@@ -61,38 +61,38 @@ pub const XXH_VERSION_NUMBER: std::ffi::c_int =
         + XXH_VERSION_RELEASE;
 pub const XXH_FORCE_ALIGN_CHECK: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const XXH32_ENDJMP: std::ffi::c_int = 0 as std::ffi::c_int;
-unsafe extern "C" fn XXH_malloc(mut s: size_t) -> *mut std::ffi::c_void {
+unsafe fn XXH_malloc(mut s: size_t) -> *mut std::ffi::c_void {
     malloc(s)
 }
-unsafe extern "C" fn XXH_free(mut p: *mut std::ffi::c_void) {
+unsafe fn XXH_free(mut p: *mut std::ffi::c_void) {
     free(p);
 }
-unsafe extern "C" fn XXH_memcpy(
+unsafe fn XXH_memcpy(
     mut dest: *mut std::ffi::c_void,
     mut src: *const std::ffi::c_void,
     mut size: size_t,
 ) -> *mut std::ffi::c_void {
     memcpy(dest, src, size)
 }
-unsafe extern "C" fn XXH_read32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
+unsafe fn XXH_read32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
     *(ptr as *const xxh_unalign32)
 }
 pub const XXH_CPU_LITTLE_ENDIAN: std::ffi::c_int = 1 as std::ffi::c_int;
-unsafe extern "C" fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
+unsafe fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
     x << 24 as std::ffi::c_int & 0xff000000 as std::ffi::c_uint
         | x << 8 as std::ffi::c_int & 0xff0000 as std::ffi::c_int as xxh_u32
         | x >> 8 as std::ffi::c_int & 0xff00 as std::ffi::c_int as xxh_u32
         | x >> 24 as std::ffi::c_int & 0xff as std::ffi::c_int as xxh_u32
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
+unsafe fn XXH_readLE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read32(ptr)
     } else {
         XXH_swap32(XXH_read32(ptr))
     }
 }
-unsafe extern "C" fn XXH_readBE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
+unsafe fn XXH_readBE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_swap32(XXH_read32(ptr))
     } else {
@@ -100,7 +100,7 @@ unsafe extern "C" fn XXH_readBE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
     }
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE32_align(
+unsafe fn XXH_readLE32_align(
     mut ptr: *const std::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u32 {
@@ -113,7 +113,7 @@ unsafe extern "C" fn XXH_readLE32_align(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH_versionNumber() -> std::ffi::c_uint {
+pub unsafe fn ZSTD_XXH_versionNumber() -> std::ffi::c_uint {
     XXH_VERSION_NUMBER as std::ffi::c_uint
 }
 pub const XXH_PRIME32_1: std::ffi::c_uint = 0x9e3779b1 as std::ffi::c_uint;
@@ -121,14 +121,14 @@ pub const XXH_PRIME32_2: std::ffi::c_uint = 0x85ebca77 as std::ffi::c_uint;
 pub const XXH_PRIME32_3: std::ffi::c_uint = 0xc2b2ae3d as std::ffi::c_uint;
 pub const XXH_PRIME32_4: std::ffi::c_uint = 0x27d4eb2f as std::ffi::c_uint;
 pub const XXH_PRIME32_5: std::ffi::c_uint = 0x165667b1 as std::ffi::c_uint;
-unsafe extern "C" fn XXH32_round(mut acc: xxh_u32, mut input: xxh_u32) -> xxh_u32 {
+unsafe fn XXH32_round(mut acc: xxh_u32, mut input: xxh_u32) -> xxh_u32 {
     acc = (acc as std::ffi::c_uint).wrapping_add(input.wrapping_mul(XXH_PRIME32_2)) as xxh_u32
         as xxh_u32;
     acc = ::core::intrinsics::rotate_left(acc, 13 as std::ffi::c_int as std::ffi::c_uint);
     acc = (acc as std::ffi::c_uint).wrapping_mul(XXH_PRIME32_1) as xxh_u32 as xxh_u32;
     acc
 }
-unsafe extern "C" fn XXH32_avalanche(mut hash: xxh_u32) -> xxh_u32 {
+unsafe fn XXH32_avalanche(mut hash: xxh_u32) -> xxh_u32 {
     hash ^= hash >> 15 as std::ffi::c_int;
     hash = (hash as std::ffi::c_uint).wrapping_mul(XXH_PRIME32_2) as xxh_u32 as xxh_u32;
     hash ^= hash >> 13 as std::ffi::c_int;
@@ -136,7 +136,7 @@ unsafe extern "C" fn XXH32_avalanche(mut hash: xxh_u32) -> xxh_u32 {
     hash ^= hash >> 16 as std::ffi::c_int;
     hash
 }
-unsafe extern "C" fn XXH32_finalize(
+unsafe fn XXH32_finalize(
     mut hash: xxh_u32,
     mut ptr: *const xxh_u8,
     mut len: size_t,
@@ -452,7 +452,7 @@ unsafe extern "C" fn XXH32_finalize(
     }
 }
 #[inline(always)]
-unsafe extern "C" fn XXH32_endian_align(
+unsafe fn XXH32_endian_align(
     mut input: *const xxh_u8,
     mut len: size_t,
     mut seed: xxh_u32,
@@ -514,7 +514,7 @@ unsafe extern "C" fn XXH32_endian_align(
     XXH32_finalize(h32, input, len & 15 as std::ffi::c_int as size_t, align)
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32(
+pub unsafe fn ZSTD_XXH32(
     mut input: *const std::ffi::c_void,
     mut len: size_t,
     mut seed: XXH32_hash_t,
@@ -522,16 +522,16 @@ pub unsafe extern "C" fn ZSTD_XXH32(
     XXH32_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_createState() -> *mut XXH32_state_t {
+pub unsafe fn ZSTD_XXH32_createState() -> *mut XXH32_state_t {
     XXH_malloc(::core::mem::size_of::<XXH32_state_t>()) as *mut XXH32_state_t
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_freeState(mut statePtr: *mut XXH32_state_t) -> XXH_errorcode {
+pub unsafe fn ZSTD_XXH32_freeState(mut statePtr: *mut XXH32_state_t) -> XXH_errorcode {
     XXH_free(statePtr as *mut std::ffi::c_void);
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_copyState(
+pub unsafe fn ZSTD_XXH32_copyState(
     mut dstState: *mut XXH32_state_t,
     mut srcState: *const XXH32_state_t,
 ) {
@@ -542,7 +542,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_copyState(
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_reset(
+pub unsafe fn ZSTD_XXH32_reset(
     mut statePtr: *mut XXH32_state_t,
     mut seed: XXH32_hash_t,
 ) -> XXH_errorcode {
@@ -569,7 +569,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_reset(
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_update(
+pub unsafe fn ZSTD_XXH32_update(
     mut state: *mut XXH32_state_t,
     mut input: *const std::ffi::c_void,
     mut len: size_t,
@@ -700,7 +700,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_update(
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_digest(mut state: *const XXH32_state_t) -> XXH32_hash_t {
+pub unsafe fn ZSTD_XXH32_digest(mut state: *const XXH32_state_t) -> XXH32_hash_t {
     let mut h32: xxh_u32 = 0;
     if (*state).large_len != 0 {
         h32 = (::core::intrinsics::rotate_left(
@@ -732,7 +732,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_digest(mut state: *const XXH32_state_t) -> X
     )
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_canonicalFromHash(
+pub unsafe fn ZSTD_XXH32_canonicalFromHash(
     mut dst: *mut XXH32_canonical_t,
     mut hash: XXH32_hash_t,
 ) {
@@ -744,15 +744,13 @@ pub unsafe extern "C" fn ZSTD_XXH32_canonicalFromHash(
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH32_hashFromCanonical(
-    mut src: *const XXH32_canonical_t,
-) -> XXH32_hash_t {
+pub unsafe fn ZSTD_XXH32_hashFromCanonical(mut src: *const XXH32_canonical_t) -> XXH32_hash_t {
     XXH_readBE32(src as *const std::ffi::c_void)
 }
-unsafe extern "C" fn XXH_read64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
+unsafe fn XXH_read64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
     *(ptr as *const xxh_unalign64)
 }
-unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
+unsafe fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
     ((x << 56 as std::ffi::c_int) as std::ffi::c_ulonglong
         & 0xff00000000000000 as std::ffi::c_ulonglong
         | (x << 40 as std::ffi::c_int) as std::ffi::c_ulonglong
@@ -769,14 +767,14 @@ unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
         as xxh_u64
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
+unsafe fn XXH_readLE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read64(ptr)
     } else {
         XXH_swap64(XXH_read64(ptr))
     }
 }
-unsafe extern "C" fn XXH_readBE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
+unsafe fn XXH_readBE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_swap64(XXH_read64(ptr))
     } else {
@@ -784,7 +782,7 @@ unsafe extern "C" fn XXH_readBE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
     }
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE64_align(
+unsafe fn XXH_readLE64_align(
     mut ptr: *const std::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u64 {
@@ -801,7 +799,7 @@ pub const XXH_PRIME64_2: std::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as std::ffi:
 pub const XXH_PRIME64_3: std::ffi::c_ulonglong = 0x165667b19e3779f9 as std::ffi::c_ulonglong;
 pub const XXH_PRIME64_4: std::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as std::ffi::c_ulonglong;
 pub const XXH_PRIME64_5: std::ffi::c_ulonglong = 0x27d4eb2f165667c5 as std::ffi::c_ulonglong;
-unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
     acc = (acc as std::ffi::c_ulonglong)
         .wrapping_add((input as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
         as xxh_u64 as xxh_u64;
@@ -809,7 +807,7 @@ unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u6
     acc = (acc as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
     acc
 }
-unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
     val = XXH64_round(0 as std::ffi::c_int as xxh_u64, val);
     acc ^= val;
     acc = (acc as std::ffi::c_ulonglong)
@@ -817,7 +815,7 @@ unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh
         .wrapping_add(XXH_PRIME64_4) as xxh_u64;
     acc
 }
-unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 33 as std::ffi::c_int;
     hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
     hash ^= hash >> 29 as std::ffi::c_int;
@@ -825,7 +823,7 @@ unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 32 as std::ffi::c_int;
     hash
 }
-unsafe extern "C" fn XXH64_finalize(
+unsafe fn XXH64_finalize(
     mut hash: xxh_u64,
     mut ptr: *const xxh_u8,
     mut len: size_t,
@@ -881,7 +879,7 @@ unsafe extern "C" fn XXH64_finalize(
     XXH64_avalanche(hash)
 }
 #[inline(always)]
-unsafe extern "C" fn XXH64_endian_align(
+unsafe fn XXH64_endian_align(
     mut input: *const xxh_u8,
     mut len: size_t,
     mut seed: xxh_u64,
@@ -950,7 +948,7 @@ unsafe extern "C" fn XXH64_endian_align(
     XXH64_finalize(h64, input, len, align)
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64(
+pub unsafe fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
     mut len: size_t,
     mut seed: XXH64_hash_t,
@@ -958,16 +956,16 @@ pub unsafe extern "C" fn ZSTD_XXH64(
     XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_createState() -> *mut XXH64_state_t {
+pub unsafe fn ZSTD_XXH64_createState() -> *mut XXH64_state_t {
     XXH_malloc(::core::mem::size_of::<XXH64_state_t>()) as *mut XXH64_state_t
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_freeState(mut statePtr: *mut XXH64_state_t) -> XXH_errorcode {
+pub unsafe fn ZSTD_XXH64_freeState(mut statePtr: *mut XXH64_state_t) -> XXH_errorcode {
     XXH_free(statePtr as *mut std::ffi::c_void);
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_copyState(
+pub unsafe fn ZSTD_XXH64_copyState(
     mut dstState: *mut XXH64_state_t,
     mut srcState: *const XXH64_state_t,
 ) {
@@ -978,7 +976,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_copyState(
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_reset(
+pub unsafe fn ZSTD_XXH64_reset(
     mut statePtr: *mut XXH64_state_t,
     mut seed: XXH64_hash_t,
 ) -> XXH_errorcode {
@@ -1009,7 +1007,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_reset(
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_update(
+pub unsafe fn ZSTD_XXH64_update(
     mut state: *mut XXH64_state_t,
     mut input: *const std::ffi::c_void,
     mut len: size_t,
@@ -1151,7 +1149,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_update(
     XXH_OK
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_digest(mut state: *const XXH64_state_t) -> XXH64_hash_t {
+pub unsafe fn ZSTD_XXH64_digest(mut state: *const XXH64_state_t) -> XXH64_hash_t {
     let mut h64: xxh_u64 = 0;
     if (*state).total_len >= 32 as std::ffi::c_int as XXH64_hash_t {
         h64 = (::core::intrinsics::rotate_left(
@@ -1200,7 +1198,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_digest(mut state: *const XXH64_state_t) -> X
     )
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_canonicalFromHash(
+pub unsafe fn ZSTD_XXH64_canonicalFromHash(
     mut dst: *mut XXH64_canonical_t,
     mut hash: XXH64_hash_t,
 ) {
@@ -1212,9 +1210,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_canonicalFromHash(
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_XXH64_hashFromCanonical(
-    mut src: *const XXH64_canonical_t,
-) -> XXH64_hash_t {
+pub unsafe fn ZSTD_XXH64_hashFromCanonical(mut src: *const XXH64_canonical_t) -> XXH64_hash_t {
     XXH_readBE64(src as *const std::ffi::c_void)
 }
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
