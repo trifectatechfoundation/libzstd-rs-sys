@@ -436,7 +436,6 @@ unsafe extern "C" fn atoi(mut __nptr: *const std::ffi::c_char) -> std::ffi::c_in
 }
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
-pub const errno: std::ffi::c_int = *__errno_location();
 pub const AT_FDCWD: std::ffi::c_int = -(100 as std::ffi::c_int);
 pub const __S_IFMT: std::ffi::c_int = 0o170000 as std::ffi::c_int;
 pub const UTIME_NOW: std::ffi::c_long =
@@ -890,7 +889,7 @@ pub unsafe extern "C" fn UTIL_utime(
         timebuf.as_mut_ptr() as *const timespec,
         0 as std::ffi::c_int,
     );
-    errno = 0 as std::ffi::c_int;
+    *__errno_location() = 0 as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         g_traceDepth;
@@ -1001,7 +1000,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
             -(1 as std::ffi::c_int) as __gid_t,
         );
     }
-    errno = 0 as std::ffi::c_int;
+    *__errno_location() = 0 as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         g_traceDepth;
@@ -2391,7 +2390,7 @@ unsafe extern "C" fn UTIL_prepareFileList(
         return 0 as std::ffi::c_int;
     }
     dirLength = strlen(dirName);
-    errno = 0 as std::ffi::c_int;
+    *__errno_location() = 0 as std::ffi::c_int;
     loop {
         entry = readdir(dir);
         if entry.is_null() {
@@ -2525,10 +2524,10 @@ unsafe extern "C" fn UTIL_prepareFileList(
                 }
             }
             free(path as *mut std::ffi::c_void);
-            errno = 0 as std::ffi::c_int;
+            *__errno_location() = 0 as std::ffi::c_int;
         }
     }
-    if errno != 0 as std::ffi::c_int {
+    if *__errno_location() != 0 as std::ffi::c_int {
         if g_utilDisplayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
@@ -2645,7 +2644,7 @@ unsafe extern "C" fn makeDir(
 ) -> std::ffi::c_int {
     let mut ret = mkdir(dir, mode);
     if ret != 0 as std::ffi::c_int {
-        if errno == EEXIST {
+        if *__errno_location() == EEXIST {
             return 0 as std::ffi::c_int;
         }
         fprintf(
