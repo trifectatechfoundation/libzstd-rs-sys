@@ -1,320 +1,186 @@
 /*
-    datagen.c - compressible data generator test tool
-    Copyright (C) Yann Collet 2012-2015
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under both the BSD-style license (found in the
+ * LICENSE file in the root directory of this source tree) and the GPLv2 (found
+ * in the COPYING file in the root directory of this source tree).
+ * You may select, at your option, one of the above-listed licenses.
+ */
 
-    GPL v2 License
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-    You can contact the author at :
-   - ZSTD source repository : https://github.com/Cyan4973/zstd
-   - Public forum : https://groups.google.com/forum/#!forum/lz4c
-*/
-
-/**************************************
-*  Remove Visual warning messages
+/*-************************************
+*  Dependencies
 **************************************/
-#define _CRT_SECURE_NO_WARNINGS   /* fgets */
+#include "datagen.h"
+#include "platform.h"  /* SET_BINARY_MODE */
+#include <stdlib.h>    /* malloc, free */
+#include <stdio.h>     /* FILE, fwrite, fprintf */
+#include <string.h>    /* memcpy */
+#include "../lib/common/mem.h"  /* U32 */
 
 
-/**************************************
-*  Includes
-**************************************/
-#include <stdlib.h>    /* malloc */
-#include <stdio.h>     /* fgets, sscanf */
-#include <string.h>    /* strcmp */
-
-
-/**************************************
-*  Basic Types
-**************************************/
-#if defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)   /* C99 */
-# include <stdint.h>
-  typedef  uint8_t BYTE;
-  typedef uint16_t U16;
-  typedef uint32_t U32;
-  typedef  int32_t S32;
-  typedef uint64_t U64;
-#else
-  typedef unsigned char       BYTE;
-  typedef unsigned short      U16;
-  typedef unsigned int        U32;
-  typedef   signed int        S32;
-  typedef unsigned long long  U64;
-#endif
-
-
-/**************************************
-*  Constants
-**************************************/
-#ifndef ZSTD_VERSION
-#  define ZSTD_VERSION "r0"
-#endif
-
-#define KB *(1 <<10)
-#define MB *(1 <<20)
-#define GB *(1U<<30)
-
-#define CDG_SIZE_DEFAULT (64 KB)
-#define CDG_SEED_DEFAULT 0
-#define CDG_COMPRESSIBILITY_DEFAULT 50
-#define PRIME1   2654435761U
-#define PRIME2   2246822519U
-
-
-/**************************************
+/*-************************************
 *  Macros
 **************************************/
-#define DISPLAY(...)         fprintf(stderr, __VA_ARGS__)
-#define DISPLAYLEVEL(l, ...) if (displayLevel>=l) { DISPLAY(__VA_ARGS__); }
+#define KB *(1 <<10)
+#define MIN(a,b)  ( (a) < (b) ? (a) : (b) )
+
+#define RDG_DEBUG 0
+#define TRACE(...)   if (RDG_DEBUG) fprintf(stderr, __VA_ARGS__ )
 
 
-/**************************************
-*  Local Parameters
+/*-************************************
+*  Local constants
 **************************************/
-static unsigned no_prompt = 0;
-static char*    programName;
-static unsigned displayLevel = 2;
+#define LTLOG 13
+#define LTSIZE (1<<LTLOG)
+#define LTMASK (LTSIZE-1)
 
 
-/*********************************************************
+/*-*******************************************************
 *  Local Functions
 *********************************************************/
-#define CDG_rotl32(x,r) ((x << r) | (x >> (32 - r)))
-static unsigned int CDG_rand(U32* src)
+#define RDG_rotl32(x,r) ((x << r) | (x >> (32 - r)))
+static U32 RDG_rand(U32* src)
 {
+    static const U32 prime1 = 2654435761U;
+    static const U32 prime2 = 2246822519U;
     U32 rand32 = *src;
-    rand32 *= PRIME1;
-    rand32 += PRIME2;
-    rand32  = CDG_rotl32(rand32, 13);
+    rand32 *= prime1;
+    rand32 ^= prime2;
+    rand32  = RDG_rotl32(rand32, 13);
     *src = rand32;
-    return rand32;
+    return rand32 >> 5;
 }
 
+typedef U32 fixedPoint_24_8;
 
-#define LTSIZE 8192
-#define LTMASK (LTSIZE-1)
-static const char firstChar = '(';
-static const char lastChar = '}';
-static void* CDG_createLiteralDistrib(double ld)
+static void RDG_fillLiteralDistrib(BYTE* ldt, fixedPoint_24_8 ld)
 {
-    char* lt = malloc(LTSIZE);
-    U32 i = 0;
-    char character = '0';
+    BYTE const firstChar = (ld<=0.0) ?   0 : '(';
+    BYTE const lastChar  = (ld<=0.0) ? 255 : '}';
+    BYTE character = (ld<=0.0) ? 0 : '0';
+    U32 u;
 
-    while (i<LTSIZE)
-    {
-        U32 weight = (U32)((double)(LTSIZE - i) * ld) + 1;
-        U32 end;
-        if (weight + i > LTSIZE) weight = LTSIZE-i;
-        end = i + weight;
-        while (i < end) lt[i++] = character;
+    if (ld<=0) ld = 0;
+    for (u=0; u<LTSIZE; ) {
+        U32 const weight = (((LTSIZE - u) * ld) >> 8) + 1;
+        U32 const end = MIN ( u + weight , LTSIZE);
+        while (u < end) ldt[u++] = character;
         character++;
         if (character > lastChar) character = firstChar;
     }
-    return lt;
 }
 
-static char CDG_genChar(U32* seed, const void* ltctx)
+
+static BYTE RDG_genChar(U32* seed, const BYTE* ldt)
 {
-    const BYTE* lt = ltctx;
-    U32 id = CDG_rand(seed) & LTMASK;
-    return lt[id];
+    U32 const id = RDG_rand(seed) & LTMASK;
+    return ldt[id];  /* memory-sanitizer fails here, stating "uninitialized value" when table initialized with P==0.0. Checked : table is fully initialized */
 }
 
-#define CDG_RAND15BITS  ((CDG_rand(seed) >> 3) & 32767)
-#define CDG_RANDLENGTH  ( ((CDG_rand(seed) >> 7) & 7) ? (CDG_rand(seed) & 15) : (CDG_rand(seed) & 511) + 15)
-#define CDG_DICTSIZE    (32 KB)
-static void CDG_generate(U64 size, U32* seed, double matchProba)
-{
-    BYTE fullbuff[CDG_DICTSIZE + 128 KB + 1];
-    BYTE* buff = fullbuff + CDG_DICTSIZE;
-    U64 total=0;
-    U32 P32 = (U32)(32768 * matchProba);
-    U32 pos=1;
-    U32 genBlockSize = 128 KB;
-    double literalDistrib = 0.13;
-    void* ldctx = CDG_createLiteralDistrib(literalDistrib);
 
-    /* Build initial prefix */
-    fullbuff[0] = CDG_genChar(seed, ldctx);
-    while (pos<32 KB)
-    {
-        /* Select : Literal (char) or Match (within 32K) */
-        if (CDG_RAND15BITS < P32)
-        {
-            /* Copy (within 64K) */
-            U32 d;
-            int ref;
-            int length = CDG_RANDLENGTH + 4;
-            U32 offset = CDG_RAND15BITS + 1;
-            if (offset > pos) offset = pos;
-            ref = pos - offset;
-            d = pos + length;
-            while (pos < d) fullbuff[pos++] = fullbuff[ref++];
+static U32 RDG_rand15Bits (U32* seedPtr)
+{
+    return RDG_rand(seedPtr) & 0x7FFF;
+}
+
+static U32 RDG_randLength(U32* seedPtr)
+{
+    if (RDG_rand(seedPtr) & 7) return (RDG_rand(seedPtr) & 0xF);   /* small length */
+    return (RDG_rand(seedPtr) & 0x1FF) + 0xF;
+}
+
+static void RDG_genBlock(void* buffer, size_t buffSize, size_t prefixSize,
+                         double matchProba, const BYTE* ldt, U32* seedPtr)
+{
+    BYTE* const buffPtr = (BYTE*)buffer;
+    U32 const matchProba32 = (U32)(32768 * matchProba);
+    size_t pos = prefixSize;
+    U32 prevOffset = 1;
+
+    /* special case : sparse content */
+    while (matchProba >= 1.0) {
+        size_t size0 = RDG_rand(seedPtr) & 3;
+        size0  = (size_t)1 << (16 + size0 * 2);
+        size0 += RDG_rand(seedPtr) & (size0-1);   /* because size0 is power of 2*/
+        if (buffSize < pos + size0) {
+            memset(buffPtr+pos, 0, buffSize-pos);
+            return;
         }
-        else
-        {
-            /* Literal (noise) */
-            U32 d = pos + CDG_RANDLENGTH;
-            while (pos < d) fullbuff[pos++] = CDG_genChar(seed, ldctx);
-        }
+        memset(buffPtr+pos, 0, size0);
+        pos += size0;
+        buffPtr[pos-1] = RDG_genChar(seedPtr, ldt);
+        continue;
     }
+
+    /* init */
+    if (pos==0) buffPtr[0] = RDG_genChar(seedPtr, ldt), pos=1;
 
     /* Generate compressible data */
-    pos = 0;
-    while (total < size)
-    {
-        if (size-total < 128 KB) genBlockSize = (U32)(size-total);
+    while (pos < buffSize) {
+        /* Select : Literal (char) or Match (within 32K) */
+        if (RDG_rand15Bits(seedPtr) < matchProba32) {
+            /* Copy (within 32K) */
+            U32 const length = RDG_randLength(seedPtr) + 4;
+            U32 const d = (U32) MIN(pos + length , buffSize);
+            U32 const repeatOffset = (RDG_rand(seedPtr) & 15) == 2;
+            U32 const randOffset = RDG_rand15Bits(seedPtr) + 1;
+            U32 const offset = repeatOffset ? prevOffset : (U32) MIN(randOffset , pos);
+            size_t match = pos - offset;
+            while (pos < d) { buffPtr[pos++] = buffPtr[match++];   /* correctly manages overlaps */ }
+            prevOffset = offset;
+        } else {
+            /* Literal (noise) */
+            U32 const length = RDG_randLength(seedPtr);
+            U32 const d = (U32) MIN(pos + length, buffSize);
+            while (pos < d) { buffPtr[pos++] = RDG_genChar(seedPtr, ldt); }
+    }   }
+}
+
+
+void RDG_genBuffer(void* buffer, size_t size, double matchProba, double litProba, unsigned seed)
+{
+    U32 seed32 = seed;
+    BYTE ldt[LTSIZE];
+    memset(ldt, '0', sizeof(ldt));  /* yes, character '0', this is intentional */
+    if (litProba<=0.0) litProba = matchProba / 4.5;
+    RDG_fillLiteralDistrib(ldt, (fixedPoint_24_8)(litProba * 256 + 0.001));
+    RDG_genBlock(buffer, size, 0, matchProba, ldt, &seed32);
+}
+
+
+void RDG_genStdout(unsigned long long size, double matchProba, double litProba, unsigned seed)
+{
+    U32 seed32 = seed;
+    size_t const stdBlockSize = 128 KB;
+    size_t const stdDictSize = 32 KB;
+    BYTE* const buff = (BYTE*)malloc(stdDictSize + stdBlockSize);
+    U64 total = 0;
+    BYTE ldt[LTSIZE];   /* literals distribution table */
+
+    /* init */
+    if (buff==NULL) { perror("datagen"); exit(1); }
+    if (litProba<=0.0) litProba = matchProba / 4.5;
+    memset(ldt, '0', sizeof(ldt));   /* yes, character '0', this is intentional */
+    RDG_fillLiteralDistrib(ldt, (fixedPoint_24_8)(litProba * 256 + 0.001));
+    SET_BINARY_MODE(stdout);
+
+    /* Generate initial dict */
+    RDG_genBlock(buff, stdDictSize, 0, matchProba, ldt, &seed32);
+
+    /* Generate compressible data */
+    while (total < size) {
+        size_t const genBlockSize = (size_t) (MIN (stdBlockSize, size-total));
+        RDG_genBlock(buff, stdDictSize+stdBlockSize, stdDictSize, matchProba, ldt, &seed32);
         total += genBlockSize;
-        buff[genBlockSize] = 0;
-        pos = 0;
-        while (pos<genBlockSize)
-        {
-            /* Select : Literal (char) or Match (within 32K) */
-            if (CDG_RAND15BITS < P32)
-            {
-                /* Copy (within 64K) */
-                int ref;
-                U32 d;
-                int length = CDG_RANDLENGTH + 4;
-                U32 offset = CDG_RAND15BITS + 1;
-                if (pos + length > genBlockSize ) length = genBlockSize - pos;
-                ref = pos - offset;
-                d = pos + length;
-                while (pos < d) buff[pos++] = buff[ref++];
-            }
-            else
-            {
-                /* Literal (noise) */
-                U32 d;
-                int length = CDG_RANDLENGTH;
-                if (pos + length > genBlockSize) length = genBlockSize - pos;
-                d = pos + length;
-                while (pos < d) buff[pos++] = CDG_genChar(seed, ldctx);
-            }
-        }
-
-        /* output datagen */
-        pos=0;
-        for (;pos+512<=genBlockSize;pos+=512)
-            printf("%512.512s", buff+pos);
-        for (;pos<genBlockSize;pos++) printf("%c", buff[pos]);
-        /* Regenerate prefix */
-        memcpy(fullbuff, buff + 96 KB, 32 KB);
-    }
-}
-
-
-/*********************************************************
-*  Command line
-*********************************************************/
-static int CDG_usage(void)
-{
-    DISPLAY( "Compressible data generator\n");
-    DISPLAY( "Usage :\n");
-    DISPLAY( "      %s [size] [args]\n", programName);
-    DISPLAY( "\n");
-    DISPLAY( "Arguments :\n");
-    DISPLAY( " -g#    : generate # data (default:%i)\n", CDG_SIZE_DEFAULT);
-    DISPLAY( " -s#    : Select seed (default:%i)\n", CDG_SEED_DEFAULT);
-    DISPLAY( " -p#    : Select compressibility in %% (default:%i%%)\n", CDG_COMPRESSIBILITY_DEFAULT);
-    DISPLAY( " -h     : display help and exit\n");
-    return 0;
-}
-
-
-int main(int argc, char** argv)
-{
-    int argNb;
-    int proba = CDG_COMPRESSIBILITY_DEFAULT;
-    U64 size = CDG_SIZE_DEFAULT;
-    U32 seed = CDG_SEED_DEFAULT;
-
-    /* Check command line */
-    programName = argv[0];
-    for(argNb=1; argNb<argc; argNb++)
-    {
-        char* argument = argv[argNb];
-
-        if(!argument) continue;   /* Protection if argument empty */
-
-        /* Handle commands. Aggregated commands are allowed */
-        if (*argument=='-')
-        {
-            if (!strcmp(argument, "--no-prompt")) { no_prompt=1; continue; }
-
-            argument++;
-            while (*argument!=0)
-            {
-                switch(*argument)
-                {
-                case 'h':
-                    return CDG_usage();
-                case 'g':
-                    argument++;
-                    size=0;
-                    while ((*argument>='0') && (*argument<='9'))
-                    {
-                        size *= 10;
-                        size += *argument - '0';
-                        argument++;
-                    }
-                    if (*argument=='K') { size <<= 10; argument++; }
-                    if (*argument=='M') { size <<= 20; argument++; }
-                    if (*argument=='G') { size <<= 30; argument++; }
-                    if (*argument=='B') { argument++; }
-                    break;
-                case 's':
-                    argument++;
-                    seed=0;
-                    while ((*argument>='0') && (*argument<='9'))
-                    {
-                        seed *= 10;
-                        seed += *argument - '0';
-                        argument++;
-                    }
-                    break;
-                case 'p':
-                    argument++;
-                    proba=0;
-                    while ((*argument>='0') && (*argument<='9'))
-                    {
-                        proba *= 10;
-                        proba += *argument - '0';
-                        argument++;
-                    }
-                    if (proba<0) proba=0;
-                    if (proba>100) proba=100;
-                    break;
-                case 'v':
-                    displayLevel = 4;
-                    argument++;
-                    break;
-                default: ;
-                }
-            }
-
-        }
+        { size_t const unused = fwrite(buff, 1, genBlockSize, stdout); (void)unused; }
+        /* update dict */
+        memcpy(buff, buff + stdBlockSize, stdDictSize);
     }
 
-    DISPLAYLEVEL(4, "Data Generator %s \n", ZSTD_VERSION);
-    DISPLAYLEVEL(3, "Seed = %u \n", seed);
-    if (proba!=CDG_COMPRESSIBILITY_DEFAULT) DISPLAYLEVEL(3, "Compressibility : %i%%\n", proba);
-
-    CDG_generate(size, &seed, ((double)proba) / 100);
-
-    return 0;
+    /* cleanup */
+    free(buff);
 }
