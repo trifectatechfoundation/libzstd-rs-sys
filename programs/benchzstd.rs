@@ -412,10 +412,6 @@ unsafe extern "C" fn XXH_read32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
     return *(ptr as *const xxh_unalign32);
 }
 pub const XXH_CPU_LITTLE_ENDIAN: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const XXH_rotl64: unsafe extern "C" fn(
-    std::ffi::c_ulong,
-    std::ffi::c_ulong,
-) -> std::ffi::c_ulong = __builtin_rotateleft64;
 unsafe extern "C" fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
     return x << 24 as std::ffi::c_int & 0xff000000 as std::ffi::c_uint
         | x << 8 as std::ffi::c_int & 0xff0000 as std::ffi::c_int as xxh_u32
