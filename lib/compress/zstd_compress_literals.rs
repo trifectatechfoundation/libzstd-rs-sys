@@ -296,14 +296,12 @@ unsafe extern "C" fn ZSTD_minLiteralsToCompress(
     } else {
         3 as std::ffi::c_int
     };
-    let mintc = if huf_repeat as std::ffi::c_uint
-        == HUF_repeat_valid as std::ffi::c_int as std::ffi::c_uint
-    {
+
+    if huf_repeat as std::ffi::c_uint == HUF_repeat_valid as std::ffi::c_int as std::ffi::c_uint {
         6 as std::ffi::c_int as size_t
     } else {
         (8 as std::ffi::c_int as size_t) << shift
-    };
-    mintc
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_compressLiterals(
@@ -439,14 +437,15 @@ pub unsafe extern "C" fn ZSTD_compressLiterals(
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
     if cLitSize == 1 as std::ffi::c_int as size_t
-        && (srcSize >= 8 as std::ffi::c_int as size_t || allBytesIdentical(src, srcSize) != 0) {
-            libc::memcpy(
-                nextHuf as *mut std::ffi::c_void,
-                prevHuf as *const std::ffi::c_void,
-                ::core::mem::size_of::<ZSTD_hufCTables_t>() as std::ffi::c_ulong as libc::size_t,
-            );
-            return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
-        }
+        && (srcSize >= 8 as std::ffi::c_int as size_t || allBytesIdentical(src, srcSize) != 0)
+    {
+        libc::memcpy(
+            nextHuf as *mut std::ffi::c_void,
+            prevHuf as *const std::ffi::c_void,
+            ::core::mem::size_of::<ZSTD_hufCTables_t>() as std::ffi::c_ulong as libc::size_t,
+        );
+        return ZSTD_compressRleLiteralsBlock(dst, dstCapacity, src, srcSize);
+    }
     if hType as std::ffi::c_uint == set_compressed as std::ffi::c_int as std::ffi::c_uint {
         (*nextHuf).repeatMode = HUF_repeat_check;
     }

@@ -944,7 +944,6 @@ pub const ZSTD_c_deterministicRefPrefix: std::ffi::c_int =
     ZSTD_c_experimentalParam15 as std::ffi::c_int;
 pub const HASH_READ_SIZE: std::ffi::c_int = 8 as std::ffi::c_int;
 static mut kNullRawSeqStore: RawSeqStore_t = {
-    
     RawSeqStore_t {
         seq: NULL_0 as *mut rawSeq,
         pos: 0 as std::ffi::c_int as size_t,
@@ -1078,8 +1077,7 @@ unsafe extern "C" fn ZSTD_window_update(
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
@@ -1156,7 +1154,6 @@ unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const NULL_0: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_nullBuffer: Buffer = {
-    
     buffer_s {
         start: NULL_0 as *mut std::ffi::c_void,
         capacity: 0 as std::ffi::c_int as size_t,
@@ -1193,7 +1190,11 @@ unsafe extern "C" fn ZSTDMT_createBufferPool(
     if bufPool.is_null() {
         return NULL_0 as *mut ZSTDMT_bufferPool;
     }
-    if pthread_mutex_init(&mut (*bufPool).poolMutex, std::ptr::null::<pthread_mutexattr_t>()) != 0 {
+    if pthread_mutex_init(
+        &mut (*bufPool).poolMutex,
+        std::ptr::null::<pthread_mutexattr_t>(),
+    ) != 0
+    {
         ZSTD_customFree(bufPool as *mut std::ffi::c_void, cMem);
         return NULL_0 as *mut ZSTDMT_bufferPool;
     }
@@ -1388,7 +1389,11 @@ unsafe extern "C" fn ZSTDMT_createCCtxPool(
     if cctxPool.is_null() {
         return NULL_0 as *mut ZSTDMT_CCtxPool;
     }
-    if pthread_mutex_init(&mut (*cctxPool).poolMutex, std::ptr::null::<pthread_mutexattr_t>()) != 0 {
+    if pthread_mutex_init(
+        &mut (*cctxPool).poolMutex,
+        std::ptr::null::<pthread_mutexattr_t>(),
+    ) != 0
+    {
         ZSTD_customFree(cctxPool as *mut std::ffi::c_void, cMem);
         return NULL_0 as *mut ZSTDMT_CCtxPool;
     }
@@ -1548,27 +1553,26 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
         if dictSize > 0 as std::ffi::c_int as size_t
             && dictContentType as std::ffi::c_uint
                 == ZSTD_dct_rawContent as std::ffi::c_int as std::ffi::c_uint
-            {
-                let dictEnd = (dict as *const BYTE).offset(dictSize as isize);
-                ZSTD_window_update(
-                    &mut (*serialState).ldmState.window,
-                    dict,
-                    dictSize,
-                    0 as std::ffi::c_int,
-                );
-                ZSTD_ldm_fillHashTable(
-                    &mut (*serialState).ldmState,
-                    dict as *const BYTE,
-                    dictEnd,
-                    &mut params.ldmParams,
-                );
-                (*serialState).ldmState.loadedDictEnd = if params.forceWindow != 0 {
-                    0 as std::ffi::c_int as U32
-                } else {
-                    dictEnd.offset_from((*serialState).ldmState.window.base) as std::ffi::c_long
-                        as U32
-                };
-            }
+        {
+            let dictEnd = (dict as *const BYTE).offset(dictSize as isize);
+            ZSTD_window_update(
+                &mut (*serialState).ldmState.window,
+                dict,
+                dictSize,
+                0 as std::ffi::c_int,
+            );
+            ZSTD_ldm_fillHashTable(
+                &mut (*serialState).ldmState,
+                dict as *const BYTE,
+                dictEnd,
+                &mut params.ldmParams,
+            );
+            (*serialState).ldmState.loadedDictEnd = if params.forceWindow != 0 {
+                0 as std::ffi::c_int as U32
+            } else {
+                dictEnd.offset_from((*serialState).ldmState.window.base) as std::ffi::c_long as U32
+            };
+        }
         (*serialState).ldmWindow = (*serialState).ldmState.window;
     }
     (*serialState).params = params;
@@ -1582,8 +1586,14 @@ unsafe extern "C" fn ZSTDMT_serialState_init(mut serialState: *mut SerialState) 
         0 as std::ffi::c_int,
         ::core::mem::size_of::<SerialState>() as std::ffi::c_ulong as libc::size_t,
     );
-    initError |= pthread_mutex_init(&mut (*serialState).mutex, std::ptr::null::<pthread_mutexattr_t>());
-    initError |= pthread_cond_init(&mut (*serialState).cond, std::ptr::null::<pthread_condattr_t>());
+    initError |= pthread_mutex_init(
+        &mut (*serialState).mutex,
+        std::ptr::null::<pthread_mutexattr_t>(),
+    );
+    initError |= pthread_cond_init(
+        &mut (*serialState).cond,
+        std::ptr::null::<pthread_condattr_t>(),
+    );
     initError |= pthread_mutex_init(
         &mut (*serialState).ldmWindowMutex,
         std::ptr::null::<pthread_mutexattr_t>(),
@@ -1679,7 +1689,6 @@ unsafe extern "C" fn ZSTDMT_serialState_ensureFinished(
     pthread_mutex_unlock(&mut (*serialState).mutex);
 }
 static mut kNullRange: Range = {
-    
     Range {
         start: NULL_0 as *const std::ffi::c_void,
         size: 0 as std::ffi::c_int as size_t,
@@ -1854,11 +1863,11 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut std::ffi::c_
                                     let mut op = ostart;
                                     let mut oend = op.offset(dstBuff.capacity as isize);
                                     let mut chunkNb: std::ffi::c_int = 0;
-                                    ::core::mem::size_of::<size_t>() as std::ffi::c_ulong;::core::mem::size_of::<std::ffi::c_int>()
-                                            as std::ffi::c_ulong;
+                                    ::core::mem::size_of::<size_t>();
+                                    ::core::mem::size_of::<std::ffi::c_int>();
                                     chunkNb = 1 as std::ffi::c_int;
                                     loop {
-                                        if (chunkNb >= nbChunks) {
+                                        if chunkNb >= nbChunks {
                                             current_block = 851619935621435220;
                                             break;
                                         }
@@ -1966,14 +1975,14 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut std::ffi::c_
     ZSTDMT_releaseSeq((*job).seqPool, rawSeqStore);
     ZSTDMT_releaseCCtx((*job).cctxPool, cctx);
     pthread_mutex_lock(&mut (*job).job_mutex);
-    ERR_isError((*job).cSize);0;
+    ERR_isError((*job).cSize);
+    0;
     (*job).cSize = ((*job).cSize).wrapping_add(lastCBlockSize);
     (*job).consumed = (*job).src.size;
     pthread_cond_signal(&mut (*job).job_cond);
     pthread_mutex_unlock(&mut (*job).job_mutex);
 }
 static mut kNullRoundBuff: RoundBuff_t = {
-    
     RoundBuff_t {
         buffer: NULL_0 as *mut BYTE,
         capacity: 0 as std::ffi::c_int as size_t,
@@ -3041,7 +3050,8 @@ pub unsafe extern "C" fn ZSTDMT_compressStream_generic(
     }
     if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
         if ((*mtctx).inBuff.buffer.start).is_null() {
-            ZSTDMT_tryGetInputRange(mtctx);0;
+            ZSTDMT_tryGetInputRange(mtctx);
+            0;
         }
         if !((*mtctx).inBuff.buffer.start).is_null() {
             let syncPoint = findSynchronizationPoint(mtctx, *input);

@@ -98,14 +98,14 @@ pub unsafe extern "C" fn BMK_isSuccessful_runOutcome(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_runTime(mut outcome: BMK_runOutcome_t) -> BMK_runTime_t {
-    if (outcome.error_tag_never_ever_use_directly != 0 as std::ffi::c_int) {
+    if outcome.error_tag_never_ever_use_directly != 0 as std::ffi::c_int {
         abort();
     }
     outcome.internal_never_ever_use_directly
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_errorResult(mut outcome: BMK_runOutcome_t) -> size_t {
-    if (outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int) {
+    if outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int {
         abort();
     }
     outcome.error_result_never_ever_use_directly

@@ -80,8 +80,7 @@ pub struct FSE_symbolCompressionTransform {
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
@@ -250,11 +249,9 @@ unsafe extern "C" fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0 as std::ffi::c_int as size_t;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t)
-        .wrapping_add(
-            ((*bitC).bitPos > 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
-                as size_t,
-        )
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t).wrapping_add(
+        ((*bitC).bitPos > 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int as size_t,
+    )
 }
 pub const FSE_NCOUNTBOUND: std::ffi::c_int = 512 as std::ffi::c_int;
 #[inline]
@@ -698,12 +695,12 @@ unsafe extern "C" fn FSE_minTableLog(
         (ZSTD_highbit32(srcSize as U32)).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
     let mut minBitsSymbols =
         (ZSTD_highbit32(maxSymbolValue)).wrapping_add(2 as std::ffi::c_int as std::ffi::c_uint);
-    let mut minBits = if minBitsSrc < minBitsSymbols {
+
+    if minBitsSrc < minBitsSymbols {
         minBitsSrc
     } else {
         minBitsSymbols
-    };
-    minBits
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_optimalTableLog_internal(
@@ -760,7 +757,8 @@ unsafe extern "C" fn FSE_normalizeM2(
     let mut distributed = 0 as std::ffi::c_int as U32;
     let mut ToDistribute: U32 = 0;
     let lowThreshold = (total >> tableLog) as U32;
-    let mut lowOne = ((total * 3 as std::ffi::c_int as size_t) >> tableLog.wrapping_add(1 as std::ffi::c_int as U32)) as U32;
+    let mut lowOne = ((total * 3 as std::ffi::c_int as size_t)
+        >> tableLog.wrapping_add(1 as std::ffi::c_int as U32)) as U32;
     s = 0 as std::ffi::c_int as U32;
     while s <= maxSymbolValue {
         if *count.offset(s as isize) == 0 as std::ffi::c_int as std::ffi::c_uint {
@@ -918,7 +916,8 @@ pub unsafe extern "C" fn FSE_normalizeCount(
             stillToDistribute -= 1;
             stillToDistribute;
         } else {
-            let mut proba = ((*count.offset(s as isize) as U64 * step) >> scale) as std::ffi::c_short;
+            let mut proba =
+                ((*count.offset(s as isize) as U64 * step) >> scale) as std::ffi::c_short;
             if (proba as std::ffi::c_int) < 8 as std::ffi::c_int {
                 let mut restToBeat = vStep * *rtbTable.as_ptr().offset(proba as isize) as U64;
                 proba = (proba as std::ffi::c_int
@@ -1097,14 +1096,14 @@ pub unsafe extern "C" fn FSE_compress_usingCTable(
             .wrapping_add(::core::mem::size_of::<size_t>() as std::ffi::c_ulong))
         as std::ffi::c_int as std::ffi::c_uint;
     if fast != 0 {
-        return FSE_compress_usingCTable_generic(
+        FSE_compress_usingCTable_generic(
             dst,
             dstSize,
             src,
             srcSize,
             ct,
             1 as std::ffi::c_int as std::ffi::c_uint,
-        );
+        )
     } else {
         FSE_compress_usingCTable_generic(
             dst,

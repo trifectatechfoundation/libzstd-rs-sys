@@ -173,13 +173,12 @@ static mut g_mutex: pthread_mutex_t = pthread_mutex_t {
         __spins: 0,
         __elision: 0,
         __list: __pthread_internal_list {
-            __prev: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
-            __next: 0 as *const __pthread_internal_list as *mut __pthread_internal_list,
+            __prev: std::ptr::null::<__pthread_internal_list>() as *mut __pthread_internal_list,
+            __next: std::ptr::null::<__pthread_internal_list>() as *mut __pthread_internal_list,
         },
     },
 };
 static mut g_enableTime: UTIL_time_t = {
-    
     UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
     }

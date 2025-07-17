@@ -811,7 +811,7 @@ pub unsafe extern "C" fn UTIL_fchmod(
                 ret,
             );
         }
-        return ret;
+        ret
     } else {
         let mut ret_0: std::ffi::c_int = 0;
         if g_traceFileStat != 0 {
@@ -875,7 +875,6 @@ pub unsafe extern "C" fn UTIL_utime(
         g_traceDepth;
     }
     let mut timebuf: [timespec; 2] = [{
-        
         timespec {
             tv_sec: 0 as std::ffi::c_int as __time_t,
             tv_nsec: UTIME_NOW,
@@ -1730,7 +1729,7 @@ pub unsafe extern "C" fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> U64
     if UTIL_isRegularFileStat(statbuf) == 0 {
         return UTIL_FILESIZE_UNKNOWN as U64;
     }
-    if ((*statbuf).st_mode & __S_IFMT as __mode_t != 0o100000 as std::ffi::c_int as __mode_t) {
+    if (*statbuf).st_mode & __S_IFMT as __mode_t != 0o100000 as std::ffi::c_int as __mode_t {
         return UTIL_FILESIZE_UNKNOWN as U64;
     }
     (*statbuf).st_size as U64
@@ -1882,7 +1881,7 @@ unsafe extern "C" fn UTIL_readFileContent(
                 .wrapping_sub(1 as std::ffi::c_int as size_t),
             inFile,
         );
-        if (bytesRead <= 0 as std::ffi::c_int as size_t) {
+        if bytesRead <= 0 as std::ffi::c_int as size_t {
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
@@ -2957,8 +2956,7 @@ unsafe extern "C" fn firstIsParentOrSameDirOfSecond(
     (firstDirLen <= secondDirLen
         && (*secondDir.offset(firstDirLen as isize) as std::ffi::c_int == PATH_SEP
             || *secondDir.offset(firstDirLen as isize) as std::ffi::c_int == '\0' as i32)
-        && 0 as std::ffi::c_int == strncmp(firstDir, secondDir, firstDirLen))
-        as std::ffi::c_int
+        && 0 as std::ffi::c_int == strncmp(firstDir, secondDir, firstDirLen)) as std::ffi::c_int
 }
 unsafe extern "C" fn compareDir(
     mut pathname1: *const std::ffi::c_void,
@@ -3284,7 +3282,7 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
         return numCores;
     }
     loop {
-        if (feof(cpuinfo) != 0) {
+        if feof(cpuinfo) != 0 {
             current_block = 11584701595673473500;
             break;
         }
@@ -3303,11 +3301,11 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
                     siblings = atoi(sep.offset(1 as std::ffi::c_int as isize));
                 }
             }
-            if (strncmp(
+            if strncmp(
                 buff.as_mut_ptr(),
                 b"cpu cores\0" as *const u8 as *const std::ffi::c_char,
                 9 as std::ffi::c_int as std::ffi::c_ulong,
-            ) != 0 as std::ffi::c_int)
+            ) != 0 as std::ffi::c_int
             {
                 continue;
             }
@@ -3323,16 +3321,13 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
             break;
         }
     }
-    match current_block {
-        11584701595673473500 => {
-            if siblings != 0 && cpu_cores != 0 && siblings > cpu_cores {
-                ratio = siblings / cpu_cores;
-            }
-            if ratio != 0 && numCores > ratio && logical == 0 {
-                numCores /= ratio;
-            }
+    if current_block == 11584701595673473500 {
+        if siblings != 0 && cpu_cores != 0 && siblings > cpu_cores {
+            ratio = siblings / cpu_cores;
         }
-        _ => {}
+        if ratio != 0 && numCores > ratio && logical == 0 {
+            numCores /= ratio;
+        }
     }
     fclose(cpuinfo);
     numCores

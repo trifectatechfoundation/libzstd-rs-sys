@@ -107,14 +107,13 @@ pub struct FSE_DState_t {
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::{MEM_readLE32, MEM_readLE64, MEM_write64};
 #[inline]
 unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
     if MEM_32bits() != 0 {
-        return MEM_readLE32(memPtr) as size_t;
+        MEM_readLE32(memPtr) as size_t
     } else {
         MEM_readLE64(memPtr)
     }
@@ -646,10 +645,10 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
             && BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
                 > BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint
-            {
-                op = op.offset(2 as std::ffi::c_int as isize);
-                break;
-            }
+        {
+            op = op.offset(2 as std::ffi::c_int as isize);
+            break;
+        }
         *op.offset(2 as std::ffi::c_int as isize) = (if fast != 0 {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
@@ -701,7 +700,8 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
             }) as BYTE;
-            if (BIT_reloadDStream(&mut bitD) as std::ffi::c_uint != BIT_DStream_overflow as std::ffi::c_int as std::ffi::c_uint)
+            if BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
+                != BIT_DStream_overflow as std::ffi::c_int as std::ffi::c_uint
             {
                 continue;
             }

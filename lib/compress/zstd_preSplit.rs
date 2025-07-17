@@ -156,11 +156,11 @@ unsafe extern "C" fn ZSTD_recordFingerprint_43(
     );
 }
 unsafe extern "C" fn abs64(mut s64: S64) -> U64 {
-    ((if s64 < 0 as std::ffi::c_int as S64 {
+    (if s64 < 0 as std::ffi::c_int as S64 {
         -s64
     } else {
         s64
-    }) as U64)
+    }) as U64
 }
 unsafe extern "C" fn fpDistance(
     mut fp1: *const Fingerprint,
@@ -379,11 +379,11 @@ unsafe extern "C" fn ZSTD_splitBlock_fromBorders(
         return (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
             as size_t;
     }
-    ((if distFromBegin > distFromEnd {
+    (if distFromBegin > distFromEnd {
         32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)
     } else {
         96 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)
-    }) as size_t)
+    }) as size_t
 }
 pub const SEGMENT_SIZE: std::ffi::c_int = 512 as std::ffi::c_int;
 #[no_mangle]

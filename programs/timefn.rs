@@ -25,7 +25,6 @@ pub const CLOCK_MONOTONIC: std::ffi::c_int = 1 as std::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getTime() -> UTIL_time_t {
     let mut time = {
-        
         timespec {
             tv_sec: 0 as std::ffi::c_int as __time_t,
             tv_nsec: 0 as std::ffi::c_int as __syscall_slong_t,
@@ -72,7 +71,7 @@ pub unsafe extern "C" fn UTIL_waitForNextTick() {
     let mut clockEnd = UTIL_time_t { t: 0 };
     loop {
         clockEnd = UTIL_getTime();
-        if (UTIL_getSpanTimeNano(clockStart, clockEnd) != 0 as std::ffi::c_int as PTime) {
+        if UTIL_getSpanTimeNano(clockStart, clockEnd) != 0 as std::ffi::c_int as PTime {
             break;
         }
     }

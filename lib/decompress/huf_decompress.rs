@@ -181,14 +181,12 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
@@ -411,8 +409,8 @@ unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std:
     ((*DStream).ptr == (*DStream).start
         && (*DStream).bitsConsumed as std::ffi::c_ulong
             == (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong))
-        as std::ffi::c_int as std::ffi::c_uint
+                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
@@ -1519,7 +1517,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                     as *const std::ffi::c_void)
                     | 1 as std::ffi::c_int as U64;
             *bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize) <<= nbBits_2;
-            if (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize) >= olimit) {
+            if *op.as_mut_ptr().offset(3 as std::ffi::c_int as isize) >= olimit {
                 break;
             }
         }
@@ -1732,9 +1730,8 @@ unsafe extern "C" fn HUF_buildDEltX2U32(
         } else {
             baseSeq.wrapping_add(symbol << 8 as std::ffi::c_int)
         };
-        return seq
-            .wrapping_add(nbBits << 16 as std::ffi::c_int)
-            .wrapping_add((level as U32) << 24 as std::ffi::c_int);
+        seq.wrapping_add(nbBits << 16 as std::ffi::c_int)
+            .wrapping_add((level as U32) << 24 as std::ffi::c_int)
     } else {
         seq = if level == 1 as std::ffi::c_int {
             symbol << 8 as std::ffi::c_int
@@ -3095,7 +3092,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                     as *const std::ffi::c_void)
                     | 1 as std::ffi::c_int as U64;
             *bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize) <<= nbBits_2;
-            if (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize) >= olimit) {
+            if *op.as_mut_ptr().offset(3 as std::ffi::c_int as isize) >= olimit {
                 break;
             }
         }
@@ -3328,14 +3325,12 @@ unsafe extern "C" fn HUF_decompress4X2_DCtx_wksp(
 static mut algoTime: [[algo_time_t; 2]; 16] = [
     [
         {
-            
             algo_time_t {
                 tableTime: 0 as std::ffi::c_int as U32,
                 decode256Time: 0 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1 as std::ffi::c_int as U32,
                 decode256Time: 1 as std::ffi::c_int as U32,
@@ -3344,14 +3339,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 0 as std::ffi::c_int as U32,
                 decode256Time: 0 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1 as std::ffi::c_int as U32,
                 decode256Time: 1 as std::ffi::c_int as U32,
@@ -3360,14 +3353,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 150 as std::ffi::c_int as U32,
                 decode256Time: 216 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 381 as std::ffi::c_int as U32,
                 decode256Time: 119 as std::ffi::c_int as U32,
@@ -3376,14 +3367,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 170 as std::ffi::c_int as U32,
                 decode256Time: 205 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 514 as std::ffi::c_int as U32,
                 decode256Time: 112 as std::ffi::c_int as U32,
@@ -3392,14 +3381,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 177 as std::ffi::c_int as U32,
                 decode256Time: 199 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 539 as std::ffi::c_int as U32,
                 decode256Time: 110 as std::ffi::c_int as U32,
@@ -3408,14 +3395,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 197 as std::ffi::c_int as U32,
                 decode256Time: 194 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 644 as std::ffi::c_int as U32,
                 decode256Time: 107 as std::ffi::c_int as U32,
@@ -3424,14 +3409,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 221 as std::ffi::c_int as U32,
                 decode256Time: 192 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 735 as std::ffi::c_int as U32,
                 decode256Time: 107 as std::ffi::c_int as U32,
@@ -3440,14 +3423,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 256 as std::ffi::c_int as U32,
                 decode256Time: 189 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 881 as std::ffi::c_int as U32,
                 decode256Time: 106 as std::ffi::c_int as U32,
@@ -3456,14 +3437,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 359 as std::ffi::c_int as U32,
                 decode256Time: 188 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1167 as std::ffi::c_int as U32,
                 decode256Time: 109 as std::ffi::c_int as U32,
@@ -3472,14 +3451,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 582 as std::ffi::c_int as U32,
                 decode256Time: 187 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1570 as std::ffi::c_int as U32,
                 decode256Time: 114 as std::ffi::c_int as U32,
@@ -3488,14 +3465,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 688 as std::ffi::c_int as U32,
                 decode256Time: 187 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1712 as std::ffi::c_int as U32,
                 decode256Time: 122 as std::ffi::c_int as U32,
@@ -3504,14 +3479,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 825 as std::ffi::c_int as U32,
                 decode256Time: 186 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1965 as std::ffi::c_int as U32,
                 decode256Time: 136 as std::ffi::c_int as U32,
@@ -3520,14 +3493,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 976 as std::ffi::c_int as U32,
                 decode256Time: 185 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2131 as std::ffi::c_int as U32,
                 decode256Time: 150 as std::ffi::c_int as U32,
@@ -3536,14 +3507,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1180 as std::ffi::c_int as U32,
                 decode256Time: 186 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2070 as std::ffi::c_int as U32,
                 decode256Time: 175 as std::ffi::c_int as U32,
@@ -3552,14 +3521,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1377 as std::ffi::c_int as U32,
                 decode256Time: 185 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1731 as std::ffi::c_int as U32,
                 decode256Time: 202 as std::ffi::c_int as U32,
@@ -3568,14 +3535,12 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1412 as std::ffi::c_int as U32,
                 decode256Time: 185 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1695 as std::ffi::c_int as U32,
                 decode256Time: 202 as std::ffi::c_int as U32,

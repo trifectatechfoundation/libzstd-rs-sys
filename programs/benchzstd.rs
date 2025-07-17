@@ -431,13 +431,11 @@ unsafe extern "C" fn XXH_readLE32_align(
     mut align: XXH_alignment,
 ) -> xxh_u32 {
     if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
-        return XXH_readLE32(ptr);
+        XXH_readLE32(ptr)
+    } else if XXH_CPU_LITTLE_ENDIAN != 0 {
+        *(ptr as *const xxh_u32)
     } else {
-        if XXH_CPU_LITTLE_ENDIAN != 0 {
-            *(ptr as *const xxh_u32)
-        } else {
-            XXH_swap32(*(ptr as *const xxh_u32))
-        }
+        XXH_swap32(*(ptr as *const xxh_u32))
     }
 }
 unsafe extern "C" fn XXH_read64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
@@ -473,13 +471,11 @@ unsafe extern "C" fn XXH_readLE64_align(
     mut align: XXH_alignment,
 ) -> xxh_u64 {
     if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
-        return XXH_readLE64(ptr);
+        XXH_readLE64(ptr)
+    } else if XXH_CPU_LITTLE_ENDIAN != 0 {
+        *(ptr as *const xxh_u64)
     } else {
-        if XXH_CPU_LITTLE_ENDIAN != 0 {
-            *(ptr as *const xxh_u64)
-        } else {
-            XXH_swap64(*(ptr as *const xxh_u64))
-        }
+        XXH_swap64(*(ptr as *const xxh_u64))
     }
 }
 pub const XXH_PRIME64_1: std::ffi::c_ulonglong = 0x9e3779b185ebca87 as std::ffi::c_ulonglong;
@@ -607,7 +603,7 @@ unsafe extern "C" fn XXH64_endian_align(
                 XXH_readLE64_align(input as *const std::ffi::c_void, align),
             );
             input = input.offset(8 as std::ffi::c_int as isize);
-            if (input >= limit) {
+            if input >= limit {
                 break;
             }
         }
@@ -777,8 +773,7 @@ unsafe extern "C" fn formatString_u(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
-    let res = {
-        
+    {
         BMK_advancedParams_t {
             mode: BMK_both,
             nbSeconds: BMK_TIMETEST_DEFAULT_S as std::ffi::c_uint,
@@ -795,8 +790,7 @@ pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
             literalCompressionMode: ZSTD_ps_auto,
             useRowMatchFinder: 0 as std::ffi::c_int,
         }
-    };
-    res
+    }
 }
 unsafe extern "C" fn BMK_initCCtx(
     mut ctx: *mut ZSTD_CCtx,
@@ -1787,15 +1781,17 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             1 as std::ffi::c_int as std::ffi::c_uint,
         );
     }
-    if UTIL_support_MT_measurements() == 0 && (*adv).nbWorkers > 1 as std::ffi::c_int
-        && displayLevel >= 2 as std::ffi::c_int {
-            fprintf(
-                stdout,
-                b"Warning : time measurements may be incorrect in multithreading mode... \n\0"
-                    as *const u8 as *const std::ffi::c_char,
-            );
-            fflush(NULL as *mut FILE);
-        }
+    if UTIL_support_MT_measurements() == 0
+        && (*adv).nbWorkers > 1 as std::ffi::c_int
+        && displayLevel >= 2 as std::ffi::c_int
+    {
+        fprintf(
+            stdout,
+            b"Warning : time measurements may be incorrect in multithreading mode... \n\0"
+                as *const u8 as *const std::ffi::c_char,
+        );
+        fflush(NULL as *mut FILE);
+    }
     let crcOrig = if (*adv).mode as std::ffi::c_uint
         == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
     {
@@ -3083,8 +3079,7 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
             if displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
-                    b"not enough memory for srcBuffer\0" as *const u8
-                        as *const std::ffi::c_char,
+                    b"not enough memory for srcBuffer\0" as *const u8 as *const std::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -3098,9 +3093,8 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
             nbFiles,
             displayLevel,
         );
-        if !(errorCode_0 != 0) {
-            let mut mfName: [std::ffi::c_char; 20] =
-                [0 as std::ffi::c_int as std::ffi::c_char; 20];
+        if errorCode_0 == 0 {
+            let mut mfName: [std::ffi::c_char; 20] = [0 as std::ffi::c_int as std::ffi::c_char; 20];
             formatString_u(
                 mfName.as_mut_ptr(),
                 ::core::mem::size_of::<[std::ffi::c_char; 20]>() as std::ffi::c_ulong,

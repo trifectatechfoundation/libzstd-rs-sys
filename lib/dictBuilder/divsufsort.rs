@@ -614,7 +614,7 @@ unsafe extern "C" fn ss_isqrt(mut x: std::ffi::c_int) -> std::ffi::c_int {
         y = *sqq_table
             .as_ptr()
             .offset((x >> (e - 6 as std::ffi::c_int - (e & 1 as std::ffi::c_int))) as isize)
-            << (e >> 1 as std::ffi::c_int) - 7 as std::ffi::c_int;
+            << ((e >> 1 as std::ffi::c_int) - 7 as std::ffi::c_int);
         if e >= 24 as std::ffi::c_int {
             y = (y + 1 as std::ffi::c_int + x / y) >> 1 as std::ffi::c_int;
         }
@@ -623,7 +623,7 @@ unsafe extern "C" fn ss_isqrt(mut x: std::ffi::c_int) -> std::ffi::c_int {
         y = (*sqq_table
             .as_ptr()
             .offset((x >> (e - 6 as std::ffi::c_int - (e & 1 as std::ffi::c_int))) as isize)
-            >> 7 as std::ffi::c_int - (e >> 1 as std::ffi::c_int))
+            >> (7 as std::ffi::c_int - (e >> 1 as std::ffi::c_int)))
             + 1 as std::ffi::c_int;
     } else {
         return *sqq_table.as_ptr().offset(x as isize) >> 4 as std::ffi::c_int;
@@ -688,7 +688,7 @@ unsafe extern "C" fn ss_insertionsort(
         j = i.offset(1 as std::ffi::c_int as isize);
         loop {
             r = ss_compare(T, PA.offset(t as isize), PA.offset(*j as isize), depth);
-            if ((0 as std::ffi::c_int) >= r) {
+            if (0 as std::ffi::c_int) >= r {
                 break;
             }
             loop {
@@ -728,7 +728,7 @@ unsafe extern "C" fn ss_fixdown(
     c = *Td.offset(*PA.offset(v as isize) as isize) as std::ffi::c_int;
     loop {
         j = 2 as std::ffi::c_int * i + 1 as std::ffi::c_int;
-        if (j >= size) {
+        if j >= size {
             break;
         }
         let fresh0 = j;
@@ -1992,7 +1992,7 @@ unsafe extern "C" fn ss_rotate(
                 let fresh45 = b;
                 b = b.offset(-1);
                 *fresh45 = *a;
-                if (b >= first) {
+                if b >= first {
                     continue;
                 }
                 *a = t;
@@ -2016,7 +2016,7 @@ unsafe extern "C" fn ss_rotate(
                 let fresh47 = b;
                 b = b.offset(1);
                 *fresh47 = *a;
-                if (last > b) {
+                if last > b {
                     continue;
                 }
                 *a = t;
@@ -2093,7 +2093,7 @@ unsafe extern "C" fn ss_inplacemerge(
         if x != 0 as std::ffi::c_int {
             loop {
                 last = last.offset(-1);
-                if (*last >= 0 as std::ffi::c_int) {
+                if *last >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -2144,7 +2144,7 @@ unsafe extern "C" fn ss_mergeforward(
                 let fresh49 = b;
                 b = b.offset(1);
                 *fresh49 = *a;
-                if (*b >= 0 as std::ffi::c_int) {
+                if *b >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -2169,7 +2169,7 @@ unsafe extern "C" fn ss_mergeforward(
                     *b = t;
                     return;
                 }
-                if (*c >= 0 as std::ffi::c_int) {
+                if *c >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -2186,7 +2186,7 @@ unsafe extern "C" fn ss_mergeforward(
                 let fresh55 = b;
                 b = b.offset(1);
                 *fresh55 = *a;
-                if (*b >= 0 as std::ffi::c_int) {
+                if *b >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -2210,7 +2210,7 @@ unsafe extern "C" fn ss_mergeforward(
                     *b = t;
                     return;
                 }
-                if (*c >= 0 as std::ffi::c_int) {
+                if *c >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -2271,7 +2271,7 @@ unsafe extern "C" fn ss_mergebackward(
                     let fresh61 = b;
                     b = b.offset(-1);
                     *fresh61 = *a;
-                    if (*b >= 0 as std::ffi::c_int) {
+                    if *b >= 0 as std::ffi::c_int {
                         break;
                     }
                 }
@@ -2303,7 +2303,7 @@ unsafe extern "C" fn ss_mergebackward(
                     let fresh65 = c;
                     c = c.offset(-1);
                     *fresh65 = *a;
-                    if (*c >= 0 as std::ffi::c_int) {
+                    if *c >= 0 as std::ffi::c_int {
                         break;
                     }
                 }
@@ -2342,7 +2342,7 @@ unsafe extern "C" fn ss_mergebackward(
                     let fresh71 = b;
                     b = b.offset(-1);
                     *fresh71 = *a;
-                    if (*b >= 0 as std::ffi::c_int) {
+                    if *b >= 0 as std::ffi::c_int {
                         break;
                     }
                 }
@@ -2366,7 +2366,7 @@ unsafe extern "C" fn ss_mergebackward(
                         let fresh75 = c;
                         c = c.offset(-1);
                         *fresh75 = *a;
-                        if (*c >= 0 as std::ffi::c_int) {
+                        if *c >= 0 as std::ffi::c_int {
                             break;
                         }
                     }
@@ -2660,7 +2660,7 @@ unsafe extern "C" fn ss_swapmerge(
                         if first < lm {
                             loop {
                                 l = l.offset(-1);
-                                if (*l >= 0 as std::ffi::c_int) {
+                                if *l >= 0 as std::ffi::c_int {
                                     break;
                                 }
                             }
@@ -3043,7 +3043,7 @@ unsafe extern "C" fn tr_insertionsort(
         b = a.offset(-(1 as std::ffi::c_int as isize));
         loop {
             r = *ISAd.offset(t as isize) - *ISAd.offset(*b as isize);
-            if (0 as std::ffi::c_int <= r) {
+            if 0 as std::ffi::c_int <= r {
                 break;
             }
             loop {
@@ -3082,7 +3082,7 @@ unsafe extern "C" fn tr_fixdown(
     c = *ISAd.offset(v as isize);
     loop {
         j = 2 as std::ffi::c_int * i + 1 as std::ffi::c_int;
-        if (j >= size) {
+        if j >= size {
             break;
         }
         let fresh88 = j;
@@ -4021,7 +4021,7 @@ unsafe extern "C" fn tr_introsort(
                     loop {
                         *a = !*a;
                         a = a.offset(1);
-                        if (*a >= 0 as std::ffi::c_int) {
+                        if *a >= 0 as std::ffi::c_int {
                             break;
                         }
                     }
@@ -4383,11 +4383,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh114 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh114 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh114 = ISAd.offset(incr as isize);
-                                    let fresh115 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh115 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh115 = a;
-                                    let fresh116 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh116 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh116 = b;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = next;
                                     let fresh117 = ssize;
@@ -4429,11 +4432,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh118 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh118 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh118 = ISAd;
-                                    let fresh119 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh119 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh119 = b;
-                                    let fresh120 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh120 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh120 = last;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = limit;
                                     let fresh121 = ssize;
@@ -4479,11 +4485,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh122 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh122 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh122 = ISAd.offset(incr as isize);
-                                    let fresh123 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh123 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh123 = a;
-                                    let fresh124 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh124 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh124 = b;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = next;
                                     let fresh125 = ssize;
@@ -4538,11 +4547,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh126 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh126 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh126 = ISAd;
-                                    let fresh127 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh127 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh127 = b;
-                                    let fresh128 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh128 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh128 = last;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = limit;
                                     let fresh129 = ssize;
@@ -4584,11 +4596,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh130 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh130 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh130 = ISAd.offset(incr as isize);
-                                    let fresh131 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh131 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh131 = a;
-                                    let fresh132 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh132 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh132 = b;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = next;
                                     let fresh133 = ssize;
@@ -4632,11 +4647,14 @@ unsafe extern "C" fn tr_introsort(
                                             );
                                         }
                                     };
-                                    let fresh134 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
+                                    let fresh134 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh134 = ISAd;
-                                    let fresh135 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
+                                    let fresh135 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                                     *fresh135 = b;
-                                    let fresh136 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
+                                    let fresh136 =
+                                        &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                                     *fresh136 = last;
                                     (*stack.as_mut_ptr().offset(ssize as isize)).d = limit;
                                     let fresh137 = ssize;
@@ -5476,7 +5494,7 @@ unsafe extern "C" fn trsort(
                 }
                 first = last;
             }
-            if (first >= SA.offset(n as isize)) {
+            if first >= SA.offset(n as isize) {
                 break;
             }
         }
@@ -5650,7 +5668,7 @@ unsafe extern "C" fn sort_typeBstar(
                 *fresh191 = !*SA.offset(i as isize);
                 *ISAb.offset(*fresh191 as isize) = j;
                 i -= 1;
-                if (*SA.offset(i as isize) >= 0 as std::ffi::c_int) {
+                if *SA.offset(i as isize) >= 0 as std::ffi::c_int {
                     break;
                 }
             }
@@ -5697,7 +5715,8 @@ unsafe extern "C" fn sort_typeBstar(
             }
         }
         *bucket_B.offset(
-            (((256 as std::ffi::c_int - 1 as std::ffi::c_int) << 8 as std::ffi::c_int) | (256 as std::ffi::c_int - 1 as std::ffi::c_int)) as isize,
+            (((256 as std::ffi::c_int - 1 as std::ffi::c_int) << 8 as std::ffi::c_int)
+                | (256 as std::ffi::c_int - 1 as std::ffi::c_int)) as isize,
         ) = n;
         c0 = ALPHABET_SIZE - 2 as std::ffi::c_int;
         k = m - 1 as std::ffi::c_int;
@@ -5719,7 +5738,8 @@ unsafe extern "C" fn sort_typeBstar(
                 c1 -= 1;
                 c1;
             }
-            *bucket_B.offset(((c0 << 8 as std::ffi::c_int) | (c0 + 1 as std::ffi::c_int)) as isize) = i
+            *bucket_B
+                .offset(((c0 << 8 as std::ffi::c_int) | (c0 + 1 as std::ffi::c_int)) as isize) = i
                 - *bucket_B.offset((c0 << 8 as std::ffi::c_int | c0) as isize)
                 + 1 as std::ffi::c_int;
             *bucket_B.offset((c0 << 8 as std::ffi::c_int | c0) as isize) = i;
@@ -5748,7 +5768,8 @@ unsafe extern "C" fn construct_SA(
         c1 = ALPHABET_SIZE - 2 as std::ffi::c_int;
         while 0 as std::ffi::c_int <= c1 {
             i = SA.offset(
-                *bucket_B.offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
+                *bucket_B
+                    .offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
                     as isize,
             );
             j = SA
@@ -6178,7 +6199,8 @@ unsafe extern "C" fn construct_BWT(
         c1 = ALPHABET_SIZE - 2 as std::ffi::c_int;
         while 0 as std::ffi::c_int <= c1 {
             i = SA.offset(
-                *bucket_B.offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
+                *bucket_B
+                    .offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
                     as isize,
             );
             j = SA
@@ -6584,7 +6606,8 @@ unsafe extern "C" fn construct_BWT_indexes(
         c1 = ALPHABET_SIZE - 2 as std::ffi::c_int;
         while 0 as std::ffi::c_int <= c1 {
             i = SA.offset(
-                *bucket_B.offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
+                *bucket_B
+                    .offset(((c1 << 8 as std::ffi::c_int) | (c1 + 1 as std::ffi::c_int)) as isize)
                     as isize,
             );
             j = SA

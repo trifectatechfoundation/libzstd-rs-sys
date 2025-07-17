@@ -325,14 +325,12 @@ pub const ZSTDv07_BLOCKSIZE_ABSOLUTEMAX: std::ffi::c_int =
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
@@ -408,7 +406,7 @@ unsafe extern "C" fn MEM_swap64(mut in_0: U64) -> U64 {
 #[inline]
 unsafe extern "C" fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> U16 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read16(memPtr);
+        MEM_read16(memPtr)
     } else {
         let mut p = memPtr as *const BYTE;
         (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
@@ -430,7 +428,7 @@ unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: U
 #[inline]
 unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read32(memPtr);
+        MEM_read32(memPtr)
     } else {
         MEM_swap32(MEM_read32(memPtr))
     }
@@ -438,7 +436,7 @@ unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
 #[inline]
 unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> U64 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read64(memPtr);
+        MEM_read64(memPtr)
     } else {
         MEM_swap64(MEM_read64(memPtr))
     }
@@ -446,7 +444,7 @@ unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> U64 {
 #[inline]
 unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
     if MEM_32bits() != 0 {
-        return MEM_readLE32(memPtr) as size_t;
+        MEM_readLE32(memPtr) as size_t
     } else {
         MEM_readLE64(memPtr)
     }
@@ -663,8 +661,8 @@ unsafe extern "C" fn BITv07_endOfDStream(mut DStream: *const BITv07_DStream_t) -
     ((*DStream).ptr == (*DStream).start
         && (*DStream).bitsConsumed as std::ffi::c_ulong
             == (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong))
-        as std::ffi::c_int as std::ffi::c_uint
+                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn FSEv07_initDState(
@@ -742,11 +740,11 @@ pub unsafe extern "C" fn HUFv07_getErrorName(mut code: size_t) -> *const std::ff
     ERR_getErrorName(code)
 }
 unsafe extern "C" fn FSEv07_abs(mut a: std::ffi::c_short) -> std::ffi::c_short {
-    ((if (a as std::ffi::c_int) < 0 as std::ffi::c_int {
+    (if (a as std::ffi::c_int) < 0 as std::ffi::c_int {
         -(a as std::ffi::c_int)
     } else {
         a as std::ffi::c_int
-    }) as std::ffi::c_short)
+    }) as std::ffi::c_short
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSEv07_readNCount(
@@ -1224,10 +1222,10 @@ unsafe extern "C" fn FSEv07_decompress_usingDTable_generic(
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
             && BITv07_reloadDStream(&mut bitD) as std::ffi::c_uint
                 > BITv07_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint
-            {
-                op = op.offset(2 as std::ffi::c_int as isize);
-                break;
-            }
+        {
+            op = op.offset(2 as std::ffi::c_int as isize);
+            break;
+        }
         *op.offset(2 as std::ffi::c_int as isize) = (if fast != 0 {
             FSEv07_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
@@ -1279,7 +1277,8 @@ unsafe extern "C" fn FSEv07_decompress_usingDTable_generic(
             } else {
                 FSEv07_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
             }) as BYTE;
-            if (BITv07_reloadDStream(&mut bitD) as std::ffi::c_uint != BITv07_DStream_overflow as std::ffi::c_int as std::ffi::c_uint)
+            if BITv07_reloadDStream(&mut bitD) as std::ffi::c_uint
+                != BITv07_DStream_overflow as std::ffi::c_int as std::ffi::c_uint
             {
                 continue;
             }
@@ -1898,7 +1897,7 @@ unsafe extern "C" fn HUFv07_fillDTableX4Level2(
             let fresh34 = i_0;
             i_0 = i_0.wrapping_add(1);
             *DTable.offset(fresh34 as isize) = DElt;
-            if (i_0 >= end) {
+            if i_0 >= end {
                 break;
             }
         }
@@ -2596,21 +2595,18 @@ pub unsafe extern "C" fn HUFv07_decompress4X_usingDTable(
 static mut algoTime: [[algo_time_t; 3]; 16] = [
     [
         {
-            
             algo_time_t {
                 tableTime: 0 as std::ffi::c_int as U32,
                 decode256Time: 0 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1 as std::ffi::c_int as U32,
                 decode256Time: 1 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2 as std::ffi::c_int as U32,
                 decode256Time: 2 as std::ffi::c_int as U32,
@@ -2619,21 +2615,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 0 as std::ffi::c_int as U32,
                 decode256Time: 0 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1 as std::ffi::c_int as U32,
                 decode256Time: 1 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2 as std::ffi::c_int as U32,
                 decode256Time: 2 as std::ffi::c_int as U32,
@@ -2642,21 +2635,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 38 as std::ffi::c_int as U32,
                 decode256Time: 130 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1313 as std::ffi::c_int as U32,
                 decode256Time: 74 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2151 as std::ffi::c_int as U32,
                 decode256Time: 38 as std::ffi::c_int as U32,
@@ -2665,21 +2655,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 448 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1353 as std::ffi::c_int as U32,
                 decode256Time: 74 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2238 as std::ffi::c_int as U32,
                 decode256Time: 41 as std::ffi::c_int as U32,
@@ -2688,21 +2675,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 556 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1353 as std::ffi::c_int as U32,
                 decode256Time: 74 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2238 as std::ffi::c_int as U32,
                 decode256Time: 47 as std::ffi::c_int as U32,
@@ -2711,21 +2695,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 714 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1418 as std::ffi::c_int as U32,
                 decode256Time: 74 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2436 as std::ffi::c_int as U32,
                 decode256Time: 53 as std::ffi::c_int as U32,
@@ -2734,21 +2715,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 883 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1437 as std::ffi::c_int as U32,
                 decode256Time: 74 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2464 as std::ffi::c_int as U32,
                 decode256Time: 61 as std::ffi::c_int as U32,
@@ -2757,21 +2735,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 897 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1515 as std::ffi::c_int as U32,
                 decode256Time: 75 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2622 as std::ffi::c_int as U32,
                 decode256Time: 68 as std::ffi::c_int as U32,
@@ -2780,21 +2755,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 926 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1613 as std::ffi::c_int as U32,
                 decode256Time: 75 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2730 as std::ffi::c_int as U32,
                 decode256Time: 75 as std::ffi::c_int as U32,
@@ -2803,21 +2775,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 947 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1729 as std::ffi::c_int as U32,
                 decode256Time: 77 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 3359 as std::ffi::c_int as U32,
                 decode256Time: 77 as std::ffi::c_int as U32,
@@ -2826,21 +2795,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1107 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2083 as std::ffi::c_int as U32,
                 decode256Time: 81 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 4006 as std::ffi::c_int as U32,
                 decode256Time: 84 as std::ffi::c_int as U32,
@@ -2849,21 +2815,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1177 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2379 as std::ffi::c_int as U32,
                 decode256Time: 87 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 4785 as std::ffi::c_int as U32,
                 decode256Time: 88 as std::ffi::c_int as U32,
@@ -2872,21 +2835,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1242 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2415 as std::ffi::c_int as U32,
                 decode256Time: 93 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 5155 as std::ffi::c_int as U32,
                 decode256Time: 84 as std::ffi::c_int as U32,
@@ -2895,21 +2855,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1349 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2644 as std::ffi::c_int as U32,
                 decode256Time: 106 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 5260 as std::ffi::c_int as U32,
                 decode256Time: 106 as std::ffi::c_int as U32,
@@ -2918,21 +2875,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 1455 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 2422 as std::ffi::c_int as U32,
                 decode256Time: 124 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 4174 as std::ffi::c_int as U32,
                 decode256Time: 124 as std::ffi::c_int as U32,
@@ -2941,21 +2895,18 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
     ],
     [
         {
-            
             algo_time_t {
                 tableTime: 722 as std::ffi::c_int as U32,
                 decode256Time: 128 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1891 as std::ffi::c_int as U32,
                 decode256Time: 145 as std::ffi::c_int as U32,
             }
         },
         {
-            
             algo_time_t {
                 tableTime: 1936 as std::ffi::c_int as U32,
                 decode256Time: 146 as std::ffi::c_int as U32,
@@ -3036,9 +2987,7 @@ pub unsafe extern "C" fn HUFv07_decompress(
         return dstSize;
     }
     let algoNb = HUFv07_selectDecoder(dstSize, cSrcSize);
-    (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(
-        dst, dstSize, cSrc, cSrcSize,
-    )
+    (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
 }
 #[no_mangle]
 pub unsafe extern "C" fn HUFv07_decompress4X_DCtx(
@@ -3139,8 +3088,7 @@ unsafe extern "C" fn ZSTDv07_defaultAllocFunction(
     mut opaque: *mut std::ffi::c_void,
     mut size: size_t,
 ) -> *mut std::ffi::c_void {
-    let mut address = malloc(size);
-    address
+    malloc(size)
 }
 unsafe extern "C" fn ZSTDv07_defaultFreeFunction(
     mut opaque: *mut std::ffi::c_void,
@@ -3428,14 +3376,13 @@ unsafe extern "C" fn ZSTDv07_wildcopy(
         ZSTDv07_copy8(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
         op = op.offset(8 as std::ffi::c_int as isize);
         ip = ip.offset(8 as std::ffi::c_int as isize);
-        if (op >= oend) {
+        if op >= oend {
             break;
         }
     }
 }
 static mut defaultCustomMem: ZSTDv07_customMem = unsafe {
     {
-        
         ZSTDv07_customMem {
             customAlloc: Some(
                 ZSTDv07_defaultAllocFunction
@@ -3873,7 +3820,7 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
                 0 as std::ffi::c_int,
                 WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
             );
-            return litCSize.wrapping_add(lhSize as size_t);
+            litCSize.wrapping_add(lhSize as size_t)
         }
         1 => {
             let mut litSize_0: size_t = 0;
@@ -3920,7 +3867,7 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
                 0 as std::ffi::c_int,
                 WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
             );
-            return litCSize_0.wrapping_add(lhSize_0 as size_t);
+            litCSize_0.wrapping_add(lhSize_0 as size_t)
         }
         2 => {
             let mut litSize_1: size_t = 0;
@@ -3979,7 +3926,7 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
             }
             (*dctx).litPtr = istart.offset(lhSize_1 as isize);
             (*dctx).litSize = litSize_1;
-            return (lhSize_1 as size_t).wrapping_add(litSize_1);
+            (lhSize_1 as size_t).wrapping_add(litSize_1)
         }
         3 => {
             let mut litSize_2: size_t = 0;
@@ -4024,7 +3971,7 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
             );
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_2;
-            return lhSize_2.wrapping_add(1 as std::ffi::c_int as U32) as size_t;
+            lhSize_2.wrapping_add(1 as std::ffi::c_int as U32) as size_t
         }
         _ => -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t,
     }
@@ -4049,17 +3996,17 @@ unsafe extern "C" fn ZSTDv07_buildSeqTable(
                 return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
             }
             FSEv07_buildDTable_rle(DTable, *(src as *const BYTE));
-            return 1 as std::ffi::c_int as size_t;
+            1 as std::ffi::c_int as size_t
         }
         0 => {
             FSEv07_buildDTable(DTable, defaultNorm, max, defaultLog);
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         2 => {
             if flagRepeatTable == 0 {
                 return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
             }
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         3 | _ => {
             let mut tableLog: U32 = 0;
@@ -4990,8 +4937,8 @@ pub unsafe extern "C" fn ZSTDv07_nextSrcSizeToDecompress(mut dctx: *mut ZSTDv07_
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTDv07_isSkipFrame(mut dctx: *mut ZSTDv07_DCtx) -> std::ffi::c_int {
-    ((*dctx).stage as std::ffi::c_uint
-        == ZSTDds_skipFrame as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+    ((*dctx).stage as std::ffi::c_uint == ZSTDds_skipFrame as std::ffi::c_int as std::ffi::c_uint)
+        as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTDv07_decompressContinue(
@@ -5393,7 +5340,6 @@ pub unsafe extern "C" fn ZSTDv07_createDDict(
     mut dictSize: size_t,
 ) -> *mut ZSTDv07_DDict {
     let allocator = {
-        
         ZSTDv07_customMem {
             customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTDv07_allocFunction>(
                 NULL as libc::intptr_t,
@@ -5424,14 +5370,7 @@ pub unsafe extern "C" fn ZSTDv07_decompress_usingDDict(
     mut srcSize: size_t,
     mut ddict: *const ZSTDv07_DDict,
 ) -> size_t {
-    ZSTDv07_decompress_usingPreparedDCtx(
-        dctx,
-        (*ddict).refContext,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-    )
+    ZSTDv07_decompress_usingPreparedDCtx(dctx, (*ddict).refContext, dst, dstCapacity, src, srcSize)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZBUFFv07_createDCtx() -> *mut ZBUFFv07_DCtx {

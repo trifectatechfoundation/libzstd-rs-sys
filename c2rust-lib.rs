@@ -121,7 +121,7 @@ pub(crate) fn MEM_swap64(mut in_0: u64) -> u64 {
 #[inline]
 pub(crate) unsafe fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> u16 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read16(memPtr);
+        MEM_read16(memPtr)
     } else {
         let mut p = memPtr as *const u8;
         (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
@@ -139,7 +139,7 @@ pub(crate) unsafe fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> u32 {
 #[inline]
 pub(crate) unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read32(memPtr);
+        MEM_read32(memPtr)
     } else {
         MEM_swap32(MEM_read32(memPtr))
     }
@@ -177,7 +177,7 @@ pub(crate) unsafe fn MEM_writeLE64(mut memPtr: *mut std::ffi::c_void, mut val64:
 #[inline]
 pub(crate) unsafe fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read64(memPtr);
+        MEM_read64(memPtr)
     } else {
         MEM_swap64(MEM_read64(memPtr))
     }

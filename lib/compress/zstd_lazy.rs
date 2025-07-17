@@ -227,13 +227,9 @@ pub type ZSTD_VecMask = U64;
 #[inline]
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::{
-    MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64,
-    MEM_readST,
-};
+use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const kSearchStrength: std::ffi::c_int = 8 as std::ffi::c_int;
 pub const ZSTD_DUBT_UNSORTED_MARK: std::ffi::c_int = 1 as std::ffi::c_int;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: std::ffi::c_int = 8 as std::ffi::c_int;
@@ -395,7 +391,7 @@ unsafe extern "C" fn ZSTD_count_2segments(
 }
 static mut prime4bytes: U32 = 2654435761 as std::ffi::c_uint;
 unsafe extern "C" fn ZSTD_hash4(mut u: U32, mut h: U32, mut s: U32) -> U32 {
-    (u * prime4bytes ^ s) >> (32 as std::ffi::c_int as U32).wrapping_sub(h)
+    ((u * prime4bytes) ^ s) >> (32 as std::ffi::c_int as U32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash4Ptr(mut ptr: *const std::ffi::c_void, mut h: U32) -> size_t {
     ZSTD_hash4(MEM_readLE32(ptr), h, 0 as std::ffi::c_int as U32) as size_t
@@ -409,7 +405,7 @@ unsafe extern "C" fn ZSTD_hash4PtrS(
 }
 static mut prime5bytes: U64 = 889523592379 as std::ffi::c_ulonglong as U64;
 unsafe extern "C" fn ZSTD_hash5(mut u: U64, mut h: U32, mut s: U64) -> size_t {
-    ((u << 64 as std::ffi::c_int - 40 as std::ffi::c_int) * prime5bytes ^ s)
+    (((u << (64 as std::ffi::c_int - 40 as std::ffi::c_int)) * prime5bytes) ^ s)
         >> (64 as std::ffi::c_int as U32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash5Ptr(mut p: *const std::ffi::c_void, mut h: U32) -> size_t {
@@ -424,7 +420,7 @@ unsafe extern "C" fn ZSTD_hash5PtrS(
 }
 static mut prime6bytes: U64 = 227718039650203 as std::ffi::c_ulonglong as U64;
 unsafe extern "C" fn ZSTD_hash6(mut u: U64, mut h: U32, mut s: U64) -> size_t {
-    ((u << 64 as std::ffi::c_int - 48 as std::ffi::c_int) * prime6bytes ^ s)
+    (((u << (64 as std::ffi::c_int - 48 as std::ffi::c_int)) * prime6bytes) ^ s)
         >> (64 as std::ffi::c_int as U32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const std::ffi::c_void, mut h: U32) -> size_t {
@@ -439,7 +435,7 @@ unsafe extern "C" fn ZSTD_hash6PtrS(
 }
 static mut prime7bytes: U64 = 58295818150454627 as std::ffi::c_ulonglong as U64;
 unsafe extern "C" fn ZSTD_hash7(mut u: U64, mut h: U32, mut s: U64) -> size_t {
-    ((u << 64 as std::ffi::c_int - 56 as std::ffi::c_int) * prime7bytes ^ s)
+    (((u << (64 as std::ffi::c_int - 56 as std::ffi::c_int)) * prime7bytes) ^ s)
         >> (64 as std::ffi::c_int as U32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash7Ptr(mut p: *const std::ffi::c_void, mut h: U32) -> size_t {
@@ -454,7 +450,7 @@ unsafe extern "C" fn ZSTD_hash7PtrS(
 }
 static mut prime8bytes: U64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as U64;
 unsafe extern "C" fn ZSTD_hash8(mut u: U64, mut h: U32, mut s: U64) -> size_t {
-    (u * prime8bytes ^ s) >> (64 as std::ffi::c_int as U32).wrapping_sub(h)
+    ((u * prime8bytes) ^ s) >> (64 as std::ffi::c_int as U32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash8Ptr(mut p: *const std::ffi::c_void, mut h: U32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0 as std::ffi::c_int as U64)
@@ -473,10 +469,10 @@ unsafe extern "C" fn ZSTD_hashPtr(
     mut mls: U32,
 ) -> size_t {
     match mls {
-        5 => return ZSTD_hash5Ptr(p, hBits),
-        6 => return ZSTD_hash6Ptr(p, hBits),
-        7 => return ZSTD_hash7Ptr(p, hBits),
-        8 => return ZSTD_hash8Ptr(p, hBits),
+        5 => ZSTD_hash5Ptr(p, hBits),
+        6 => ZSTD_hash6Ptr(p, hBits),
+        7 => ZSTD_hash7Ptr(p, hBits),
+        8 => ZSTD_hash8Ptr(p, hBits),
         4 | _ => ZSTD_hash4Ptr(p, hBits),
     }
 }
@@ -488,10 +484,10 @@ unsafe extern "C" fn ZSTD_hashPtrSalted(
     hashSalt: U64,
 ) -> size_t {
     match mls {
-        5 => return ZSTD_hash5PtrS(p, hBits, hashSalt),
-        6 => return ZSTD_hash6PtrS(p, hBits, hashSalt),
-        7 => return ZSTD_hash7PtrS(p, hBits, hashSalt),
-        8 => return ZSTD_hash8PtrS(p, hBits, hashSalt),
+        5 => ZSTD_hash5PtrS(p, hBits, hashSalt),
+        6 => ZSTD_hash6PtrS(p, hBits, hashSalt),
+        7 => ZSTD_hash7PtrS(p, hBits, hashSalt),
+        8 => ZSTD_hash8PtrS(p, hBits, hashSalt),
         4 | _ => ZSTD_hash4PtrS(p, hBits, hashSalt as U32),
     }
 }
@@ -510,12 +506,12 @@ unsafe extern "C" fn ZSTD_getLowestMatchIndex(
     };
     let isDictionary =
         ((*ms).loadedDictEnd != 0 as std::ffi::c_int as U32) as std::ffi::c_int as U32;
-    let matchLowest = if isDictionary != 0 {
+
+    if isDictionary != 0 {
         lowestValid
     } else {
         withinWindow
-    };
-    matchLowest
+    }
 }
 #[inline]
 unsafe extern "C" fn ZSTD_getLowestPrefixIndex(
@@ -532,12 +528,12 @@ unsafe extern "C" fn ZSTD_getLowestPrefixIndex(
     };
     let isDictionary =
         ((*ms).loadedDictEnd != 0 as std::ffi::c_int as U32) as std::ffi::c_int as U32;
-    let matchLowest = if isDictionary != 0 {
+
+    if isDictionary != 0 {
         lowestValid
     } else {
         withinWindow
-    };
-    matchLowest
+    }
 }
 #[inline]
 unsafe extern "C" fn ZSTD_index_overlap_check(
@@ -582,7 +578,7 @@ unsafe extern "C" fn ZSTD_wildcopy(
             ZSTD_copy8(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
             op = op.offset(8 as std::ffi::c_int as isize);
             ip = ip.offset(8 as std::ffi::c_int as isize);
-            if (op >= oend) {
+            if op >= oend {
                 break;
             }
         }
@@ -600,7 +596,7 @@ unsafe extern "C" fn ZSTD_wildcopy(
             ZSTD_copy16(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
             op = op.offset(16 as std::ffi::c_int as isize);
             ip = ip.offset(16 as std::ffi::c_int as isize);
-            if (op >= oend) {
+            if op >= oend {
                 break;
             }
         }
@@ -626,12 +622,12 @@ unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: U64) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> std::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            return ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int;
+            ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int
         } else {
-            return ZSTD_countTrailingZeros32(val as U32) >> 3 as std::ffi::c_int;
+            ZSTD_countTrailingZeros32(val as U32) >> 3 as std::ffi::c_int
         }
     } else if MEM_64bits() != 0 {
-        return ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int;
+        ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int
     } else {
         ZSTD_countLeadingZeros32(val as U32) >> 3 as std::ffi::c_int
     }
@@ -662,8 +658,7 @@ unsafe extern "C" fn ZSTD_rotateRight_U16(value: U16, mut count: U32) -> U16 {
     (value as std::ffi::c_int >> count
         | ((value as std::ffi::c_int)
             << ((0 as std::ffi::c_uint).wrapping_sub(count)
-                & 0xf as std::ffi::c_int as std::ffi::c_uint)) as U16 as std::ffi::c_int)
-        as U16
+                & 0xf as std::ffi::c_int as std::ffi::c_uint)) as U16 as std::ffi::c_int) as U16
 }
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: std::ffi::c_int = 2 as std::ffi::c_int;
 pub const ZSTD_ROW_HASH_TAG_BITS: std::ffi::c_int = 8 as std::ffi::c_int;
@@ -1180,9 +1175,10 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
                     && (i == 0 || {
                         countBeyondMinChain = countBeyondMinChain.wrapping_add(1);
                         countBeyondMinChain > cacheSize
-                    }) {
-                        break;
-                    }
+                    })
+                {
+                    break;
+                }
                 let fresh2 = chainPos;
                 chainPos = chainPos.wrapping_add(1);
                 *chainTable.offset(fresh2 as isize) = i;
@@ -1653,13 +1649,11 @@ unsafe extern "C" fn ZSTD_row_fillHashCache(
         (iLimit.offset_from(base.offset(idx as isize)) as std::ffi::c_long
             + 1 as std::ffi::c_int as std::ffi::c_long) as U32
     };
-    let lim = idx.wrapping_add(
-        if (8 as std::ffi::c_int as U32) < maxElemsToPrefetch {
-            8 as std::ffi::c_int as U32
-        } else {
-            maxElemsToPrefetch
-        },
-    );
+    let lim = idx.wrapping_add(if (8 as std::ffi::c_int as U32) < maxElemsToPrefetch {
+        8 as std::ffi::c_int as U32
+    } else {
+        maxElemsToPrefetch
+    });
     while idx < lim {
         let hash = ZSTD_hashPtrSalted(
             base.offset(idx as isize) as *const std::ffi::c_void,
@@ -1762,19 +1756,20 @@ unsafe extern "C" fn ZSTD_row_update_internal(
     let kMaxMatchStartPositionsToUpdate = 96 as std::ffi::c_int as U32;
     let kMaxMatchEndPositionsToUpdate = 32 as std::ffi::c_int as U32;
     if useCache != 0
-        && (target.wrapping_sub(idx) > kSkipThreshold) as std::ffi::c_int as std::ffi::c_long != 0 {
-            let bound = idx.wrapping_add(kMaxMatchStartPositionsToUpdate);
-            ZSTD_row_update_internalImpl(ms, idx, bound, mls, rowLog, rowMask, useCache);
-            idx = target.wrapping_sub(kMaxMatchEndPositionsToUpdate);
-            ZSTD_row_fillHashCache(
-                ms,
-                base,
-                rowLog,
-                mls,
-                idx,
-                ip.offset(1 as std::ffi::c_int as isize),
-            );
-        }
+        && (target.wrapping_sub(idx) > kSkipThreshold) as std::ffi::c_int as std::ffi::c_long != 0
+    {
+        let bound = idx.wrapping_add(kMaxMatchStartPositionsToUpdate);
+        ZSTD_row_update_internalImpl(ms, idx, bound, mls, rowLog, rowMask, useCache);
+        idx = target.wrapping_sub(kMaxMatchEndPositionsToUpdate);
+        ZSTD_row_fillHashCache(
+            ms,
+            base,
+            rowLog,
+            mls,
+            idx,
+            ip.offset(1 as std::ffi::c_int as isize),
+        );
+    }
     ZSTD_row_update_internalImpl(ms, idx, target, mls, rowLog, rowMask, useCache);
     (*ms).nextToUpdate = target;
 }
@@ -1971,13 +1966,16 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
     let mut matches = ZSTD_row_getMatchMask(tagRow, tag as BYTE, headGrouped, rowEntries);
     while matches > 0 as std::ffi::c_int as ZSTD_VecMask && nbAttempts > 0 as std::ffi::c_int as U32
     {
-        let matchPos = (headGrouped.wrapping_add(ZSTD_VecMask_next(matches)) / groupWidth) & rowMask;
+        let matchPos =
+            (headGrouped.wrapping_add(ZSTD_VecMask_next(matches)) / groupWidth) & rowMask;
         let matchIndex = *row.offset(matchPos as isize);
-        if (matchPos != 0 as std::ffi::c_int as U32) {
+        if matchPos != 0 as std::ffi::c_int as U32 {
             if matchIndex < lowLimit {
                 break;
             }
-            if dictMode as std::ffi::c_uint == ZSTD_extDict as std::ffi::c_int as std::ffi::c_uint { matchIndex >= dictLimit; }
+            if dictMode as std::ffi::c_uint == ZSTD_extDict as std::ffi::c_int as std::ffi::c_uint {
+                matchIndex >= dictLimit;
+            }
             let fresh3 = numMatches;
             numMatches = numMatches.wrapping_add(1);
             *matchBuffer.as_mut_ptr().offset(fresh3 as isize) = matchIndex;
@@ -2072,7 +2070,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
             let matchPos_0 =
                 (headGrouped_0.wrapping_add(ZSTD_VecMask_next(matches_0)) / groupWidth) & rowMask;
             let matchIndex_1 = *dmsRow.offset(matchPos_0 as isize);
-            if (matchPos_0 != 0 as std::ffi::c_int as U32) {
+            if matchPos_0 != 0 as std::ffi::c_int as U32 {
                 if matchIndex_1 < dmsLowestIndex {
                     break;
                 }
@@ -3611,8 +3609,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
             current_block = 14136749492126903395;
         }
         if current_block == 14136749492126903395 {
-            if dictMode as std::ffi::c_uint
-                == ZSTD_noDict as std::ffi::c_int as std::ffi::c_uint
+            if dictMode as std::ffi::c_uint == ZSTD_noDict as std::ffi::c_int as std::ffi::c_uint
                 && (offset_1 > 0 as std::ffi::c_int as U32) as std::ffi::c_int
                     & (MEM_read32(
                         ip.offset(1 as std::ffi::c_int as isize)
@@ -3675,8 +3672,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                 if dictMode as std::ffi::c_uint
                                     == ZSTD_noDict as std::ffi::c_int as std::ffi::c_uint
                                     && offBase != 0
-                                    && (offset_1 > 0 as std::ffi::c_int as U32)
-                                        as std::ffi::c_int
+                                    && (offset_1 > 0 as std::ffi::c_int as U32) as std::ffi::c_int
                                         & (MEM_read32(ip as *const std::ffi::c_void)
                                             == MEM_read32(ip.offset(-(offset_1 as isize))
                                                 as *const std::ffi::c_void))
@@ -3690,14 +3686,13 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         iend,
                                     ))
                                     .wrapping_add(4 as std::ffi::c_int as size_t);
-                                    let gain2 = (mlRep * 3 as std::ffi::c_int as size_t)
-                                        as std::ffi::c_int;
+                                    let gain2 =
+                                        (mlRep * 3 as std::ffi::c_int as size_t) as std::ffi::c_int;
                                     let gain1 = (matchLength * 3 as std::ffi::c_int as size_t)
                                         .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
                                         .wrapping_add(1 as std::ffi::c_int as size_t)
                                         as std::ffi::c_int;
-                                    if mlRep >= 4 as std::ffi::c_int as size_t && gain2 > gain1
-                                    {
+                                    if mlRep >= 4 as std::ffi::c_int as size_t && gain2 > gain1 {
                                         matchLength = mlRep;
                                         offBase = REPCODE1_TO_OFFBASE as size_t;
                                         start = ip;
@@ -3714,17 +3709,15 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                     } else {
                                         base.offset(repIndex_0 as isize)
                                     };
-                                    if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
-                                        != 0
+                                    if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0) != 0
                                         && MEM_read32(repMatch_0 as *const std::ffi::c_void)
                                             == MEM_read32(ip as *const std::ffi::c_void)
                                     {
-                                        let mut repMatchEnd_0 =
-                                            if repIndex_0 < prefixLowestIndex {
-                                                dictEnd
-                                            } else {
-                                                iend
-                                            };
+                                        let mut repMatchEnd_0 = if repIndex_0 < prefixLowestIndex {
+                                            dictEnd
+                                        } else {
+                                            iend
+                                        };
                                         let mlRep_0 = (ZSTD_count_2segments(
                                             ip.offset(4 as std::ffi::c_int as isize),
                                             repMatch_0.offset(4 as std::ffi::c_int as isize),
@@ -3735,11 +3728,8 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         .wrapping_add(4 as std::ffi::c_int as size_t);
                                         let gain2_0 = (mlRep_0 * 3 as std::ffi::c_int as size_t)
                                             as std::ffi::c_int;
-                                        let gain1_0 = (matchLength
-                                            * 3 as std::ffi::c_int as size_t)
-                                            .wrapping_sub(
-                                                ZSTD_highbit32(offBase as U32) as size_t
-                                            )
+                                        let gain1_0 = (matchLength * 3 as std::ffi::c_int as size_t)
+                                            .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
                                             .wrapping_add(1 as std::ffi::c_int as size_t)
                                             as std::ffi::c_int;
                                         if mlRep_0 >= 4 as std::ffi::c_int as size_t
@@ -3769,8 +3759,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                     .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
                                     .wrapping_add(4 as std::ffi::c_int as size_t)
                                     as std::ffi::c_int;
-                                if ml2_0 >= 4 as std::ffi::c_int as size_t && gain2_1 > gain1_1
-                                {
+                                if ml2_0 >= 4 as std::ffi::c_int as size_t && gain2_1 > gain1_1 {
                                     matchLength = ml2_0;
                                     offBase = ofbCandidate;
                                     start = ip;
@@ -3800,11 +3789,8 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         .wrapping_add(4 as std::ffi::c_int as size_t);
                                         let gain2_2 = (mlRep_1 * 4 as std::ffi::c_int as size_t)
                                             as std::ffi::c_int;
-                                        let gain1_2 = (matchLength
-                                            * 4 as std::ffi::c_int as size_t)
-                                            .wrapping_sub(
-                                                ZSTD_highbit32(offBase as U32) as size_t
-                                            )
+                                        let gain1_2 = (matchLength * 4 as std::ffi::c_int as size_t)
+                                            .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
                                             .wrapping_add(1 as std::ffi::c_int as size_t)
                                             as std::ffi::c_int;
                                         if mlRep_1 >= 4 as std::ffi::c_int as size_t
@@ -3816,9 +3802,9 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         }
                                     }
                                     if isDxS != 0 {
-                                        let repIndex_1 =
-                                            (ip.offset_from(base) as std::ffi::c_long as U32)
-                                                .wrapping_sub(offset_1);
+                                        let repIndex_1 = (ip.offset_from(base) as std::ffi::c_long
+                                            as U32)
+                                            .wrapping_sub(offset_1);
                                         let mut repMatch_1 = if repIndex_1 < prefixLowestIndex {
                                             dictBase
                                                 .offset(repIndex_1.wrapping_sub(dictIndexDelta)
@@ -3826,10 +3812,8 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         } else {
                                             base.offset(repIndex_1 as isize)
                                         };
-                                        if ZSTD_index_overlap_check(
-                                            prefixLowestIndex,
-                                            repIndex_1,
-                                        ) != 0
+                                        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
+                                            != 0
                                             && MEM_read32(repMatch_1 as *const std::ffi::c_void)
                                                 == MEM_read32(ip as *const std::ffi::c_void)
                                         {
@@ -3841,15 +3825,13 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                                 };
                                             let mlRep_2 = (ZSTD_count_2segments(
                                                 ip.offset(4 as std::ffi::c_int as isize),
-                                                repMatch_1
-                                                    .offset(4 as std::ffi::c_int as isize),
+                                                repMatch_1.offset(4 as std::ffi::c_int as isize),
                                                 iend,
                                                 repMatchEnd_1,
                                                 prefixLowest,
                                             ))
                                             .wrapping_add(4 as std::ffi::c_int as size_t);
-                                            let gain2_3 = (mlRep_2
-                                                * 4 as std::ffi::c_int as size_t)
+                                            let gain2_3 = (mlRep_2 * 4 as std::ffi::c_int as size_t)
                                                 as std::ffi::c_int;
                                             let gain1_3 = (matchLength
                                                 * 4 as std::ffi::c_int as size_t)
@@ -3867,8 +3849,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                             }
                                         }
                                     }
-                                    let mut ofbCandidate_0 =
-                                        999999999 as std::ffi::c_int as size_t;
+                                    let mut ofbCandidate_0 = 999999999 as std::ffi::c_int as size_t;
                                     let ml2_1 = ZSTD_searchMax(
                                         ms,
                                         ip,
@@ -3905,8 +3886,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                             {
                                 while (start > anchor) as std::ffi::c_int
                                     & (start.offset(
-                                        -(offBase.wrapping_sub(ZSTD_REP_NUM as size_t)
-                                            as isize),
+                                        -(offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as isize),
                                     ) > prefixLowest)
                                         as std::ffi::c_int
                                     != 0
@@ -4565,219 +4545,207 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
         } else {
             current_block_61 = 12147880666119273379;
         }
-        match current_block_61 {
-            12147880666119273379 => {
-                let mut ofbCandidate = 999999999 as std::ffi::c_int as size_t;
-                let ml2 = ZSTD_searchMax(
-                    ms,
-                    ip,
-                    iend,
-                    &mut ofbCandidate,
-                    mls,
-                    rowLog,
-                    searchMethod,
-                    ZSTD_extDict,
-                );
-                if ml2 > matchLength {
-                    matchLength = ml2;
-                    start = ip;
-                    offBase = ofbCandidate;
-                }
-                if matchLength < 4 as std::ffi::c_int as size_t {
-                    let step =
-                        ip.offset_from(anchor) as std::ffi::c_long as size_t >> kSearchStrength;
-                    ip = ip.offset(step.wrapping_add(1 as std::ffi::c_int as size_t) as isize);
-                    (*ms).lazySkipping = (step > kLazySkippingStep as size_t) as std::ffi::c_int;
-                    continue;
-                } else {
-                    if depth >= 1 as std::ffi::c_int as U32 {
-                        while ip < ilimit {
+        if current_block_61 == 12147880666119273379 {
+            let mut ofbCandidate = 999999999 as std::ffi::c_int as size_t;
+            let ml2 = ZSTD_searchMax(
+                ms,
+                ip,
+                iend,
+                &mut ofbCandidate,
+                mls,
+                rowLog,
+                searchMethod,
+                ZSTD_extDict,
+            );
+            if ml2 > matchLength {
+                matchLength = ml2;
+                start = ip;
+                offBase = ofbCandidate;
+            }
+            if matchLength < 4 as std::ffi::c_int as size_t {
+                let step = ip.offset_from(anchor) as std::ffi::c_long as size_t >> kSearchStrength;
+                ip = ip.offset(step.wrapping_add(1 as std::ffi::c_int as size_t) as isize);
+                (*ms).lazySkipping = (step > kLazySkippingStep as size_t) as std::ffi::c_int;
+                continue;
+            } else {
+                if depth >= 1 as std::ffi::c_int as U32 {
+                    while ip < ilimit {
+                        ip = ip.offset(1);
+                        ip;
+                        curr = curr.wrapping_add(1);
+                        curr;
+                        if offBase != 0 {
+                            let windowLow_0 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
+                            let repIndex_0 = curr.wrapping_sub(offset_1);
+                            let repBase_0 = if repIndex_0 < dictLimit {
+                                dictBase
+                            } else {
+                                base
+                            };
+                            let repMatch_0 = repBase_0.offset(repIndex_0 as isize);
+                            if ZSTD_index_overlap_check(dictLimit, repIndex_0)
+                                & (offset_1 <= curr.wrapping_sub(windowLow_0)) as std::ffi::c_int
+                                != 0
+                                && MEM_read32(ip as *const std::ffi::c_void)
+                                    == MEM_read32(repMatch_0 as *const std::ffi::c_void)
+                            {
+                                let repEnd_0 = if repIndex_0 < dictLimit {
+                                    dictEnd
+                                } else {
+                                    iend
+                                };
+                                let repLength = (ZSTD_count_2segments(
+                                    ip.offset(4 as std::ffi::c_int as isize),
+                                    repMatch_0.offset(4 as std::ffi::c_int as isize),
+                                    iend,
+                                    repEnd_0,
+                                    prefixStart,
+                                ))
+                                .wrapping_add(4 as std::ffi::c_int as size_t);
+                                let gain2 =
+                                    (repLength * 3 as std::ffi::c_int as size_t) as std::ffi::c_int;
+                                let gain1 = (matchLength * 3 as std::ffi::c_int as size_t)
+                                    .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
+                                    .wrapping_add(1 as std::ffi::c_int as size_t)
+                                    as std::ffi::c_int;
+                                if repLength >= 4 as std::ffi::c_int as size_t && gain2 > gain1 {
+                                    matchLength = repLength;
+                                    offBase = REPCODE1_TO_OFFBASE as size_t;
+                                    start = ip;
+                                }
+                            }
+                        }
+                        let mut ofbCandidate_0 = 999999999 as std::ffi::c_int as size_t;
+                        let ml2_0 = ZSTD_searchMax(
+                            ms,
+                            ip,
+                            iend,
+                            &mut ofbCandidate_0,
+                            mls,
+                            rowLog,
+                            searchMethod,
+                            ZSTD_extDict,
+                        );
+                        let gain2_0 = (ml2_0 * 4 as std::ffi::c_int as size_t)
+                            .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as U32) as size_t)
+                            as std::ffi::c_int;
+                        let gain1_0 = (matchLength * 4 as std::ffi::c_int as size_t)
+                            .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
+                            .wrapping_add(4 as std::ffi::c_int as size_t)
+                            as std::ffi::c_int;
+                        if ml2_0 >= 4 as std::ffi::c_int as size_t && gain2_0 > gain1_0 {
+                            matchLength = ml2_0;
+                            offBase = ofbCandidate_0;
+                            start = ip;
+                        } else {
+                            if !(depth == 2 as std::ffi::c_int as U32 && ip < ilimit) {
+                                break;
+                            }
                             ip = ip.offset(1);
                             ip;
                             curr = curr.wrapping_add(1);
                             curr;
                             if offBase != 0 {
-                                let windowLow_0 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
-                                let repIndex_0 = curr.wrapping_sub(offset_1);
-                                let repBase_0 = if repIndex_0 < dictLimit {
+                                let windowLow_1 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
+                                let repIndex_1 = curr.wrapping_sub(offset_1);
+                                let repBase_1 = if repIndex_1 < dictLimit {
                                     dictBase
                                 } else {
                                     base
                                 };
-                                let repMatch_0 = repBase_0.offset(repIndex_0 as isize);
-                                if ZSTD_index_overlap_check(dictLimit, repIndex_0)
-                                    & (offset_1 <= curr.wrapping_sub(windowLow_0))
+                                let repMatch_1 = repBase_1.offset(repIndex_1 as isize);
+                                if ZSTD_index_overlap_check(dictLimit, repIndex_1)
+                                    & (offset_1 <= curr.wrapping_sub(windowLow_1))
                                         as std::ffi::c_int
                                     != 0
                                     && MEM_read32(ip as *const std::ffi::c_void)
-                                        == MEM_read32(repMatch_0 as *const std::ffi::c_void)
+                                        == MEM_read32(repMatch_1 as *const std::ffi::c_void)
+                                {
+                                    let repEnd_1 = if repIndex_1 < dictLimit {
+                                        dictEnd
+                                    } else {
+                                        iend
+                                    };
+                                    let repLength_0 = (ZSTD_count_2segments(
+                                        ip.offset(4 as std::ffi::c_int as isize),
+                                        repMatch_1.offset(4 as std::ffi::c_int as isize),
+                                        iend,
+                                        repEnd_1,
+                                        prefixStart,
+                                    ))
+                                    .wrapping_add(4 as std::ffi::c_int as size_t);
+                                    let gain2_1 = (repLength_0 * 4 as std::ffi::c_int as size_t)
+                                        as std::ffi::c_int;
+                                    let gain1_1 = (matchLength * 4 as std::ffi::c_int as size_t)
+                                        .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
+                                        .wrapping_add(1 as std::ffi::c_int as size_t)
+                                        as std::ffi::c_int;
+                                    if repLength_0 >= 4 as std::ffi::c_int as size_t
+                                        && gain2_1 > gain1_1
                                     {
-                                        let repEnd_0 = if repIndex_0 < dictLimit {
-                                            dictEnd
-                                        } else {
-                                            iend
-                                        };
-                                        let repLength = (ZSTD_count_2segments(
-                                            ip.offset(4 as std::ffi::c_int as isize),
-                                            repMatch_0.offset(4 as std::ffi::c_int as isize),
-                                            iend,
-                                            repEnd_0,
-                                            prefixStart,
-                                        ))
-                                        .wrapping_add(4 as std::ffi::c_int as size_t);
-                                        let gain2 = (repLength * 3 as std::ffi::c_int as size_t)
-                                            as std::ffi::c_int;
-                                        let gain1 = (matchLength * 3 as std::ffi::c_int as size_t)
-                                            .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
-                                            .wrapping_add(1 as std::ffi::c_int as size_t)
-                                            as std::ffi::c_int;
-                                        if repLength >= 4 as std::ffi::c_int as size_t
-                                            && gain2 > gain1
-                                        {
-                                            matchLength = repLength;
-                                            offBase = REPCODE1_TO_OFFBASE as size_t;
-                                            start = ip;
-                                        }
+                                        matchLength = repLength_0;
+                                        offBase = REPCODE1_TO_OFFBASE as size_t;
+                                        start = ip;
                                     }
+                                }
                             }
-                            let mut ofbCandidate_0 = 999999999 as std::ffi::c_int as size_t;
-                            let ml2_0 = ZSTD_searchMax(
+                            let mut ofbCandidate_1 = 999999999 as std::ffi::c_int as size_t;
+                            let ml2_1 = ZSTD_searchMax(
                                 ms,
                                 ip,
                                 iend,
-                                &mut ofbCandidate_0,
+                                &mut ofbCandidate_1,
                                 mls,
                                 rowLog,
                                 searchMethod,
                                 ZSTD_extDict,
                             );
-                            let gain2_0 = (ml2_0 * 4 as std::ffi::c_int as size_t)
-                                .wrapping_sub(ZSTD_highbit32(ofbCandidate_0 as U32) as size_t)
+                            let gain2_2 = (ml2_1 * 4 as std::ffi::c_int as size_t)
+                                .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as U32) as size_t)
                                 as std::ffi::c_int;
-                            let gain1_0 = (matchLength * 4 as std::ffi::c_int as size_t)
+                            let gain1_2 = (matchLength * 4 as std::ffi::c_int as size_t)
                                 .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
-                                .wrapping_add(4 as std::ffi::c_int as size_t)
+                                .wrapping_add(7 as std::ffi::c_int as size_t)
                                 as std::ffi::c_int;
-                            if ml2_0 >= 4 as std::ffi::c_int as size_t && gain2_0 > gain1_0 {
-                                matchLength = ml2_0;
-                                offBase = ofbCandidate_0;
-                                start = ip;
-                            } else {
-                                if !(depth == 2 as std::ffi::c_int as U32 && ip < ilimit) {
-                                    break;
-                                }
-                                ip = ip.offset(1);
-                                ip;
-                                curr = curr.wrapping_add(1);
-                                curr;
-                                if offBase != 0 {
-                                    let windowLow_1 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
-                                    let repIndex_1 = curr.wrapping_sub(offset_1);
-                                    let repBase_1 = if repIndex_1 < dictLimit {
-                                        dictBase
-                                    } else {
-                                        base
-                                    };
-                                    let repMatch_1 = repBase_1.offset(repIndex_1 as isize);
-                                    if ZSTD_index_overlap_check(dictLimit, repIndex_1)
-                                        & (offset_1 <= curr.wrapping_sub(windowLow_1))
-                                            as std::ffi::c_int
-                                        != 0
-                                        && MEM_read32(ip as *const std::ffi::c_void)
-                                            == MEM_read32(repMatch_1 as *const std::ffi::c_void)
-                                        {
-                                            let repEnd_1 = if repIndex_1 < dictLimit {
-                                                dictEnd
-                                            } else {
-                                                iend
-                                            };
-                                            let repLength_0 = (ZSTD_count_2segments(
-                                                ip.offset(4 as std::ffi::c_int as isize),
-                                                repMatch_1.offset(4 as std::ffi::c_int as isize),
-                                                iend,
-                                                repEnd_1,
-                                                prefixStart,
-                                            ))
-                                            .wrapping_add(4 as std::ffi::c_int as size_t);
-                                            let gain2_1 = (repLength_0
-                                                * 4 as std::ffi::c_int as size_t)
-                                                as std::ffi::c_int;
-                                            let gain1_1 = (matchLength
-                                                * 4 as std::ffi::c_int as size_t)
-                                                .wrapping_sub(
-                                                    ZSTD_highbit32(offBase as U32) as size_t
-                                                )
-                                                .wrapping_add(1 as std::ffi::c_int as size_t)
-                                                as std::ffi::c_int;
-                                            if repLength_0 >= 4 as std::ffi::c_int as size_t
-                                                && gain2_1 > gain1_1
-                                            {
-                                                matchLength = repLength_0;
-                                                offBase = REPCODE1_TO_OFFBASE as size_t;
-                                                start = ip;
-                                            }
-                                        }
-                                }
-                                let mut ofbCandidate_1 = 999999999 as std::ffi::c_int as size_t;
-                                let ml2_1 = ZSTD_searchMax(
-                                    ms,
-                                    ip,
-                                    iend,
-                                    &mut ofbCandidate_1,
-                                    mls,
-                                    rowLog,
-                                    searchMethod,
-                                    ZSTD_extDict,
-                                );
-                                let gain2_2 = (ml2_1 * 4 as std::ffi::c_int as size_t)
-                                    .wrapping_sub(ZSTD_highbit32(ofbCandidate_1 as U32) as size_t)
-                                    as std::ffi::c_int;
-                                let gain1_2 = (matchLength * 4 as std::ffi::c_int as size_t)
-                                    .wrapping_sub(ZSTD_highbit32(offBase as U32) as size_t)
-                                    .wrapping_add(7 as std::ffi::c_int as size_t)
-                                    as std::ffi::c_int;
-                                if !(ml2_1 >= 4 as std::ffi::c_int as size_t && gain2_2 > gain1_2) {
-                                    break;
-                                }
-                                matchLength = ml2_1;
-                                offBase = ofbCandidate_1;
-                                start = ip;
+                            if !(ml2_1 >= 4 as std::ffi::c_int as size_t && gain2_2 > gain1_2) {
+                                break;
                             }
+                            matchLength = ml2_1;
+                            offBase = ofbCandidate_1;
+                            start = ip;
                         }
-                    }
-                    if offBase > ZSTD_REP_NUM as size_t {
-                        let matchIndex = (start.offset_from(base) as std::ffi::c_long as size_t)
-                            .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
-                            as U32;
-                        let mut match_0 = if matchIndex < dictLimit {
-                            dictBase.offset(matchIndex as isize)
-                        } else {
-                            base.offset(matchIndex as isize)
-                        };
-                        let mStart = if matchIndex < dictLimit {
-                            dictStart
-                        } else {
-                            prefixStart
-                        };
-                        while start > anchor
-                            && match_0 > mStart
-                            && *start.offset(-(1 as std::ffi::c_int) as isize) as std::ffi::c_int
-                                == *match_0.offset(-(1 as std::ffi::c_int) as isize)
-                                    as std::ffi::c_int
-                        {
-                            start = start.offset(-1);
-                            start;
-                            match_0 = match_0.offset(-1);
-                            match_0;
-                            matchLength = matchLength.wrapping_add(1);
-                            matchLength;
-                        }
-                        offset_2 = offset_1;
-                        offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as U32;
                     }
                 }
+                if offBase > ZSTD_REP_NUM as size_t {
+                    let matchIndex = (start.offset_from(base) as std::ffi::c_long as size_t)
+                        .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
+                        as U32;
+                    let mut match_0 = if matchIndex < dictLimit {
+                        dictBase.offset(matchIndex as isize)
+                    } else {
+                        base.offset(matchIndex as isize)
+                    };
+                    let mStart = if matchIndex < dictLimit {
+                        dictStart
+                    } else {
+                        prefixStart
+                    };
+                    while start > anchor
+                        && match_0 > mStart
+                        && *start.offset(-(1 as std::ffi::c_int) as isize) as std::ffi::c_int
+                            == *match_0.offset(-(1 as std::ffi::c_int) as isize) as std::ffi::c_int
+                    {
+                        start = start.offset(-1);
+                        start;
+                        match_0 = match_0.offset(-1);
+                        match_0;
+                        matchLength = matchLength.wrapping_add(1);
+                        matchLength;
+                    }
+                    offset_2 = offset_1;
+                    offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as U32;
+                }
             }
-            _ => {}
         }
         let litLength = start.offset_from(anchor) as std::ffi::c_long as size_t;
         ZSTD_storeSeq(
@@ -4808,12 +4776,14 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
                 base
             };
             let repMatch_2 = repBase_2.offset(repIndex_2 as isize);
-            if (ZSTD_index_overlap_check(dictLimit, repIndex_2)
-                & (offset_2 <= repCurrent.wrapping_sub(windowLow_2)) as std::ffi::c_int == 0)
+            if ZSTD_index_overlap_check(dictLimit, repIndex_2)
+                & (offset_2 <= repCurrent.wrapping_sub(windowLow_2)) as std::ffi::c_int
+                == 0
             {
                 break;
             }
-            if (MEM_read32(ip as *const std::ffi::c_void) != MEM_read32(repMatch_2 as *const std::ffi::c_void))
+            if MEM_read32(ip as *const std::ffi::c_void)
+                != MEM_read32(repMatch_2 as *const std::ffi::c_void)
             {
                 break;
             }

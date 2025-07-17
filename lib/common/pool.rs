@@ -150,7 +150,6 @@ pub type ZSTD_threadPool = POOL_ctx_s;
 pub type POOL_ctx = POOL_ctx_s;
 static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
     {
-        
         ZSTD_customMem {
             customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
                 NULL as libc::intptr_t,
@@ -257,9 +256,18 @@ pub unsafe extern "C" fn POOL_create_advanced(
     (*ctx).numThreadsBusy = 0 as std::ffi::c_int as size_t;
     (*ctx).queueEmpty = 1 as std::ffi::c_int;
     let mut error = 0 as std::ffi::c_int;
-    error |= pthread_mutex_init(&mut (*ctx).queueMutex, std::ptr::null::<pthread_mutexattr_t>());
-    error |= pthread_cond_init(&mut (*ctx).queuePushCond, std::ptr::null::<pthread_condattr_t>());
-    error |= pthread_cond_init(&mut (*ctx).queuePopCond, std::ptr::null::<pthread_condattr_t>());
+    error |= pthread_mutex_init(
+        &mut (*ctx).queueMutex,
+        std::ptr::null::<pthread_mutexattr_t>(),
+    );
+    error |= pthread_cond_init(
+        &mut (*ctx).queuePushCond,
+        std::ptr::null::<pthread_condattr_t>(),
+    );
+    error |= pthread_cond_init(
+        &mut (*ctx).queuePopCond,
+        std::ptr::null::<pthread_condattr_t>(),
+    );
     if error != 0 {
         POOL_free(ctx);
         return NULL_0 as *mut POOL_ctx;
@@ -421,12 +429,11 @@ pub unsafe extern "C" fn POOL_resize(
 }
 unsafe extern "C" fn isQueueFull(mut ctx: *const POOL_ctx) -> std::ffi::c_int {
     if (*ctx).queueSize > 1 as std::ffi::c_int as size_t {
-        return ((*ctx).queueHead
+        ((*ctx).queueHead
             == ((*ctx).queueTail).wrapping_add(1 as std::ffi::c_int as size_t) % (*ctx).queueSize)
-            as std::ffi::c_int;
-    } else {
-        ((*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0)
             as std::ffi::c_int
+    } else {
+        ((*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0) as std::ffi::c_int
     }
 }
 unsafe extern "C" fn POOL_add_internal(

@@ -583,7 +583,6 @@ pub const ZSTD_BLOCKSIZE_MAX_MIN: std::ffi::c_int = (1 as std::ffi::c_int) << 10
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: std::ffi::c_int = 27 as std::ffi::c_int;
 static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
     {
-        
         ZSTD_customMem {
             customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
                 NULL as libc::intptr_t,
@@ -1016,9 +1015,9 @@ unsafe extern "C" fn ZSTD_isLegacy(
     }
     magicNumberLE = MEM_readLE32(src);
     match magicNumberLE {
-        ZSTDv05_MAGICNUMBER => return 5 as std::ffi::c_int as std::ffi::c_uint,
-        ZSTDv06_MAGICNUMBER => return 6 as std::ffi::c_int as std::ffi::c_uint,
-        ZSTDv07_MAGICNUMBER => return 7 as std::ffi::c_int as std::ffi::c_uint,
+        ZSTDv05_MAGICNUMBER => 5 as std::ffi::c_int as std::ffi::c_uint,
+        ZSTDv06_MAGICNUMBER => 6 as std::ffi::c_int as std::ffi::c_uint,
+        ZSTDv07_MAGICNUMBER => 7 as std::ffi::c_int as std::ffi::c_uint,
         _ => 0 as std::ffi::c_int as std::ffi::c_uint,
     }
 }
@@ -1111,7 +1110,7 @@ unsafe extern "C" fn ZSTD_decompressLegacy(
                 dictSize,
             );
             ZSTDv05_freeDCtx(zd);
-            return result;
+            result
         }
         6 => {
             let mut result_0: size_t = 0;
@@ -1129,7 +1128,7 @@ unsafe extern "C" fn ZSTD_decompressLegacy(
                 dictSize,
             );
             ZSTDv06_freeDCtx(zd_0);
-            return result_0;
+            result_0
         }
         7 => {
             let mut result_1: size_t = 0;
@@ -1147,7 +1146,7 @@ unsafe extern "C" fn ZSTD_decompressLegacy(
                 dictSize,
             );
             ZSTDv07_freeDCtx(zd_1);
-            return result_1;
+            result_1
         }
         _ => -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t,
     }
@@ -1219,12 +1218,10 @@ unsafe extern "C" fn ZSTD_freeLegacyStreamContext(
     mut version: U32,
 ) -> size_t {
     match version {
-        5 => return ZBUFFv05_freeDCtx(legacyContext as *mut ZBUFFv05_DCtx),
-        6 => return ZBUFFv06_freeDCtx(legacyContext as *mut ZBUFFv06_DCtx),
-        7 => return ZBUFFv07_freeDCtx(legacyContext as *mut ZBUFFv07_DCtx),
-        1 | 2 | 3 | _ => {
-            -(ZSTD_error_version_unsupported as std::ffi::c_int) as size_t
-        }
+        5 => ZBUFFv05_freeDCtx(legacyContext as *mut ZBUFFv05_DCtx),
+        6 => ZBUFFv06_freeDCtx(legacyContext as *mut ZBUFFv06_DCtx),
+        7 => ZBUFFv07_freeDCtx(legacyContext as *mut ZBUFFv07_DCtx),
+        1 | 2 | 3 | _ => -(ZSTD_error_version_unsupported as std::ffi::c_int) as size_t,
     }
 }
 #[inline]
@@ -1254,7 +1251,7 @@ unsafe extern "C" fn ZSTD_initLegacyStream(
             }
             ZBUFFv05_decompressInitDictionary(dctx, dict, dictSize);
             *legacyContext = dctx as *mut std::ffi::c_void;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         6 => {
             let mut dctx_0 = if prevVersion != newVersion {
@@ -1267,7 +1264,7 @@ unsafe extern "C" fn ZSTD_initLegacyStream(
             }
             ZBUFFv06_decompressInitDictionary(dctx_0, dict, dictSize);
             *legacyContext = dctx_0 as *mut std::ffi::c_void;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         7 => {
             let mut dctx_1 = if prevVersion != newVersion {
@@ -1280,7 +1277,7 @@ unsafe extern "C" fn ZSTD_initLegacyStream(
             }
             ZBUFFv07_decompressInitDictionary(dctx_1, dict, dictSize);
             *legacyContext = dctx_1 as *mut std::ffi::c_void;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         1 | 2 | 3 | _ => 0 as std::ffi::c_int as size_t,
     }
@@ -1312,7 +1309,7 @@ unsafe extern "C" fn ZSTD_decompressLegacyStream(
                 ZBUFFv05_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
             (*output).pos = ((*output).pos).wrapping_add(decodedSize);
             (*input).pos = ((*input).pos).wrapping_add(readSize);
-            return hintSize;
+            hintSize
         }
         6 => {
             let mut dctx_0 = legacyContext as *mut ZBUFFv06_DCtx;
@@ -1331,7 +1328,7 @@ unsafe extern "C" fn ZSTD_decompressLegacyStream(
             );
             (*output).pos = ((*output).pos).wrapping_add(decodedSize_0);
             (*input).pos = ((*input).pos).wrapping_add(readSize_0);
-            return hintSize_0;
+            hintSize_0
         }
         7 => {
             let mut dctx_1 = legacyContext as *mut ZBUFFv07_DCtx;
@@ -1350,11 +1347,9 @@ unsafe extern "C" fn ZSTD_decompressLegacyStream(
             );
             (*output).pos = ((*output).pos).wrapping_add(decodedSize_1);
             (*input).pos = ((*input).pos).wrapping_add(readSize_1);
-            return hintSize_1;
+            hintSize_1
         }
-        1 | 2 | 3 | _ => {
-            -(ZSTD_error_version_unsupported as std::ffi::c_int) as size_t
-        }
+        1 | 2 | 3 | _ => -(ZSTD_error_version_unsupported as std::ffi::c_int) as size_t,
     }
 }
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
@@ -1519,13 +1514,11 @@ pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     ::core::mem::size_of::<ZSTD_DCtx>() as std::ffi::c_ulong
 }
 unsafe extern "C" fn ZSTD_startingInputLength(mut format: ZSTD_format_e) -> size_t {
-    let startingInputLength =
-        (if format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint {
-            5 as std::ffi::c_int
-        } else {
-            1 as std::ffi::c_int
-        }) as size_t;
-    startingInputLength
+    (if format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint {
+        5 as std::ffi::c_int
+    } else {
+        1 as std::ffi::c_int
+    }) as size_t
 }
 unsafe extern "C" fn ZSTD_DCtx_resetParameters(mut dctx: *mut ZSTD_DCtx) {
     (*dctx).format = ZSTD_f_zstd1;
@@ -1720,10 +1713,9 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 ) -> size_t {
     let mut ip = src as *const BYTE;
     let minInputSize = ZSTD_startingInputLength(format);
-    if srcSize > 0 as std::ffi::c_int as size_t
-        && src.is_null() {
-            return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
-        }
+    if srcSize > 0 as std::ffi::c_int as size_t && src.is_null() {
+        return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+    }
     if srcSize < minInputSize {
         if srcSize > 0 as std::ffi::c_int as size_t
             && format as std::ffi::c_uint
@@ -1922,7 +1914,7 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
     if zfh.frameType as std::ffi::c_uint
         == ZSTD_skippableFrame as std::ffi::c_int as std::ffi::c_uint
     {
-        return 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+        0 as std::ffi::c_int as std::ffi::c_ulonglong
     } else {
         zfh.frameContentSize
     }
@@ -2105,7 +2097,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
             == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
     {
         frameSizeInfo.compressedSize = readSkippableFrameSize(src, srcSize);
-        return frameSizeInfo;
+        frameSizeInfo
     } else {
         let mut ip = src as *const BYTE;
         let ipstart = ip;
@@ -2495,9 +2487,9 @@ unsafe extern "C" fn ZSTD_decompressFrame(
     if (*dctx).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
         && op.offset_from(ostart) as std::ffi::c_long as U64 as std::ffi::c_ulonglong
             != (*dctx).fParams.frameContentSize
-        {
-            return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
-        }
+    {
+        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+    }
     if (*dctx).fParams.checksumFlag != 0 {
         if remainingSrcSize < 4 as std::ffi::c_int as size_t {
             return -(ZSTD_error_checksum_wrong as std::ffi::c_int) as size_t;
@@ -2563,9 +2555,10 @@ unsafe extern "C" fn ZSTD_decompressMultiFrame(
                 return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
             }
             if expectedSize != ZSTD_CONTENTSIZE_UNKNOWN
-                && expectedSize != decodedSize as std::ffi::c_ulonglong {
-                    return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
-                }
+                && expectedSize != decodedSize as std::ffi::c_ulonglong
+            {
+                return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+            }
             dst = (dst as *mut BYTE).offset(decodedSize as isize) as *mut std::ffi::c_void;
             dstCapacity = dstCapacity.wrapping_sub(decodedSize);
             src = (src as *const BYTE).offset(frameSize as isize) as *const std::ffi::c_void;
@@ -2647,10 +2640,10 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
 }
 unsafe extern "C" fn ZSTD_getDDict(mut dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
     match (*dctx).dictUses as std::ffi::c_int {
-        -1 => return (*dctx).ddict,
+        -1 => (*dctx).ddict,
         1 => {
             (*dctx).dictUses = ZSTD_dont_use;
-            return (*dctx).ddict;
+            (*dctx).ddict
         }
         0 | _ => {
             ZSTD_clearDict(dctx);
@@ -2707,7 +2700,8 @@ unsafe extern "C" fn ZSTD_nextSrcSizeToDecompressWithInputSize(
             inputSize
         } else {
             (*dctx).expected
-        }) {
+        })
+    {
         1 as std::ffi::c_int as size_t
     } else if inputSize < (*dctx).expected {
         inputSize
@@ -2718,17 +2712,17 @@ unsafe extern "C" fn ZSTD_nextSrcSizeToDecompressWithInputSize(
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_nextInputType(mut dctx: *mut ZSTD_DCtx) -> ZSTD_nextInputType_e {
     match (*dctx).stage as std::ffi::c_uint {
-        2 => return ZSTDnit_blockHeader,
-        3 => return ZSTDnit_block,
-        4 => return ZSTDnit_lastBlock,
-        5 => return ZSTDnit_checksum,
-        6 | 7 => return ZSTDnit_skippableFrame,
+        2 => ZSTDnit_blockHeader,
+        3 => ZSTDnit_block,
+        4 => ZSTDnit_lastBlock,
+        5 => ZSTDnit_checksum,
+        6 | 7 => ZSTDnit_skippableFrame,
         0 | 1 | _ => ZSTDnit_frameHeader,
     }
 }
 unsafe extern "C" fn ZSTD_isSkipFrame(mut dctx: *mut ZSTD_DCtx) -> std::ffi::c_int {
-    ((*dctx).stage as std::ffi::c_uint
-        == ZSTDds_skipFrame as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+    ((*dctx).stage as std::ffi::c_uint == ZSTDds_skipFrame as std::ffi::c_int as std::ffi::c_uint)
+        as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_decompressContinue(
@@ -2750,16 +2744,16 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
                 && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
-                {
-                    libc::memcpy(
-                        ((*dctx).headerBuffer).as_mut_ptr() as *mut std::ffi::c_void,
-                        src,
-                        srcSize as libc::size_t,
-                    );
-                    (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(srcSize);
-                    (*dctx).stage = ZSTDds_decodeSkippableHeader;
-                    return 0 as std::ffi::c_int as size_t;
-                }
+            {
+                libc::memcpy(
+                    ((*dctx).headerBuffer).as_mut_ptr() as *mut std::ffi::c_void,
+                    src,
+                    srcSize as libc::size_t,
+                );
+                (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(srcSize);
+                (*dctx).stage = ZSTDds_decodeSkippableHeader;
+                return 0 as std::ffi::c_int as size_t;
+            }
             (*dctx).headerSize = ZSTD_frameHeaderSize_internal(src, srcSize, (*dctx).format);
             if ERR_isError((*dctx).headerSize) != 0 {
                 return (*dctx).headerSize;
@@ -2771,7 +2765,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             );
             (*dctx).expected = ((*dctx).headerSize).wrapping_sub(srcSize);
             (*dctx).stage = ZSTDds_decodeFrameHeader;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         1 => {
             libc::memcpy(
@@ -2792,7 +2786,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             }
             (*dctx).expected = ZSTD_blockHeaderSize;
             (*dctx).stage = ZSTDds_decodeBlockHeader;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         2 => {
             let mut bp = blockProperties_t {
@@ -2830,7 +2824,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 (*dctx).expected = ZSTD_blockHeaderSize;
                 (*dctx).stage = ZSTDds_decodeBlockHeader;
             }
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         4 | 3 => {
             let mut rSize: size_t = 0;
@@ -2908,7 +2902,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 (*dctx).stage = ZSTDds_decodeBlockHeader;
                 (*dctx).expected = ZSTD_blockHeaderSize;
             }
-            return rSize;
+            rSize
         }
         5 => {
             if (*dctx).validateChecksum != 0 {
@@ -2926,7 +2920,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             );
             (*dctx).expected = 0 as std::ffi::c_int as size_t;
             (*dctx).stage = ZSTDds_getFrameHeaderSize;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         6 => {
             libc::memcpy(
@@ -2943,12 +2937,12 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                     .offset(ZSTD_FRAMEIDSIZE as isize) as *const std::ffi::c_void,
             ) as size_t;
             (*dctx).stage = ZSTDds_skipFrame;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         7 => {
             (*dctx).expected = 0 as std::ffi::c_int as size_t;
             (*dctx).stage = ZSTDds_getFrameHeaderSize;
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         _ => -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t,
     }
@@ -3184,10 +3178,12 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    if !dict.is_null() && dictSize != 0
-        && ERR_isError(ZSTD_decompress_insertDictionary(dctx, dict, dictSize)) != 0 {
-            return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
-        }
+    if !dict.is_null()
+        && dictSize != 0
+        && ERR_isError(ZSTD_decompress_insertDictionary(dctx, dict, dictSize)) != 0
+    {
+        return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
+    }
     0 as std::ffi::c_int as size_t
 }
 #[no_mangle]
@@ -3232,7 +3228,6 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromFrame(
     mut srcSize: size_t,
 ) -> std::ffi::c_uint {
     let mut zfp = {
-        
         ZSTD_FrameHeader {
             frameContentSize: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             windowSize: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
@@ -3486,7 +3481,6 @@ pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_dParam_getBounds(mut dParam: ZSTD_dParameter) -> ZSTD_bounds {
     let mut bounds = {
-        
         ZSTD_bounds {
             error: 0 as std::ffi::c_int as size_t,
             lowerBound: 0 as std::ffi::c_int,
@@ -3655,9 +3649,10 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
         }
         1005 => {
             if value != 0 as std::ffi::c_int
-                && ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam6, value) == 0 {
-                    return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
-                }
+                && ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam6, value) == 0
+            {
+                return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
+            }
             (*dctx).maxBlockSizeParam = value;
             return 0 as std::ffi::c_int as size_t;
         }
@@ -3738,11 +3733,7 @@ pub unsafe extern "C" fn ZSTD_decodingBufferSize_min(
     mut windowSize: std::ffi::c_ulonglong,
     mut frameContentSize: std::ffi::c_ulonglong,
 ) -> size_t {
-    ZSTD_decodingBufferSize_internal(
-        windowSize,
-        frameContentSize,
-        ZSTD_BLOCKSIZE_MAX as size_t,
-    )
+    ZSTD_decodingBufferSize_internal(windowSize, frameContentSize, ZSTD_BLOCKSIZE_MAX as size_t)
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_estimateDStreamSize(mut windowSize: size_t) -> size_t {
@@ -3818,8 +3809,7 @@ unsafe extern "C" fn ZSTD_DCtx_updateOversizedDuration(
     };
 }
 unsafe extern "C" fn ZSTD_DCtx_isOversizedTooLong(mut zds: *mut ZSTD_DStream) -> std::ffi::c_int {
-    ((*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t)
-        as std::ffi::c_int
+    ((*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t) as std::ffi::c_int
 }
 unsafe extern "C" fn ZSTD_checkOutBuffer(
     mut zds: *const ZSTD_DStream,
@@ -4006,8 +3996,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 (*zds).lhSize,
                 (*zds).format,
             );
-            if (*zds).refMultipleDDicts as std::ffi::c_uint != 0 && !((*zds).ddictSet).is_null()
-            {
+            if (*zds).refMultipleDDicts as std::ffi::c_uint != 0 && !((*zds).ddictSet).is_null() {
                 ZSTD_DCtx_selectFrameDDict(zds);
             }
             if ERR_isError(hSize) != 0 {
@@ -4117,8 +4106,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
                     && (*zds).fParams.frameType as std::ffi::c_uint
                         != ZSTD_skippableFrame as std::ffi::c_int as std::ffi::c_uint
-                    && oend.offset_from(op) as std::ffi::c_long as size_t
-                        as std::ffi::c_ulonglong
+                    && oend.offset_from(op) as std::ffi::c_long as size_t as std::ffi::c_ulonglong
                         >= (*zds).fParams.frameContentSize
                 {
                     let cSize = ZSTD_findFrameCompressedSize_advanced(
@@ -4168,8 +4156,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         {
                             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
                         }
-                        let err_code_2 =
-                            ZSTD_decompressBegin_usingDDict(zds, ZSTD_getDDict(zds));
+                        let err_code_2 = ZSTD_decompressBegin_usingDDict(zds, ZSTD_getDDict(zds));
                         if ERR_isError(err_code_2) != 0 {
                             return err_code_2;
                         }
@@ -4208,11 +4195,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             ((1 as std::ffi::c_uint) << 10 as std::ffi::c_int)
                                 as std::ffi::c_ulonglong
                         };
-                        if (*zds).fParams.windowSize
-                            > (*zds).maxWindowSize as std::ffi::c_ulonglong
+                        if (*zds).fParams.windowSize > (*zds).maxWindowSize as std::ffi::c_ulonglong
                         {
-                            return -(ZSTD_error_frameParameter_windowTooLarge
-                                as std::ffi::c_int)
+                            return -(ZSTD_error_frameParameter_windowTooLarge as std::ffi::c_int)
                                 as size_t;
                         }
                         if (*zds).maxBlockSizeParam != 0 as std::ffi::c_int {
@@ -4242,11 +4227,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         } else {
                             0 as std::ffi::c_int as size_t
                         };
-                        ZSTD_DCtx_updateOversizedDuration(
-                            zds,
-                            neededInBuffSize,
-                            neededOutBuffSize,
-                        );
+                        ZSTD_DCtx_updateOversizedDuration(zds, neededInBuffSize, neededOutBuffSize);
                         let tooSmall = ((*zds).inBuffSize < neededInBuffSize
                             || (*zds).outBuffSize < neededOutBuffSize)
                             as std::ffi::c_int;

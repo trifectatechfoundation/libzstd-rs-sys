@@ -358,7 +358,7 @@ unsafe extern "C" fn MEM_swap64(mut in_0: U64) -> U64 {
 #[inline]
 unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> U64 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read64(memPtr);
+        MEM_read64(memPtr)
     } else {
         MEM_swap64(MEM_read64(memPtr))
     }
@@ -406,7 +406,7 @@ unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: U32) ->
 }
 static mut COVER_prime4bytes: U32 = 2654435761 as std::ffi::c_uint;
 unsafe extern "C" fn COVER_map_hash(mut map: *mut COVER_map_t, mut key: U32) -> U32 {
-    key * COVER_prime4bytes >> (32 as std::ffi::c_int as U32).wrapping_sub((*map).sizeLog)
+    (key * COVER_prime4bytes) >> (32 as std::ffi::c_int as U32).wrapping_sub((*map).sizeLog)
 }
 unsafe extern "C" fn COVER_map_index(mut map: *mut COVER_map_t, mut key: U32) -> U32 {
     let hash = COVER_map_hash(map, key);
@@ -657,7 +657,7 @@ unsafe extern "C" fn COVER_group(
     let mut curSampleEnd = *((*ctx).offsets).offset(0 as std::ffi::c_int as isize);
     while grpPtr != grpEnd {
         *((*ctx).dmerAt).offset(*grpPtr as isize) = dmerId;
-        if ((*grpPtr as size_t) >= curSampleEnd) {
+        if (*grpPtr as size_t) >= curSampleEnd {
             freq = freq.wrapping_add(1 as std::ffi::c_int as U32);
             if grpPtr.offset(1 as std::ffi::c_int as isize) != grpEnd {
                 let mut sampleEndPtr =
@@ -683,7 +683,6 @@ unsafe extern "C" fn COVER_selectSegment(
     let d = parameters.d;
     let dmersInK = k.wrapping_sub(d).wrapping_add(1 as std::ffi::c_int as U32);
     let mut bestSegment = {
-        
         COVER_segment_t {
             begin: 0 as std::ffi::c_int as U32,
             end: 0 as std::ffi::c_int as U32,
@@ -1289,15 +1288,14 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         nbSamples,
         parameters.zParams,
     );
-    if ERR_isError(dictionarySize) == 0
-        && displayLevel >= 2 as std::ffi::c_int {
-            fprintf(
-                stderr,
-                b"Constructed dictionary of size %u\n\0" as *const u8 as *const std::ffi::c_char,
-                dictionarySize as std::ffi::c_uint,
-            );
-            fflush(stderr);
-        }
+    if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 as std::ffi::c_int {
+        fprintf(
+            stderr,
+            b"Constructed dictionary of size %u\n\0" as *const u8 as *const std::ffi::c_char,
+            dictionarySize as std::ffi::c_uint,
+        );
+        fflush(stderr);
+    }
     COVER_ctx_destroy(&mut ctx);
     COVER_map_destroy(&mut activeDmers);
     dictionarySize
@@ -1685,14 +1683,13 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
             (*ctx).offsets,
             totalCompressedSize,
         );
-        if COVER_dictSelectionIsError(selection) != 0
-            && displayLevel >= 1 as std::ffi::c_int {
-                fprintf(
-                    stderr,
-                    b"Failed to select dictionary\n\0" as *const u8 as *const std::ffi::c_char,
-                );
-                fflush(stderr);
-            }
+        if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Failed to select dictionary\n\0" as *const u8 as *const std::ffi::c_char,
+            );
+            fflush(stderr);
+        }
     }
     free(dict as *mut std::ffi::c_void);
     COVER_best_finish((*data).best, parameters, selection);

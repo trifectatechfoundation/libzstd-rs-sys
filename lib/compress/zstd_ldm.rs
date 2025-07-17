@@ -331,8 +331,7 @@ pub struct ldmRollingHashState_t {
 #[inline]
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -503,7 +502,7 @@ unsafe extern "C" fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> U32 {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_matchState_dictMode(mut ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    ((if ZSTD_window_hasExtDict((*ms).window) != 0 {
+    (if ZSTD_window_hasExtDict((*ms).window) != 0 {
         ZSTD_extDict as std::ffi::c_int
     } else if !((*ms).dictMatchState).is_null() {
         if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
@@ -513,7 +512,7 @@ unsafe extern "C" fn ZSTD_matchState_dictMode(mut ms: *const ZSTD_MatchState_t) 
         }
     } else {
         ZSTD_noDict as std::ffi::c_int
-    }) as ZSTD_dictMode_e)
+    }) as ZSTD_dictMode_e
 }
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: std::ffi::c_int = 0 as std::ffi::c_int;
 #[inline]
@@ -527,13 +526,11 @@ unsafe extern "C" fn ZSTD_window_canOverflowCorrect(
     let cycleSize = (1 as std::ffi::c_uint) << cycleLog;
     let curr = (src as *const BYTE).offset_from(window.base) as std::ffi::c_long as U32;
     let minIndexToOverflowCorrect = cycleSize
-        .wrapping_add(
-            if maxDist > cycleSize {
-                maxDist
-            } else {
-                cycleSize
-            },
-        )
+        .wrapping_add(if maxDist > cycleSize {
+            maxDist
+        } else {
+            cycleSize
+        })
         .wrapping_add(ZSTD_WINDOW_START_INDEX as U32);
     let adjustment = (window.nbOverflowCorrections).wrapping_add(1 as std::ffi::c_int as U32);
     let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
@@ -587,13 +584,11 @@ unsafe extern "C" fn ZSTD_window_correctOverflow(
     };
     let newCurrent = currentCycle
         .wrapping_add(currentCycleCorrection)
-        .wrapping_add(
-            if maxDist > cycleSize {
-                maxDist
-            } else {
-                cycleSize
-            },
-        );
+        .wrapping_add(if maxDist > cycleSize {
+            maxDist
+        } else {
+            cycleSize
+        });
     let correction = curr.wrapping_sub(newCurrent);
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0;
     (*window).base = ((*window).base).offset(correction as isize);
@@ -677,7 +672,7 @@ unsafe extern "C" fn ZSTD_wildcopy(
             ZSTD_copy8(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
             op = op.offset(8 as std::ffi::c_int as isize);
             ip = ip.offset(8 as std::ffi::c_int as isize);
-            if (op >= oend) {
+            if op >= oend {
                 break;
             }
         }
@@ -695,7 +690,7 @@ unsafe extern "C" fn ZSTD_wildcopy(
             ZSTD_copy16(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
             op = op.offset(16 as std::ffi::c_int as isize);
             ip = ip.offset(16 as std::ffi::c_int as isize);
-            if (op >= oend) {
+            if op >= oend {
                 break;
             }
         }
@@ -728,12 +723,12 @@ unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: U64) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> std::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            return ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int;
+            ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int
         } else {
-            return ZSTD_countTrailingZeros32(val as U32) >> 3 as std::ffi::c_int;
+            ZSTD_countTrailingZeros32(val as U32) >> 3 as std::ffi::c_int
         }
     } else if MEM_64bits() != 0 {
-        return ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int;
+        ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int
     } else {
         ZSTD_countLeadingZeros32(val as U32) >> 3 as std::ffi::c_int
     }
@@ -1065,7 +1060,7 @@ unsafe extern "C" fn ZSTD_ldm_gear_feed(
     mask = (*state).stopMask;
     n = 0 as std::ffi::c_int as size_t;
     loop {
-        if (n.wrapping_add(3 as std::ffi::c_int as size_t) >= size) {
+        if n.wrapping_add(3 as std::ffi::c_int as size_t) >= size {
             current_block = 5689316957504528238;
             break;
         }
@@ -1112,7 +1107,7 @@ unsafe extern "C" fn ZSTD_ldm_gear_feed(
             (*data.offset(n as isize) as std::ffi::c_int & 0xff as std::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1 as std::ffi::c_int as size_t);
-        if ((hash & mask == 0 as std::ffi::c_int as U64) as std::ffi::c_int as std::ffi::c_long == 0)
+        if (hash & mask == 0 as std::ffi::c_int as U64) as std::ffi::c_int as std::ffi::c_long == 0
         {
             continue;
         }
@@ -1130,7 +1125,7 @@ unsafe extern "C" fn ZSTD_ldm_gear_feed(
                 break;
             }
             _ => {
-                if (n >= size) {
+                if n >= size {
                     current_block = 12351618399163395313;
                     continue;
                 }
@@ -1140,8 +1135,9 @@ unsafe extern "C" fn ZSTD_ldm_gear_feed(
                             as isize,
                     ));
                 n = n.wrapping_add(1 as std::ffi::c_int as size_t);
-                if ((hash & mask == 0 as std::ffi::c_int as U64) as std::ffi::c_int
-                    as std::ffi::c_long == 0)
+                if (hash & mask == 0 as std::ffi::c_int as U64) as std::ffi::c_int
+                    as std::ffi::c_long
+                    == 0
                 {
                     current_block = 5689316957504528238;
                     continue;
@@ -1303,8 +1299,7 @@ pub unsafe extern "C" fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as std::ffi::c_ulong),
     ));
-    if params.enableLdm as std::ffi::c_uint
-        == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
+    if params.enableLdm as std::ffi::c_uint == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
     {
         totalSize
     } else {
@@ -1316,8 +1311,7 @@ pub unsafe extern "C" fn ZSTD_ldm_getMaxNbSeq(
     mut params: ldmParams_t,
     mut maxChunkSize: size_t,
 ) -> size_t {
-    if params.enableLdm as std::ffi::c_uint
-        == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
+    if params.enableLdm as std::ffi::c_uint == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
     {
         maxChunkSize / params.minMatchLength as size_t
     } else {

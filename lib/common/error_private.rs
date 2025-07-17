@@ -41,113 +41,72 @@ pub unsafe extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const std::f
     static mut notErrorCode: *const std::ffi::c_char =
         b"Unspecified error code\0" as *const u8 as *const std::ffi::c_char;
     match code as std::ffi::c_uint {
-        0 => return b"No error detected\0" as *const u8 as *const std::ffi::c_char,
-        1 => return b"Error (generic)\0" as *const u8 as *const std::ffi::c_char,
-        10 => {
-            return b"Unknown frame descriptor\0" as *const u8 as *const std::ffi::c_char;
-        }
-        12 => return b"Version not supported\0" as *const u8 as *const std::ffi::c_char,
-        14 => {
-            return b"Unsupported frame parameter\0" as *const u8 as *const std::ffi::c_char;
-        }
+        0 => b"No error detected\0" as *const u8 as *const std::ffi::c_char,
+        1 => b"Error (generic)\0" as *const u8 as *const std::ffi::c_char,
+        10 => b"Unknown frame descriptor\0" as *const u8 as *const std::ffi::c_char,
+        12 => b"Version not supported\0" as *const u8 as *const std::ffi::c_char,
+        14 => b"Unsupported frame parameter\0" as *const u8 as *const std::ffi::c_char,
         16 => {
-            return b"Frame requires too much memory for decoding\0" as *const u8
-                as *const std::ffi::c_char;
+            b"Frame requires too much memory for decoding\0" as *const u8 as *const std::ffi::c_char
         }
-        20 => {
-            return b"Data corruption detected\0" as *const u8 as *const std::ffi::c_char;
-        }
-        22 => {
-            return b"Restored data doesn't match checksum\0" as *const u8
-                as *const std::ffi::c_char;
-        }
+        20 => b"Data corruption detected\0" as *const u8 as *const std::ffi::c_char,
+        22 => b"Restored data doesn't match checksum\0" as *const u8 as *const std::ffi::c_char,
         24 => {
-            return b"Header of Literals' block doesn't respect format specification\0" as *const u8
-                as *const std::ffi::c_char;
+            b"Header of Literals' block doesn't respect format specification\0" as *const u8
+                as *const std::ffi::c_char
         }
-        40 => return b"Unsupported parameter\0" as *const u8 as *const std::ffi::c_char,
-        41 => {
-            return b"Unsupported combination of parameters\0" as *const u8
-                as *const std::ffi::c_char;
-        }
-        42 => {
-            return b"Parameter is out of bound\0" as *const u8 as *const std::ffi::c_char;
-        }
-        62 => {
-            return b"Context should be init first\0" as *const u8 as *const std::ffi::c_char;
-        }
-        64 => {
-            return b"Allocation error : not enough memory\0" as *const u8
-                as *const std::ffi::c_char;
-        }
-        66 => {
-            return b"workSpace buffer is not large enough\0" as *const u8
-                as *const std::ffi::c_char;
-        }
+        40 => b"Unsupported parameter\0" as *const u8 as *const std::ffi::c_char,
+        41 => b"Unsupported combination of parameters\0" as *const u8 as *const std::ffi::c_char,
+        42 => b"Parameter is out of bound\0" as *const u8 as *const std::ffi::c_char,
+        62 => b"Context should be init first\0" as *const u8 as *const std::ffi::c_char,
+        64 => b"Allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+        66 => b"workSpace buffer is not large enough\0" as *const u8 as *const std::ffi::c_char,
         60 => {
-            return b"Operation not authorized at current processing stage\0" as *const u8
-                as *const std::ffi::c_char;
+            b"Operation not authorized at current processing stage\0" as *const u8
+                as *const std::ffi::c_char
         }
         44 => {
-            return b"tableLog requires too much memory : unsupported\0" as *const u8
-                as *const std::ffi::c_char;
+            b"tableLog requires too much memory : unsupported\0" as *const u8
+                as *const std::ffi::c_char
         }
-        46 => {
-            return b"Unsupported max Symbol Value : too large\0" as *const u8
-                as *const std::ffi::c_char;
-        }
-        48 => {
-            return b"Specified maxSymbolValue is too small\0" as *const u8
-                as *const std::ffi::c_char;
-        }
+        46 => b"Unsupported max Symbol Value : too large\0" as *const u8 as *const std::ffi::c_char,
+        48 => b"Specified maxSymbolValue is too small\0" as *const u8 as *const std::ffi::c_char,
         49 => {
-            return b"This mode cannot generate an uncompressed block\0" as *const u8
-                as *const std::ffi::c_char;
+            b"This mode cannot generate an uncompressed block\0" as *const u8
+                as *const std::ffi::c_char
         }
         50 => {
-            return b"pledged buffer stability condition is not respected\0" as *const u8
-                as *const std::ffi::c_char;
+            b"pledged buffer stability condition is not respected\0" as *const u8
+                as *const std::ffi::c_char
         }
-        30 => return b"Dictionary is corrupted\0" as *const u8 as *const std::ffi::c_char,
-        32 => return b"Dictionary mismatch\0" as *const u8 as *const std::ffi::c_char,
+        30 => b"Dictionary is corrupted\0" as *const u8 as *const std::ffi::c_char,
+        32 => b"Dictionary mismatch\0" as *const u8 as *const std::ffi::c_char,
         34 => {
-            return b"Cannot create Dictionary from provided samples\0" as *const u8
-                as *const std::ffi::c_char;
+            b"Cannot create Dictionary from provided samples\0" as *const u8
+                as *const std::ffi::c_char
         }
-        70 => {
-            return b"Destination buffer is too small\0" as *const u8 as *const std::ffi::c_char;
-        }
-        72 => return b"Src size is incorrect\0" as *const u8 as *const std::ffi::c_char,
-        74 => {
-            return b"Operation on NULL destination buffer\0" as *const u8
-                as *const std::ffi::c_char;
-        }
+        70 => b"Destination buffer is too small\0" as *const u8 as *const std::ffi::c_char,
+        72 => b"Src size is incorrect\0" as *const u8 as *const std::ffi::c_char,
+        74 => b"Operation on NULL destination buffer\0" as *const u8 as *const std::ffi::c_char,
         80 => {
-            return b"Operation made no progress over multiple calls, due to output buffer being full\0"
-                as *const u8 as *const std::ffi::c_char;
+            b"Operation made no progress over multiple calls, due to output buffer being full\0"
+                as *const u8 as *const std::ffi::c_char
         }
         82 => {
-            return b"Operation made no progress over multiple calls, due to input being empty\0"
-                as *const u8 as *const std::ffi::c_char;
+            b"Operation made no progress over multiple calls, due to input being empty\0"
+                as *const u8 as *const std::ffi::c_char
         }
-        100 => {
-            return b"Frame index is too large\0" as *const u8 as *const std::ffi::c_char;
-        }
+        100 => b"Frame index is too large\0" as *const u8 as *const std::ffi::c_char,
         102 => {
-            return b"An I/O error occurred when reading/seeking\0" as *const u8
-                as *const std::ffi::c_char;
+            b"An I/O error occurred when reading/seeking\0" as *const u8 as *const std::ffi::c_char
         }
-        104 => {
-            return b"Destination buffer is wrong\0" as *const u8 as *const std::ffi::c_char;
-        }
-        105 => return b"Source buffer is wrong\0" as *const u8 as *const std::ffi::c_char,
+        104 => b"Destination buffer is wrong\0" as *const u8 as *const std::ffi::c_char,
+        105 => b"Source buffer is wrong\0" as *const u8 as *const std::ffi::c_char,
         106 => {
-            return b"Block-level external sequence producer returned an error code\0" as *const u8
-                as *const std::ffi::c_char;
+            b"Block-level external sequence producer returned an error code\0" as *const u8
+                as *const std::ffi::c_char
         }
-        107 => {
-            return b"External sequences are not valid\0" as *const u8 as *const std::ffi::c_char;
-        }
+        107 => b"External sequences are not valid\0" as *const u8 as *const std::ffi::c_char,
         120 | _ => notErrorCode,
     }
 }

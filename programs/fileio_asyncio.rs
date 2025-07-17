@@ -815,7 +815,11 @@ unsafe extern "C" fn AIO_IOPool_createThreadPool(
     (*ctx).threadPool = NULL as *mut POOL_ctx;
     (*ctx).threadPoolActive = 0 as std::ffi::c_int;
     if (*prefs).asyncIO != 0 {
-        if pthread_mutex_init(&mut (*ctx).ioJobsMutex, std::ptr::null::<pthread_mutexattr_t>()) != 0 {
+        if pthread_mutex_init(
+            &mut (*ctx).ioJobsMutex,
+            std::ptr::null::<pthread_mutexattr_t>(),
+        ) != 0
+        {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
             }
@@ -1548,8 +1552,7 @@ unsafe extern "C" fn AIO_ReadPool_numReadsInFlight(mut ctx: *mut ReadPoolCtx_t) 
         1 as std::ffi::c_int
     };
     ((*ctx).base.totalIoJobs
-        - ((*ctx).base.availableJobsCount + (*ctx).completedJobsCount + jobsHeld))
-        as size_t
+        - ((*ctx).base.availableJobsCount + (*ctx).completedJobsCount + jobsHeld)) as size_t
 }
 unsafe extern "C" fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
     let mut job = NULL as *mut IOJob_t;
@@ -1833,37 +1836,40 @@ pub unsafe extern "C" fn AIO_ReadPool_create(
     (*ctx).completedJobsCount = 0 as std::ffi::c_int;
     (*ctx).currentJobHeld = NULL as *mut std::ffi::c_void;
     if !((*ctx).base.threadPool).is_null()
-        && pthread_cond_init(&mut (*ctx).jobCompletedCond, std::ptr::null::<pthread_condattr_t>()) != 0 {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
-                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
-            }
-            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
-                fprintf(
-                    stderr,
-                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
-                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
-                    561 as std::ffi::c_int,
-                );
-            }
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
-                fprintf(
-                    stderr,
-                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
-                    103 as std::ffi::c_int,
-                );
-            }
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
-                fprintf(
-                    stderr,
-                    b"Failed creating jobCompletedCond cond\0" as *const u8
-                        as *const std::ffi::c_char,
-                );
-            }
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
-                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
-            }
-            exit(103 as std::ffi::c_int);
+        && pthread_cond_init(
+            &mut (*ctx).jobCompletedCond,
+            std::ptr::null::<pthread_condattr_t>(),
+        ) != 0
+    {
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
         }
+        if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                561 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                103 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Failed creating jobCompletedCond cond\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        }
+        exit(103 as std::ffi::c_int);
+    }
     ctx
 }
 #[no_mangle]

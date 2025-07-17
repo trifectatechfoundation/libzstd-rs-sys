@@ -223,7 +223,6 @@ static mut g_maxMemory: size_t = 0;
 pub const NOISELENGTH: std::ffi::c_int = 32 as std::ffi::c_int;
 static mut g_refreshRate: U64 = 0;
 static mut g_displayClock: UTIL_time_t = {
-    
     UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
     }
@@ -281,17 +280,17 @@ unsafe extern "C" fn DiB_loadFiles(
             if displayLevel >= 2 as std::ffi::c_int
                 && (UTIL_clockSpanMicro(g_displayClock) > g_refreshRate
                     || displayLevel >= 4 as std::ffi::c_int)
-                {
-                    g_displayClock = UTIL_getTime();
-                    fprintf(
-                        stderr,
-                        b"Loading %s...       \r\0" as *const u8 as *const std::ffi::c_char,
-                        *fileNamesTable.offset(fileIndex as isize),
-                    );
-                    if displayLevel >= 4 as std::ffi::c_int {
-                        fflush(stderr);
-                    }
+            {
+                g_displayClock = UTIL_getTime();
+                fprintf(
+                    stderr,
+                    b"Loading %s...       \r\0" as *const u8 as *const std::ffi::c_char,
+                    *fileNamesTable.offset(fileIndex as isize),
+                );
+                if displayLevel >= 4 as std::ffi::c_int {
+                    fflush(stderr);
                 }
+            }
             fileDataLoaded = if targetChunkSize > 0 as std::ffi::c_int as size_t {
                 (if fileSize < targetChunkSize as S64 {
                     fileSize
@@ -778,20 +777,19 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             );
         }
     }
-    if (loadedSize as S64) < fs.totalSizeToLoad
-        && displayLevel >= 1 as std::ffi::c_int {
-            fprintf(
-                stderr,
-                b"Training samples set too large (%u MB); training on %u MB only...\n\0"
-                    as *const u8 as *const std::ffi::c_char,
-                (fs.totalSizeToLoad
-                    / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))
-                        as S64) as std::ffi::c_uint,
-                (loadedSize
-                    / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))
-                        as size_t) as std::ffi::c_uint,
-            );
-        }
+    if (loadedSize as S64) < fs.totalSizeToLoad && displayLevel >= 1 as std::ffi::c_int {
+        fprintf(
+            stderr,
+            b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
+                as *const std::ffi::c_char,
+            (fs.totalSizeToLoad
+                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)) as S64)
+                as std::ffi::c_uint,
+            (loadedSize
+                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))
+                    as size_t) as std::ffi::c_uint,
+        );
+    }
     nbSamplesLoaded = DiB_loadFiles(
         srcBuffer,
         &mut loadedSize,

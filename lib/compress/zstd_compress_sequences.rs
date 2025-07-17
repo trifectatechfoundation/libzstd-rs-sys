@@ -152,8 +152,7 @@ pub struct ZSTD_BuildCTableWksp {
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
@@ -487,11 +486,9 @@ unsafe extern "C" fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0 as std::ffi::c_int as size_t;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t)
-        .wrapping_add(
-            ((*bitC).bitPos > 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
-                as size_t,
-        )
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t).wrapping_add(
+        ((*bitC).bitPos > 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int as size_t,
+    )
 }
 static mut kInverseProbabilityLog256: [std::ffi::c_uint; 256] = [
     0 as std::ffi::c_int as std::ffi::c_uint,
@@ -754,9 +751,8 @@ static mut kInverseProbabilityLog256: [std::ffi::c_uint; 256] = [
 unsafe extern "C" fn ZSTD_getFSEMaxSymbolValue(mut ctable: *const FSE_CTable) -> std::ffi::c_uint {
     let mut ptr = ctable as *const std::ffi::c_void;
     let mut u16ptr = ptr as *const U16;
-    let maxSymbolValue =
-        MEM_read16(u16ptr.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void) as U32;
-    maxSymbolValue
+
+    MEM_read16(u16ptr.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void) as U32
 }
 unsafe extern "C" fn ZSTD_useLowProbCount(nbSeq: size_t) -> std::ffi::c_uint {
     (nbSeq >= 2048 as std::ffi::c_int as size_t) as std::ffi::c_int as std::ffi::c_uint
@@ -840,7 +836,7 @@ pub unsafe extern "C" fn ZSTD_fseBitCost(
         let badCost =
             tableLog.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) << kAccuracyLog;
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
-        if (*count.offset(s as isize) != 0 as std::ffi::c_int as std::ffi::c_uint) {
+        if *count.offset(s as isize) != 0 as std::ffi::c_int as std::ffi::c_uint {
             if bitCost >= badCost {
                 return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
             }
@@ -980,7 +976,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
                 return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
             }
             *op = *codeTable.offset(0 as std::ffi::c_int as isize);
-            return 1 as std::ffi::c_int as size_t;
+            1 as std::ffi::c_int as size_t
         }
         3 => {
             libc::memcpy(
@@ -988,7 +984,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
                 prevCTable as *const std::ffi::c_void,
                 prevCTableSize as libc::size_t,
             );
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         0 => {
             let err_code_0 = FSE_buildCTable_wksp(
@@ -1002,7 +998,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
             if ERR_isError(err_code_0) != 0 {
                 return err_code_0;
             }
-            return 0 as std::ffi::c_int as size_t;
+            0 as std::ffi::c_int as size_t
         }
         2 => {
             let mut wksp = entropyWorkspace as *mut ZSTD_BuildCTableWksp;
@@ -1055,7 +1051,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
             if ERR_isError(err_code_3) != 0 {
                 return err_code_3;
             }
-            return NCountSize;
+            NCountSize
         }
         _ => -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t,
     }

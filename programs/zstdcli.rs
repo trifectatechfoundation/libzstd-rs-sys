@@ -1236,8 +1236,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1248,8 +1247,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1260,8 +1258,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1273,8 +1270,7 @@ unsafe extern "C" fn parseCoverParameters(
         {
             let mut splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as std::ffi::c_double / 100.0f64;
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1291,8 +1287,7 @@ unsafe extern "C" fn parseCoverParameters(
                 stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1335,8 +1330,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1347,8 +1341,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1359,8 +1352,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).f = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1371,8 +1363,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1383,8 +1374,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).accel = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1396,8 +1386,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         {
             let mut splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as std::ffi::c_double / 100.0f64;
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1414,8 +1403,7 @@ unsafe extern "C" fn parseFastCoverParameters(
                 stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1542,8 +1530,7 @@ unsafe extern "C" fn parseAdaptParameters(
         ) != 0
         {
             *adaptMinPtr = readIntFromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1554,8 +1541,7 @@ unsafe extern "C" fn parseAdaptParameters(
         ) != 0
         {
             *adaptMaxPtr = readIntFromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1599,8 +1585,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).windowLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1615,8 +1600,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).chainLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1631,8 +1615,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).hashLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1647,8 +1630,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).searchLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1663,8 +1645,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).minMatch = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1679,8 +1660,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).targetLength = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1695,8 +1675,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).strategy = readU32FromChar(&mut stringPtr) as ZSTD_strategy;
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1711,8 +1690,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_overlapLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1727,8 +1705,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1743,8 +1720,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmMinMatch = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1759,8 +1735,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmBucketSizeLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1775,8 +1750,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashRateLog = readU32FromChar(&mut stringPtr);
-            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
-            {
+            if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -2231,18 +2205,19 @@ unsafe extern "C" fn init_nbWorkers() -> std::ffi::c_uint {
             );
         }
     }
-    ((if 1 as std::ffi::c_int
+    (if 1 as std::ffi::c_int
         > (if (4 as std::ffi::c_int) < UTIL_countLogicalCores() / 4 as std::ffi::c_int {
             4 as std::ffi::c_int
         } else {
             UTIL_countLogicalCores() / 4 as std::ffi::c_int
-        }) {
+        })
+    {
         1 as std::ffi::c_int
     } else if (4 as std::ffi::c_int) < UTIL_countLogicalCores() / 4 as std::ffi::c_int {
         4 as std::ffi::c_int
     } else {
         UTIL_countLogicalCores() / 4 as std::ffi::c_int
-    }) as std::ffi::c_uint)
+    }) as std::ffi::c_uint
 }
 pub const MINCLEVEL: std::ffi::c_int = ZSTD_minCLevel();
 pub const MAXCLEVEL: std::ffi::c_int = ZSTD_maxCLevel();
@@ -2438,7 +2413,7 @@ unsafe fn main_0(
     FIO_addAbortHandler();
     argNb = 1 as std::ffi::c_int;
     's_373: loop {
-        if (argNb >= argCount) {
+        if argNb >= argCount {
             current_block = 17866802397806708230;
             break;
         }
@@ -2914,7 +2889,7 @@ unsafe fn main_0(
                                         outFileName = g_defaultDictName;
                                     }
                                     dict = legacy;
-                                    if (*argument as std::ffi::c_int != 0 as std::ffi::c_int) {
+                                    if *argument as std::ffi::c_int != 0 as std::ffi::c_int {
                                         let fresh2 = argument;
                                         argument = argument.offset(1);
                                         if *fresh2 as std::ffi::c_int != '=' as i32 {
@@ -4788,8 +4763,9 @@ unsafe fn main_0(
                                                     );
                                                 }
                                             };
-                                            if (*outFileName.offset(0 as std::ffi::c_int as isize)
-                                                as std::ffi::c_int != '-' as i32)
+                                            if *outFileName.offset(0 as std::ffi::c_int as isize)
+                                                as std::ffi::c_int
+                                                != '-' as i32
                                             {
                                                 continue;
                                             }
@@ -4870,8 +4846,9 @@ unsafe fn main_0(
                                                     );
                                                 }
                                             };
-                                            if (*dictFileName.offset(0 as std::ffi::c_int as isize)
-                                                as std::ffi::c_int != '-' as i32)
+                                            if *dictFileName.offset(0 as std::ffi::c_int as isize)
+                                                as std::ffi::c_int
+                                                != '-' as i32
                                             {
                                                 continue;
                                             }
@@ -5022,268 +4999,251 @@ unsafe fn main_0(
         argNb += 1;
         argNb;
     }
-    match current_block {
-        17866802397806708230 => {
-            if g_displayLevel >= 3 as std::ffi::c_int {
-                fprintf(
-                    stderr,
-                    b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const std::ffi::c_char,
-                    b"Zstandard CLI\0" as *const u8 as *const std::ffi::c_char,
-                    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                        as std::ffi::c_int,
-                    b"v1.5.8\0" as *const u8 as *const std::ffi::c_char,
-                    b"Yann Collet\0" as *const u8 as *const std::ffi::c_char,
-                );
-            }
-            if operation as std::ffi::c_uint
-                == zom_decompress as std::ffi::c_int as std::ffi::c_uint
-                && setThreads_non1 != 0
-                && g_displayLevel >= 2 as std::ffi::c_int {
+    if current_block == 17866802397806708230 {
+        if g_displayLevel >= 3 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Zstandard CLI\0" as *const u8 as *const std::ffi::c_char,
+                (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
+                    .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+                    as std::ffi::c_int,
+                b"v1.5.8\0" as *const u8 as *const std::ffi::c_char,
+                b"Yann Collet\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if operation as std::ffi::c_uint == zom_decompress as std::ffi::c_int as std::ffi::c_uint
+            && setThreads_non1 != 0
+            && g_displayLevel >= 2 as std::ffi::c_int
+        {
+            fprintf(
+                stderr,
+                b"Warning : decompression does not support multi-threading\n\0" as *const u8
+                    as *const std::ffi::c_char,
+            );
+        }
+        if nbWorkers == NBWORKERS_AUTOCPU as std::ffi::c_uint && singleThread == 0 {
+            if defaultLogicalCores != 0 {
+                nbWorkers = UTIL_countLogicalCores() as std::ffi::c_uint;
+                if g_displayLevel >= 3 as std::ffi::c_int {
                     fprintf(
                         stderr,
-                        b"Warning : decompression does not support multi-threading\n\0" as *const u8
-                            as *const std::ffi::c_char,
-                    );
-                }
-            if nbWorkers == NBWORKERS_AUTOCPU as std::ffi::c_uint && singleThread == 0 {
-                if defaultLogicalCores != 0 {
-                    nbWorkers = UTIL_countLogicalCores() as std::ffi::c_uint;
-                    if g_displayLevel >= 3 as std::ffi::c_int {
-                        fprintf(
-                            stderr,
-                            b"Note: %d logical core(s) detected \n\0" as *const u8
-                                as *const std::ffi::c_char,
-                            nbWorkers,
-                        );
-                    }
-                } else {
-                    nbWorkers = UTIL_countPhysicalCores() as std::ffi::c_uint;
-                    if g_displayLevel >= 3 as std::ffi::c_int {
-                        fprintf(
-                            stderr,
-                            b"Note: %d physical core(s) detected \n\0" as *const u8
-                                as *const std::ffi::c_char,
-                            nbWorkers,
-                        );
-                    }
-                }
-            }
-            if operation as std::ffi::c_uint == zom_compress as std::ffi::c_int as std::ffi::c_uint
-                && g_displayLevel >= 4 as std::ffi::c_int {
-                    fprintf(
-                        stderr,
-                        b"Compressing with %u worker threads \n\0" as *const u8
+                        b"Note: %d logical core(s) detected \n\0" as *const u8
                             as *const std::ffi::c_char,
                         nbWorkers,
                     );
                 }
-            g_utilDisplayLevel = g_displayLevel;
-            if followLinks == 0 {
-                let mut u: std::ffi::c_uint = 0;
-                let mut fileNamesNb: std::ffi::c_uint = 0;
-                let nbFilenames = (*filenames).tableSize as std::ffi::c_uint;
-                u = 0 as std::ffi::c_int as std::ffi::c_uint;
-                fileNamesNb = 0 as std::ffi::c_int as std::ffi::c_uint;
-                while u < nbFilenames {
-                    if UTIL_isLink(*((*filenames).fileNames).offset(u as isize)) != 0
-                        && UTIL_isFIFO(*((*filenames).fileNames).offset(u as isize)) == 0
-                    {
-                        if g_displayLevel >= 2 as std::ffi::c_int {
-                            fprintf(
-                                stderr,
-                                b"Warning : %s is a symbolic link, ignoring \n\0" as *const u8
-                                    as *const std::ffi::c_char,
-                                *((*filenames).fileNames).offset(u as isize),
-                            );
-                        }
-                    } else {
-                        let fresh3 = fileNamesNb;
-                        fileNamesNb = fileNamesNb.wrapping_add(1);
-                        let fresh4 = &mut (*((*filenames).fileNames).offset(fresh3 as isize));
-                        *fresh4 = *((*filenames).fileNames).offset(u as isize);
-                    }
-                    u = u.wrapping_add(1);
-                    u;
-                }
-                if fileNamesNb == 0 as std::ffi::c_int as std::ffi::c_uint
-                    && nbFilenames > 0 as std::ffi::c_int as std::ffi::c_uint
-                {
-                    operationResult = 1 as std::ffi::c_int;
-                    current_block = 16277912505878250739;
-                } else {
-                    (*filenames).tableSize = fileNamesNb as size_t;
-                    current_block = 665450585616957159;
-                }
             } else {
+                nbWorkers = UTIL_countPhysicalCores() as std::ffi::c_uint;
+                if g_displayLevel >= 3 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Note: %d physical core(s) detected \n\0" as *const u8
+                            as *const std::ffi::c_char,
+                        nbWorkers,
+                    );
+                }
+            }
+        }
+        if operation as std::ffi::c_uint == zom_compress as std::ffi::c_int as std::ffi::c_uint
+            && g_displayLevel >= 4 as std::ffi::c_int
+        {
+            fprintf(
+                stderr,
+                b"Compressing with %u worker threads \n\0" as *const u8 as *const std::ffi::c_char,
+                nbWorkers,
+            );
+        }
+        g_utilDisplayLevel = g_displayLevel;
+        if followLinks == 0 {
+            let mut u: std::ffi::c_uint = 0;
+            let mut fileNamesNb: std::ffi::c_uint = 0;
+            let nbFilenames = (*filenames).tableSize as std::ffi::c_uint;
+            u = 0 as std::ffi::c_int as std::ffi::c_uint;
+            fileNamesNb = 0 as std::ffi::c_int as std::ffi::c_uint;
+            while u < nbFilenames {
+                if UTIL_isLink(*((*filenames).fileNames).offset(u as isize)) != 0
+                    && UTIL_isFIFO(*((*filenames).fileNames).offset(u as isize)) == 0
+                {
+                    if g_displayLevel >= 2 as std::ffi::c_int {
+                        fprintf(
+                            stderr,
+                            b"Warning : %s is a symbolic link, ignoring \n\0" as *const u8
+                                as *const std::ffi::c_char,
+                            *((*filenames).fileNames).offset(u as isize),
+                        );
+                    }
+                } else {
+                    let fresh3 = fileNamesNb;
+                    fileNamesNb = fileNamesNb.wrapping_add(1);
+                    let fresh4 = &mut (*((*filenames).fileNames).offset(fresh3 as isize));
+                    *fresh4 = *((*filenames).fileNames).offset(u as isize);
+                }
+                u = u.wrapping_add(1);
+                u;
+            }
+            if fileNamesNb == 0 as std::ffi::c_int as std::ffi::c_uint
+                && nbFilenames > 0 as std::ffi::c_int as std::ffi::c_uint
+            {
+                operationResult = 1 as std::ffi::c_int;
+                current_block = 16277912505878250739;
+            } else {
+                (*filenames).tableSize = fileNamesNb as size_t;
                 current_block = 665450585616957159;
             }
-            match current_block {
-                16277912505878250739 => {}
-                _ => {
-                    if (*file_of_names).tableSize != 0 {
-                        let nbFileLists = (*file_of_names).tableSize;
-                        let mut flNb: size_t = 0;
-                        flNb = 0 as std::ffi::c_int as size_t;
-                        loop {
-                            if (flNb >= nbFileLists) {
-                                current_block = 2697231409163282360;
-                                break;
+        } else {
+            current_block = 665450585616957159;
+        }
+        match current_block {
+            16277912505878250739 => {}
+            _ => {
+                if (*file_of_names).tableSize != 0 {
+                    let nbFileLists = (*file_of_names).tableSize;
+                    let mut flNb: size_t = 0;
+                    flNb = 0 as std::ffi::c_int as size_t;
+                    loop {
+                        if flNb >= nbFileLists {
+                            current_block = 2697231409163282360;
+                            break;
+                        }
+                        let fnt = UTIL_createFileNamesTable_fromFileList(
+                            *((*file_of_names).fileNames).offset(flNb as isize),
+                        );
+                        if fnt.is_null() {
+                            if g_displayLevel >= 1 as std::ffi::c_int {
+                                fprintf(
+                                    stderr,
+                                    b"zstd: error reading %s \n\0" as *const u8
+                                        as *const std::ffi::c_char,
+                                    *((*file_of_names).fileNames).offset(flNb as isize),
+                                );
                             }
-                            let fnt = UTIL_createFileNamesTable_fromFileList(
-                                *((*file_of_names).fileNames).offset(flNb as isize),
+                            operationResult = 1 as std::ffi::c_int;
+                            current_block = 16277912505878250739;
+                            break;
+                        } else {
+                            filenames = UTIL_mergeFileNamesTable(filenames, fnt);
+                            flNb = flNb.wrapping_add(1);
+                            flNb;
+                        }
+                    }
+                } else {
+                    current_block = 2697231409163282360;
+                }
+                match current_block {
+                    16277912505878250739 => {}
+                    _ => {
+                        nbInputFileNames = (*filenames).tableSize;
+                        if recursive != 0 {
+                            UTIL_expandFNT(&mut filenames, followLinks);
+                        }
+                        if operation as std::ffi::c_uint
+                            == zom_list as std::ffi::c_int as std::ffi::c_uint
+                        {
+                            let ret = FIO_listMultipleFiles(
+                                (*filenames).tableSize as std::ffi::c_uint,
+                                (*filenames).fileNames,
+                                g_displayLevel,
                             );
-                            if fnt.is_null() {
+                            operationResult = ret;
+                        } else if operation as std::ffi::c_uint
+                            == zom_bench as std::ffi::c_int as std::ffi::c_uint
+                        {
+                            if cType as std::ffi::c_uint
+                                != FIO_zstdCompression as std::ffi::c_int as std::ffi::c_uint
+                            {
                                 if g_displayLevel >= 1 as std::ffi::c_int {
                                     fprintf(
                                         stderr,
-                                        b"zstd: error reading %s \n\0" as *const u8
+                                        b"benchmark mode is only compatible with zstd format \n\0"
+                                            as *const u8
                                             as *const std::ffi::c_char,
-                                        *((*file_of_names).fileNames).offset(flNb as isize),
                                     );
                                 }
                                 operationResult = 1 as std::ffi::c_int;
-                                current_block = 16277912505878250739;
-                                break;
                             } else {
-                                filenames = UTIL_mergeFileNamesTable(filenames, fnt);
-                                flNb = flNb.wrapping_add(1);
-                                flNb;
-                            }
-                        }
-                    } else {
-                        current_block = 2697231409163282360;
-                    }
-                    match current_block {
-                        16277912505878250739 => {}
-                        _ => {
-                            nbInputFileNames = (*filenames).tableSize;
-                            if recursive != 0 {
-                                UTIL_expandFNT(&mut filenames, followLinks);
-                            }
-                            if operation as std::ffi::c_uint
-                                == zom_list as std::ffi::c_int as std::ffi::c_uint
-                            {
-                                let ret = FIO_listMultipleFiles(
-                                    (*filenames).tableSize as std::ffi::c_uint,
-                                    (*filenames).fileNames,
-                                    g_displayLevel,
-                                );
-                                operationResult = ret;
-                            } else if operation as std::ffi::c_uint
-                                == zom_bench as std::ffi::c_int as std::ffi::c_uint
-                            {
-                                if cType as std::ffi::c_uint
-                                    != FIO_zstdCompression as std::ffi::c_int as std::ffi::c_uint
+                                benchParams.chunkSizeMax = chunkSize;
+                                benchParams.targetCBlockSize = targetCBlockSize;
+                                benchParams.nbWorkers = nbWorkers as std::ffi::c_int;
+                                benchParams.realTime = setRealTimePrio as std::ffi::c_uint;
+                                benchParams.nbSeconds = bench_nbSeconds;
+                                benchParams.ldmFlag = ldmFlag;
+                                benchParams.ldmMinMatch = g_ldmMinMatch as std::ffi::c_int;
+                                benchParams.ldmHashLog = g_ldmHashLog as std::ffi::c_int;
+                                benchParams.useRowMatchFinder =
+                                    useRowMatchFinder as std::ffi::c_int;
+                                if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as U32 {
+                                    benchParams.ldmBucketSizeLog =
+                                        g_ldmBucketSizeLog as std::ffi::c_int;
+                                }
+                                if g_ldmHashRateLog != LDM_PARAM_DEFAULT as U32 {
+                                    benchParams.ldmHashRateLog =
+                                        g_ldmHashRateLog as std::ffi::c_int;
+                                }
+                                benchParams.literalCompressionMode = literalCompressionMode;
+                                if benchParams.mode as std::ffi::c_uint
+                                    == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
                                 {
-                                    if g_displayLevel >= 1 as std::ffi::c_int {
-                                        fprintf(
-                                            stderr,
-                                            b"benchmark mode is only compatible with zstd format \n\0"
-                                                as *const u8 as *const std::ffi::c_char,
-                                        );
-                                    }
-                                    operationResult = 1 as std::ffi::c_int;
-                                } else {
-                                    benchParams.chunkSizeMax = chunkSize;
-                                    benchParams.targetCBlockSize = targetCBlockSize;
-                                    benchParams.nbWorkers = nbWorkers as std::ffi::c_int;
-                                    benchParams.realTime = setRealTimePrio as std::ffi::c_uint;
-                                    benchParams.nbSeconds = bench_nbSeconds;
-                                    benchParams.ldmFlag = ldmFlag;
-                                    benchParams.ldmMinMatch = g_ldmMinMatch as std::ffi::c_int;
-                                    benchParams.ldmHashLog = g_ldmHashLog as std::ffi::c_int;
-                                    benchParams.useRowMatchFinder =
-                                        useRowMatchFinder as std::ffi::c_int;
-                                    if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as U32 {
-                                        benchParams.ldmBucketSizeLog =
-                                            g_ldmBucketSizeLog as std::ffi::c_int;
-                                    }
-                                    if g_ldmHashRateLog != LDM_PARAM_DEFAULT as U32 {
-                                        benchParams.ldmHashRateLog =
-                                            g_ldmHashRateLog as std::ffi::c_int;
-                                    }
-                                    benchParams.literalCompressionMode = literalCompressionMode;
-                                    if benchParams.mode as std::ffi::c_uint
-                                        == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
-                                    {
-                                        cLevelLast = 0 as std::ffi::c_int;
-                                        cLevel = cLevelLast;
-                                    }
-                                    if cLevel > ZSTD_maxCLevel() {
-                                        cLevel = ZSTD_maxCLevel();
-                                    }
-                                    if cLevelLast > ZSTD_maxCLevel() {
-                                        cLevelLast = ZSTD_maxCLevel();
-                                    }
-                                    if cLevelLast < cLevel {
-                                        cLevelLast = cLevel;
-                                    }
+                                    cLevelLast = 0 as std::ffi::c_int;
+                                    cLevel = cLevelLast;
+                                }
+                                if cLevel > ZSTD_maxCLevel() {
+                                    cLevel = ZSTD_maxCLevel();
+                                }
+                                if cLevelLast > ZSTD_maxCLevel() {
+                                    cLevelLast = ZSTD_maxCLevel();
+                                }
+                                if cLevelLast < cLevel {
+                                    cLevelLast = cLevel;
+                                }
+                                if g_displayLevel >= 3 as std::ffi::c_int {
+                                    fprintf(
+                                        stderr,
+                                        b"Benchmarking \0" as *const u8 as *const std::ffi::c_char,
+                                    );
+                                }
+                                if (*filenames).tableSize > 1 as std::ffi::c_int as size_t
+                                    && g_displayLevel >= 3 as std::ffi::c_int
+                                {
+                                    fprintf(
+                                        stderr,
+                                        b"%u files \0" as *const u8 as *const std::ffi::c_char,
+                                        (*filenames).tableSize as std::ffi::c_uint,
+                                    );
+                                }
+                                if cLevelLast > cLevel {
                                     if g_displayLevel >= 3 as std::ffi::c_int {
                                         fprintf(
                                             stderr,
-                                            b"Benchmarking \0" as *const u8
-                                                as *const std::ffi::c_char,
-                                        );
-                                    }
-                                    if (*filenames).tableSize > 1 as std::ffi::c_int as size_t
-                                        && g_displayLevel >= 3 as std::ffi::c_int {
-                                            fprintf(
-                                                stderr,
-                                                b"%u files \0" as *const u8
-                                                    as *const std::ffi::c_char,
-                                                (*filenames).tableSize as std::ffi::c_uint,
-                                            );
-                                        }
-                                    if cLevelLast > cLevel {
-                                        if g_displayLevel >= 3 as std::ffi::c_int {
-                                            fprintf(
-                                                stderr,
-                                                b"from level %d to %d \0" as *const u8
-                                                    as *const std::ffi::c_char,
-                                                cLevel,
-                                                cLevelLast,
-                                            );
-                                        }
-                                    } else if g_displayLevel >= 3 as std::ffi::c_int {
-                                        fprintf(
-                                            stderr,
-                                            b"at level %d \0" as *const u8
+                                            b"from level %d to %d \0" as *const u8
                                                 as *const std::ffi::c_char,
                                             cLevel,
+                                            cLevelLast,
                                         );
                                     }
-                                    if g_displayLevel >= 3 as std::ffi::c_int {
-                                        fprintf(
-                                            stderr,
-                                            b"using %i threads \n\0" as *const u8
-                                                as *const std::ffi::c_char,
-                                            nbWorkers,
-                                        );
-                                    }
-                                    if (*filenames).tableSize > 0 as std::ffi::c_int as size_t {
-                                        if separateFiles != 0 {
-                                            let mut i: std::ffi::c_uint = 0;
-                                            i = 0 as std::ffi::c_int as std::ffi::c_uint;
-                                            while (i as size_t) < (*filenames).tableSize {
-                                                operationResult = BMK_benchFilesAdvanced(
-                                                    &mut *((*filenames).fileNames)
-                                                        .offset(i as isize),
-                                                    1 as std::ffi::c_int as std::ffi::c_uint,
-                                                    dictFileName,
-                                                    cLevel,
-                                                    cLevelLast,
-                                                    &mut compressionParams,
-                                                    g_displayLevel,
-                                                    &mut benchParams,
-                                                );
-                                                i = i.wrapping_add(1);
-                                                i;
-                                            }
-                                        } else {
+                                } else if g_displayLevel >= 3 as std::ffi::c_int {
+                                    fprintf(
+                                        stderr,
+                                        b"at level %d \0" as *const u8 as *const std::ffi::c_char,
+                                        cLevel,
+                                    );
+                                }
+                                if g_displayLevel >= 3 as std::ffi::c_int {
+                                    fprintf(
+                                        stderr,
+                                        b"using %i threads \n\0" as *const u8
+                                            as *const std::ffi::c_char,
+                                        nbWorkers,
+                                    );
+                                }
+                                if (*filenames).tableSize > 0 as std::ffi::c_int as size_t {
+                                    if separateFiles != 0 {
+                                        let mut i: std::ffi::c_uint = 0;
+                                        i = 0 as std::ffi::c_int as std::ffi::c_uint;
+                                        while (i as size_t) < (*filenames).tableSize {
                                             operationResult = BMK_benchFilesAdvanced(
-                                                (*filenames).fileNames,
-                                                (*filenames).tableSize as std::ffi::c_uint,
+                                                &mut *((*filenames).fileNames).offset(i as isize),
+                                                1 as std::ffi::c_int as std::ffi::c_uint,
                                                 dictFileName,
                                                 cLevel,
                                                 cLevelLast,
@@ -5291,10 +5251,14 @@ unsafe fn main_0(
                                                 g_displayLevel,
                                                 &mut benchParams,
                                             );
+                                            i = i.wrapping_add(1);
+                                            i;
                                         }
                                     } else {
-                                        operationResult = BMK_syntheticTest(
-                                            compressibility,
+                                        operationResult = BMK_benchFilesAdvanced(
+                                            (*filenames).fileNames,
+                                            (*filenames).tableSize as std::ffi::c_uint,
+                                            dictFileName,
                                             cLevel,
                                             cLevelLast,
                                             &mut compressionParams,
@@ -5302,391 +5266,396 @@ unsafe fn main_0(
                                             &mut benchParams,
                                         );
                                     }
-                                }
-                            } else if operation as std::ffi::c_uint
-                                == zom_train as std::ffi::c_int as std::ffi::c_uint
-                            {
-                                let mut zParams = ZDICT_params_t {
-                                    compressionLevel: 0,
-                                    notificationLevel: 0,
-                                    dictID: 0,
-                                };
-                                zParams.compressionLevel = dictCLevel;
-                                zParams.notificationLevel = g_displayLevel as std::ffi::c_uint;
-                                zParams.dictID = dictID;
-                                if dict as std::ffi::c_uint
-                                    == cover as std::ffi::c_int as std::ffi::c_uint
-                                {
-                                    let optimize = (coverParams.k == 0 || coverParams.d == 0)
-                                        as std::ffi::c_int;
-                                    coverParams.nbThreads = nbWorkers;
-                                    coverParams.zParams = zParams;
-                                    operationResult = DiB_trainFromFiles(
-                                        outFileName,
-                                        maxDictSize as size_t,
-                                        (*filenames).fileNames,
-                                        (*filenames).tableSize as std::ffi::c_int,
-                                        chunkSize,
-                                        NULL as *mut ZDICT_legacy_params_t,
-                                        &mut coverParams,
-                                        NULL as *mut ZDICT_fastCover_params_t,
-                                        optimize,
-                                        memLimit,
-                                    );
-                                } else if dict as std::ffi::c_uint
-                                    == fastCover as std::ffi::c_int as std::ffi::c_uint
-                                {
-                                    let optimize_0 = (fastCoverParams.k == 0
-                                        || fastCoverParams.d == 0)
-                                        as std::ffi::c_int;
-                                    fastCoverParams.nbThreads = nbWorkers;
-                                    fastCoverParams.zParams = zParams;
-                                    operationResult = DiB_trainFromFiles(
-                                        outFileName,
-                                        maxDictSize as size_t,
-                                        (*filenames).fileNames,
-                                        (*filenames).tableSize as std::ffi::c_int,
-                                        chunkSize,
-                                        NULL as *mut ZDICT_legacy_params_t,
-                                        NULL as *mut ZDICT_cover_params_t,
-                                        &mut fastCoverParams,
-                                        optimize_0,
-                                        memLimit,
-                                    );
                                 } else {
-                                    let mut dictParams = ZDICT_legacy_params_t {
-                                        selectivityLevel: 0,
-                                        zParams: ZDICT_params_t {
-                                            compressionLevel: 0,
-                                            notificationLevel: 0,
-                                            dictID: 0,
-                                        },
-                                    };
-                                    memset(
-                                        &mut dictParams as *mut ZDICT_legacy_params_t
-                                            as *mut std::ffi::c_void,
-                                        0 as std::ffi::c_int,
-                                        ::core::mem::size_of::<ZDICT_legacy_params_t>()
-                                            as std::ffi::c_ulong,
+                                    operationResult = BMK_syntheticTest(
+                                        compressibility,
+                                        cLevel,
+                                        cLevelLast,
+                                        &mut compressionParams,
+                                        g_displayLevel,
+                                        &mut benchParams,
                                     );
-                                    dictParams.selectivityLevel = dictSelect;
-                                    dictParams.zParams = zParams;
-                                    operationResult = DiB_trainFromFiles(
-                                        outFileName,
-                                        maxDictSize as size_t,
-                                        (*filenames).fileNames,
-                                        (*filenames).tableSize as std::ffi::c_int,
-                                        chunkSize,
-                                        &mut dictParams,
-                                        NULL as *mut ZDICT_cover_params_t,
-                                        NULL as *mut ZDICT_fastCover_params_t,
-                                        0 as std::ffi::c_int,
-                                        memLimit,
-                                    );
+                                }
+                            }
+                        } else if operation as std::ffi::c_uint
+                            == zom_train as std::ffi::c_int as std::ffi::c_uint
+                        {
+                            let mut zParams = ZDICT_params_t {
+                                compressionLevel: 0,
+                                notificationLevel: 0,
+                                dictID: 0,
+                            };
+                            zParams.compressionLevel = dictCLevel;
+                            zParams.notificationLevel = g_displayLevel as std::ffi::c_uint;
+                            zParams.dictID = dictID;
+                            if dict as std::ffi::c_uint
+                                == cover as std::ffi::c_int as std::ffi::c_uint
+                            {
+                                let optimize =
+                                    (coverParams.k == 0 || coverParams.d == 0) as std::ffi::c_int;
+                                coverParams.nbThreads = nbWorkers;
+                                coverParams.zParams = zParams;
+                                operationResult = DiB_trainFromFiles(
+                                    outFileName,
+                                    maxDictSize as size_t,
+                                    (*filenames).fileNames,
+                                    (*filenames).tableSize as std::ffi::c_int,
+                                    chunkSize,
+                                    NULL as *mut ZDICT_legacy_params_t,
+                                    &mut coverParams,
+                                    NULL as *mut ZDICT_fastCover_params_t,
+                                    optimize,
+                                    memLimit,
+                                );
+                            } else if dict as std::ffi::c_uint
+                                == fastCover as std::ffi::c_int as std::ffi::c_uint
+                            {
+                                let optimize_0 = (fastCoverParams.k == 0 || fastCoverParams.d == 0)
+                                    as std::ffi::c_int;
+                                fastCoverParams.nbThreads = nbWorkers;
+                                fastCoverParams.zParams = zParams;
+                                operationResult = DiB_trainFromFiles(
+                                    outFileName,
+                                    maxDictSize as size_t,
+                                    (*filenames).fileNames,
+                                    (*filenames).tableSize as std::ffi::c_int,
+                                    chunkSize,
+                                    NULL as *mut ZDICT_legacy_params_t,
+                                    NULL as *mut ZDICT_cover_params_t,
+                                    &mut fastCoverParams,
+                                    optimize_0,
+                                    memLimit,
+                                );
+                            } else {
+                                let mut dictParams = ZDICT_legacy_params_t {
+                                    selectivityLevel: 0,
+                                    zParams: ZDICT_params_t {
+                                        compressionLevel: 0,
+                                        notificationLevel: 0,
+                                        dictID: 0,
+                                    },
+                                };
+                                memset(
+                                    &mut dictParams as *mut ZDICT_legacy_params_t
+                                        as *mut std::ffi::c_void,
+                                    0 as std::ffi::c_int,
+                                    ::core::mem::size_of::<ZDICT_legacy_params_t>()
+                                        as std::ffi::c_ulong,
+                                );
+                                dictParams.selectivityLevel = dictSelect;
+                                dictParams.zParams = zParams;
+                                operationResult = DiB_trainFromFiles(
+                                    outFileName,
+                                    maxDictSize as size_t,
+                                    (*filenames).fileNames,
+                                    (*filenames).tableSize as std::ffi::c_int,
+                                    chunkSize,
+                                    &mut dictParams,
+                                    NULL as *mut ZDICT_cover_params_t,
+                                    NULL as *mut ZDICT_fastCover_params_t,
+                                    0 as std::ffi::c_int,
+                                    memLimit,
+                                );
+                            }
+                        } else {
+                            if operation as std::ffi::c_uint
+                                == zom_test as std::ffi::c_int as std::ffi::c_uint
+                            {
+                                FIO_setTestMode(prefs, 1 as std::ffi::c_int);
+                                outFileName = nulmark.as_ptr();
+                                removeSrcFile = 0 as std::ffi::c_int;
+                            }
+                            if (*filenames).tableSize == 0 as std::ffi::c_int as size_t {
+                                if nbInputFileNames > 0 as std::ffi::c_int as size_t {
+                                    if g_displayLevel >= 1 as std::ffi::c_int {
+                                        fprintf(
+                                            stderr,
+                                            b"please provide correct input file(s) or non-empty directories -- ignored \n\0"
+                                                as *const u8 as *const std::ffi::c_char,
+                                        );
+                                    }
+                                    operationResult = 0 as std::ffi::c_int;
+                                    current_block = 16277912505878250739;
+                                } else {
+                                    UTIL_refFilename(filenames, stdinmark.as_ptr());
+                                    current_block = 2266625133249563118;
                                 }
                             } else {
-                                if operation as std::ffi::c_uint
-                                    == zom_test as std::ffi::c_int as std::ffi::c_uint
-                                {
-                                    FIO_setTestMode(prefs, 1 as std::ffi::c_int);
-                                    outFileName = nulmark.as_ptr();
-                                    removeSrcFile = 0 as std::ffi::c_int;
-                                }
-                                if (*filenames).tableSize == 0 as std::ffi::c_int as size_t {
-                                    if nbInputFileNames > 0 as std::ffi::c_int as size_t {
+                                current_block = 2266625133249563118;
+                            }
+                            match current_block {
+                                16277912505878250739 => {}
+                                _ => {
+                                    if (*filenames).tableSize == 1 as std::ffi::c_int as size_t
+                                        && strcmp(
+                                            *((*filenames).fileNames)
+                                                .offset(0 as std::ffi::c_int as isize),
+                                            stdinmark.as_ptr(),
+                                        ) == 0
+                                        && outFileName.is_null()
+                                    {
+                                        outFileName = stdoutmark.as_ptr();
+                                    }
+                                    if forceStdin == 0
+                                        && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr())
+                                            != -(1 as std::ffi::c_int)
+                                        && UTIL_isConsole(stdin) != 0
+                                    {
                                         if g_displayLevel >= 1 as std::ffi::c_int {
                                             fprintf(
                                                 stderr,
-                                                b"please provide correct input file(s) or non-empty directories -- ignored \n\0"
-                                                    as *const u8 as *const std::ffi::c_char,
+                                                b"stdin is a console, aborting\n\0" as *const u8
+                                                    as *const std::ffi::c_char,
                                             );
                                         }
-                                        operationResult = 0 as std::ffi::c_int;
-                                        current_block = 16277912505878250739;
-                                    } else {
-                                        UTIL_refFilename(filenames, stdinmark.as_ptr());
-                                        current_block = 2266625133249563118;
-                                    }
-                                } else {
-                                    current_block = 2266625133249563118;
-                                }
-                                match current_block {
-                                    16277912505878250739 => {}
-                                    _ => {
-                                        if (*filenames).tableSize == 1 as std::ffi::c_int as size_t
-                                            && strcmp(
-                                                *((*filenames).fileNames)
-                                                    .offset(0 as std::ffi::c_int as isize),
-                                                stdinmark.as_ptr(),
-                                            ) == 0
-                                            && outFileName.is_null()
-                                        {
-                                            outFileName = stdoutmark.as_ptr();
+                                        operationResult = 1 as std::ffi::c_int;
+                                    } else if (outFileName.is_null()
+                                        || strcmp(outFileName, stdoutmark.as_ptr()) == 0)
+                                        && UTIL_isConsole(stdout) != 0
+                                        && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr())
+                                            != -(1 as std::ffi::c_int)
+                                        && forceStdout == 0
+                                        && operation as std::ffi::c_uint
+                                            != zom_decompress as std::ffi::c_int as std::ffi::c_uint
+                                    {
+                                        if g_displayLevel >= 1 as std::ffi::c_int {
+                                            fprintf(
+                                                stderr,
+                                                b"stdout is a console, aborting\n\0" as *const u8
+                                                    as *const std::ffi::c_char,
+                                            );
                                         }
-                                        if forceStdin == 0
-                                            && UTIL_searchFileNamesTable(
-                                                filenames,
-                                                stdinmark.as_ptr(),
-                                            ) != -(1 as std::ffi::c_int)
-                                            && UTIL_isConsole(stdin) != 0
-                                        {
-                                            if g_displayLevel >= 1 as std::ffi::c_int {
-                                                fprintf(
-                                                    stderr,
-                                                    b"stdin is a console, aborting\n\0" as *const u8
-                                                        as *const std::ffi::c_char,
-                                                );
-                                            }
-                                            operationResult = 1 as std::ffi::c_int;
-                                        } else if (outFileName.is_null()
-                                            || strcmp(outFileName, stdoutmark.as_ptr()) == 0)
-                                            && UTIL_isConsole(stdout) != 0
-                                            && UTIL_searchFileNamesTable(
-                                                filenames,
-                                                stdinmark.as_ptr(),
-                                            ) != -(1 as std::ffi::c_int)
-                                            && forceStdout == 0
-                                            && operation as std::ffi::c_uint
-                                                != zom_decompress as std::ffi::c_int
-                                                    as std::ffi::c_uint
-                                        {
-                                            if g_displayLevel >= 1 as std::ffi::c_int {
-                                                fprintf(
-                                                    stderr,
-                                                    b"stdout is a console, aborting\n\0"
-                                                        as *const u8
-                                                        as *const std::ffi::c_char,
-                                                );
-                                            }
-                                            operationResult = 1 as std::ffi::c_int;
+                                        operationResult = 1 as std::ffi::c_int;
+                                    } else {
+                                        let maxCLevel = if ultra != 0 {
+                                            ZSTD_maxCLevel()
                                         } else {
-                                            let maxCLevel = if ultra != 0 {
-                                                ZSTD_maxCLevel()
-                                            } else {
-                                                ZSTDCLI_CLEVEL_MAX
-                                            };
-                                            if cLevel > maxCLevel {
-                                                if g_displayLevel >= 2 as std::ffi::c_int {
+                                            ZSTDCLI_CLEVEL_MAX
+                                        };
+                                        if cLevel > maxCLevel {
+                                            if g_displayLevel >= 2 as std::ffi::c_int {
+                                                fprintf(
+                                                    stderr,
+                                                    b"Warning : compression level higher than max, reduced to %i \n\0"
+                                                        as *const u8 as *const std::ffi::c_char,
+                                                    maxCLevel,
+                                                );
+                                            }
+                                            cLevel = maxCLevel;
+                                        }
+                                        if showDefaultCParams != 0 {
+                                            if operation as std::ffi::c_uint
+                                                == zom_decompress as std::ffi::c_int
+                                                    as std::ffi::c_uint
+                                            {
+                                                if g_displayLevel >= 1 as std::ffi::c_int {
                                                     fprintf(
                                                         stderr,
-                                                        b"Warning : compression level higher than max, reduced to %i \n\0"
+                                                        b"error : can't use --show-default-cparams in decompression mode \n\0"
                                                             as *const u8 as *const std::ffi::c_char,
-                                                        maxCLevel,
                                                     );
                                                 }
-                                                cLevel = maxCLevel;
+                                                operationResult = 1 as std::ffi::c_int;
+                                                current_block = 16277912505878250739;
+                                            } else {
+                                                current_block = 16042738330116972545;
                                             }
-                                            if showDefaultCParams != 0 {
-                                                if operation as std::ffi::c_uint
-                                                    == zom_decompress as std::ffi::c_int
-                                                        as std::ffi::c_uint
+                                        } else {
+                                            current_block = 16042738330116972545;
+                                        }
+                                        match current_block {
+                                            16277912505878250739 => {}
+                                            _ => {
+                                                if !dictFileName.is_null()
+                                                    && !patchFromDictFileName.is_null()
                                                 {
                                                     if g_displayLevel >= 1 as std::ffi::c_int {
                                                         fprintf(
                                                             stderr,
-                                                            b"error : can't use --show-default-cparams in decompression mode \n\0"
+                                                            b"error : can't use -D and --patch-from=# at the same time \n\0"
                                                                 as *const u8 as *const std::ffi::c_char,
                                                         );
                                                     }
                                                     operationResult = 1 as std::ffi::c_int;
-                                                    current_block = 16277912505878250739;
+                                                } else if !patchFromDictFileName.is_null()
+                                                    && (*filenames).tableSize
+                                                        > 1 as std::ffi::c_int as size_t
+                                                {
+                                                    if g_displayLevel >= 1 as std::ffi::c_int {
+                                                        fprintf(
+                                                            stderr,
+                                                            b"error : can't use --patch-from=# on multiple files \n\0"
+                                                                as *const u8 as *const std::ffi::c_char,
+                                                        );
+                                                    }
+                                                    operationResult = 1 as std::ffi::c_int;
                                                 } else {
-                                                    current_block = 16042738330116972545;
-                                                }
-                                            } else {
-                                                current_block = 16042738330116972545;
-                                            }
-                                            match current_block {
-                                                16277912505878250739 => {}
-                                                _ => {
-                                                    if !dictFileName.is_null()
-                                                        && !patchFromDictFileName.is_null()
+                                                    hasStdout = (!outFileName.is_null()
+                                                        && strcmp(outFileName, stdoutmark.as_ptr())
+                                                            == 0)
+                                                        as std::ffi::c_int;
+                                                    if hasStdout != 0
+                                                        && g_displayLevel == 2 as std::ffi::c_int
                                                     {
-                                                        if g_displayLevel >= 1 as std::ffi::c_int {
+                                                        g_displayLevel = 1 as std::ffi::c_int;
+                                                    }
+                                                    if UTIL_isConsole(stderr) == 0
+                                                        && progress as std::ffi::c_uint
+                                                            != FIO_ps_always as std::ffi::c_int
+                                                                as std::ffi::c_uint
+                                                    {
+                                                        progress = FIO_ps_never;
+                                                    }
+                                                    FIO_setProgressSetting(progress);
+                                                    if hasStdout != 0 && removeSrcFile != 0 {
+                                                        if g_displayLevel >= 3 as std::ffi::c_int {
                                                             fprintf(
                                                                 stderr,
-                                                                b"error : can't use -D and --patch-from=# at the same time \n\0"
+                                                                b"Note: src files are not removed when output is stdout \n\0"
                                                                     as *const u8 as *const std::ffi::c_char,
                                                             );
                                                         }
-                                                        operationResult = 1 as std::ffi::c_int;
-                                                    } else if !patchFromDictFileName.is_null()
-                                                        && (*filenames).tableSize
-                                                            > 1 as std::ffi::c_int as size_t
+                                                        removeSrcFile = 0 as std::ffi::c_int;
+                                                    }
+                                                    FIO_setRemoveSrcFile(prefs, removeSrcFile);
+                                                    FIO_setHasStdoutOutput(fCtx, hasStdout);
+                                                    FIO_setNbFilesTotal(
+                                                        fCtx,
+                                                        (*filenames).tableSize as std::ffi::c_int,
+                                                    );
+                                                    FIO_determineHasStdinInput(fCtx, filenames);
+                                                    FIO_setNotificationLevel(g_displayLevel);
+                                                    FIO_setAllowBlockDevices(
+                                                        prefs,
+                                                        allowBlockDevices,
+                                                    );
+                                                    FIO_setPatchFromMode(
+                                                        prefs,
+                                                        (patchFromDictFileName
+                                                            != NULL as *const std::ffi::c_char)
+                                                            as std::ffi::c_int,
+                                                    );
+                                                    FIO_setMMapDict(prefs, mmapDict);
+                                                    if memLimit
+                                                        == 0 as std::ffi::c_int as std::ffi::c_uint
                                                     {
-                                                        if g_displayLevel >= 1 as std::ffi::c_int {
-                                                            fprintf(
-                                                                stderr,
-                                                                b"error : can't use --patch-from=# on multiple files \n\0"
-                                                                    as *const u8 as *const std::ffi::c_char,
-                                                            );
-                                                        }
-                                                        operationResult = 1 as std::ffi::c_int;
-                                                    } else {
-                                                        hasStdout = (!outFileName.is_null()
-                                                            && strcmp(
-                                                                outFileName,
-                                                                stdoutmark.as_ptr(),
-                                                            ) == 0)
-                                                            as std::ffi::c_int;
-                                                        if hasStdout != 0
-                                                            && g_displayLevel
-                                                                == 2 as std::ffi::c_int
-                                                        {
-                                                            g_displayLevel = 1 as std::ffi::c_int;
-                                                        }
-                                                        if UTIL_isConsole(stderr) == 0
-                                                            && progress as std::ffi::c_uint
-                                                                != FIO_ps_always as std::ffi::c_int
-                                                                    as std::ffi::c_uint
-                                                        {
-                                                            progress = FIO_ps_never;
-                                                        }
-                                                        FIO_setProgressSetting(progress);
-                                                        if hasStdout != 0 && removeSrcFile != 0 {
-                                                            if g_displayLevel
-                                                                >= 3 as std::ffi::c_int
-                                                            {
-                                                                fprintf(
-                                                                    stderr,
-                                                                    b"Note: src files are not removed when output is stdout \n\0"
-                                                                        as *const u8 as *const std::ffi::c_char,
-                                                                );
-                                                            }
-                                                            removeSrcFile = 0 as std::ffi::c_int;
-                                                        }
-                                                        FIO_setRemoveSrcFile(prefs, removeSrcFile);
-                                                        FIO_setHasStdoutOutput(fCtx, hasStdout);
-                                                        FIO_setNbFilesTotal(
-                                                            fCtx,
-                                                            (*filenames).tableSize
-                                                                as std::ffi::c_int,
-                                                        );
-                                                        FIO_determineHasStdinInput(fCtx, filenames);
-                                                        FIO_setNotificationLevel(g_displayLevel);
-                                                        FIO_setAllowBlockDevices(
-                                                            prefs,
-                                                            allowBlockDevices,
-                                                        );
-                                                        FIO_setPatchFromMode(
-                                                            prefs,
-                                                            (patchFromDictFileName
-                                                                != NULL as *const std::ffi::c_char)
-                                                                as std::ffi::c_int,
-                                                        );
-                                                        FIO_setMMapDict(prefs, mmapDict);
-                                                        if memLimit
+                                                        if compressionParams.windowLog
                                                             == 0 as std::ffi::c_int
                                                                 as std::ffi::c_uint
                                                         {
-                                                            if compressionParams.windowLog
-                                                                == 0 as std::ffi::c_int
-                                                                    as std::ffi::c_uint
-                                                            {
-                                                                memLimit = (1 as std::ffi::c_int
-                                                                    as U32)
-                                                                    << g_defaultMaxWindowLog;
-                                                            } else {
-                                                                memLimit = (1 as std::ffi::c_int
-                                                                    as U32)
-                                                                    << (compressionParams
-                                                                        .windowLog
-                                                                        & 31 as std::ffi::c_int
-                                                                            as std::ffi::c_uint);
-                                                            }
+                                                            memLimit = (1 as std::ffi::c_int
+                                                                as U32)
+                                                                << g_defaultMaxWindowLog;
+                                                        } else {
+                                                            memLimit = (1 as std::ffi::c_int
+                                                                as U32)
+                                                                << (compressionParams.windowLog
+                                                                    & 31 as std::ffi::c_int
+                                                                        as std::ffi::c_uint);
                                                         }
-                                                        if !patchFromDictFileName.is_null() {
-                                                            dictFileName = patchFromDictFileName;
-                                                        }
-                                                        FIO_setMemLimit(prefs, memLimit);
-                                                        if operation as std::ffi::c_uint
-                                                            == zom_compress as std::ffi::c_int
-                                                                as std::ffi::c_uint
+                                                    }
+                                                    if !patchFromDictFileName.is_null() {
+                                                        dictFileName = patchFromDictFileName;
+                                                    }
+                                                    FIO_setMemLimit(prefs, memLimit);
+                                                    if operation as std::ffi::c_uint
+                                                        == zom_compress as std::ffi::c_int
+                                                            as std::ffi::c_uint
+                                                    {
+                                                        FIO_setCompressionType(prefs, cType);
+                                                        FIO_setContentSize(prefs, contentSize);
+                                                        FIO_setNbWorkers(
+                                                            prefs,
+                                                            nbWorkers as std::ffi::c_int,
+                                                        );
+                                                        FIO_setJobSize(
+                                                            prefs,
+                                                            chunkSize as std::ffi::c_int,
+                                                        );
+                                                        if g_overlapLog
+                                                            != OVERLAP_LOG_DEFAULT as U32
                                                         {
-                                                            FIO_setCompressionType(prefs, cType);
-                                                            FIO_setContentSize(prefs, contentSize);
-                                                            FIO_setNbWorkers(
+                                                            FIO_setOverlapLog(
                                                                 prefs,
-                                                                nbWorkers as std::ffi::c_int,
+                                                                g_overlapLog as std::ffi::c_int,
                                                             );
-                                                            FIO_setJobSize(
+                                                        }
+                                                        FIO_setLdmFlag(
+                                                            prefs,
+                                                            ldmFlag as std::ffi::c_uint,
+                                                        );
+                                                        FIO_setLdmHashLog(
+                                                            prefs,
+                                                            g_ldmHashLog as std::ffi::c_int,
+                                                        );
+                                                        FIO_setLdmMinMatch(
+                                                            prefs,
+                                                            g_ldmMinMatch as std::ffi::c_int,
+                                                        );
+                                                        if g_ldmBucketSizeLog
+                                                            != LDM_PARAM_DEFAULT as U32
+                                                        {
+                                                            FIO_setLdmBucketSizeLog(
                                                                 prefs,
-                                                                chunkSize as std::ffi::c_int,
-                                                            );
-                                                            if g_overlapLog
-                                                                != OVERLAP_LOG_DEFAULT as U32
-                                                            {
-                                                                FIO_setOverlapLog(
-                                                                    prefs,
-                                                                    g_overlapLog as std::ffi::c_int,
-                                                                );
-                                                            }
-                                                            FIO_setLdmFlag(
-                                                                prefs,
-                                                                ldmFlag as std::ffi::c_uint,
-                                                            );
-                                                            FIO_setLdmHashLog(
-                                                                prefs,
-                                                                g_ldmHashLog as std::ffi::c_int,
-                                                            );
-                                                            FIO_setLdmMinMatch(
-                                                                prefs,
-                                                                g_ldmMinMatch as std::ffi::c_int,
-                                                            );
-                                                            if g_ldmBucketSizeLog
-                                                                != LDM_PARAM_DEFAULT as U32
-                                                            {
-                                                                FIO_setLdmBucketSizeLog(
-                                                                    prefs,
-                                                                    g_ldmBucketSizeLog
-                                                                        as std::ffi::c_int,
-                                                                );
-                                                            }
-                                                            if g_ldmHashRateLog
-                                                                != LDM_PARAM_DEFAULT as U32
-                                                            {
-                                                                FIO_setLdmHashRateLog(
-                                                                    prefs,
-                                                                    g_ldmHashRateLog
-                                                                        as std::ffi::c_int,
-                                                                );
-                                                            }
-                                                            FIO_setAdaptiveMode(prefs, adapt);
-                                                            FIO_setUseRowMatchFinder(
-                                                                prefs,
-                                                                useRowMatchFinder
+                                                                g_ldmBucketSizeLog
                                                                     as std::ffi::c_int,
                                                             );
-                                                            FIO_setAdaptMin(prefs, adaptMin);
-                                                            FIO_setAdaptMax(prefs, adaptMax);
-                                                            FIO_setRsyncable(prefs, rsyncable);
-                                                            FIO_setStreamSrcSize(
+                                                        }
+                                                        if g_ldmHashRateLog
+                                                            != LDM_PARAM_DEFAULT as U32
+                                                        {
+                                                            FIO_setLdmHashRateLog(
                                                                 prefs,
-                                                                streamSrcSize,
+                                                                g_ldmHashRateLog as std::ffi::c_int,
                                                             );
-                                                            FIO_setTargetCBlockSize(
-                                                                prefs,
-                                                                targetCBlockSize,
+                                                        }
+                                                        FIO_setAdaptiveMode(prefs, adapt);
+                                                        FIO_setUseRowMatchFinder(
+                                                            prefs,
+                                                            useRowMatchFinder as std::ffi::c_int,
+                                                        );
+                                                        FIO_setAdaptMin(prefs, adaptMin);
+                                                        FIO_setAdaptMax(prefs, adaptMax);
+                                                        FIO_setRsyncable(prefs, rsyncable);
+                                                        FIO_setStreamSrcSize(prefs, streamSrcSize);
+                                                        FIO_setTargetCBlockSize(
+                                                            prefs,
+                                                            targetCBlockSize,
+                                                        );
+                                                        FIO_setSrcSizeHint(prefs, srcSizeHint);
+                                                        FIO_setLiteralCompressionMode(
+                                                            prefs,
+                                                            literalCompressionMode,
+                                                        );
+                                                        FIO_setSparseWrite(
+                                                            prefs,
+                                                            0 as std::ffi::c_int,
+                                                        );
+                                                        if adaptMin > cLevel {
+                                                            cLevel = adaptMin;
+                                                        }
+                                                        if adaptMax < cLevel {
+                                                            cLevel = adaptMax;
+                                                        }
+                                                        let mut strategyBounds =
+                                                            ZSTD_cParam_getBounds(ZSTD_c_strategy);
+                                                        if 9 as std::ffi::c_int
+                                                            == strategyBounds.upperBound
+                                                        {
+                                                        } else {
+                                                            __assert_fail(
+                                                                b"ZSTD_NB_STRATEGIES == strategyBounds.upperBound\0"
+                                                                    as *const u8 as *const std::ffi::c_char,
+                                                                b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
+                                                                1618 as std::ffi::c_int as std::ffi::c_uint,
+                                                                (*::core::mem::transmute::<
+                                                                    &[u8; 29],
+                                                                    &[std::ffi::c_char; 29],
+                                                                >(b"int main(int, const char **)\0"))
+                                                                    .as_ptr(),
                                                             );
-                                                            FIO_setSrcSizeHint(prefs, srcSizeHint);
-                                                            FIO_setLiteralCompressionMode(
-                                                                prefs,
-                                                                literalCompressionMode,
-                                                            );
-                                                            FIO_setSparseWrite(
-                                                                prefs,
-                                                                0 as std::ffi::c_int,
-                                                            );
-                                                            if adaptMin > cLevel {
-                                                                cLevel = adaptMin;
-                                                            }
-                                                            if adaptMax < cLevel {
-                                                                cLevel = adaptMax;
-                                                            }
-                                                            let mut strategyBounds =
-                                                                ZSTD_cParam_getBounds(
-                                                                    ZSTD_c_strategy,
-                                                                );
+                                                        }
+                                                        'c_18725: {
                                                             if 9 as std::ffi::c_int
                                                                 == strategyBounds.upperBound
                                                             {
@@ -5703,131 +5672,98 @@ unsafe fn main_0(
                                                                         .as_ptr(),
                                                                 );
                                                             }
-                                                            'c_18725: {
-                                                                if 9 as std::ffi::c_int
-                                                                    == strategyBounds.upperBound
-                                                                {
-                                                                } else {
-                                                                    __assert_fail(
-                                                                        b"ZSTD_NB_STRATEGIES == strategyBounds.upperBound\0"
-                                                                            as *const u8 as *const std::ffi::c_char,
-                                                                        b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
-                                                                        1618 as std::ffi::c_int as std::ffi::c_uint,
-                                                                        (*::core::mem::transmute::<
-                                                                            &[u8; 29],
-                                                                            &[std::ffi::c_char; 29],
-                                                                        >(b"int main(int, const char **)\0"))
-                                                                            .as_ptr(),
-                                                                    );
-                                                                }
-                                                            };
-                                                            if showDefaultCParams != 0
-                                                                || g_displayLevel
-                                                                    >= 4 as std::ffi::c_int
-                                                            {
-                                                                let mut fileNb: size_t = 0;
-                                                                fileNb =
-                                                                    0 as std::ffi::c_int as size_t;
-                                                                while fileNb
-                                                                    < (*filenames).tableSize
-                                                                {
-                                                                    if showDefaultCParams != 0 {
-                                                                        printDefaultCParams(
-                                                                            *((*filenames)
-                                                                                .fileNames)
-                                                                                .offset(
-                                                                                    fileNb as isize,
-                                                                                ),
-                                                                            dictFileName,
-                                                                            cLevel,
-                                                                        );
-                                                                    }
-                                                                    if g_displayLevel
-                                                                        >= 4 as std::ffi::c_int
-                                                                    {
-                                                                        printActualCParams(
-                                                                            *((*filenames)
-                                                                                .fileNames)
-                                                                                .offset(
-                                                                                    fileNb as isize,
-                                                                                ),
-                                                                            dictFileName,
-                                                                            cLevel,
-                                                                            &mut compressionParams,
-                                                                        );
-                                                                    }
-                                                                    fileNb = fileNb.wrapping_add(1);
-                                                                    fileNb;
-                                                                }
-                                                            }
-                                                            if g_displayLevel
+                                                        };
+                                                        if showDefaultCParams != 0
+                                                            || g_displayLevel
                                                                 >= 4 as std::ffi::c_int
-                                                            {
-                                                                FIO_displayCompressionParameters(
-                                                                    prefs,
-                                                                );
-                                                            }
-                                                            if (*filenames).tableSize
-                                                                == 1 as std::ffi::c_int as size_t
-                                                                && !outFileName.is_null()
-                                                            {
-                                                                operationResult =
-                                                                    FIO_compressFilename(
-                                                                        fCtx,
-                                                                        prefs,
-                                                                        outFileName,
+                                                        {
+                                                            let mut fileNb: size_t = 0;
+                                                            fileNb = 0 as std::ffi::c_int as size_t;
+                                                            while fileNb < (*filenames).tableSize {
+                                                                if showDefaultCParams != 0 {
+                                                                    printDefaultCParams(
                                                                         *((*filenames).fileNames)
                                                                             .offset(
-                                                                                0 as std::ffi::c_int
-                                                                                    as isize,
+                                                                                fileNb as isize,
                                                                             ),
                                                                         dictFileName,
                                                                         cLevel,
-                                                                        compressionParams,
                                                                     );
-                                                            } else {
-                                                                operationResult =
-                                                                    FIO_compressMultipleFilenames(
-                                                                        fCtx,
-                                                                        prefs,
-                                                                        (*filenames).fileNames,
-                                                                        outMirroredDirName,
-                                                                        outDirName,
-                                                                        outFileName,
-                                                                        suffix,
+                                                                }
+                                                                if g_displayLevel
+                                                                    >= 4 as std::ffi::c_int
+                                                                {
+                                                                    printActualCParams(
+                                                                        *((*filenames).fileNames)
+                                                                            .offset(
+                                                                                fileNb as isize,
+                                                                            ),
                                                                         dictFileName,
                                                                         cLevel,
-                                                                        compressionParams,
+                                                                        &mut compressionParams,
                                                                     );
+                                                                }
+                                                                fileNb = fileNb.wrapping_add(1);
+                                                                fileNb;
                                                             }
-                                                        } else if (*filenames).tableSize
+                                                        }
+                                                        if g_displayLevel >= 4 as std::ffi::c_int {
+                                                            FIO_displayCompressionParameters(prefs);
+                                                        }
+                                                        if (*filenames).tableSize
                                                             == 1 as std::ffi::c_int as size_t
                                                             && !outFileName.is_null()
                                                         {
-                                                            operationResult =
-                                                                FIO_decompressFilename(
-                                                                    fCtx,
-                                                                    prefs,
-                                                                    outFileName,
-                                                                    *((*filenames).fileNames)
-                                                                        .offset(
-                                                                            0 as std::ffi::c_int
-                                                                                as isize,
-                                                                        ),
-                                                                    dictFileName,
-                                                                );
+                                                            operationResult = FIO_compressFilename(
+                                                                fCtx,
+                                                                prefs,
+                                                                outFileName,
+                                                                *((*filenames).fileNames).offset(
+                                                                    0 as std::ffi::c_int as isize,
+                                                                ),
+                                                                dictFileName,
+                                                                cLevel,
+                                                                compressionParams,
+                                                            );
                                                         } else {
                                                             operationResult =
-                                                                FIO_decompressMultipleFilenames(
+                                                                FIO_compressMultipleFilenames(
                                                                     fCtx,
                                                                     prefs,
                                                                     (*filenames).fileNames,
                                                                     outMirroredDirName,
                                                                     outDirName,
                                                                     outFileName,
+                                                                    suffix,
                                                                     dictFileName,
+                                                                    cLevel,
+                                                                    compressionParams,
                                                                 );
                                                         }
+                                                    } else if (*filenames).tableSize
+                                                        == 1 as std::ffi::c_int as size_t
+                                                        && !outFileName.is_null()
+                                                    {
+                                                        operationResult = FIO_decompressFilename(
+                                                            fCtx,
+                                                            prefs,
+                                                            outFileName,
+                                                            *((*filenames).fileNames).offset(
+                                                                0 as std::ffi::c_int as isize,
+                                                            ),
+                                                            dictFileName,
+                                                        );
+                                                    } else {
+                                                        operationResult =
+                                                            FIO_decompressMultipleFilenames(
+                                                                fCtx,
+                                                                prefs,
+                                                                (*filenames).fileNames,
+                                                                outMirroredDirName,
+                                                                outDirName,
+                                                                outFileName,
+                                                                dictFileName,
+                                                            );
                                                     }
                                                 }
                                             }
@@ -5840,7 +5776,6 @@ unsafe fn main_0(
                 }
             }
         }
-        _ => {}
     }
     FIO_freePreferences(prefs);
     FIO_freeContext(fCtx);

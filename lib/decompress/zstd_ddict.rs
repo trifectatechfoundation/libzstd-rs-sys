@@ -277,7 +277,7 @@ unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
 #[inline]
 unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
     if MEM_isLittleEndian() != 0 {
-        return MEM_read32(memPtr);
+        MEM_read32(memPtr)
     } else {
         MEM_swap32(MEM_read32(memPtr))
     }
@@ -477,7 +477,6 @@ pub unsafe extern "C" fn ZSTD_createDDict(
     mut dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
-        
         ZSTD_customMem {
             customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
                 NULL as libc::intptr_t,
@@ -496,7 +495,6 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
     mut dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
-        
         ZSTD_customMem {
             customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
                 NULL as libc::intptr_t,
@@ -577,13 +575,13 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
     (::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong).wrapping_add(
-        (if dictLoadMethod as std::ffi::c_uint
+        if dictLoadMethod as std::ffi::c_uint
             == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
         {
             0 as std::ffi::c_int as size_t
         } else {
             dictSize
-        }),
+        },
     )
 }
 #[no_mangle]
@@ -592,11 +590,11 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
         return 0 as std::ffi::c_int as size_t;
     }
     (::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong).wrapping_add(
-        (if !((*ddict).dictBuffer).is_null() {
+        if !((*ddict).dictBuffer).is_null() {
             (*ddict).dictSize
         } else {
             0 as std::ffi::c_int as size_t
-        }),
+        },
     )
 }
 #[no_mangle]
