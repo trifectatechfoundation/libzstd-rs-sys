@@ -13568,8 +13568,7 @@ pub unsafe extern "C" fn ZSTD_endStream(
         .wrapping_add(checksumSize);
     return toFlush;
 }
-#[no_mangle]
-pub unsafe extern "C" fn ZSTD_maxCLevel() -> std::ffi::c_int {
+pub const fn ZSTD_maxCLevel() -> std::ffi::c_int {
     return ZSTD_MAX_CLEVEL;
 }
 #[no_mangle]
@@ -14763,8 +14762,8 @@ static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
         },
     ],
 ];
-#[no_mangle]
-pub unsafe extern "C" fn ZSTD_minCLevel() -> std::ffi::c_int {
+
+pub const fn ZSTD_minCLevel() -> std::ffi::c_int {
     return -ZSTD_TARGETLENGTH_MAX;
 }
 unsafe extern "C" fn ZSTD_dedicatedDictSearch_getCParams(

@@ -1,3 +1,4 @@
+use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use ::libc;
 extern "C" {
     pub type _IO_wide_data;
@@ -57,8 +58,6 @@ extern "C" {
         __function: *const std::ffi::c_char,
     ) -> !;
     fn ZSTD_versionString() -> *const std::ffi::c_char;
-    fn ZSTD_minCLevel() -> std::ffi::c_int;
-    fn ZSTD_maxCLevel() -> std::ffi::c_int;
     fn ZSTD_cParam_getBounds(cParam: ZSTD_cParameter) -> ZSTD_bounds;
     fn ZSTD_getCParams(
         compressionLevel: std::ffi::c_int,

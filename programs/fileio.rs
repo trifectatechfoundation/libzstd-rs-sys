@@ -1,4 +1,6 @@
 use ::libc;
+
+use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -133,8 +135,6 @@ extern "C" {
     fn ZSTD_isError(result: size_t) -> std::ffi::c_uint;
     fn ZSTD_getErrorCode(functionResult: size_t) -> ZSTD_ErrorCode;
     fn ZSTD_getErrorName(result: size_t) -> *const std::ffi::c_char;
-    fn ZSTD_minCLevel() -> std::ffi::c_int;
-    fn ZSTD_maxCLevel() -> std::ffi::c_int;
     fn ZSTD_createCCtx() -> *mut ZSTD_CCtx;
     fn ZSTD_CCtx_setParameter(
         cctx: *mut ZSTD_CCtx,
