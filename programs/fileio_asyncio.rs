@@ -1,0 +1,2030 @@
+use ::libc;
+extern "C" {
+    pub type _IO_wide_data;
+    pub type _IO_codecvt;
+    pub type _IO_marker;
+    pub type POOL_ctx_s;
+    static mut stderr: *mut FILE;
+    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
+    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
+    fn fread(
+        _: *mut std::ffi::c_void,
+        _: std::ffi::c_ulong,
+        _: std::ffi::c_ulong,
+        _: *mut FILE,
+    ) -> std::ffi::c_ulong;
+    fn fwrite(
+        _: *const std::ffi::c_void,
+        _: std::ffi::c_ulong,
+        _: std::ffi::c_ulong,
+        _: *mut FILE,
+    ) -> std::ffi::c_ulong;
+    fn fseek(
+        __stream: *mut FILE,
+        __off: std::ffi::c_long,
+        __whence: std::ffi::c_int,
+    ) -> std::ffi::c_int;
+    fn feof(__stream: *mut FILE) -> std::ffi::c_int;
+    fn ferror(__stream: *mut FILE) -> std::ffi::c_int;
+    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
+    fn free(_: *mut std::ffi::c_void);
+    fn exit(_: std::ffi::c_int) -> !;
+    fn __assert_fail(
+        __assertion: *const std::ffi::c_char,
+        __file: *const std::ffi::c_char,
+        __line: std::ffi::c_uint,
+        __function: *const std::ffi::c_char,
+    ) -> !;
+    fn __errno_location() -> *mut std::ffi::c_int;
+    fn memcpy(
+        _: *mut std::ffi::c_void,
+        _: *const std::ffi::c_void,
+        _: std::ffi::c_ulong,
+    ) -> *mut std::ffi::c_void;
+    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
+    fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx;
+    fn POOL_free(ctx: *mut POOL_ctx);
+    fn POOL_joinJobs(ctx: *mut POOL_ctx);
+    fn POOL_add(ctx: *mut POOL_ctx, function: POOL_function, opaque: *mut std::ffi::c_void);
+    fn pthread_mutex_init(
+        __mutex: *mut pthread_mutex_t,
+        __mutexattr: *const pthread_mutexattr_t,
+    ) -> std::ffi::c_int;
+    fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
+    fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
+    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
+    fn pthread_cond_init(
+        __cond: *mut pthread_cond_t,
+        __cond_attr: *const pthread_condattr_t,
+    ) -> std::ffi::c_int;
+    fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> std::ffi::c_int;
+    fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> std::ffi::c_int;
+    fn pthread_cond_wait(
+        __cond: *mut pthread_cond_t,
+        __mutex: *mut pthread_mutex_t,
+    ) -> std::ffi::c_int;
+    static mut g_display_prefs: FIO_display_prefs_t;
+}
+pub type __uint8_t = std::ffi::c_uchar;
+pub type __uint64_t = std::ffi::c_ulong;
+pub type __off_t = std::ffi::c_long;
+pub type __off64_t = std::ffi::c_long;
+pub type size_t = std::ffi::c_ulong;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct _IO_FILE {
+    pub _flags: std::ffi::c_int,
+    pub _IO_read_ptr: *mut std::ffi::c_char,
+    pub _IO_read_end: *mut std::ffi::c_char,
+    pub _IO_read_base: *mut std::ffi::c_char,
+    pub _IO_write_base: *mut std::ffi::c_char,
+    pub _IO_write_ptr: *mut std::ffi::c_char,
+    pub _IO_write_end: *mut std::ffi::c_char,
+    pub _IO_buf_base: *mut std::ffi::c_char,
+    pub _IO_buf_end: *mut std::ffi::c_char,
+    pub _IO_save_base: *mut std::ffi::c_char,
+    pub _IO_backup_base: *mut std::ffi::c_char,
+    pub _IO_save_end: *mut std::ffi::c_char,
+    pub _markers: *mut _IO_marker,
+    pub _chain: *mut _IO_FILE,
+    pub _fileno: std::ffi::c_int,
+    pub _flags2: std::ffi::c_int,
+    pub _old_offset: __off_t,
+    pub _cur_column: std::ffi::c_ushort,
+    pub _vtable_offset: std::ffi::c_schar,
+    pub _shortbuf: [std::ffi::c_char; 1],
+    pub _lock: *mut std::ffi::c_void,
+    pub _offset: __off64_t,
+    pub _codecvt: *mut _IO_codecvt,
+    pub _wide_data: *mut _IO_wide_data,
+    pub _freeres_list: *mut _IO_FILE,
+    pub _freeres_buf: *mut std::ffi::c_void,
+    pub __pad5: size_t,
+    pub _mode: std::ffi::c_int,
+    pub _unused2: [std::ffi::c_char; 20],
+}
+pub type _IO_lock_t = ();
+pub type FILE = _IO_FILE;
+pub type uint8_t = __uint8_t;
+pub type uint64_t = __uint64_t;
+pub type U8 = uint8_t;
+pub type U64 = uint64_t;
+pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
+pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
+pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
+pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct FIO_display_prefs_s {
+    pub displayLevel: std::ffi::c_int,
+    pub progressSetting: FIO_progressSetting_e,
+}
+pub type FIO_progressSetting_e = std::ffi::c_uint;
+pub const FIO_ps_always: FIO_progressSetting_e = 2;
+pub const FIO_ps_never: FIO_progressSetting_e = 1;
+pub const FIO_ps_auto: FIO_progressSetting_e = 0;
+pub type FIO_display_prefs_t = FIO_display_prefs_s;
+pub type FIO_compressionType_t = std::ffi::c_uint;
+pub const FIO_lz4Compression: FIO_compressionType_t = 4;
+pub const FIO_lzmaCompression: FIO_compressionType_t = 3;
+pub const FIO_xzCompression: FIO_compressionType_t = 2;
+pub const FIO_gzipCompression: FIO_compressionType_t = 1;
+pub const FIO_zstdCompression: FIO_compressionType_t = 0;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct FIO_prefs_s {
+    pub compressionType: FIO_compressionType_t,
+    pub sparseFileSupport: std::ffi::c_int,
+    pub dictIDFlag: std::ffi::c_int,
+    pub checksumFlag: std::ffi::c_int,
+    pub jobSize: std::ffi::c_int,
+    pub overlapLog: std::ffi::c_int,
+    pub adaptiveMode: std::ffi::c_int,
+    pub useRowMatchFinder: std::ffi::c_int,
+    pub rsyncable: std::ffi::c_int,
+    pub minAdaptLevel: std::ffi::c_int,
+    pub maxAdaptLevel: std::ffi::c_int,
+    pub ldmFlag: std::ffi::c_int,
+    pub ldmHashLog: std::ffi::c_int,
+    pub ldmMinMatch: std::ffi::c_int,
+    pub ldmBucketSizeLog: std::ffi::c_int,
+    pub ldmHashRateLog: std::ffi::c_int,
+    pub streamSrcSize: size_t,
+    pub targetCBlockSize: size_t,
+    pub srcSizeHint: std::ffi::c_int,
+    pub testMode: std::ffi::c_int,
+    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub removeSrcFile: std::ffi::c_int,
+    pub overwrite: std::ffi::c_int,
+    pub asyncIO: std::ffi::c_int,
+    pub memLimit: std::ffi::c_uint,
+    pub nbWorkers: std::ffi::c_int,
+    pub excludeCompressedFiles: std::ffi::c_int,
+    pub patchFromMode: std::ffi::c_int,
+    pub contentSize: std::ffi::c_int,
+    pub allowBlockDevices: std::ffi::c_int,
+    pub passThrough: std::ffi::c_int,
+    pub mmapDict: ZSTD_ParamSwitch_e,
+}
+pub type FIO_prefs_t = FIO_prefs_s;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union __atomic_wide_counter {
+    pub __value64: std::ffi::c_ulonglong,
+    pub __value32: C2RustUnnamed,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct C2RustUnnamed {
+    pub __low: std::ffi::c_uint,
+    pub __high: std::ffi::c_uint,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __pthread_internal_list {
+    pub __prev: *mut __pthread_internal_list,
+    pub __next: *mut __pthread_internal_list,
+}
+pub type __pthread_list_t = __pthread_internal_list;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __pthread_mutex_s {
+    pub __lock: std::ffi::c_int,
+    pub __count: std::ffi::c_uint,
+    pub __owner: std::ffi::c_int,
+    pub __nusers: std::ffi::c_uint,
+    pub __kind: std::ffi::c_int,
+    pub __spins: std::ffi::c_short,
+    pub __elision: std::ffi::c_short,
+    pub __list: __pthread_list_t,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct __pthread_cond_s {
+    pub __wseq: __atomic_wide_counter,
+    pub __g1_start: __atomic_wide_counter,
+    pub __g_refs: [std::ffi::c_uint; 2],
+    pub __g_size: [std::ffi::c_uint; 2],
+    pub __g1_orig_size: std::ffi::c_uint,
+    pub __wrefs: std::ffi::c_uint,
+    pub __g_signals: [std::ffi::c_uint; 2],
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union pthread_mutexattr_t {
+    pub __size: [std::ffi::c_char; 4],
+    pub __align: std::ffi::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union pthread_condattr_t {
+    pub __size: [std::ffi::c_char; 4],
+    pub __align: std::ffi::c_int,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union pthread_mutex_t {
+    pub __data: __pthread_mutex_s,
+    pub __size: [std::ffi::c_char; 40],
+    pub __align: std::ffi::c_long,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub union pthread_cond_t {
+    pub __data: __pthread_cond_s,
+    pub __size: [std::ffi::c_char; 48],
+    pub __align: std::ffi::c_longlong,
+}
+pub type POOL_ctx = POOL_ctx_s;
+pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct IOPoolCtx_t {
+    pub threadPool: *mut POOL_ctx,
+    pub threadPoolActive: std::ffi::c_int,
+    pub totalIoJobs: std::ffi::c_int,
+    pub prefs: *const FIO_prefs_t,
+    pub poolFunction: POOL_function,
+    pub file: *mut FILE,
+    pub ioJobsMutex: pthread_mutex_t,
+    pub availableJobs: [*mut std::ffi::c_void; 10],
+    pub availableJobsCount: std::ffi::c_int,
+    pub jobBufferSize: size_t,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ReadPoolCtx_t {
+    pub base: IOPoolCtx_t,
+    pub reachedEof: std::ffi::c_int,
+    pub nextReadOffset: U64,
+    pub waitingOnOffset: U64,
+    pub currentJobHeld: *mut std::ffi::c_void,
+    pub coalesceBuffer: *mut U8,
+    pub srcBuffer: *mut U8,
+    pub srcBufferLoaded: size_t,
+    pub completedJobs: [*mut std::ffi::c_void; 10],
+    pub completedJobsCount: std::ffi::c_int,
+    pub jobCompletedCond: pthread_cond_t,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct WritePoolCtx_t {
+    pub base: IOPoolCtx_t,
+    pub storedSkips: std::ffi::c_uint,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct IOJob_t {
+    pub ctx: *mut std::ffi::c_void,
+    pub file: *mut FILE,
+    pub buffer: *mut std::ffi::c_void,
+    pub bufferSize: size_t,
+    pub usedBufferSize: size_t,
+    pub offset: U64,
+}
+pub const SEEK_CUR: std::ffi::c_int = 1 as std::ffi::c_int;
+pub const MAX_IO_JOBS: std::ffi::c_int = 10 as std::ffi::c_int;
+pub const LONG_SEEK: unsafe extern "C" fn(
+    *mut FILE,
+    std::ffi::c_long,
+    std::ffi::c_int,
+) -> std::ffi::c_int = fseek;
+pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+static mut segmentSizeT: size_t = 0;
+static mut maskT: size_t = 0;
+unsafe extern "C" fn AIO_fwriteSparse(
+    mut file: *mut FILE,
+    mut buffer: *const std::ffi::c_void,
+    mut bufferSize: size_t,
+    prefs: *const FIO_prefs_t,
+    mut storedSkips: std::ffi::c_uint,
+) -> std::ffi::c_uint {
+    let bufferT = buffer as *const size_t;
+    let mut bufferSizeT =
+        bufferSize.wrapping_div(::core::mem::size_of::<size_t>() as std::ffi::c_ulong);
+    let bufferTEnd = bufferT.offset(bufferSizeT as isize);
+    let mut ptrT = bufferT;
+    if (*prefs).testMode != 0 {
+        return 0 as std::ffi::c_int as std::ffi::c_uint;
+    }
+    if (*prefs).sparseFileSupport == 0 {
+        let sizeCheck = fwrite(
+            buffer,
+            1 as std::ffi::c_int as std::ffi::c_ulong,
+            bufferSize,
+            file,
+        );
+        if sizeCheck != bufferSize {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    50 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    70 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Write error : cannot write block : %s\0" as *const u8
+                        as *const std::ffi::c_char,
+                    strerror(*__errno_location()),
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(70 as std::ffi::c_int);
+        }
+        return 0 as std::ffi::c_int as std::ffi::c_uint;
+    }
+    if storedSkips
+        > (1 as std::ffi::c_int as std::ffi::c_uint)
+            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+    {
+        if fseek(
+            file,
+            (1 as std::ffi::c_int as std::ffi::c_uint)
+                .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+                as std::ffi::c_long,
+            SEEK_CUR,
+        ) != 0 as std::ffi::c_int
+        {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    57 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    91 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"1 GB skip error (sparse file support)\0" as *const u8
+                        as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(91 as std::ffi::c_int);
+        }
+        storedSkips = storedSkips.wrapping_sub(
+            (1 as std::ffi::c_int as std::ffi::c_uint)
+                .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int),
+        );
+    }
+    while ptrT < bufferTEnd {
+        let mut nb0T: size_t = 0;
+        let mut seg0SizeT = segmentSizeT;
+        if seg0SizeT > bufferSizeT {
+            seg0SizeT = bufferSizeT;
+        }
+        bufferSizeT = bufferSizeT.wrapping_sub(seg0SizeT);
+        nb0T = 0 as std::ffi::c_int as size_t;
+        while nb0T < seg0SizeT && *ptrT.offset(nb0T as isize) == 0 as std::ffi::c_int as size_t {
+            nb0T = nb0T.wrapping_add(1);
+            nb0T;
+        }
+        storedSkips = storedSkips.wrapping_add(
+            nb0T.wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
+                as std::ffi::c_uint,
+        );
+        if nb0T != seg0SizeT {
+            let nbNon0ST = seg0SizeT.wrapping_sub(nb0T);
+            if fseek(file, storedSkips as std::ffi::c_long, SEEK_CUR) != 0 as std::ffi::c_int {
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+                }
+                if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Error defined at %s, line %i : \n\0" as *const u8
+                            as *const std::ffi::c_char,
+                        b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                        77 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        92 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Sparse skip error ; try --no-sparse\0" as *const u8
+                            as *const std::ffi::c_char,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                }
+                exit(92 as std::ffi::c_int);
+            }
+            storedSkips = 0 as std::ffi::c_int as std::ffi::c_uint;
+            if fwrite(
+                ptrT.offset(nb0T as isize) as *const std::ffi::c_void,
+                ::core::mem::size_of::<size_t>() as std::ffi::c_ulong,
+                nbNon0ST,
+                file,
+            ) != nbNon0ST
+            {
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+                }
+                if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Error defined at %s, line %i : \n\0" as *const u8
+                            as *const std::ffi::c_char,
+                        b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                        82 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        93 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Write error : cannot write block : %s\0" as *const u8
+                            as *const std::ffi::c_char,
+                        strerror(*__errno_location()),
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                }
+                exit(93 as std::ffi::c_int);
+            }
+        }
+        ptrT = ptrT.offset(seg0SizeT as isize);
+    }
+    if bufferSize & maskT != 0 {
+        let restStart = bufferTEnd as *const std::ffi::c_char;
+        let mut restPtr = restStart;
+        let restEnd = (buffer as *const std::ffi::c_char).offset(bufferSize as isize);
+        if restEnd > restStart
+            && restEnd
+                < restStart.offset(::core::mem::size_of::<size_t>() as std::ffi::c_ulong as isize)
+        {
+        } else {
+            __assert_fail(
+                b"restEnd > restStart && restEnd < restStart + sizeof(size_t)\0"
+                    as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                93 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<
+                    &[u8; 100],
+                    &[std::ffi::c_char; 100],
+                >(
+                    b"unsigned int AIO_fwriteSparse(FILE *, const void *, size_t, const FIO_prefs_t *const, unsigned int)\0",
+                ))
+                    .as_ptr(),
+            );
+        }
+        'c_14653: {
+            if restEnd > restStart
+                && restEnd
+                    < restStart
+                        .offset(::core::mem::size_of::<size_t>() as std::ffi::c_ulong as isize)
+            {
+            } else {
+                __assert_fail(
+                    b"restEnd > restStart && restEnd < restStart + sizeof(size_t)\0"
+                        as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    93 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<
+                        &[u8; 100],
+                        &[std::ffi::c_char; 100],
+                    >(
+                        b"unsigned int AIO_fwriteSparse(FILE *, const void *, size_t, const FIO_prefs_t *const, unsigned int)\0",
+                    ))
+                        .as_ptr(),
+                );
+            }
+        };
+        while restPtr < restEnd && *restPtr as std::ffi::c_int == 0 as std::ffi::c_int {
+            restPtr = restPtr.offset(1);
+            restPtr;
+        }
+        storedSkips = storedSkips
+            .wrapping_add(restPtr.offset_from(restStart) as std::ffi::c_long as std::ffi::c_uint);
+        if restPtr != restEnd {
+            let restSize = restEnd.offset_from(restPtr) as std::ffi::c_long as size_t;
+            if fseek(file, storedSkips as std::ffi::c_long, SEEK_CUR) != 0 as std::ffi::c_int {
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+                }
+                if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Error defined at %s, line %i : \n\0" as *const u8
+                            as *const std::ffi::c_char,
+                        b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                        100 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        92 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Sparse skip error ; try --no-sparse\0" as *const u8
+                            as *const std::ffi::c_char,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                }
+                exit(92 as std::ffi::c_int);
+            }
+            if fwrite(
+                restPtr as *const std::ffi::c_void,
+                1 as std::ffi::c_int as std::ffi::c_ulong,
+                restSize,
+                file,
+            ) != restSize
+            {
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+                }
+                if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Error defined at %s, line %i : \n\0" as *const u8
+                            as *const std::ffi::c_char,
+                        b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                        103 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        95 as std::ffi::c_int,
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(
+                        stderr,
+                        b"Write error : cannot write end of decoded block : %s\0" as *const u8
+                            as *const std::ffi::c_char,
+                        strerror(*__errno_location()),
+                    );
+                }
+                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                }
+                exit(95 as std::ffi::c_int);
+            }
+            storedSkips = 0 as std::ffi::c_int as std::ffi::c_uint;
+        }
+    }
+    return storedSkips;
+}
+unsafe extern "C" fn AIO_fwriteSparseEnd(
+    prefs: *const FIO_prefs_t,
+    mut file: *mut FILE,
+    mut storedSkips: std::ffi::c_uint,
+) {
+    if (*prefs).testMode != 0 {
+        if storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+        } else {
+            __assert_fail(
+                b"storedSkips == 0\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                113 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 73], &[std::ffi::c_char; 73]>(
+                    b"void AIO_fwriteSparseEnd(const FIO_prefs_t *const, FILE *, unsigned int)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_13816: {
+            if storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+            } else {
+                __assert_fail(
+                    b"storedSkips == 0\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    113 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<
+                        &[u8; 73],
+                        &[std::ffi::c_char; 73],
+                    >(
+                        b"void AIO_fwriteSparseEnd(const FIO_prefs_t *const, FILE *, unsigned int)\0",
+                    ))
+                        .as_ptr(),
+                );
+            }
+        };
+    }
+    if storedSkips > 0 as std::ffi::c_int as std::ffi::c_uint {
+        if (*prefs).sparseFileSupport > 0 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"prefs->sparseFileSupport > 0\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                115 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 73], &[std::ffi::c_char; 73]>(
+                    b"void AIO_fwriteSparseEnd(const FIO_prefs_t *const, FILE *, unsigned int)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_13768: {
+            if (*prefs).sparseFileSupport > 0 as std::ffi::c_int {
+            } else {
+                __assert_fail(
+                    b"prefs->sparseFileSupport > 0\0" as *const u8
+                        as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    115 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<
+                        &[u8; 73],
+                        &[std::ffi::c_char; 73],
+                    >(
+                        b"void AIO_fwriteSparseEnd(const FIO_prefs_t *const, FILE *, unsigned int)\0",
+                    ))
+                        .as_ptr(),
+                );
+            }
+        };
+        if fseek(
+            file,
+            storedSkips.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_long,
+            SEEK_CUR,
+        ) != 0 as std::ffi::c_int
+        {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    118 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    69 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Final skip error (sparse file support)\0" as *const u8
+                        as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(69 as std::ffi::c_int);
+        }
+        let lastZeroByte: [std::ffi::c_char; 1] = [0 as std::ffi::c_int as std::ffi::c_char; 1];
+        if fwrite(
+            lastZeroByte.as_ptr() as *const std::ffi::c_void,
+            1 as std::ffi::c_int as std::ffi::c_ulong,
+            1 as std::ffi::c_int as std::ffi::c_ulong,
+            file,
+        ) != 1 as std::ffi::c_int as std::ffi::c_ulong
+        {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    123 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    69 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Write error : cannot write last zero : %s\0" as *const u8
+                        as *const std::ffi::c_char,
+                    strerror(*__errno_location()),
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(69 as std::ffi::c_int);
+        }
+    }
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_supported() -> std::ffi::c_int {
+    return 1 as std::ffi::c_int;
+}
+unsafe extern "C" fn AIO_IOPool_createIoJob(
+    mut ctx: *mut IOPoolCtx_t,
+    mut bufferSize: size_t,
+) -> *mut IOJob_t {
+    let job = malloc(::core::mem::size_of::<IOJob_t>() as std::ffi::c_ulong) as *mut IOJob_t;
+    let buffer = malloc(bufferSize);
+    if job.is_null() || buffer.is_null() {
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+        }
+        if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                150 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                101 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        }
+        exit(101 as std::ffi::c_int);
+    }
+    (*job).buffer = buffer;
+    (*job).bufferSize = bufferSize;
+    (*job).usedBufferSize = 0 as std::ffi::c_int as size_t;
+    (*job).file = NULL as *mut FILE;
+    (*job).ctx = ctx as *mut std::ffi::c_void;
+    (*job).offset = 0 as std::ffi::c_int as U64;
+    return job;
+}
+unsafe extern "C" fn AIO_IOPool_createThreadPool(
+    mut ctx: *mut IOPoolCtx_t,
+    mut prefs: *const FIO_prefs_t,
+) {
+    (*ctx).threadPool = NULL as *mut POOL_ctx;
+    (*ctx).threadPoolActive = 0 as std::ffi::c_int;
+    if (*prefs).asyncIO != 0 {
+        if pthread_mutex_init(&mut (*ctx).ioJobsMutex, 0 as *const pthread_mutexattr_t) != 0 {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    169 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    102 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Failed creating ioJobsMutex mutex\0" as *const u8 as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(102 as std::ffi::c_int);
+        }
+        if 10 as std::ffi::c_int >= 2 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"MAX_IO_JOBS >= 2\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                172 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 69], &[std::ffi::c_char; 69]>(
+                    b"void AIO_IOPool_createThreadPool(IOPoolCtx_t *, const FIO_prefs_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_15777: {
+            if 10 as std::ffi::c_int >= 2 as std::ffi::c_int {
+            } else {
+                __assert_fail(
+                    b"MAX_IO_JOBS >= 2\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    172 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<&[u8; 69], &[std::ffi::c_char; 69]>(
+                        b"void AIO_IOPool_createThreadPool(IOPoolCtx_t *, const FIO_prefs_t *)\0",
+                    ))
+                    .as_ptr(),
+                );
+            }
+        };
+        (*ctx).threadPool = POOL_create(
+            1 as std::ffi::c_int as size_t,
+            (MAX_IO_JOBS - 2 as std::ffi::c_int) as size_t,
+        );
+        (*ctx).threadPoolActive = 1 as std::ffi::c_int;
+        if ((*ctx).threadPool).is_null() {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    176 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    104 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Failed creating I/O thread pool\0" as *const u8 as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(104 as std::ffi::c_int);
+        }
+    }
+}
+unsafe extern "C" fn AIO_IOPool_init(
+    mut ctx: *mut IOPoolCtx_t,
+    mut prefs: *const FIO_prefs_t,
+    mut poolFunction: POOL_function,
+    mut bufferSize: size_t,
+) {
+    let mut i: std::ffi::c_int = 0;
+    AIO_IOPool_createThreadPool(ctx, prefs);
+    (*ctx).prefs = prefs;
+    (*ctx).poolFunction = poolFunction;
+    (*ctx).totalIoJobs = if !((*ctx).threadPool).is_null() {
+        MAX_IO_JOBS
+    } else {
+        2 as std::ffi::c_int
+    };
+    (*ctx).availableJobsCount = (*ctx).totalIoJobs;
+    i = 0 as std::ffi::c_int;
+    while i < (*ctx).availableJobsCount {
+        let ref mut fresh0 = *((*ctx).availableJobs).as_mut_ptr().offset(i as isize);
+        *fresh0 = AIO_IOPool_createIoJob(ctx, bufferSize) as *mut std::ffi::c_void;
+        i += 1;
+        i;
+    }
+    (*ctx).jobBufferSize = bufferSize;
+    (*ctx).file = NULL as *mut FILE;
+}
+unsafe extern "C" fn AIO_IOPool_threadPoolActive(mut ctx: *mut IOPoolCtx_t) -> std::ffi::c_int {
+    return (!((*ctx).threadPool).is_null() && (*ctx).threadPoolActive != 0) as std::ffi::c_int;
+}
+unsafe extern "C" fn AIO_IOPool_lockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
+    if AIO_IOPool_threadPoolActive(ctx) != 0 {
+        pthread_mutex_lock(&mut (*ctx).ioJobsMutex);
+    }
+}
+unsafe extern "C" fn AIO_IOPool_unlockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
+    if AIO_IOPool_threadPoolActive(ctx) != 0 {
+        pthread_mutex_unlock(&mut (*ctx).ioJobsMutex);
+    }
+}
+unsafe extern "C" fn AIO_IOPool_releaseIoJob(mut job: *mut IOJob_t) {
+    let ctx = (*job).ctx as *mut IOPoolCtx_t;
+    AIO_IOPool_lockJobsMutex(ctx);
+    if (*ctx).availableJobsCount < (*ctx).totalIoJobs {
+    } else {
+        __assert_fail(
+            b"ctx->availableJobsCount < ctx->totalIoJobs\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            224 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 40], &[std::ffi::c_char; 40]>(
+                b"void AIO_IOPool_releaseIoJob(IOJob_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_13132: {
+        if (*ctx).availableJobsCount < (*ctx).totalIoJobs {
+        } else {
+            __assert_fail(
+                b"ctx->availableJobsCount < ctx->totalIoJobs\0" as *const u8
+                    as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                224 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 40], &[std::ffi::c_char; 40]>(
+                    b"void AIO_IOPool_releaseIoJob(IOJob_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    let fresh1 = (*ctx).availableJobsCount;
+    (*ctx).availableJobsCount = (*ctx).availableJobsCount + 1;
+    let ref mut fresh2 = *((*ctx).availableJobs).as_mut_ptr().offset(fresh1 as isize);
+    *fresh2 = job as *mut std::ffi::c_void;
+    AIO_IOPool_unlockJobsMutex(ctx);
+}
+unsafe extern "C" fn AIO_IOPool_join(mut ctx: *mut IOPoolCtx_t) {
+    if AIO_IOPool_threadPoolActive(ctx) != 0 {
+        POOL_joinJobs((*ctx).threadPool);
+    }
+}
+unsafe extern "C" fn AIO_IOPool_setThreaded(
+    mut ctx: *mut IOPoolCtx_t,
+    mut threaded: std::ffi::c_int,
+) {
+    if threaded == 0 as std::ffi::c_int || threaded == 1 as std::ffi::c_int {
+    } else {
+        __assert_fail(
+            b"threaded == 0 || threaded == 1\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            240 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
+                b"void AIO_IOPool_setThreaded(IOPoolCtx_t *, int)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_16384: {
+        if threaded == 0 as std::ffi::c_int || threaded == 1 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"threaded == 0 || threaded == 1\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                240 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
+                    b"void AIO_IOPool_setThreaded(IOPoolCtx_t *, int)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    if !ctx.is_null() {
+    } else {
+        __assert_fail(
+            b"ctx != NULL\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            241 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
+                b"void AIO_IOPool_setThreaded(IOPoolCtx_t *, int)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_16341: {
+        if !ctx.is_null() {
+        } else {
+            __assert_fail(
+                b"ctx != NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                241 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
+                    b"void AIO_IOPool_setThreaded(IOPoolCtx_t *, int)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    if (*ctx).threadPoolActive != threaded {
+        AIO_IOPool_join(ctx);
+        (*ctx).threadPoolActive = threaded;
+    }
+}
+unsafe extern "C" fn AIO_IOPool_destroy(mut ctx: *mut IOPoolCtx_t) {
+    let mut i: std::ffi::c_int = 0;
+    if !((*ctx).threadPool).is_null() {
+        AIO_IOPool_join(ctx);
+        if (*ctx).availableJobsCount == (*ctx).totalIoJobs {
+        } else {
+            __assert_fail(
+                b"ctx->availableJobsCount == ctx->totalIoJobs\0" as *const u8
+                    as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                256 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 39], &[std::ffi::c_char; 39]>(
+                    b"void AIO_IOPool_destroy(IOPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_16228: {
+            if (*ctx).availableJobsCount == (*ctx).totalIoJobs {
+            } else {
+                __assert_fail(
+                    b"ctx->availableJobsCount == ctx->totalIoJobs\0" as *const u8
+                        as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    256 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<&[u8; 39], &[std::ffi::c_char; 39]>(
+                        b"void AIO_IOPool_destroy(IOPoolCtx_t *)\0",
+                    ))
+                    .as_ptr(),
+                );
+            }
+        };
+        POOL_free((*ctx).threadPool);
+        pthread_mutex_destroy(&mut (*ctx).ioJobsMutex);
+    }
+    if ((*ctx).file).is_null() {
+    } else {
+        __assert_fail(
+            b"ctx->file == NULL\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            260 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 39], &[std::ffi::c_char; 39]>(
+                b"void AIO_IOPool_destroy(IOPoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_16160: {
+        if ((*ctx).file).is_null() {
+        } else {
+            __assert_fail(
+                b"ctx->file == NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                260 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 39], &[std::ffi::c_char; 39]>(
+                    b"void AIO_IOPool_destroy(IOPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    i = 0 as std::ffi::c_int;
+    while i < (*ctx).availableJobsCount {
+        let mut job = *((*ctx).availableJobs).as_mut_ptr().offset(i as isize) as *mut IOJob_t;
+        free((*job).buffer);
+        free(job as *mut std::ffi::c_void);
+        i += 1;
+        i;
+    }
+}
+unsafe extern "C" fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IOJob_t {
+    let mut job = 0 as *mut IOJob_t;
+    if !((*ctx).file).is_null() || (*(*ctx).prefs).testMode != 0 {
+    } else {
+        __assert_fail(
+            b"ctx->file != NULL || ctx->prefs->testMode\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            272 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                b"IOJob_t *AIO_IOPool_acquireJob(IOPoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_13324: {
+        if !((*ctx).file).is_null() || (*(*ctx).prefs).testMode != 0 {
+        } else {
+            __assert_fail(
+                b"ctx->file != NULL || ctx->prefs->testMode\0" as *const u8
+                    as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                272 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                    b"IOJob_t *AIO_IOPool_acquireJob(IOPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    AIO_IOPool_lockJobsMutex(ctx);
+    if (*ctx).availableJobsCount > 0 as std::ffi::c_int {
+    } else {
+        __assert_fail(
+            b"ctx->availableJobsCount > 0\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            274 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                b"IOJob_t *AIO_IOPool_acquireJob(IOPoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_13277: {
+        if (*ctx).availableJobsCount > 0 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"ctx->availableJobsCount > 0\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                274 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                    b"IOJob_t *AIO_IOPool_acquireJob(IOPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    (*ctx).availableJobsCount -= 1;
+    job = *((*ctx).availableJobs)
+        .as_mut_ptr()
+        .offset((*ctx).availableJobsCount as isize) as *mut IOJob_t;
+    AIO_IOPool_unlockJobsMutex(ctx);
+    (*job).usedBufferSize = 0 as std::ffi::c_int as size_t;
+    (*job).file = (*ctx).file;
+    (*job).offset = 0 as std::ffi::c_int as U64;
+    return job;
+}
+unsafe extern "C" fn AIO_IOPool_setFile(mut ctx: *mut IOPoolCtx_t, mut file: *mut FILE) {
+    if !ctx.is_null() {
+    } else {
+        __assert_fail(
+            b"ctx!=NULL\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            288 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                b"void AIO_IOPool_setFile(IOPoolCtx_t *, FILE *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_14054: {
+        if !ctx.is_null() {
+        } else {
+            __assert_fail(
+                b"ctx!=NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                288 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                    b"void AIO_IOPool_setFile(IOPoolCtx_t *, FILE *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    AIO_IOPool_join(ctx);
+    if (*ctx).availableJobsCount == (*ctx).totalIoJobs {
+    } else {
+        __assert_fail(
+            b"ctx->availableJobsCount == ctx->totalIoJobs\0" as *const u8
+                as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            290 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                b"void AIO_IOPool_setFile(IOPoolCtx_t *, FILE *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_14001: {
+        if (*ctx).availableJobsCount == (*ctx).totalIoJobs {
+        } else {
+            __assert_fail(
+                b"ctx->availableJobsCount == ctx->totalIoJobs\0" as *const u8
+                    as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                290 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                    b"void AIO_IOPool_setFile(IOPoolCtx_t *, FILE *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    (*ctx).file = file;
+}
+unsafe extern "C" fn AIO_IOPool_getFile(mut ctx: *const IOPoolCtx_t) -> *mut FILE {
+    return (*ctx).file;
+}
+unsafe extern "C" fn AIO_IOPool_enqueueJob(mut job: *mut IOJob_t) {
+    let ctx = (*job).ctx as *mut IOPoolCtx_t;
+    if AIO_IOPool_threadPoolActive(ctx) != 0 {
+        POOL_add(
+            (*ctx).threadPool,
+            (*ctx).poolFunction,
+            job as *mut std::ffi::c_void,
+        );
+    } else {
+        ((*ctx).poolFunction).unwrap_unchecked()(job as *mut std::ffi::c_void);
+    };
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_acquireJob(mut ctx: *mut WritePoolCtx_t) -> *mut IOJob_t {
+    return AIO_IOPool_acquireJob(&mut (*ctx).base);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_enqueueAndReacquireWriteJob(mut job: *mut *mut IOJob_t) {
+    AIO_IOPool_enqueueJob(*job);
+    *job = AIO_IOPool_acquireJob((**job).ctx as *mut IOPoolCtx_t);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_sparseWriteEnd(mut ctx: *mut WritePoolCtx_t) {
+    if !ctx.is_null() {
+    } else {
+        __assert_fail(
+            b"ctx != NULL\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            333 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
+                b"void AIO_WritePool_sparseWriteEnd(WritePoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_13882: {
+        if !ctx.is_null() {
+        } else {
+            __assert_fail(
+                b"ctx != NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                333 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
+                    b"void AIO_WritePool_sparseWriteEnd(WritePoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    AIO_IOPool_join(&mut (*ctx).base);
+    AIO_fwriteSparseEnd((*ctx).base.prefs, (*ctx).base.file, (*ctx).storedSkips);
+    (*ctx).storedSkips = 0 as std::ffi::c_int as std::ffi::c_uint;
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_setFile(mut ctx: *mut WritePoolCtx_t, mut file: *mut FILE) {
+    AIO_IOPool_setFile(&mut (*ctx).base, file);
+    if (*ctx).storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+    } else {
+        __assert_fail(
+            b"ctx->storedSkips == 0\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            345 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 53], &[std::ffi::c_char; 53]>(
+                b"void AIO_WritePool_setFile(WritePoolCtx_t *, FILE *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_13932: {
+        if (*ctx).storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+        } else {
+            __assert_fail(
+                b"ctx->storedSkips == 0\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                345 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 53], &[std::ffi::c_char; 53]>(
+                    b"void AIO_WritePool_setFile(WritePoolCtx_t *, FILE *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_getFile(mut ctx: *const WritePoolCtx_t) -> *mut FILE {
+    return AIO_IOPool_getFile(&(*ctx).base);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_releaseIoJob(mut job: *mut IOJob_t) {
+    AIO_IOPool_releaseIoJob(job);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_closeFile(mut ctx: *mut WritePoolCtx_t) -> std::ffi::c_int {
+    let dstFile = (*ctx).base.file;
+    if !dstFile.is_null() || (*(*ctx).base.prefs).testMode != 0 as std::ffi::c_int {
+    } else {
+        __assert_fail(
+            b"dstFile!=NULL || ctx->base.prefs->testMode!=0\0" as *const u8
+                as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            365 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                b"int AIO_WritePool_closeFile(WritePoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_14159: {
+        if !dstFile.is_null() || (*(*ctx).base.prefs).testMode != 0 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"dstFile!=NULL || ctx->base.prefs->testMode!=0\0" as *const u8
+                    as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                365 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
+                    b"int AIO_WritePool_closeFile(WritePoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    AIO_WritePool_sparseWriteEnd(ctx);
+    AIO_IOPool_setFile(&mut (*ctx).base, NULL as *mut FILE);
+    return fclose(dstFile);
+}
+unsafe extern "C" fn AIO_WritePool_executeWriteJob(mut opaque: *mut std::ffi::c_void) {
+    let job = opaque as *mut IOJob_t;
+    let ctx = (*job).ctx as *mut WritePoolCtx_t;
+    (*ctx).storedSkips = AIO_fwriteSparse(
+        (*job).file,
+        (*job).buffer,
+        (*job).usedBufferSize,
+        (*ctx).base.prefs,
+        (*ctx).storedSkips,
+    );
+    AIO_IOPool_releaseIoJob(job);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_create(
+    mut prefs: *const FIO_prefs_t,
+    mut bufferSize: size_t,
+) -> *mut WritePoolCtx_t {
+    let ctx = malloc(::core::mem::size_of::<WritePoolCtx_t>() as std::ffi::c_ulong)
+        as *mut WritePoolCtx_t;
+    if ctx.is_null() {
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+        }
+        if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                384 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                100 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        }
+        exit(100 as std::ffi::c_int);
+    }
+    AIO_IOPool_init(
+        &mut (*ctx).base,
+        prefs,
+        Some(AIO_WritePool_executeWriteJob as unsafe extern "C" fn(*mut std::ffi::c_void) -> ()),
+        bufferSize,
+    );
+    (*ctx).storedSkips = 0 as std::ffi::c_int as std::ffi::c_uint;
+    return ctx;
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_free(mut ctx: *mut WritePoolCtx_t) {
+    if !(AIO_WritePool_getFile(ctx)).is_null() {
+        AIO_WritePool_closeFile(ctx);
+    }
+    AIO_IOPool_destroy(&mut (*ctx).base);
+    if (*ctx).storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+    } else {
+        __assert_fail(
+            b"ctx->storedSkips==0\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            397 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 42], &[std::ffi::c_char; 42]>(
+                b"void AIO_WritePool_free(WritePoolCtx_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_16062: {
+        if (*ctx).storedSkips == 0 as std::ffi::c_int as std::ffi::c_uint {
+        } else {
+            __assert_fail(
+                b"ctx->storedSkips==0\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                397 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 42], &[std::ffi::c_char; 42]>(
+                    b"void AIO_WritePool_free(WritePoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    free(ctx as *mut std::ffi::c_void);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_WritePool_setAsync(
+    mut ctx: *mut WritePoolCtx_t,
+    mut async_0: std::ffi::c_int,
+) {
+    AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
+}
+unsafe extern "C" fn AIO_ReadPool_releaseAllCompletedJobs(mut ctx: *mut ReadPoolCtx_t) {
+    let mut i: std::ffi::c_int = 0;
+    i = 0 as std::ffi::c_int;
+    while i < (*ctx).completedJobsCount {
+        let mut job = *((*ctx).completedJobs).as_mut_ptr().offset(i as isize) as *mut IOJob_t;
+        AIO_IOPool_releaseIoJob(job);
+        i += 1;
+        i;
+    }
+    (*ctx).completedJobsCount = 0 as std::ffi::c_int;
+}
+unsafe extern "C" fn AIO_ReadPool_addJobToCompleted(mut job: *mut IOJob_t) {
+    let ctx = (*job).ctx as *mut ReadPoolCtx_t;
+    AIO_IOPool_lockJobsMutex(&mut (*ctx).base);
+    if (*ctx).completedJobsCount < 10 as std::ffi::c_int {
+    } else {
+        __assert_fail(
+            b"ctx->completedJobsCount < MAX_IO_JOBS\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            424 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                b"void AIO_ReadPool_addJobToCompleted(IOJob_t *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_16805: {
+        if (*ctx).completedJobsCount < 10 as std::ffi::c_int {
+        } else {
+            __assert_fail(
+                b"ctx->completedJobsCount < MAX_IO_JOBS\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                424 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 47], &[std::ffi::c_char; 47]>(
+                    b"void AIO_ReadPool_addJobToCompleted(IOJob_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    let fresh3 = (*ctx).completedJobsCount;
+    (*ctx).completedJobsCount = (*ctx).completedJobsCount + 1;
+    let ref mut fresh4 = *((*ctx).completedJobs).as_mut_ptr().offset(fresh3 as isize);
+    *fresh4 = job as *mut std::ffi::c_void;
+    if AIO_IOPool_threadPoolActive(&mut (*ctx).base) != 0 {
+        pthread_cond_signal(&mut (*ctx).jobCompletedCond);
+    }
+    AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
+}
+unsafe extern "C" fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
+    mut ctx: *mut ReadPoolCtx_t,
+) -> *mut IOJob_t {
+    let mut job = NULL as *mut IOJob_t;
+    let mut i: std::ffi::c_int = 0;
+    i = 0 as std::ffi::c_int;
+    while i < (*ctx).completedJobsCount {
+        job = *((*ctx).completedJobs).as_mut_ptr().offset(i as isize) as *mut IOJob_t;
+        if (*job).offset == (*ctx).waitingOnOffset {
+            (*ctx).completedJobsCount -= 1;
+            let ref mut fresh5 = *((*ctx).completedJobs).as_mut_ptr().offset(i as isize);
+            *fresh5 = *((*ctx).completedJobs)
+                .as_mut_ptr()
+                .offset((*ctx).completedJobsCount as isize);
+            return job;
+        }
+        i += 1;
+        i;
+    }
+    return NULL as *mut IOJob_t;
+}
+unsafe extern "C" fn AIO_ReadPool_numReadsInFlight(mut ctx: *mut ReadPoolCtx_t) -> size_t {
+    let jobsHeld = if ((*ctx).currentJobHeld).is_null() {
+        0 as std::ffi::c_int
+    } else {
+        1 as std::ffi::c_int
+    };
+    return ((*ctx).base.totalIoJobs
+        - ((*ctx).base.availableJobsCount + (*ctx).completedJobsCount + jobsHeld))
+        as size_t;
+}
+unsafe extern "C" fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
+    let mut job = NULL as *mut IOJob_t;
+    AIO_IOPool_lockJobsMutex(&mut (*ctx).base);
+    job = AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(ctx);
+    while job.is_null() && AIO_ReadPool_numReadsInFlight(ctx) > 0 as std::ffi::c_int as size_t {
+        if !((*ctx).base.threadPool).is_null() {
+        } else {
+            __assert_fail(
+                b"ctx->base.threadPool != NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                471 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 59], &[std::ffi::c_char; 59]>(
+                    b"IOJob_t *AIO_ReadPool_getNextCompletedJob(ReadPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_18032: {
+            if !((*ctx).base.threadPool).is_null() {
+            } else {
+                __assert_fail(
+                    b"ctx->base.threadPool != NULL\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    471 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<&[u8; 59], &[std::ffi::c_char; 59]>(
+                        b"IOJob_t *AIO_ReadPool_getNextCompletedJob(ReadPoolCtx_t *)\0",
+                    ))
+                    .as_ptr(),
+                );
+            }
+        };
+        pthread_cond_wait(&mut (*ctx).jobCompletedCond, &mut (*ctx).base.ioJobsMutex);
+        job = AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(ctx);
+    }
+    if !job.is_null() {
+        if (*job).offset == (*ctx).waitingOnOffset {
+        } else {
+            __assert_fail(
+                b"job->offset == ctx->waitingOnOffset\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                477 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 59], &[std::ffi::c_char; 59]>(
+                    b"IOJob_t *AIO_ReadPool_getNextCompletedJob(ReadPoolCtx_t *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_17881: {
+            if (*job).offset == (*ctx).waitingOnOffset {
+            } else {
+                __assert_fail(
+                    b"job->offset == ctx->waitingOnOffset\0" as *const u8
+                        as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    477 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<&[u8; 59], &[std::ffi::c_char; 59]>(
+                        b"IOJob_t *AIO_ReadPool_getNextCompletedJob(ReadPoolCtx_t *)\0",
+                    ))
+                    .as_ptr(),
+                );
+            }
+        };
+        (*ctx).waitingOnOffset = ((*ctx).waitingOnOffset as std::ffi::c_ulong)
+            .wrapping_add((*job).usedBufferSize) as U64 as U64;
+    }
+    AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
+    return job;
+}
+unsafe extern "C" fn AIO_ReadPool_executeReadJob(mut opaque: *mut std::ffi::c_void) {
+    let job = opaque as *mut IOJob_t;
+    let ctx = (*job).ctx as *mut ReadPoolCtx_t;
+    if (*ctx).reachedEof != 0 {
+        (*job).usedBufferSize = 0 as std::ffi::c_int as size_t;
+        AIO_ReadPool_addJobToCompleted(job);
+        return;
+    }
+    (*job).usedBufferSize = fread(
+        (*job).buffer,
+        1 as std::ffi::c_int as std::ffi::c_ulong,
+        (*job).bufferSize,
+        (*job).file,
+    );
+    if (*job).usedBufferSize < (*job).bufferSize {
+        if ferror((*job).file) != 0 {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    499 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    37 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Read error\0" as *const u8 as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(37 as std::ffi::c_int);
+        } else if feof((*job).file) != 0 {
+            (*ctx).reachedEof = 1 as std::ffi::c_int;
+        } else {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    503 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    37 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Unexpected short read\0" as *const u8 as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(37 as std::ffi::c_int);
+        }
+    }
+    AIO_ReadPool_addJobToCompleted(job);
+}
+unsafe extern "C" fn AIO_ReadPool_enqueueRead(mut ctx: *mut ReadPoolCtx_t) {
+    let job = AIO_IOPool_acquireJob(&mut (*ctx).base);
+    (*job).offset = (*ctx).nextReadOffset;
+    (*ctx).nextReadOffset =
+        ((*ctx).nextReadOffset as std::ffi::c_ulong).wrapping_add((*job).bufferSize) as U64 as U64;
+    AIO_IOPool_enqueueJob(job);
+}
+unsafe extern "C" fn AIO_ReadPool_startReading(mut ctx: *mut ReadPoolCtx_t) {
+    while (*ctx).base.availableJobsCount != 0 {
+        AIO_ReadPool_enqueueRead(ctx);
+    }
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_setFile(mut ctx: *mut ReadPoolCtx_t, mut file: *mut FILE) {
+    if !ctx.is_null() {
+    } else {
+        __assert_fail(
+            b"ctx!=NULL\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            526 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 51], &[std::ffi::c_char; 51]>(
+                b"void AIO_ReadPool_setFile(ReadPoolCtx_t *, FILE *)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_17541: {
+        if !ctx.is_null() {
+        } else {
+            __assert_fail(
+                b"ctx!=NULL\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                526 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 51], &[std::ffi::c_char; 51]>(
+                    b"void AIO_ReadPool_setFile(ReadPoolCtx_t *, FILE *)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    AIO_IOPool_join(&mut (*ctx).base);
+    AIO_ReadPool_releaseAllCompletedJobs(ctx);
+    if !((*ctx).currentJobHeld).is_null() {
+        AIO_IOPool_releaseIoJob((*ctx).currentJobHeld as *mut IOJob_t);
+        (*ctx).currentJobHeld = NULL as *mut std::ffi::c_void;
+    }
+    AIO_IOPool_setFile(&mut (*ctx).base, file);
+    (*ctx).nextReadOffset = 0 as std::ffi::c_int as U64;
+    (*ctx).waitingOnOffset = 0 as std::ffi::c_int as U64;
+    (*ctx).srcBuffer = (*ctx).coalesceBuffer;
+    (*ctx).srcBufferLoaded = 0 as std::ffi::c_int as size_t;
+    (*ctx).reachedEof = 0 as std::ffi::c_int;
+    if !file.is_null() {
+        AIO_ReadPool_startReading(ctx);
+    }
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_create(
+    mut prefs: *const FIO_prefs_t,
+    mut bufferSize: size_t,
+) -> *mut ReadPoolCtx_t {
+    let ctx =
+        malloc(::core::mem::size_of::<ReadPoolCtx_t>() as std::ffi::c_ulong) as *mut ReadPoolCtx_t;
+    if ctx.is_null() {
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+        }
+        if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                549 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                100 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        }
+        exit(100 as std::ffi::c_int);
+    }
+    AIO_IOPool_init(
+        &mut (*ctx).base,
+        prefs,
+        Some(AIO_ReadPool_executeReadJob as unsafe extern "C" fn(*mut std::ffi::c_void) -> ()),
+        bufferSize,
+    );
+    (*ctx).coalesceBuffer = malloc(bufferSize * 2 as std::ffi::c_int as size_t) as *mut U8;
+    if ((*ctx).coalesceBuffer).is_null() {
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+        }
+        if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                553 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                100 as std::ffi::c_int,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(
+                stderr,
+                b"Allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+            );
+        }
+        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        }
+        exit(100 as std::ffi::c_int);
+    }
+    (*ctx).srcBuffer = (*ctx).coalesceBuffer;
+    (*ctx).srcBufferLoaded = 0 as std::ffi::c_int as size_t;
+    (*ctx).completedJobsCount = 0 as std::ffi::c_int;
+    (*ctx).currentJobHeld = NULL as *mut std::ffi::c_void;
+    if !((*ctx).base.threadPool).is_null() {
+        if pthread_cond_init(&mut (*ctx).jobCompletedCond, 0 as *const pthread_condattr_t) != 0 {
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
+            }
+            if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Error defined at %s, line %i : \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    561 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    103 as std::ffi::c_int,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(
+                    stderr,
+                    b"Failed creating jobCompletedCond cond\0" as *const u8
+                        as *const std::ffi::c_char,
+                );
+            }
+            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            }
+            exit(103 as std::ffi::c_int);
+        }
+    }
+    return ctx;
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_free(mut ctx: *mut ReadPoolCtx_t) {
+    if !(AIO_ReadPool_getFile(ctx)).is_null() {
+        AIO_ReadPool_closeFile(ctx);
+    }
+    if !((*ctx).base.threadPool).is_null() {
+        pthread_cond_destroy(&mut (*ctx).jobCompletedCond);
+    }
+    AIO_IOPool_destroy(&mut (*ctx).base);
+    free((*ctx).coalesceBuffer as *mut std::ffi::c_void);
+    free(ctx as *mut std::ffi::c_void);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_consumeBytes(mut ctx: *mut ReadPoolCtx_t, mut n: size_t) {
+    if n <= (*ctx).srcBufferLoaded {
+    } else {
+        __assert_fail(
+            b"n <= ctx->srcBufferLoaded\0" as *const u8 as *const std::ffi::c_char,
+            b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+            581 as std::ffi::c_int as std::ffi::c_uint,
+            (*::core::mem::transmute::<&[u8; 56], &[std::ffi::c_char; 56]>(
+                b"void AIO_ReadPool_consumeBytes(ReadPoolCtx_t *, size_t)\0",
+            ))
+            .as_ptr(),
+        );
+    }
+    'c_17624: {
+        if n <= (*ctx).srcBufferLoaded {
+        } else {
+            __assert_fail(
+                b"n <= ctx->srcBufferLoaded\0" as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                581 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 56], &[std::ffi::c_char; 56]>(
+                    b"void AIO_ReadPool_consumeBytes(ReadPoolCtx_t *, size_t)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+    };
+    (*ctx).srcBufferLoaded = ((*ctx).srcBufferLoaded).wrapping_sub(n);
+    (*ctx).srcBuffer = ((*ctx).srcBuffer).offset(n as isize);
+}
+unsafe extern "C" fn AIO_ReadPool_releaseCurrentHeldAndGetNext(
+    mut ctx: *mut ReadPoolCtx_t,
+) -> *mut IOJob_t {
+    if !((*ctx).currentJobHeld).is_null() {
+        AIO_IOPool_releaseIoJob((*ctx).currentJobHeld as *mut IOJob_t);
+        (*ctx).currentJobHeld = NULL as *mut std::ffi::c_void;
+        AIO_ReadPool_enqueueRead(ctx);
+    }
+    (*ctx).currentJobHeld = AIO_ReadPool_getNextCompletedJob(ctx) as *mut std::ffi::c_void;
+    return (*ctx).currentJobHeld as *mut IOJob_t;
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_fillBuffer(
+    mut ctx: *mut ReadPoolCtx_t,
+    mut n: size_t,
+) -> size_t {
+    let mut job = 0 as *mut IOJob_t;
+    let mut useCoalesce = 0 as std::ffi::c_int;
+    if n > (*ctx).base.jobBufferSize {
+        n = (*ctx).base.jobBufferSize;
+    }
+    if (*ctx).srcBufferLoaded >= n {
+        return 0 as std::ffi::c_int as size_t;
+    }
+    if (*ctx).srcBufferLoaded > 0 as std::ffi::c_int as size_t {
+        useCoalesce = 1 as std::ffi::c_int;
+        memcpy(
+            (*ctx).coalesceBuffer as *mut std::ffi::c_void,
+            (*ctx).srcBuffer as *const std::ffi::c_void,
+            (*ctx).srcBufferLoaded,
+        );
+        (*ctx).srcBuffer = (*ctx).coalesceBuffer;
+    }
+    job = AIO_ReadPool_releaseCurrentHeldAndGetNext(ctx);
+    if job.is_null() {
+        return 0 as std::ffi::c_int as size_t;
+    }
+    if useCoalesce != 0 {
+        if ((*ctx).srcBufferLoaded).wrapping_add((*job).usedBufferSize)
+            <= 2 as std::ffi::c_int as size_t * (*ctx).base.jobBufferSize
+        {
+        } else {
+            __assert_fail(
+                b"ctx->srcBufferLoaded + job->usedBufferSize <= 2*ctx->base.jobBufferSize\0"
+                    as *const u8 as *const std::ffi::c_char,
+                b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                626 as std::ffi::c_int as std::ffi::c_uint,
+                (*::core::mem::transmute::<&[u8; 56], &[std::ffi::c_char; 56]>(
+                    b"size_t AIO_ReadPool_fillBuffer(ReadPoolCtx_t *, size_t)\0",
+                ))
+                .as_ptr(),
+            );
+        }
+        'c_17743: {
+            if ((*ctx).srcBufferLoaded).wrapping_add((*job).usedBufferSize)
+                <= 2 as std::ffi::c_int as size_t * (*ctx).base.jobBufferSize
+            {
+            } else {
+                __assert_fail(
+                    b"ctx->srcBufferLoaded + job->usedBufferSize <= 2*ctx->base.jobBufferSize\0"
+                        as *const u8 as *const std::ffi::c_char,
+                    b"fileio_asyncio.c\0" as *const u8 as *const std::ffi::c_char,
+                    626 as std::ffi::c_int as std::ffi::c_uint,
+                    (*::core::mem::transmute::<&[u8; 56], &[std::ffi::c_char; 56]>(
+                        b"size_t AIO_ReadPool_fillBuffer(ReadPoolCtx_t *, size_t)\0",
+                    ))
+                    .as_ptr(),
+                );
+            }
+        };
+        memcpy(
+            ((*ctx).coalesceBuffer).offset((*ctx).srcBufferLoaded as isize)
+                as *mut std::ffi::c_void,
+            (*job).buffer,
+            (*job).usedBufferSize,
+        );
+        (*ctx).srcBufferLoaded = ((*ctx).srcBufferLoaded).wrapping_add((*job).usedBufferSize);
+    } else {
+        (*ctx).srcBuffer = (*job).buffer as *mut U8;
+        (*ctx).srcBufferLoaded = (*job).usedBufferSize;
+    }
+    return (*job).usedBufferSize;
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_consumeAndRefill(mut ctx: *mut ReadPoolCtx_t) -> size_t {
+    AIO_ReadPool_consumeBytes(ctx, (*ctx).srcBufferLoaded);
+    return AIO_ReadPool_fillBuffer(ctx, (*ctx).base.jobBufferSize);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_getFile(mut ctx: *const ReadPoolCtx_t) -> *mut FILE {
+    return AIO_IOPool_getFile(&(*ctx).base);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_closeFile(mut ctx: *mut ReadPoolCtx_t) -> std::ffi::c_int {
+    let file = AIO_ReadPool_getFile(ctx);
+    AIO_ReadPool_setFile(ctx, NULL as *mut FILE);
+    return fclose(file);
+}
+#[no_mangle]
+pub unsafe extern "C" fn AIO_ReadPool_setAsync(
+    mut ctx: *mut ReadPoolCtx_t,
+    mut async_0: std::ffi::c_int,
+) {
+    AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
+}
+unsafe extern "C" fn run_static_initializers() {
+    segmentSizeT = ((32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
+        as std::ffi::c_ulong)
+        .wrapping_div(::core::mem::size_of::<size_t>() as std::ffi::c_ulong);
+    maskT = (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
+        .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong);
+}
+#[used]
+#[cfg_attr(target_os = "linux", link_section = ".init_array")]
+#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
+#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];

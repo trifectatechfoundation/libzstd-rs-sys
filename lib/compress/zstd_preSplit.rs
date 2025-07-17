@@ -1,0 +1,407 @@
+use ::libc;
+extern "C" {
+    fn HIST_add(count: *mut std::ffi::c_uint, src: *const std::ffi::c_void, srcSize: size_t);
+}
+pub type size_t = std::ffi::c_ulong;
+pub type __uint8_t = std::ffi::c_uchar;
+pub type __uint16_t = std::ffi::c_ushort;
+pub type __uint32_t = std::ffi::c_uint;
+pub type __int64_t = std::ffi::c_long;
+pub type __uint64_t = std::ffi::c_ulong;
+pub type int64_t = __int64_t;
+pub type uint8_t = __uint8_t;
+pub type uint16_t = __uint16_t;
+pub type uint32_t = __uint32_t;
+pub type uint64_t = __uint64_t;
+pub type BYTE = uint8_t;
+pub type U16 = uint16_t;
+pub type U32 = uint32_t;
+pub type U64 = uint64_t;
+pub type S64 = int64_t;
+pub type unalign16 = U16;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Fingerprint {
+    pub events: [std::ffi::c_uint; 1024],
+    pub nbEvents: size_t,
+}
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct FPStats {
+    pub pastEvents: Fingerprint,
+    pub newEvents: Fingerprint,
+}
+pub type RecordEvents_f =
+    Option<unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> ()>;
+#[inline]
+unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> U16 {
+    return *(ptr as *const unalign16);
+}
+pub const THRESHOLD_PENALTY_RATE: std::ffi::c_int = 16 as std::ffi::c_int;
+pub const THRESHOLD_BASE: std::ffi::c_int = THRESHOLD_PENALTY_RATE - 2 as std::ffi::c_int;
+pub const THRESHOLD_PENALTY: std::ffi::c_int = 3 as std::ffi::c_int;
+pub const HASHLENGTH: std::ffi::c_int = 2 as std::ffi::c_int;
+pub const HASHLOG_MAX: std::ffi::c_int = 10 as std::ffi::c_int;
+pub const HASHTABLESIZE: std::ffi::c_int = (1 as std::ffi::c_int) << HASHLOG_MAX;
+pub const KNUTH: std::ffi::c_uint = 0x9e3779b9 as std::ffi::c_uint;
+#[inline(always)]
+unsafe extern "C" fn hash2(
+    mut p: *const std::ffi::c_void,
+    mut hashLog: std::ffi::c_uint,
+) -> std::ffi::c_uint {
+    if hashLog == 8 as std::ffi::c_int as std::ffi::c_uint {
+        return *(p as *const BYTE).offset(0 as std::ffi::c_int as isize) as U32;
+    }
+    return (MEM_read16(p) as U32).wrapping_mul(KNUTH)
+        >> (32 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(hashLog);
+}
+unsafe extern "C" fn initStats(mut fpstats: *mut FPStats) {
+    libc::memset(
+        fpstats as *mut std::ffi::c_void,
+        0 as std::ffi::c_int,
+        ::core::mem::size_of::<FPStats>() as std::ffi::c_ulong as libc::size_t,
+    );
+}
+#[inline(always)]
+unsafe extern "C" fn addEvents_generic(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+    mut samplingRate: size_t,
+    mut hashLog: std::ffi::c_uint,
+) {
+    let mut p = src as *const std::ffi::c_char;
+    let mut limit = srcSize
+        .wrapping_sub(HASHLENGTH as size_t)
+        .wrapping_add(1 as std::ffi::c_int as size_t);
+    let mut n: size_t = 0;
+    n = 0 as std::ffi::c_int as size_t;
+    while n < limit {
+        let ref mut fresh0 = *((*fp).events)
+            .as_mut_ptr()
+            .offset(hash2(p.offset(n as isize) as *const std::ffi::c_void, hashLog) as isize);
+        *fresh0 = (*fresh0).wrapping_add(1);
+        *fresh0;
+        n = n.wrapping_add(samplingRate);
+    }
+    (*fp).nbEvents = ((*fp).nbEvents).wrapping_add(limit / samplingRate);
+}
+#[inline(always)]
+unsafe extern "C" fn recordFingerprint_generic(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+    mut samplingRate: size_t,
+    mut hashLog: std::ffi::c_uint,
+) {
+    libc::memset(
+        fp as *mut std::ffi::c_void,
+        0 as std::ffi::c_int,
+        (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+            .wrapping_mul((1 as std::ffi::c_int as size_t) << hashLog) as libc::size_t,
+    );
+    (*fp).nbEvents = 0 as std::ffi::c_int as size_t;
+    addEvents_generic(fp, src, srcSize, samplingRate, hashLog);
+}
+unsafe extern "C" fn ZSTD_recordFingerprint_1(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+) {
+    recordFingerprint_generic(
+        fp,
+        src,
+        srcSize,
+        1 as std::ffi::c_int as size_t,
+        10 as std::ffi::c_int as std::ffi::c_uint,
+    );
+}
+unsafe extern "C" fn ZSTD_recordFingerprint_5(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+) {
+    recordFingerprint_generic(
+        fp,
+        src,
+        srcSize,
+        5 as std::ffi::c_int as size_t,
+        10 as std::ffi::c_int as std::ffi::c_uint,
+    );
+}
+unsafe extern "C" fn ZSTD_recordFingerprint_11(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+) {
+    recordFingerprint_generic(
+        fp,
+        src,
+        srcSize,
+        11 as std::ffi::c_int as size_t,
+        9 as std::ffi::c_int as std::ffi::c_uint,
+    );
+}
+unsafe extern "C" fn ZSTD_recordFingerprint_43(
+    mut fp: *mut Fingerprint,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+) {
+    recordFingerprint_generic(
+        fp,
+        src,
+        srcSize,
+        43 as std::ffi::c_int as size_t,
+        8 as std::ffi::c_int as std::ffi::c_uint,
+    );
+}
+unsafe extern "C" fn abs64(mut s64: S64) -> U64 {
+    return (if s64 < 0 as std::ffi::c_int as S64 {
+        -s64
+    } else {
+        s64
+    }) as U64;
+}
+unsafe extern "C" fn fpDistance(
+    mut fp1: *const Fingerprint,
+    mut fp2: *const Fingerprint,
+    mut hashLog: std::ffi::c_uint,
+) -> U64 {
+    let mut distance = 0 as std::ffi::c_int as U64;
+    let mut n: size_t = 0;
+    n = 0 as std::ffi::c_int as size_t;
+    while n < (1 as std::ffi::c_int as size_t) << hashLog {
+        distance = distance.wrapping_add(abs64(
+            *((*fp1).events).as_ptr().offset(n as isize) as S64 * (*fp2).nbEvents as S64
+                - *((*fp2).events).as_ptr().offset(n as isize) as S64 * (*fp1).nbEvents as S64,
+        ));
+        n = n.wrapping_add(1);
+        n;
+    }
+    return distance;
+}
+unsafe extern "C" fn compareFingerprints(
+    mut ref_0: *const Fingerprint,
+    mut newfp: *const Fingerprint,
+    mut penalty: std::ffi::c_int,
+    mut hashLog: std::ffi::c_uint,
+) -> std::ffi::c_int {
+    let mut p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
+    let mut deviation = fpDistance(ref_0, newfp, hashLog);
+    let mut threshold = p50 * (THRESHOLD_BASE + penalty) as U64 / THRESHOLD_PENALTY_RATE as U64;
+    return (deviation >= threshold) as std::ffi::c_int;
+}
+unsafe extern "C" fn mergeEvents(mut acc: *mut Fingerprint, mut newfp: *const Fingerprint) {
+    let mut n: size_t = 0;
+    n = 0 as std::ffi::c_int as size_t;
+    while n < HASHTABLESIZE as size_t {
+        let ref mut fresh1 = *((*acc).events).as_mut_ptr().offset(n as isize);
+        *fresh1 = (*fresh1).wrapping_add(*((*newfp).events).as_ptr().offset(n as isize));
+        n = n.wrapping_add(1);
+        n;
+    }
+    (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
+}
+unsafe extern "C" fn flushEvents(mut fpstats: *mut FPStats) {
+    let mut n: size_t = 0;
+    n = 0 as std::ffi::c_int as size_t;
+    while n < HASHTABLESIZE as size_t {
+        *((*fpstats).pastEvents.events)
+            .as_mut_ptr()
+            .offset(n as isize) = *((*fpstats).newEvents.events)
+            .as_mut_ptr()
+            .offset(n as isize);
+        n = n.wrapping_add(1);
+        n;
+    }
+    (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
+    libc::memset(
+        &mut (*fpstats).newEvents as *mut Fingerprint as *mut std::ffi::c_void,
+        0 as std::ffi::c_int,
+        ::core::mem::size_of::<Fingerprint>() as std::ffi::c_ulong as libc::size_t,
+    );
+}
+unsafe extern "C" fn removeEvents(mut acc: *mut Fingerprint, mut slice: *const Fingerprint) {
+    let mut n: size_t = 0;
+    n = 0 as std::ffi::c_int as size_t;
+    while n < HASHTABLESIZE as size_t {
+        let ref mut fresh2 = *((*acc).events).as_mut_ptr().offset(n as isize);
+        *fresh2 = (*fresh2).wrapping_sub(*((*slice).events).as_ptr().offset(n as isize));
+        n = n.wrapping_add(1);
+        n;
+    }
+    (*acc).nbEvents = ((*acc).nbEvents).wrapping_sub((*slice).nbEvents);
+}
+pub const CHUNKSIZE: std::ffi::c_int = (8 as std::ffi::c_int) << 10 as std::ffi::c_int;
+unsafe extern "C" fn ZSTD_splitBlock_byChunks(
+    mut blockStart: *const std::ffi::c_void,
+    mut blockSize: size_t,
+    mut level: std::ffi::c_int,
+    mut workspace: *mut std::ffi::c_void,
+    mut wkspSize: size_t,
+) -> size_t {
+    static mut records_fs: [RecordEvents_f; 4] = unsafe {
+        [
+            Some(
+                ZSTD_recordFingerprint_43
+                    as unsafe extern "C" fn(
+                        *mut Fingerprint,
+                        *const std::ffi::c_void,
+                        size_t,
+                    ) -> (),
+            ),
+            Some(
+                ZSTD_recordFingerprint_11
+                    as unsafe extern "C" fn(
+                        *mut Fingerprint,
+                        *const std::ffi::c_void,
+                        size_t,
+                    ) -> (),
+            ),
+            Some(
+                ZSTD_recordFingerprint_5
+                    as unsafe extern "C" fn(
+                        *mut Fingerprint,
+                        *const std::ffi::c_void,
+                        size_t,
+                    ) -> (),
+            ),
+            Some(
+                ZSTD_recordFingerprint_1
+                    as unsafe extern "C" fn(
+                        *mut Fingerprint,
+                        *const std::ffi::c_void,
+                        size_t,
+                    ) -> (),
+            ),
+        ]
+    };
+    static mut hashParams: [std::ffi::c_uint; 4] = [
+        8 as std::ffi::c_int as std::ffi::c_uint,
+        9 as std::ffi::c_int as std::ffi::c_uint,
+        10 as std::ffi::c_int as std::ffi::c_uint,
+        10 as std::ffi::c_int as std::ffi::c_uint,
+    ];
+    let record_f: RecordEvents_f = *records_fs.as_ptr().offset(level as isize);
+    let fpstats = workspace as *mut FPStats;
+    let mut p = blockStart as *const std::ffi::c_char;
+    let mut penalty = THRESHOLD_PENALTY;
+    let mut pos = 0 as std::ffi::c_int as size_t;
+    initStats(fpstats);
+    record_f.unwrap_unchecked()(
+        &mut (*fpstats).pastEvents,
+        p as *const std::ffi::c_void,
+        CHUNKSIZE as size_t,
+    );
+    pos = CHUNKSIZE as size_t;
+    while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
+        record_f.unwrap_unchecked()(
+            &mut (*fpstats).newEvents,
+            p.offset(pos as isize) as *const std::ffi::c_void,
+            CHUNKSIZE as size_t,
+        );
+        if compareFingerprints(
+            &mut (*fpstats).pastEvents,
+            &mut (*fpstats).newEvents,
+            penalty,
+            *hashParams.as_ptr().offset(level as isize),
+        ) != 0
+        {
+            return pos;
+        } else {
+            mergeEvents(&mut (*fpstats).pastEvents, &mut (*fpstats).newEvents);
+            if penalty > 0 as std::ffi::c_int {
+                penalty -= 1;
+                penalty;
+            }
+        }
+        pos = pos.wrapping_add(CHUNKSIZE as size_t);
+    }
+    return blockSize;
+}
+unsafe extern "C" fn ZSTD_splitBlock_fromBorders(
+    mut blockStart: *const std::ffi::c_void,
+    mut blockSize: size_t,
+    mut workspace: *mut std::ffi::c_void,
+    mut wkspSize: size_t,
+) -> size_t {
+    let fpstats = workspace as *mut FPStats;
+    let mut middleEvents = (workspace as *mut std::ffi::c_char).offset(
+        (512 as std::ffi::c_int as std::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+            as isize,
+    ) as *mut std::ffi::c_void as *mut Fingerprint;
+    initStats(fpstats);
+    HIST_add(
+        ((*fpstats).pastEvents.events).as_mut_ptr(),
+        blockStart,
+        SEGMENT_SIZE as size_t,
+    );
+    HIST_add(
+        ((*fpstats).newEvents.events).as_mut_ptr(),
+        (blockStart as *const std::ffi::c_char)
+            .offset(blockSize as isize)
+            .offset(-(SEGMENT_SIZE as isize)) as *const std::ffi::c_void,
+        SEGMENT_SIZE as size_t,
+    );
+    (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
+    (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
+    if compareFingerprints(
+        &mut (*fpstats).pastEvents,
+        &mut (*fpstats).newEvents,
+        0 as std::ffi::c_int,
+        8 as std::ffi::c_int as std::ffi::c_uint,
+    ) == 0
+    {
+        return blockSize;
+    }
+    HIST_add(
+        ((*middleEvents).events).as_mut_ptr(),
+        (blockStart as *const std::ffi::c_char)
+            .offset((blockSize / 2 as std::ffi::c_int as size_t) as isize)
+            .offset(-((SEGMENT_SIZE / 2 as std::ffi::c_int) as isize))
+            as *const std::ffi::c_void,
+        SEGMENT_SIZE as size_t,
+    );
+    (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;
+    let distFromBegin = fpDistance(
+        &mut (*fpstats).pastEvents,
+        middleEvents,
+        8 as std::ffi::c_int as std::ffi::c_uint,
+    );
+    let distFromEnd = fpDistance(
+        &mut (*fpstats).newEvents,
+        middleEvents,
+        8 as std::ffi::c_int as std::ffi::c_uint,
+    );
+    let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3 as std::ffi::c_int) as U64;
+    if abs64(distFromBegin as S64 - distFromEnd as S64) < minDistance {
+        return (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
+            as size_t;
+    }
+    return (if distFromBegin > distFromEnd {
+        32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)
+    } else {
+        96 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)
+    }) as size_t;
+}
+pub const SEGMENT_SIZE: std::ffi::c_int = 512 as std::ffi::c_int;
+#[no_mangle]
+pub unsafe extern "C" fn ZSTD_splitBlock(
+    mut blockStart: *const std::ffi::c_void,
+    mut blockSize: size_t,
+    mut level: std::ffi::c_int,
+    mut workspace: *mut std::ffi::c_void,
+    mut wkspSize: size_t,
+) -> size_t {
+    if level == 0 as std::ffi::c_int {
+        return ZSTD_splitBlock_fromBorders(blockStart, blockSize, workspace, wkspSize);
+    }
+    return ZSTD_splitBlock_byChunks(
+        blockStart,
+        blockSize,
+        level - 1 as std::ffi::c_int,
+        workspace,
+        wkspSize,
+    );
+}
