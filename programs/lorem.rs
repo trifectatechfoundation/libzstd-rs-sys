@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
@@ -378,10 +377,10 @@ unsafe extern "C" fn LOREM_rand(mut range: std::ffi::c_uint) -> std::ffi::c_uint
     rand32 = rand32.wrapping_mul(prime1);
     rand32 ^= prime2;
     rand32 =
-        rand32 << 13 as std::ffi::c_int | rand32 >> 32 as std::ffi::c_int - 13 as std::ffi::c_int;
+        rand32 << 13 as std::ffi::c_int | rand32 >> (32 as std::ffi::c_int - 13 as std::ffi::c_int);
     g_randRoot = rand32;
-    return ((rand32 as std::ffi::c_ulonglong).wrapping_mul(range as std::ffi::c_ulonglong)
-        >> 32 as std::ffi::c_int) as std::ffi::c_uint;
+    ((rand32 as std::ffi::c_ulonglong).wrapping_mul(range as std::ffi::c_ulonglong)
+        >> 32 as std::ffi::c_int) as std::ffi::c_uint
 }
 unsafe extern "C" fn writeLastCharacters() {
     let mut lastChars = g_maxChars.wrapping_sub(g_nbChars);
@@ -461,9 +460,9 @@ unsafe extern "C" fn generateWord(
         (g_nbChars as std::ffi::c_ulong).wrapping_add(strlen(separator)) as size_t as size_t;
 }
 unsafe extern "C" fn about(mut target: std::ffi::c_uint) -> std::ffi::c_int {
-    return (LOREM_rand(target))
+    (LOREM_rand(target))
         .wrapping_add(LOREM_rand(target))
-        .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int;
+        .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
 }
 unsafe extern "C" fn generateSentence(mut nbWords: std::ffi::c_int) {
     let mut commaPos = about(9 as std::ffi::c_int as std::ffi::c_uint);
@@ -600,7 +599,7 @@ pub unsafe extern "C" fn LOREM_genBlock(
         }
     }
     g_ptr = NULL as *mut std::ffi::c_char;
-    return g_nbChars;
+    g_nbChars
 }
 #[no_mangle]
 pub unsafe extern "C" fn LOREM_genBuffer(

@@ -1,4 +1,3 @@
-use ::libc;
 pub type ZSTD_ErrorCode = std::ffi::c_uint;
 pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
 pub const ZSTD_error_externalSequences_invalid: ZSTD_ErrorCode = 107;
@@ -149,6 +148,6 @@ pub unsafe extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const std::f
         107 => {
             return b"External sequences are not valid\0" as *const u8 as *const std::ffi::c_char;
         }
-        120 | _ => return notErrorCode,
-    };
+        120 | _ => notErrorCode,
+    }
 }

@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -81,12 +80,12 @@ unsafe extern "C" fn RDG_rand(mut src: *mut U32) -> U32 {
     static mut prime1: U32 = 2654435761 as std::ffi::c_uint;
     static mut prime2: U32 = 2246822519 as std::ffi::c_uint;
     let mut rand32 = *src;
-    rand32 = rand32 * prime1;
+    rand32 *= prime1;
     rand32 ^= prime2;
     rand32 =
-        rand32 << 13 as std::ffi::c_int | rand32 >> 32 as std::ffi::c_int - 13 as std::ffi::c_int;
+        rand32 << 13 as std::ffi::c_int | rand32 >> (32 as std::ffi::c_int - 13 as std::ffi::c_int);
     *src = rand32;
-    return rand32 >> 5 as std::ffi::c_int;
+    rand32 >> 5 as std::ffi::c_int
 }
 unsafe extern "C" fn RDG_fillLiteralDistrib(mut ldt: *mut BYTE, mut ld: fixedPoint_24_8) {
     let firstChar = (if ld as std::ffi::c_double <= 0.0f64 {
@@ -110,7 +109,7 @@ unsafe extern "C" fn RDG_fillLiteralDistrib(mut ldt: *mut BYTE, mut ld: fixedPoi
     }
     u = 0 as std::ffi::c_int as U32;
     while u < LTSIZE as U32 {
-        let weight = ((LTSIZE as U32).wrapping_sub(u) * ld >> 8 as std::ffi::c_int)
+        let weight = (((LTSIZE as U32).wrapping_sub(u) * ld) >> 8 as std::ffi::c_int)
             .wrapping_add(1 as std::ffi::c_int as U32);
         let end =
             if u.wrapping_add(weight) < ((1 as std::ffi::c_int) << 13 as std::ffi::c_int) as U32 {
@@ -132,17 +131,17 @@ unsafe extern "C" fn RDG_fillLiteralDistrib(mut ldt: *mut BYTE, mut ld: fixedPoi
 }
 unsafe extern "C" fn RDG_genChar(mut seed: *mut U32, mut ldt: *const BYTE) -> BYTE {
     let id = RDG_rand(seed) & LTMASK as U32;
-    return *ldt.offset(id as isize);
+    *ldt.offset(id as isize)
 }
 unsafe extern "C" fn RDG_rand15Bits(mut seedPtr: *mut U32) -> U32 {
-    return RDG_rand(seedPtr) & 0x7fff as std::ffi::c_int as U32;
+    RDG_rand(seedPtr) & 0x7fff as std::ffi::c_int as U32
 }
 unsafe extern "C" fn RDG_randLength(mut seedPtr: *mut U32) -> U32 {
     if RDG_rand(seedPtr) & 7 as std::ffi::c_int as U32 != 0 {
         return RDG_rand(seedPtr) & 0xf as std::ffi::c_int as U32;
     }
-    return (RDG_rand(seedPtr) & 0x1ff as std::ffi::c_int as U32)
-        .wrapping_add(0xf as std::ffi::c_int as U32);
+    (RDG_rand(seedPtr) & 0x1ff as std::ffi::c_int as U32)
+        .wrapping_add(0xf as std::ffi::c_int as U32)
 }
 unsafe extern "C" fn RDG_genBlock(
     mut buffer: *mut std::ffi::c_void,

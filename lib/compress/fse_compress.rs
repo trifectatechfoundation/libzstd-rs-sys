@@ -1,4 +1,3 @@
-use ::libc;
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type __uint8_t = std::ffi::c_uchar;
@@ -80,17 +79,17 @@ pub struct FSE_symbolCompressionTransform {
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    return (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint;
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> U16 {
-    return *(ptr as *const unalign16);
+    *(ptr as *const unalign16)
 }
 #[inline]
 unsafe extern "C" fn MEM_write32(mut memPtr: *mut std::ffi::c_void, mut value: U32) {
@@ -102,11 +101,11 @@ unsafe extern "C" fn MEM_write64(mut memPtr: *mut std::ffi::c_void, mut value: U
 }
 #[inline]
 unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
-    return in_0.swap_bytes();
+    in_0.swap_bytes()
 }
 #[inline]
 unsafe extern "C" fn MEM_swap64(mut in_0: U64) -> U64 {
-    return in_0.swap_bytes();
+    in_0.swap_bytes()
 }
 #[inline]
 unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: U32) {
@@ -133,16 +132,16 @@ unsafe extern "C" fn MEM_writeLEST(mut memPtr: *mut std::ffi::c_void, mut val: s
     };
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    return (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint;
+    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
-    return val.leading_zeros() as i32 as std::ffi::c_uint;
+    val.leading_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
-    return (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val));
+    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 static mut BIT_mask: [std::ffi::c_uint; 32] = [
     0 as std::ffi::c_int as std::ffi::c_uint,
@@ -194,14 +193,14 @@ unsafe extern "C" fn BIT_initCStream(
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 #[inline(always)]
 unsafe extern "C" fn BIT_getLowerBits(
     mut bitContainer: BitContainerType,
     nbBits: U32,
 ) -> BitContainerType {
-    return bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType;
+    bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType
 }
 #[inline]
 unsafe extern "C" fn BIT_addBits(
@@ -251,11 +250,11 @@ unsafe extern "C" fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0 as std::ffi::c_int as size_t;
     }
-    return (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t)
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t)
         .wrapping_add(
             ((*bitC).bitPos > 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
                 as size_t,
-        );
+        )
 }
 pub const FSE_NCOUNTBOUND: std::ffi::c_int = 512 as std::ffi::c_int;
 #[inline]
@@ -304,7 +303,7 @@ unsafe extern "C" fn FSE_encodeSymbol(
         *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
     let stateTable = (*statePtr).stateTable as *const U16;
     let nbBitsOut =
-        ((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t >> 16 as std::ffi::c_int) as U32;
+        (((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t) >> 16 as std::ffi::c_int) as U32;
     BIT_addBits(bitC, (*statePtr).value as BitContainerType, nbBitsOut);
     (*statePtr).value = *stateTable
         .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
@@ -470,7 +469,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
     u_1 = 0 as std::ffi::c_int as U32;
     while u_1 < tableSize {
         let mut s_1 = *tableSymbol.offset(u_1 as isize);
-        let ref mut fresh1 = *cumul.offset(s_1 as isize);
+        let fresh1 = &mut (*cumul.offset(s_1 as isize));
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         *tableU16.offset(fresh2 as isize) = tableSize.wrapping_add(u_1) as U16;
@@ -514,7 +513,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
         s_2 = s_2.wrapping_add(1);
         s_2;
     }
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_NCountWriteBound(
@@ -529,11 +528,11 @@ pub unsafe extern "C" fn FSE_NCountWriteBound(
         .wrapping_div(8 as std::ffi::c_int as std::ffi::c_uint)
         .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
         .wrapping_add(2 as std::ffi::c_int as std::ffi::c_uint) as size_t;
-    return if maxSymbolValue != 0 {
+    if maxSymbolValue != 0 {
         maxHeaderSize
     } else {
         FSE_NCOUNTBOUND as size_t
-    };
+    }
 }
 unsafe extern "C" fn FSE_writeNCount_generic(
     mut header: *mut std::ffi::c_void,
@@ -656,7 +655,7 @@ unsafe extern "C" fn FSE_writeNCount_generic(
     *out.offset(0 as std::ffi::c_int as isize) = bitStream as BYTE;
     *out.offset(1 as std::ffi::c_int as isize) = (bitStream >> 8 as std::ffi::c_int) as BYTE;
     out = out.offset(((bitCount + 7 as std::ffi::c_int) / 8 as std::ffi::c_int) as isize);
-    return out.offset_from(ostart) as std::ffi::c_long as size_t;
+    out.offset_from(ostart) as std::ffi::c_long as size_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_writeNCount(
@@ -682,14 +681,14 @@ pub unsafe extern "C" fn FSE_writeNCount(
             0 as std::ffi::c_int as std::ffi::c_uint,
         );
     }
-    return FSE_writeNCount_generic(
+    FSE_writeNCount_generic(
         buffer,
         bufferSize,
         normalizedCounter,
         maxSymbolValue,
         tableLog,
         1 as std::ffi::c_int as std::ffi::c_uint,
-    );
+    )
 }
 unsafe extern "C" fn FSE_minTableLog(
     mut srcSize: size_t,
@@ -704,7 +703,7 @@ unsafe extern "C" fn FSE_minTableLog(
     } else {
         minBitsSymbols
     };
-    return minBits;
+    minBits
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_optimalTableLog_internal(
@@ -733,7 +732,7 @@ pub unsafe extern "C" fn FSE_optimalTableLog_internal(
     if tableLog > FSE_MAX_TABLELOG as U32 {
         tableLog = FSE_MAX_TABLELOG as U32;
     }
-    return tableLog;
+    tableLog
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_optimalTableLog(
@@ -741,12 +740,12 @@ pub unsafe extern "C" fn FSE_optimalTableLog(
     mut srcSize: size_t,
     mut maxSymbolValue: std::ffi::c_uint,
 ) -> std::ffi::c_uint {
-    return FSE_optimalTableLog_internal(
+    FSE_optimalTableLog_internal(
         maxTableLog,
         srcSize,
         maxSymbolValue,
         2 as std::ffi::c_int as std::ffi::c_uint,
-    );
+    )
 }
 unsafe extern "C" fn FSE_normalizeM2(
     mut norm: *mut std::ffi::c_short,
@@ -761,8 +760,7 @@ unsafe extern "C" fn FSE_normalizeM2(
     let mut distributed = 0 as std::ffi::c_int as U32;
     let mut ToDistribute: U32 = 0;
     let lowThreshold = (total >> tableLog) as U32;
-    let mut lowOne = (total * 3 as std::ffi::c_int as size_t
-        >> tableLog.wrapping_add(1 as std::ffi::c_int as U32)) as U32;
+    let mut lowOne = ((total * 3 as std::ffi::c_int as size_t) >> tableLog.wrapping_add(1 as std::ffi::c_int as U32)) as U32;
     s = 0 as std::ffi::c_int as U32;
     while s <= maxSymbolValue {
         if *count.offset(s as isize) == 0 as std::ffi::c_int as std::ffi::c_uint {
@@ -817,7 +815,7 @@ unsafe extern "C" fn FSE_normalizeM2(
             s = s.wrapping_add(1);
             s;
         }
-        let ref mut fresh4 = *norm.offset(maxV as isize);
+        let fresh4 = &mut (*norm.offset(maxV as isize));
         *fresh4 = (*fresh4 as std::ffi::c_int
             + ToDistribute as std::ffi::c_short as std::ffi::c_int)
             as std::ffi::c_short;
@@ -829,7 +827,7 @@ unsafe extern "C" fn FSE_normalizeM2(
             if *norm.offset(s as isize) as std::ffi::c_int > 0 as std::ffi::c_int {
                 ToDistribute = ToDistribute.wrapping_sub(1);
                 ToDistribute;
-                let ref mut fresh5 = *norm.offset(s as isize);
+                let fresh5 = &mut (*norm.offset(s as isize));
                 *fresh5 += 1;
                 *fresh5;
             }
@@ -861,7 +859,7 @@ unsafe extern "C" fn FSE_normalizeM2(
         s = s.wrapping_add(1);
         s;
     }
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_normalizeCount(
@@ -920,7 +918,7 @@ pub unsafe extern "C" fn FSE_normalizeCount(
             stillToDistribute -= 1;
             stillToDistribute;
         } else {
-            let mut proba = (*count.offset(s as isize) as U64 * step >> scale) as std::ffi::c_short;
+            let mut proba = ((*count.offset(s as isize) as U64 * step) >> scale) as std::ffi::c_short;
             if (proba as std::ffi::c_int) < 8 as std::ffi::c_int {
                 let mut restToBeat = vStep * *rtbTable.as_ptr().offset(proba as isize) as U64;
                 proba = (proba as std::ffi::c_int
@@ -954,12 +952,12 @@ pub unsafe extern "C" fn FSE_normalizeCount(
             return errorCode;
         }
     } else {
-        let ref mut fresh6 = *normalizedCounter.offset(largest as isize);
+        let fresh6 = &mut (*normalizedCounter.offset(largest as isize));
         *fresh6 = (*fresh6 as std::ffi::c_int
             + stillToDistribute as std::ffi::c_short as std::ffi::c_int)
             as std::ffi::c_short;
     }
-    return tableLog as size_t;
+    tableLog as size_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_buildCTable_rle(
@@ -977,7 +975,7 @@ pub unsafe extern "C" fn FSE_buildCTable_rle(
     *tableU16.offset(1 as std::ffi::c_int as isize) = 0 as std::ffi::c_int as U16;
     (*symbolTT.offset(symbolValue as isize)).deltaNbBits = 0 as std::ffi::c_int as U32;
     (*symbolTT.offset(symbolValue as isize)).deltaFindState = 0 as std::ffi::c_int;
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 unsafe extern "C" fn FSE_compress_usingCTable_generic(
     mut dst: *mut std::ffi::c_void,
@@ -993,20 +991,20 @@ unsafe extern "C" fn FSE_compress_usingCTable_generic(
     let mut bitC = BIT_CStream_t {
         bitContainer: 0,
         bitPos: 0,
-        startPtr: 0 as *mut std::ffi::c_char,
-        ptr: 0 as *mut std::ffi::c_char,
-        endPtr: 0 as *mut std::ffi::c_char,
+        startPtr: std::ptr::null_mut::<std::ffi::c_char>(),
+        ptr: std::ptr::null_mut::<std::ffi::c_char>(),
+        endPtr: std::ptr::null_mut::<std::ffi::c_char>(),
     };
     let mut CState1 = FSE_CState_t {
         value: 0,
-        stateTable: 0 as *const std::ffi::c_void,
-        symbolTT: 0 as *const std::ffi::c_void,
+        stateTable: std::ptr::null::<std::ffi::c_void>(),
+        symbolTT: std::ptr::null::<std::ffi::c_void>(),
         stateLog: 0,
     };
     let mut CState2 = FSE_CState_t {
         value: 0,
-        stateTable: 0 as *const std::ffi::c_void,
-        symbolTT: 0 as *const std::ffi::c_void,
+        stateTable: std::ptr::null::<std::ffi::c_void>(),
+        symbolTT: std::ptr::null::<std::ffi::c_void>(),
         stateLog: 0,
     };
     if srcSize <= 2 as std::ffi::c_int as size_t {
@@ -1082,7 +1080,7 @@ unsafe extern "C" fn FSE_compress_usingCTable_generic(
     }
     FSE_flushCState(&mut bitC, &mut CState2);
     FSE_flushCState(&mut bitC, &mut CState1);
-    return BIT_closeCStream(&mut bitC);
+    BIT_closeCStream(&mut bitC)
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_compress_usingCTable(
@@ -1108,21 +1106,21 @@ pub unsafe extern "C" fn FSE_compress_usingCTable(
             1 as std::ffi::c_int as std::ffi::c_uint,
         );
     } else {
-        return FSE_compress_usingCTable_generic(
+        FSE_compress_usingCTable_generic(
             dst,
             dstSize,
             src,
             srcSize,
             ct,
             0 as std::ffi::c_int as std::ffi::c_uint,
-        );
-    };
+        )
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_compressBound(mut size: size_t) -> size_t {
-    return (FSE_NCOUNTBOUND as std::ffi::c_ulong).wrapping_add(
+    (FSE_NCOUNTBOUND as std::ffi::c_ulong).wrapping_add(
         size.wrapping_add(size >> 7 as std::ffi::c_int)
             .wrapping_add(4 as std::ffi::c_int as size_t)
             .wrapping_add(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
-    );
+    )
 }

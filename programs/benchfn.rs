@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
@@ -95,21 +94,21 @@ pub const TIMELOOP_NANOSEC: std::ffi::c_ulonglong = (1 as std::ffi::c_int as std
 pub unsafe extern "C" fn BMK_isSuccessful_runOutcome(
     mut outcome: BMK_runOutcome_t,
 ) -> std::ffi::c_int {
-    return (outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int) as std::ffi::c_int;
+    (outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int) as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_runTime(mut outcome: BMK_runOutcome_t) -> BMK_runTime_t {
-    if !(outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int) {
+    if (outcome.error_tag_never_ever_use_directly != 0 as std::ffi::c_int) {
         abort();
     }
-    return outcome.internal_never_ever_use_directly;
+    outcome.internal_never_ever_use_directly
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_errorResult(mut outcome: BMK_runOutcome_t) -> size_t {
-    if !(outcome.error_tag_never_ever_use_directly != 0 as std::ffi::c_int) {
+    if (outcome.error_tag_never_ever_use_directly == 0 as std::ffi::c_int) {
         abort();
     }
-    return outcome.error_result_never_ever_use_directly;
+    outcome.error_result_never_ever_use_directly
 }
 unsafe extern "C" fn BMK_runOutcome_error(mut errorResult: size_t) -> BMK_runOutcome_t {
     let mut b = BMK_runOutcome_t {
@@ -127,7 +126,7 @@ unsafe extern "C" fn BMK_runOutcome_error(mut errorResult: size_t) -> BMK_runOut
     );
     b.error_tag_never_ever_use_directly = 1 as std::ffi::c_int;
     b.error_result_never_ever_use_directly = errorResult;
-    return b;
+    b
 }
 unsafe extern "C" fn BMK_setValid_runTime(mut runTime: BMK_runTime_t) -> BMK_runOutcome_t {
     let mut outcome = BMK_runOutcome_t {
@@ -140,7 +139,7 @@ unsafe extern "C" fn BMK_setValid_runTime(mut runTime: BMK_runTime_t) -> BMK_run
     };
     outcome.error_tag_never_ever_use_directly = 0 as std::ffi::c_int;
     outcome.internal_never_ever_use_directly = runTime;
-    return outcome;
+    outcome
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFunction(
@@ -199,7 +198,7 @@ pub unsafe extern "C" fn BMK_benchFunction(
     };
     rt.nanoSecPerRun = totalTime as std::ffi::c_double / nbLoops as std::ffi::c_double;
     rt.sumOfReturn = dstSize;
-    return BMK_setValid_runTime(rt);
+    BMK_setValid_runTime(rt)
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_createTimedFnState(
@@ -212,7 +211,7 @@ pub unsafe extern "C" fn BMK_createTimedFnState(
         return NULL as *mut BMK_timedFnState_t;
     }
     BMK_resetTimedFnState(r, total_ms, run_ms);
-    return r;
+    r
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_freeTimedFnState(mut state: *mut BMK_timedFnState_t) {
@@ -233,11 +232,11 @@ pub unsafe extern "C" fn BMK_initStatic_timedFnState(
     if size < ::core::mem::size_of::<BMK_timedFnState_s>() as std::ffi::c_ulong {
         return NULL as *mut BMK_timedFnState_t;
     }
-    if buffer as size_t % tfs_alignment != 0 {
+    if !(buffer as size_t).is_multiple_of(tfs_alignment) {
         return NULL as *mut BMK_timedFnState_t;
     }
     BMK_resetTimedFnState(r, total_ms, run_ms);
-    return r;
+    r
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_resetTimedFnState(
@@ -273,7 +272,7 @@ pub unsafe extern "C" fn BMK_resetTimedFnState(
 pub unsafe extern "C" fn BMK_isCompleted_TimedFn(
     mut timedFnState: *const BMK_timedFnState_t,
 ) -> std::ffi::c_int {
-    return ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as std::ffi::c_int;
+    ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchTimedFn(
@@ -363,5 +362,5 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
             completed = 1 as std::ffi::c_int;
         }
     }
-    return BMK_setValid_runTime(bestRunTime);
+    BMK_setValid_runTime(bestRunTime)
 }

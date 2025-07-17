@@ -907,7 +907,7 @@ pub const info_frame_error: InfoError = 1;
 pub const info_success: InfoError = 0;
 pub const _IOFBF: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const UINT64_MAX: std::ffi::c_ulong = 18446744073709551615 as std::ffi::c_ulong;
-use crate::{MEM_readLE24, MEM_readLE32, MEM_writeLE32};
+use crate::{MEM_readLE24, MEM_readLE32};
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const S_IRUSR: std::ffi::c_int = __S_IREAD;
@@ -958,18 +958,18 @@ pub const TLZ4_EXTENSION: [std::ffi::c_char; 6] =
     unsafe { *::core::mem::transmute::<&[u8; 6], &[std::ffi::c_char; 6]>(b".tlz4\0") };
 #[no_mangle]
 pub static mut g_display_prefs: FIO_display_prefs_t = {
-    let mut init = FIO_display_prefs_s {
+    
+    FIO_display_prefs_s {
         displayLevel: 2 as std::ffi::c_int,
         progressSetting: FIO_ps_auto,
-    };
-    init
+    }
 };
 #[no_mangle]
 pub static mut g_displayClock: UTIL_time_t = {
-    let mut init = UTIL_time_t {
+    
+    UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
-    };
-    init
+    }
 };
 pub const ZLIB_VERSION: [std::ffi::c_char; 4] =
     unsafe { *::core::mem::transmute::<&[u8; 4], &[std::ffi::c_char; 4]>(b"1.3\0") };
@@ -997,15 +997,15 @@ pub const LONG_TELL: unsafe extern "C" fn(*mut FILE) -> std::ffi::c_long = ftell
 pub const LZ4_MAGICNUMBER: std::ffi::c_int = 0x184d2204 as std::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn FIO_zlibVersion() -> *const std::ffi::c_char {
-    return zlibVersion();
+    zlibVersion()
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_lz4Version() -> *const std::ffi::c_char {
-    return b"Unsupported\0" as *const u8 as *const std::ffi::c_char;
+    b"Unsupported\0" as *const u8 as *const std::ffi::c_char
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_lzmaVersion() -> *const std::ffi::c_char {
-    return lzma_version_string();
+    lzma_version_string()
 }
 pub const ADAPT_WINDOWLOG_DEFAULT: std::ffi::c_int = 23 as std::ffi::c_int;
 pub const DICTSIZE_MAX: std::ffi::c_int =
@@ -1100,8 +1100,8 @@ unsafe extern "C" fn clearHandler() {
 #[no_mangle]
 pub unsafe extern "C" fn FIO_addAbortHandler() {}
 unsafe extern "C" fn FIO_shouldDisplayFileSummary(mut fCtx: *const FIO_ctx_t) -> std::ffi::c_int {
-    return ((*fCtx).nbFilesTotal <= 1 as std::ffi::c_int
-        || g_display_prefs.displayLevel >= 3 as std::ffi::c_int) as std::ffi::c_int;
+    ((*fCtx).nbFilesTotal <= 1 as std::ffi::c_int
+        || g_display_prefs.displayLevel >= 3 as std::ffi::c_int) as std::ffi::c_int
 }
 unsafe extern "C" fn FIO_shouldDisplayMultipleFileSummary(
     mut fCtx: *const FIO_ctx_t,
@@ -1143,7 +1143,7 @@ unsafe extern "C" fn FIO_shouldDisplayMultipleFileSummary(
             );
         }
     };
-    return shouldDisplay;
+    shouldDisplay
 }
 pub const FIO_OVERLAP_LOG_NOTSET: std::ffi::c_int = 9999 as std::ffi::c_int;
 pub const FIO_LDM_PARAM_NOTSET: std::ffi::c_int = 9999 as std::ffi::c_int;
@@ -1209,7 +1209,7 @@ pub unsafe extern "C" fn FIO_createPreferences() -> *mut FIO_prefs_t {
     (*ret).allowBlockDevices = 0 as std::ffi::c_int;
     (*ret).asyncIO = AIO_supported();
     (*ret).passThrough = -(1 as std::ffi::c_int);
-    return ret;
+    ret
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_createContext() -> *mut FIO_ctx_t {
@@ -1251,7 +1251,7 @@ pub unsafe extern "C" fn FIO_createContext() -> *mut FIO_ctx_t {
     (*ret).nbFilesProcessed = 0 as std::ffi::c_int;
     (*ret).totalBytesInput = 0 as std::ffi::c_int as size_t;
     (*ret).totalBytesOutput = 0 as std::ffi::c_int as size_t;
-    return ret;
+    ret
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_freePreferences(prefs: *mut FIO_prefs_t) {
@@ -1326,15 +1326,14 @@ pub unsafe extern "C" fn FIO_setAllowBlockDevices(
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: std::ffi::c_int) {
-    if jobSize != 0 && (*prefs).nbWorkers == 0 as std::ffi::c_int {
-        if g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
+    if jobSize != 0 && (*prefs).nbWorkers == 0 as std::ffi::c_int
+        && g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"Setting block size is useless in single-thread mode \n\0" as *const u8
                     as *const std::ffi::c_char,
             );
         }
-    }
     (*prefs).jobSize = jobSize;
 }
 #[no_mangle]
@@ -1342,15 +1341,14 @@ pub unsafe extern "C" fn FIO_setOverlapLog(
     prefs: *mut FIO_prefs_t,
     mut overlapLog: std::ffi::c_int,
 ) {
-    if overlapLog != 0 && (*prefs).nbWorkers == 0 as std::ffi::c_int {
-        if g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
+    if overlapLog != 0 && (*prefs).nbWorkers == 0 as std::ffi::c_int
+        && g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"Setting overlapLog is useless in single-thread mode \n\0" as *const u8
                     as *const std::ffi::c_char,
             );
         }
-    }
     (*prefs).overlapLog = overlapLog;
 }
 #[no_mangle]
@@ -1625,7 +1623,7 @@ unsafe extern "C" fn FIO_removeFile(mut path: *const std::ffi::c_char) -> std::f
         }
         return 0 as std::ffi::c_int;
     }
-    return remove(path);
+    remove(path)
 }
 unsafe extern "C" fn FIO_openSrcFile(
     prefs: *const FIO_prefs_t,
@@ -1725,8 +1723,8 @@ unsafe extern "C" fn FIO_openSrcFile(
         return NULL as *mut FILE;
     }
     let f = fopen(srcFileName, b"rb\0" as *const u8 as *const std::ffi::c_char);
-    if f.is_null() {
-        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+    if f.is_null()
+        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"zstd: %s: %s \n\0" as *const u8 as *const std::ffi::c_char,
@@ -1734,8 +1732,7 @@ unsafe extern "C" fn FIO_openSrcFile(
                 strerror(*__errno_location()),
             );
         }
-    }
-    return f;
+    f
 }
 unsafe extern "C" fn FIO_openDstFile(
     mut fCtx: *mut FIO_ctx_t,
@@ -1914,16 +1911,14 @@ unsafe extern "C" fn FIO_openDstFile(
         _IOFBF,
         (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)) as size_t,
     ) != 0
-    {
-        if g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
+        && g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"Warning: setvbuf failed for %s\n\0" as *const u8 as *const std::ffi::c_char,
                 dstFileName,
             );
         }
-    }
-    return f;
+    f
 }
 unsafe extern "C" fn FIO_getDictFileStat(
     mut fileName: *const std::ffi::c_char,
@@ -2028,7 +2023,7 @@ unsafe extern "C" fn FIO_setDictBufferMalloc(
     prefs: *mut FIO_prefs_t,
     mut dictFileStat: *mut stat_t,
 ) -> size_t {
-    let mut fileHandle = 0 as *mut FILE;
+    let mut fileHandle = std::ptr::null_mut::<FILE>();
     let mut fileSize: U64 = 0;
     let mut bufferPtr: *mut *mut std::ffi::c_void = &mut (*dict).dictBuffer;
     if !bufferPtr.is_null() {
@@ -2249,7 +2244,7 @@ unsafe extern "C" fn FIO_setDictBufferMalloc(
         exit(35 as std::ffi::c_int);
     }
     fclose(fileHandle);
-    return fileSize;
+    fileSize
 }
 pub const PROT_READ: std::ffi::c_int = 0x1 as std::ffi::c_int;
 pub const MAP_PRIVATE: std::ffi::c_int = 0x2 as std::ffi::c_int;
@@ -2454,7 +2449,7 @@ unsafe extern "C" fn FIO_setDictBufferMMap(
         exit(34 as std::ffi::c_int);
     }
     close(fileHandle);
-    return fileSize;
+    fileSize
 }
 unsafe extern "C" fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
     if (*dict).dictBufferType as std::ffi::c_uint
@@ -2540,9 +2535,9 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
     mut filenameTable: *mut *const std::ffi::c_char,
     mut nbFiles: std::ffi::c_uint,
 ) -> std::ffi::c_int {
-    let mut filenameTableSorted = 0 as *mut *const std::ffi::c_char;
-    let mut prevElem = 0 as *const std::ffi::c_char;
-    let mut filename = 0 as *const std::ffi::c_char;
+    let mut filenameTableSorted = std::ptr::null_mut::<*const std::ffi::c_char>();
+    let mut prevElem = std::ptr::null::<std::ffi::c_char>();
+    let mut filename = std::ptr::null::<std::ffi::c_char>();
     let mut u: std::ffi::c_uint = 0;
     filenameTableSorted = malloc(
         (::core::mem::size_of::<*mut std::ffi::c_char>() as std::ffi::c_ulong)
@@ -2562,10 +2557,10 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
     while u < nbFiles {
         filename = strrchr(*filenameTable.offset(u as isize), PATH_SEP);
         if filename.is_null() {
-            let ref mut fresh0 = *filenameTableSorted.offset(u as isize);
+            let fresh0 = &mut (*filenameTableSorted.offset(u as isize));
             *fresh0 = *filenameTable.offset(u as isize);
         } else {
-            let ref mut fresh1 = *filenameTableSorted.offset(u as isize);
+            let fresh1 = &mut (*filenameTableSorted.offset(u as isize));
             *fresh1 = filename.offset(1 as std::ffi::c_int as isize);
         }
         u = u.wrapping_add(1);
@@ -2586,8 +2581,8 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
     prevElem = *filenameTableSorted.offset(0 as std::ffi::c_int as isize);
     u = 1 as std::ffi::c_int as std::ffi::c_uint;
     while u < nbFiles {
-        if strcmp(prevElem, *filenameTableSorted.offset(u as isize)) == 0 as std::ffi::c_int {
-            if g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
+        if strcmp(prevElem, *filenameTableSorted.offset(u as isize)) == 0 as std::ffi::c_int
+            && g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"WARNING: Two files have same filename: %s\n\0" as *const u8
@@ -2595,13 +2590,12 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
                     prevElem,
                 );
             }
-        }
         prevElem = *filenameTableSorted.offset(u as isize);
         u = u.wrapping_add(1);
         u;
     }
     free(filenameTableSorted as *mut std::ffi::c_void);
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn extractFilename(
     mut path: *const std::ffi::c_char,
@@ -2611,16 +2605,16 @@ unsafe extern "C" fn extractFilename(
     if search.is_null() {
         return path;
     }
-    return search.offset(1 as std::ffi::c_int as isize);
+    search.offset(1 as std::ffi::c_int as isize)
 }
 unsafe extern "C" fn FIO_createFilename_fromOutDir(
     mut path: *const std::ffi::c_char,
     mut outDirName: *const std::ffi::c_char,
     suffixLen: size_t,
 ) -> *mut std::ffi::c_char {
-    let mut filenameStart = 0 as *const std::ffi::c_char;
+    let mut filenameStart = std::ptr::null::<std::ffi::c_char>();
     let mut separator: std::ffi::c_char = 0;
-    let mut result = 0 as *mut std::ffi::c_char;
+    let mut result = std::ptr::null_mut::<std::ffi::c_char>();
     separator = '/' as i32 as std::ffi::c_char;
     filenameStart = extractFilename(path, separator);
     result = calloc(
@@ -2692,7 +2686,7 @@ unsafe extern "C" fn FIO_createFilename_fromOutDir(
             strlen(filenameStart),
         );
     }
-    return result;
+    result
 }
 unsafe extern "C" fn FIO_highbit64(mut v: std::ffi::c_ulonglong) -> std::ffi::c_uint {
     let mut count = 0 as std::ffi::c_int as std::ffi::c_uint;
@@ -2728,7 +2722,7 @@ unsafe extern "C" fn FIO_highbit64(mut v: std::ffi::c_ulonglong) -> std::ffi::c_
         count = count.wrapping_add(1);
         count;
     }
-    return count;
+    count
 }
 unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
     prefs: *mut FIO_prefs_t,
@@ -2862,8 +2856,8 @@ unsafe extern "C" fn FIO_multiFilesConcatWarning(
     mut outFileName: *const std::ffi::c_char,
     mut displayLevelCutoff: std::ffi::c_int,
 ) -> std::ffi::c_int {
-    if (*fCtx).hasStdoutOutput != 0 {
-        if (*prefs).removeSrcFile != 0 {
+    if (*fCtx).hasStdoutOutput != 0
+        && (*prefs).removeSrcFile != 0 {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
             }
@@ -2894,7 +2888,6 @@ unsafe extern "C" fn FIO_multiFilesConcatWarning(
             }
             exit(43 as std::ffi::c_int);
         }
-    }
     if (*prefs).testMode != 0 {
         if (*prefs).removeSrcFile != 0 {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -3022,12 +3015,12 @@ unsafe extern "C" fn FIO_multiFilesConcatWarning(
         }
         return 1 as std::ffi::c_int;
     }
-    return UTIL_requireUserConfirmation(
+    UTIL_requireUserConfirmation(
         b"Proceed? (y/n): \0" as *const u8 as *const std::ffi::c_char,
         b"Aborting...\0" as *const u8 as *const std::ffi::c_char,
         b"yY\0" as *const u8 as *const std::ffi::c_char,
         (*fCtx).hasStdinInput,
-    );
+    )
 }
 unsafe extern "C" fn setInBuffer(
     mut buf: *const std::ffi::c_void,
@@ -3035,14 +3028,14 @@ unsafe extern "C" fn setInBuffer(
     mut pos: size_t,
 ) -> ZSTD_inBuffer {
     let mut i = ZSTD_inBuffer_s {
-        src: 0 as *const std::ffi::c_void,
+        src: std::ptr::null::<std::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
     i.src = buf;
     i.size = s;
     i.pos = pos;
-    return i;
+    i
 }
 unsafe extern "C" fn setOutBuffer(
     mut buf: *mut std::ffi::c_void,
@@ -3050,14 +3043,14 @@ unsafe extern "C" fn setOutBuffer(
     mut pos: size_t,
 ) -> ZSTD_outBuffer {
     let mut o = ZSTD_outBuffer_s {
-        dst: 0 as *mut std::ffi::c_void,
+        dst: std::ptr::null_mut::<std::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
     o.dst = buf;
     o.size = s;
     o.pos = pos;
-    return o;
+    o
 }
 unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: U32, mut strat: ZSTD_strategy) -> U32 {
     let btScale =
@@ -3088,7 +3081,7 @@ unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: U32, mut strat: ZSTD_strategy) -
             );
         }
     };
-    return hashLog.wrapping_sub(btScale);
+    hashLog.wrapping_sub(btScale)
 }
 unsafe extern "C" fn FIO_adjustParamsForPatchFromMode(
     prefs: *mut FIO_prefs_t,
@@ -3113,15 +3106,13 @@ unsafe extern "C" fn FIO_adjustParamsForPatchFromMode(
         } else {
             ZSTD_WINDOWLOG_MAX_64
         }) as std::ffi::c_uint
-    {
-        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"Max window log exceeded by file (compression ratio will suffer)\n\0" as *const u8
                     as *const std::ffi::c_char,
             );
         }
-    }
     (*comprParams).windowLog = if 10 as std::ffi::c_int as std::ffi::c_uint
         > (if ((if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
             == 4 as std::ffi::c_int as std::ffi::c_ulong
@@ -3163,15 +3154,14 @@ unsafe extern "C" fn FIO_adjustParamsForPatchFromMode(
         fileWindowLog
     };
     if fileWindowLog > ZSTD_cycleLog(cParams.chainLog, cParams.strategy) {
-        if (*prefs).ldmFlag == 0 {
-            if g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
+        if (*prefs).ldmFlag == 0
+            && g_display_prefs.displayLevel >= 2 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"long mode automatically triggered\n\0" as *const u8
                         as *const std::ffi::c_char,
                 );
             }
-        }
         FIO_setLdmFlag(prefs, 1 as std::ffi::c_int as std::ffi::c_uint);
     }
     if cParams.strategy as std::ffi::c_uint >= ZSTD_btopt as std::ffi::c_int as std::ffi::c_uint {
@@ -3261,11 +3251,11 @@ unsafe extern "C" fn FIO_createCResources(
     let mut dictBufferType = FIO_mallocDict;
     let mut ress = cRess_t {
         dict: FIO_Dict_t {
-            dictBuffer: 0 as *mut std::ffi::c_void,
+            dictBuffer: std::ptr::null_mut::<std::ffi::c_void>(),
             dictBufferSize: 0,
             dictBufferType: FIO_mallocDict,
         },
-        dictFileName: 0 as *const std::ffi::c_char,
+        dictFileName: std::ptr::null::<std::ffi::c_char>(),
         dictFileStat: stat {
             st_dev: 0,
             st_ino: 0,
@@ -3292,9 +3282,9 @@ unsafe extern "C" fn FIO_createCResources(
             },
             __glibc_reserved: [0; 3],
         },
-        cctx: 0 as *mut ZSTD_CStream,
-        writeCtx: 0 as *mut WritePoolCtx_t,
-        readCtx: 0 as *mut ReadPoolCtx_t,
+        cctx: std::ptr::null_mut::<ZSTD_CStream>(),
+        writeCtx: std::ptr::null_mut::<WritePoolCtx_t>(),
+        readCtx: std::ptr::null_mut::<ReadPoolCtx_t>(),
     };
     memset(
         &mut ress as *mut cRess_t as *mut std::ffi::c_void,
@@ -4588,7 +4578,7 @@ unsafe extern "C" fn FIO_createCResources(
             exit(11 as std::ffi::c_int);
         }
     }
-    return ress;
+    ress
 }
 unsafe extern "C" fn FIO_freeCResources(ress: *mut cRess_t) {
     FIO_freeDict(&mut (*ress).dict);
@@ -4606,17 +4596,17 @@ unsafe extern "C" fn FIO_compressGzFrame(
     let mut inFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = z_stream_s {
-        next_in: 0 as *mut Bytef,
+        next_in: std::ptr::null_mut::<Bytef>(),
         avail_in: 0,
         total_in: 0,
-        next_out: 0 as *mut Bytef,
+        next_out: std::ptr::null_mut::<Bytef>(),
         avail_out: 0,
         total_out: 0,
-        msg: 0 as *mut std::ffi::c_char,
-        state: 0 as *mut internal_state,
+        msg: std::ptr::null_mut::<std::ffi::c_char>(),
+        state: std::ptr::null_mut::<internal_state>(),
         zalloc: None,
         zfree: None,
-        opaque: 0 as *mut std::ffi::c_void,
+        opaque: std::ptr::null_mut::<std::ffi::c_void>(),
         data_type: 0,
         adler: 0,
         reserved: 0,
@@ -4671,7 +4661,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
         exit(71 as std::ffi::c_int);
     }
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
-    strm.next_in = 0 as *mut Bytef;
+    strm.next_in = std::ptr::null_mut::<Bytef>();
     strm.avail_in = 0 as std::ffi::c_int as uInt;
     strm.next_out = (*writeJob).buffer as *mut Bytef;
     strm.avail_out = (*writeJob).bufferSize as uInt;
@@ -4739,13 +4729,11 @@ unsafe extern "C" fn FIO_compressGzFrame(
                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                     || g_display_prefs.progressSetting as std::ffi::c_uint
                         == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-            {
-                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                     && g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-                {
-                    if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                    && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                     {
                         g_displayClock = UTIL_getTime();
                         fprintf(
@@ -4759,20 +4747,16 @@ unsafe extern "C" fn FIO_compressGzFrame(
                             fflush(stderr);
                         }
                     }
-                }
-            }
         } else if g_display_prefs.progressSetting as std::ffi::c_uint
             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                 && g_display_prefs.progressSetting as std::ffi::c_uint
                     != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-            {
-                if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                 {
                     g_displayClock = UTIL_getTime();
                     fprintf(
@@ -4788,8 +4772,6 @@ unsafe extern "C" fn FIO_compressGzFrame(
                         fflush(stderr);
                     }
                 }
-            }
-        }
     }
     loop {
         let ret_1 = deflate(&mut strm, Z_FINISH);
@@ -4873,7 +4855,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
     *readsize = inFileSize as U64;
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return outFileSize;
+    outFileSize
 }
 unsafe extern "C" fn FIO_compressLzmaFrame(
     mut ress: *mut cRess_t,
@@ -4886,7 +4868,8 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     let mut inFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = {
-        let mut init = lzma_stream {
+        
+        lzma_stream {
             next_in: NULL as *const uint8_t,
             avail_in: 0 as std::ffi::c_int as size_t,
             total_in: 0 as std::ffi::c_int as uint64_t,
@@ -4905,8 +4888,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
             reserved_int4: 0 as std::ffi::c_int as size_t,
             reserved_enum1: LZMA_RESERVED_ENUM,
             reserved_enum2: LZMA_RESERVED_ENUM,
-        };
-        init
+        }
     };
     let mut action = LZMA_RUN;
     let mut ret = LZMA_OK;
@@ -4920,7 +4902,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     if plain_lzma != 0 {
         let mut opt_lzma = lzma_options_lzma {
             dict_size: 0,
-            preset_dict: 0 as *const uint8_t,
+            preset_dict: std::ptr::null::<uint8_t>(),
             preset_dict_size: 0,
             lc: 0,
             lp: 0,
@@ -4941,8 +4923,8 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
             reserved_enum2: LZMA_RESERVED_ENUM,
             reserved_enum3: LZMA_RESERVED_ENUM,
             reserved_enum4: LZMA_RESERVED_ENUM,
-            reserved_ptr1: 0 as *mut std::ffi::c_void,
-            reserved_ptr2: 0 as *mut std::ffi::c_void,
+            reserved_ptr1: std::ptr::null_mut::<std::ffi::c_void>(),
+            reserved_ptr2: std::ptr::null_mut::<std::ffi::c_void>(),
         };
         if lzma_lzma_preset(&mut opt_lzma, compressionLevel as uint32_t) != 0 {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -5048,7 +5030,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
     strm.next_out = (*writeJob).buffer as *mut BYTE;
     strm.avail_out = (*writeJob).bufferSize;
-    strm.next_in = 0 as *const uint8_t;
+    strm.next_in = std::ptr::null::<uint8_t>();
     strm.avail_in = 0 as std::ffi::c_int as size_t;
     loop {
         if strm.avail_in == 0 as std::ffi::c_int as size_t {
@@ -5112,13 +5094,11 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                     || g_display_prefs.progressSetting as std::ffi::c_uint
                         == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-            {
-                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                     && g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-                {
-                    if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                    && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                     {
                         g_displayClock = UTIL_getTime();
                         fprintf(
@@ -5132,20 +5112,16 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                             fflush(stderr);
                         }
                     }
-                }
-            }
         } else if g_display_prefs.progressSetting as std::ffi::c_uint
             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                 && g_display_prefs.progressSetting as std::ffi::c_uint
                     != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-            {
-                if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                 {
                     g_displayClock = UTIL_getTime();
                     fprintf(
@@ -5160,8 +5136,6 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                         fflush(stderr);
                     }
                 }
-            }
-        }
         if ret as std::ffi::c_uint == LZMA_STREAM_END as std::ffi::c_int as std::ffi::c_uint {
             break;
         }
@@ -5170,7 +5144,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     *readsize = inFileSize as U64;
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return outFileSize;
+    outFileSize
 }
 unsafe extern "C" fn FIO_compressZstdFrame(
     fCtx: *mut FIO_ctx_t,
@@ -5187,26 +5161,26 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     let mut directive = ZSTD_e_continue;
     let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN as U64;
     let mut previous_zfp_update = {
-        let mut init = ZSTD_frameProgression {
+        
+        ZSTD_frameProgression {
             ingested: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             consumed: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             produced: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             flushed: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             currentJobID: 0 as std::ffi::c_int as std::ffi::c_uint,
             nbActiveWorkers: 0 as std::ffi::c_int as std::ffi::c_uint,
-        };
-        init
+        }
     };
     let mut previous_zfp_correction = {
-        let mut init = ZSTD_frameProgression {
+        
+        ZSTD_frameProgression {
             ingested: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             consumed: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             produced: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             flushed: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
             currentJobID: 0 as std::ffi::c_int as std::ffi::c_uint,
             nbActiveWorkers: 0 as std::ffi::c_int as std::ffi::c_uint,
-        };
-        init
+        }
     };
     let mut speedChange = noChange;
     let mut flushWaiting = 0 as std::ffi::c_int as std::ffi::c_uint;
@@ -5314,7 +5288,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     let mut windowSize = UTIL_HumanReadableSize_t {
         value: 0.,
         precision: 0,
-        suffix: 0 as *const std::ffi::c_char,
+        suffix: std::ptr::null::<std::ffi::c_char>(),
     };
     let mut err_1: size_t = 0;
     err_1 = ZSTD_CCtx_getParameter(ress.cctx, ZSTD_c_windowLog, &mut windowLog);
@@ -5797,23 +5771,20 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                     && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                         || g_display_prefs.progressSetting as std::ffi::c_uint
                             == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                {
-                    if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                         fprintf(
                             stderr,
                             b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
                             b"\0" as *const u8 as *const std::ffi::c_char,
                         );
                     }
-                }
                 if g_display_prefs.displayLevel >= 3 as std::ffi::c_int {
                     if g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                             || g_display_prefs.progressSetting as std::ffi::c_uint
                                 == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                    {
-                        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                             fprintf(
                                 stderr,
                                 b"(L%i) Buffered:%5.*f%s - Consumed:%5.*f%s - Compressed:%5.*f%s => %.2f%% \0"
@@ -5831,7 +5802,6 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                 cShare,
                             );
                         }
-                    }
                 } else {
                     if (*fCtx).nbFilesTotal > 1 as std::ffi::c_int {
                         let mut srcFileNameSize = strlen(srcFileName);
@@ -5844,8 +5814,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                                     || g_display_prefs.progressSetting as std::ffi::c_uint
                                         == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                            {
-                                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                                     fprintf(
                                         stderr,
                                         b"Compress: %u/%u files. Current: ...%s \0" as *const u8
@@ -5855,14 +5824,12 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                         truncatedSrcFileName,
                                     );
                                 }
-                            }
                         } else if g_display_prefs.progressSetting as std::ffi::c_uint
                             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                                 || g_display_prefs.progressSetting as std::ffi::c_uint
                                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                        {
-                            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                                 fprintf(
                                     stderr,
                                     b"Compress: %u/%u files. Current: %*s \0" as *const u8
@@ -5874,15 +5841,13 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                     srcFileName,
                                 );
                             }
-                        }
                     }
                     if g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                             || g_display_prefs.progressSetting as std::ffi::c_uint
                                 == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                    {
-                        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                             fprintf(
                                 stderr,
                                 b"Read:%6.*f%4s \0" as *const u8 as *const std::ffi::c_char,
@@ -5891,15 +5856,13 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                 consumed_hrs.suffix,
                             );
                         }
-                    }
-                    if fileSize != UTIL_FILESIZE_UNKNOWN as U64 {
-                        if g_display_prefs.progressSetting as std::ffi::c_uint
+                    if fileSize != UTIL_FILESIZE_UNKNOWN as U64
+                        && g_display_prefs.progressSetting as std::ffi::c_uint
                             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                                 || g_display_prefs.progressSetting as std::ffi::c_uint
                                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                        {
-                            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                                 fprintf(
                                     stderr,
                                     b"/%6.*f%4s\0" as *const u8 as *const std::ffi::c_char,
@@ -5908,26 +5871,22 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                     file_hrs.suffix,
                                 );
                             }
-                        }
-                    }
                     if g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                             || g_display_prefs.progressSetting as std::ffi::c_uint
                                 == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-                    {
-                        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                             fprintf(
                                 stderr,
                                 b" ==> %2.f%%\0" as *const u8 as *const std::ffi::c_char,
                                 cShare,
                             );
                         }
-                    }
                 }
             }
         }
-        if !(directive as std::ffi::c_uint != ZSTD_e_end as std::ffi::c_int as std::ffi::c_uint) {
+        if (directive as std::ffi::c_uint == ZSTD_e_end as std::ffi::c_int as std::ffi::c_uint) {
             break;
         }
     }
@@ -5966,7 +5925,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     }
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ressPtr).writeCtx);
-    return compressedfilesize as std::ffi::c_ulonglong;
+    compressedfilesize as std::ffi::c_ulonglong
 }
 unsafe extern "C" fn FIO_compressFilename_internal(
     fCtx: *mut FIO_ctx_t,
@@ -6062,24 +6021,21 @@ unsafe extern "C" fn FIO_compressFilename_internal(
         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
                 == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-    {
-        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
                 b"\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-    }
     if FIO_shouldDisplayFileSummary(fCtx) != 0 {
         let mut hr_isize = UTIL_makeHumanReadableSize(readsize);
         let mut hr_osize = UTIL_makeHumanReadableSize(compressedfilesize);
         if readsize == 0 as std::ffi::c_int as U64 {
-            if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+            if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
-                    == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-            {
-                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                     fprintf(
                         stderr,
                         b"%-20s :  (%6.*f%s => %6.*f%s, %s) \n\0" as *const u8
@@ -6094,12 +6050,10 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                         dstFileName,
                     );
                 }
-            }
-        } else if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+        } else if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
-                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"%-20s :%6.2f%%   (%6.*f%s => %6.*f%s, %s) \n\0" as *const u8
@@ -6116,7 +6070,6 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                     dstFileName,
                 );
             }
-        }
     }
     let cpuEnd = clock();
     let cpuLoad_s =
@@ -6135,7 +6088,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
             cpuLoad_pct,
         );
     }
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn FIO_compressFilename_dstFile(
     fCtx: *mut FIO_ctx_t,
@@ -6255,7 +6208,7 @@ unsafe extern "C" fn FIO_compressFilename_dstFile(
             FIO_removeFile(dstFileName);
         }
     }
-    return result;
+    result
 }
 static mut compressedFileExtensions: [*const std::ffi::c_char; 114] = [
     ZSTD_EXTENSION.as_ptr(),
@@ -6382,7 +6335,7 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
     mut compressionLevel: std::ffi::c_int,
 ) -> std::ffi::c_int {
     let mut result: std::ffi::c_int = 0;
-    let mut srcFile = 0 as *mut FILE;
+    let mut srcFile = std::ptr::null_mut::<FILE>();
     let mut srcFileStat = stat {
         st_dev: 0,
         st_ino: 0,
@@ -6417,8 +6370,8 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
             srcFileName,
         );
     }
-    if strcmp(srcFileName, stdinmark.as_ptr()) != 0 {
-        if UTIL_stat(srcFileName, &mut srcFileStat) != 0 {
+    if strcmp(srcFileName, stdinmark.as_ptr()) != 0
+        && UTIL_stat(srcFileName, &mut srcFileStat) != 0 {
             if UTIL_isDirectoryStat(&mut srcFileStat) != 0 {
                 if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                     fprintf(
@@ -6449,7 +6402,6 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
                 return 1 as std::ffi::c_int;
             }
         }
-    }
     if (*prefs).excludeCompressedFiles == 1 as std::ffi::c_int
         && UTIL_isCompressedFile(srcFileName, compressedFileExtensions.as_mut_ptr()) != 0
     {
@@ -6527,7 +6479,7 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
             exit(1 as std::ffi::c_int);
         }
     }
-    return result;
+    result
 }
 unsafe extern "C" fn checked_index(
     mut options: *mut *const std::ffi::c_char,
@@ -6560,7 +6512,7 @@ unsafe extern "C" fn checked_index(
             );
         }
     };
-    return *options.offset(index as isize);
+    *options.offset(index as isize)
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
@@ -6777,7 +6729,7 @@ pub unsafe extern "C" fn FIO_compressFilename(
         compressionLevel,
     );
     FIO_freeCResources(&mut ress);
-    return result;
+    result
 }
 unsafe extern "C" fn FIO_determineCompressedName(
     mut srcFileName: *const std::ffi::c_char,
@@ -6921,7 +6873,7 @@ unsafe extern "C" fn FIO_determineCompressedName(
         suffix as *const std::ffi::c_void,
         srcSuffixLen.wrapping_add(1 as std::ffi::c_int as size_t),
     );
-    return dstFileNameBuffer;
+    dstFileNameBuffer
 }
 unsafe extern "C" fn FIO_getLargestFileSize(
     mut inFileNames: *mut *const std::ffi::c_char,
@@ -6941,7 +6893,7 @@ unsafe extern "C" fn FIO_getLargestFileSize(
         i = i.wrapping_add(1);
         i;
     }
-    return maxFileSize;
+    maxFileSize
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_compressMultipleFilenames(
@@ -7000,7 +6952,7 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
         }
     };
     if !outFileName.is_null() {
-        let mut dstFile = 0 as *mut FILE;
+        let mut dstFile = std::ptr::null_mut::<FILE>();
         if FIO_multiFilesConcatWarning(fCtx, prefs, outFileName, 1 as std::ffi::c_int) != 0 {
             FIO_freeCResources(&mut ress);
             return 1 as std::ffi::c_int;
@@ -7105,23 +7057,20 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
                 dstFileName = FIO_determineCompressedName(srcFileName, outDirName, suffix);
                 current_block_63 = 5892776923941496671;
             }
-            match current_block_63 {
-                5892776923941496671 => {
-                    status = FIO_compressFilename_srcFile(
-                        fCtx,
-                        prefs,
-                        ress,
-                        dstFileName,
-                        srcFileName,
-                        compressionLevel,
-                    );
-                    if status == 0 {
-                        (*fCtx).nbFilesProcessed += 1;
-                        (*fCtx).nbFilesProcessed;
-                    }
-                    error |= status;
+            if current_block_63 == 5892776923941496671 {
+                status = FIO_compressFilename_srcFile(
+                    fCtx,
+                    prefs,
+                    ress,
+                    dstFileName,
+                    srcFileName,
+                    compressionLevel,
+                );
+                if status == 0 {
+                    (*fCtx).nbFilesProcessed += 1;
+                    (*fCtx).nbFilesProcessed;
                 }
-                _ => {}
+                error |= status;
             }
             (*fCtx).currFileIdx += 1;
             (*fCtx).currFileIdx;
@@ -7138,21 +7087,18 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
                     b"\0" as *const u8 as *const std::ffi::c_char,
                 );
             }
-        }
         if (*fCtx).totalBytesInput == 0 as std::ffi::c_int as size_t {
-            if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+            if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
-                    == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-            {
-                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                    == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                     fprintf(
                         stderr,
                         b"%3d files compressed : (%6.*f%4s => %6.*f%4s)\n\0" as *const u8
@@ -7166,12 +7112,10 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
                         hr_osize.suffix,
                     );
                 }
-            }
-        } else if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+        } else if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
-                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"%3d files compressed : %.2f%% (%6.*f%4s => %6.*f%4s)\n\0" as *const u8
@@ -7188,10 +7132,9 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
                     hr_osize.suffix,
                 );
             }
-        }
     }
     FIO_freeCResources(&mut ress);
-    return error;
+    error
 }
 unsafe extern "C" fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
@@ -7231,13 +7174,13 @@ unsafe extern "C" fn FIO_createDResources(
     };
     let mut ress = dRess_t {
         dict: FIO_Dict_t {
-            dictBuffer: 0 as *mut std::ffi::c_void,
+            dictBuffer: std::ptr::null_mut::<std::ffi::c_void>(),
             dictBufferSize: 0,
             dictBufferType: FIO_mallocDict,
         },
-        dctx: 0 as *mut ZSTD_DStream,
-        writeCtx: 0 as *mut WritePoolCtx_t,
-        readCtx: 0 as *mut ReadPoolCtx_t,
+        dctx: std::ptr::null_mut::<ZSTD_DStream>(),
+        writeCtx: std::ptr::null_mut::<WritePoolCtx_t>(),
+        readCtx: std::ptr::null_mut::<ReadPoolCtx_t>(),
     };
     memset(
         &mut statbuf as *mut stat_t as *mut std::ffi::c_void,
@@ -7521,7 +7464,7 @@ unsafe extern "C" fn FIO_createDResources(
     }
     ress.writeCtx = AIO_WritePool_create(prefs, ZSTD_DStreamOutSize());
     ress.readCtx = AIO_ReadPool_create(prefs, ZSTD_DStreamInSize());
-    return ress;
+    ress
 }
 unsafe extern "C" fn FIO_freeDResources(mut ress: dRess_t) {
     FIO_freeDict(&mut ress.dict);
@@ -7661,7 +7604,7 @@ unsafe extern "C" fn FIO_passThrough(mut ress: *mut dRess_t) -> std::ffi::c_int 
     };
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn FIO_zstdErrorHelp(
     prefs: *const FIO_prefs_t,
@@ -7911,13 +7854,11 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                     || g_display_prefs.progressSetting as std::ffi::c_uint
                         == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-            {
-                if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+                && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                     && g_display_prefs.progressSetting as std::ffi::c_uint
                         != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-                {
-                    if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                    && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                        || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                     {
                         g_displayClock = UTIL_getTime();
                         fprintf(
@@ -7935,20 +7876,16 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
                             fflush(stderr);
                         }
                     }
-                }
-            }
         } else if g_display_prefs.progressSetting as std::ffi::c_uint
             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int
                 && g_display_prefs.progressSetting as std::ffi::c_uint
                     != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
-            {
-                if UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
-                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int
+                && (UTIL_clockSpanMicro(g_displayClock) > REFRESH_RATE
+                    || g_display_prefs.displayLevel >= 4 as std::ffi::c_int)
                 {
                     g_displayClock = UTIL_getTime();
                     fprintf(
@@ -7963,8 +7900,6 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
                         fflush(stderr);
                     }
                 }
-            }
-        }
         AIO_ReadPool_consumeBytes((*ress).readCtx, inBuff.pos);
         if readSizeHint == 0 as std::ffi::c_int as size_t {
             break;
@@ -7992,7 +7927,7 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
     }
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return frameSize as std::ffi::c_ulonglong;
+    frameSize as std::ffi::c_ulonglong
 }
 unsafe extern "C" fn FIO_decompressGzFrame(
     mut ress: *mut dRess_t,
@@ -8000,17 +7935,17 @@ unsafe extern "C" fn FIO_decompressGzFrame(
 ) -> std::ffi::c_ulonglong {
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = z_stream_s {
-        next_in: 0 as *mut Bytef,
+        next_in: std::ptr::null_mut::<Bytef>(),
         avail_in: 0,
         total_in: 0,
-        next_out: 0 as *mut Bytef,
+        next_out: std::ptr::null_mut::<Bytef>(),
         avail_out: 0,
         total_out: 0,
-        msg: 0 as *mut std::ffi::c_char,
-        state: 0 as *mut internal_state,
+        msg: std::ptr::null_mut::<std::ffi::c_char>(),
+        state: std::ptr::null_mut::<internal_state>(),
         zalloc: None,
         zfree: None,
-        opaque: 0 as *mut std::ffi::c_void,
+        opaque: std::ptr::null_mut::<std::ffi::c_void>(),
         data_type: 0,
         adler: 0,
         reserved: 0,
@@ -8021,7 +7956,7 @@ unsafe extern "C" fn FIO_decompressGzFrame(
     strm.zalloc = ::core::mem::transmute::<libc::intptr_t, alloc_func>(Z_NULL as libc::intptr_t);
     strm.zfree = ::core::mem::transmute::<libc::intptr_t, free_func>(Z_NULL as libc::intptr_t);
     strm.opaque = Z_NULL as voidpf;
-    strm.next_in = 0 as *mut Bytef;
+    strm.next_in = std::ptr::null_mut::<Bytef>();
     strm.avail_in = 0 as std::ffi::c_int as uInt;
     if inflateInit2_(
         &mut strm,
@@ -8099,11 +8034,11 @@ unsafe extern "C" fn FIO_decompressGzFrame(
     }
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return if decodingError != 0 {
+    if decodingError != 0 {
         FIO_ERROR_FRAME_DECODING as std::ffi::c_ulonglong
     } else {
         outFileSize
-    };
+    }
 }
 unsafe extern "C" fn FIO_decompressLzmaFrame(
     mut ress: *mut dRess_t,
@@ -8112,7 +8047,8 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
 ) -> std::ffi::c_ulonglong {
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = {
-        let mut init = lzma_stream {
+        
+        lzma_stream {
             next_in: NULL as *const uint8_t,
             avail_in: 0 as std::ffi::c_int as size_t,
             total_in: 0 as std::ffi::c_int as uint64_t,
@@ -8131,14 +8067,13 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
             reserved_int4: 0 as std::ffi::c_int as size_t,
             reserved_enum1: LZMA_RESERVED_ENUM,
             reserved_enum2: LZMA_RESERVED_ENUM,
-        };
-        init
+        }
     };
     let mut action = LZMA_RUN;
     let mut initRet = LZMA_OK;
     let mut decodingError = 0 as std::ffi::c_int;
     let mut writeJob = NULL as *mut IOJob_t;
-    strm.next_in = 0 as *const uint8_t;
+    strm.next_in = std::ptr::null::<uint8_t>();
     strm.avail_in = 0 as std::ffi::c_int as size_t;
     if plain_lzma != 0 {
         initRet = lzma_alone_decoder(&mut strm, UINT64_MAX);
@@ -8222,11 +8157,11 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
     lzma_end(&mut strm);
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
-    return if decodingError != 0 {
+    if decodingError != 0 {
         FIO_ERROR_FRAME_DECODING as std::ffi::c_ulonglong
     } else {
         outFileSize
-    };
+    }
 }
 unsafe extern "C" fn FIO_decompressFrames(
     fCtx: *mut FIO_ctx_t,
@@ -8278,7 +8213,7 @@ unsafe extern "C" fn FIO_decompressFrames(
     };
     loop {
         let toRead = 4 as std::ffi::c_int as size_t;
-        let mut buf = 0 as *const BYTE;
+        let mut buf = std::ptr::null::<BYTE>();
         AIO_ReadPool_fillBuffer(ress.readCtx, toRead);
         buf = (*ress.readCtx).srcBuffer as *const BYTE;
         if (*ress.readCtx).srcBufferLoaded == 0 as std::ffi::c_int as size_t {
@@ -8380,21 +8315,18 @@ unsafe extern "C" fn FIO_decompressFrames(
         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
                 == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-    {
-        if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+        && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
                 b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
                 b"\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-    }
     if FIO_shouldDisplayFileSummary(fCtx) != 0 {
-        if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+        if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
-                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"%-20s: %llu bytes \n\0" as *const u8 as *const std::ffi::c_char,
@@ -8402,9 +8334,8 @@ unsafe extern "C" fn FIO_decompressFrames(
                     filesize,
                 );
             }
-        }
     }
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn FIO_decompressDstFile(
     fCtx: *mut FIO_ctx_t,
@@ -8420,7 +8351,7 @@ unsafe extern "C" fn FIO_decompressDstFile(
     let mut dstFd = 0 as std::ffi::c_int;
     if (AIO_WritePool_getFile(ress.writeCtx)).is_null() && (*prefs).testMode == 0 as std::ffi::c_int
     {
-        let mut dstFile = 0 as *mut FILE;
+        let mut dstFile = std::ptr::null_mut::<FILE>();
         let mut dstFilePermissions = DEFAULT_FILE_PERMISSIONS;
         if strcmp(srcFileName, stdinmark.as_ptr()) != 0
             && strcmp(dstFileName, stdoutmark.as_ptr()) != 0
@@ -8462,7 +8393,7 @@ unsafe extern "C" fn FIO_decompressDstFile(
             FIO_removeFile(dstFileName);
         }
     }
-    return result;
+    result
 }
 unsafe extern "C" fn FIO_decompressSrcFile(
     fCtx: *mut FIO_ctx_t,
@@ -8471,7 +8402,7 @@ unsafe extern "C" fn FIO_decompressSrcFile(
     mut dstFileName: *const std::ffi::c_char,
     mut srcFileName: *const std::ffi::c_char,
 ) -> std::ffi::c_int {
-    let mut srcFile = 0 as *mut FILE;
+    let mut srcFile = std::ptr::null_mut::<FILE>();
     let mut srcFileStat = stat {
         st_dev: 0,
         st_ino: 0,
@@ -8564,7 +8495,7 @@ unsafe extern "C" fn FIO_decompressSrcFile(
             return 1 as std::ffi::c_int;
         }
     }
-    return result;
+    result
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_decompressFilename(
@@ -8577,7 +8508,7 @@ pub unsafe extern "C" fn FIO_decompressFilename(
     let ress = FIO_createDResources(prefs, dictFileName);
     let decodingError = FIO_decompressSrcFile(fCtx, prefs, ress, dstFileName, srcFileName);
     FIO_freeDResources(ress);
-    return decodingError;
+    decodingError
 }
 static mut suffixList: [*const std::ffi::c_char; 9] = [
     ZSTD_EXTENSION.as_ptr(),
@@ -8621,7 +8552,7 @@ unsafe extern "C" fn FIO_determineDstName(
         return NULL as *const std::ffi::c_char;
     }
     srcSuffixLen = strlen(srcSuffix);
-    let mut matchedSuffixPtr = 0 as *mut *const std::ffi::c_char;
+    let mut matchedSuffixPtr = std::ptr::null_mut::<*const std::ffi::c_char>();
     matchedSuffixPtr = suffixList.as_mut_ptr();
     while !(*matchedSuffixPtr).is_null() {
         if strcmp(*matchedSuffixPtr, srcSuffix) == 0 {
@@ -8763,7 +8694,7 @@ unsafe extern "C" fn FIO_determineDstName(
         dstFileNameBuffer.offset(dstFileNameEndPos as isize),
         dstSuffix,
     );
-    return dstFileNameBuffer;
+    dstFileNameBuffer
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
@@ -8925,20 +8856,17 @@ pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
             && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
                     b"\0" as *const u8 as *const std::ffi::c_char,
                 );
             }
-        }
-        if g_display_prefs.displayLevel >= 2 as std::ffi::c_int
+        if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
             || g_display_prefs.progressSetting as std::ffi::c_uint
-                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint
-        {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+                == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"%d files decompressed : %6llu bytes total \n\0" as *const u8
@@ -8947,10 +8875,9 @@ pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
                     (*fCtx).totalBytesOutput as std::ffi::c_ulonglong,
                 );
             }
-        }
     }
     FIO_freeDResources(ress);
-    return error;
+    error
 }
 unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
     loop {
@@ -9171,7 +9098,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                         }
                         return info_frame_error;
                     }
-                    if !(lastBlock != 1 as std::ffi::c_int) {
+                    if (lastBlock == 1 as std::ffi::c_int) {
                         break;
                     }
                 }
@@ -9236,7 +9163,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
             }
         }
     }
-    return info_success;
+    info_success
 }
 unsafe extern "C" fn getFileInfo_fileConfirmed(
     mut info: *mut fileInfo_t,
@@ -9287,7 +9214,7 @@ unsafe extern "C" fn getFileInfo_fileConfirmed(
     status = FIO_analyzeFrames(info, srcFile);
     fclose(srcFile);
     (*info).nbFiles = 1 as std::ffi::c_int as U32;
-    return status;
+    status
 }
 unsafe extern "C" fn getFileInfo(
     mut info: *mut fileInfo_t,
@@ -9306,7 +9233,7 @@ unsafe extern "C" fn getFileInfo(
         }
         return info_file_error;
     }
-    return getFileInfo_fileConfirmed(info, srcFileName);
+    getFileInfo_fileConfirmed(info, srcFileName)
 }
 unsafe extern "C" fn displayInfo(
     mut inFileName: *const std::ffi::c_char,
@@ -9466,7 +9393,7 @@ unsafe extern "C" fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> f
     total.decompUnavailable = fi1.decompUnavailable | fi2.decompUnavailable;
     total.usesCheck = fi1.usesCheck & fi2.usesCheck;
     total.nbFiles = (fi1.nbFiles).wrapping_add(fi2.nbFiles);
-    return total;
+    total
 }
 unsafe extern "C" fn FIO_listFile(
     mut total: *mut fileInfo_t,
@@ -9565,7 +9492,7 @@ unsafe extern "C" fn FIO_listFile(
             );
         }
     };
-    return error as std::ffi::c_int;
+    error as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn FIO_listMultipleFiles(
@@ -9597,15 +9524,14 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
         u;
     }
     if numFiles == 0 as std::ffi::c_int as std::ffi::c_uint {
-        if UTIL_isConsole(stdin) == 0 {
-            if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
+        if UTIL_isConsole(stdin) == 0
+            && g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
                     b"zstd: --list does not support reading from standard input \n\0" as *const u8
                         as *const std::ffi::c_char,
                 );
             }
-        }
         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
                 stderr,
@@ -9702,5 +9628,5 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
             );
         }
     }
-    return error;
+    error
 }

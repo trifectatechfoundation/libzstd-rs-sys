@@ -106,9 +106,9 @@ pub struct FSE_DState_t {
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    return (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
-        as std::ffi::c_uint;
+        as std::ffi::c_uint
 }
 use crate::{MEM_readLE32, MEM_readLE64, MEM_write64};
 #[inline]
@@ -116,22 +116,22 @@ unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t
     if MEM_32bits() != 0 {
         return MEM_readLE32(memPtr) as size_t;
     } else {
-        return MEM_readLE64(memPtr);
-    };
+        MEM_readLE64(memPtr)
+    }
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    return (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint;
+    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
 #[inline]
 unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
-    return val.leading_zeros() as i32 as std::ffi::c_uint;
+    val.leading_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
-    return (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val));
+    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 #[inline]
 unsafe extern "C" fn BIT_initDStream(
@@ -199,63 +199,48 @@ unsafe extern "C" fn BIT_initDStream(
                 current_block_32 = 16203760046146113240;
             }
         }
-        match current_block_32 {
-            1526876707632491634 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(5 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                            .wrapping_sub(24 as std::ffi::c_int as std::ffi::c_ulong),
-                );
-                current_block_32 = 3132044029094175486;
-            }
-            _ => {}
+        if current_block_32 == 1526876707632491634 {
+            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
+                (*(srcBuffer as *const BYTE).offset(5 as std::ffi::c_int as isize)
+                    as BitContainerType)
+                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
+                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+                        .wrapping_sub(24 as std::ffi::c_int as std::ffi::c_ulong),
+            );
+            current_block_32 = 3132044029094175486;
         }
-        match current_block_32 {
-            3132044029094175486 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(4 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                            .wrapping_sub(32 as std::ffi::c_int as std::ffi::c_ulong),
-                );
-                current_block_32 = 5336772990438301456;
-            }
-            _ => {}
+        if current_block_32 == 3132044029094175486 {
+            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
+                (*(srcBuffer as *const BYTE).offset(4 as std::ffi::c_int as isize)
+                    as BitContainerType)
+                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
+                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+                        .wrapping_sub(32 as std::ffi::c_int as std::ffi::c_ulong),
+            );
+            current_block_32 = 5336772990438301456;
         }
-        match current_block_32 {
-            5336772990438301456 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(3 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << 24 as std::ffi::c_int,
-                );
-                current_block_32 = 11143942153966811798;
-            }
-            _ => {}
+        if current_block_32 == 5336772990438301456 {
+            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
+                (*(srcBuffer as *const BYTE).offset(3 as std::ffi::c_int as isize)
+                    as BitContainerType)
+                    << 24 as std::ffi::c_int,
+            );
+            current_block_32 = 11143942153966811798;
         }
-        match current_block_32 {
-            11143942153966811798 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(2 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << 16 as std::ffi::c_int,
-                );
-                current_block_32 = 2397150252174490634;
-            }
-            _ => {}
+        if current_block_32 == 11143942153966811798 {
+            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
+                (*(srcBuffer as *const BYTE).offset(2 as std::ffi::c_int as isize)
+                    as BitContainerType)
+                    << 16 as std::ffi::c_int,
+            );
+            current_block_32 = 2397150252174490634;
         }
-        match current_block_32 {
-            2397150252174490634 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(1 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << 8 as std::ffi::c_int,
-                );
-            }
-            _ => {}
+        if current_block_32 == 2397150252174490634 {
+            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
+                (*(srcBuffer as *const BYTE).offset(1 as std::ffi::c_int as isize)
+                    as BitContainerType)
+                    << 8 as std::ffi::c_int,
+            );
         }
         let lastByte_0 = *(srcBuffer as *const BYTE)
             .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
@@ -274,7 +259,7 @@ unsafe extern "C" fn BIT_initDStream(
                 * 8 as std::ffi::c_int as U32,
         );
     }
-    return srcSize;
+    srcSize
 }
 #[inline(always)]
 unsafe extern "C" fn BIT_getMiddleBits(
@@ -285,22 +270,22 @@ unsafe extern "C" fn BIT_getMiddleBits(
     let regMask = (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
         .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as U32;
-    return bitContainer >> (start & regMask)
-        & ((1 as std::ffi::c_int as U64) << nbBits).wrapping_sub(1 as std::ffi::c_int as U64);
+    bitContainer >> (start & regMask)
+        & ((1 as std::ffi::c_int as U64) << nbBits).wrapping_sub(1 as std::ffi::c_int as U64)
 }
 #[inline(always)]
 unsafe extern "C" fn BIT_lookBits(
     mut bitD: *const BIT_DStream_t,
     mut nbBits: U32,
 ) -> BitContainerType {
-    return BIT_getMiddleBits(
+    BIT_getMiddleBits(
         (*bitD).bitContainer,
         (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
             .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
             .wrapping_sub((*bitD).bitsConsumed as std::ffi::c_ulong)
             .wrapping_sub(nbBits as std::ffi::c_ulong) as U32,
         nbBits,
-    );
+    )
 }
 #[inline]
 unsafe extern "C" fn BIT_lookBitsFast(
@@ -310,11 +295,11 @@ unsafe extern "C" fn BIT_lookBitsFast(
     let regMask = (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
         .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as U32;
-    return (*bitD).bitContainer << ((*bitD).bitsConsumed & regMask)
+    (*bitD).bitContainer << ((*bitD).bitsConsumed & regMask)
         >> (regMask
             .wrapping_add(1 as std::ffi::c_int as U32)
             .wrapping_sub(nbBits)
-            & regMask);
+            & regMask)
 }
 #[inline(always)]
 unsafe extern "C" fn BIT_skipBits(mut bitD: *mut BIT_DStream_t, mut nbBits: U32) {
@@ -327,7 +312,7 @@ unsafe extern "C" fn BIT_readBits(
 ) -> BitContainerType {
     let value = BIT_lookBits(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
-    return value;
+    value
 }
 #[inline]
 unsafe extern "C" fn BIT_readBitsFast(
@@ -336,7 +321,7 @@ unsafe extern "C" fn BIT_readBitsFast(
 ) -> size_t {
     let value = BIT_lookBitsFast(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
-    return value;
+    value
 }
 #[inline]
 unsafe extern "C" fn BIT_reloadDStream_internal(
@@ -345,7 +330,7 @@ unsafe extern "C" fn BIT_reloadDStream_internal(
     (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3 as std::ffi::c_int) as isize));
     (*bitD).bitsConsumed &= 7 as std::ffi::c_int as std::ffi::c_uint;
     (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
-    return BIT_DStream_unfinished;
+    BIT_DStream_unfinished
 }
 #[inline(always)]
 unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStream_status {
@@ -381,7 +366,7 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
     (*bitD).bitsConsumed =
         ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as U32);
     (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
-    return result;
+    result
 }
 #[inline]
 unsafe extern "C" fn FSE_initDState(
@@ -405,7 +390,7 @@ unsafe extern "C" fn FSE_decodeSymbol(
     let symbol = DInfo.symbol;
     let lowBits = BIT_readBits(bitD, nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
-    return symbol;
+    symbol
 }
 #[inline]
 unsafe extern "C" fn FSE_decodeSymbolFast(
@@ -417,7 +402,7 @@ unsafe extern "C" fn FSE_decodeSymbolFast(
     let symbol = DInfo.symbol;
     let lowBits = BIT_readBitsFast(bitD, nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
-    return symbol;
+    symbol
 }
 pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
@@ -563,7 +548,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
     u_0 = 0 as std::ffi::c_int as U32;
     while u_0 < tableSize {
         let symbol = (*tableDecode.offset(u_0 as isize)).symbol;
-        let ref mut fresh1 = *symbolNext.offset(symbol as isize);
+        let fresh1 = &mut (*symbolNext.offset(symbol as isize));
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as U32;
@@ -575,7 +560,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
         u_0 = u_0.wrapping_add(1);
         u_0;
     }
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_buildDTable_wksp(
@@ -586,14 +571,14 @@ pub unsafe extern "C" fn FSE_buildDTable_wksp(
     mut workSpace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
 ) -> size_t {
-    return FSE_buildDTable_internal(
+    FSE_buildDTable_internal(
         dt,
         normalizedCounter,
         maxSymbolValue,
         tableLog,
         workSpace,
         wkspSize,
-    );
+    )
 }
 #[inline(always)]
 unsafe extern "C" fn FSE_decompress_usingDTable_generic(
@@ -611,17 +596,17 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
     let mut bitD = BIT_DStream_t {
         bitContainer: 0,
         bitsConsumed: 0,
-        ptr: 0 as *const std::ffi::c_char,
-        start: 0 as *const std::ffi::c_char,
-        limitPtr: 0 as *const std::ffi::c_char,
+        ptr: std::ptr::null::<std::ffi::c_char>(),
+        start: std::ptr::null::<std::ffi::c_char>(),
+        limitPtr: std::ptr::null::<std::ffi::c_char>(),
     };
     let mut state1 = FSE_DState_t {
         state: 0,
-        table: 0 as *const std::ffi::c_void,
+        table: std::ptr::null::<std::ffi::c_void>(),
     };
     let mut state2 = FSE_DState_t {
         state: 0,
-        table: 0 as *const std::ffi::c_void,
+        table: std::ptr::null::<std::ffi::c_void>(),
     };
     let _var_err__ = BIT_initDStream(&mut bitD, cSrc, cSrcSize);
     if ERR_isError(_var_err__) != 0 {
@@ -659,14 +644,12 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         if (FSE_MAX_TABLELOG * 4 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
             > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        {
-            if BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
+            && BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
                 > BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint
             {
                 op = op.offset(2 as std::ffi::c_int as isize);
                 break;
             }
-        }
         *op.offset(2 as std::ffi::c_int as isize) = (if fast != 0 {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
@@ -718,8 +701,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
             }) as BYTE;
-            if !(BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
-                == BIT_DStream_overflow as std::ffi::c_int as std::ffi::c_uint)
+            if (BIT_reloadDStream(&mut bitD) as std::ffi::c_uint != BIT_DStream_overflow as std::ffi::c_int as std::ffi::c_uint)
             {
                 continue;
             }
@@ -733,7 +715,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             break;
         }
     }
-    return op.offset_from(ostart) as std::ffi::c_long as size_t;
+    op.offset_from(ostart) as std::ffi::c_long as size_t
 }
 #[inline(always)]
 unsafe extern "C" fn FSE_decompress_wksp_body(
@@ -842,14 +824,14 @@ unsafe extern "C" fn FSE_decompress_wksp_body(
             1 as std::ffi::c_int as std::ffi::c_uint,
         );
     }
-    return FSE_decompress_usingDTable_generic(
+    FSE_decompress_usingDTable_generic(
         dst,
         dstCapacity,
         ip as *const std::ffi::c_void,
         cSrcSize,
         dtable,
         0 as std::ffi::c_int as std::ffi::c_uint,
-    );
+    )
 }
 unsafe extern "C" fn FSE_decompress_wksp_body_default(
     mut dst: *mut std::ffi::c_void,
@@ -860,7 +842,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
     mut workSpace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
 ) -> size_t {
-    return FSE_decompress_wksp_body(
+    FSE_decompress_wksp_body(
         dst,
         dstCapacity,
         cSrc,
@@ -869,7 +851,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
         workSpace,
         wkspSize,
         0 as std::ffi::c_int,
-    );
+    )
 }
 unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
     mut dst: *mut std::ffi::c_void,
@@ -880,7 +862,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
     mut workSpace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
 ) -> size_t {
-    return FSE_decompress_wksp_body(
+    FSE_decompress_wksp_body(
         dst,
         dstCapacity,
         cSrc,
@@ -889,7 +871,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
         workSpace,
         wkspSize,
         1 as std::ffi::c_int,
-    );
+    )
 }
 #[no_mangle]
 pub unsafe extern "C" fn FSE_decompress_wksp_bmi2(
@@ -913,7 +895,7 @@ pub unsafe extern "C" fn FSE_decompress_wksp_bmi2(
             wkspSize,
         );
     }
-    return FSE_decompress_wksp_body_default(
+    FSE_decompress_wksp_body_default(
         dst,
         dstCapacity,
         cSrc,
@@ -921,5 +903,5 @@ pub unsafe extern "C" fn FSE_decompress_wksp_bmi2(
         maxLog,
         workSpace,
         wkspSize,
-    );
+    )
 }

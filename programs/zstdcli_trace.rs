@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -180,10 +179,10 @@ static mut g_mutex: pthread_mutex_t = pthread_mutex_t {
     },
 };
 static mut g_enableTime: UTIL_time_t = {
-    let mut init = UTIL_time_t {
+    
+    UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
-    };
-    init
+    }
 };
 #[no_mangle]
 pub unsafe extern "C" fn TRACE_enable(mut filename: *const std::ffi::c_char) {
@@ -201,7 +200,7 @@ pub unsafe extern "C" fn TRACE_enable(mut filename: *const std::ffi::c_char) {
     }
     g_enableTime = UTIL_getTime();
     if g_mutexInit == 0 {
-        if pthread_mutex_init(&mut g_mutex, 0 as *const pthread_mutexattr_t) == 0 {
+        if pthread_mutex_init(&mut g_mutex, std::ptr::null::<pthread_mutexattr_t>()) == 0 {
             g_mutexInit = 1 as std::ffi::c_int;
         } else {
             TRACE_finish();
@@ -263,7 +262,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_begin(mut cctx: *const ZSTD_CCtx) -
     if g_traceFile.is_null() {
         return 0 as std::ffi::c_int as ZSTD_TraceCtx;
     }
-    return UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx;
+    UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_compress_end(
@@ -288,7 +287,7 @@ pub unsafe extern "C" fn ZSTD_trace_decompress_begin(mut dctx: *const ZSTD_DCtx)
     if g_traceFile.is_null() {
         return 0 as std::ffi::c_int as ZSTD_TraceCtx;
     }
-    return UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx;
+    UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_decompress_end(

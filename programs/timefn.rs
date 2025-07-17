@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn perror(__s: *const std::ffi::c_char);
     fn clock_gettime(__clock_id: clockid_t, __tp: *mut timespec) -> std::ffi::c_int;
@@ -26,11 +25,11 @@ pub const CLOCK_MONOTONIC: std::ffi::c_int = 1 as std::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getTime() -> UTIL_time_t {
     let mut time = {
-        let mut init = timespec {
+        
+        timespec {
             tv_sec: 0 as std::ffi::c_int as __time_t,
             tv_nsec: 0 as std::ffi::c_int as __syscall_slong_t,
-        };
-        init
+        }
     };
     if clock_gettime(CLOCK_MONOTONIC, &mut time) != 0 as std::ffi::c_int {
         perror(b"timefn::clock_gettime(CLOCK_MONOTONIC)\0" as *const u8 as *const std::ffi::c_char);
@@ -40,32 +39,32 @@ pub unsafe extern "C" fn UTIL_getTime() -> UTIL_time_t {
     r.t = (time.tv_sec as PTime as std::ffi::c_ulonglong)
         .wrapping_mul(1000000000 as std::ffi::c_ulonglong)
         .wrapping_add(time.tv_nsec as PTime as std::ffi::c_ulonglong) as PTime;
-    return r;
+    r
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getSpanTimeNano(
     mut clockStart: UTIL_time_t,
     mut clockEnd: UTIL_time_t,
 ) -> PTime {
-    return (clockEnd.t).wrapping_sub(clockStart.t);
+    (clockEnd.t).wrapping_sub(clockStart.t)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getSpanTimeMicro(
     mut begin: UTIL_time_t,
     mut end: UTIL_time_t,
 ) -> PTime {
-    return (UTIL_getSpanTimeNano(begin, end) as std::ffi::c_ulonglong)
-        .wrapping_div(1000 as std::ffi::c_ulonglong) as PTime;
+    (UTIL_getSpanTimeNano(begin, end) as std::ffi::c_ulonglong)
+        .wrapping_div(1000 as std::ffi::c_ulonglong) as PTime
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_clockSpanMicro(mut clockStart: UTIL_time_t) -> PTime {
     let clockEnd = UTIL_getTime();
-    return UTIL_getSpanTimeMicro(clockStart, clockEnd);
+    UTIL_getSpanTimeMicro(clockStart, clockEnd)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_clockSpanNano(mut clockStart: UTIL_time_t) -> PTime {
     let clockEnd = UTIL_getTime();
-    return UTIL_getSpanTimeNano(clockStart, clockEnd);
+    UTIL_getSpanTimeNano(clockStart, clockEnd)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_waitForNextTick() {
@@ -73,12 +72,12 @@ pub unsafe extern "C" fn UTIL_waitForNextTick() {
     let mut clockEnd = UTIL_time_t { t: 0 };
     loop {
         clockEnd = UTIL_getTime();
-        if !(UTIL_getSpanTimeNano(clockStart, clockEnd) == 0 as std::ffi::c_int as PTime) {
+        if (UTIL_getSpanTimeNano(clockStart, clockEnd) != 0 as std::ffi::c_int as PTime) {
             break;
         }
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_support_MT_measurements() -> std::ffi::c_int {
-    return 1 as std::ffi::c_int;
+    1 as std::ffi::c_int
 }

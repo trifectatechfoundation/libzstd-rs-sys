@@ -107,15 +107,15 @@ pub(crate) unsafe fn MEM_write64(mut memPtr: *mut std::ffi::c_void, mut value: u
 }
 #[inline]
 pub(crate) fn MEM_swap16(mut in_0: u16) -> u16 {
-    return in_0.swap_bytes();
+    in_0.swap_bytes()
 }
 #[inline]
 pub(crate) fn MEM_swap32(mut in_0: u32) -> u32 {
-    return in_0.swap_bytes();
+    in_0.swap_bytes()
 }
 #[inline]
 pub(crate) fn MEM_swap64(mut in_0: u64) -> u64 {
-    return in_0.swap_bytes();
+    in_0.swap_bytes()
 }
 
 #[inline]
@@ -124,25 +124,25 @@ pub(crate) unsafe fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> u16 {
         return MEM_read16(memPtr);
     } else {
         let mut p = memPtr as *const u8;
-        return (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
+        (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
             + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as u16;
-    };
+                << 8 as std::ffi::c_int)) as u16
+    }
 }
 #[inline]
 pub(crate) unsafe fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> u32 {
-    return (MEM_readLE16(memPtr) as u32).wrapping_add(
+    (MEM_readLE16(memPtr) as u32).wrapping_add(
         (*(memPtr as *const u8).offset(2 as std::ffi::c_int as isize) as u32)
             << 16 as std::ffi::c_int,
-    );
+    )
 }
 #[inline]
 pub(crate) unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
     if MEM_isLittleEndian() != 0 {
         return MEM_read32(memPtr);
     } else {
-        return MEM_swap32(MEM_read32(memPtr));
-    };
+        MEM_swap32(MEM_read32(memPtr))
+    }
 }
 #[inline]
 pub(crate) unsafe fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val32: u16) {
@@ -179,8 +179,8 @@ pub(crate) unsafe fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
     if MEM_isLittleEndian() != 0 {
         return MEM_read64(memPtr);
     } else {
-        return MEM_swap64(MEM_read64(memPtr));
-    };
+        MEM_swap64(MEM_read64(memPtr))
+    }
 }
 
 #[inline]

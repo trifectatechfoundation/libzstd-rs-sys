@@ -1,5 +1,4 @@
 use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
-use ::libc;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -437,7 +436,7 @@ pub const zom_decompress: zstd_operation_mode = 1;
 pub const zom_compress: zstd_operation_mode = 0;
 #[inline]
 unsafe extern "C" fn getchar() -> std::ffi::c_int {
-    return getc(stdin);
+    getc(stdin)
 }
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;
@@ -545,10 +544,10 @@ unsafe extern "C" fn exeNameMatch(
     mut exeName: *const std::ffi::c_char,
     mut test: *const std::ffi::c_char,
 ) -> std::ffi::c_int {
-    return (strncmp(exeName, test, strlen(test)) == 0
+    (strncmp(exeName, test, strlen(test)) == 0
         && (*exeName.offset(strlen(test) as isize) as std::ffi::c_int == '\0' as i32
             || *exeName.offset(strlen(test) as isize) as std::ffi::c_int == '.' as i32))
-        as std::ffi::c_int;
+        as std::ffi::c_int
 }
 unsafe extern "C" fn usage(mut f: *mut FILE, mut programName: *const std::ffi::c_char) {
     fprintf(
@@ -1053,7 +1052,7 @@ unsafe extern "C" fn lastNameFromPath(
     if !(strrchr(name, '\\' as i32)).is_null() {
         name = (strrchr(name, '\\' as i32)).offset(1 as std::ffi::c_int as isize);
     }
-    return name;
+    name
 }
 unsafe extern "C" fn errorOut(mut msg: *const std::ffi::c_char) {
     if g_displayLevel >= 1 as std::ffi::c_int {
@@ -1113,7 +1112,7 @@ unsafe extern "C" fn readU32FromCharChecked(
         }
     }
     *value = result;
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn readU32FromChar(
     mut stringPtr: *mut *const std::ffi::c_char,
@@ -1127,7 +1126,7 @@ unsafe extern "C" fn readU32FromChar(
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(errorMsg.as_ptr());
     }
-    return result;
+    result
 }
 unsafe extern "C" fn readIntFromChar(
     mut stringPtr: *mut *const std::ffi::c_char,
@@ -1147,7 +1146,7 @@ unsafe extern "C" fn readIntFromChar(
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(errorMsg.as_ptr());
     }
-    return result as std::ffi::c_int * sign;
+    result as std::ffi::c_int * sign
 }
 unsafe extern "C" fn readSizeTFromCharChecked(
     mut stringPtr: *mut *const std::ffi::c_char,
@@ -1162,7 +1161,7 @@ unsafe extern "C" fn readSizeTFromCharChecked(
         if result > max {
             return 1 as std::ffi::c_int;
         }
-        result = result * 10 as std::ffi::c_int as size_t;
+        result *= 10 as std::ffi::c_int as size_t;
         result = result.wrapping_add((**stringPtr as std::ffi::c_int - '0' as i32) as size_t);
         if result < last {
             return 1 as std::ffi::c_int;
@@ -1195,7 +1194,7 @@ unsafe extern "C" fn readSizeTFromCharChecked(
         }
     }
     *value = result;
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 unsafe extern "C" fn readSizeTFromChar(mut stringPtr: *mut *const std::ffi::c_char) -> size_t {
     static mut errorMsg: [std::ffi::c_char; 38] = unsafe {
@@ -1207,7 +1206,7 @@ unsafe extern "C" fn readSizeTFromChar(mut stringPtr: *mut *const std::ffi::c_ch
     if readSizeTFromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(errorMsg.as_ptr());
     }
-    return result;
+    result
 }
 unsafe extern "C" fn longCommandWArg(
     mut stringPtr: *mut *const std::ffi::c_char,
@@ -1218,7 +1217,7 @@ unsafe extern "C" fn longCommandWArg(
     if result != 0 {
         *stringPtr = (*stringPtr).offset(comSize as isize);
     }
-    return result;
+    result
 }
 static mut kDefaultRegression: std::ffi::c_uint = 1 as std::ffi::c_int as std::ffi::c_uint;
 unsafe extern "C" fn parseCoverParameters(
@@ -1237,7 +1236,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1249,7 +1248,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1261,7 +1260,7 @@ unsafe extern "C" fn parseCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1274,7 +1273,7 @@ unsafe extern "C" fn parseCoverParameters(
         {
             let mut splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as std::ffi::c_double / 100.0f64;
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1292,7 +1291,7 @@ unsafe extern "C" fn parseCoverParameters(
                 stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1318,7 +1317,7 @@ unsafe extern "C" fn parseCoverParameters(
             (*params).shrinkDictMaxRegression,
         );
     }
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn parseFastCoverParameters(
     mut stringPtr: *const std::ffi::c_char,
@@ -1336,7 +1335,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1348,7 +1347,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1360,7 +1359,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).f = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1372,7 +1371,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1384,7 +1383,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         ) != 0
         {
             (*params).accel = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1397,7 +1396,7 @@ unsafe extern "C" fn parseFastCoverParameters(
         {
             let mut splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as std::ffi::c_double / 100.0f64;
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1415,7 +1414,7 @@ unsafe extern "C" fn parseFastCoverParameters(
                 stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1443,7 +1442,7 @@ unsafe extern "C" fn parseFastCoverParameters(
             (*params).shrinkDictMaxRegression,
         );
     }
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn parseLegacyParameters(
     mut stringPtr: *const std::ffi::c_char,
@@ -1471,7 +1470,7 @@ unsafe extern "C" fn parseLegacyParameters(
             *selectivity,
         );
     }
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
     let mut params = ZDICT_cover_params_t {
@@ -1498,7 +1497,7 @@ unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
     params.splitPoint = 1.0f64;
     params.shrinkDict = 0 as std::ffi::c_int as std::ffi::c_uint;
     params.shrinkDictMaxRegression = kDefaultRegression;
-    return params;
+    params
 }
 unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     let mut params = ZDICT_fastCover_params_t {
@@ -1529,7 +1528,7 @@ unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     params.accel = DEFAULT_ACCEL as std::ffi::c_uint;
     params.shrinkDict = 0 as std::ffi::c_int as std::ffi::c_uint;
     params.shrinkDictMaxRegression = kDefaultRegression;
-    return params;
+    params
 }
 unsafe extern "C" fn parseAdaptParameters(
     mut stringPtr: *const std::ffi::c_char,
@@ -1543,7 +1542,7 @@ unsafe extern "C" fn parseAdaptParameters(
         ) != 0
         {
             *adaptMinPtr = readIntFromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1555,7 +1554,7 @@ unsafe extern "C" fn parseAdaptParameters(
         ) != 0
         {
             *adaptMaxPtr = readIntFromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1583,7 +1582,7 @@ unsafe extern "C" fn parseAdaptParameters(
         }
         return 0 as std::ffi::c_int as std::ffi::c_uint;
     }
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn parseCompressionParameters(
     mut stringPtr: *const std::ffi::c_char,
@@ -1600,7 +1599,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).windowLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1616,7 +1615,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).chainLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1632,7 +1631,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).hashLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1648,7 +1647,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).searchLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1664,7 +1663,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).minMatch = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1680,7 +1679,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).targetLength = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1696,7 +1695,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             (*params).strategy = readU32FromChar(&mut stringPtr) as ZSTD_strategy;
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1712,7 +1711,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_overlapLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1728,7 +1727,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1744,7 +1743,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmMinMatch = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1760,7 +1759,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmBucketSizeLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1776,7 +1775,7 @@ unsafe extern "C" fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashRateLog = readU32FromChar(&mut stringPtr);
-            if !(*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == ',' as i32)
+            if (*stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != ',' as i32)
             {
                 break;
             }
@@ -1795,7 +1794,7 @@ unsafe extern "C" fn parseCompressionParameters(
     if *stringPtr.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int != 0 as std::ffi::c_int {
         return 0 as std::ffi::c_int as std::ffi::c_uint;
     }
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
+    1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParameters) {
     (*params).windowLog = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
@@ -2188,7 +2187,7 @@ unsafe extern "C" fn init_cLevel() -> std::ffi::c_int {
             );
         }
     }
-    return ZSTDCLI_CLEVEL_DEFAULT;
+    ZSTDCLI_CLEVEL_DEFAULT
 }
 unsafe extern "C" fn init_nbWorkers() -> std::ffi::c_uint {
     let env: *const std::ffi::c_char = getenv(ENV_NBWORKERS.as_ptr());
@@ -2232,7 +2231,7 @@ unsafe extern "C" fn init_nbWorkers() -> std::ffi::c_uint {
             );
         }
     }
-    return (if 1 as std::ffi::c_int
+    ((if 1 as std::ffi::c_int
         > (if (4 as std::ffi::c_int) < UTIL_countLogicalCores() / 4 as std::ffi::c_int {
             4 as std::ffi::c_int
         } else {
@@ -2243,7 +2242,7 @@ unsafe extern "C" fn init_nbWorkers() -> std::ffi::c_uint {
         4 as std::ffi::c_int
     } else {
         UTIL_countLogicalCores() / 4 as std::ffi::c_int
-    }) as std::ffi::c_uint;
+    }) as std::ffi::c_uint)
 }
 pub const MINCLEVEL: std::ffi::c_int = ZSTD_minCLevel();
 pub const MAXCLEVEL: std::ffi::c_int = ZSTD_maxCLevel();
@@ -2439,7 +2438,7 @@ unsafe fn main_0(
     FIO_addAbortHandler();
     argNb = 1 as std::ffi::c_int;
     's_373: loop {
-        if !(argNb < argCount) {
+        if (argNb >= argCount) {
             current_block = 17866802397806708230;
             break;
         }
@@ -2915,7 +2914,7 @@ unsafe fn main_0(
                                         outFileName = g_defaultDictName;
                                     }
                                     dict = legacy;
-                                    if !(*argument as std::ffi::c_int == 0 as std::ffi::c_int) {
+                                    if (*argument as std::ffi::c_int != 0 as std::ffi::c_int) {
                                         let fresh2 = argument;
                                         argument = argument.offset(1);
                                         if *fresh2 as std::ffi::c_int != '=' as i32 {
@@ -2937,7 +2936,7 @@ unsafe fn main_0(
                                     b"--threads\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb = 0 as *const std::ffi::c_char;
+                                    let mut __nb = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb = argument;
@@ -3027,7 +3026,7 @@ unsafe fn main_0(
                                     b"--memlimit\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_0 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_0 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_0 = argument;
@@ -3114,7 +3113,7 @@ unsafe fn main_0(
                                     b"--memory\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_1 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_1 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_1 = argument;
@@ -3202,7 +3201,7 @@ unsafe fn main_0(
                                         as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_2 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_2 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_2 = argument;
@@ -3289,7 +3288,7 @@ unsafe fn main_0(
                                     b"--block-size\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_3 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_3 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_3 = argument;
@@ -3376,7 +3375,7 @@ unsafe fn main_0(
                                     b"--split\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_4 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_4 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_4 = argument;
@@ -3463,7 +3462,7 @@ unsafe fn main_0(
                                     b"--jobsize\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_5 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_5 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_5 = argument;
@@ -3550,7 +3549,7 @@ unsafe fn main_0(
                                     b"--maxdict\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_6 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_6 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_6 = argument;
@@ -3637,7 +3636,7 @@ unsafe fn main_0(
                                     b"--dictID\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_7 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_7 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_7 = argument;
@@ -3739,7 +3738,7 @@ unsafe fn main_0(
                                     b"--stream-size\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_8 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_8 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_8 = argument;
@@ -3827,7 +3826,7 @@ unsafe fn main_0(
                                         as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_9 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_9 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_9 = argument;
@@ -3914,7 +3913,7 @@ unsafe fn main_0(
                                     b"--size-hint\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut __nb_10 = 0 as *const std::ffi::c_char;
+                                    let mut __nb_10 = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_10 = argument;
@@ -4277,7 +4276,7 @@ unsafe fn main_0(
                                     b"--trace\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut traceFile = 0 as *const std::ffi::c_char;
+                                    let mut traceFile = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         traceFile = argument;
@@ -4588,7 +4587,7 @@ unsafe fn main_0(
                                     b"--filelist\0" as *const u8 as *const std::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut listName = 0 as *const std::ffi::c_char;
+                                    let mut listName = std::ptr::null::<std::ffi::c_char>();
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         listName = argument;
@@ -4789,9 +4788,8 @@ unsafe fn main_0(
                                                     );
                                                 }
                                             };
-                                            if !(*outFileName.offset(0 as std::ffi::c_int as isize)
-                                                as std::ffi::c_int
-                                                == '-' as i32)
+                                            if (*outFileName.offset(0 as std::ffi::c_int as isize)
+                                                as std::ffi::c_int != '-' as i32)
                                             {
                                                 continue;
                                             }
@@ -4872,9 +4870,8 @@ unsafe fn main_0(
                                                     );
                                                 }
                                             };
-                                            if !(*dictFileName.offset(0 as std::ffi::c_int as isize)
-                                                as std::ffi::c_int
-                                                == '-' as i32)
+                                            if (*dictFileName.offset(0 as std::ffi::c_int as isize)
+                                                as std::ffi::c_int != '-' as i32)
                                             {
                                                 continue;
                                             }
@@ -5042,15 +5039,13 @@ unsafe fn main_0(
             if operation as std::ffi::c_uint
                 == zom_decompress as std::ffi::c_int as std::ffi::c_uint
                 && setThreads_non1 != 0
-            {
-                if g_displayLevel >= 2 as std::ffi::c_int {
+                && g_displayLevel >= 2 as std::ffi::c_int {
                     fprintf(
                         stderr,
                         b"Warning : decompression does not support multi-threading\n\0" as *const u8
                             as *const std::ffi::c_char,
                     );
                 }
-            }
             if nbWorkers == NBWORKERS_AUTOCPU as std::ffi::c_uint && singleThread == 0 {
                 if defaultLogicalCores != 0 {
                     nbWorkers = UTIL_countLogicalCores() as std::ffi::c_uint;
@@ -5075,8 +5070,7 @@ unsafe fn main_0(
                 }
             }
             if operation as std::ffi::c_uint == zom_compress as std::ffi::c_int as std::ffi::c_uint
-            {
-                if g_displayLevel >= 4 as std::ffi::c_int {
+                && g_displayLevel >= 4 as std::ffi::c_int {
                     fprintf(
                         stderr,
                         b"Compressing with %u worker threads \n\0" as *const u8
@@ -5084,7 +5078,6 @@ unsafe fn main_0(
                         nbWorkers,
                     );
                 }
-            }
             g_utilDisplayLevel = g_displayLevel;
             if followLinks == 0 {
                 let mut u: std::ffi::c_uint = 0;
@@ -5107,7 +5100,7 @@ unsafe fn main_0(
                     } else {
                         let fresh3 = fileNamesNb;
                         fileNamesNb = fileNamesNb.wrapping_add(1);
-                        let ref mut fresh4 = *((*filenames).fileNames).offset(fresh3 as isize);
+                        let fresh4 = &mut (*((*filenames).fileNames).offset(fresh3 as isize));
                         *fresh4 = *((*filenames).fileNames).offset(u as isize);
                     }
                     u = u.wrapping_add(1);
@@ -5133,7 +5126,7 @@ unsafe fn main_0(
                         let mut flNb: size_t = 0;
                         flNb = 0 as std::ffi::c_int as size_t;
                         loop {
-                            if !(flNb < nbFileLists) {
+                            if (flNb >= nbFileLists) {
                                 current_block = 2697231409163282360;
                                 break;
                             }
@@ -5233,8 +5226,8 @@ unsafe fn main_0(
                                                 as *const std::ffi::c_char,
                                         );
                                     }
-                                    if (*filenames).tableSize > 1 as std::ffi::c_int as size_t {
-                                        if g_displayLevel >= 3 as std::ffi::c_int {
+                                    if (*filenames).tableSize > 1 as std::ffi::c_int as size_t
+                                        && g_displayLevel >= 3 as std::ffi::c_int {
                                             fprintf(
                                                 stderr,
                                                 b"%u files \0" as *const u8
@@ -5242,7 +5235,6 @@ unsafe fn main_0(
                                                 (*filenames).tableSize as std::ffi::c_uint,
                                             );
                                         }
-                                    }
                                     if cLevelLast > cLevel {
                                         if g_displayLevel >= 3 as std::ffi::c_int {
                                             fprintf(
@@ -5858,7 +5850,7 @@ unsafe fn main_0(
     UTIL_freeFileNamesTable(filenames);
     UTIL_freeFileNamesTable(file_of_names);
     TRACE_finish();
-    return operationResult;
+    operationResult
 }
 pub fn main() {
     let mut args: Vec<*mut std::ffi::c_char> = Vec::new();

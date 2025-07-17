@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -409,22 +408,22 @@ pub const ZSTD_CONTENTSIZE_ERROR: std::ffi::c_ulonglong =
     (0 as std::ffi::c_ulonglong).wrapping_sub(2 as std::ffi::c_int as std::ffi::c_ulonglong);
 pub const XXH_FORCE_ALIGN_CHECK: std::ffi::c_int = 0 as std::ffi::c_int;
 unsafe extern "C" fn XXH_read32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
-    return *(ptr as *const xxh_unalign32);
+    *(ptr as *const xxh_unalign32)
 }
 pub const XXH_CPU_LITTLE_ENDIAN: std::ffi::c_int = 1 as std::ffi::c_int;
 unsafe extern "C" fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
-    return x << 24 as std::ffi::c_int & 0xff000000 as std::ffi::c_uint
+    x << 24 as std::ffi::c_int & 0xff000000 as std::ffi::c_uint
         | x << 8 as std::ffi::c_int & 0xff0000 as std::ffi::c_int as xxh_u32
         | x >> 8 as std::ffi::c_int & 0xff00 as std::ffi::c_int as xxh_u32
-        | x >> 24 as std::ffi::c_int & 0xff as std::ffi::c_int as xxh_u32;
+        | x >> 24 as std::ffi::c_int & 0xff as std::ffi::c_int as xxh_u32
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
-    return if XXH_CPU_LITTLE_ENDIAN != 0 {
+    if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read32(ptr)
     } else {
         XXH_swap32(XXH_read32(ptr))
-    };
+    }
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE32_align(
@@ -434,18 +433,18 @@ unsafe extern "C" fn XXH_readLE32_align(
     if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
         return XXH_readLE32(ptr);
     } else {
-        return if XXH_CPU_LITTLE_ENDIAN != 0 {
+        if XXH_CPU_LITTLE_ENDIAN != 0 {
             *(ptr as *const xxh_u32)
         } else {
             XXH_swap32(*(ptr as *const xxh_u32))
-        };
-    };
+        }
+    }
 }
 unsafe extern "C" fn XXH_read64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
-    return *(ptr as *const xxh_unalign64);
+    *(ptr as *const xxh_unalign64)
 }
 unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
-    return ((x << 56 as std::ffi::c_int) as std::ffi::c_ulonglong
+    ((x << 56 as std::ffi::c_int) as std::ffi::c_ulonglong
         & 0xff00000000000000 as std::ffi::c_ulonglong
         | (x << 40 as std::ffi::c_int) as std::ffi::c_ulonglong
             & 0xff000000000000 as std::ffi::c_ulonglong
@@ -458,15 +457,15 @@ unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
         | (x >> 24 as std::ffi::c_int) as std::ffi::c_ulonglong & 0xff0000 as std::ffi::c_ulonglong
         | (x >> 40 as std::ffi::c_int) as std::ffi::c_ulonglong & 0xff00 as std::ffi::c_ulonglong
         | (x >> 56 as std::ffi::c_int) as std::ffi::c_ulonglong & 0xff as std::ffi::c_ulonglong)
-        as xxh_u64;
+        as xxh_u64
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
-    return if XXH_CPU_LITTLE_ENDIAN != 0 {
+    if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read64(ptr)
     } else {
         XXH_swap64(XXH_read64(ptr))
-    };
+    }
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE64_align(
@@ -476,12 +475,12 @@ unsafe extern "C" fn XXH_readLE64_align(
     if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
         return XXH_readLE64(ptr);
     } else {
-        return if XXH_CPU_LITTLE_ENDIAN != 0 {
+        if XXH_CPU_LITTLE_ENDIAN != 0 {
             *(ptr as *const xxh_u64)
         } else {
             XXH_swap64(*(ptr as *const xxh_u64))
-        };
-    };
+        }
+    }
 }
 pub const XXH_PRIME64_1: std::ffi::c_ulonglong = 0x9e3779b185ebca87 as std::ffi::c_ulonglong;
 pub const XXH_PRIME64_2: std::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as std::ffi::c_ulonglong;
@@ -494,7 +493,7 @@ unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u6
         as xxh_u64 as xxh_u64;
     acc = ::core::intrinsics::rotate_left(acc, 31 as std::ffi::c_int as std::ffi::c_ulong as u32);
     acc = (acc as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
-    return acc;
+    acc
 }
 unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
     val = XXH64_round(0 as std::ffi::c_int as xxh_u64, val);
@@ -502,7 +501,7 @@ unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh
     acc = (acc as std::ffi::c_ulonglong)
         .wrapping_mul(XXH_PRIME64_1)
         .wrapping_add(XXH_PRIME64_4) as xxh_u64;
-    return acc;
+    acc
 }
 unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 33 as std::ffi::c_int;
@@ -510,7 +509,7 @@ unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 29 as std::ffi::c_int;
     hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_3) as xxh_u64 as xxh_u64;
     hash ^= hash >> 32 as std::ffi::c_int;
-    return hash;
+    hash
 }
 unsafe extern "C" fn XXH64_finalize(
     mut hash: xxh_u64,
@@ -565,7 +564,7 @@ unsafe extern "C" fn XXH64_finalize(
         len = len.wrapping_sub(1);
         len;
     }
-    return XXH64_avalanche(hash);
+    XXH64_avalanche(hash)
 }
 #[inline(always)]
 unsafe extern "C" fn XXH64_endian_align(
@@ -608,7 +607,7 @@ unsafe extern "C" fn XXH64_endian_align(
                 XXH_readLE64_align(input as *const std::ffi::c_void, align),
             );
             input = input.offset(8 as std::ffi::c_int as isize);
-            if !(input < limit) {
+            if (input >= limit) {
                 break;
             }
         }
@@ -634,7 +633,7 @@ unsafe extern "C" fn XXH64_endian_align(
         h64 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
     }
     h64 = h64.wrapping_add(len);
-    return XXH64_finalize(h64, input, len, align);
+    XXH64_finalize(h64, input, len, align)
 }
 #[inline]
 unsafe extern "C" fn XXH_INLINE_XXH64(
@@ -642,7 +641,7 @@ unsafe extern "C" fn XXH_INLINE_XXH64(
     mut len: size_t,
     mut seed: XXH64_hash_t,
 ) -> XXH64_hash_t {
-    return XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned);
+    XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
 }
 pub const MB_UNIT: std::ffi::c_int = 1000000 as std::ffi::c_int;
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
@@ -658,7 +657,7 @@ unsafe extern "C" fn uintSize(mut value: std::ffi::c_uint) -> size_t {
         size;
         value = value.wrapping_div(10 as std::ffi::c_int as std::ffi::c_uint);
     }
-    return size;
+    size
 }
 unsafe extern "C" fn writeUint_varLen(
     mut buffer: *mut std::ffi::c_char,
@@ -723,7 +722,7 @@ unsafe extern "C" fn writeUint_varLen(
             + value.wrapping_rem(10 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_char
                 as std::ffi::c_int) as std::ffi::c_char;
         let fresh1 = endPos;
-        endPos = endPos - 1;
+        endPos -= 1;
         *buffer.offset(fresh1 as isize) = c;
         value = value.wrapping_div(10 as std::ffi::c_int as std::ffi::c_uint);
     }
@@ -774,12 +773,13 @@ unsafe extern "C" fn formatString_u(
     } else {
         abort();
     }
-    return written as std::ffi::c_int;
+    written as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
     let res = {
-        let mut init = BMK_advancedParams_t {
+        
+        BMK_advancedParams_t {
             mode: BMK_both,
             nbSeconds: BMK_TIMETEST_DEFAULT_S as std::ffi::c_uint,
             chunkSizeMax: 0 as std::ffi::c_int as size_t,
@@ -794,10 +794,9 @@ pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
             ldmHashRateLog: 0 as std::ffi::c_int,
             literalCompressionMode: ZSTD_ps_auto,
             useRowMatchFinder: 0 as std::ffi::c_int,
-        };
-        init
+        }
     };
-    return res;
+    res
 }
 unsafe extern "C" fn BMK_initCCtx(
     mut ctx: *mut ZSTD_CCtx,
@@ -1263,12 +1262,12 @@ unsafe extern "C" fn local_initCCtx(mut payload: *mut std::ffi::c_void) -> size_
         (*ag).comprParams,
         (*ag).adv,
     );
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 unsafe extern "C" fn local_initDCtx(mut payload: *mut std::ffi::c_void) -> size_t {
     let mut ag = payload as *mut BMK_initDCtxArgs;
     BMK_initDCtx((*ag).dctx, (*ag).dictBuffer, (*ag).dictBufferSize);
-    return 0 as std::ffi::c_int as size_t;
+    0 as std::ffi::c_int as size_t
 }
 unsafe extern "C" fn local_defaultCompress(
     mut srcBuffer: *const std::ffi::c_void,
@@ -1278,7 +1277,7 @@ unsafe extern "C" fn local_defaultCompress(
     mut addArgs: *mut std::ffi::c_void,
 ) -> size_t {
     let cctx = addArgs as *mut ZSTD_CCtx;
-    return ZSTD_compress2(cctx, dstBuffer, dstSize, srcBuffer, srcSize);
+    ZSTD_compress2(cctx, dstBuffer, dstSize, srcBuffer, srcSize)
 }
 unsafe extern "C" fn local_defaultDecompress(
     mut srcBuffer: *const std::ffi::c_void,
@@ -1290,12 +1289,12 @@ unsafe extern "C" fn local_defaultDecompress(
     let mut moreToFlush = 1 as std::ffi::c_int as size_t;
     let dctx = addArgs as *mut ZSTD_DCtx;
     let mut in_0 = ZSTD_inBuffer_s {
-        src: 0 as *const std::ffi::c_void,
+        src: std::ptr::null::<std::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
     let mut out = ZSTD_outBuffer_s {
-        dst: 0 as *mut std::ffi::c_void,
+        dst: std::ptr::null_mut::<std::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
@@ -1314,13 +1313,13 @@ unsafe extern "C" fn local_defaultDecompress(
             return moreToFlush;
         }
     }
-    return out.pos;
+    out.pos
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_isSuccessful_benchOutcome(
     mut outcome: BMK_benchOutcome_t,
 ) -> std::ffi::c_int {
-    return (outcome.tag == 0 as std::ffi::c_int) as std::ffi::c_int;
+    (outcome.tag == 0 as std::ffi::c_int) as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_benchResult(
@@ -1352,7 +1351,7 @@ pub unsafe extern "C" fn BMK_extract_benchResult(
             );
         }
     };
-    return outcome.internal_never_use_directly;
+    outcome.internal_never_use_directly
 }
 unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
     let mut b = BMK_benchOutcome_t {
@@ -1370,7 +1369,7 @@ unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
         ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
     );
     b.tag = 1 as std::ffi::c_int;
-    return b;
+    b
 }
 unsafe extern "C" fn BMK_benchOutcome_setValidResult(
     mut result: BMK_benchResult_t,
@@ -1386,7 +1385,7 @@ unsafe extern "C" fn BMK_benchOutcome_setValidResult(
     };
     b.tag = 0 as std::ffi::c_int;
     b.internal_never_use_directly = result;
-    return b;
+    b
 }
 unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     mut srcPtrs: *mut *const std::ffi::c_void,
@@ -1739,10 +1738,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             } else {
                 chunkSizeMax
             };
-            let ref mut fresh4 = *srcPtrs.offset(chunkID as isize);
+            let fresh4 = &mut (*srcPtrs.offset(chunkID as isize));
             *fresh4 = srcPtr_0 as *const std::ffi::c_void;
             *srcSizes.offset(chunkID as isize) = chunkSize;
-            let ref mut fresh5 = *cPtrs.offset(chunkID as isize);
+            let fresh5 = &mut (*cPtrs.offset(chunkID as isize));
             *fresh5 = cPtr as *mut std::ffi::c_void;
             *cCapacities.offset(chunkID as isize) = if (*adv).mode as std::ffi::c_uint
                 == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
@@ -1751,7 +1750,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             } else {
                 ZSTD_compressBound(chunkSize)
             };
-            let ref mut fresh6 = *resPtrs.offset(chunkID as isize);
+            let fresh6 = &mut (*resPtrs.offset(chunkID as isize));
             *fresh6 = resPtr as *mut std::ffi::c_void;
             *resSizes.offset(chunkID as isize) = if (*adv).mode as std::ffi::c_uint
                 == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
@@ -1788,8 +1787,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             1 as std::ffi::c_int as std::ffi::c_uint,
         );
     }
-    if UTIL_support_MT_measurements() == 0 && (*adv).nbWorkers > 1 as std::ffi::c_int {
-        if displayLevel >= 2 as std::ffi::c_int {
+    if UTIL_support_MT_measurements() == 0 && (*adv).nbWorkers > 1 as std::ffi::c_int
+        && displayLevel >= 2 as std::ffi::c_int {
             fprintf(
                 stdout,
                 b"Warning : time measurements may be incorrect in multithreading mode... \n\0"
@@ -1797,7 +1796,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             );
             fflush(NULL as *mut FILE);
         }
-    }
     let crcOrig = if (*adv).mode as std::ffi::c_uint
         == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
     {
@@ -1820,41 +1818,41 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         as std::ffi::c_int;
     let mut cbp = BMK_benchParams_t {
         benchFn: None,
-        benchPayload: 0 as *mut std::ffi::c_void,
+        benchPayload: std::ptr::null_mut::<std::ffi::c_void>(),
         initFn: None,
-        initPayload: 0 as *mut std::ffi::c_void,
+        initPayload: std::ptr::null_mut::<std::ffi::c_void>(),
         errorFn: None,
         blockCount: 0,
-        srcBuffers: 0 as *const *const std::ffi::c_void,
-        srcSizes: 0 as *const size_t,
-        dstBuffers: 0 as *const *mut std::ffi::c_void,
-        dstCapacities: 0 as *const size_t,
-        blockResults: 0 as *mut size_t,
+        srcBuffers: std::ptr::null::<*const std::ffi::c_void>(),
+        srcSizes: std::ptr::null::<size_t>(),
+        dstBuffers: std::ptr::null::<*mut std::ffi::c_void>(),
+        dstCapacities: std::ptr::null::<size_t>(),
+        blockResults: std::ptr::null_mut::<size_t>(),
     };
     let mut dbp = BMK_benchParams_t {
         benchFn: None,
-        benchPayload: 0 as *mut std::ffi::c_void,
+        benchPayload: std::ptr::null_mut::<std::ffi::c_void>(),
         initFn: None,
-        initPayload: 0 as *mut std::ffi::c_void,
+        initPayload: std::ptr::null_mut::<std::ffi::c_void>(),
         errorFn: None,
         blockCount: 0,
-        srcBuffers: 0 as *const *const std::ffi::c_void,
-        srcSizes: 0 as *const size_t,
-        dstBuffers: 0 as *const *mut std::ffi::c_void,
-        dstCapacities: 0 as *const size_t,
-        blockResults: 0 as *mut size_t,
+        srcBuffers: std::ptr::null::<*const std::ffi::c_void>(),
+        srcSizes: std::ptr::null::<size_t>(),
+        dstBuffers: std::ptr::null::<*mut std::ffi::c_void>(),
+        dstCapacities: std::ptr::null::<size_t>(),
+        blockResults: std::ptr::null_mut::<size_t>(),
     };
     let mut cctxprep = BMK_initCCtxArgs {
-        cctx: 0 as *mut ZSTD_CCtx,
-        dictBuffer: 0 as *const std::ffi::c_void,
+        cctx: std::ptr::null_mut::<ZSTD_CCtx>(),
+        dictBuffer: std::ptr::null::<std::ffi::c_void>(),
         dictBufferSize: 0,
         cLevel: 0,
-        comprParams: 0 as *const ZSTD_compressionParameters,
-        adv: 0 as *const BMK_advancedParams_t,
+        comprParams: std::ptr::null::<ZSTD_compressionParameters>(),
+        adv: std::ptr::null::<BMK_advancedParams_t>(),
     };
     let mut dctxprep = BMK_initDCtxArgs {
-        dctx: 0 as *mut ZSTD_DCtx,
-        dictBuffer: 0 as *const std::ffi::c_void,
+        dctx: std::ptr::null_mut::<ZSTD_DCtx>(),
+        dictBuffer: std::ptr::null::<std::ffi::c_void>(),
         dictBufferSize: 0,
     };
     cbp.benchFn = Some(
@@ -2358,7 +2356,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     benchResult.cMem = ((1 as std::ffi::c_ulonglong) << (*comprParams).windowLog)
         .wrapping_add(ZSTD_sizeof_CCtx(cctx) as std::ffi::c_ulonglong)
         as size_t;
-    return BMK_benchOutcome_setValidResult(benchResult);
+    BMK_benchOutcome_setValidResult(benchResult)
 }
 pub const NB_MARKS: std::ffi::c_int = 4 as std::ffi::c_int;
 #[no_mangle]
@@ -2580,7 +2578,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         r_0.tag = 32 as std::ffi::c_int;
         return r_0;
     }
-    return outcome;
+    outcome
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchMem(
@@ -2596,7 +2594,7 @@ pub unsafe extern "C" fn BMK_benchMem(
     mut displayName: *const std::ffi::c_char,
 ) -> BMK_benchOutcome_t {
     let adv = BMK_initAdvancedParams();
-    return BMK_benchMemAdvanced(
+    BMK_benchMemAdvanced(
         srcBuffer,
         srcSize,
         NULL as *mut std::ffi::c_void,
@@ -2610,7 +2608,7 @@ pub unsafe extern "C" fn BMK_benchMem(
         displayLevel,
         displayName,
         &adv,
-    );
+    )
 }
 unsafe extern "C" fn BMK_benchCLevels(
     mut srcBuffer: *const std::ffi::c_void,
@@ -2705,7 +2703,7 @@ unsafe extern "C" fn BMK_benchCLevels(
         level += 1;
         level;
     }
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_syntheticTest(
@@ -2772,7 +2770,7 @@ pub unsafe extern "C" fn BMK_syntheticTest(
         adv,
     );
     free(srcBuffer);
-    return res;
+    res
 }
 unsafe extern "C" fn BMK_findMaxMem(mut requiredMem: U64) -> size_t {
     let step =
@@ -2792,7 +2790,7 @@ unsafe extern "C" fn BMK_findMaxMem(mut requiredMem: U64) -> size_t {
         }
     }
     free(testmem as *mut std::ffi::c_void);
-    return requiredMem;
+    requiredMem
 }
 unsafe extern "C" fn BMK_loadFiles(
     mut buffer: *mut std::ffi::c_void,
@@ -2927,7 +2925,7 @@ unsafe extern "C" fn BMK_loadFiles(
         }
         return 12 as std::ffi::c_int;
     }
-    return 0 as std::ffi::c_int;
+    0 as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFilesAdvanced(
@@ -3059,84 +3057,81 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
     } else {
         current_block = 5181772461570869434;
     }
-    match current_block {
-        5181772461570869434 => {
-            benchedSize = BMK_findMaxMem(totalSizeToLoad * 3 as std::ffi::c_int as U64)
-                / 3 as std::ffi::c_int as size_t;
-            if benchedSize > totalSizeToLoad {
-                benchedSize = totalSizeToLoad;
-            }
-            if benchedSize < totalSizeToLoad {
+    if current_block == 5181772461570869434 {
+        benchedSize = BMK_findMaxMem(totalSizeToLoad * 3 as std::ffi::c_int as U64)
+            / 3 as std::ffi::c_int as size_t;
+        if benchedSize > totalSizeToLoad {
+            benchedSize = totalSizeToLoad;
+        }
+        if benchedSize < totalSizeToLoad {
+            fprintf(
+                stderr,
+                b"Not enough memory; testing %u MB only...\n\0" as *const u8
+                    as *const std::ffi::c_char,
+                (benchedSize >> 20 as std::ffi::c_int) as std::ffi::c_uint,
+            );
+            fflush(NULL as *mut FILE);
+        }
+        srcBuffer = if benchedSize != 0 {
+            malloc(benchedSize)
+        } else {
+            NULL as *mut std::ffi::c_void
+        };
+        if srcBuffer.is_null() {
+            free(dictBuffer);
+            free(fileSizes as *mut std::ffi::c_void);
+            if displayLevel >= 1 as std::ffi::c_int {
                 fprintf(
                     stderr,
-                    b"Not enough memory; testing %u MB only...\n\0" as *const u8
+                    b"not enough memory for srcBuffer\0" as *const u8
                         as *const std::ffi::c_char,
-                    (benchedSize >> 20 as std::ffi::c_int) as std::ffi::c_uint,
                 );
                 fflush(NULL as *mut FILE);
             }
-            srcBuffer = if benchedSize != 0 {
-                malloc(benchedSize)
+            return 20 as std::ffi::c_int;
+        }
+        let errorCode_0 = BMK_loadFiles(
+            srcBuffer,
+            benchedSize,
+            fileSizes,
+            fileNamesTable,
+            nbFiles,
+            displayLevel,
+        );
+        if !(errorCode_0 != 0) {
+            let mut mfName: [std::ffi::c_char; 20] =
+                [0 as std::ffi::c_int as std::ffi::c_char; 20];
+            formatString_u(
+                mfName.as_mut_ptr(),
+                ::core::mem::size_of::<[std::ffi::c_char; 20]>() as std::ffi::c_ulong,
+                b" %u files\0" as *const u8 as *const std::ffi::c_char,
+                nbFiles,
+            );
+            let displayName = if nbFiles > 1 as std::ffi::c_int as std::ffi::c_uint {
+                mfName.as_mut_ptr() as *const std::ffi::c_char
             } else {
-                NULL as *mut std::ffi::c_void
+                *fileNamesTable.offset(0 as std::ffi::c_int as isize)
             };
-            if srcBuffer.is_null() {
-                free(dictBuffer);
-                free(fileSizes as *mut std::ffi::c_void);
-                if displayLevel >= 1 as std::ffi::c_int {
-                    fprintf(
-                        stderr,
-                        b"not enough memory for srcBuffer\0" as *const u8
-                            as *const std::ffi::c_char,
-                    );
-                    fflush(NULL as *mut FILE);
-                }
-                return 20 as std::ffi::c_int;
-            }
-            let errorCode_0 = BMK_loadFiles(
+            res = BMK_benchCLevels(
                 srcBuffer,
                 benchedSize,
                 fileSizes,
-                fileNamesTable,
                 nbFiles,
+                startCLevel,
+                endCLevel,
+                compressionParams,
+                dictBuffer,
+                dictBufferSize,
                 displayLevel,
+                displayName,
+                adv,
             );
-            if !(errorCode_0 != 0) {
-                let mut mfName: [std::ffi::c_char; 20] =
-                    [0 as std::ffi::c_int as std::ffi::c_char; 20];
-                formatString_u(
-                    mfName.as_mut_ptr(),
-                    ::core::mem::size_of::<[std::ffi::c_char; 20]>() as std::ffi::c_ulong,
-                    b" %u files\0" as *const u8 as *const std::ffi::c_char,
-                    nbFiles,
-                );
-                let displayName = if nbFiles > 1 as std::ffi::c_int as std::ffi::c_uint {
-                    mfName.as_mut_ptr() as *const std::ffi::c_char
-                } else {
-                    *fileNamesTable.offset(0 as std::ffi::c_int as isize)
-                };
-                res = BMK_benchCLevels(
-                    srcBuffer,
-                    benchedSize,
-                    fileSizes,
-                    nbFiles,
-                    startCLevel,
-                    endCLevel,
-                    compressionParams,
-                    dictBuffer,
-                    dictBufferSize,
-                    displayLevel,
-                    displayName,
-                    adv,
-                );
-            }
         }
-        _ => {}
     }
     free(srcBuffer);
     free(dictBuffer);
     free(fileSizes as *mut std::ffi::c_void);
-    return res;
+    res
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFiles(
@@ -3148,7 +3143,7 @@ pub unsafe extern "C" fn BMK_benchFiles(
     mut displayLevel: std::ffi::c_int,
 ) -> std::ffi::c_int {
     let adv = BMK_initAdvancedParams();
-    return BMK_benchFilesAdvanced(
+    BMK_benchFilesAdvanced(
         fileNamesTable,
         nbFiles,
         dictFileName,
@@ -3157,7 +3152,7 @@ pub unsafe extern "C" fn BMK_benchFiles(
         compressionParams,
         displayLevel,
         &adv,
-    );
+    )
 }
 unsafe extern "C" fn run_static_initializers() {
     maxMemory = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
