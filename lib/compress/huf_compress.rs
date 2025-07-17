@@ -274,11 +274,11 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
         as std::ffi::c_uint;
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
+const fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
     return val.leading_zeros() as i32 as std::ffi::c_uint;
 }
 #[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
+const fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
     return (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val));
 }
 pub const HUF_BLOCKSIZE_MAX: std::ffi::c_int = 128 as std::ffi::c_int * 1024 as std::ffi::c_int;
