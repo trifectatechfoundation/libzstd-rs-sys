@@ -907,48 +907,7 @@ pub const info_frame_error: InfoError = 1;
 pub const info_success: InfoError = 0;
 pub const _IOFBF: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const UINT64_MAX: std::ffi::c_ulong = 18446744073709551615 as std::ffi::c_ulong;
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> U16 {
-    return *(ptr as *const unalign16);
-}
-#[inline]
-unsafe extern "C" fn MEM_read32(mut ptr: *const std::ffi::c_void) -> U32 {
-    return *(ptr as *const unalign32);
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
-    return in_0.swap_bytes();
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> U16 {
-    if MEM_isLittleEndian() != 0 {
-        return MEM_read16(memPtr);
-    } else {
-        let mut p = memPtr as *const BYTE;
-        return (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
-            + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as U16;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> U32 {
-    return (MEM_readLE16(memPtr) as U32).wrapping_add(
-        (*(memPtr as *const BYTE).offset(2 as std::ffi::c_int as isize) as U32)
-            << 16 as std::ffi::c_int,
-    );
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
-    if MEM_isLittleEndian() != 0 {
-        return MEM_read32(memPtr);
-    } else {
-        return MEM_swap32(MEM_read32(memPtr));
-    };
-}
+use crate::{MEM_readLE24, MEM_readLE32, MEM_writeLE32};
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const S_IRUSR: std::ffi::c_int = __S_IREAD;

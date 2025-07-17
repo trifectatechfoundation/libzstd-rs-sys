@@ -4,6 +4,8 @@ use core::arch::asm;
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
+
+use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
 extern "C" {
     pub type ZSTD_DDict_s;
     fn FSE_readNCount(
@@ -416,76 +418,6 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     return (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int
         as std::ffi::c_uint;
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    return 1 as std::ffi::c_int as std::ffi::c_uint;
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> U16 {
-    return *(ptr as *const unalign16);
-}
-#[inline]
-unsafe extern "C" fn MEM_read32(mut ptr: *const std::ffi::c_void) -> U32 {
-    return *(ptr as *const unalign32);
-}
-#[inline]
-unsafe extern "C" fn MEM_read64(mut ptr: *const std::ffi::c_void) -> U64 {
-    return *(ptr as *const unalign64);
-}
-#[inline]
-unsafe extern "C" fn MEM_write64(mut memPtr: *mut std::ffi::c_void, mut value: U64) {
-    *(memPtr as *mut unalign64) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
-    return in_0.swap_bytes();
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: U64) -> U64 {
-    return in_0.swap_bytes();
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> U16 {
-    if MEM_isLittleEndian() != 0 {
-        return MEM_read16(memPtr);
-    } else {
-        let mut p = memPtr as *const BYTE;
-        return (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
-            + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as U16;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> U32 {
-    return (MEM_readLE16(memPtr) as U32).wrapping_add(
-        (*(memPtr as *const BYTE).offset(2 as std::ffi::c_int as isize) as U32)
-            << 16 as std::ffi::c_int,
-    );
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
-    if MEM_isLittleEndian() != 0 {
-        return MEM_read32(memPtr);
-    } else {
-        return MEM_swap32(MEM_read32(memPtr));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> U64 {
-    if MEM_isLittleEndian() != 0 {
-        return MEM_read64(memPtr);
-    } else {
-        return MEM_swap64(MEM_read64(memPtr));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
-    if MEM_32bits() != 0 {
-        return MEM_readLE32(memPtr) as size_t;
-    } else {
-        return MEM_readLE64(memPtr);
-    };
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     return (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
