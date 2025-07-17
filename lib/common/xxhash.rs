@@ -1,18 +1,6 @@
-extern "C" {
-    fn memcpy(
-        _: *mut std::ffi::c_void,
-        _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
-}
-pub type size_t = std::ffi::c_ulong;
+use libc::{free, malloc, memcpy, memset};
+
+pub type size_t = usize;
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
@@ -535,7 +523,7 @@ pub unsafe extern "C" fn ZSTD_XXH32(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_XXH32_createState() -> *mut XXH32_state_t {
-    XXH_malloc(::core::mem::size_of::<XXH32_state_t>() as std::ffi::c_ulong) as *mut XXH32_state_t
+    XXH_malloc(::core::mem::size_of::<XXH32_state_t>()) as *mut XXH32_state_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_XXH32_freeState(mut statePtr: *mut XXH32_state_t) -> XXH_errorcode {
@@ -550,7 +538,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_copyState(
     XXH_memcpy(
         dstState as *mut std::ffi::c_void,
         srcState as *const std::ffi::c_void,
-        ::core::mem::size_of::<XXH32_state_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH32_state_t>(),
     );
 }
 #[no_mangle]
@@ -562,7 +550,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_reset(
     memset(
         statePtr as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<XXH32_state_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH32_state_t>(),
     );
     *((*statePtr).v)
         .as_mut_ptr()
@@ -752,7 +740,7 @@ pub unsafe extern "C" fn ZSTD_XXH32_canonicalFromHash(
     XXH_memcpy(
         dst as *mut std::ffi::c_void,
         &mut hash as *mut XXH32_hash_t as *const std::ffi::c_void,
-        ::core::mem::size_of::<XXH32_canonical_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH32_canonical_t>(),
     );
 }
 #[no_mangle]
@@ -958,7 +946,7 @@ unsafe extern "C" fn XXH64_endian_align(
     } else {
         h64 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
     }
-    h64 = h64.wrapping_add(len);
+    h64 = h64.wrapping_add(len as u64);
     XXH64_finalize(h64, input, len, align)
 }
 #[no_mangle]
@@ -971,7 +959,7 @@ pub unsafe extern "C" fn ZSTD_XXH64(
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_XXH64_createState() -> *mut XXH64_state_t {
-    XXH_malloc(::core::mem::size_of::<XXH64_state_t>() as std::ffi::c_ulong) as *mut XXH64_state_t
+    XXH_malloc(::core::mem::size_of::<XXH64_state_t>()) as *mut XXH64_state_t
 }
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_XXH64_freeState(mut statePtr: *mut XXH64_state_t) -> XXH_errorcode {
@@ -986,7 +974,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_copyState(
     XXH_memcpy(
         dstState as *mut std::ffi::c_void,
         srcState as *const std::ffi::c_void,
-        ::core::mem::size_of::<XXH64_state_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH64_state_t>(),
     );
 }
 #[no_mangle]
@@ -998,7 +986,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_reset(
     memset(
         statePtr as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<XXH64_state_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH64_state_t>(),
     );
     *((*statePtr).v)
         .as_mut_ptr()
@@ -1032,8 +1020,8 @@ pub unsafe extern "C" fn ZSTD_XXH64_update(
     }
     let mut p = input as *const xxh_u8;
     let bEnd = p.offset(len as isize);
-    (*state).total_len =
-        ((*state).total_len as std::ffi::c_ulong).wrapping_add(len) as XXH64_hash_t as XXH64_hash_t;
+    (*state).total_len = ((*state).total_len as std::ffi::c_ulong).wrapping_add(len as u64)
+        as XXH64_hash_t as XXH64_hash_t;
     if ((*state).memsize as size_t).wrapping_add(len) < 32 as std::ffi::c_int as size_t {
         XXH_memcpy(
             (((*state).mem64).as_mut_ptr() as *mut xxh_u8).offset((*state).memsize as isize)
@@ -1207,7 +1195,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_digest(mut state: *const XXH64_state_t) -> X
     XXH64_finalize(
         h64,
         ((*state).mem64).as_ptr() as *const xxh_u8,
-        (*state).total_len,
+        (*state).total_len as usize,
         XXH_aligned,
     )
 }
@@ -1220,7 +1208,7 @@ pub unsafe extern "C" fn ZSTD_XXH64_canonicalFromHash(
     XXH_memcpy(
         dst as *mut std::ffi::c_void,
         &mut hash as *mut XXH64_hash_t as *const std::ffi::c_void,
-        ::core::mem::size_of::<XXH64_canonical_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<XXH64_canonical_t>(),
     );
 }
 #[no_mangle]
