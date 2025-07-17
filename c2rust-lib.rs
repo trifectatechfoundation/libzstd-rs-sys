@@ -10,8 +10,6 @@
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
 #![feature(label_break_value)]
-#![feature(stdsimd)]
-
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;
