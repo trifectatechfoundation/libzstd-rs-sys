@@ -799,30 +799,29 @@ const XXH_PRIME64_3: std::ffi::c_ulonglong = 0x165667b19e3779f9 as std::ffi::c_u
 const XXH_PRIME64_4: std::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as std::ffi::c_ulonglong;
 const XXH_PRIME64_5: std::ffi::c_ulonglong = 0x27d4eb2f165667c5 as std::ffi::c_ulonglong;
 
-unsafe fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
-    acc = (acc as std::ffi::c_ulonglong)
-        .wrapping_add((input as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
-        as xxh_u64 as xxh_u64;
-    acc = ::core::intrinsics::rotate_left(acc, 31 as std::ffi::c_int as std::ffi::c_ulong as u32);
-    acc = (acc as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
-    acc
-}
-unsafe fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
-    val = XXH64_round(0 as std::ffi::c_int as xxh_u64, val);
-    acc ^= val;
-    acc = (acc as std::ffi::c_ulonglong)
+const fn XXH64_round(mut acc: u64, input: u64) -> u64 {
+    input
+        .wrapping_mul(XXH_PRIME64_2)
+        .wrapping_add(acc)
+        .rotate_left(31)
         .wrapping_mul(XXH_PRIME64_1)
-        .wrapping_add(XXH_PRIME64_4) as xxh_u64;
-    acc
 }
-unsafe fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
-    hash ^= hash >> 33 as std::ffi::c_int;
-    hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
-    hash ^= hash >> 29 as std::ffi::c_int;
-    hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_3) as xxh_u64 as xxh_u64;
-    hash ^= hash >> 32 as std::ffi::c_int;
+
+const fn XXH64_mergeRound(mut acc: u64, val: u64) -> u64 {
+    (acc ^ XXH64_round(0, val))
+        .wrapping_mul(XXH_PRIME64_1)
+        .wrapping_add(XXH_PRIME64_4)
+}
+
+const fn XXH64_avalanche(mut hash: u64) -> u64 {
+    hash ^= hash >> 33;
+    hash = hash.wrapping_mul(XXH_PRIME64_2);
+    hash ^= hash >> 29;
+    hash = hash.wrapping_mul(XXH_PRIME64_3);
+    hash ^= hash >> 32;
     hash
 }
+
 unsafe fn XXH64_finalize(
     mut hash: xxh_u64,
     mut ptr: *const xxh_u8,
