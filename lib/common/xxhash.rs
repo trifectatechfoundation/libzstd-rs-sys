@@ -1206,3 +1206,36 @@ unsafe fn ZSTD_XXH64_hashFromCanonical(mut src: *const XXH64_canonical_t) -> XXH
     XXH_readBE64(src as *const std::ffi::c_void)
 }
 const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use quickcheck::quickcheck;
+
+    fn helper_u64(input: &[u8], seed: u64) -> u64 {
+        unsafe { ZSTD_XXH64(input.as_ptr().cast(), input.len(), seed) }
+    }
+
+    quickcheck! {
+        fn prop_xxh64_matches(input: Vec<u8>, seed: u64) -> bool {
+            let expected = xxhash_rust::xxh64::xxh64(&input, seed);
+            let actual = helper_u64(&input, seed);
+            assert_eq!(expected, actual);
+            expected == actual
+        }
+    }
+
+    fn helper_u32(input: &[u8], seed: u32) -> u32 {
+        unsafe { ZSTD_XXH32(input.as_ptr().cast(), input.len(), seed) }
+    }
+
+    quickcheck! {
+        fn prop_xxh32_matches(input: Vec<u8>, seed: u32) -> bool {
+            let expected = xxhash_rust::xxh32::xxh32(&input, seed);
+            let actual = helper_u32(&input, seed);
+            assert_eq!(expected, actual);
+            expected == actual
+        }
+    }
+}

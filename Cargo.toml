@@ -16,3 +16,10 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 c2rust-bitfields= "0.3"
 libc= "0.2"
+
+[dev-dependencies]
+quickcheck = "1.0.3"
+
+[dev-dependencies.xxhash-rust]
+version = "0.8.15"
+features = ["xxh64", "xxh32"]
