@@ -1122,51 +1122,26 @@ unsafe fn ZSTD_XXH64_update(
     XXH_OK
 }
 #[no_mangle]
-pub unsafe fn ZSTD_XXH64_digest(mut state: *const XXH64_state_t) -> XXH64_hash_t {
+pub unsafe fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
     let mut h64: xxh_u64 = 0;
-    if (*state).total_len >= 32 as std::ffi::c_int as XXH64_hash_t {
-        h64 = (::core::intrinsics::rotate_left(
-            *((*state).v).as_ptr().offset(0 as std::ffi::c_int as isize),
-            1 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ))
-        .wrapping_add(::core::intrinsics::rotate_left(
-            *((*state).v).as_ptr().offset(1 as std::ffi::c_int as isize),
-            7 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ))
-        .wrapping_add(::core::intrinsics::rotate_left(
-            *((*state).v).as_ptr().offset(2 as std::ffi::c_int as isize),
-            12 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ))
-        .wrapping_add(::core::intrinsics::rotate_left(
-            *((*state).v).as_ptr().offset(3 as std::ffi::c_int as isize),
-            18 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ));
-        h64 = XXH64_mergeRound(
-            h64,
-            *((*state).v).as_ptr().offset(0 as std::ffi::c_int as isize),
-        );
-        h64 = XXH64_mergeRound(
-            h64,
-            *((*state).v).as_ptr().offset(1 as std::ffi::c_int as isize),
-        );
-        h64 = XXH64_mergeRound(
-            h64,
-            *((*state).v).as_ptr().offset(2 as std::ffi::c_int as isize),
-        );
-        h64 = XXH64_mergeRound(
-            h64,
-            *((*state).v).as_ptr().offset(3 as std::ffi::c_int as isize),
-        );
+    if state.total_len >= 32 {
+        h64 = (state.v[0].rotate_left(1))
+            .wrapping_add(state.v[1].rotate_left(7))
+            .wrapping_add(state.v[2].rotate_left(12))
+            .wrapping_add(state.v[3].rotate_left(18));
+
+        h64 = XXH64_mergeRound(h64, state.v[0]);
+        h64 = XXH64_mergeRound(h64, state.v[1]);
+        h64 = XXH64_mergeRound(h64, state.v[2]);
+        h64 = XXH64_mergeRound(h64, state.v[3]);
     } else {
-        h64 = (*((*state).v).as_ptr().offset(2 as std::ffi::c_int as isize)
-            as std::ffi::c_ulonglong)
-            .wrapping_add(XXH_PRIME64_5) as xxh_u64;
+        h64 = (state.v[2]).wrapping_add(XXH_PRIME64_5);
     }
-    h64 = h64.wrapping_add((*state).total_len);
+    h64 = h64.wrapping_add(state.total_len);
     XXH64_finalize(
         h64,
-        ((*state).mem64).as_ptr() as *const xxh_u8,
-        (*state).total_len as usize,
+        state.mem64.as_ptr() as *const xxh_u8,
+        state.total_len as usize,
         XXH_aligned,
     )
 }
