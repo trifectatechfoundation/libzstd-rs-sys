@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 
-use libc::{free, malloc, memcpy, memset};
+use libc::{free, malloc, memcpy};
 
 type size_t = usize;
 type XXH_errorcode = std::ffi::c_uint;
@@ -191,6 +191,7 @@ unsafe fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_ali
     h64 = h64.wrapping_add(input.len() as u64);
     XXH64_finalize(h64, remainder, align)
 }
+
 #[no_mangle]
 unsafe fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
@@ -243,74 +244,59 @@ fn ZSTD_XXH64_reset(
     XXH_OK
 }
 
-unsafe fn XXH_readLE64(ptr: *const std::ffi::c_void) -> u64 {
-    ptr.cast::<u64>().read_unaligned().to_le()
-}
-
 #[no_mangle]
 unsafe fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
-    mut input: *const std::ffi::c_void,
+    mut input: *const u8,
     mut len: size_t,
 ) -> XXH_errorcode {
-    let slice = if input.is_null() {
+    if input.is_null() {
         assert_eq!(len, 0);
-        return XXH_OK;
+        XXH_OK
     } else {
-        core::slice::from_raw_parts(input.cast::<u8>(), len)
-    };
+        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input, len))
+    }
+}
 
-    let mut p = input as *const xxh_u8;
-    let bEnd = p.add(len);
-    state.total_len = state.total_len.wrapping_add(len as u64);
+fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_errorcode {
+    state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
-        state.mem64_as_bytes_mut()[..len].copy_from_slice(slice);
-        state.memsize = state.memsize.wrapping_add(len as u32);
+        state.mem64_as_bytes_mut()[..slice.len()].copy_from_slice(slice);
+        state.memsize = state.memsize.wrapping_add(slice.len() as u32);
         return XXH_OK;
     }
 
     if state.memsize != 0 {
-        XXH_memcpy(
-            ((state.mem64).as_mut_ptr() as *mut xxh_u8).offset(state.memsize as isize)
-                as *mut std::ffi::c_void,
-            input,
-            32u32.wrapping_sub(state.memsize) as size_t,
-        );
+        let in_use = state.memsize as usize;
+        let remainder = &mut state.mem64_as_bytes_mut()[in_use..];
+        let (left, right) = slice.split_at(remainder.len());
+        remainder.copy_from_slice(left);
+        slice = right;
 
         state.v[0] = XXH64_round(state.v[0], state.mem64[0]);
         state.v[1] = XXH64_round(state.v[1], state.mem64[1]);
         state.v[2] = XXH64_round(state.v[2], state.mem64[2]);
         state.v[3] = XXH64_round(state.v[3], state.mem64[3]);
 
-        p = p.offset((32 as std::ffi::c_int as XXH32_hash_t).wrapping_sub(state.memsize) as isize);
-        state.memsize = 0 as std::ffi::c_int as XXH32_hash_t;
+        state.memsize = 0;
     }
 
-    if p.offset(32 as std::ffi::c_int as isize) <= bEnd {
-        let limit = bEnd.offset(-(32 as std::ffi::c_int as isize));
-        loop {
-            state.v[0] = XXH64_round(state.v[0], XXH_readLE64(p as *const std::ffi::c_void));
-            p = p.offset(8);
-            state.v[1] = XXH64_round(state.v[1], XXH_readLE64(p as *const std::ffi::c_void));
-            p = p.offset(8);
-            state.v[2] = XXH64_round(state.v[2], XXH_readLE64(p as *const std::ffi::c_void));
-            p = p.offset(8);
-            state.v[3] = XXH64_round(state.v[3], XXH_readLE64(p as *const std::ffi::c_void));
-            p = p.offset(8);
-            if p > limit {
-                break;
-            }
-        }
+    let (chunks, remainder) = slice.as_chunks::<32>();
+    for chunk in chunks {
+        let ([n0, n1, n2, n3], &[]) = chunk.as_chunks() else {
+            unreachable!()
+        };
+
+        state.v[0] = XXH64_round(state.v[0], u64::from_le_bytes(*n0));
+        state.v[1] = XXH64_round(state.v[1], u64::from_le_bytes(*n1));
+        state.v[2] = XXH64_round(state.v[2], u64::from_le_bytes(*n2));
+        state.v[3] = XXH64_round(state.v[3], u64::from_le_bytes(*n3));
     }
 
-    if p < bEnd {
-        XXH_memcpy(
-            (state.mem64).as_mut_ptr() as *mut std::ffi::c_void,
-            p as *const std::ffi::c_void,
-            bEnd.offset_from(p) as std::ffi::c_long as size_t,
-        );
-        state.memsize = bEnd.offset_from(p) as std::ffi::c_long as std::ffi::c_uint;
+    if !remainder.is_empty() {
+        state.mem64_as_bytes_mut()[..remainder.len()].copy_from_slice(remainder);
+        state.memsize = remainder.len() as u32;
     }
 
     XXH_OK
