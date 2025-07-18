@@ -1,45 +1,25 @@
 use std::mem::MaybeUninit;
 
-type size_t = usize;
-type XXH_errorcode = std::ffi::c_uint;
-const XXH_ERROR: XXH_errorcode = 1;
-const XXH_OK: XXH_errorcode = 0;
-type __uint8_t = std::ffi::c_uchar;
-type __uint32_t = std::ffi::c_uint;
-type __uint64_t = std::ffi::c_ulong;
-type uint8_t = __uint8_t;
-type uint32_t = __uint32_t;
-type uint64_t = __uint64_t;
-type XXH32_hash_t = uint32_t;
-type xxh_u32 = XXH32_hash_t;
+#[repr(u32)]
+enum XXH_errorcode {
+    XXH_ERROR = 1,
+    XXH_OK = 0,
+}
 
 enum Align {
     Aligned,
     Unaligned,
 }
 
-type xxh_u8 = uint8_t;
-type xxh_unalign32 = xxh_u32;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH32_canonical_t {
-    pub digest: [std::ffi::c_uchar; 4],
-}
-
-type XXH64_hash_t = uint64_t;
-type xxh_u64 = XXH64_hash_t;
-type xxh_unalign64 = xxh_u64;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
+    pub total_len: u64,
+    pub v: [u64; 4],
+    pub mem64: [u64; 4],
+    pub memsize: u32,
+    pub reserved32: u32,
+    pub reserved64: u64,
 }
 
 impl XXH64_state_s {
@@ -54,29 +34,11 @@ impl XXH64_state_s {
     }
 }
 
-pub type XXH64_state_t = XXH64_state_s;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_canonical_t {
-    pub digest: [std::ffi::c_uchar; 8],
-}
-
-const XXH_VERSION_MAJOR: std::ffi::c_int = 0 as std::ffi::c_int;
-const XXH_VERSION_MINOR: std::ffi::c_int = 8 as std::ffi::c_int;
-const XXH_VERSION_RELEASE: std::ffi::c_int = 2 as std::ffi::c_int;
-const XXH_VERSION_NUMBER: std::ffi::c_int =
-    XXH_VERSION_MAJOR * 100 as std::ffi::c_int * 100 as std::ffi::c_int
-        + XXH_VERSION_MINOR * 100 as std::ffi::c_int
-        + XXH_VERSION_RELEASE;
-const XXH_FORCE_ALIGN_CHECK: std::ffi::c_int = 0 as std::ffi::c_int;
-const XXH32_ENDJMP: std::ffi::c_int = 0 as std::ffi::c_int;
-
-const XXH_PRIME64_1: std::ffi::c_ulonglong = 0x9e3779b185ebca87 as std::ffi::c_ulonglong;
-const XXH_PRIME64_2: std::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as std::ffi::c_ulonglong;
-const XXH_PRIME64_3: std::ffi::c_ulonglong = 0x165667b19e3779f9 as std::ffi::c_ulonglong;
-const XXH_PRIME64_4: std::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as std::ffi::c_ulonglong;
-const XXH_PRIME64_5: std::ffi::c_ulonglong = 0x27d4eb2f165667c5 as std::ffi::c_ulonglong;
+const XXH_PRIME64_1: u64 = 0x9e3779b185ebca87;
+const XXH_PRIME64_2: u64 = 0xc2b2ae3d27d4eb4f;
+const XXH_PRIME64_3: u64 = 0x165667b19e3779f9;
+const XXH_PRIME64_4: u64 = 0x85ebca77c2b2ae63;
+const XXH_PRIME64_5: u64 = 0x27d4eb2f165667c5;
 
 const fn XXH64_round(mut acc: u64, input: u64) -> u64 {
     input
@@ -101,7 +63,7 @@ const fn XXH64_avalanche(mut hash: u64) -> u64 {
     hash
 }
 
-fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> xxh_u64 {
+fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> u64 {
     let (chunks, slice) = slice.as_chunks::<8>();
     for chunk in chunks {
         let k1 = XXH64_round(0, u64::from_le_bytes(*chunk));
@@ -128,7 +90,7 @@ fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> xxh_u64 {
 }
 
 #[inline(always)]
-fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> xxh_u64 {
+fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
     let mut h64: u64;
 
     let (chunks, remainder) = input.as_chunks::<32>();
@@ -171,9 +133,9 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> xxh_u64 
 #[no_mangle]
 unsafe extern "C" fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
-    mut len: size_t,
-    mut seed: XXH64_hash_t,
-) -> XXH64_hash_t {
+    mut len: usize,
+    mut seed: u64,
+) -> u64 {
     let slice = if input.is_null() {
         assert_eq!(len, 0);
         &[]
@@ -186,8 +148,8 @@ unsafe extern "C" fn ZSTD_XXH64(
 
 #[no_mangle]
 extern "C" fn ZSTD_XXH64_reset(
-    statePtr: &mut MaybeUninit<XXH64_state_t>,
-    mut seed: XXH64_hash_t,
+    statePtr: &mut MaybeUninit<XXH64_state_s>,
+    mut seed: u64,
 ) -> XXH_errorcode {
     // SAFETY: all zeros is a valid value of type XXH64_state_t.
     let state = unsafe {
@@ -200,30 +162,30 @@ extern "C" fn ZSTD_XXH64_reset(
     state.v[2] = seed.wrapping_add(0);
     state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
 
-    XXH_OK
+    XXH_errorcode::XXH_OK
 }
 
 #[no_mangle]
 unsafe extern "C" fn ZSTD_XXH64_update(
-    state: &mut XXH64_state_t,
+    state: &mut XXH64_state_s,
     mut input: *const u8,
-    mut len: size_t,
+    mut len: usize,
 ) -> XXH_errorcode {
     if input.is_null() {
         assert_eq!(len, 0);
-        XXH_OK
+        XXH_errorcode::XXH_OK
     } else {
         ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input, len))
     }
 }
 
-fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_errorcode {
+fn ZSTD_XXH64_update_help(state: &mut XXH64_state_s, mut slice: &[u8]) -> XXH_errorcode {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
         state.mem64_as_bytes_mut()[..slice.len()].copy_from_slice(slice);
         state.memsize = state.memsize.wrapping_add(slice.len() as u32);
-        return XXH_OK;
+        return XXH_errorcode::XXH_OK;
     }
 
     if state.memsize != 0 {
@@ -258,11 +220,11 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_er
         state.memsize = remainder.len() as u32;
     }
 
-    XXH_OK
+    XXH_errorcode::XXH_OK
 }
 
 #[no_mangle]
-pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
+pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_s) -> u64 {
     let mut h64;
 
     if state.total_len >= 32 {
