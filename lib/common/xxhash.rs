@@ -12,9 +12,12 @@ type uint32_t = __uint32_t;
 type uint64_t = __uint64_t;
 type XXH32_hash_t = uint32_t;
 type xxh_u32 = XXH32_hash_t;
-type XXH_alignment = std::ffi::c_uint;
-const XXH_unaligned: XXH_alignment = 1;
-const XXH_aligned: XXH_alignment = 0;
+
+enum Align {
+    Aligned,
+    Unaligned,
+}
+
 type xxh_u8 = uint8_t;
 type xxh_unalign32 = xxh_u32;
 
@@ -98,7 +101,7 @@ const fn XXH64_avalanche(mut hash: u64) -> u64 {
     hash
 }
 
-fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: XXH_alignment) -> xxh_u64 {
+fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> xxh_u64 {
     let (chunks, slice) = slice.as_chunks::<8>();
     for chunk in chunks {
         let k1 = XXH64_round(0, u64::from_le_bytes(*chunk));
@@ -125,7 +128,7 @@ fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: XXH_alignment) -> xxh_u64
 }
 
 #[inline(always)]
-fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment) -> xxh_u64 {
+fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> xxh_u64 {
     let mut h64: u64;
 
     let (chunks, remainder) = input.as_chunks::<32>();
@@ -159,7 +162,9 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment)
     } else {
         h64 = seed.wrapping_add(XXH_PRIME64_5);
     }
+
     h64 = h64.wrapping_add(input.len() as u64);
+
     XXH64_finalize(h64, remainder, align)
 }
 
@@ -176,7 +181,7 @@ unsafe fn ZSTD_XXH64(
         core::slice::from_raw_parts(input.cast::<u8>(), len)
     };
 
-    XXH64_endian_align(slice, seed, XXH_unaligned)
+    XXH64_endian_align(slice, seed, Align::Unaligned)
 }
 
 #[no_mangle]
@@ -277,7 +282,7 @@ pub fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
     h64 = h64.wrapping_add(state.total_len);
 
     let len = state.total_len as usize % 32;
-    XXH64_finalize(h64, &state.mem64_as_bytes_ref()[..len], XXH_aligned)
+    XXH64_finalize(h64, &state.mem64_as_bytes_ref()[..len], Align::Aligned)
 }
 
 #[cfg(test)]
