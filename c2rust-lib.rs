@@ -5,11 +5,10 @@
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
 #![allow(unused_mut)]
-#![feature(asm)]
+#![feature(test)]
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
-#![feature(label_break_value)]
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;

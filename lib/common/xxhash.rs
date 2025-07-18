@@ -1164,6 +1164,8 @@ mod tests {
 
     use quickcheck::quickcheck;
 
+    extern crate test;
+
     fn helper_u64(input: &[u8], seed: u64) -> u64 {
         unsafe { ZSTD_XXH64(input.as_ptr().cast(), input.len(), seed) }
     }
@@ -1188,5 +1190,19 @@ mod tests {
             assert_eq!(expected, actual);
             expected == actual
         }
+    }
+
+    #[bench]
+    fn xxh64_reference(b: &mut test::Bencher) {
+        b.iter(|| {
+            xxhash_rust::xxh64::xxh64(test::black_box(&[b'a'; 1024]), test::black_box(123));
+        });
+    }
+
+    #[bench]
+    fn xxh64_ours(b: &mut test::Bencher) {
+        b.iter(|| {
+            helper_u64(test::black_box(&[b'a'; 1024]), test::black_box(123));
+        });
     }
 }
