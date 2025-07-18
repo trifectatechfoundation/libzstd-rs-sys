@@ -827,57 +827,40 @@ unsafe fn XXH64_finalize(
     mut hash: xxh_u64,
     mut ptr: *const xxh_u8,
     mut len: size_t,
-    mut align: XXH_alignment,
+    _align: XXH_alignment,
 ) -> xxh_u64 {
     if ptr.is_null() {
         ::core::hint::assert_unchecked(len == 0 as std::ffi::c_int as size_t);
     }
-    len &= 31 as std::ffi::c_int as size_t;
-    while len >= 8 as std::ffi::c_int as size_t {
-        let k1 = XXH64_round(
-            0 as std::ffi::c_int as xxh_u64,
-            XXH_readLE64_align(ptr as *const std::ffi::c_void, align),
-        );
-        ptr = ptr.offset(8 as std::ffi::c_int as isize);
+    len &= 31;
+
+    let slice = core::slice::from_raw_parts(ptr, len);
+
+    let (chunks, slice) = slice.as_chunks::<8>();
+    for chunk in chunks {
+        let k1 = XXH64_round(0, u64::from_le_bytes(*chunk));
         hash ^= k1;
-        hash = (::core::intrinsics::rotate_left(
-            hash,
-            27 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ) as std::ffi::c_ulonglong)
+        hash = (hash.rotate_left(27))
             .wrapping_mul(XXH_PRIME64_1)
-            .wrapping_add(XXH_PRIME64_4) as xxh_u64;
-        len = len.wrapping_sub(8 as std::ffi::c_int as size_t);
+            .wrapping_add(XXH_PRIME64_4);
     }
-    if len >= 4 as std::ffi::c_int as size_t {
-        hash = (hash as std::ffi::c_ulonglong
-            ^ (XXH_readLE32_align(ptr as *const std::ffi::c_void, align) as xxh_u64
-                as std::ffi::c_ulonglong)
-                .wrapping_mul(XXH_PRIME64_1)) as xxh_u64;
-        ptr = ptr.offset(4 as std::ffi::c_int as isize);
-        hash = (::core::intrinsics::rotate_left(
-            hash,
-            23 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ) as std::ffi::c_ulonglong)
+
+    let (chunks, slice) = slice.as_chunks::<4>();
+    for chunk in chunks {
+        hash = hash ^ (u64::from(u32::from_le_bytes(*chunk))).wrapping_mul(XXH_PRIME64_1);
+        hash = (hash.rotate_left(23))
             .wrapping_mul(XXH_PRIME64_2)
-            .wrapping_add(XXH_PRIME64_3) as xxh_u64;
-        len = len.wrapping_sub(4 as std::ffi::c_int as size_t);
+            .wrapping_add(XXH_PRIME64_3);
     }
-    while len > 0 as std::ffi::c_int as size_t {
-        let fresh7 = ptr;
-        ptr = ptr.offset(1);
-        hash = (hash as std::ffi::c_ulonglong
-            ^ (*fresh7 as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_5))
-            as xxh_u64;
-        hash = (::core::intrinsics::rotate_left(
-            hash,
-            11 as std::ffi::c_int as std::ffi::c_ulong as u32,
-        ) as std::ffi::c_ulonglong)
-            .wrapping_mul(XXH_PRIME64_1) as xxh_u64;
-        len = len.wrapping_sub(1);
-        len;
+
+    for byte in slice {
+        hash = hash ^ (u64::from(*byte)).wrapping_mul(XXH_PRIME64_5);
+        hash = (hash.rotate_left(11)).wrapping_mul(XXH_PRIME64_1);
     }
+
     XXH64_avalanche(hash)
 }
+
 #[inline(always)]
 unsafe fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment) -> xxh_u64 {
     let mut h64: u64;
