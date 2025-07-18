@@ -1,7 +1,5 @@
 use std::mem::MaybeUninit;
 
-use libc::{free, malloc, memcpy};
-
 type size_t = usize;
 type XXH_errorcode = std::ffi::c_uint;
 const XXH_ERROR: XXH_errorcode = 1;
@@ -19,19 +17,6 @@ const XXH_unaligned: XXH_alignment = 1;
 const XXH_aligned: XXH_alignment = 0;
 type xxh_u8 = uint8_t;
 type xxh_unalign32 = xxh_u32;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH32_state_s {
-    pub total_len_32: XXH32_hash_t,
-    pub large_len: XXH32_hash_t,
-    pub v: [XXH32_hash_t; 4],
-    pub mem32: [XXH32_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved: XXH32_hash_t,
-}
-
-type XXH32_state_t = XXH32_state_s;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -83,20 +68,6 @@ const XXH_VERSION_NUMBER: std::ffi::c_int =
         + XXH_VERSION_RELEASE;
 const XXH_FORCE_ALIGN_CHECK: std::ffi::c_int = 0 as std::ffi::c_int;
 const XXH32_ENDJMP: std::ffi::c_int = 0 as std::ffi::c_int;
-
-unsafe fn XXH_malloc(mut s: size_t) -> *mut std::ffi::c_void {
-    malloc(s)
-}
-unsafe fn XXH_free(mut p: *mut std::ffi::c_void) {
-    free(p);
-}
-unsafe fn XXH_memcpy(
-    mut dest: *mut std::ffi::c_void,
-    mut src: *const std::ffi::c_void,
-    mut size: size_t,
-) -> *mut std::ffi::c_void {
-    memcpy(dest, src, size)
-}
 
 const XXH_PRIME64_1: std::ffi::c_ulonglong = 0x9e3779b185ebca87 as std::ffi::c_ulonglong;
 const XXH_PRIME64_2: std::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as std::ffi::c_ulonglong;
@@ -154,7 +125,7 @@ fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: XXH_alignment) -> xxh_u64
 }
 
 #[inline(always)]
-unsafe fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment) -> xxh_u64 {
+fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment) -> xxh_u64 {
     let mut h64: u64;
 
     let (chunks, remainder) = input.as_chunks::<32>();
@@ -206,23 +177,6 @@ unsafe fn ZSTD_XXH64(
     };
 
     XXH64_endian_align(slice, seed, XXH_unaligned)
-}
-unsafe fn ZSTD_XXH64_createState() -> *mut XXH64_state_t {
-    XXH_malloc(::core::mem::size_of::<XXH64_state_t>()) as *mut XXH64_state_t
-}
-unsafe fn ZSTD_XXH64_freeState(mut statePtr: *mut XXH64_state_t) -> XXH_errorcode {
-    XXH_free(statePtr as *mut std::ffi::c_void);
-    XXH_OK
-}
-unsafe fn ZSTD_XXH64_copyState(
-    mut dstState: *mut XXH64_state_t,
-    mut srcState: *const XXH64_state_t,
-) {
-    XXH_memcpy(
-        dstState as *mut std::ffi::c_void,
-        srcState as *const std::ffi::c_void,
-        ::core::mem::size_of::<XXH64_state_t>(),
-    );
 }
 
 #[no_mangle]
