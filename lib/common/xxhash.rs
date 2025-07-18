@@ -1,3 +1,5 @@
+use std::mem::MaybeUninit;
+
 use libc::{free, malloc, memcpy, memset};
 
 type size_t = usize;
@@ -930,37 +932,26 @@ unsafe fn ZSTD_XXH64_copyState(
         ::core::mem::size_of::<XXH64_state_t>(),
     );
 }
+
 #[no_mangle]
-unsafe fn ZSTD_XXH64_reset(
-    mut statePtr: *mut XXH64_state_t,
+fn ZSTD_XXH64_reset(
+    statePtr: &mut MaybeUninit<XXH64_state_t>,
     mut seed: XXH64_hash_t,
 ) -> XXH_errorcode {
-    ::core::hint::assert_unchecked(!statePtr.is_null());
-    memset(
-        statePtr as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
-        ::core::mem::size_of::<XXH64_state_t>(),
-    );
-    *((*statePtr).v)
-        .as_mut_ptr()
-        .offset(0 as std::ffi::c_int as isize) = (seed as std::ffi::c_ulonglong)
-        .wrapping_add(XXH_PRIME64_1)
-        .wrapping_add(XXH_PRIME64_2)
-        as XXH64_hash_t;
-    *((*statePtr).v)
-        .as_mut_ptr()
-        .offset(1 as std::ffi::c_int as isize) =
-        (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_2) as XXH64_hash_t;
-    *((*statePtr).v)
-        .as_mut_ptr()
-        .offset(2 as std::ffi::c_int as isize) =
-        seed.wrapping_add(0 as std::ffi::c_int as XXH64_hash_t);
-    *((*statePtr).v)
-        .as_mut_ptr()
-        .offset(3 as std::ffi::c_int as isize) =
-        (seed as std::ffi::c_ulonglong).wrapping_sub(XXH_PRIME64_1) as XXH64_hash_t;
+    // SAFETY: all zeros is a valid value of type XXH64_state_t.
+    let state = unsafe {
+        core::ptr::write_bytes(statePtr.as_mut_ptr(), 0u8, 1);
+        statePtr.assume_init_mut()
+    };
+
+    state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
+    state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
+    state.v[2] = seed.wrapping_add(0);
+    state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
+
     XXH_OK
 }
+
 #[no_mangle]
 unsafe fn ZSTD_XXH64_update(
     mut state: *mut XXH64_state_t,
@@ -1178,7 +1169,7 @@ mod tests {
 
     fn helper_state_u64(input: &[u8], seed: u64) -> u64 {
         let mut state = MaybeUninit::uninit();
-        unsafe { ZSTD_XXH64_reset(state.as_mut_ptr(), seed) };
+        unsafe { ZSTD_XXH64_reset(&mut state, seed) };
         let state = unsafe { state.assume_init_mut() };
 
         unsafe { ZSTD_XXH64_update(state, input.as_ptr().cast(), input.len()) };
