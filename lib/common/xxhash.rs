@@ -169,7 +169,7 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> xxh_u64 
 }
 
 #[no_mangle]
-unsafe fn ZSTD_XXH64(
+unsafe extern "C" fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
     mut len: size_t,
     mut seed: XXH64_hash_t,
@@ -185,7 +185,7 @@ unsafe fn ZSTD_XXH64(
 }
 
 #[no_mangle]
-fn ZSTD_XXH64_reset(
+extern "C" fn ZSTD_XXH64_reset(
     statePtr: &mut MaybeUninit<XXH64_state_t>,
     mut seed: XXH64_hash_t,
 ) -> XXH_errorcode {
@@ -204,7 +204,7 @@ fn ZSTD_XXH64_reset(
 }
 
 #[no_mangle]
-unsafe fn ZSTD_XXH64_update(
+unsafe extern "C" fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
     mut input: *const u8,
     mut len: size_t,
@@ -262,7 +262,7 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_er
 }
 
 #[no_mangle]
-pub fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
+pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
     let mut h64;
 
     if state.total_len >= 32 {
