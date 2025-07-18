@@ -879,73 +879,42 @@ unsafe fn XXH64_finalize(
     XXH64_avalanche(hash)
 }
 #[inline(always)]
-unsafe fn XXH64_endian_align(
-    mut input: *const xxh_u8,
-    mut len: size_t,
-    mut seed: xxh_u64,
-    mut align: XXH_alignment,
-) -> xxh_u64 {
-    let mut h64: xxh_u64 = 0;
-    if input.is_null() {
-        ::core::hint::assert_unchecked(len == 0 as std::ffi::c_int as size_t);
-    }
-    if len >= 32 as std::ffi::c_int as size_t {
-        let bEnd = input.offset(len as isize);
-        let limit = bEnd.offset(-(31 as std::ffi::c_int as isize));
-        let mut v1 = (seed as std::ffi::c_ulonglong)
-            .wrapping_add(XXH_PRIME64_1)
-            .wrapping_add(XXH_PRIME64_2) as xxh_u64;
-        let mut v2 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_2) as xxh_u64;
-        let mut v3 = seed.wrapping_add(0 as std::ffi::c_int as xxh_u64);
-        let mut v4 = (seed as std::ffi::c_ulonglong).wrapping_sub(XXH_PRIME64_1) as xxh_u64;
-        loop {
-            v1 = XXH64_round(
-                v1,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
-            );
-            input = input.offset(8 as std::ffi::c_int as isize);
-            v2 = XXH64_round(
-                v2,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
-            );
-            input = input.offset(8 as std::ffi::c_int as isize);
-            v3 = XXH64_round(
-                v3,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
-            );
-            input = input.offset(8 as std::ffi::c_int as isize);
-            v4 = XXH64_round(
-                v4,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
-            );
-            input = input.offset(8 as std::ffi::c_int as isize);
-            if input >= limit {
-                break;
-            }
+unsafe fn XXH64_endian_align(mut input: &[u8], mut seed: u64, mut align: XXH_alignment) -> xxh_u64 {
+    let mut h64: u64;
+
+    let (chunks, remainder) = input.as_chunks::<32>();
+
+    if !chunks.is_empty() {
+        let mut v1 = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
+        let mut v2 = seed.wrapping_add(XXH_PRIME64_2);
+        let mut v3 = seed.wrapping_add(0);
+        let mut v4 = seed.wrapping_sub(XXH_PRIME64_1);
+
+        for chunk in chunks {
+            let ([n1, n2, n3, n4], &[]) = chunk.as_chunks() else {
+                unreachable!()
+            };
+
+            v1 = XXH64_round(v1, u64::from_le_bytes(*n1));
+            v2 = XXH64_round(v2, u64::from_le_bytes(*n2));
+            v3 = XXH64_round(v3, u64::from_le_bytes(*n3));
+            v4 = XXH64_round(v4, u64::from_le_bytes(*n4));
         }
-        h64 =
-            (::core::intrinsics::rotate_left(v1, 1 as std::ffi::c_int as std::ffi::c_ulong as u32))
-                .wrapping_add(::core::intrinsics::rotate_left(
-                    v2,
-                    7 as std::ffi::c_int as std::ffi::c_ulong as u32,
-                ))
-                .wrapping_add(::core::intrinsics::rotate_left(
-                    v3,
-                    12 as std::ffi::c_int as std::ffi::c_ulong as u32,
-                ))
-                .wrapping_add(::core::intrinsics::rotate_left(
-                    v4,
-                    18 as std::ffi::c_int as std::ffi::c_ulong as u32,
-                ));
+
+        h64 = (v1.rotate_left(1))
+            .wrapping_add(v2.rotate_left(7))
+            .wrapping_add(v3.rotate_left(12))
+            .wrapping_add(v4.rotate_left(18));
+
         h64 = XXH64_mergeRound(h64, v1);
         h64 = XXH64_mergeRound(h64, v2);
         h64 = XXH64_mergeRound(h64, v3);
         h64 = XXH64_mergeRound(h64, v4);
     } else {
-        h64 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
+        h64 = seed.wrapping_add(XXH_PRIME64_5);
     }
-    h64 = h64.wrapping_add(len as u64);
-    XXH64_finalize(h64, input, len, align)
+    h64 = h64.wrapping_add(input.len() as u64);
+    XXH64_finalize(h64, remainder.as_ptr().cast(), input.len(), align)
 }
 #[no_mangle]
 unsafe fn ZSTD_XXH64(
@@ -953,7 +922,14 @@ unsafe fn ZSTD_XXH64(
     mut len: size_t,
     mut seed: XXH64_hash_t,
 ) -> XXH64_hash_t {
-    XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
+    let slice = if input.is_null() {
+        assert_eq!(len, 0);
+        &[]
+    } else {
+        core::slice::from_raw_parts(input.cast::<u8>(), len)
+    };
+
+    XXH64_endian_align(slice, seed, XXH_unaligned)
 }
 unsafe fn ZSTD_XXH64_createState() -> *mut XXH64_state_t {
     XXH_malloc(::core::mem::size_of::<XXH64_state_t>()) as *mut XXH64_state_t
