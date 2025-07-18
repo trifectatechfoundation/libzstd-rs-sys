@@ -54,6 +54,18 @@ pub struct XXH64_state_s {
     pub reserved64: XXH64_hash_t,
 }
 
+impl XXH64_state_s {
+    fn mem64_as_bytes_ref(&self) -> &[u8; 32] {
+        // SAFETY: casting an array of u64 to u8 is valid.
+        unsafe { core::mem::transmute::<&[u64; 4], &[u8; 8 * 4]>(&self.mem64) }
+    }
+
+    fn mem64_as_bytes_mut(&mut self) -> &mut [u8; 32] {
+        // SAFETY: casting an array of u64 to u8 is valid.
+        unsafe { core::mem::transmute::<&mut [u64; 4], &mut [u8; 8 * 4]>(&mut self.mem64) }
+    }
+}
+
 pub type XXH64_state_t = XXH64_state_s;
 
 #[derive(Copy, Clone)]
@@ -241,98 +253,57 @@ unsafe fn ZSTD_XXH64_update(
     mut input: *const std::ffi::c_void,
     mut len: size_t,
 ) -> XXH_errorcode {
-    if input.is_null() {
-        ::core::hint::assert_unchecked(len == 0 as std::ffi::c_int as size_t);
+    let slice = if input.is_null() {
+        assert_eq!(len, 0);
         return XXH_OK;
-    }
+    } else {
+        core::slice::from_raw_parts(input.cast::<u8>(), len)
+    };
+
     let mut p = input as *const xxh_u8;
     let bEnd = p.add(len);
-    state.total_len = (state.total_len as std::ffi::c_ulong).wrapping_add(len as u64)
-        as XXH64_hash_t as XXH64_hash_t;
-    if (state.memsize as size_t).wrapping_add(len) < 32 as std::ffi::c_int as size_t {
-        XXH_memcpy(
-            ((state.mem64).as_mut_ptr() as *mut xxh_u8).offset(state.memsize as isize)
-                as *mut std::ffi::c_void,
-            input,
-            len,
-        );
-        state.memsize = (state.memsize).wrapping_add(len as xxh_u32);
+    state.total_len = state.total_len.wrapping_add(len as u64);
+
+    if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
+        state.mem64_as_bytes_mut()[..len].copy_from_slice(slice);
+        state.memsize = state.memsize.wrapping_add(len as u32);
         return XXH_OK;
     }
+
     if state.memsize != 0 {
         XXH_memcpy(
             ((state.mem64).as_mut_ptr() as *mut xxh_u8).offset(state.memsize as isize)
                 as *mut std::ffi::c_void,
             input,
-            (32 as std::ffi::c_int as XXH32_hash_t).wrapping_sub(state.memsize) as size_t,
+            32u32.wrapping_sub(state.memsize) as size_t,
         );
-        *(state.v).as_mut_ptr().offset(0 as std::ffi::c_int as isize) = XXH64_round(
-            *(state.v).as_mut_ptr().offset(0 as std::ffi::c_int as isize),
-            XXH_readLE64(
-                (state.mem64)
-                    .as_mut_ptr()
-                    .offset(0 as std::ffi::c_int as isize)
-                    as *const std::ffi::c_void,
-            ),
-        );
-        *(state.v).as_mut_ptr().offset(1 as std::ffi::c_int as isize) = XXH64_round(
-            *(state.v).as_mut_ptr().offset(1 as std::ffi::c_int as isize),
-            XXH_readLE64(
-                (state.mem64)
-                    .as_mut_ptr()
-                    .offset(1 as std::ffi::c_int as isize)
-                    as *const std::ffi::c_void,
-            ),
-        );
-        *(state.v).as_mut_ptr().offset(2 as std::ffi::c_int as isize) = XXH64_round(
-            *(state.v).as_mut_ptr().offset(2 as std::ffi::c_int as isize),
-            XXH_readLE64(
-                (state.mem64)
-                    .as_mut_ptr()
-                    .offset(2 as std::ffi::c_int as isize)
-                    as *const std::ffi::c_void,
-            ),
-        );
-        *(state.v).as_mut_ptr().offset(3 as std::ffi::c_int as isize) = XXH64_round(
-            *(state.v).as_mut_ptr().offset(3 as std::ffi::c_int as isize),
-            XXH_readLE64(
-                (state.mem64)
-                    .as_mut_ptr()
-                    .offset(3 as std::ffi::c_int as isize)
-                    as *const std::ffi::c_void,
-            ),
-        );
+
+        state.v[0] = XXH64_round(state.v[0], state.mem64[0]);
+        state.v[1] = XXH64_round(state.v[1], state.mem64[1]);
+        state.v[2] = XXH64_round(state.v[2], state.mem64[2]);
+        state.v[3] = XXH64_round(state.v[3], state.mem64[3]);
+
         p = p.offset((32 as std::ffi::c_int as XXH32_hash_t).wrapping_sub(state.memsize) as isize);
         state.memsize = 0 as std::ffi::c_int as XXH32_hash_t;
     }
+
     if p.offset(32 as std::ffi::c_int as isize) <= bEnd {
         let limit = bEnd.offset(-(32 as std::ffi::c_int as isize));
         loop {
-            *(state.v).as_mut_ptr().offset(0 as std::ffi::c_int as isize) = XXH64_round(
-                *(state.v).as_mut_ptr().offset(0 as std::ffi::c_int as isize),
-                XXH_readLE64(p as *const std::ffi::c_void),
-            );
-            p = p.offset(8 as std::ffi::c_int as isize);
-            *(state.v).as_mut_ptr().offset(1 as std::ffi::c_int as isize) = XXH64_round(
-                *(state.v).as_mut_ptr().offset(1 as std::ffi::c_int as isize),
-                XXH_readLE64(p as *const std::ffi::c_void),
-            );
-            p = p.offset(8 as std::ffi::c_int as isize);
-            *(state.v).as_mut_ptr().offset(2 as std::ffi::c_int as isize) = XXH64_round(
-                *(state.v).as_mut_ptr().offset(2 as std::ffi::c_int as isize),
-                XXH_readLE64(p as *const std::ffi::c_void),
-            );
-            p = p.offset(8 as std::ffi::c_int as isize);
-            *(state.v).as_mut_ptr().offset(3 as std::ffi::c_int as isize) = XXH64_round(
-                *(state.v).as_mut_ptr().offset(3 as std::ffi::c_int as isize),
-                XXH_readLE64(p as *const std::ffi::c_void),
-            );
-            p = p.offset(8 as std::ffi::c_int as isize);
+            state.v[0] = XXH64_round(state.v[0], XXH_readLE64(p as *const std::ffi::c_void));
+            p = p.offset(8);
+            state.v[1] = XXH64_round(state.v[1], XXH_readLE64(p as *const std::ffi::c_void));
+            p = p.offset(8);
+            state.v[2] = XXH64_round(state.v[2], XXH_readLE64(p as *const std::ffi::c_void));
+            p = p.offset(8);
+            state.v[3] = XXH64_round(state.v[3], XXH_readLE64(p as *const std::ffi::c_void));
+            p = p.offset(8);
             if p > limit {
                 break;
             }
         }
     }
+
     if p < bEnd {
         XXH_memcpy(
             (state.mem64).as_mut_ptr() as *mut std::ffi::c_void,
@@ -341,6 +312,7 @@ unsafe fn ZSTD_XXH64_update(
         );
         state.memsize = bEnd.offset_from(p) as std::ffi::c_long as std::ffi::c_uint;
     }
+
     XXH_OK
 }
 
@@ -364,10 +336,8 @@ pub fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> XXH64_hash_t {
 
     h64 = h64.wrapping_add(state.total_len);
 
-    // SAFETY: casting an array of u64 to u8 is valid.
-    let bytes = unsafe { core::mem::transmute::<&[u64; 4], &[u8; 8 * 4]>(&state.mem64) };
-
-    XXH64_finalize(h64, &bytes[..state.total_len as usize % 32], XXH_aligned)
+    let len = state.total_len as usize % 32;
+    XXH64_finalize(h64, &state.mem64_as_bytes_ref()[..len], XXH_aligned)
 }
 
 #[cfg(test)]
