@@ -1142,6 +1142,8 @@ const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 
 #[cfg(test)]
 mod tests {
+    use std::mem::MaybeUninit;
+
     use super::*;
 
     use quickcheck::quickcheck;
@@ -1169,6 +1171,25 @@ mod tests {
         fn prop_xxh32_matches(input: Vec<u8>, seed: u32) -> bool {
             let expected = xxhash_rust::xxh32::xxh32(&input, seed);
             let actual = helper_u32(&input, seed);
+            assert_eq!(expected, actual);
+            expected == actual
+        }
+    }
+
+    fn helper_state_u64(input: &[u8], seed: u64) -> u64 {
+        let mut state = MaybeUninit::uninit();
+        unsafe { ZSTD_XXH64_reset(state.as_mut_ptr(), seed) };
+        let state = unsafe { state.assume_init_mut() };
+
+        unsafe { ZSTD_XXH64_update(state, input.as_ptr().cast(), input.len()) };
+
+        unsafe { ZSTD_XXH64_digest(state) }
+    }
+
+    quickcheck! {
+        fn prop_xxh64_state_matches(input: Vec<u8>, seed: u64) -> bool {
+            let expected = xxhash_rust::xxh64::xxh64(&input, seed);
+            let actual = helper_state_u64(&input, seed);
             assert_eq!(expected, actual);
             expected == actual
         }
