@@ -16,6 +16,7 @@ pub mod lib {
     pub mod common {
         pub mod debug;
         pub mod entropy_common;
+        pub mod entropy_common_old;
         pub mod error_private;
         pub mod fse_decompress;
         pub mod pool;

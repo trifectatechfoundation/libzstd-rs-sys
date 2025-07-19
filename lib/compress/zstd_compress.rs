@@ -2109,7 +2109,9 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::{
-    lib::common::entropy_common::FSE_readNCount, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64
+    lib::common::entropy_common::FSE_readNCount, MEM_isLittleEndian, MEM_read16, MEM_read32,
+    MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
+    MEM_writeLE64,
 };
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_OPT_NUM: std::ffi::c_int = (1 as std::ffi::c_int) << 12 as std::ffi::c_int;

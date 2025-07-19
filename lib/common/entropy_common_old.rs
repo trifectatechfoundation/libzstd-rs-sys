@@ -404,7 +404,7 @@ pub unsafe fn HUF_readStats(
     )
 }
 #[inline(always)]
-unsafe fn HUF_readStats_body(
+pub(crate) unsafe fn HUF_readStats_body(
     mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
     mut rankStats: &mut [U32; 13],
@@ -543,114 +543,4 @@ pub unsafe fn HUF_readStats_wksp(
         workspace,
         use_bmi2,
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use quickcheck::quickcheck;
-
-    extern crate test;
-
-    #[derive(Debug, Clone, PartialEq)]
-    struct Input {
-        huffWeight: [u8; 256],
-        hwSize: size_t,
-        rankStats: [U32; 13],
-        nbSymbolsPtr: U32,
-        tableLogPtr: U32,
-        src: Vec<u8>,
-        workspace: [u32; 219],
-        bmi2: bool,
-    }
-
-    impl quickcheck::Arbitrary for Input {
-        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-            Input {
-                huffWeight: {
-                    let mut arr = [0u8; 256];
-                    for elem in &mut arr {
-                        *elem = u8::arbitrary(g);
-                    }
-                    arr
-                },
-                hwSize: size_t::arbitrary(g) % 257, // at most 256
-                rankStats: {
-                    let mut arr = [0u32; 13];
-                    for elem in &mut arr {
-                        *elem = u32::arbitrary(g);
-                    }
-                    arr
-                },
-                nbSymbolsPtr: u32::arbitrary(g),
-                tableLogPtr: u32::arbitrary(g),
-                src: Vec::<u8>::arbitrary(g),
-                workspace: {
-                    let mut arr = [0u32; 219];
-                    for elem in &mut arr {
-                        *elem = u32::arbitrary(g);
-                    }
-                    arr
-                },
-                bmi2: bool::arbitrary(g),
-            }
-        }
-    }
-
-    quickcheck! {
-        fn new_matches_old(input: Input) -> bool {
-            unsafe {
-                let expected = {
-                    let Input {
-                        mut huffWeight,
-                        hwSize,
-                        mut rankStats,
-                        mut nbSymbolsPtr,
-                        mut tableLogPtr,
-                        src,
-                        mut workspace,
-                        bmi2,
-                    } = input.clone();
-                    let v =crate::lib::common::entropy_common_old::HUF_readStats_body(
-                        &mut huffWeight,
-                        hwSize,
-                        &mut rankStats,
-                        &mut nbSymbolsPtr,
-                        &mut tableLogPtr,
-                        &src,
-                        &mut workspace,
-                        bmi2,
-                    );
-                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, workspace)
-                };
-                let actual = {
-                    let Input {
-                        mut huffWeight,
-                        hwSize,
-                        mut rankStats,
-                        mut nbSymbolsPtr,
-                        mut tableLogPtr,
-                        src,
-                        mut workspace,
-                        bmi2,
-                    } = input.clone();
-                    let v = HUF_readStats_body(
-                        &mut huffWeight,
-                        hwSize,
-                        &mut rankStats,
-                        &mut nbSymbolsPtr,
-                        &mut tableLogPtr,
-                        &src,
-                        &mut workspace,
-                        bmi2,
-                    );
-
-                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, workspace)
-                };
-                assert_eq!(expected, actual);
-                expected == actual
-            }
-        }
-    }
 }
