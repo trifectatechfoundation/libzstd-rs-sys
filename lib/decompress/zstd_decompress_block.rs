@@ -5,16 +5,12 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
-use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
+use crate::{
+    lib::common::entropy_common::FSE_readNCount, MEM_readLE16, MEM_readLE24, MEM_readLE32,
+    MEM_readLEST, MEM_write64,
+};
 extern "C" {
     pub type ZSTD_DDict_s;
-    fn FSE_readNCount(
-        normalizedCounter: *mut std::ffi::c_short,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        tableLogPtr: *mut std::ffi::c_uint,
-        rBuffer: *const std::ffi::c_void,
-        rBuffSize: size_t,
-    ) -> size_t;
     fn HUF_decompress1X_usingDTable(
         dst: *mut std::ffi::c_void,
         maxDstSize: size_t,

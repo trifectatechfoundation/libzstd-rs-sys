@@ -91,8 +91,8 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
+
+pub unsafe fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
 
@@ -309,8 +309,8 @@ unsafe extern "C" fn FSE_readNCount_body_bmi2(
         hbSize,
     )
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_readNCount_bmi2(
+
+pub unsafe fn FSE_readNCount_bmi2(
     mut normalizedCounter: *mut std::ffi::c_short,
     mut maxSVPtr: *mut std::ffi::c_uint,
     mut tableLogPtr: *mut std::ffi::c_uint,
@@ -335,8 +335,8 @@ pub unsafe extern "C" fn FSE_readNCount_bmi2(
         hbSize,
     )
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_readNCount(
+
+pub unsafe fn FSE_readNCount(
     mut normalizedCounter: *mut std::ffi::c_short,
     mut maxSVPtr: *mut std::ffi::c_uint,
     mut tableLogPtr: *mut std::ffi::c_uint,
@@ -377,7 +377,7 @@ const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize)
 const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
-pub unsafe extern "C" fn HUF_readStats(
+pub unsafe fn HUF_readStats(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
     mut rankStats: *mut U32,
@@ -515,7 +515,7 @@ unsafe extern "C" fn HUF_readStats_body(
     *nbSymbolsPtr = oSize.wrapping_add(1 as std::ffi::c_int as size_t) as U32;
     iSize.wrapping_add(1 as std::ffi::c_int as size_t)
 }
-unsafe extern "C" fn HUF_readStats_body_default(
+unsafe fn HUF_readStats_body_default(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
     mut rankStats: *mut U32,
@@ -539,7 +539,7 @@ unsafe extern "C" fn HUF_readStats_body_default(
         0 as std::ffi::c_int,
     )
 }
-unsafe extern "C" fn HUF_readStats_body_bmi2(
+unsafe fn HUF_readStats_body_bmi2(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
     mut rankStats: *mut U32,

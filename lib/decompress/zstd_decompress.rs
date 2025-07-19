@@ -1,7 +1,10 @@
 use ::libc;
 use core::arch::asm;
 
-use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
+use crate::{
+    lib::common::entropy_common::FSE_readNCount, MEM_readLE16, MEM_readLE32, MEM_readLE64,
+    MEM_writeLE32,
+};
 extern "C" {
     pub type ZSTD_DDict_s;
     pub type ZBUFFv07_DCtx_s;
@@ -54,13 +57,6 @@ extern "C" {
     fn ZSTD_XXH64_digest(statePtr: *const XXH64_state_t) -> XXH64_hash_t;
     fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx_s) -> ZSTD_TraceCtx;
     fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
-    fn FSE_readNCount(
-        normalizedCounter: *mut std::ffi::c_short,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        tableLogPtr: *mut std::ffi::c_uint,
-        rBuffer: *const std::ffi::c_void,
-        rBuffSize: size_t,
-    ) -> size_t;
     fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const std::ffi::c_void;
     fn ZSTD_DDict_dictSize(ddict: *const ZSTD_DDict) -> size_t;
     fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: *const ZSTD_DDict);
