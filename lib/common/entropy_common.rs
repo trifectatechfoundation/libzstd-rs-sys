@@ -404,7 +404,7 @@ pub unsafe fn HUF_readStats(
     )
 }
 #[inline(always)]
-unsafe extern "C" fn HUF_readStats_body(
+unsafe fn HUF_readStats_body(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
     mut rankStats: *mut U32,
@@ -414,7 +414,7 @@ unsafe extern "C" fn HUF_readStats_body(
     mut srcSize: size_t,
     mut workSpace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
-    mut bmi2: std::ffi::c_int,
+    mut bmi2: bool,
 ) -> size_t {
     let mut weightTotal: U32 = 0;
     let mut ip = src as *const BYTE;
@@ -515,54 +515,6 @@ unsafe extern "C" fn HUF_readStats_body(
     *nbSymbolsPtr = oSize.wrapping_add(1 as std::ffi::c_int as size_t) as U32;
     iSize.wrapping_add(1 as std::ffi::c_int as size_t)
 }
-unsafe fn HUF_readStats_body_default(
-    mut huffWeight: *mut BYTE,
-    mut hwSize: size_t,
-    mut rankStats: *mut U32,
-    mut nbSymbolsPtr: *mut U32,
-    mut tableLogPtr: *mut U32,
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
-) -> size_t {
-    HUF_readStats_body(
-        huffWeight,
-        hwSize,
-        rankStats,
-        nbSymbolsPtr,
-        tableLogPtr,
-        src,
-        srcSize,
-        workSpace,
-        wkspSize,
-        0 as std::ffi::c_int,
-    )
-}
-unsafe fn HUF_readStats_body_bmi2(
-    mut huffWeight: *mut BYTE,
-    mut hwSize: size_t,
-    mut rankStats: *mut U32,
-    mut nbSymbolsPtr: *mut U32,
-    mut tableLogPtr: *mut U32,
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
-) -> size_t {
-    HUF_readStats_body(
-        huffWeight,
-        hwSize,
-        rankStats,
-        nbSymbolsPtr,
-        tableLogPtr,
-        src,
-        srcSize,
-        workSpace,
-        wkspSize,
-        1 as std::ffi::c_int,
-    )
-}
 
 pub unsafe fn HUF_readStats_wksp(
     mut huffWeight: *mut BYTE,
@@ -575,29 +527,18 @@ pub unsafe fn HUF_readStats_wksp(
     workspace: &mut [u32; 219],
     mut flags: std::ffi::c_int,
 ) -> size_t {
-    if flags & HUF_flags_bmi2 as std::ffi::c_int != 0 {
-        HUF_readStats_body_bmi2(
-            huffWeight,
-            hwSize,
-            rankStats,
-            nbSymbolsPtr,
-            tableLogPtr,
-            src,
-            srcSize,
-            workspace.as_mut_ptr().cast(),
-            (4 * workspace.len()) as size_t,
-        )
-    } else {
-        HUF_readStats_body_default(
-            huffWeight,
-            hwSize,
-            rankStats,
-            nbSymbolsPtr,
-            tableLogPtr,
-            src,
-            srcSize,
-            workspace.as_mut_ptr().cast(),
-            (4 * workspace.len()) as size_t,
-        )
-    }
+    let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
+
+    HUF_readStats_body(
+        huffWeight,
+        hwSize,
+        rankStats,
+        nbSymbolsPtr,
+        tableLogPtr,
+        src,
+        srcSize,
+        workspace.as_mut_ptr().cast(),
+        (4 * workspace.len()) as size_t,
+        use_bmi2,
+    )
 }

@@ -871,10 +871,10 @@ pub unsafe fn FSE_decompress_wksp_bmi2(
     mut maxLog: std::ffi::c_uint,
     mut workSpace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
-    mut bmi2: std::ffi::c_int,
+    mut bmi2: bool,
 ) -> size_t {
-    if bmi2 != 0 {
-        return FSE_decompress_wksp_body_bmi2(
+    if bmi2 {
+        FSE_decompress_wksp_body_bmi2(
             dst,
             dstCapacity,
             cSrc,
@@ -882,15 +882,16 @@ pub unsafe fn FSE_decompress_wksp_bmi2(
             maxLog,
             workSpace,
             wkspSize,
-        );
+        )
+    } else {
+        FSE_decompress_wksp_body_default(
+            dst,
+            dstCapacity,
+            cSrc,
+            cSrcSize,
+            maxLog,
+            workSpace,
+            wkspSize,
+        )
     }
-    FSE_decompress_wksp_body_default(
-        dst,
-        dstCapacity,
-        cSrc,
-        cSrcSize,
-        maxLog,
-        workSpace,
-        wkspSize,
-    )
 }
