@@ -410,21 +410,19 @@ unsafe fn HUF_readStats_body(
     mut rankStats: &mut [U32; 13],
     mut nbSymbolsPtr: &mut U32,
     mut tableLogPtr: &mut U32,
-    mut src: &[u8],
+    mut ip: &[u8],
     workspace: &mut [u32; 219],
     mut bmi2: bool,
 ) -> size_t {
-    let srcSize = src.len() as size_t;
-    let src = src.as_ptr();
+    let srcSize = ip.len() as size_t;
 
     let mut weightTotal: U32 = 0;
-    let mut ip = src as *const BYTE;
     let mut iSize: size_t = 0;
     let mut oSize: size_t = 0;
     if srcSize == 0 {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    iSize = *ip.offset(0 as std::ffi::c_int as isize) as size_t;
+    iSize = ip[0] as size_t;
     if iSize >= 128 as std::ffi::c_int as size_t {
         oSize = iSize.wrapping_sub(127 as std::ffi::c_int as size_t);
         iSize = oSize.wrapping_add(1 as std::ffi::c_int as size_t) / 2 as std::ffi::c_int as size_t;
@@ -434,10 +432,10 @@ unsafe fn HUF_readStats_body(
         if oSize >= hwSize {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
-        ip = ip.offset(1 as std::ffi::c_int as isize);
+        ip = &ip[1..];
         for n in (0..oSize as usize).step_by(2) {
-            huffWeight[n] = (*ip.add(n / 2) as std::ffi::c_int >> 4 as std::ffi::c_int) as BYTE;
-            huffWeight[n + 1] = (*ip.add(n / 2) & 0b1111) as BYTE;
+            huffWeight[n] = (ip[n / 2] as std::ffi::c_int >> 4 as std::ffi::c_int) as BYTE;
+            huffWeight[n + 1] = (ip[n / 2] & 0b1111) as BYTE;
         }
     } else {
         if iSize.wrapping_add(1 as std::ffi::c_int as size_t) > srcSize {
@@ -446,7 +444,7 @@ unsafe fn HUF_readStats_body(
         oSize = FSE_decompress_wksp_bmi2(
             huffWeight.as_mut_ptr().cast(),
             hwSize.wrapping_sub(1 as std::ffi::c_int as size_t),
-            ip.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void,
+            ip[1..].as_ptr().cast(),
             iSize,
             6 as std::ffi::c_int as std::ffi::c_uint,
             workspace.as_mut_ptr().cast(),
