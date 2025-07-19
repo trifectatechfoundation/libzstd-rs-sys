@@ -709,8 +709,7 @@ pub unsafe extern "C" fn HUF_readDTableX1_wksp(
         &mut tableLog,
         src,
         srcSize,
-        ((*wksp).statsWksp).as_mut_ptr() as *mut std::ffi::c_void,
-        ::core::mem::size_of::<[U32; 219]>() as std::ffi::c_ulong,
+        &mut (*wksp).statsWksp,
         flags,
     );
     if ERR_isError(iSize) != 0 {
@@ -2089,8 +2088,7 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
         &mut tableLog,
         src,
         srcSize,
-        ((*wksp).calleeWksp).as_mut_ptr() as *mut std::ffi::c_void,
-        ::core::mem::size_of::<[U32; 219]>() as std::ffi::c_ulong,
+        &mut (*wksp).calleeWksp,
         flags,
     );
     if ERR_isError(iSize) != 0 {

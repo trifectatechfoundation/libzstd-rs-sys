@@ -91,7 +91,6 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
@@ -353,7 +352,31 @@ pub unsafe extern "C" fn FSE_readNCount(
         0 as std::ffi::c_int,
     )
 }
-#[no_mangle]
+
+/// Max runtime value of tableLog (due to static allocation); can be modified up to HUF_TABLELOG_ABSOLUTEMAX.
+const HUF_TABLELOG_MAX: usize = 12;
+
+const fn FSE_DTABLE_SIZE_U32(maxTableLog: usize) -> usize {
+    1 + (1 << (maxTableLog))
+}
+
+const fn FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog: usize, maxSymbolValue: usize) -> usize {
+    size_of::<u16>() * (maxSymbolValue + 1) + (1 << maxTableLog) + 8
+}
+
+/// Maximum symbol value authorized.
+const FSE_MAX_SYMBOL_VALUE: usize = 255;
+
+const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
+    FSE_DTABLE_SIZE_U32(maxTableLog)
+        + 1
+        + FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog, maxSymbolValue).div_ceil(size_of::<u32>())
+        + (FSE_MAX_SYMBOL_VALUE + 1) / 2
+        + 1
+}
+const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
+    FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
+
 pub unsafe extern "C" fn HUF_readStats(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
@@ -363,7 +386,11 @@ pub unsafe extern "C" fn HUF_readStats(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    let mut wksp: [U32; 219] = [0; 219];
+    // We can remove this at some point, it's just a check that the constants are correct.
+    const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
+
+    let mut wksp: [u32; HUF_READ_STATS_WORKSPACE_SIZE_U32] = [0; HUF_READ_STATS_WORKSPACE_SIZE_U32];
+
     HUF_readStats_wksp(
         huffWeight,
         hwSize,
@@ -372,8 +399,7 @@ pub unsafe extern "C" fn HUF_readStats(
         tableLogPtr,
         src,
         srcSize,
-        wksp.as_mut_ptr() as *mut std::ffi::c_void,
-        ::core::mem::size_of::<[U32; 219]>() as std::ffi::c_ulong,
+        &mut wksp,
         0 as std::ffi::c_int,
     )
 }
@@ -448,7 +474,7 @@ unsafe extern "C" fn HUF_readStats_body(
     let mut n_0: U32 = 0;
     n_0 = 0 as std::ffi::c_int as U32;
     while (n_0 as size_t) < oSize {
-        if *huffWeight.offset(n_0 as isize) as std::ffi::c_int > HUF_TABLELOG_MAX {
+        if usize::from(*huffWeight.offset(n_0 as isize)) > HUF_TABLELOG_MAX {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
         let fresh1 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
@@ -537,8 +563,8 @@ unsafe extern "C" fn HUF_readStats_body_bmi2(
         1 as std::ffi::c_int,
     )
 }
-#[no_mangle]
-pub unsafe extern "C" fn HUF_readStats_wksp(
+
+pub unsafe fn HUF_readStats_wksp(
     mut huffWeight: *mut BYTE,
     mut hwSize: size_t,
     mut rankStats: *mut U32,
@@ -546,12 +572,11 @@ pub unsafe extern "C" fn HUF_readStats_wksp(
     mut tableLogPtr: *mut U32,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    workspace: &mut [u32; 219],
     mut flags: std::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as std::ffi::c_int != 0 {
-        return HUF_readStats_body_bmi2(
+        HUF_readStats_body_bmi2(
             huffWeight,
             hwSize,
             rankStats,
@@ -559,19 +584,20 @@ pub unsafe extern "C" fn HUF_readStats_wksp(
             tableLogPtr,
             src,
             srcSize,
-            workSpace,
-            wkspSize,
-        );
+            workspace.as_mut_ptr().cast(),
+            (4 * workspace.len()) as size_t,
+        )
+    } else {
+        HUF_readStats_body_default(
+            huffWeight,
+            hwSize,
+            rankStats,
+            nbSymbolsPtr,
+            tableLogPtr,
+            src,
+            srcSize,
+            workspace.as_mut_ptr().cast(),
+            (4 * workspace.len()) as size_t,
+        )
     }
-    HUF_readStats_body_default(
-        huffWeight,
-        hwSize,
-        rankStats,
-        nbSymbolsPtr,
-        tableLogPtr,
-        src,
-        srcSize,
-        workSpace,
-        wkspSize,
-    )
 }
