@@ -80,16 +80,13 @@ pub const FSE_VERSION_NUMBER: std::ffi::c_int =
 pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5 as std::ffi::c_int;
 pub const FSE_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15 as std::ffi::c_int;
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros32(mut val: U32) -> std::ffi::c_uint {
-    val.trailing_zeros() as i32 as std::ffi::c_uint
+const fn ZSTD_countTrailingZeros32(mut val: u32) -> u32 {
+    val.trailing_zeros() as i32 as u32
 }
+
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
-    val.leading_zeros() as i32 as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
-    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+const fn ZSTD_highbit32(mut val: u32) -> u32 {
+    u32::BITS - 1 - val.leading_zeros()
 }
 
 pub unsafe fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -424,6 +421,7 @@ unsafe fn HUF_readStats_body(
     }
     iSize = ip[0] as size_t;
     if iSize >= 128 {
+        // Special header case.
         oSize = iSize.wrapping_sub(127);
         iSize = oSize.wrapping_add(1) / 2;
         if iSize.wrapping_add(1) > srcSize {
@@ -438,15 +436,17 @@ unsafe fn HUF_readStats_body(
             huffWeight[n + 1] = ip[n / 2] & 0b1111;
         }
     } else {
-        if iSize.wrapping_add(1 as std::ffi::c_int as size_t) > srcSize {
+        // Normal case: header compressed with FSE.
+        if iSize.wrapping_add(1) > srcSize {
             return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
         }
+        // At most (hwSize-1) values decoded, the last one is implied.
         oSize = FSE_decompress_wksp_bmi2(
             huffWeight.as_mut_ptr().cast(),
-            hwSize.wrapping_sub(1 as std::ffi::c_int as size_t),
+            hwSize.wrapping_sub(1),
             ip[1..].as_ptr().cast(),
             iSize,
-            6 as std::ffi::c_int as std::ffi::c_uint,
+            6,
             workspace.as_mut_ptr().cast(),
             (4 * workspace.len()) as size_t,
             bmi2,
@@ -469,11 +469,15 @@ unsafe fn HUF_readStats_body(
     if weightTotal == 0 as std::ffi::c_int as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
+    // Get last non-null symbol weight (implied, total must be 2^n).
     let tableLog = (ZSTD_highbit32(weightTotal)).wrapping_add(1);
     if tableLog > HUF_TABLELOG_MAX as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     *tableLogPtr = tableLog;
+
+    // Determine last weight.
     let total = 1u32 << tableLog;
     let rest = total.wrapping_sub(weightTotal);
     let verif = 1u32 << ZSTD_highbit32(rest);
@@ -482,13 +486,15 @@ unsafe fn HUF_readStats_body(
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     huffWeight[oSize as usize] = lastWeight as BYTE;
-    let fresh2 = &mut (rankStats[lastWeight as usize]);
-    *fresh2 = (*fresh2).wrapping_add(1);
+    rankStats[lastWeight as usize] += 1;
+
+    // Check tree construction validity.
     if rankStats[1] < 2 || rankStats[1] & 1 != 0 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    *nbSymbolsPtr = oSize.wrapping_add(1) as U32;
 
+    // Store results.
+    *nbSymbolsPtr = oSize.wrapping_add(1) as U32;
     iSize.wrapping_add(1)
 }
 
