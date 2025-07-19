@@ -423,10 +423,10 @@ unsafe fn HUF_readStats_body(
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
     iSize = ip[0] as size_t;
-    if iSize >= 128 as std::ffi::c_int as size_t {
-        oSize = iSize.wrapping_sub(127 as std::ffi::c_int as size_t);
-        iSize = oSize.wrapping_add(1 as std::ffi::c_int as size_t) / 2 as std::ffi::c_int as size_t;
-        if iSize.wrapping_add(1 as std::ffi::c_int as size_t) > srcSize {
+    if iSize >= 128 {
+        oSize = iSize.wrapping_sub(127);
+        iSize = oSize.wrapping_add(1) / 2;
+        if iSize.wrapping_add(1) > srcSize {
             return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
         }
         if oSize >= hwSize {
@@ -434,8 +434,8 @@ unsafe fn HUF_readStats_body(
         }
         ip = &ip[1..];
         for n in (0..oSize as usize).step_by(2) {
-            huffWeight[n] = (ip[n / 2] as std::ffi::c_int >> 4 as std::ffi::c_int) as BYTE;
-            huffWeight[n + 1] = (ip[n / 2] & 0b1111) as BYTE;
+            huffWeight[n] = ip[n / 2] >> 4;
+            huffWeight[n + 1] = ip[n / 2] & 0b1111;
         }
     } else {
         if iSize.wrapping_add(1 as std::ffi::c_int as size_t) > srcSize {
@@ -459,9 +459,7 @@ unsafe fn HUF_readStats_body(
     // Collect weight stats.
     rankStats[..HUF_TABLELOG_MAX + 1].fill(0);
     weightTotal = 0;
-    let mut n_0: U32 = 0;
-    n_0 = 0 as std::ffi::c_int as U32;
-    while (n_0 as size_t) < oSize {
+    for n_0 in 0..oSize {
         if usize::from(huffWeight[n_0 as usize]) > HUF_TABLELOG_MAX {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
@@ -471,7 +469,6 @@ unsafe fn HUF_readStats_body(
             ((1 as std::ffi::c_int) << huffWeight[n_0 as usize] as std::ffi::c_int
                 >> 1 as std::ffi::c_int) as U32,
         );
-        n_0 = n_0.wrapping_add(1);
     }
     if weightTotal == 0 as std::ffi::c_int as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -492,12 +489,11 @@ unsafe fn HUF_readStats_body(
     huffWeight[oSize as usize] = lastWeight as BYTE;
     let fresh2 = &mut (rankStats[lastWeight as usize]);
     *fresh2 = (*fresh2).wrapping_add(1);
-    if rankStats[1] < 2 as std::ffi::c_int as U32 || rankStats[1] & 1 as std::ffi::c_int as U32 != 0
-    {
+    if rankStats[1] < 2 || rankStats[1] & 1 != 0 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    *nbSymbolsPtr = oSize.wrapping_add(1 as std::ffi::c_int as size_t) as U32;
-    iSize.wrapping_add(1 as std::ffi::c_int as size_t)
+    *nbSymbolsPtr = oSize.wrapping_add(1) as U32;
+    iSize.wrapping_add(1)
 }
 
 pub unsafe fn HUF_readStats_wksp(
