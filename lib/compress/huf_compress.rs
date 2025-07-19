@@ -511,9 +511,9 @@ pub unsafe extern "C" fn HUF_readCTable(
     let mut nbSymbols = 0 as std::ffi::c_int as U32;
     let ct = CTable.offset(1 as std::ffi::c_int as isize);
     let readSize = HUF_readStats(
-        huffWeight.as_mut_ptr(),
+        &mut huffWeight,
         (255 as std::ffi::c_int + 1 as std::ffi::c_int) as size_t,
-        rankVal.as_mut_ptr(),
+        &mut rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,

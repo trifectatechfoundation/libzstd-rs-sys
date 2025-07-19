@@ -378,9 +378,9 @@ const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
 pub unsafe fn HUF_readStats(
-    mut huffWeight: *mut BYTE,
+    mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
-    mut rankStats: *mut U32,
+    mut rankStats: &mut [u32; 13],
     mut nbSymbolsPtr: &mut U32,
     mut tableLogPtr: &mut U32,
     mut src: *const std::ffi::c_void,
@@ -517,9 +517,9 @@ unsafe fn HUF_readStats_body(
 }
 
 pub unsafe fn HUF_readStats_wksp(
-    mut huffWeight: *mut BYTE,
+    mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
-    mut rankStats: *mut U32,
+    mut rankStats: &mut [U32; 13],
     mut nbSymbolsPtr: &mut U32,
     mut tableLogPtr: &mut U32,
     mut src: *const std::ffi::c_void,
@@ -530,9 +530,9 @@ pub unsafe fn HUF_readStats_wksp(
     let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
 
     HUF_readStats_body(
-        huffWeight,
+        huffWeight.as_mut_ptr(),
         hwSize,
-        rankStats,
+        rankStats.as_mut_ptr(),
         nbSymbolsPtr,
         tableLogPtr,
         src,

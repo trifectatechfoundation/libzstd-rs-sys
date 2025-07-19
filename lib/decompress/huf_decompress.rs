@@ -702,9 +702,9 @@ pub unsafe extern "C" fn HUF_readDTableX1_wksp(
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
     iSize = HUF_readStats_wksp(
-        ((*wksp).huffWeight).as_mut_ptr(),
+        &mut (*wksp).huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1 as std::ffi::c_int) as size_t,
-        ((*wksp).rankVal).as_mut_ptr(),
+        &mut (*wksp).rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,
@@ -2081,9 +2081,9 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
     iSize = HUF_readStats_wksp(
-        ((*wksp).weightList).as_mut_ptr(),
+        &mut (*wksp).weightList,
         (HUF_SYMBOLVALUE_MAX + 1 as std::ffi::c_int) as size_t,
-        ((*wksp).rankStats).as_mut_ptr(),
+        &mut (*wksp).rankStats,
         &mut nbSymbols,
         &mut tableLog,
         src,
