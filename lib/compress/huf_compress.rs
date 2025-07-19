@@ -1,70 +1,15 @@
 use ::libc;
-extern "C" {
-    fn HIST_count_wksp(
-        count: *mut std::ffi::c_uint,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        workSpace: *mut std::ffi::c_void,
-        workSpaceSize: size_t,
-    ) -> size_t;
-    fn HIST_count_simple(
-        count: *mut std::ffi::c_uint,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> std::ffi::c_uint;
-    fn FSE_optimalTableLog(
-        maxTableLog: std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-    ) -> std::ffi::c_uint;
-    fn FSE_normalizeCount(
-        normalizedCounter: *mut std::ffi::c_short,
-        tableLog: std::ffi::c_uint,
-        count: *const std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        useLowProbCount: std::ffi::c_uint,
-    ) -> size_t;
-    fn FSE_writeNCount(
-        buffer: *mut std::ffi::c_void,
-        bufferSize: size_t,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-    ) -> size_t;
-    fn FSE_compress_usingCTable(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        ct: *const FSE_CTable,
-    ) -> size_t;
-    fn FSE_optimalTableLog_internal(
-        maxTableLog: std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        minus: std::ffi::c_uint,
-    ) -> std::ffi::c_uint;
-    fn FSE_buildCTable_wksp(
-        ct: *mut FSE_CTable,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
-    fn HUF_readStats(
-        huffWeight: *mut BYTE,
-        hwSize: size_t,
-        rankStats: *mut U32,
-        nbSymbolsPtr: *mut U32,
-        tableLogPtr: *mut U32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-}
+
+use crate::lib::{
+    common::entropy_common::HUF_readStats,
+    compress::{
+        fse_compress::{
+            FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount,
+            FSE_optimalTableLog, FSE_optimalTableLog_internal, FSE_writeNCount,
+        },
+        hist::{HIST_count_simple, HIST_count_wksp},
+    },
+};
 pub type size_t = std::ffi::c_ulong;
 pub type __uint8_t = std::ffi::c_uchar;
 pub type __int16_t = std::ffi::c_short;

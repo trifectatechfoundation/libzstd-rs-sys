@@ -1,129 +1,117 @@
 use ::libc;
-extern "C" {
-    fn FSE_readNCount_bmi2(
-        normalizedCounter: *mut std::ffi::c_short,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        tableLogPtr: *mut std::ffi::c_uint,
-        rBuffer: *const std::ffi::c_void,
-        rBuffSize: size_t,
-        bmi2: std::ffi::c_int,
-    ) -> size_t;
-}
-pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __int16_t = std::ffi::c_short;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type __uint64_t = std::ffi::c_ulong;
-pub type int16_t = __int16_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type BYTE = uint8_t;
-pub type U16 = uint16_t;
-pub type S16 = int16_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
-pub type unalign32 = U32;
-pub type unalign64 = U64;
-pub type C2RustUnnamed = std::ffi::c_uint;
-pub const ZSTD_error_maxCode: C2RustUnnamed = 120;
-pub const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
-pub const ZSTD_error_sequenceProducer_failed: C2RustUnnamed = 106;
-pub const ZSTD_error_srcBuffer_wrong: C2RustUnnamed = 105;
-pub const ZSTD_error_dstBuffer_wrong: C2RustUnnamed = 104;
-pub const ZSTD_error_seekableIO: C2RustUnnamed = 102;
-pub const ZSTD_error_frameIndex_tooLarge: C2RustUnnamed = 100;
-pub const ZSTD_error_noForwardProgress_inputEmpty: C2RustUnnamed = 82;
-pub const ZSTD_error_noForwardProgress_destFull: C2RustUnnamed = 80;
-pub const ZSTD_error_dstBuffer_null: C2RustUnnamed = 74;
-pub const ZSTD_error_srcSize_wrong: C2RustUnnamed = 72;
-pub const ZSTD_error_dstSize_tooSmall: C2RustUnnamed = 70;
-pub const ZSTD_error_workSpace_tooSmall: C2RustUnnamed = 66;
-pub const ZSTD_error_memory_allocation: C2RustUnnamed = 64;
-pub const ZSTD_error_init_missing: C2RustUnnamed = 62;
-pub const ZSTD_error_stage_wrong: C2RustUnnamed = 60;
-pub const ZSTD_error_stabilityCondition_notRespected: C2RustUnnamed = 50;
-pub const ZSTD_error_cannotProduce_uncompressedBlock: C2RustUnnamed = 49;
-pub const ZSTD_error_maxSymbolValue_tooSmall: C2RustUnnamed = 48;
-pub const ZSTD_error_maxSymbolValue_tooLarge: C2RustUnnamed = 46;
-pub const ZSTD_error_tableLog_tooLarge: C2RustUnnamed = 44;
-pub const ZSTD_error_parameter_outOfBound: C2RustUnnamed = 42;
-pub const ZSTD_error_parameter_combination_unsupported: C2RustUnnamed = 41;
-pub const ZSTD_error_parameter_unsupported: C2RustUnnamed = 40;
-pub const ZSTD_error_dictionaryCreation_failed: C2RustUnnamed = 34;
-pub const ZSTD_error_dictionary_wrong: C2RustUnnamed = 32;
-pub const ZSTD_error_dictionary_corrupted: C2RustUnnamed = 30;
-pub const ZSTD_error_literals_headerWrong: C2RustUnnamed = 24;
-pub const ZSTD_error_checksum_wrong: C2RustUnnamed = 22;
-pub const ZSTD_error_corruption_detected: C2RustUnnamed = 20;
-pub const ZSTD_error_frameParameter_windowTooLarge: C2RustUnnamed = 16;
-pub const ZSTD_error_frameParameter_unsupported: C2RustUnnamed = 14;
-pub const ZSTD_error_version_unsupported: C2RustUnnamed = 12;
-pub const ZSTD_error_prefix_unknown: C2RustUnnamed = 10;
-pub const ZSTD_error_GENERIC: C2RustUnnamed = 1;
-pub const ZSTD_error_no_error: C2RustUnnamed = 0;
-pub type BitContainerType = size_t;
+
+type size_t = std::ffi::c_ulong;
+type __uint8_t = std::ffi::c_uchar;
+type __int16_t = std::ffi::c_short;
+type __uint16_t = std::ffi::c_ushort;
+type __uint32_t = std::ffi::c_uint;
+type __uint64_t = std::ffi::c_ulong;
+type int16_t = __int16_t;
+type uint8_t = __uint8_t;
+type uint16_t = __uint16_t;
+type uint32_t = __uint32_t;
+type uint64_t = __uint64_t;
+type BYTE = uint8_t;
+type U16 = uint16_t;
+type S16 = int16_t;
+type U32 = uint32_t;
+type U64 = uint64_t;
+type unalign32 = U32;
+type unalign64 = U64;
+type C2RustUnnamed = std::ffi::c_uint;
+const ZSTD_error_maxCode: C2RustUnnamed = 120;
+const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
+const ZSTD_error_sequenceProducer_failed: C2RustUnnamed = 106;
+const ZSTD_error_srcBuffer_wrong: C2RustUnnamed = 105;
+const ZSTD_error_dstBuffer_wrong: C2RustUnnamed = 104;
+const ZSTD_error_seekableIO: C2RustUnnamed = 102;
+const ZSTD_error_frameIndex_tooLarge: C2RustUnnamed = 100;
+const ZSTD_error_noForwardProgress_inputEmpty: C2RustUnnamed = 82;
+const ZSTD_error_noForwardProgress_destFull: C2RustUnnamed = 80;
+const ZSTD_error_dstBuffer_null: C2RustUnnamed = 74;
+const ZSTD_error_srcSize_wrong: C2RustUnnamed = 72;
+const ZSTD_error_dstSize_tooSmall: C2RustUnnamed = 70;
+const ZSTD_error_workSpace_tooSmall: C2RustUnnamed = 66;
+const ZSTD_error_memory_allocation: C2RustUnnamed = 64;
+const ZSTD_error_init_missing: C2RustUnnamed = 62;
+const ZSTD_error_stage_wrong: C2RustUnnamed = 60;
+const ZSTD_error_stabilityCondition_notRespected: C2RustUnnamed = 50;
+const ZSTD_error_cannotProduce_uncompressedBlock: C2RustUnnamed = 49;
+const ZSTD_error_maxSymbolValue_tooSmall: C2RustUnnamed = 48;
+const ZSTD_error_maxSymbolValue_tooLarge: C2RustUnnamed = 46;
+const ZSTD_error_tableLog_tooLarge: C2RustUnnamed = 44;
+const ZSTD_error_parameter_outOfBound: C2RustUnnamed = 42;
+const ZSTD_error_parameter_combination_unsupported: C2RustUnnamed = 41;
+const ZSTD_error_parameter_unsupported: C2RustUnnamed = 40;
+const ZSTD_error_dictionaryCreation_failed: C2RustUnnamed = 34;
+const ZSTD_error_dictionary_wrong: C2RustUnnamed = 32;
+const ZSTD_error_dictionary_corrupted: C2RustUnnamed = 30;
+const ZSTD_error_literals_headerWrong: C2RustUnnamed = 24;
+const ZSTD_error_checksum_wrong: C2RustUnnamed = 22;
+const ZSTD_error_corruption_detected: C2RustUnnamed = 20;
+const ZSTD_error_frameParameter_windowTooLarge: C2RustUnnamed = 16;
+const ZSTD_error_frameParameter_unsupported: C2RustUnnamed = 14;
+const ZSTD_error_version_unsupported: C2RustUnnamed = 12;
+const ZSTD_error_prefix_unknown: C2RustUnnamed = 10;
+const ZSTD_error_GENERIC: C2RustUnnamed = 1;
+const ZSTD_error_no_error: C2RustUnnamed = 0;
+
+type BitContainerType = size_t;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct BIT_DStream_t {
-    pub bitContainer: BitContainerType,
-    pub bitsConsumed: std::ffi::c_uint,
-    pub ptr: *const std::ffi::c_char,
-    pub start: *const std::ffi::c_char,
-    pub limitPtr: *const std::ffi::c_char,
+struct BIT_DStream_t {
+    bitContainer: BitContainerType,
+    bitsConsumed: std::ffi::c_uint,
+    ptr: *const std::ffi::c_char,
+    start: *const std::ffi::c_char,
+    limitPtr: *const std::ffi::c_char,
 }
-pub type BIT_DStream_status = std::ffi::c_uint;
-pub const BIT_DStream_overflow: BIT_DStream_status = 3;
-pub const BIT_DStream_completed: BIT_DStream_status = 2;
-pub const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
-pub const BIT_DStream_unfinished: BIT_DStream_status = 0;
-pub type FSE_DTable = std::ffi::c_uint;
+
+type BIT_DStream_status = std::ffi::c_uint;
+const BIT_DStream_overflow: BIT_DStream_status = 3;
+const BIT_DStream_completed: BIT_DStream_status = 2;
+const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
+const BIT_DStream_unfinished: BIT_DStream_status = 0;
+type FSE_DTable = std::ffi::c_uint;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSE_decode_t {
-    pub newState: std::ffi::c_ushort,
-    pub symbol: std::ffi::c_uchar,
-    pub nbBits: std::ffi::c_uchar,
+struct FSE_decode_t {
+    newState: std::ffi::c_ushort,
+    symbol: std::ffi::c_uchar,
+    nbBits: std::ffi::c_uchar,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSE_DTableHeader {
-    pub tableLog: U16,
-    pub fastMode: U16,
+struct FSE_DTableHeader {
+    tableLog: U16,
+    fastMode: U16,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSE_DecompressWksp {
-    pub ncount: [std::ffi::c_short; 256],
+struct FSE_DecompressWksp {
+    ncount: [std::ffi::c_short; 256],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSE_DState_t {
-    pub state: size_t,
-    pub table: *const std::ffi::c_void,
+struct FSE_DState_t {
+    state: size_t,
+    table: *const std::ffi::c_void,
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::{MEM_readLE32, MEM_readLE64, MEM_write64};
-#[inline]
-unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
-    if MEM_32bits() != 0 {
-        MEM_readLE32(memPtr) as size_t
-    } else {
-        MEM_readLE64(memPtr)
-    }
-}
+use crate::{lib::common::entropy_common::FSE_readNCount_bmi2, MEM_readLEST, MEM_write64};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
 }
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
 #[inline]
 unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
     val.leading_zeros() as i32 as std::ffi::c_uint
@@ -561,8 +549,8 @@ unsafe extern "C" fn FSE_buildDTable_internal(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_buildDTable_wksp(
+
+unsafe fn FSE_buildDTable_wksp(
     mut dt: *mut FSE_DTable,
     mut normalizedCounter: *const std::ffi::c_short,
     mut maxSymbolValue: std::ffi::c_uint,
@@ -579,6 +567,7 @@ pub unsafe extern "C" fn FSE_buildDTable_wksp(
         wkspSize,
     )
 }
+
 #[inline(always)]
 unsafe extern "C" fn FSE_decompress_usingDTable_generic(
     mut dst: *mut std::ffi::c_void,
@@ -873,8 +862,8 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
         1 as std::ffi::c_int,
     )
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_decompress_wksp_bmi2(
+
+pub unsafe fn FSE_decompress_wksp_bmi2(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
     mut cSrc: *const std::ffi::c_void,

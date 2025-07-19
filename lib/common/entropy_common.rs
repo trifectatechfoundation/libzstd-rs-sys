@@ -1,17 +1,5 @@
 use ::libc;
-extern "C" {
-    fn ERR_getErrorString(code: ERR_enum) -> *const std::ffi::c_char;
-    fn FSE_decompress_wksp_bmi2(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        cSrc: *const std::ffi::c_void,
-        cSrcSize: size_t,
-        maxLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        bmi2: std::ffi::c_int,
-    ) -> size_t;
-}
+
 pub type size_t = std::ffi::c_ulong;
 pub type __uint8_t = std::ffi::c_uchar;
 pub type __uint32_t = std::ffi::c_uint;
@@ -65,7 +53,10 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
-use crate::MEM_readLE32;
+use crate::{
+    lib::common::{error_private::ERR_getErrorString, fse_decompress::FSE_decompress_wksp_bmi2},
+    MEM_readLE32,
+};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
@@ -102,25 +93,10 @@ unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
 }
 pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 #[no_mangle]
-pub unsafe extern "C" fn FSE_versionNumber() -> std::ffi::c_uint {
-    FSE_VERSION_NUMBER as std::ffi::c_uint
-}
-#[no_mangle]
 pub unsafe extern "C" fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
-#[no_mangle]
-pub unsafe extern "C" fn FSE_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
-    ERR_getErrorName(code)
-}
-#[no_mangle]
-pub unsafe extern "C" fn HUF_isError(mut code: size_t) -> std::ffi::c_uint {
-    ERR_isError(code)
-}
-#[no_mangle]
-pub unsafe extern "C" fn HUF_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
-    ERR_getErrorName(code)
-}
+
 #[inline(always)]
 unsafe extern "C" fn FSE_readNCount_body(
     mut normalizedCounter: *mut std::ffi::c_short,

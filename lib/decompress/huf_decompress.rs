@@ -1,19 +1,10 @@
 use ::libc;
 
-use crate::{MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16, MEM_write64};
+use crate::{
+    lib::common::entropy_common::HUF_readStats_wksp, MEM_isLittleEndian, MEM_read64, MEM_readLE16,
+    MEM_readLEST, MEM_write16, MEM_write64,
+};
 extern "C" {
-    fn HUF_readStats_wksp(
-        huffWeight: *mut BYTE,
-        hwSize: size_t,
-        rankStats: *mut U32,
-        nbSymbolsPtr: *mut U32,
-        tableLogPtr: *mut U32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        workspace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        flags: std::ffi::c_int,
-    ) -> size_t;
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
 }
