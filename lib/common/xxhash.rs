@@ -13,7 +13,7 @@ enum Align {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct XXH64_state_s {
+pub struct XXH64_state_t {
     pub total_len: u64,
     pub v: [u64; 4],
     pub mem64: [u64; 4],
@@ -22,7 +22,7 @@ pub struct XXH64_state_s {
     pub reserved64: u64,
 }
 
-impl XXH64_state_s {
+impl XXH64_state_t {
     fn mem64_as_bytes_ref(&self) -> &[u8; 32] {
         // SAFETY: casting an array of u64 to u8 is valid.
         unsafe { core::mem::transmute::<&[u64; 4], &[u8; 8 * 4]>(&self.mem64) }
@@ -148,7 +148,7 @@ unsafe extern "C" fn ZSTD_XXH64(
 
 #[no_mangle]
 extern "C" fn ZSTD_XXH64_reset(
-    statePtr: &mut MaybeUninit<XXH64_state_s>,
+    statePtr: &mut MaybeUninit<XXH64_state_t>,
     mut seed: u64,
 ) -> XXH_errorcode {
     // SAFETY: all zeros is a valid value of type XXH64_state_t.
@@ -167,7 +167,7 @@ extern "C" fn ZSTD_XXH64_reset(
 
 #[no_mangle]
 unsafe extern "C" fn ZSTD_XXH64_update(
-    state: &mut XXH64_state_s,
+    state: &mut XXH64_state_t,
     mut input: *const u8,
     mut len: usize,
 ) -> XXH_errorcode {
@@ -179,7 +179,7 @@ unsafe extern "C" fn ZSTD_XXH64_update(
     }
 }
 
-fn ZSTD_XXH64_update_help(state: &mut XXH64_state_s, mut slice: &[u8]) -> XXH_errorcode {
+fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_errorcode {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
@@ -224,7 +224,7 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_s, mut slice: &[u8]) -> XXH_er
 }
 
 #[no_mangle]
-pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_s) -> u64 {
+pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
     let mut h64;
 
     if state.total_len >= 32 {
