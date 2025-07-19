@@ -6,8 +6,11 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
 use crate::{
-    lib::common::entropy_common::FSE_readNCount, MEM_readLE16, MEM_readLE24, MEM_readLE32,
-    MEM_readLEST, MEM_write64,
+    lib::{
+        common::entropy_common::FSE_readNCount,
+        decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp,
+    },
+    MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64,
 };
 extern "C" {
     pub type ZSTD_DDict_s;
@@ -35,16 +38,6 @@ extern "C" {
         cSrc: *const std::ffi::c_void,
         cSrcSize: size_t,
         DTable: *const HUF_DTable,
-        flags: std::ffi::c_int,
-    ) -> size_t;
-    fn HUF_decompress4X_hufOnly_wksp(
-        dctx: *mut HUF_DTable,
-        dst: *mut std::ffi::c_void,
-        dstSize: size_t,
-        cSrc: *const std::ffi::c_void,
-        cSrcSize: size_t,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
         flags: std::ffi::c_int,
     ) -> size_t;
 }

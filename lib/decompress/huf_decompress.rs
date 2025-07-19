@@ -683,8 +683,8 @@ unsafe extern "C" fn HUF_rescaleStats(
     }
     targetTableLog
 }
-#[no_mangle]
-pub unsafe extern "C" fn HUF_readDTableX1_wksp(
+
+pub unsafe fn HUF_readDTableX1_wksp(
     mut DTable: *mut HUF_DTable,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
@@ -1678,7 +1678,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal(
     }
     fallbackFn.unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize, DTable)
 }
-unsafe extern "C" fn HUF_decompress4X1_DCtx_wksp(
+unsafe fn HUF_decompress4X1_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -3672,8 +3672,8 @@ pub unsafe extern "C" fn HUF_decompress4X_usingDTable(
         HUF_decompress4X1_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn HUF_decompress4X_hufOnly_wksp(
+
+pub unsafe fn HUF_decompress4X_hufOnly_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,

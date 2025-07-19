@@ -405,17 +405,21 @@ pub unsafe fn HUF_readStats(
 }
 #[inline(always)]
 unsafe fn HUF_readStats_body(
-    mut huffWeight: *mut BYTE,
+    mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
-    mut rankStats: *mut U32,
-    mut nbSymbolsPtr: *mut U32,
-    mut tableLogPtr: *mut U32,
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    mut rankStats: &mut [U32; 13],
+    mut nbSymbolsPtr: &mut U32,
+    mut tableLogPtr: &mut U32,
+    mut src: &[u8],
+    workspace: &mut [u32; 219],
     mut bmi2: bool,
 ) -> size_t {
+    let huffWeight = huffWeight.as_mut_ptr();
+    let rankStats = rankStats.as_mut_ptr();
+
+    let srcSize = src.len() as size_t;
+    let src = src.as_ptr();
+
     let mut weightTotal: U32 = 0;
     let mut ip = src as *const BYTE;
     let mut iSize: size_t = 0;
@@ -455,8 +459,8 @@ unsafe fn HUF_readStats_body(
             ip.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void,
             iSize,
             6 as std::ffi::c_int as std::ffi::c_uint,
-            workSpace,
-            wkspSize,
+            workspace.as_mut_ptr().cast(),
+            (4 * workspace.len()) as size_t,
             bmi2,
         );
         if FSE_isError(oSize) != 0 {
@@ -530,15 +534,13 @@ pub unsafe fn HUF_readStats_wksp(
     let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
 
     HUF_readStats_body(
-        huffWeight.as_mut_ptr(),
+        huffWeight,
         hwSize,
-        rankStats.as_mut_ptr(),
+        rankStats,
         nbSymbolsPtr,
         tableLogPtr,
-        src,
-        srcSize,
-        workspace.as_mut_ptr().cast(),
-        (4 * workspace.len()) as size_t,
+        core::slice::from_raw_parts(src.cast(), srcSize as usize),
+        workspace,
         use_bmi2,
     )
 }
