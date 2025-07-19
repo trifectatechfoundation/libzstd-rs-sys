@@ -459,30 +459,25 @@ unsafe fn HUF_readStats_body(
     // Collect weight stats.
     rankStats[..HUF_TABLELOG_MAX + 1].fill(0);
     weightTotal = 0;
-    for n_0 in 0..oSize {
-        if usize::from(huffWeight[n_0 as usize]) > HUF_TABLELOG_MAX {
+    for n in 0..oSize as usize {
+        let Some(rank_stat) = rankStats.get_mut(usize::from(huffWeight[n])) else {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
-        }
-        let fresh1 = &mut (rankStats[huffWeight[n_0 as usize] as usize]);
-        *fresh1 = (*fresh1).wrapping_add(1);
-        weightTotal = weightTotal.wrapping_add(
-            ((1 as std::ffi::c_int) << huffWeight[n_0 as usize] as std::ffi::c_int
-                >> 1 as std::ffi::c_int) as U32,
-        );
+        };
+        *rank_stat += 1;
+        weightTotal += (1 << huffWeight[n] >> 1) as U32;
     }
     if weightTotal == 0 as std::ffi::c_int as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    let tableLog =
-        (ZSTD_highbit32(weightTotal)).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
+    let tableLog = (ZSTD_highbit32(weightTotal)).wrapping_add(1);
     if tableLog > HUF_TABLELOG_MAX as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     *tableLogPtr = tableLog;
-    let total = ((1 as std::ffi::c_int) << tableLog) as U32;
+    let total = 1u32 << tableLog;
     let rest = total.wrapping_sub(weightTotal);
-    let verif = ((1 as std::ffi::c_int) << ZSTD_highbit32(rest)) as U32;
-    let lastWeight = (ZSTD_highbit32(rest)).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
+    let verif = 1u32 << ZSTD_highbit32(rest);
+    let lastWeight = (ZSTD_highbit32(rest)).wrapping_add(1);
     if verif != rest {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
@@ -493,6 +488,7 @@ unsafe fn HUF_readStats_body(
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     *nbSymbolsPtr = oSize.wrapping_add(1) as U32;
+
     iSize.wrapping_add(1)
 }
 
