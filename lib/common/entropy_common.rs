@@ -414,8 +414,6 @@ unsafe fn HUF_readStats_body(
     workspace: &mut [u32; 219],
     mut bmi2: bool,
 ) -> size_t {
-    let rankStats = rankStats.as_mut_ptr();
-
     let srcSize = src.len() as size_t;
     let src = src.as_ptr();
 
@@ -459,29 +457,23 @@ unsafe fn HUF_readStats_body(
             return oSize;
         }
     }
-    libc::memset(
-        rankStats as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
-        ((12 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<U32>() as std::ffi::c_ulong)
-            as libc::size_t,
-    );
-    weightTotal = 0 as std::ffi::c_int as U32;
+
+    // Collect weight stats.
+    rankStats[..HUF_TABLELOG_MAX + 1].fill(0);
+    weightTotal = 0;
     let mut n_0: U32 = 0;
     n_0 = 0 as std::ffi::c_int as U32;
     while (n_0 as size_t) < oSize {
         if usize::from(huffWeight[n_0 as usize]) > HUF_TABLELOG_MAX {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
-        let fresh1 = &mut (*rankStats.offset(huffWeight[n_0 as usize] as isize));
+        let fresh1 = &mut (rankStats[huffWeight[n_0 as usize] as usize]);
         *fresh1 = (*fresh1).wrapping_add(1);
-        *fresh1;
         weightTotal = weightTotal.wrapping_add(
             ((1 as std::ffi::c_int) << huffWeight[n_0 as usize] as std::ffi::c_int
                 >> 1 as std::ffi::c_int) as U32,
         );
         n_0 = n_0.wrapping_add(1);
-        n_0;
     }
     if weightTotal == 0 as std::ffi::c_int as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -500,11 +492,9 @@ unsafe fn HUF_readStats_body(
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     huffWeight[oSize as usize] = lastWeight as BYTE;
-    let fresh2 = &mut (*rankStats.offset(lastWeight as isize));
+    let fresh2 = &mut (rankStats[lastWeight as usize]);
     *fresh2 = (*fresh2).wrapping_add(1);
-    *fresh2;
-    if *rankStats.offset(1 as std::ffi::c_int as isize) < 2 as std::ffi::c_int as U32
-        || *rankStats.offset(1 as std::ffi::c_int as isize) & 1 as std::ffi::c_int as U32 != 0
+    if rankStats[1] < 2 as std::ffi::c_int as U32 || rankStats[1] & 1 as std::ffi::c_int as U32 != 0
     {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
