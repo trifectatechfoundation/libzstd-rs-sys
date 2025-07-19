@@ -414,7 +414,6 @@ unsafe fn HUF_readStats_body(
     workspace: &mut [u32; 219],
     mut bmi2: bool,
 ) -> size_t {
-    let huffWeight = huffWeight.as_mut_ptr();
     let rankStats = rankStats.as_mut_ptr();
 
     let srcSize = src.len() as size_t;
@@ -438,23 +437,16 @@ unsafe fn HUF_readStats_body(
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
         ip = ip.offset(1 as std::ffi::c_int as isize);
-        let mut n: U32 = 0;
-        n = 0 as std::ffi::c_int as U32;
-        while (n as size_t) < oSize {
-            *huffWeight.offset(n as isize) = (*ip.offset((n / 2 as std::ffi::c_int as U32) as isize)
-                as std::ffi::c_int
-                >> 4 as std::ffi::c_int) as BYTE;
-            *huffWeight.offset(n.wrapping_add(1 as std::ffi::c_int as U32) as isize) =
-                (*ip.offset((n / 2 as std::ffi::c_int as U32) as isize) as std::ffi::c_int
-                    & 15 as std::ffi::c_int) as BYTE;
-            n = n.wrapping_add(2 as std::ffi::c_int as U32);
+        for n in (0..oSize as usize).step_by(2) {
+            huffWeight[n] = (*ip.add(n / 2) as std::ffi::c_int >> 4 as std::ffi::c_int) as BYTE;
+            huffWeight[n + 1] = (*ip.add(n / 2) & 0b1111) as BYTE;
         }
     } else {
         if iSize.wrapping_add(1 as std::ffi::c_int as size_t) > srcSize {
             return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
         }
         oSize = FSE_decompress_wksp_bmi2(
-            huffWeight as *mut std::ffi::c_void,
+            huffWeight.as_mut_ptr().cast(),
             hwSize.wrapping_sub(1 as std::ffi::c_int as size_t),
             ip.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void,
             iSize,
@@ -478,14 +470,14 @@ unsafe fn HUF_readStats_body(
     let mut n_0: U32 = 0;
     n_0 = 0 as std::ffi::c_int as U32;
     while (n_0 as size_t) < oSize {
-        if usize::from(*huffWeight.offset(n_0 as isize)) > HUF_TABLELOG_MAX {
+        if usize::from(huffWeight[n_0 as usize]) > HUF_TABLELOG_MAX {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
-        let fresh1 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
+        let fresh1 = &mut (*rankStats.offset(huffWeight[n_0 as usize] as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
         *fresh1;
         weightTotal = weightTotal.wrapping_add(
-            ((1 as std::ffi::c_int) << *huffWeight.offset(n_0 as isize) as std::ffi::c_int
+            ((1 as std::ffi::c_int) << huffWeight[n_0 as usize] as std::ffi::c_int
                 >> 1 as std::ffi::c_int) as U32,
         );
         n_0 = n_0.wrapping_add(1);
@@ -507,7 +499,7 @@ unsafe fn HUF_readStats_body(
     if verif != rest {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    *huffWeight.offset(oSize as isize) = lastWeight as BYTE;
+    huffWeight[oSize as usize] = lastWeight as BYTE;
     let fresh2 = &mut (*rankStats.offset(lastWeight as isize));
     *fresh2 = (*fresh2).wrapping_add(1);
     *fresh2;
