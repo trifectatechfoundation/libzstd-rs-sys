@@ -2991,7 +2991,7 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
     let mut offcodeMaxValue = MaxOff as std::ffi::c_uint;
     let mut offcodeLog: std::ffi::c_uint = 0;
     let offcodeHeaderSize = FSE_readNCount(
-        offcodeNCount.as_mut_ptr(),
+        &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dictPtr as *const std::ffi::c_void,
@@ -3022,7 +3022,7 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
     let mut matchlengthMaxValue = MaxML as std::ffi::c_uint;
     let mut matchlengthLog: std::ffi::c_uint = 0;
     let matchlengthHeaderSize = FSE_readNCount(
-        matchlengthNCount.as_mut_ptr(),
+        &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dictPtr as *const std::ffi::c_void,
@@ -3053,7 +3053,7 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
     let mut litlengthMaxValue = MaxLL as std::ffi::c_uint;
     let mut litlengthLog: std::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount(
-        litlengthNCount.as_mut_ptr(),
+        &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dictPtr as *const std::ffi::c_void,

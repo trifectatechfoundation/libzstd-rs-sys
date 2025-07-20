@@ -734,7 +734,7 @@ unsafe fn FSE_decompress_wksp_body(
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
     let NCountLength = FSE_readNCount_bmi2(
-        ((*wksp).ncount).as_mut_ptr(),
+        &mut (*wksp).ncount,
         &mut maxSymbolValue,
         &mut tableLog,
         cSrc,

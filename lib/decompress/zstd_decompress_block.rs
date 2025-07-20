@@ -3269,8 +3269,7 @@ unsafe extern "C" fn ZSTD_buildSeqTable(
         2 => {
             let mut tableLog: std::ffi::c_uint = 0;
             let mut norm: [S16; 53] = [0; 53];
-            let headerSize =
-                FSE_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize);
+            let headerSize = FSE_readNCount(&mut norm, &mut max, &mut tableLog, src, srcSize);
             if ERR_isError(headerSize) != 0 {
                 return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
             }
