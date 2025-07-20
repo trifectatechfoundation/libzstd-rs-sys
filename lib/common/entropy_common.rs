@@ -146,7 +146,7 @@ unsafe fn FSE_readNCount_body(
     nbBits += 1;
     loop {
         if previous0 != 0 {
-            let mut repeats = ((!bitStream | 0x80000000).trailing_zeros() >> 1) as std::ffi::c_int;
+            let mut repeats = bitStream.trailing_ones() >> 1;
             while repeats >= 12 {
                 charnum = charnum.wrapping_add(3 * 12);
                 if likely(ip <= iend.offset(-(7 as isize))) {
@@ -160,33 +160,41 @@ unsafe fn FSE_readNCount_body(
                     ip = iend.offset(-4);
                 }
                 bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
-                repeats = ((!bitStream | 0x80000000).trailing_zeros() >> 1) as std::ffi::c_int;
+                repeats = bitStream.trailing_ones() >> 1;
             }
 
-            charnum = charnum.wrapping_add((3 as std::ffi::c_int * repeats) as std::ffi::c_uint);
-            bitStream >>= 2 as std::ffi::c_int * repeats;
-            bitCount += 2 as std::ffi::c_int * repeats;
-            charnum = charnum.wrapping_add(bitStream & 3 as std::ffi::c_int as U32);
-            bitCount += 2 as std::ffi::c_int;
+            charnum = charnum.wrapping_add(3 * repeats);
+            bitStream >>= 2 * repeats;
+            bitCount += 2 * repeats as i32;
+
+            /* Add the final repeat which isn't 0b11. */
+            assert!((bitStream & 0b11) < 3);
+            charnum = charnum.wrapping_add(bitStream & 0b11);
+            bitCount += 2;
+
+            /* This is an error, but break and return an error
+             * at the end, because returning out of a loop makes
+             * it harder for the compiler to optimize.
+             */
             if charnum >= maxSV1 {
                 break;
             }
-            if (ip <= iend.offset(-(7 as std::ffi::c_int as isize))) as std::ffi::c_int
-                as std::ffi::c_long
-                != 0
-                || ip.offset((bitCount >> 3 as std::ffi::c_int) as isize)
-                    <= iend.offset(-(4 as std::ffi::c_int as isize))
+
+            /* We don't need to set the normalized count to 0
+             * because we already memset the whole buffer to 0.
+             */
+
+            if (ip <= iend.offset(-7)) as std::ffi::c_int as std::ffi::c_long != 0
+                || ip.offset((bitCount >> 3 as std::ffi::c_int) as isize) <= iend.offset(-(4))
             {
                 ip = ip.offset((bitCount >> 3 as std::ffi::c_int) as isize);
                 bitCount &= 7 as std::ffi::c_int;
             } else {
                 bitCount -= (8 as std::ffi::c_int as std::ffi::c_long
-                    * iend
-                        .offset(-(4 as std::ffi::c_int as isize))
-                        .offset_from(ip) as std::ffi::c_long)
+                    * iend.offset(-4).offset_from(ip) as std::ffi::c_long)
                     as std::ffi::c_int;
                 bitCount &= 31 as std::ffi::c_int;
-                ip = iend.offset(-(4 as std::ffi::c_int as isize));
+                ip = iend.offset(-4);
             }
             bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
         }
