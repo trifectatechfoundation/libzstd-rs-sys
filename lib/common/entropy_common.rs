@@ -444,8 +444,7 @@ unsafe fn HUF_readStats_body(
         oSize = FSE_decompress_wksp_bmi2(
             huffWeight.as_mut_ptr().cast(),
             hwSize.wrapping_sub(1),
-            ip[1..].as_ptr().cast(),
-            iSize,
+            &ip[1..][..iSize as usize],
             6,
             // TODO this should probably be a (4-byte aligned) byte slice from the start.
             unsafe {

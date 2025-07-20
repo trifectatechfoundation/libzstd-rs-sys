@@ -710,14 +710,16 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
 unsafe extern "C" fn FSE_decompress_wksp_body(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
-    mut cSrc: *const std::ffi::c_void,
-    mut cSrcSize: size_t,
+    mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
     workSpace: &mut [u8],
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
     let mut wkspSize = workSpace.len() as size_t;
     let mut workSpace = workSpace.as_mut_ptr().cast();
+
+    let mut cSrcSize = cSrc.len() as size_t;
+    let mut cSrc = cSrc.as_ptr();
 
     let istart = cSrc as *const BYTE;
     let mut ip = istart;
@@ -827,8 +829,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body(
 unsafe extern "C" fn FSE_decompress_wksp_body_default(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
-    mut cSrc: *const std::ffi::c_void,
-    mut cSrcSize: size_t,
+    mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
     mut workSpace: &mut [u8],
 ) -> size_t {
@@ -836,7 +837,6 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
         dst,
         dstCapacity,
         cSrc,
-        cSrcSize,
         maxLog,
         workSpace,
         0 as std::ffi::c_int,
@@ -845,8 +845,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
 unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
-    mut cSrc: *const std::ffi::c_void,
-    mut cSrcSize: size_t,
+    mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
     mut workSpace: &mut [u8],
 ) -> size_t {
@@ -854,7 +853,6 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
         dst,
         dstCapacity,
         cSrc,
-        cSrcSize,
         maxLog,
         workSpace,
         1 as std::ffi::c_int,
@@ -864,15 +862,14 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
 pub unsafe fn FSE_decompress_wksp_bmi2(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
-    mut cSrc: *const std::ffi::c_void,
-    mut cSrcSize: size_t,
+    mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
     workSpace: &mut [u8],
     mut bmi2: bool,
 ) -> size_t {
     if bmi2 {
-        FSE_decompress_wksp_body_bmi2(dst, dstCapacity, cSrc, cSrcSize, maxLog, workSpace)
+        FSE_decompress_wksp_body_bmi2(dst, dstCapacity, cSrc, maxLog, workSpace)
     } else {
-        FSE_decompress_wksp_body_default(dst, dstCapacity, cSrc, cSrcSize, maxLog, workSpace)
+        FSE_decompress_wksp_body_default(dst, dstCapacity, cSrc, maxLog, workSpace)
     }
 }
