@@ -713,10 +713,12 @@ unsafe extern "C" fn FSE_decompress_wksp_body(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
     mut maxLog: std::ffi::c_uint,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    workSpace: &mut [u8],
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
+    let mut wkspSize = workSpace.len() as size_t;
+    let mut workSpace = workSpace.as_mut_ptr().cast();
+
     let istart = cSrc as *const BYTE;
     let mut ip = istart;
     let mut tableLog: std::ffi::c_uint = 0;
@@ -828,8 +830,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
     mut maxLog: std::ffi::c_uint,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    mut workSpace: &mut [u8],
 ) -> size_t {
     FSE_decompress_wksp_body(
         dst,
@@ -838,7 +839,6 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
         cSrcSize,
         maxLog,
         workSpace,
-        wkspSize,
         0 as std::ffi::c_int,
     )
 }
@@ -848,8 +848,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
     mut maxLog: std::ffi::c_uint,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    mut workSpace: &mut [u8],
 ) -> size_t {
     FSE_decompress_wksp_body(
         dst,
@@ -858,7 +857,6 @@ unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
         cSrcSize,
         maxLog,
         workSpace,
-        wkspSize,
         1 as std::ffi::c_int,
     )
 }
@@ -869,29 +867,12 @@ pub unsafe fn FSE_decompress_wksp_bmi2(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
     mut maxLog: std::ffi::c_uint,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
+    workSpace: &mut [u8],
     mut bmi2: bool,
 ) -> size_t {
     if bmi2 {
-        FSE_decompress_wksp_body_bmi2(
-            dst,
-            dstCapacity,
-            cSrc,
-            cSrcSize,
-            maxLog,
-            workSpace,
-            wkspSize,
-        )
+        FSE_decompress_wksp_body_bmi2(dst, dstCapacity, cSrc, cSrcSize, maxLog, workSpace)
     } else {
-        FSE_decompress_wksp_body_default(
-            dst,
-            dstCapacity,
-            cSrc,
-            cSrcSize,
-            maxLog,
-            workSpace,
-            wkspSize,
-        )
+        FSE_decompress_wksp_body_default(dst, dstCapacity, cSrc, cSrcSize, maxLog, workSpace)
     }
 }

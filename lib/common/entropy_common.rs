@@ -447,8 +447,13 @@ unsafe fn HUF_readStats_body(
             ip[1..].as_ptr().cast(),
             iSize,
             6,
-            workspace.as_mut_ptr().cast(),
-            (4 * workspace.len()) as size_t,
+            // TODO this should probably be a (4-byte aligned) byte slice from the start.
+            unsafe {
+                core::slice::from_raw_parts_mut(
+                    workspace.as_mut_ptr().cast::<u8>(),
+                    4 * workspace.len(),
+                )
+            },
             bmi2,
         );
         if FSE_isError(oSize) != 0 {
