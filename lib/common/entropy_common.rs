@@ -1,3 +1,5 @@
+use std::hint::likely;
+
 use ::libc;
 
 pub type size_t = std::ffi::c_ulong;
@@ -136,40 +138,31 @@ unsafe fn FSE_readNCount_body(
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
-    bitStream >>= 4 as std::ffi::c_int;
-    bitCount = 4 as std::ffi::c_int;
+    bitStream >>= 4;
+    bitCount = 4;
     *tableLogPtr = nbBits as std::ffi::c_uint;
-    remaining = ((1 as std::ffi::c_int) << nbBits) + 1 as std::ffi::c_int;
-    threshold = (1 as std::ffi::c_int) << nbBits;
+    remaining = (1 << nbBits) + 1;
+    threshold = 1 << nbBits;
     nbBits += 1;
-    nbBits;
     loop {
         if previous0 != 0 {
-            let mut repeats =
-                (ZSTD_countTrailingZeros32(!bitStream | 0x80000000 as std::ffi::c_uint)
-                    >> 1 as std::ffi::c_int) as std::ffi::c_int;
-            while repeats >= 12 as std::ffi::c_int {
-                charnum = charnum.wrapping_add(
-                    (3 as std::ffi::c_int * 12 as std::ffi::c_int) as std::ffi::c_uint,
-                );
-                if (ip <= iend.offset(-(7 as std::ffi::c_int as isize))) as std::ffi::c_int
-                    as std::ffi::c_long
-                    != 0
-                {
-                    ip = ip.offset(3 as std::ffi::c_int as isize);
+            let mut repeats = ((!bitStream | 0x80000000).trailing_zeros() >> 1) as std::ffi::c_int;
+            while repeats >= 12 {
+                charnum = charnum.wrapping_add(3 * 12);
+                if likely(ip <= iend.offset(-(7 as isize))) {
+                    ip = ip.offset(3);
                 } else {
-                    bitCount -= (8 as std::ffi::c_int as std::ffi::c_long
-                        * iend
-                            .offset(-(7 as std::ffi::c_int as isize))
-                            .offset_from(ip) as std::ffi::c_long)
+                    bitCount -= (8 * iend
+                        .offset(-(7 as std::ffi::c_int as isize))
+                        .offset_from(ip) as std::ffi::c_long)
                         as std::ffi::c_int;
-                    bitCount &= 31 as std::ffi::c_int;
-                    ip = iend.offset(-(4 as std::ffi::c_int as isize));
+                    bitCount &= 31;
+                    ip = iend.offset(-4);
                 }
                 bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
-                repeats = (ZSTD_countTrailingZeros32(!bitStream | 0x80000000 as std::ffi::c_uint)
-                    >> 1 as std::ffi::c_int) as std::ffi::c_int;
+                repeats = ((!bitStream | 0x80000000).trailing_zeros() >> 1) as std::ffi::c_int;
             }
+
             charnum = charnum.wrapping_add((3 as std::ffi::c_int * repeats) as std::ffi::c_uint);
             bitStream >>= 2 as std::ffi::c_int * repeats;
             bitCount += 2 as std::ffi::c_int * repeats;
@@ -197,26 +190,27 @@ unsafe fn FSE_readNCount_body(
             }
             bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
         }
+
         let max = 2 as std::ffi::c_int * threshold - 1 as std::ffi::c_int - remaining;
         let mut count: std::ffi::c_int = 0;
-        if (bitStream & (threshold - 1 as std::ffi::c_int) as U32) < max as U32 {
-            count = (bitStream & (threshold - 1 as std::ffi::c_int) as U32) as std::ffi::c_int;
-            bitCount += nbBits - 1 as std::ffi::c_int;
+        if (bitStream & (threshold - 1) as U32) < max as U32 {
+            count = (bitStream & (threshold - 1) as U32) as std::ffi::c_int;
+            bitCount += nbBits - 1;
         } else {
-            count = (bitStream & (2 as std::ffi::c_int * threshold - 1 as std::ffi::c_int) as U32)
-                as std::ffi::c_int;
+            count = (bitStream & (2 * threshold - 1 as std::ffi::c_int) as U32) as std::ffi::c_int;
             if count >= threshold {
                 count -= max;
             }
             bitCount += nbBits;
         }
         count -= 1;
-        count;
-        if count >= 0 as std::ffi::c_int {
+
+        if count >= 0 {
             remaining -= count;
         } else {
             remaining += count;
         }
+
         let fresh0 = charnum;
         charnum = charnum.wrapping_add(1);
         normalizedCounter[fresh0 as usize] = count as std::ffi::c_short;
@@ -252,6 +246,7 @@ unsafe fn FSE_readNCount_body(
         }
         bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
     }
+
     if remaining != 1 as std::ffi::c_int {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
@@ -261,6 +256,7 @@ unsafe fn FSE_readNCount_body(
     if bitCount > 32 as std::ffi::c_int {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
     *maxSVPtr = charnum.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint);
     ip = ip.offset(((bitCount + 7 as std::ffi::c_int) >> 3 as std::ffi::c_int) as isize);
     ip.offset_from(istart) as std::ffi::c_long as size_t

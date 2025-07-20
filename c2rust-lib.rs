@@ -9,6 +9,7 @@
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
+#![feature(likely_unlikely)]
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;
