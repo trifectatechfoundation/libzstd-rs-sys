@@ -707,23 +707,22 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
 #[inline(always)]
-unsafe extern "C" fn FSE_decompress_wksp_body(
+unsafe fn FSE_decompress_wksp_body(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
-    workSpace: &mut [u8],
+    workspace: &mut [u8],
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
-    let mut wkspSize = workSpace.len() as size_t;
-    let mut workSpace = workSpace.as_mut_ptr().cast();
+    let mut wkspSize = workspace.len() as size_t;
+    let mut workSpace = workspace.as_mut_ptr().cast();
 
     let mut cSrcSize = cSrc.len() as size_t;
-    let mut cSrc = cSrc.as_ptr();
 
     let mut dstCapacity = dst.len() as size_t;
     let mut dst = dst.as_mut_ptr().cast();
 
-    let istart = cSrc as *const BYTE;
+    let istart = cSrc.as_ptr();
     let mut ip = istart;
     let mut tableLog: std::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint;
@@ -738,8 +737,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body(
         ((*wksp).ncount).as_mut_ptr(),
         &mut maxSymbolValue,
         &mut tableLog,
-        istart as *const std::ffi::c_void,
-        cSrcSize,
+        cSrc,
         bmi2,
     );
     if ERR_isError(NCountLength) != 0 {
@@ -828,7 +826,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body(
         0 as std::ffi::c_int as std::ffi::c_uint,
     )
 }
-unsafe extern "C" fn FSE_decompress_wksp_body_default(
+unsafe fn FSE_decompress_wksp_body_default(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
@@ -836,7 +834,7 @@ unsafe extern "C" fn FSE_decompress_wksp_body_default(
 ) -> size_t {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0 as std::ffi::c_int)
 }
-unsafe extern "C" fn FSE_decompress_wksp_body_bmi2(
+unsafe fn FSE_decompress_wksp_body_bmi2(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
