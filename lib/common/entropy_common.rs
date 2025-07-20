@@ -442,8 +442,7 @@ unsafe fn HUF_readStats_body(
         }
         // At most (hwSize-1) values decoded, the last one is implied.
         oSize = FSE_decompress_wksp_bmi2(
-            huffWeight.as_mut_ptr().cast(),
-            hwSize.wrapping_sub(1),
+            &mut huffWeight[..hwSize as usize - 1],
             &ip[1..][..iSize as usize],
             6,
             // TODO this should probably be a (4-byte aligned) byte slice from the start.
