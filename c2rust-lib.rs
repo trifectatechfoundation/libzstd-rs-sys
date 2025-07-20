@@ -19,6 +19,7 @@ pub mod lib {
         pub mod entropy_common_old;
         pub mod error_private;
         pub mod fse_decompress;
+        pub mod fse_decompress_old;
         pub mod pool;
         pub mod threading;
         pub mod xxhash;

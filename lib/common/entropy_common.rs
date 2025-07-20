@@ -86,7 +86,7 @@ const fn ZSTD_countTrailingZeros32(mut val: u32) -> u32 {
 
 #[inline]
 const fn ZSTD_highbit32(mut val: u32) -> u32 {
-    u32::BITS - 1 - val.leading_zeros()
+    val.ilog2()
 }
 
 pub unsafe fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -471,7 +471,7 @@ unsafe fn HUF_readStats_body(
     }
 
     // Get last non-null symbol weight (implied, total must be 2^n).
-    let tableLog = (ZSTD_highbit32(weightTotal)).wrapping_add(1);
+    let tableLog = weightTotal.ilog2() + 1;
     if tableLog > HUF_TABLELOG_MAX as U32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
@@ -480,8 +480,8 @@ unsafe fn HUF_readStats_body(
     // Determine last weight.
     let total = 1u32 << tableLog;
     let rest = total.wrapping_sub(weightTotal);
-    let verif = 1u32 << ZSTD_highbit32(rest);
-    let lastWeight = (ZSTD_highbit32(rest)).wrapping_add(1);
+    let verif = 1u32 << rest.ilog2();
+    let lastWeight = rest.ilog2() + 1;
     if verif != rest {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }

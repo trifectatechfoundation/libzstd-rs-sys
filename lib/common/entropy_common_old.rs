@@ -54,7 +54,9 @@ pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::{
-    lib::common::{error_private::ERR_getErrorString, fse_decompress::FSE_decompress_wksp_bmi2},
+    lib::common::{
+        error_private::ERR_getErrorString, fse_decompress_old::FSE_decompress_wksp_bmi2,
+    },
     MEM_readLE32,
 };
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
