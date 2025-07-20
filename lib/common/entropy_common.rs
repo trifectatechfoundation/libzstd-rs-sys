@@ -534,7 +534,6 @@ mod tests {
     #[derive(Debug, Clone, PartialEq)]
     struct Input {
         huffWeight: [u8; 256],
-        hwSize: size_t,
         rankStats: [U32; 13],
         nbSymbolsPtr: U32,
         tableLogPtr: U32,
@@ -553,7 +552,6 @@ mod tests {
                     }
                     arr
                 },
-                hwSize: size_t::arbitrary(g) % 257, // at most 256
                 rankStats: {
                     let mut arr = [0u32; 13];
                     for elem in &mut arr {
@@ -582,7 +580,6 @@ mod tests {
                 let expected = {
                     let Input {
                         mut huffWeight,
-                        hwSize,
                         mut rankStats,
                         mut nbSymbolsPtr,
                         mut tableLogPtr,
@@ -592,7 +589,7 @@ mod tests {
                     } = input.clone();
                     let v =crate::lib::common::entropy_common_old::HUF_readStats_body(
                         &mut huffWeight,
-                        hwSize,
+                        256,
                         &mut rankStats,
                         &mut nbSymbolsPtr,
                         &mut tableLogPtr,
@@ -605,7 +602,6 @@ mod tests {
                 let actual = {
                     let Input {
                         mut huffWeight,
-                        hwSize,
                         mut rankStats,
                         mut nbSymbolsPtr,
                         mut tableLogPtr,
@@ -615,7 +611,7 @@ mod tests {
                     } = input.clone();
                     let v = HUF_readStats_body(
                         &mut huffWeight,
-                        hwSize,
+                        256,
                         &mut rankStats,
                         &mut nbSymbolsPtr,
                         &mut tableLogPtr,
