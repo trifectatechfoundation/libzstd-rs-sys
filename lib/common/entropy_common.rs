@@ -94,16 +94,15 @@ pub unsafe fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
 }
 
 #[inline(always)]
-unsafe extern "C" fn FSE_readNCount_body(
+unsafe fn FSE_readNCount_body(
     mut normalizedCounter: *mut std::ffi::c_short,
     mut maxSVPtr: *mut std::ffi::c_uint,
     mut tableLogPtr: *mut std::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> size_t {
-    let hbSize = headerBuffer.len() as size_t;
-    let headerBuffer = headerBuffer.as_ptr().cast();
+    let hbSize = headerBuffer.len();
 
-    let istart = headerBuffer as *const BYTE;
+    let istart = headerBuffer.as_ptr();
     let iend = istart.offset(hbSize as isize);
     let mut ip = istart;
     let mut nbBits: std::ffi::c_int = 0;
@@ -114,24 +113,16 @@ unsafe extern "C" fn FSE_readNCount_body(
     let mut charnum = 0 as std::ffi::c_int as std::ffi::c_uint;
     let maxSV1 = (*maxSVPtr).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
     let mut previous0 = 0 as std::ffi::c_int;
-    if hbSize < 8 as std::ffi::c_int as size_t {
-        let mut buffer: [std::ffi::c_char; 8] = [0 as std::ffi::c_int as std::ffi::c_char; 8];
-        libc::memcpy(
-            buffer.as_mut_ptr() as *mut std::ffi::c_void,
-            headerBuffer,
-            hbSize as libc::size_t,
-        );
-        let countSize = FSE_readNCount(
-            normalizedCounter,
-            maxSVPtr,
-            tableLogPtr,
-            buffer.as_mut_ptr() as *const std::ffi::c_void,
-            ::core::mem::size_of::<[std::ffi::c_char; 8]>() as std::ffi::c_ulong,
-        );
+    if hbSize < 8 {
+        let mut buffer = [0u8; 8];
+        buffer[..hbSize].copy_from_slice(headerBuffer);
+
+        let countSize = FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &mut buffer);
+
         if FSE_isError(countSize) != 0 {
             return countSize;
         }
-        if countSize > hbSize {
+        if countSize > hbSize as size_t {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
         return countSize;
@@ -315,11 +306,25 @@ pub unsafe fn FSE_readNCount(
     mut headerBuffer: *const std::ffi::c_void,
     mut hbSize: size_t,
 ) -> size_t {
-    FSE_readNCount_bmi2(
+    FSE_readNCount_slice(
         normalizedCounter,
         maxSVPtr,
         tableLogPtr,
         core::slice::from_raw_parts(headerBuffer.cast(), hbSize as usize),
+    )
+}
+
+pub unsafe fn FSE_readNCount_slice(
+    mut normalizedCounter: *mut std::ffi::c_short,
+    mut maxSVPtr: *mut std::ffi::c_uint,
+    mut tableLogPtr: *mut std::ffi::c_uint,
+    headerBuffer: &[u8],
+) -> size_t {
+    FSE_readNCount_bmi2(
+        normalizedCounter,
+        maxSVPtr,
+        tableLogPtr,
+        headerBuffer,
         0 as std::ffi::c_int,
     )
 }
