@@ -108,17 +108,9 @@ unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::{lib::common::entropy_common::FSE_readNCount_bmi2, MEM_readLEST, MEM_write64};
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
+const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
-    val.leading_zeros() as i32 as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
-    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 #[inline]
 unsafe extern "C" fn BIT_initDStream(
@@ -145,7 +137,7 @@ unsafe extern "C" fn BIT_initDStream(
         let lastByte = *(srcBuffer as *const BYTE)
             .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
         (*bitD).bitsConsumed = if lastByte as std::ffi::c_int != 0 {
-            (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_highbit32(lastByte as U32))
+            (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(lastByte.ilog2())
         } else {
             0 as std::ffi::c_int as std::ffi::c_uint
         };
@@ -232,8 +224,7 @@ unsafe extern "C" fn BIT_initDStream(
         let lastByte_0 = *(srcBuffer as *const BYTE)
             .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
         (*bitD).bitsConsumed = if lastByte_0 as std::ffi::c_int != 0 {
-            (8 as std::ffi::c_int as std::ffi::c_uint)
-                .wrapping_sub(ZSTD_highbit32(lastByte_0 as U32))
+            (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(lastByte_0.ilog2())
         } else {
             0 as std::ffi::c_int as std::ffi::c_uint
         };
@@ -394,7 +385,7 @@ unsafe extern "C" fn FSE_decodeSymbolFast(
 pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
-pub const FSE_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
+pub const FSE_isError: fn(size_t) -> std::ffi::c_uint = ERR_isError;
 unsafe extern "C" fn FSE_buildDTable_internal(
     mut dt: *mut FSE_DTable,
     mut normalizedCounter: *const std::ffi::c_short,
@@ -540,7 +531,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as U32;
         (*tableDecode.offset(u_0 as isize)).nbBits =
-            tableLog.wrapping_sub(ZSTD_highbit32(nextState)) as BYTE;
+            tableLog.wrapping_sub(nextState.ilog2()) as BYTE;
         (*tableDecode.offset(u_0 as isize)).newState = (nextState
             << (*tableDecode.offset(u_0 as isize)).nbBits as std::ffi::c_int)
             .wrapping_sub(tableSize) as U16;
