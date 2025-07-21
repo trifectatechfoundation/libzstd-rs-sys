@@ -59,7 +59,7 @@ use crate::{
     lib::common::{error_private::ERR_getErrorString, fse_decompress::FSE_decompress_wksp_bmi2},
     MEM_readLE32,
 };
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
+const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
 }
@@ -91,12 +91,12 @@ const fn ZSTD_highbit32(mut val: u32) -> u32 {
     val.ilog2()
 }
 
-pub unsafe fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
+pub fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
 
 #[inline(always)]
-unsafe fn FSE_readNCount_body(
+fn FSE_readNCount_body(
     mut normalizedCounter: &mut [i16],
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
@@ -255,7 +255,7 @@ unsafe fn FSE_readNCount_body(
     ip as size_t
 }
 
-unsafe fn FSE_readNCount_body_default(
+fn FSE_readNCount_body_default(
     mut normalizedCounter: &mut [i16],
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
@@ -263,7 +263,7 @@ unsafe fn FSE_readNCount_body_default(
 ) -> size_t {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
-unsafe fn FSE_readNCount_body_bmi2(
+fn FSE_readNCount_body_bmi2(
     mut normalizedCounter: &mut [i16],
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
@@ -272,7 +272,7 @@ unsafe fn FSE_readNCount_body_bmi2(
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
-pub unsafe fn FSE_readNCount_bmi2(
+pub fn FSE_readNCount_bmi2(
     mut normalizedCounter: &mut [i16],
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
@@ -300,7 +300,7 @@ pub unsafe fn FSE_readNCount(
     )
 }
 
-pub unsafe fn FSE_readNCount_slice(
+pub fn FSE_readNCount_slice(
     mut normalizedCounter: &mut [i16],
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
