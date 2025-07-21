@@ -566,7 +566,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
     mut dt: *const FSE_DTable,
-    fast: std::ffi::c_uint,
+    fast: bool,
 ) -> size_t {
     let ostart = dst as *mut BYTE;
     let mut op = ostart;
@@ -604,7 +604,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         & (op < olimit) as std::ffi::c_int
         != 0
     {
-        *op.offset(0 as std::ffi::c_int as isize) = (if fast != 0 {
+        *op.offset(0 as std::ffi::c_int as isize) = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
@@ -615,7 +615,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         {
             BIT_reloadDStream(&mut bitD);
         }
-        *op.offset(1 as std::ffi::c_int as isize) = (if fast != 0 {
+        *op.offset(1 as std::ffi::c_int as isize) = (if fast {
             FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
@@ -629,7 +629,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             op = op.offset(2 as std::ffi::c_int as isize);
             break;
         }
-        *op.offset(2 as std::ffi::c_int as isize) = (if fast != 0 {
+        *op.offset(2 as std::ffi::c_int as isize) = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
@@ -640,7 +640,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         {
             BIT_reloadDStream(&mut bitD);
         }
-        *op.offset(3 as std::ffi::c_int as isize) = (if fast != 0 {
+        *op.offset(3 as std::ffi::c_int as isize) = (if fast {
             FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
@@ -653,7 +653,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         }
         let fresh3 = op;
         op = op.offset(1);
-        *fresh3 = (if fast != 0 {
+        *fresh3 = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
@@ -663,7 +663,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         {
             let fresh4 = op;
             op = op.offset(1);
-            *fresh4 = (if fast != 0 {
+            *fresh4 = (if fast {
                 FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
@@ -675,7 +675,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             }
             let fresh5 = op;
             op = op.offset(1);
-            *fresh5 = (if fast != 0 {
+            *fresh5 = (if fast {
                 FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
@@ -687,7 +687,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
             }
             let fresh6 = op;
             op = op.offset(1);
-            *fresh6 = (if fast != 0 {
+            *fresh6 = (if fast {
                 FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
@@ -797,24 +797,14 @@ unsafe fn FSE_decompress_wksp_body(
     }
     let mut ptr = dtable as *const std::ffi::c_void;
     let mut DTableH = ptr as *const FSE_DTableHeader;
-    let fastMode = (*DTableH).fastMode as U32;
-    if fastMode != 0 {
-        return FSE_decompress_usingDTable_generic(
-            dst,
-            dstCapacity,
-            ip as *const std::ffi::c_void,
-            cSrcSize,
-            dtable,
-            1 as std::ffi::c_int as std::ffi::c_uint,
-        );
-    }
+
     FSE_decompress_usingDTable_generic(
         dst,
         dstCapacity,
         ip as *const std::ffi::c_void,
         cSrcSize,
         dtable,
-        0 as std::ffi::c_int as std::ffi::c_uint,
+        (*DTableH).fastMode as U32 != 0,
     )
 }
 unsafe fn FSE_decompress_wksp_body_default(
