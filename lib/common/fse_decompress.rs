@@ -113,29 +113,26 @@ const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
         as std::ffi::c_uint
 }
 #[inline]
-unsafe fn BIT_initDStream(mut bitD: *mut BIT_DStream_t, mut srcBuffer: &[u8]) -> size_t {
+unsafe fn BIT_initDStream(bitD: &mut BIT_DStream_t, mut srcBuffer: &[u8]) -> size_t {
     let srcSize = srcBuffer.len() as size_t;
     let srcBuffer = srcBuffer.as_ptr();
 
     if srcSize < 1 as std::ffi::c_int as size_t {
-        libc::memset(
-            bitD as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
-            ::core::mem::size_of::<BIT_DStream_t>() as std::ffi::c_ulong as libc::size_t,
-        );
+        core::ptr::write_bytes(bitD, 0u8, 1);
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    (*bitD).start = srcBuffer as *const std::ffi::c_char;
-    (*bitD).limitPtr = ((*bitD).start)
+
+    bitD.start = srcBuffer as *const std::ffi::c_char;
+    bitD.limitPtr = (bitD.start)
         .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
     if srcSize >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
-        (*bitD).ptr = (srcBuffer as *const std::ffi::c_char)
+        bitD.ptr = (srcBuffer as *const std::ffi::c_char)
             .offset(srcSize as isize)
             .offset(-(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize));
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+        bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
         let lastByte = *(srcBuffer as *const BYTE)
             .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
-        (*bitD).bitsConsumed = if lastByte as std::ffi::c_int != 0 {
+        bitD.bitsConsumed = if lastByte as std::ffi::c_int != 0 {
             (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(lastByte.ilog2())
         } else {
             0 as std::ffi::c_int as std::ffi::c_uint
@@ -144,8 +141,8 @@ unsafe fn BIT_initDStream(mut bitD: *mut BIT_DStream_t, mut srcBuffer: &[u8]) ->
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
     } else {
-        (*bitD).ptr = (*bitD).start;
-        (*bitD).bitContainer = *((*bitD).start as *const BYTE) as BitContainerType;
+        bitD.ptr = bitD.start;
+        bitD.bitContainer = *(bitD.start as *const BYTE) as BitContainerType;
         let mut current_block_32: u64;
         match srcSize {
             7 => {
