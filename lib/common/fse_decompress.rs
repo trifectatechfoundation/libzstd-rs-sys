@@ -113,11 +113,10 @@ const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
         as std::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn BIT_initDStream(
-    mut bitD: *mut BIT_DStream_t,
-    mut srcBuffer: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> size_t {
+unsafe fn BIT_initDStream(mut bitD: *mut BIT_DStream_t, mut srcBuffer: &[u8]) -> size_t {
+    let srcSize = srcBuffer.len() as size_t;
+    let srcBuffer = srcBuffer.as_ptr();
+
     if srcSize < 1 as std::ffi::c_int as size_t {
         libc::memset(
             bitD as *mut std::ffi::c_void,
@@ -563,8 +562,7 @@ unsafe fn FSE_buildDTable_wksp(
 unsafe extern "C" fn FSE_decompress_usingDTable_generic(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
-    mut cSrc: *const std::ffi::c_void,
-    mut cSrcSize: size_t,
+    mut cSrc: &[u8],
     mut dt: *const FSE_DTable,
     fast: bool,
 ) -> size_t {
@@ -587,7 +585,7 @@ unsafe extern "C" fn FSE_decompress_usingDTable_generic(
         state: 0,
         table: std::ptr::null::<std::ffi::c_void>(),
     };
-    let _var_err__ = BIT_initDStream(&mut bitD, cSrc, cSrcSize);
+    let _var_err__ = BIT_initDStream(&mut bitD, cSrc);
     if ERR_isError(_var_err__) != 0 {
         return _var_err__;
     }
@@ -713,8 +711,6 @@ unsafe fn FSE_decompress_wksp_body(
     let mut dstCapacity = dst.len() as size_t;
     let mut dst = dst.as_mut_ptr().cast();
 
-    let istart = cSrc.as_ptr();
-    let mut ip = istart;
     let mut tableLog: std::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint;
     let wksp = workSpace as *mut FSE_DecompressWksp;
@@ -737,8 +733,7 @@ unsafe fn FSE_decompress_wksp_body(
     if tableLog > maxLog {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
-    ip = ip.offset(NCountLength as isize);
-    cSrcSize = cSrcSize.wrapping_sub(NCountLength);
+    let ip = &cSrc[NCountLength as usize..];
     if ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog) + 1 as std::ffi::c_int)
         as std::ffi::c_ulonglong)
         .wrapping_add(
@@ -801,8 +796,7 @@ unsafe fn FSE_decompress_wksp_body(
     FSE_decompress_usingDTable_generic(
         dst,
         dstCapacity,
-        ip as *const std::ffi::c_void,
-        cSrcSize,
+        ip,
         dtable,
         (*DTableH).fastMode as U32 != 0,
     )
