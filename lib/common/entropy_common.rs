@@ -104,9 +104,8 @@ unsafe fn FSE_readNCount_body(
 ) -> size_t {
     let hbSize = headerBuffer.len();
 
-    let istart = headerBuffer.as_ptr();
-    let iend = istart.offset(hbSize as isize);
-    let mut ip = istart;
+    let iend = hbSize;
+    let mut ip = 0usize;
     let mut nbBits: std::ffi::c_int = 0;
     let mut remaining: std::ffi::c_int = 0;
     let mut threshold: std::ffi::c_int = 0;
@@ -132,7 +131,9 @@ unsafe fn FSE_readNCount_body(
 
     normalizedCounter.fill(0);
 
-    bitStream = MEM_readLE32(ip as *const std::ffi::c_void);
+    let read_u32_le = |offset| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
+
+    bitStream = read_u32_le(ip);
     nbBits = (bitStream & 0xf as std::ffi::c_int as U32).wrapping_add(FSE_MIN_TABLELOG as U32)
         as std::ffi::c_int;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
@@ -150,17 +151,14 @@ unsafe fn FSE_readNCount_body(
             let mut repeats = bitStream.trailing_ones() >> 1;
             while repeats >= 12 {
                 charnum = charnum.wrapping_add(3 * 12);
-                if likely(ip <= iend.offset(-(7 as isize))) {
-                    ip = ip.offset(3);
+                if likely(ip <= iend - 7) {
+                    ip += 3;
                 } else {
-                    bitCount -= (8 * iend
-                        .offset(-(7 as std::ffi::c_int as isize))
-                        .offset_from(ip) as std::ffi::c_long)
-                        as std::ffi::c_int;
+                    bitCount -= 8 * ((iend - 7) - ip) as i32;
                     bitCount &= 31;
-                    ip = iend.offset(-4);
+                    ip = iend - 4;
                 }
-                bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
+                bitStream = read_u32_le(ip) >> bitCount;
                 repeats = bitStream.trailing_ones() >> 1;
             }
 
@@ -185,17 +183,16 @@ unsafe fn FSE_readNCount_body(
              * because we already memset the whole buffer to 0.
              */
 
-            if (ip <= iend.offset(-7)) || ip.offset((bitCount >> 3) as isize) <= iend.offset(-4) {
-                ip = ip.offset((bitCount >> 3) as isize);
+            if (ip <= iend - 7) || (ip + (bitCount as usize >> 3)) <= iend - 4 {
+                ip += bitCount as usize >> 3;
                 bitCount &= 0b111;
             } else {
-                bitCount -=
-                    (8 * iend.offset(-4).offset_from(ip) as std::ffi::c_long) as std::ffi::c_int;
+                bitCount -= 8 * ((iend - 4) - ip) as i32;
                 bitCount &= 31;
-                ip = iend.offset(-4);
+                ip = iend - 4;
             }
 
-            bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
+            bitStream = read_u32_le(ip) >> bitCount;
         }
 
         let max = 2 as std::ffi::c_int * threshold - 1 as std::ffi::c_int - remaining;
@@ -231,24 +228,15 @@ unsafe fn FSE_readNCount_body(
         if charnum >= maxSV1 {
             break;
         }
-        if (ip <= iend.offset(-(7 as std::ffi::c_int as isize))) as std::ffi::c_int
-            as std::ffi::c_long
-            != 0
-            || ip.offset((bitCount >> 3 as std::ffi::c_int) as isize)
-                <= iend.offset(-(4 as std::ffi::c_int as isize))
-        {
-            ip = ip.offset((bitCount >> 3 as std::ffi::c_int) as isize);
+        if (ip <= iend - 7) || (ip + (bitCount as usize >> 3)) <= iend - 4 {
+            ip += bitCount as usize >> 3;
             bitCount &= 7 as std::ffi::c_int;
         } else {
-            bitCount -= (8 as std::ffi::c_int as std::ffi::c_long
-                * iend
-                    .offset(-(4 as std::ffi::c_int as isize))
-                    .offset_from(ip) as std::ffi::c_long)
-                as std::ffi::c_int;
-            bitCount &= 31 as std::ffi::c_int;
-            ip = iend.offset(-(4 as std::ffi::c_int as isize));
+            bitCount -= 8 * ((iend - 4) - ip) as i32;
+            bitCount &= 31;
+            ip = iend - 4;
         }
-        bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
+        bitStream = read_u32_le(ip) >> bitCount;
     }
 
     if remaining != 1 as std::ffi::c_int {
@@ -262,8 +250,9 @@ unsafe fn FSE_readNCount_body(
     }
 
     *maxSVPtr = charnum.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint);
-    ip = ip.offset(((bitCount + 7 as std::ffi::c_int) >> 3 as std::ffi::c_int) as isize);
-    ip.offset_from(istart) as std::ffi::c_long as size_t
+    ip += ((bitCount + 7 as std::ffi::c_int) >> 3) as usize;
+
+    ip as size_t
 }
 
 unsafe fn FSE_readNCount_body_default(
