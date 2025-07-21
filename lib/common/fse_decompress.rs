@@ -115,17 +115,18 @@ const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
 #[inline]
 unsafe fn BIT_initDStream(bitD: &mut BIT_DStream_t, mut srcBuffer: &[u8]) -> size_t {
     let srcSize = srcBuffer.len() as size_t;
-    let srcBuffer = srcBuffer.as_ptr();
 
     if srcSize < 1 as std::ffi::c_int as size_t {
         core::ptr::write_bytes(bitD, 0u8, 1);
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
 
-    bitD.start = srcBuffer as *const std::ffi::c_char;
-    bitD.limitPtr = (bitD.start)
-        .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
     if srcSize >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
+        let srcBuffer = srcBuffer.as_ptr();
+        bitD.start = srcBuffer as *const std::ffi::c_char;
+        bitD.limitPtr = (bitD.start)
+            .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
+
         bitD.ptr = (srcBuffer as *const std::ffi::c_char)
             .offset(srcSize as isize)
             .offset(-(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize));
@@ -141,84 +142,34 @@ unsafe fn BIT_initDStream(bitD: &mut BIT_DStream_t, mut srcBuffer: &[u8]) -> siz
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
     } else {
+        bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
+        bitD.limitPtr = (bitD.start)
+            .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
         bitD.ptr = bitD.start;
         bitD.bitContainer = *(bitD.start as *const BYTE) as BitContainerType;
-        let mut current_block_32: u64;
-        match srcSize {
-            7 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const BYTE).offset(6 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                            .wrapping_sub(16 as std::ffi::c_int as std::ffi::c_ulong),
-                );
-                current_block_32 = 1526876707632491634;
-            }
-            6 => {
-                current_block_32 = 1526876707632491634;
-            }
-            5 => {
-                current_block_32 = 3132044029094175486;
-            }
-            4 => {
-                current_block_32 = 5336772990438301456;
-            }
-            3 => {
-                current_block_32 = 11143942153966811798;
-            }
-            2 => {
-                current_block_32 = 2397150252174490634;
-            }
-            _ => {
-                current_block_32 = 16203760046146113240;
-            }
+
+        let size = size_of::<BitContainerType>();
+
+        if srcSize >= 7 {
+            bitD.bitContainer += u64::from(srcBuffer[6]) << (size * 8 - 16);
         }
-        if current_block_32 == 1526876707632491634 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const BYTE).offset(5 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                        .wrapping_sub(24 as std::ffi::c_int as std::ffi::c_ulong),
-            );
-            current_block_32 = 3132044029094175486;
+        if srcSize >= 6 {
+            bitD.bitContainer += u64::from(srcBuffer[5]) << (size * 8 - 24);
         }
-        if current_block_32 == 3132044029094175486 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const BYTE).offset(4 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                        .wrapping_sub(32 as std::ffi::c_int as std::ffi::c_ulong),
-            );
-            current_block_32 = 5336772990438301456;
+        if srcSize >= 5 {
+            bitD.bitContainer += u64::from(srcBuffer[4]) << (size * 8 - 32);
         }
-        if current_block_32 == 5336772990438301456 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const BYTE).offset(3 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 24 as std::ffi::c_int,
-            );
-            current_block_32 = 11143942153966811798;
+        if srcSize >= 4 {
+            bitD.bitContainer += u64::from(srcBuffer[3]) << 24;
         }
-        if current_block_32 == 11143942153966811798 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const BYTE).offset(2 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 16 as std::ffi::c_int,
-            );
-            current_block_32 = 2397150252174490634;
+        if srcSize >= 3 {
+            bitD.bitContainer += u64::from(srcBuffer[2]) << 16;
         }
-        if current_block_32 == 2397150252174490634 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const BYTE).offset(1 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 8 as std::ffi::c_int,
-            );
+        if srcSize >= 2 {
+            bitD.bitContainer += u64::from(srcBuffer[1]) << 8;
         }
-        let lastByte_0 = *(srcBuffer as *const BYTE)
-            .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
+
+        let lastByte_0 = *srcBuffer.last().unwrap();
         (*bitD).bitsConsumed = if lastByte_0 as std::ffi::c_int != 0 {
             (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(lastByte_0.ilog2())
         } else {
