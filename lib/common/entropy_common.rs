@@ -114,7 +114,7 @@ unsafe fn FSE_readNCount_body(
     let mut bitCount: std::ffi::c_int = 0;
     let mut charnum = 0 as std::ffi::c_int as std::ffi::c_uint;
     let maxSV1 = (*maxSVPtr).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
-    let mut previous0 = 0 as std::ffi::c_int;
+    let mut previous_was_0 = false;
     if hbSize < 8 {
         let mut buffer = [0u8; 8];
         buffer[..hbSize].copy_from_slice(headerBuffer);
@@ -145,7 +145,8 @@ unsafe fn FSE_readNCount_body(
     threshold = 1 << nbBits;
     nbBits += 1;
     loop {
-        if previous0 != 0 {
+        if previous_was_0 {
+            // Count the number of repeats. Each time the 2-bit repeat code is 0b11 there is another repeat.
             let mut repeats = bitStream.trailing_ones() >> 1;
             while repeats >= 12 {
                 charnum = charnum.wrapping_add(3 * 12);
@@ -184,18 +185,16 @@ unsafe fn FSE_readNCount_body(
              * because we already memset the whole buffer to 0.
              */
 
-            if (ip <= iend.offset(-7)) as std::ffi::c_int as std::ffi::c_long != 0
-                || ip.offset((bitCount >> 3 as std::ffi::c_int) as isize) <= iend.offset(-(4))
-            {
-                ip = ip.offset((bitCount >> 3 as std::ffi::c_int) as isize);
-                bitCount &= 7 as std::ffi::c_int;
+            if (ip <= iend.offset(-7)) || ip.offset((bitCount >> 3) as isize) <= iend.offset(-4) {
+                ip = ip.offset((bitCount >> 3) as isize);
+                bitCount &= 0b111;
             } else {
-                bitCount -= (8 as std::ffi::c_int as std::ffi::c_long
-                    * iend.offset(-4).offset_from(ip) as std::ffi::c_long)
-                    as std::ffi::c_int;
-                bitCount &= 31 as std::ffi::c_int;
+                bitCount -=
+                    (8 * iend.offset(-4).offset_from(ip) as std::ffi::c_long) as std::ffi::c_int;
+                bitCount &= 31;
                 ip = iend.offset(-4);
             }
+
             bitStream = MEM_readLE32(ip as *const std::ffi::c_void) >> bitCount;
         }
 
@@ -219,17 +218,14 @@ unsafe fn FSE_readNCount_body(
             remaining += count;
         }
 
-        let fresh0 = charnum;
-        charnum = charnum.wrapping_add(1);
-        normalizedCounter[fresh0 as usize] = count as std::ffi::c_short;
-        previous0 = (count == 0) as std::ffi::c_int;
+        normalizedCounter[charnum as usize] = count as std::ffi::c_short;
+        charnum += 1;
+        previous_was_0 = count == 0;
         if remaining < threshold {
             if remaining <= 1 as std::ffi::c_int {
                 break;
             }
-            nbBits = (ZSTD_highbit32(remaining as U32))
-                .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int;
+            nbBits = remaining.ilog2() as i32 + 1;
             threshold = (1 as std::ffi::c_int) << (nbBits - 1 as std::ffi::c_int);
         }
         if charnum >= maxSV1 {
