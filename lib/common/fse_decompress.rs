@@ -508,12 +508,9 @@ unsafe fn FSE_decompress_usingDTable_generic(
     mut dt: &DTable,
     fast: bool,
 ) -> size_t {
-    let mut maxDstSize = dst.len() as size_t;
-
-    let ostart = dst.as_mut_ptr();
-    let mut op = ostart;
-    let omax = op.offset(maxDstSize as isize);
-    let olimit = omax.offset(-(3 as std::ffi::c_int as isize));
+    let mut op = 0;
+    let omax = dst.len();
+    let olimit = omax - 3;
 
     let mut bitD = match BIT_DStream_t::new(cSrc) {
         Err(e) => return e,
@@ -528,7 +525,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
     }
 
     while BIT_reloadDStream(&mut bitD) == StreamStatus::Unfinished && op < olimit {
-        *op.offset(0 as std::ffi::c_int as isize) = (if fast {
+        dst[op] = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
@@ -539,7 +536,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
         {
             let _ = BIT_reloadDStream(&mut bitD);
         }
-        *op.offset(1 as std::ffi::c_int as isize) = (if fast {
+        dst[op + 1] = (if fast {
             FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
@@ -549,77 +546,82 @@ unsafe fn FSE_decompress_usingDTable_generic(
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
             && BIT_reloadDStream(&mut bitD) != StreamStatus::Unfinished
         {
-            op = op.offset(2 as std::ffi::c_int as isize);
+            op += 2;
             break;
         }
-        *op.offset(2 as std::ffi::c_int as isize) = (if fast {
+        dst[op + 2] = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
         }) as u8;
+
         if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
             > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         {
             let _ = BIT_reloadDStream(&mut bitD);
         }
-        *op.offset(3 as std::ffi::c_int as isize) = (if fast {
+
+        dst[op + 3] = (if fast {
             FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
         }) as u8;
-        op = op.offset(4 as std::ffi::c_int as isize);
+
+        op += 4;
     }
+
     loop {
-        if op > omax.offset(-(2 as std::ffi::c_int as isize)) {
+        if op > omax - 2 {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
-        let fresh3 = op;
-        op = op.offset(1);
-        *fresh3 = (if fast {
+
+        dst[op] = (if fast {
             FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
         } else {
             FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
         }) as u8;
+        op += 1;
 
         if let StreamStatus::Overflow = BIT_reloadDStream(&mut bitD) {
-            let fresh4 = op;
-            op = op.offset(1);
-            *fresh4 = (if fast {
+            dst[op] = (if fast {
                 FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
             }) as u8;
+            op += 1;
             break;
         } else {
-            if op > omax.offset(-(2 as std::ffi::c_int as isize)) {
+            if op > omax - 2 {
                 return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
             }
-            let fresh5 = op;
-            op = op.offset(1);
-            *fresh5 = (if fast {
+
+            dst[op] = (if fast {
                 FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
             }) as u8;
+            op += 1;
 
             match BIT_reloadDStream(&mut bitD) {
                 StreamStatus::Overflow => { /* fall through */ }
                 _ => continue,
             }
 
-            let fresh6 = op;
-            op = op.offset(1);
-            *fresh6 = (if fast {
+            dst[op] = (if fast {
                 FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
             } else {
                 FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
             }) as u8;
+            op += 1;
+
             break;
         }
     }
-    op.offset_from(ostart) as std::ffi::c_long as size_t
+
+    op as size_t
 }
+
 #[inline(always)]
 unsafe fn FSE_decompress_wksp_body(
     mut dst: &mut [u8],
