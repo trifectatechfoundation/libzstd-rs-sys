@@ -1,6 +1,8 @@
 use core::arch::asm;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::zstd_common::ZSTD_getErrorCode;
+use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
 use crate::lib::decompress::{
     zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable, LL_base, ML_base,
     OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_dont_use,
@@ -24,7 +26,6 @@ extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn ZSTD_getErrorCode(functionResult: size_t) -> ZSTD_ErrorCode;
     fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t;
     fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> std::ffi::c_uint;
     fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t;
@@ -74,17 +75,6 @@ extern "C" {
         srcSize: size_t,
         streaming: streaming_operation,
     ) -> size_t;
-    fn ZSTD_buildFSETable(
-        dt: *mut ZSTD_seqSymbol,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        baseValue: *const u32,
-        nbAdditionalBits: *const U8,
-        tableLog: std::ffi::c_uint,
-        wksp: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        bmi2: std::ffi::c_int,
-    );
     fn ZSTDv05_findFrameSizeInfoLegacy(
         src: *const std::ffi::c_void,
         srcSize: size_t,

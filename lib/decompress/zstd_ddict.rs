@@ -1,3 +1,4 @@
+use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{
     HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t,
     ZSTD_litLocation_e, ZSTD_seqSymbol,
@@ -7,11 +8,6 @@ use crate::lib::zstd::*;
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn ZSTD_loadDEntropy(
-        entropy: *mut ZSTD_entropyDTables_t,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
