@@ -1011,8 +1011,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
         }
         u = 1 as std::ffi::c_int as u32;
         while u < patternEnd {
-            *doneMarks.offset(pos.wrapping_add(u as size_t) as isize) =
-                1 as std::ffi::c_int as u8;
+            *doneMarks.offset(pos.wrapping_add(u as size_t) as isize) = 1 as std::ffi::c_int as u8;
             u = u.wrapping_add(1);
             u;
         }

@@ -427,8 +427,7 @@ unsafe extern "C" fn BITv05_initDStream(
         match srcSize {
             7 => {
                 (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*((*bitD).start as *const u8).offset(6 as std::ffi::c_int as isize)
-                        as size_t)
+                    (*((*bitD).start as *const u8).offset(6 as std::ffi::c_int as isize) as size_t)
                         << (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
                             .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
                             .wrapping_sub(16 as std::ffi::c_int as std::ffi::c_ulong),

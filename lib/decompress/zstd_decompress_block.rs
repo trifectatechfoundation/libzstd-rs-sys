@@ -3611,8 +3611,7 @@ unsafe extern "C" fn ZSTD_execSequenceEndSplitLitBuffer(
     if sequence.litLength > litLimit.offset_from(*litPtr) as std::ffi::c_long as size_t {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    if op > *litPtr as *mut u8 && op < (*litPtr).offset(sequence.litLength as isize) as *mut u8
-    {
+    if op > *litPtr as *mut u8 && op < (*litPtr).offset(sequence.litLength as isize) as *mut u8 {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     ZSTD_safecopyDstBeforeSrc(op, *litPtr, sequence.litLength);
