@@ -743,17 +743,6 @@ pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_customMem {
-    pub customAlloc: ZSTD_allocFunction,
-    pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
-}
-pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
-pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ZSTD_compressedBlockState_t {
     pub entropy: ZSTD_entropyCTables_t,
     pub rep: [u32; 3],
@@ -2091,6 +2080,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::zstd::{ZSTD_allocFunction, ZSTD_customMem, ZSTD_freeFunction};
 use crate::{
     lib::common::entropy_common::FSE_readNCount, MEM_isLittleEndian, MEM_read16, MEM_read32,
     MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
