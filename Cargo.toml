@@ -13,9 +13,13 @@ autobins = false
 name = "c2rust_out"
 path = "c2rust-lib.rs"
 crate-type = ["staticlib", "rlib"]
+
 [dependencies]
-c2rust-bitfields= "0.3"
-libc= "0.2"
+c2rust-bitfields = "0.3"
+libc = "0.2"
+
+[target.'cfg(target_arch = "x86_64")'.build-dependencies]
+cc = "1.2.30"
 
 [dev-dependencies]
 quickcheck = "1.0.3"
