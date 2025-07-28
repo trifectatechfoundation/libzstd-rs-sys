@@ -57,12 +57,12 @@ const BIT_DStream_completed: BIT_DStream_status = 2;
 const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 const BIT_DStream_unfinished: BIT_DStream_status = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
-struct FSE_decode_t {
-    newState: std::ffi::c_ushort,
-    symbol: std::ffi::c_uchar,
-    nbBits: std::ffi::c_uchar,
+pub struct FSE_decode_t {
+    pub newState: std::ffi::c_ushort,
+    pub symbol: std::ffi::c_uchar,
+    pub nbBits: std::ffi::c_uchar,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
