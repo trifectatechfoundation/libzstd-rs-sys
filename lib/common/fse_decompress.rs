@@ -290,13 +290,13 @@ unsafe extern "C" fn BIT_readBitsFast(
     BIT_skipBits(bitD, nbBits);
     value
 }
-#[inline]
-unsafe fn BIT_reloadDStream_internal(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
-    bitD.ptr = (bitD.ptr).offset(-((bitD.bitsConsumed / 8) as isize));
-    bitD.bitsConsumed &= 7;
-    bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
 
-    BIT_DStream_unfinished
+impl BIT_DStream_t {
+    fn reload(&mut self) {
+        self.ptr = unsafe { (self.ptr).sub(self.bitsConsumed as usize / 8) };
+        self.bitsConsumed &= 7;
+        self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const std::ffi::c_void) };
+    }
 }
 
 #[inline(always)]
@@ -307,13 +307,16 @@ unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status 
         as std::ffi::c_long
         != 0
     {
-        static mut zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
+        static zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
         bitD.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
         return BIT_DStream_overflow;
     }
+
     if bitD.ptr >= bitD.limitPtr {
-        return BIT_reloadDStream_internal(bitD);
+        bitD.reload();
+        return BIT_DStream_unfinished;
     }
+
     if bitD.ptr == bitD.start {
         if (bitD.bitsConsumed as std::ffi::c_ulong)
             < (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
@@ -323,15 +326,18 @@ unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status 
         }
         return BIT_DStream_completed;
     }
-    let mut nbBytes = bitD.bitsConsumed >> 3 as std::ffi::c_int;
+    let mut nbBytes = bitD.bitsConsumed / 8;
     let mut result = BIT_DStream_unfinished;
-    if (bitD.ptr).offset(-(nbBytes as isize)) < bitD.start {
+    if (bitD.ptr).sub(nbBytes as usize) < bitD.start {
         nbBytes = (bitD.ptr).offset_from(bitD.start) as std::ffi::c_long as u32;
+
         result = BIT_DStream_endOfBuffer;
     }
-    bitD.ptr = (bitD.ptr).offset(-(nbBytes as isize));
-    bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as u32);
+
+    bitD.ptr = bitD.ptr.sub(nbBytes as usize);
+    bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8);
     bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
+
     result
 }
 
