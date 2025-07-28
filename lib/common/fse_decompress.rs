@@ -460,26 +460,22 @@ extern "C" fn FSE_buildDTable_internal(
             s_1 = s_1.wrapping_add(unroll);
         }
     } else {
-        let tableMask_0 = tableSize.wrapping_sub(1 as std::ffi::c_int as u32);
-        let step_0 = (tableSize >> 1 as std::ffi::c_int)
-            .wrapping_add(tableSize >> 3 as std::ffi::c_int)
-            .wrapping_add(3 as std::ffi::c_int as u32);
-        let mut s_2: u32 = 0;
+        let tableMask_0 = tableSize.wrapping_sub(1);
+        let step_0 = (tableSize >> 1)
+            .wrapping_add(tableSize >> 3)
+            .wrapping_add(3);
+
         let mut position_0 = 0 as std::ffi::c_int as u32;
-        s_2 = 0 as std::ffi::c_int as u32;
-        while s_2 < maxSV1 {
-            let mut i_0: std::ffi::c_int = 0;
-            i_0 = 0 as std::ffi::c_int;
-            while i_0 < normalizedCounter[s_2 as usize] as std::ffi::c_int {
+        for s_2 in 0..maxSV1 {
+            for _ in 0..normalizedCounter[s_2 as usize] {
                 elements[position_0 as usize].symbol = s_2 as u8;
                 position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 while position_0 > highThreshold {
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 }
-                i_0 += 1;
             }
-            s_2 = s_2.wrapping_add(1);
         }
+
         if position_0 != 0 as std::ffi::c_int as u32 {
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
