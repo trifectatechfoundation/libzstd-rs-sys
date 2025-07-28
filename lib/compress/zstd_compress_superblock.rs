@@ -1,3 +1,5 @@
+use crate::lib::zstd::ZSTD_customMem;
+
 extern "C" {
     pub type ZSTDMT_CCtx_s;
     pub type ZSTD_CDict_s;
@@ -484,17 +486,6 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 pub type ZSTD_threadPool = POOL_ctx_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_customMem {
-    pub customAlloc: ZSTD_allocFunction,
-    pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
-}
-pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
-pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
 pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]

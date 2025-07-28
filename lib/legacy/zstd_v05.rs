@@ -1,3 +1,5 @@
+use crate::lib::zstd::*;
+
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
@@ -176,35 +178,7 @@ pub struct algo_time_t {
     pub tableTime: u32,
     pub decode256Time: u32,
 }
-pub const ZSTD_error_frameParameter_unsupported: ERR_enum = 14;
-pub const ZSTD_error_prefix_unknown: ERR_enum = 10;
-pub const ZSTD_error_memory_allocation: ERR_enum = 64;
-pub type ZSTD_ErrorCode = ERR_enum;
-pub type ERR_enum = std::ffi::c_uint;
-pub const ZSTD_error_externalSequences_invalid: ERR_enum = 107;
-pub const ZSTD_error_sequenceProducer_failed: ERR_enum = 106;
-pub const ZSTD_error_srcBuffer_wrong: ERR_enum = 105;
-pub const ZSTD_error_dstBuffer_wrong: ERR_enum = 104;
-pub const ZSTD_error_seekableIO: ERR_enum = 102;
-pub const ZSTD_error_frameIndex_tooLarge: ERR_enum = 100;
-pub const ZSTD_error_noForwardProgress_inputEmpty: ERR_enum = 82;
-pub const ZSTD_error_noForwardProgress_destFull: ERR_enum = 80;
-pub const ZSTD_error_dstBuffer_null: ERR_enum = 74;
-pub const ZSTD_error_workSpace_tooSmall: ERR_enum = 66;
-pub const ZSTD_error_init_missing: ERR_enum = 62;
-pub const ZSTD_error_stage_wrong: ERR_enum = 60;
-pub const ZSTD_error_stabilityCondition_notRespected: ERR_enum = 50;
-pub const ZSTD_error_cannotProduce_uncompressedBlock: ERR_enum = 49;
-pub const ZSTD_error_parameter_outOfBound: ERR_enum = 42;
-pub const ZSTD_error_parameter_combination_unsupported: ERR_enum = 41;
-pub const ZSTD_error_parameter_unsupported: ERR_enum = 40;
-pub const ZSTD_error_dictionaryCreation_failed: ERR_enum = 34;
-pub const ZSTD_error_dictionary_wrong: ERR_enum = 32;
-pub const ZSTD_error_literals_headerWrong: ERR_enum = 24;
-pub const ZSTD_error_checksum_wrong: ERR_enum = 22;
-pub const ZSTD_error_frameParameter_windowTooLarge: ERR_enum = 16;
-pub const ZSTD_error_version_unsupported: ERR_enum = 12;
-pub const ZSTD_error_no_error: ERR_enum = 0;
+pub type ERR_enum = ZSTD_ErrorCode;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZBUFFv05_DCtx_s {

@@ -1,3 +1,5 @@
+use crate::lib::zstd::{ZSTD_allocFunction, ZSTD_customMem, ZSTD_freeFunction};
+
 extern "C" {
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
@@ -107,17 +109,6 @@ pub union pthread_cond_t {
     pub __data: __pthread_cond_s,
     pub __size: [std::ffi::c_char; 48],
     pub __align: std::ffi::c_longlong,
-}
-pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
-pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_customMem {
-    pub customAlloc: ZSTD_allocFunction,
-    pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
