@@ -60,10 +60,10 @@ type FSE_DTable = std::ffi::c_uint;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
-pub(crate) struct FSE_decode_t {
-    pub newState: std::ffi::c_ushort,
-    pub symbol: std::ffi::c_uchar,
-    pub nbBits: std::ffi::c_uchar,
+struct FSE_decode_t {
+    newState: std::ffi::c_ushort,
+    symbol: std::ffi::c_uchar,
+    nbBits: std::ffi::c_uchar,
 }
 
 #[derive(Copy, Clone)]

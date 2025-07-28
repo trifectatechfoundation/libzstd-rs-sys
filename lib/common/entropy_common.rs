@@ -49,8 +49,9 @@ pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::lib::common::{
     error_private::ERR_getErrorString,
-    fse_decompress::{FSE_DTable, FSE_DTableHeader, FSE_DecompressWksp, FSE_decompress_wksp_bmi2},
-    fse_decompress_old::FSE_decode_t,
+    fse_decompress::{
+        FSE_DTable, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
+    },
 };
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
