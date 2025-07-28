@@ -1,4 +1,3 @@
-use ::libc;
 use core::arch::asm;
 #[cfg(target_arch = "x86")]
 pub use core::arch::x86::{

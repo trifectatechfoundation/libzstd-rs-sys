@@ -1,5 +1,3 @@
-use ::libc;
-
 use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 extern "C" {
     pub type _IO_wide_data;

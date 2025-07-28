@@ -1,5 +1,3 @@
-use ::libc;
-
 type size_t = std::ffi::c_ulong;
 type __uint8_t = std::ffi::c_uchar;
 type __int16_t = std::ffi::c_short;
