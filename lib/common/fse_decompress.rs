@@ -629,7 +629,6 @@ unsafe fn FSE_decompress_wksp_body(
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
     let mut wkspSize = size_of::<Workspace>() as size_t;
-    let mut workSpace = (workspace as *mut Workspace).cast();
 
     let mut dstCapacity = dst.len() as size_t;
     let mut dst = dst.as_mut_ptr().cast();
@@ -685,11 +684,6 @@ unsafe fn FSE_decompress_wksp_body(
     {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
-    workSpace = (&mut workspace.dtable.elements as *mut _ as *mut u8).offset(
-        (((1) << tableLog) as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<FSE_DTable>() as std::ffi::c_ulong)
-            as isize,
-    ) as *mut std::ffi::c_void;
     wkspSize = (wkspSize as std::ffi::c_ulong).wrapping_sub(
         (::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong).wrapping_add(
             ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog)) as std::ffi::c_ulong)

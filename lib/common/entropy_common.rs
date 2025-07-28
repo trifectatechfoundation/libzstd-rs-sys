@@ -238,9 +238,10 @@ pub fn FSE_readNCount_bmi2(
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
     if bmi2 != 0 {
-        return FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer);
+        FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
+    } else {
+        FSE_readNCount_body_default(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
     }
-    FSE_readNCount_body_default(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
 pub unsafe fn FSE_readNCount(
