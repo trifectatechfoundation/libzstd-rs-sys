@@ -471,7 +471,7 @@ extern "C" fn FSE_buildDTable_internal(
             let mut i_0: std::ffi::c_int = 0;
             i_0 = 0 as std::ffi::c_int;
             while i_0 < normalizedCounter[s_2 as usize] as std::ffi::c_int {
-                dt.elements[position_0 as usize].symbol = s_2 as u8;
+                elements[position_0 as usize].symbol = s_2 as u8;
                 position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 while position_0 > highThreshold {
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
@@ -484,20 +484,19 @@ extern "C" fn FSE_buildDTable_internal(
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
     }
-    let mut u_0: u32 = 0;
-    u_0 = 0 as std::ffi::c_int as u32;
-    while u_0 < tableSize {
-        let symbol = (dt.elements[u_0 as usize]).symbol;
+
+    for u in 0..tableSize {
+        let symbol = (dt.elements[u as usize]).symbol;
         let fresh1 = unsafe { &mut (*symbolNext.offset(symbol as isize)) };
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as u32;
-        (dt.elements[u_0 as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
-        (dt.elements[u_0 as usize]).newState = (nextState
-            << (dt.elements[u_0 as usize]).nbBits as std::ffi::c_int)
+        (dt.elements[u as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
+        (dt.elements[u as usize]).newState = (nextState
+            << (dt.elements[u as usize]).nbBits as std::ffi::c_int)
             .wrapping_sub(tableSize) as u16;
-        u_0 = u_0.wrapping_add(1);
     }
+
     0 as std::ffi::c_int as size_t
 }
 
