@@ -375,11 +375,10 @@ extern "C" fn FSE_buildDTable_internal(
 ) -> size_t {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
-    let mut symbolNext = symbols.as_mut_ptr();
-    let mut spread_ptr = spread.as_mut_ptr();
     let maxSV1 = maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
     let tableSize = ((1 as std::ffi::c_int) << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1 as std::ffi::c_int as u32);
+
     if ((::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong).wrapping_mul(
         maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_ulong,
     ) as std::ffi::c_ulonglong)
@@ -389,18 +388,20 @@ extern "C" fn FSE_buildDTable_internal(
     {
         return -(ZSTD_error_maxSymbolValue_tooLarge as std::ffi::c_int) as size_t;
     }
+
     if maxSymbolValue > FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint {
         return -(ZSTD_error_maxSymbolValue_tooLarge as std::ffi::c_int) as size_t;
     }
+
     if tableLog > FSE_MAX_TABLELOG as std::ffi::c_uint {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
+
     let mut DTableH = FSE_DTableHeader {
-        tableLog: 0,
-        fastMode: 0,
+        tableLog: tableLog as u16,
+        fastMode: 1,
     };
-    DTableH.tableLog = tableLog as u16;
-    DTableH.fastMode = 1 as std::ffi::c_int as u16;
+
     let largeLimit = ((1 as std::ffi::c_int)
         << tableLog.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint))
         as i16;
@@ -420,7 +421,9 @@ extern "C" fn FSE_buildDTable_internal(
         }
         s = s.wrapping_add(1);
     }
+
     *header = DTableH;
+
     if highThreshold == tableSize.wrapping_sub(1 as std::ffi::c_int as u32) {
         let tableMask = tableSize.wrapping_sub(1 as std::ffi::c_int as u32) as size_t;
         let step = (tableSize >> 1 as std::ffi::c_int)
@@ -429,9 +432,8 @@ extern "C" fn FSE_buildDTable_internal(
         let add = 0x101010101010101 as std::ffi::c_ulonglong as u64;
         let mut pos = 0 as std::ffi::c_int as size_t;
         let mut sv = 0 as std::ffi::c_int as u64;
-        let mut s_0: u32 = 0;
-        s_0 = 0 as std::ffi::c_int as u32;
-        while s_0 < maxSV1 {
+
+        for s_0 in 0..maxSV1 {
             let mut i: std::ffi::c_int = 0;
             let n = normalizedCounter[s_0 as usize] as std::ffi::c_int;
             spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
@@ -441,9 +443,9 @@ extern "C" fn FSE_buildDTable_internal(
                 i += 8 as std::ffi::c_int;
             }
             pos = pos.wrapping_add(n as size_t);
-            s_0 = s_0.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
+
         let mut position = 0 as std::ffi::c_int as size_t;
         let mut s_1: size_t = 0;
         let unroll = 2 as std::ffi::c_int as size_t;
@@ -480,6 +482,8 @@ extern "C" fn FSE_buildDTable_internal(
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
     }
+
+    let mut symbolNext = symbols.as_mut_ptr();
 
     for u in 0..tableSize {
         let symbol = (dt.elements[u as usize]).symbol;
