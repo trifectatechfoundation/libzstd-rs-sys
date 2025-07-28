@@ -1,3 +1,5 @@
+use crate::lib::zstd::*;
+
 extern "C" {
     fn HUF_compress4X_repeat(
         dst: *mut std::ffi::c_void,
@@ -71,16 +73,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type ZSTD_strategy = std::ffi::c_uint;
-pub const ZSTD_btultra2: ZSTD_strategy = 9;
-pub const ZSTD_btultra: ZSTD_strategy = 8;
-pub const ZSTD_btopt: ZSTD_strategy = 7;
-pub const ZSTD_btlazy2: ZSTD_strategy = 6;
-pub const ZSTD_lazy2: ZSTD_strategy = 5;
-pub const ZSTD_lazy: ZSTD_strategy = 4;
-pub const ZSTD_greedy: ZSTD_strategy = 3;
-pub const ZSTD_dfast: ZSTD_strategy = 2;
-pub const ZSTD_fast: ZSTD_strategy = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
