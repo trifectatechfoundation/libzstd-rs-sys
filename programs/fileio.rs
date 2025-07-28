@@ -254,8 +254,7 @@ extern "C" {
     fn lzma_lzma_preset(options: *mut lzma_options_lzma, preset: u32) -> lzma_bool;
     fn lzma_easy_encoder(strm: *mut lzma_stream, preset: u32, check: lzma_check) -> lzma_ret;
     fn lzma_alone_encoder(strm: *mut lzma_stream, options: *const lzma_options_lzma) -> lzma_ret;
-    fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: u64, flags: u32)
-        -> lzma_ret;
+    fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: u64, flags: u32) -> lzma_ret;
     fn lzma_alone_decoder(strm: *mut lzma_stream, memlimit: u64) -> lzma_ret;
     fn mmap(
         __addr: *mut std::ffi::c_void,
