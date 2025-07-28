@@ -252,7 +252,7 @@ unsafe extern "C" fn FSE_readNCount_body(
         if (ip <= iend.offset(-(7 as std::ffi::c_int as isize))) as std::ffi::c_int
             as std::ffi::c_long
             != 0
-            || ip.offset((bitCount >> 3 as std::ffi::c_int) as isize)
+            || ip.wrapping_offset((bitCount >> 3 as std::ffi::c_int) as isize)
                 <= iend.offset(-(4 as std::ffi::c_int as isize))
         {
             ip = ip.offset((bitCount >> 3 as std::ffi::c_int) as isize);
