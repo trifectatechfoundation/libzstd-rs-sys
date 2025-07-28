@@ -263,24 +263,21 @@ unsafe extern "C" fn BIT_lookBitsFast(
             .wrapping_sub(nbBits)
             & regMask)
 }
+
 #[inline(always)]
-unsafe extern "C" fn BIT_skipBits(mut bitD: *mut BIT_DStream_t, mut nbBits: u32) {
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(nbBits);
+fn BIT_skipBits(bitD: &mut BIT_DStream_t, mut nbBits: u32) {
+    bitD.bitsConsumed += nbBits;
 }
+
 #[inline(always)]
-unsafe extern "C" fn BIT_readBits(
-    mut bitD: *mut BIT_DStream_t,
-    mut nbBits: std::ffi::c_uint,
-) -> BitContainerType {
+unsafe fn BIT_readBits(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> BitContainerType {
     let value = BIT_lookBits(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
     value
 }
+
 #[inline]
-unsafe extern "C" fn BIT_readBitsFast(
-    mut bitD: *mut BIT_DStream_t,
-    mut nbBits: std::ffi::c_uint,
-) -> size_t {
+unsafe fn BIT_readBitsFast(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> size_t {
     let value = BIT_lookBitsFast(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
     value
@@ -345,28 +342,35 @@ impl<'a> FSE_DState_t<'a> {
 
 #[inline]
 unsafe extern "C" fn FSE_decodeSymbol(
-    mut DStatePtr: *mut FSE_DState_t,
-    mut bitD: *mut BIT_DStream_t,
+    DStatePtr: &mut FSE_DState_t,
+    bitD: &mut BIT_DStream_t,
 ) -> u8 {
-    let DInfo = *((*DStatePtr).table as *const FSE_decode_t).offset((*DStatePtr).state as isize);
-    let nbBits = DInfo.nbBits as u32;
-    let symbol = DInfo.symbol;
-    let lowBits = BIT_readBits(bitD, nbBits);
-    (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
+    let FSE_decode_t {
+        nbBits,
+        symbol,
+        newState,
+    } = DStatePtr.table[DStatePtr.state as usize];
+
+    let lowBits = BIT_readBits(bitD, u32::from(nbBits));
+    DStatePtr.state = size_t::from(newState) + lowBits;
+
     symbol
 }
+
 #[inline]
-unsafe fn FSE_decodeSymbolFast(
-    mut DStatePtr: *mut FSE_DState_t,
-    mut bitD: *mut BIT_DStream_t,
-) -> u8 {
-    let DInfo = *((*DStatePtr).table as *const FSE_decode_t).offset((*DStatePtr).state as isize);
-    let nbBits = DInfo.nbBits as u32;
-    let symbol = DInfo.symbol;
-    let lowBits = BIT_readBitsFast(bitD, nbBits);
-    (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
+unsafe fn FSE_decodeSymbolFast(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) -> u8 {
+    let FSE_decode_t {
+        nbBits,
+        symbol,
+        newState,
+    } = DStatePtr.table[DStatePtr.state as usize];
+
+    let lowBits = BIT_readBitsFast(bitD, u32::from(nbBits));
+    DStatePtr.state = size_t::from(newState) + lowBits;
+
     symbol
 }
+
 pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
