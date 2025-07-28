@@ -32,7 +32,7 @@ extern "C" {
     fn UTIL_fakeStdoutIsConsole();
     fn UTIL_fakeStderrIsConsole();
     fn UTIL_traceFileStat();
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> U64;
+    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
     fn UTIL_createFileNamesTable_fromFileList(
         inputFileName: *const std::ffi::c_char,
     ) -> *mut FileNamesTable;
@@ -190,8 +190,6 @@ extern "C" {
     fn TRACE_finish();
     fn AIO_supported() -> std::ffi::c_int;
 }
-pub type __uint32_t = std::ffi::c_uint;
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
@@ -230,10 +228,6 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type FILE = _IO_FILE;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FileNamesTable {
@@ -506,11 +500,11 @@ static mut g_defaultSelectivityLevel: std::ffi::c_uint = 9 as std::ffi::c_int as
 static mut g_defaultMaxWindowLog: std::ffi::c_uint = 27 as std::ffi::c_int as std::ffi::c_uint;
 pub const OVERLAP_LOG_DEFAULT: std::ffi::c_int = 9999 as std::ffi::c_int;
 pub const LDM_PARAM_DEFAULT: std::ffi::c_int = 9999 as std::ffi::c_int;
-static mut g_overlapLog: U32 = OVERLAP_LOG_DEFAULT as U32;
-static mut g_ldmHashLog: U32 = 0 as std::ffi::c_int as U32;
-static mut g_ldmMinMatch: U32 = 0 as std::ffi::c_int as U32;
-static mut g_ldmHashRateLog: U32 = LDM_PARAM_DEFAULT as U32;
-static mut g_ldmBucketSizeLog: U32 = LDM_PARAM_DEFAULT as U32;
+static mut g_overlapLog: u32 = OVERLAP_LOG_DEFAULT as u32;
+static mut g_ldmHashLog: u32 = 0 as std::ffi::c_int as u32;
+static mut g_ldmMinMatch: u32 = 0 as std::ffi::c_int as u32;
+static mut g_ldmHashRateLog: u32 = LDM_PARAM_DEFAULT as u32;
+static mut g_ldmBucketSizeLog: u32 = LDM_PARAM_DEFAULT as u32;
 pub const DEFAULT_ACCEL: std::ffi::c_int = 1 as std::ffi::c_int;
 pub const NBWORKERS_AUTOCPU: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_displayLevel: std::ffi::c_int = DISPLAY_LEVEL_DEFAULT;
@@ -1813,7 +1807,7 @@ unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParamete
     (*params).minMatch = ZSTD_MINMATCH_MIN as std::ffi::c_uint;
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as std::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
-    g_overlapLog = ZSTD_OVERLAPLOG_MAX as U32;
+    g_overlapLog = ZSTD_OVERLAPLOG_MAX as u32;
     g_ldmHashLog = (if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong
     {
@@ -1831,10 +1825,10 @@ unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParamete
         }
     } else {
         30 as std::ffi::c_int
-    }) as U32;
-    g_ldmHashRateLog = 0 as std::ffi::c_int as U32;
-    g_ldmMinMatch = 16 as std::ffi::c_int as U32;
-    g_ldmBucketSizeLog = ZSTD_LDM_BUCKETSIZELOG_MAX as U32;
+    }) as u32;
+    g_ldmHashRateLog = 0 as std::ffi::c_int as u32;
+    g_ldmMinMatch = 16 as std::ffi::c_int as u32;
+    g_ldmBucketSizeLog = ZSTD_LDM_BUCKETSIZELOG_MAX as u32;
 }
 unsafe extern "C" fn printVersion() {
     if g_displayLevel < DISPLAY_LEVEL_DEFAULT {
@@ -4532,8 +4526,8 @@ unsafe fn main_0(
                                 ) != 0
                                 {
                                     if *argument as std::ffi::c_int == '=' as i32 {
-                                        let maxFast = -ZSTD_minCLevel() as U32;
-                                        let mut fastLevel: U32 = 0;
+                                        let maxFast = -ZSTD_minCLevel() as u32;
+                                        let mut fastLevel: u32 = 0;
                                         argument = argument.offset(1);
                                         argument;
                                         fastLevel = readU32FromChar(&mut argument);
@@ -5172,11 +5166,11 @@ unsafe fn main_0(
                                 benchParams.ldmHashLog = g_ldmHashLog as std::ffi::c_int;
                                 benchParams.useRowMatchFinder =
                                     useRowMatchFinder as std::ffi::c_int;
-                                if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as U32 {
+                                if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
                                     benchParams.ldmBucketSizeLog =
                                         g_ldmBucketSizeLog as std::ffi::c_int;
                                 }
-                                if g_ldmHashRateLog != LDM_PARAM_DEFAULT as U32 {
+                                if g_ldmHashRateLog != LDM_PARAM_DEFAULT as u32 {
                                     benchParams.ldmHashRateLog =
                                         g_ldmHashRateLog as std::ffi::c_int;
                                 }
@@ -5544,11 +5538,11 @@ unsafe fn main_0(
                                                                 as std::ffi::c_uint
                                                         {
                                                             memLimit = (1 as std::ffi::c_int
-                                                                as U32)
+                                                                as u32)
                                                                 << g_defaultMaxWindowLog;
                                                         } else {
                                                             memLimit = (1 as std::ffi::c_int
-                                                                as U32)
+                                                                as u32)
                                                                 << (compressionParams.windowLog
                                                                     & 31 as std::ffi::c_int
                                                                         as std::ffi::c_uint);
@@ -5573,7 +5567,7 @@ unsafe fn main_0(
                                                             chunkSize as std::ffi::c_int,
                                                         );
                                                         if g_overlapLog
-                                                            != OVERLAP_LOG_DEFAULT as U32
+                                                            != OVERLAP_LOG_DEFAULT as u32
                                                         {
                                                             FIO_setOverlapLog(
                                                                 prefs,
@@ -5593,7 +5587,7 @@ unsafe fn main_0(
                                                             g_ldmMinMatch as std::ffi::c_int,
                                                         );
                                                         if g_ldmBucketSizeLog
-                                                            != LDM_PARAM_DEFAULT as U32
+                                                            != LDM_PARAM_DEFAULT as u32
                                                         {
                                                             FIO_setLdmBucketSizeLog(
                                                                 prefs,
@@ -5602,7 +5596,7 @@ unsafe fn main_0(
                                                             );
                                                         }
                                                         if g_ldmHashRateLog
-                                                            != LDM_PARAM_DEFAULT as U32
+                                                            != LDM_PARAM_DEFAULT as u32
                                                         {
                                                             FIO_setLdmHashRateLog(
                                                                 prefs,

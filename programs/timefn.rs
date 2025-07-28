@@ -3,12 +3,10 @@ extern "C" {
     fn clock_gettime(__clock_id: clockid_t, __tp: *mut timespec) -> std::ffi::c_int;
     fn abort() -> !;
 }
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __time_t = std::ffi::c_long;
 pub type __clockid_t = std::ffi::c_int;
 pub type __syscall_slong_t = std::ffi::c_long;
-pub type uint64_t = __uint64_t;
-pub type PTime = uint64_t;
+pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_time_t {
