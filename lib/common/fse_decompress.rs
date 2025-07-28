@@ -86,9 +86,9 @@ pub(crate) struct FSE_DecompressWksp {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct FSE_DState_t {
+struct FSE_DState_t<'a> {
     state: size_t,
-    table: *const std::ffi::c_void,
+    table: &'a [FSE_decode_t; 90],
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
@@ -279,16 +279,17 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
     (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
     result
 }
-#[inline]
-unsafe extern "C" fn FSE_initDState(
-    mut DStatePtr: &mut FSE_DState_t,
-    mut bitD: &mut BIT_DStream_t,
-    mut dt: &DTable,
-) {
-    DStatePtr.state = BIT_readBits(bitD, dt.header.tableLog as std::ffi::c_uint);
-    BIT_reloadDStream(bitD);
-    DStatePtr.table = dt.elements.as_ptr() as *const std::ffi::c_void;
+
+impl<'a> FSE_DState_t<'a> {
+    unsafe fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
+        let state = BIT_readBits(bitD, dt.header.tableLog as std::ffi::c_uint);
+        BIT_reloadDStream(bitD);
+        let table = &dt.elements;
+
+        Self { state, table }
+    }
 }
+
 #[inline]
 unsafe extern "C" fn FSE_decodeSymbol(
     mut DStatePtr: *mut FSE_DState_t,
@@ -476,20 +477,13 @@ unsafe fn FSE_decompress_usingDTable_generic(
         start: std::ptr::null::<std::ffi::c_char>(),
         limitPtr: std::ptr::null::<std::ffi::c_char>(),
     };
-    let mut state1 = FSE_DState_t {
-        state: 0,
-        table: std::ptr::null::<std::ffi::c_void>(),
-    };
-    let mut state2 = FSE_DState_t {
-        state: 0,
-        table: std::ptr::null::<std::ffi::c_void>(),
-    };
     let _var_err__ = BIT_initDStream(&mut bitD, cSrc);
     if ERR_isError(_var_err__) != 0 {
         return _var_err__;
     }
-    FSE_initDState(&mut state1, &mut bitD, dt);
-    FSE_initDState(&mut state2, &mut bitD, dt);
+
+    let mut state1 = FSE_DState_t::new(&mut bitD, dt);
+    let mut state2 = FSE_DState_t::new(&mut bitD, dt);
     if BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
         == BIT_DStream_overflow as std::ffi::c_int as std::ffi::c_uint
     {
