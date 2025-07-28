@@ -6,6 +6,9 @@ pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp;
+use crate::lib::decompress::huf_decompress::{
+    HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
+};
 use crate::lib::decompress::{
     HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage,
     ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst,
@@ -15,32 +18,6 @@ use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
 extern "C" {
     pub type ZSTD_DDict_s;
-    fn HUF_decompress1X_usingDTable(
-        dst: *mut std::ffi::c_void,
-        maxDstSize: size_t,
-        cSrc: *const std::ffi::c_void,
-        cSrcSize: size_t,
-        DTable: *const HUF_DTable,
-        flags: std::ffi::c_int,
-    ) -> size_t;
-    fn HUF_decompress1X1_DCtx_wksp(
-        dctx: *mut HUF_DTable,
-        dst: *mut std::ffi::c_void,
-        dstSize: size_t,
-        cSrc: *const std::ffi::c_void,
-        cSrcSize: size_t,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        flags: std::ffi::c_int,
-    ) -> size_t;
-    fn HUF_decompress4X_usingDTable(
-        dst: *mut std::ffi::c_void,
-        maxDstSize: size_t,
-        cSrc: *const std::ffi::c_void,
-        cSrcSize: size_t,
-        DTable: *const HUF_DTable,
-        flags: std::ffi::c_int,
-    ) -> size_t;
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
