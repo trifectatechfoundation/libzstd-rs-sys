@@ -1,3 +1,5 @@
+use crate::lib::zstd::*;
+
 extern "C" {
     fn FSE_optimalTableLog(
         maxTableLog: std::ffi::c_uint,
@@ -84,16 +86,6 @@ pub struct SeqDef_s {
     pub litLength: u16,
     pub mlBase: u16,
 }
-pub type ZSTD_strategy = std::ffi::c_uint;
-pub const ZSTD_btultra2: ZSTD_strategy = 9;
-pub const ZSTD_btultra: ZSTD_strategy = 8;
-pub const ZSTD_btopt: ZSTD_strategy = 7;
-pub const ZSTD_btlazy2: ZSTD_strategy = 6;
-pub const ZSTD_lazy2: ZSTD_strategy = 5;
-pub const ZSTD_lazy: ZSTD_strategy = 4;
-pub const ZSTD_greedy: ZSTD_strategy = 3;
-pub const ZSTD_dfast: ZSTD_strategy = 2;
-pub const ZSTD_fast: ZSTD_strategy = 1;
 pub type FSE_repeat = std::ffi::c_uint;
 pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;

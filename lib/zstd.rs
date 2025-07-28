@@ -39,6 +39,29 @@ pub const ZSTD_error_prefix_unknown: ZSTD_ErrorCode = 10;
 pub const ZSTD_error_GENERIC: ZSTD_ErrorCode = 1;
 pub const ZSTD_error_no_error: ZSTD_ErrorCode = 0;
 
+pub type ZSTD_strategy = std::ffi::c_uint;
+pub const ZSTD_btultra2: ZSTD_strategy = 9;
+pub const ZSTD_btultra: ZSTD_strategy = 8;
+pub const ZSTD_btopt: ZSTD_strategy = 7;
+pub const ZSTD_btlazy2: ZSTD_strategy = 6;
+pub const ZSTD_lazy2: ZSTD_strategy = 5;
+pub const ZSTD_lazy: ZSTD_strategy = 4;
+pub const ZSTD_greedy: ZSTD_strategy = 3;
+pub const ZSTD_dfast: ZSTD_strategy = 2;
+pub const ZSTD_fast: ZSTD_strategy = 1;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_compressionParameters {
+    pub windowLog: std::ffi::c_uint,
+    pub chainLog: std::ffi::c_uint,
+    pub hashLog: std::ffi::c_uint,
+    pub searchLog: std::ffi::c_uint,
+    pub minMatch: std::ffi::c_uint,
+    pub targetLength: std::ffi::c_uint,
+    pub strategy: ZSTD_strategy,
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_customMem {

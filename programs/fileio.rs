@@ -427,16 +427,6 @@ pub struct UTIL_time_t {
 }
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
-pub type ZSTD_strategy = std::ffi::c_uint;
-pub const ZSTD_btultra2: ZSTD_strategy = 9;
-pub const ZSTD_btultra: ZSTD_strategy = 8;
-pub const ZSTD_btopt: ZSTD_strategy = 7;
-pub const ZSTD_btlazy2: ZSTD_strategy = 6;
-pub const ZSTD_lazy2: ZSTD_strategy = 5;
-pub const ZSTD_lazy: ZSTD_strategy = 4;
-pub const ZSTD_greedy: ZSTD_strategy = 3;
-pub const ZSTD_dfast: ZSTD_strategy = 2;
-pub const ZSTD_fast: ZSTD_strategy = 1;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
@@ -511,17 +501,6 @@ pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
 pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_DStream = ZSTD_DCtx;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_compressionParameters {
-    pub windowLog: std::ffi::c_uint,
-    pub chainLog: std::ffi::c_uint,
-    pub hashLog: std::ffi::c_uint,
-    pub searchLog: std::ffi::c_uint,
-    pub minMatch: std::ffi::c_uint,
-    pub targetLength: std::ffi::c_uint,
-    pub strategy: ZSTD_strategy,
-}
 pub type C2RustUnnamed_0 = std::ffi::c_uint;
 pub const ZSTD_f_zstd1_magicless: C2RustUnnamed_0 = 1;
 pub const ZSTD_f_zstd1: C2RustUnnamed_0 = 0;
