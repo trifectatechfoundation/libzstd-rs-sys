@@ -56,7 +56,6 @@ const BIT_DStream_overflow: BIT_DStream_status = 3;
 const BIT_DStream_completed: BIT_DStream_status = 2;
 const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 const BIT_DStream_unfinished: BIT_DStream_status = 0;
-type FSE_DTable = std::ffi::c_uint;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -67,16 +66,22 @@ struct FSE_decode_t {
 }
 
 #[derive(Copy, Clone)]
-#[repr(C)]
-struct FSE_DTableHeader {
-    tableLog: u16,
-    fastMode: u16,
+#[repr(C, align(4))]
+pub(crate) struct FSE_DTable {
+    pub header: FSE_DTableHeader,
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct FSE_DecompressWksp {
-    ncount: [std::ffi::c_short; 256],
+pub(crate) struct FSE_DTableHeader {
+    pub tableLog: u16,
+    pub fastMode: u16,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub(crate) struct FSE_DecompressWksp {
+    pub ncount: [std::ffi::c_short; 256],
 }
 
 #[derive(Copy, Clone)]
