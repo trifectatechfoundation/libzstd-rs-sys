@@ -372,10 +372,9 @@ unsafe extern "C" fn FSE_buildDTable_internal(
     mut normalizedCounter: &[std::ffi::c_short; 256],
     mut maxSymbolValue: std::ffi::c_uint,
     mut tableLog: std::ffi::c_uint,
-    mut workSpace: *mut std::ffi::c_void,
-    mut wkspSize: size_t,
 ) -> size_t {
-    let mut symbolNext = workSpace as *mut u16;
+    let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
+    let mut symbolNext = dt.elements[(1 << tableLog)..].as_mut_ptr().cast::<u16>();
     let mut spread = symbolNext
         .offset(maxSymbolValue as isize)
         .offset(1 as std::ffi::c_int as isize) as *mut u8;
@@ -695,13 +694,11 @@ unsafe fn FSE_decompress_wksp_body(
     {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
     }
-    workSpace = (workSpace as *mut u8)
-        .offset(::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong as isize)
-        .offset(
-            ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog)) as std::ffi::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<FSE_DTable>() as std::ffi::c_ulong)
-                as isize,
-        ) as *mut std::ffi::c_void;
+    workSpace = (&mut workspace.dtable.elements as *mut _ as *mut u8).offset(
+        (((1) << tableLog) as std::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<FSE_DTable>() as std::ffi::c_ulong)
+            as isize,
+    ) as *mut std::ffi::c_void;
     wkspSize = (wkspSize as std::ffi::c_ulong).wrapping_sub(
         (::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong).wrapping_add(
             ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog)) as std::ffi::c_ulong)
@@ -714,8 +711,6 @@ unsafe fn FSE_decompress_wksp_body(
         &workspace.a.ncount,
         maxSymbolValue,
         tableLog,
-        workSpace,
-        wkspSize,
     );
     if ERR_isError(_var_err__) != 0 {
         return _var_err__;
