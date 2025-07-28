@@ -58,12 +58,12 @@ const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 const BIT_DStream_unfinished: BIT_DStream_status = 0;
 type FSE_DTable = std::ffi::c_uint;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
-struct FSE_decode_t {
-    newState: std::ffi::c_ushort,
-    symbol: std::ffi::c_uchar,
-    nbBits: std::ffi::c_uchar,
+pub(crate) struct FSE_decode_t {
+    pub newState: std::ffi::c_ushort,
+    pub symbol: std::ffi::c_uchar,
+    pub nbBits: std::ffi::c_uchar,
 }
 
 #[derive(Copy, Clone)]
