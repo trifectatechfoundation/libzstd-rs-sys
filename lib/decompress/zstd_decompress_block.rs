@@ -9,7 +9,7 @@ use crate::lib::decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp;
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
-use crate::lib::decompress::zstd_ddict::ZSTD_DDict;
+use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::{
     HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage,
     ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst,
@@ -136,13 +136,6 @@ pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_DDictHashSet {
-    pub ddictPtrTable: *mut *const ZSTD_DDict,
-    pub ddictPtrTableSize: size_t,
-    pub ddictPtrCount: size_t,
-}
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
