@@ -367,7 +367,8 @@ pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
 pub const FSE_isError: fn(size_t) -> std::ffi::c_uint = ERR_isError;
-extern "C" fn FSE_buildDTable_internal(
+
+fn FSE_buildDTable_internal(
     mut dt: &mut DTable,
     mut normalizedCounter: &[std::ffi::c_short; 256],
     mut maxSymbolValue: std::ffi::c_uint,
@@ -483,17 +484,13 @@ extern "C" fn FSE_buildDTable_internal(
         }
     }
 
-    let mut symbolNext = symbols.as_mut_ptr();
-
     for u in 0..tableSize {
-        let symbol = (dt.elements[u as usize]).symbol;
-        let fresh1 = unsafe { &mut (*symbolNext.offset(symbol as isize)) };
-        let fresh2 = *fresh1;
-        *fresh1 = (*fresh1).wrapping_add(1);
-        let nextState = fresh2 as u32;
-        (dt.elements[u as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
-        (dt.elements[u as usize]).newState = (nextState
-            << (dt.elements[u as usize]).nbBits as std::ffi::c_int)
+        let symbol = usize::from((elements[u as usize]).symbol);
+        let nextState = u32::from(symbols[symbol]);
+        symbols[symbol] += 1;
+        (elements[u as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
+        (elements[u as usize]).newState = (nextState
+            << (elements[u as usize]).nbBits as std::ffi::c_int)
             .wrapping_sub(tableSize) as u16;
     }
 
