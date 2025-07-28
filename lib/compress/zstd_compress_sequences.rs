@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn FSE_optimalTableLog(
         maxTableLog: std::ffi::c_uint,

@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     pub type ZSTDMT_CCtx_s;
     pub type ZSTD_CDict_s;

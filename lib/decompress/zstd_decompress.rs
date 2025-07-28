@@ -1,4 +1,3 @@
-use ::libc;
 use core::arch::asm;
 
 use crate::{

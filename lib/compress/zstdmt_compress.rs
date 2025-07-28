@@ -1,5 +1,4 @@
 use ::c2rust_bitfields;
-use ::libc;
 extern "C" {
     pub type ZSTD_CDict_s;
     pub type POOL_ctx_s;

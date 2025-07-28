@@ -1,4 +1,3 @@
-use ::libc;
 pub type size_t = std::ffi::c_ulong;
 pub type __uint8_t = std::ffi::c_uchar;
 pub type __uint32_t = std::ffi::c_uint;

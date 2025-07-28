@@ -1,5 +1,3 @@
-use ::libc;
-
 use crate::{
     lib::common::entropy_common::HUF_readStats_wksp, MEM_isLittleEndian, MEM_read64, MEM_readLE16,
     MEM_readLEST, MEM_write16, MEM_write64,

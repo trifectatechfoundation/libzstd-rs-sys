@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn HUF_compress4X_repeat(
         dst: *mut std::ffi::c_void,
