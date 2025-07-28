@@ -481,8 +481,8 @@ impl DTable {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Workspace {
-    a: FSE_DecompressWksp,
-    dtable: DTable,
+    pub a: FSE_DecompressWksp,
+    pub dtable: DTable,
 }
 
 impl Workspace {
