@@ -110,9 +110,9 @@ unsafe extern "C" fn BIT_initDStream(
     mut srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 as std::ffi::c_int as size_t {
-        libc::memset(
-            bitD as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+        core::ptr::write_bytes(
+            bitD as *mut u8,
+            0,
             ::core::mem::size_of::<BIT_DStream_t>() as std::ffi::c_ulong as libc::size_t,
         );
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
