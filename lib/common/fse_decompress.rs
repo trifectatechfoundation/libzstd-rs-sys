@@ -65,20 +65,20 @@ struct FSE_decode_t {
     nbBits: std::ffi::c_uchar,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C, align(4))]
 pub(crate) struct FSE_DTable {
     pub header: FSE_DTableHeader,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub(crate) struct FSE_DTableHeader {
     pub tableLog: u16,
     pub fastMode: u16,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub(crate) struct FSE_DecompressWksp {
     pub ncount: [std::ffi::c_short; 256],
@@ -95,7 +95,10 @@ unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::{lib::common::entropy_common::FSE_readNCount_bmi2, MEM_readLEST, MEM_write64};
+use crate::{
+    lib::common::entropy_common::{FSE_readNCount_bmi2, Workspace},
+    MEM_readLEST, MEM_write64,
+};
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
@@ -605,11 +608,11 @@ unsafe fn FSE_decompress_wksp_body(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
-    workspace: &mut [u8],
+    workSpace: &mut Workspace,
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
-    let mut wkspSize = workspace.len() as size_t;
-    let mut workSpace = workspace.as_mut_ptr().cast();
+    let mut wkspSize = size_of::<Workspace>() as size_t;
+    let mut workSpace = (workSpace as *mut Workspace).cast();
 
     let mut dstCapacity = dst.len() as size_t;
     let mut dst = dst.as_mut_ptr().cast();
@@ -705,28 +708,28 @@ unsafe fn FSE_decompress_wksp_body(
     )
 }
 unsafe fn FSE_decompress_wksp_body_default(
-    mut dst: &mut [u8],
-    mut cSrc: &[u8],
-    mut maxLog: std::ffi::c_uint,
-    mut workSpace: &mut [u8],
+    dst: &mut [u8],
+    cSrc: &[u8],
+    maxLog: std::ffi::c_uint,
+    workSpace: &mut Workspace,
 ) -> size_t {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0 as std::ffi::c_int)
 }
 unsafe fn FSE_decompress_wksp_body_bmi2(
-    mut dst: &mut [u8],
-    mut cSrc: &[u8],
-    mut maxLog: std::ffi::c_uint,
-    mut workSpace: &mut [u8],
+    dst: &mut [u8],
+    cSrc: &[u8],
+    maxLog: std::ffi::c_uint,
+    workSpace: &mut Workspace,
 ) -> size_t {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1 as std::ffi::c_int)
 }
 
 pub unsafe fn FSE_decompress_wksp_bmi2(
-    mut dst: &mut [u8],
-    mut cSrc: &[u8],
-    mut maxLog: std::ffi::c_uint,
-    workSpace: &mut [u8],
-    mut bmi2: bool,
+    dst: &mut [u8],
+    cSrc: &[u8],
+    maxLog: std::ffi::c_uint,
+    workSpace: &mut Workspace,
+    bmi2: bool,
 ) -> size_t {
     if bmi2 {
         FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace)
