@@ -1,4 +1,7 @@
-use crate::lib::decompress::{HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_litLocation_e, ZSTD_seqSymbol};
+use crate::lib::decompress::{
+    HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t,
+    ZSTD_litLocation_e, ZSTD_seqSymbol,
+};
 use crate::lib::zstd::*;
 
 extern "C" {

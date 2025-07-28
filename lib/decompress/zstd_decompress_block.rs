@@ -4,15 +4,15 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
-use crate::lib::decompress::{HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst, ZSTD_seqSymbol, ZSTD_seqSymbol_header, ZSTD_split};
-use crate::lib::zstd::ZSTD_customMem;
-use crate::{
-    lib::{
-        common::entropy_common::FSE_readNCount,
-        decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp,
-    },
-    MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64,
+use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp;
+use crate::lib::decompress::{
+    HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage,
+    ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst,
+    ZSTD_seqSymbol, ZSTD_seqSymbol_header, ZSTD_split,
 };
+use crate::lib::zstd::*;
+use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
 extern "C" {
     pub type ZSTD_DDict_s;
     fn HUF_decompress1X_usingDTable(
@@ -57,43 +57,6 @@ pub struct __storeu_si128 {
 pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalign64 = u64;
-pub type C2RustUnnamed = std::ffi::c_uint;
-pub const ZSTD_error_maxCode: C2RustUnnamed = 120;
-pub const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
-pub const ZSTD_error_sequenceProducer_failed: C2RustUnnamed = 106;
-pub const ZSTD_error_srcBuffer_wrong: C2RustUnnamed = 105;
-pub const ZSTD_error_dstBuffer_wrong: C2RustUnnamed = 104;
-pub const ZSTD_error_seekableIO: C2RustUnnamed = 102;
-pub const ZSTD_error_frameIndex_tooLarge: C2RustUnnamed = 100;
-pub const ZSTD_error_noForwardProgress_inputEmpty: C2RustUnnamed = 82;
-pub const ZSTD_error_noForwardProgress_destFull: C2RustUnnamed = 80;
-pub const ZSTD_error_dstBuffer_null: C2RustUnnamed = 74;
-pub const ZSTD_error_srcSize_wrong: C2RustUnnamed = 72;
-pub const ZSTD_error_dstSize_tooSmall: C2RustUnnamed = 70;
-pub const ZSTD_error_workSpace_tooSmall: C2RustUnnamed = 66;
-pub const ZSTD_error_memory_allocation: C2RustUnnamed = 64;
-pub const ZSTD_error_init_missing: C2RustUnnamed = 62;
-pub const ZSTD_error_stage_wrong: C2RustUnnamed = 60;
-pub const ZSTD_error_stabilityCondition_notRespected: C2RustUnnamed = 50;
-pub const ZSTD_error_cannotProduce_uncompressedBlock: C2RustUnnamed = 49;
-pub const ZSTD_error_maxSymbolValue_tooSmall: C2RustUnnamed = 48;
-pub const ZSTD_error_maxSymbolValue_tooLarge: C2RustUnnamed = 46;
-pub const ZSTD_error_tableLog_tooLarge: C2RustUnnamed = 44;
-pub const ZSTD_error_parameter_outOfBound: C2RustUnnamed = 42;
-pub const ZSTD_error_parameter_combination_unsupported: C2RustUnnamed = 41;
-pub const ZSTD_error_parameter_unsupported: C2RustUnnamed = 40;
-pub const ZSTD_error_dictionaryCreation_failed: C2RustUnnamed = 34;
-pub const ZSTD_error_dictionary_wrong: C2RustUnnamed = 32;
-pub const ZSTD_error_dictionary_corrupted: C2RustUnnamed = 30;
-pub const ZSTD_error_literals_headerWrong: C2RustUnnamed = 24;
-pub const ZSTD_error_checksum_wrong: C2RustUnnamed = 22;
-pub const ZSTD_error_corruption_detected: C2RustUnnamed = 20;
-pub const ZSTD_error_frameParameter_windowTooLarge: C2RustUnnamed = 16;
-pub const ZSTD_error_frameParameter_unsupported: C2RustUnnamed = 14;
-pub const ZSTD_error_version_unsupported: C2RustUnnamed = 12;
-pub const ZSTD_error_prefix_unknown: C2RustUnnamed = 10;
-pub const ZSTD_error_GENERIC: C2RustUnnamed = 1;
-pub const ZSTD_error_no_error: C2RustUnnamed = 0;
 pub type BitContainerType = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
