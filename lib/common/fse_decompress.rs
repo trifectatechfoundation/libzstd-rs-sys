@@ -367,17 +367,16 @@ pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
 pub const FSE_isError: fn(size_t) -> std::ffi::c_uint = ERR_isError;
-unsafe extern "C" fn FSE_buildDTable_internal(
+extern "C" fn FSE_buildDTable_internal(
     mut dt: &mut DTable,
     mut normalizedCounter: &[std::ffi::c_short; 256],
     mut maxSymbolValue: std::ffi::c_uint,
     mut tableLog: std::ffi::c_uint,
 ) -> size_t {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
-    let mut symbolNext = dt.elements[(1 << tableLog)..].as_mut_ptr().cast::<u16>();
-    let mut spread = symbolNext
-        .offset(maxSymbolValue as isize)
-        .offset(1 as std::ffi::c_int as isize) as *mut u8;
+    let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
+    let mut symbolNext = symbols.as_mut_ptr();
+    let mut spread_ptr = spread.as_mut_ptr();
     let maxSV1 = maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
     let tableSize = ((1 as std::ffi::c_int) << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1 as std::ffi::c_int as u32);
@@ -411,17 +410,17 @@ unsafe extern "C" fn FSE_buildDTable_internal(
         if normalizedCounter[s as usize] as std::ffi::c_int == -(1 as std::ffi::c_int) {
             let fresh0 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
-            dt.elements[fresh0 as usize].symbol = s as u8;
-            *symbolNext.offset(s as isize) = 1 as std::ffi::c_int as u16;
+            elements[fresh0 as usize].symbol = s as u8;
+            symbols[s as usize] = 1;
         } else {
             if normalizedCounter[s as usize] as std::ffi::c_int >= largeLimit as std::ffi::c_int {
                 DTableH.fastMode = 0 as std::ffi::c_int as u16;
             }
-            *symbolNext.offset(s as isize) = normalizedCounter[s as usize] as u16;
+            symbols[s as usize] = normalizedCounter[s as usize] as u16;
         }
         s = s.wrapping_add(1);
     }
-    dt.header = DTableH;
+    *header = DTableH;
     if highThreshold == tableSize.wrapping_sub(1 as std::ffi::c_int as u32) {
         let tableMask = tableSize.wrapping_sub(1 as std::ffi::c_int as u32) as size_t;
         let step = (tableSize >> 1 as std::ffi::c_int)
@@ -435,13 +434,10 @@ unsafe extern "C" fn FSE_buildDTable_internal(
         while s_0 < maxSV1 {
             let mut i: std::ffi::c_int = 0;
             let n = normalizedCounter[s_0 as usize] as std::ffi::c_int;
-            MEM_write64(spread.offset(pos as isize) as *mut std::ffi::c_void, sv);
+            spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
             i = 8 as std::ffi::c_int;
             while i < n {
-                MEM_write64(
-                    spread.offset(pos as isize).offset(i as isize) as *mut std::ffi::c_void,
-                    sv,
-                );
+                spread[pos as usize..][i as usize..][..8].copy_from_slice(&sv.to_le_bytes());
                 i += 8 as std::ffi::c_int;
             }
             pos = pos.wrapping_add(n as size_t);
@@ -457,8 +453,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
             u = 0 as std::ffi::c_int as size_t;
             while u < unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                dt.elements[uPosition as usize].symbol =
-                    *spread.offset(s_1.wrapping_add(u) as isize);
+                elements[uPosition as usize].symbol = spread[(s_1 + u) as usize];
                 u = u.wrapping_add(1);
             }
             position = position.wrapping_add(unroll * step) & tableMask;
@@ -493,7 +488,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
     u_0 = 0 as std::ffi::c_int as u32;
     while u_0 < tableSize {
         let symbol = (dt.elements[u_0 as usize]).symbol;
-        let fresh1 = &mut (*symbolNext.offset(symbol as isize));
+        let fresh1 = unsafe { &mut (*symbolNext.offset(symbol as isize)) };
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as u32;

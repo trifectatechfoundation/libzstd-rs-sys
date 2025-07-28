@@ -442,6 +442,29 @@ impl DTable {
             }; 90],
         }
     }
+
+    pub fn destructure_mut(
+        &mut self,
+        max_symbol_value: u32,
+        tableLog: u32,
+    ) -> (
+        &mut FSE_DTableHeader,
+        &mut [FSE_decode_t],
+        &mut [u16],
+        &mut [u8],
+    ) {
+        let (elements, rest) = self.elements.split_at_mut(1usize << tableLog);
+        let rest = unsafe {
+            core::slice::from_raw_parts_mut(rest.as_mut_ptr().cast::<u16>(), rest.len() * 2)
+        };
+
+        let (symbols, rest) = rest.split_at_mut(max_symbol_value as usize + 1);
+        let spread = unsafe {
+            core::slice::from_raw_parts_mut(rest.as_mut_ptr().cast::<u8>(), rest.len() * 2)
+        };
+
+        (&mut self.header, elements, symbols, spread)
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
