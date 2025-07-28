@@ -4,6 +4,7 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
+use crate::lib::decompress::{HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst, ZSTD_seqSymbol, ZSTD_seqSymbol_header, ZSTD_split};
 use crate::lib::zstd::ZSTD_customMem;
 use crate::{
     lib::{
@@ -108,7 +109,6 @@ pub const BIT_DStream_overflow: BIT_DStream_status = 3;
 pub const BIT_DStream_completed: BIT_DStream_status = 2;
 pub const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 pub const BIT_DStream_unfinished: BIT_DStream_status = 0;
-pub type HUF_DTable = u32;
 pub type C2RustUnnamed_0 = std::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
 pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
@@ -184,10 +184,6 @@ pub struct ZSTD_DCtx_s {
     pub traceCtx: ZSTD_TraceCtx,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
-pub type ZSTD_litLocation_e = std::ffi::c_uint;
-pub const ZSTD_split: ZSTD_litLocation_e = 2;
-pub const ZSTD_in_dst: ZSTD_litLocation_e = 1;
-pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -199,12 +195,6 @@ pub struct ZSTD_outBuffer_s {
 pub type ZSTD_bufferMode_e = std::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
-pub type ZSTD_dStreamStage = std::ffi::c_uint;
-pub const zdss_flush: ZSTD_dStreamStage = 4;
-pub const zdss_load: ZSTD_dStreamStage = 3;
-pub const zdss_read: ZSTD_dStreamStage = 2;
-pub const zdss_loadHeader: ZSTD_dStreamStage = 1;
-pub const zdss_init: ZSTD_dStreamStage = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
@@ -216,10 +206,6 @@ pub struct ZSTD_DDictHashSet {
     pub ddictPtrCount: size_t,
 }
 pub type ZSTD_DDict = ZSTD_DDict_s;
-pub type ZSTD_dictUses_e = std::ffi::c_int;
-pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
-pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
-pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
@@ -239,15 +225,6 @@ pub struct XXH64_state_s {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type ZSTD_dStage = std::ffi::c_uint;
-pub const ZSTDds_skipFrame: ZSTD_dStage = 7;
-pub const ZSTDds_decodeSkippableHeader: ZSTD_dStage = 6;
-pub const ZSTDds_checkChecksum: ZSTD_dStage = 5;
-pub const ZSTDds_decompressLastBlock: ZSTD_dStage = 4;
-pub const ZSTDds_decompressBlock: ZSTD_dStage = 3;
-pub const ZSTDds_decodeBlockHeader: ZSTD_dStage = 2;
-pub const ZSTDds_decodeFrameHeader: ZSTD_dStage = 1;
-pub const ZSTDds_getFrameHeaderSize: ZSTD_dStage = 0;
 pub type blockType_e = std::ffi::c_uint;
 pub const bt_reserved: blockType_e = 3;
 pub const bt_compressed: blockType_e = 2;
@@ -269,24 +246,6 @@ pub struct ZSTD_FrameHeader {
 pub type ZSTD_FrameType_e = std::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyDTables_t {
-    pub LLTable: [ZSTD_seqSymbol; 513],
-    pub OFTable: [ZSTD_seqSymbol; 257],
-    pub MLTable: [ZSTD_seqSymbol; 513],
-    pub hufTable: [HUF_DTable; 4097],
-    pub rep: [u32; 3],
-    pub workspace: [u32; 157],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_seqSymbol {
-    pub nextState: u16,
-    pub nbAdditionalBits: u8,
-    pub nbBits: u8,
-    pub baseValue: u32,
-}
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type streaming_operation = std::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
@@ -319,12 +278,6 @@ pub struct seq_t {
 pub type ZSTD_overlap_e = std::ffi::c_uint;
 pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
 pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_seqSymbol_header {
-    pub fastMode: u32,
-    pub tableLog: u32,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_OffsetInfo {
@@ -641,167 +594,6 @@ unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std:
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;
 pub const ZSTD_BLOCKSIZE_MAX: std::ffi::c_int = (1 as std::ffi::c_int) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_WINDOWLOG_MAX_32: std::ffi::c_int = 30 as std::ffi::c_int;
-static mut LL_base: [u32; 36] = [
-    0 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    2 as std::ffi::c_int as u32,
-    3 as std::ffi::c_int as u32,
-    4 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    6 as std::ffi::c_int as u32,
-    7 as std::ffi::c_int as u32,
-    8 as std::ffi::c_int as u32,
-    9 as std::ffi::c_int as u32,
-    10 as std::ffi::c_int as u32,
-    11 as std::ffi::c_int as u32,
-    12 as std::ffi::c_int as u32,
-    13 as std::ffi::c_int as u32,
-    14 as std::ffi::c_int as u32,
-    15 as std::ffi::c_int as u32,
-    16 as std::ffi::c_int as u32,
-    18 as std::ffi::c_int as u32,
-    20 as std::ffi::c_int as u32,
-    22 as std::ffi::c_int as u32,
-    24 as std::ffi::c_int as u32,
-    28 as std::ffi::c_int as u32,
-    32 as std::ffi::c_int as u32,
-    40 as std::ffi::c_int as u32,
-    48 as std::ffi::c_int as u32,
-    64 as std::ffi::c_int as u32,
-    0x80 as std::ffi::c_int as u32,
-    0x100 as std::ffi::c_int as u32,
-    0x200 as std::ffi::c_int as u32,
-    0x400 as std::ffi::c_int as u32,
-    0x800 as std::ffi::c_int as u32,
-    0x1000 as std::ffi::c_int as u32,
-    0x2000 as std::ffi::c_int as u32,
-    0x4000 as std::ffi::c_int as u32,
-    0x8000 as std::ffi::c_int as u32,
-    0x10000 as std::ffi::c_int as u32,
-];
-static mut OF_base: [u32; 32] = [
-    0 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    0xd as std::ffi::c_int as u32,
-    0x1d as std::ffi::c_int as u32,
-    0x3d as std::ffi::c_int as u32,
-    0x7d as std::ffi::c_int as u32,
-    0xfd as std::ffi::c_int as u32,
-    0x1fd as std::ffi::c_int as u32,
-    0x3fd as std::ffi::c_int as u32,
-    0x7fd as std::ffi::c_int as u32,
-    0xffd as std::ffi::c_int as u32,
-    0x1ffd as std::ffi::c_int as u32,
-    0x3ffd as std::ffi::c_int as u32,
-    0x7ffd as std::ffi::c_int as u32,
-    0xfffd as std::ffi::c_int as u32,
-    0x1fffd as std::ffi::c_int as u32,
-    0x3fffd as std::ffi::c_int as u32,
-    0x7fffd as std::ffi::c_int as u32,
-    0xffffd as std::ffi::c_int as u32,
-    0x1ffffd as std::ffi::c_int as u32,
-    0x3ffffd as std::ffi::c_int as u32,
-    0x7ffffd as std::ffi::c_int as u32,
-    0xfffffd as std::ffi::c_int as u32,
-    0x1fffffd as std::ffi::c_int as u32,
-    0x3fffffd as std::ffi::c_int as u32,
-    0x7fffffd as std::ffi::c_int as u32,
-    0xffffffd as std::ffi::c_int as u32,
-    0x1ffffffd as std::ffi::c_int as u32,
-    0x3ffffffd as std::ffi::c_int as u32,
-    0x7ffffffd as std::ffi::c_int as u32,
-];
-static mut OF_bits: [u8; 32] = [
-    0 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    5 as std::ffi::c_int as u8,
-    6 as std::ffi::c_int as u8,
-    7 as std::ffi::c_int as u8,
-    8 as std::ffi::c_int as u8,
-    9 as std::ffi::c_int as u8,
-    10 as std::ffi::c_int as u8,
-    11 as std::ffi::c_int as u8,
-    12 as std::ffi::c_int as u8,
-    13 as std::ffi::c_int as u8,
-    14 as std::ffi::c_int as u8,
-    15 as std::ffi::c_int as u8,
-    16 as std::ffi::c_int as u8,
-    17 as std::ffi::c_int as u8,
-    18 as std::ffi::c_int as u8,
-    19 as std::ffi::c_int as u8,
-    20 as std::ffi::c_int as u8,
-    21 as std::ffi::c_int as u8,
-    22 as std::ffi::c_int as u8,
-    23 as std::ffi::c_int as u8,
-    24 as std::ffi::c_int as u8,
-    25 as std::ffi::c_int as u8,
-    26 as std::ffi::c_int as u8,
-    27 as std::ffi::c_int as u8,
-    28 as std::ffi::c_int as u8,
-    29 as std::ffi::c_int as u8,
-    30 as std::ffi::c_int as u8,
-    31 as std::ffi::c_int as u8,
-];
-static mut ML_base: [u32; 53] = [
-    3 as std::ffi::c_int as u32,
-    4 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    6 as std::ffi::c_int as u32,
-    7 as std::ffi::c_int as u32,
-    8 as std::ffi::c_int as u32,
-    9 as std::ffi::c_int as u32,
-    10 as std::ffi::c_int as u32,
-    11 as std::ffi::c_int as u32,
-    12 as std::ffi::c_int as u32,
-    13 as std::ffi::c_int as u32,
-    14 as std::ffi::c_int as u32,
-    15 as std::ffi::c_int as u32,
-    16 as std::ffi::c_int as u32,
-    17 as std::ffi::c_int as u32,
-    18 as std::ffi::c_int as u32,
-    19 as std::ffi::c_int as u32,
-    20 as std::ffi::c_int as u32,
-    21 as std::ffi::c_int as u32,
-    22 as std::ffi::c_int as u32,
-    23 as std::ffi::c_int as u32,
-    24 as std::ffi::c_int as u32,
-    25 as std::ffi::c_int as u32,
-    26 as std::ffi::c_int as u32,
-    27 as std::ffi::c_int as u32,
-    28 as std::ffi::c_int as u32,
-    29 as std::ffi::c_int as u32,
-    30 as std::ffi::c_int as u32,
-    31 as std::ffi::c_int as u32,
-    32 as std::ffi::c_int as u32,
-    33 as std::ffi::c_int as u32,
-    34 as std::ffi::c_int as u32,
-    35 as std::ffi::c_int as u32,
-    37 as std::ffi::c_int as u32,
-    39 as std::ffi::c_int as u32,
-    41 as std::ffi::c_int as u32,
-    43 as std::ffi::c_int as u32,
-    47 as std::ffi::c_int as u32,
-    51 as std::ffi::c_int as u32,
-    59 as std::ffi::c_int as u32,
-    67 as std::ffi::c_int as u32,
-    83 as std::ffi::c_int as u32,
-    99 as std::ffi::c_int as u32,
-    0x83 as std::ffi::c_int as u32,
-    0x103 as std::ffi::c_int as u32,
-    0x203 as std::ffi::c_int as u32,
-    0x403 as std::ffi::c_int as u32,
-    0x803 as std::ffi::c_int as u32,
-    0x1003 as std::ffi::c_int as u32,
-    0x2003 as std::ffi::c_int as u32,
-    0x4003 as std::ffi::c_int as u32,
-    0x8003 as std::ffi::c_int as u32,
-    0x10003 as std::ffi::c_int as u32,
-];
 #[inline]
 unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> std::ffi::c_int {
     (*dctx).bmi2

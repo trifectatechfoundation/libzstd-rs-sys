@@ -1,3 +1,4 @@
+use crate::lib::decompress::{HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t, ZSTD_litLocation_e, ZSTD_seqSymbol};
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -78,10 +79,6 @@ pub struct ZSTD_DCtx_s {
     pub traceCtx: ZSTD_TraceCtx,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
-pub type ZSTD_litLocation_e = std::ffi::c_uint;
-pub const ZSTD_split: ZSTD_litLocation_e = 2;
-pub const ZSTD_in_dst: ZSTD_litLocation_e = 1;
-pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -93,12 +90,6 @@ pub struct ZSTD_outBuffer_s {
 pub type ZSTD_bufferMode_e = std::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
-pub type ZSTD_dStreamStage = std::ffi::c_uint;
-pub const zdss_flush: ZSTD_dStreamStage = 4;
-pub const zdss_load: ZSTD_dStreamStage = 3;
-pub const zdss_read: ZSTD_dStreamStage = 2;
-pub const zdss_loadHeader: ZSTD_dStreamStage = 1;
-pub const zdss_init: ZSTD_dStreamStage = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
@@ -121,29 +112,6 @@ pub struct ZSTD_DDict_s {
     pub entropyPresent: u32,
     pub cMem: ZSTD_customMem,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyDTables_t {
-    pub LLTable: [ZSTD_seqSymbol; 513],
-    pub OFTable: [ZSTD_seqSymbol; 257],
-    pub MLTable: [ZSTD_seqSymbol; 513],
-    pub hufTable: [HUF_DTable; 4097],
-    pub rep: [u32; 3],
-    pub workspace: [u32; 157],
-}
-pub type HUF_DTable = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_seqSymbol {
-    pub nextState: u16,
-    pub nbAdditionalBits: u8,
-    pub nbBits: u8,
-    pub baseValue: u32,
-}
-pub type ZSTD_dictUses_e = std::ffi::c_int;
-pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
-pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
-pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
@@ -163,15 +131,6 @@ pub struct XXH64_state_s {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type ZSTD_dStage = std::ffi::c_uint;
-pub const ZSTDds_skipFrame: ZSTD_dStage = 7;
-pub const ZSTDds_decodeSkippableHeader: ZSTD_dStage = 6;
-pub const ZSTDds_checkChecksum: ZSTD_dStage = 5;
-pub const ZSTDds_decompressLastBlock: ZSTD_dStage = 4;
-pub const ZSTDds_decompressBlock: ZSTD_dStage = 3;
-pub const ZSTDds_decodeBlockHeader: ZSTD_dStage = 2;
-pub const ZSTDds_decodeFrameHeader: ZSTD_dStage = 1;
-pub const ZSTDds_getFrameHeaderSize: ZSTD_dStage = 0;
 pub type blockType_e = std::ffi::c_uint;
 pub const bt_reserved: blockType_e = 3;
 pub const bt_compressed: blockType_e = 2;

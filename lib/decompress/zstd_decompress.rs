@@ -1,6 +1,7 @@
 use core::arch::asm;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::decompress::{zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_litLocation_e, ZSTD_seqSymbol, ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock, ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame};
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
 extern "C" {
@@ -256,10 +257,6 @@ pub struct ZSTD_DCtx_s {
     pub traceCtx: ZSTD_TraceCtx,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
-pub type ZSTD_litLocation_e = std::ffi::c_uint;
-pub const ZSTD_split: ZSTD_litLocation_e = 2;
-pub const ZSTD_in_dst: ZSTD_litLocation_e = 1;
-pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -271,12 +268,6 @@ pub struct ZSTD_outBuffer_s {
 pub type ZSTD_bufferMode_e = std::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
-pub type ZSTD_dStreamStage = std::ffi::c_uint;
-pub const zdss_flush: ZSTD_dStreamStage = 4;
-pub const zdss_load: ZSTD_dStreamStage = 3;
-pub const zdss_read: ZSTD_dStreamStage = 2;
-pub const zdss_loadHeader: ZSTD_dStreamStage = 1;
-pub const zdss_init: ZSTD_dStreamStage = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
@@ -288,10 +279,6 @@ pub struct ZSTD_DDictHashSet {
     pub ddictPtrCount: size_t,
 }
 pub type ZSTD_DDict = ZSTD_DDict_s;
-pub type ZSTD_dictUses_e = std::ffi::c_int;
-pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
-pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
-pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
@@ -311,15 +298,6 @@ pub struct XXH64_state_s {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type ZSTD_dStage = std::ffi::c_uint;
-pub const ZSTDds_skipFrame: ZSTD_dStage = 7;
-pub const ZSTDds_decodeSkippableHeader: ZSTD_dStage = 6;
-pub const ZSTDds_checkChecksum: ZSTD_dStage = 5;
-pub const ZSTDds_decompressLastBlock: ZSTD_dStage = 4;
-pub const ZSTDds_decompressBlock: ZSTD_dStage = 3;
-pub const ZSTDds_decodeBlockHeader: ZSTD_dStage = 2;
-pub const ZSTDds_decodeFrameHeader: ZSTD_dStage = 1;
-pub const ZSTDds_getFrameHeaderSize: ZSTD_dStage = 0;
 pub type blockType_e = std::ffi::c_uint;
 pub const bt_reserved: blockType_e = 3;
 pub const bt_compressed: blockType_e = 2;
@@ -342,25 +320,6 @@ pub struct ZSTD_FrameHeader {
 pub type ZSTD_FrameType_e = std::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyDTables_t {
-    pub LLTable: [ZSTD_seqSymbol; 513],
-    pub OFTable: [ZSTD_seqSymbol; 257],
-    pub MLTable: [ZSTD_seqSymbol; 513],
-    pub hufTable: [HUF_DTable; 4097],
-    pub rep: [u32; 3],
-    pub workspace: [u32; 157],
-}
-pub type HUF_DTable = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_seqSymbol {
-    pub nextState: u16,
-    pub nbAdditionalBits: u8,
-    pub nbBits: u8,
-    pub baseValue: u32,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -535,167 +494,6 @@ pub const ZSTD_d_forceIgnoreChecksum: std::ffi::c_int = 1002;
 pub const ZSTD_d_refMultipleDDicts: std::ffi::c_int = 1003;
 pub const ZSTD_d_disableHuffmanAssembly: std::ffi::c_int = 1004;
 pub const ZSTD_d_maxBlockSize: std::ffi::c_int = 1005;
-static mut LL_base: [u32; 36] = [
-    0 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    2 as std::ffi::c_int as u32,
-    3 as std::ffi::c_int as u32,
-    4 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    6 as std::ffi::c_int as u32,
-    7 as std::ffi::c_int as u32,
-    8 as std::ffi::c_int as u32,
-    9 as std::ffi::c_int as u32,
-    10 as std::ffi::c_int as u32,
-    11 as std::ffi::c_int as u32,
-    12 as std::ffi::c_int as u32,
-    13 as std::ffi::c_int as u32,
-    14 as std::ffi::c_int as u32,
-    15 as std::ffi::c_int as u32,
-    16 as std::ffi::c_int as u32,
-    18 as std::ffi::c_int as u32,
-    20 as std::ffi::c_int as u32,
-    22 as std::ffi::c_int as u32,
-    24 as std::ffi::c_int as u32,
-    28 as std::ffi::c_int as u32,
-    32 as std::ffi::c_int as u32,
-    40 as std::ffi::c_int as u32,
-    48 as std::ffi::c_int as u32,
-    64 as std::ffi::c_int as u32,
-    0x80 as std::ffi::c_int as u32,
-    0x100 as std::ffi::c_int as u32,
-    0x200 as std::ffi::c_int as u32,
-    0x400 as std::ffi::c_int as u32,
-    0x800 as std::ffi::c_int as u32,
-    0x1000 as std::ffi::c_int as u32,
-    0x2000 as std::ffi::c_int as u32,
-    0x4000 as std::ffi::c_int as u32,
-    0x8000 as std::ffi::c_int as u32,
-    0x10000 as std::ffi::c_int as u32,
-];
-static mut OF_base: [u32; 32] = [
-    0 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    1 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    0xd as std::ffi::c_int as u32,
-    0x1d as std::ffi::c_int as u32,
-    0x3d as std::ffi::c_int as u32,
-    0x7d as std::ffi::c_int as u32,
-    0xfd as std::ffi::c_int as u32,
-    0x1fd as std::ffi::c_int as u32,
-    0x3fd as std::ffi::c_int as u32,
-    0x7fd as std::ffi::c_int as u32,
-    0xffd as std::ffi::c_int as u32,
-    0x1ffd as std::ffi::c_int as u32,
-    0x3ffd as std::ffi::c_int as u32,
-    0x7ffd as std::ffi::c_int as u32,
-    0xfffd as std::ffi::c_int as u32,
-    0x1fffd as std::ffi::c_int as u32,
-    0x3fffd as std::ffi::c_int as u32,
-    0x7fffd as std::ffi::c_int as u32,
-    0xffffd as std::ffi::c_int as u32,
-    0x1ffffd as std::ffi::c_int as u32,
-    0x3ffffd as std::ffi::c_int as u32,
-    0x7ffffd as std::ffi::c_int as u32,
-    0xfffffd as std::ffi::c_int as u32,
-    0x1fffffd as std::ffi::c_int as u32,
-    0x3fffffd as std::ffi::c_int as u32,
-    0x7fffffd as std::ffi::c_int as u32,
-    0xffffffd as std::ffi::c_int as u32,
-    0x1ffffffd as std::ffi::c_int as u32,
-    0x3ffffffd as std::ffi::c_int as u32,
-    0x7ffffffd as std::ffi::c_int as u32,
-];
-static mut OF_bits: [U8; 32] = [
-    0 as std::ffi::c_int as U8,
-    1 as std::ffi::c_int as U8,
-    2 as std::ffi::c_int as U8,
-    3 as std::ffi::c_int as U8,
-    4 as std::ffi::c_int as U8,
-    5 as std::ffi::c_int as U8,
-    6 as std::ffi::c_int as U8,
-    7 as std::ffi::c_int as U8,
-    8 as std::ffi::c_int as U8,
-    9 as std::ffi::c_int as U8,
-    10 as std::ffi::c_int as U8,
-    11 as std::ffi::c_int as U8,
-    12 as std::ffi::c_int as U8,
-    13 as std::ffi::c_int as U8,
-    14 as std::ffi::c_int as U8,
-    15 as std::ffi::c_int as U8,
-    16 as std::ffi::c_int as U8,
-    17 as std::ffi::c_int as U8,
-    18 as std::ffi::c_int as U8,
-    19 as std::ffi::c_int as U8,
-    20 as std::ffi::c_int as U8,
-    21 as std::ffi::c_int as U8,
-    22 as std::ffi::c_int as U8,
-    23 as std::ffi::c_int as U8,
-    24 as std::ffi::c_int as U8,
-    25 as std::ffi::c_int as U8,
-    26 as std::ffi::c_int as U8,
-    27 as std::ffi::c_int as U8,
-    28 as std::ffi::c_int as U8,
-    29 as std::ffi::c_int as U8,
-    30 as std::ffi::c_int as U8,
-    31 as std::ffi::c_int as U8,
-];
-static mut ML_base: [u32; 53] = [
-    3 as std::ffi::c_int as u32,
-    4 as std::ffi::c_int as u32,
-    5 as std::ffi::c_int as u32,
-    6 as std::ffi::c_int as u32,
-    7 as std::ffi::c_int as u32,
-    8 as std::ffi::c_int as u32,
-    9 as std::ffi::c_int as u32,
-    10 as std::ffi::c_int as u32,
-    11 as std::ffi::c_int as u32,
-    12 as std::ffi::c_int as u32,
-    13 as std::ffi::c_int as u32,
-    14 as std::ffi::c_int as u32,
-    15 as std::ffi::c_int as u32,
-    16 as std::ffi::c_int as u32,
-    17 as std::ffi::c_int as u32,
-    18 as std::ffi::c_int as u32,
-    19 as std::ffi::c_int as u32,
-    20 as std::ffi::c_int as u32,
-    21 as std::ffi::c_int as u32,
-    22 as std::ffi::c_int as u32,
-    23 as std::ffi::c_int as u32,
-    24 as std::ffi::c_int as u32,
-    25 as std::ffi::c_int as u32,
-    26 as std::ffi::c_int as u32,
-    27 as std::ffi::c_int as u32,
-    28 as std::ffi::c_int as u32,
-    29 as std::ffi::c_int as u32,
-    30 as std::ffi::c_int as u32,
-    31 as std::ffi::c_int as u32,
-    32 as std::ffi::c_int as u32,
-    33 as std::ffi::c_int as u32,
-    34 as std::ffi::c_int as u32,
-    35 as std::ffi::c_int as u32,
-    37 as std::ffi::c_int as u32,
-    39 as std::ffi::c_int as u32,
-    41 as std::ffi::c_int as u32,
-    43 as std::ffi::c_int as u32,
-    47 as std::ffi::c_int as u32,
-    51 as std::ffi::c_int as u32,
-    59 as std::ffi::c_int as u32,
-    67 as std::ffi::c_int as u32,
-    83 as std::ffi::c_int as u32,
-    99 as std::ffi::c_int as u32,
-    0x83 as std::ffi::c_int as u32,
-    0x103 as std::ffi::c_int as u32,
-    0x203 as std::ffi::c_int as u32,
-    0x403 as std::ffi::c_int as u32,
-    0x803 as std::ffi::c_int as u32,
-    0x1003 as std::ffi::c_int as u32,
-    0x2003 as std::ffi::c_int as u32,
-    0x4003 as std::ffi::c_int as u32,
-    0x8003 as std::ffi::c_int as u32,
-    0x10003 as std::ffi::c_int as u32,
-];
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 static mut repStartValue: [u32; 3] = [
     1 as std::ffi::c_int as u32,
