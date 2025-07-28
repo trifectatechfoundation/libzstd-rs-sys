@@ -457,10 +457,10 @@ unsafe fn HUF_readStats_body(
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-#[repr(align(4))]
+#[repr(C, align(4))]
 pub struct DTable {
     pub header: FSE_DTableHeader,
-    pub v: [FSE_decode_t; 90],
+    pub elements: [FSE_decode_t; 90],
 }
 
 impl DTable {
@@ -470,7 +470,7 @@ impl DTable {
                 tableLog: 0,
                 fastMode: 0,
             },
-            v: [FSE_decode_t {
+            elements: [FSE_decode_t {
                 newState: 0,
                 symbol: 0,
                 nbBits: 0,
@@ -522,7 +522,7 @@ impl quickcheck::Arbitrary for DTable {
                 tableLog: u16::arbitrary(g),
                 fastMode: u16::arbitrary(g),
             },
-            v: {
+            elements: {
                 let mut arr = [FSE_decode_t {
                     newState: 0,
                     symbol: 0,
