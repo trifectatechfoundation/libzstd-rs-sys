@@ -295,25 +295,27 @@ unsafe fn BIT_reloadDStream_internal(mut bitD: &mut BIT_DStream_t) -> BIT_DStrea
     bitD.ptr = (bitD.ptr).offset(-((bitD.bitsConsumed / 8) as isize));
     bitD.bitsConsumed &= 7;
     bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
+
     BIT_DStream_unfinished
 }
+
 #[inline(always)]
 unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
-    if ((*bitD).bitsConsumed as std::ffi::c_ulong
+    if (bitD.bitsConsumed as std::ffi::c_ulong
         > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
             .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
         as std::ffi::c_long
         != 0
     {
         static mut zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
-        (*bitD).ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
+        bitD.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
         return BIT_DStream_overflow;
     }
-    if (*bitD).ptr >= (*bitD).limitPtr {
+    if bitD.ptr >= bitD.limitPtr {
         return BIT_reloadDStream_internal(bitD);
     }
-    if (*bitD).ptr == (*bitD).start {
-        if ((*bitD).bitsConsumed as std::ffi::c_ulong)
+    if bitD.ptr == bitD.start {
+        if (bitD.bitsConsumed as std::ffi::c_ulong)
             < (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         {
@@ -321,16 +323,15 @@ unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status 
         }
         return BIT_DStream_completed;
     }
-    let mut nbBytes = (*bitD).bitsConsumed >> 3 as std::ffi::c_int;
+    let mut nbBytes = bitD.bitsConsumed >> 3 as std::ffi::c_int;
     let mut result = BIT_DStream_unfinished;
-    if ((*bitD).ptr).offset(-(nbBytes as isize)) < (*bitD).start {
-        nbBytes = ((*bitD).ptr).offset_from((*bitD).start) as std::ffi::c_long as u32;
+    if (bitD.ptr).offset(-(nbBytes as isize)) < bitD.start {
+        nbBytes = (bitD.ptr).offset_from(bitD.start) as std::ffi::c_long as u32;
         result = BIT_DStream_endOfBuffer;
     }
-    (*bitD).ptr = ((*bitD).ptr).offset(-(nbBytes as isize));
-    (*bitD).bitsConsumed =
-        ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as u32);
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+    bitD.ptr = (bitD.ptr).offset(-(nbBytes as isize));
+    bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as u32);
+    bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
     result
 }
 
