@@ -50,6 +50,7 @@ pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::lib::common::{
     error_private::ERR_getErrorString,
     fse_decompress::{FSE_DTable, FSE_DTableHeader, FSE_DecompressWksp, FSE_decompress_wksp_bmi2},
+    fse_decompress_old::FSE_decode_t,
 };
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
@@ -456,23 +457,43 @@ unsafe fn HUF_readStats_body(
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(align(4))]
+pub struct DTable {
+    pub header: FSE_DTableHeader,
+    pub v: [FSE_decode_t; 90],
+}
+
+impl DTable {
+    const fn new() -> Self {
+        Self {
+            header: FSE_DTableHeader {
+                tableLog: 0,
+                fastMode: 0,
+            },
+            v: [FSE_decode_t {
+                newState: 0,
+                symbol: 0,
+                nbBits: 0,
+            }; 90],
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Workspace {
     a: FSE_DecompressWksp,
-    tables: [FSE_DTable; 219 - 128],
+    dtable: DTable,
 }
 
 impl Workspace {
+    const _SIZE: () = assert!(size_of::<Self>() == 4 * 219);
+
     const fn new() -> Self {
         Self {
             a: FSE_DecompressWksp {
                 ncount: [0i16; 256],
             },
-            tables: [FSE_DTable {
-                header: FSE_DTableHeader {
-                    tableLog: 0,
-                    fastMode: 0,
-                },
-            }; 219 - 128],
+            dtable: DTable::new(),
         }
     }
 }
@@ -488,19 +509,30 @@ impl quickcheck::Arbitrary for Workspace {
                 }
                 FSE_DecompressWksp { ncount: arr }
             },
-            tables: {
-                let mut arr = [FSE_DTable {
-                    header: FSE_DTableHeader {
-                        tableLog: 0,
-                        fastMode: 0,
-                    },
-                }; 91];
+            dtable: DTable::arbitrary(g),
+        }
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for DTable {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Self {
+            header: FSE_DTableHeader {
+                tableLog: u16::arbitrary(g),
+                fastMode: u16::arbitrary(g),
+            },
+            v: {
+                let mut arr = [FSE_decode_t {
+                    newState: 0,
+                    symbol: 0,
+                    nbBits: 0,
+                }; 90];
                 for elem in &mut arr {
-                    *elem = FSE_DTable {
-                        header: FSE_DTableHeader {
-                            tableLog: u16::arbitrary(g),
-                            fastMode: u16::arbitrary(g),
-                        },
+                    *elem = FSE_decode_t {
+                        newState: quickcheck::Arbitrary::arbitrary(g),
+                        symbol: quickcheck::Arbitrary::arbitrary(g),
+                        nbBits: quickcheck::Arbitrary::arbitrary(g),
                     }
                 }
 
