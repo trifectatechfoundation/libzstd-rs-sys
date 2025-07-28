@@ -139,9 +139,9 @@ unsafe extern "C" fn FSE_readNCount_body(
         }
         return countSize;
     }
-    libc::memset(
+    core::ptr::write_bytes(
         normalizedCounter as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ((*maxSVPtr).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong)
             as libc::size_t,
@@ -469,13 +469,9 @@ pub(crate) unsafe fn HUF_readStats_body(
             return oSize;
         }
     }
-    libc::memset(
-        rankStats as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
-        ((12 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+    core::ptr::write_bytes(rankStats as *mut u8, 0, ((12 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<U32>() as std::ffi::c_ulong)
-            as libc::size_t,
-    );
+            as libc::size_t);
     weightTotal = 0 as std::ffi::c_int as U32;
     let mut n_0: U32 = 0;
     n_0 = 0 as std::ffi::c_int as U32;
