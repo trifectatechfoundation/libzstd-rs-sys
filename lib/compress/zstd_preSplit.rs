@@ -2,22 +2,7 @@ extern "C" {
     fn HIST_add(count: *mut std::ffi::c_uint, src: *const std::ffi::c_void, srcSize: size_t);
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type __int64_t = std::ffi::c_long;
-pub type __uint64_t = std::ffi::c_ulong;
-pub type int64_t = __int64_t;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type BYTE = uint8_t;
-pub type U16 = uint16_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
-pub type S64 = int64_t;
-pub type unalign16 = U16;
+pub type unalign16 = u16;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Fingerprint {
@@ -33,7 +18,7 @@ pub struct FPStats {
 pub type RecordEvents_f =
     Option<unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> ()>;
 #[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> U16 {
+unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> u16 {
     *(ptr as *const unalign16)
 }
 pub const THRESHOLD_PENALTY_RATE: std::ffi::c_int = 16 as std::ffi::c_int;
@@ -49,9 +34,9 @@ unsafe extern "C" fn hash2(
     mut hashLog: std::ffi::c_uint,
 ) -> std::ffi::c_uint {
     if hashLog == 8 as std::ffi::c_int as std::ffi::c_uint {
-        return *(p as *const BYTE).offset(0 as std::ffi::c_int as isize) as U32;
+        return *(p as *const u8).offset(0 as std::ffi::c_int as isize) as u32;
     }
-    (MEM_read16(p) as U32).wrapping_mul(KNUTH)
+    (MEM_read16(p) as u32).wrapping_mul(KNUTH)
         >> (32 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(hashLog)
 }
 unsafe extern "C" fn initStats(mut fpstats: *mut FPStats) {
@@ -154,25 +139,25 @@ unsafe extern "C" fn ZSTD_recordFingerprint_43(
         8 as std::ffi::c_int as std::ffi::c_uint,
     );
 }
-unsafe extern "C" fn abs64(mut s64: S64) -> U64 {
-    (if s64 < 0 as std::ffi::c_int as S64 {
+unsafe extern "C" fn abs64(mut s64: i64) -> u64 {
+    (if s64 < 0 as std::ffi::c_int as i64 {
         -s64
     } else {
         s64
-    }) as U64
+    }) as u64
 }
 unsafe extern "C" fn fpDistance(
     mut fp1: *const Fingerprint,
     mut fp2: *const Fingerprint,
     mut hashLog: std::ffi::c_uint,
-) -> U64 {
-    let mut distance = 0 as std::ffi::c_int as U64;
+) -> u64 {
+    let mut distance = 0 as std::ffi::c_int as u64;
     let mut n: size_t = 0;
     n = 0 as std::ffi::c_int as size_t;
     while n < (1 as std::ffi::c_int as size_t) << hashLog {
         distance = distance.wrapping_add(abs64(
-            *((*fp1).events).as_ptr().offset(n as isize) as S64 * (*fp2).nbEvents as S64
-                - *((*fp2).events).as_ptr().offset(n as isize) as S64 * (*fp1).nbEvents as S64,
+            *((*fp1).events).as_ptr().offset(n as isize) as i64 * (*fp2).nbEvents as i64
+                - *((*fp2).events).as_ptr().offset(n as isize) as i64 * (*fp1).nbEvents as i64,
         ));
         n = n.wrapping_add(1);
         n;
@@ -187,7 +172,7 @@ unsafe extern "C" fn compareFingerprints(
 ) -> std::ffi::c_int {
     let mut p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
     let mut deviation = fpDistance(ref_0, newfp, hashLog);
-    let mut threshold = p50 * (THRESHOLD_BASE + penalty) as U64 / THRESHOLD_PENALTY_RATE as U64;
+    let mut threshold = p50 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
     (deviation >= threshold) as std::ffi::c_int
 }
 unsafe extern "C" fn mergeEvents(mut acc: *mut Fingerprint, mut newfp: *const Fingerprint) {
@@ -373,8 +358,8 @@ unsafe extern "C" fn ZSTD_splitBlock_fromBorders(
         middleEvents,
         8 as std::ffi::c_int as std::ffi::c_uint,
     );
-    let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3 as std::ffi::c_int) as U64;
-    if abs64(distFromBegin as S64 - distFromEnd as S64) < minDistance {
+    let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3 as std::ffi::c_int) as u64;
+    if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
         return (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
             as size_t;
     }

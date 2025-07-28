@@ -99,9 +99,7 @@ pub union pthread_mutexattr_t {
 pub struct UTIL_time_t {
     pub t: PTime,
 }
-pub type PTime = uint64_t;
-pub type uint64_t = __uint64_t;
-pub type __uint64_t = std::ffi::c_ulong;
+pub type PTime = u64;
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;

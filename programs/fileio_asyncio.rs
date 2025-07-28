@@ -64,8 +64,6 @@ extern "C" {
     ) -> std::ffi::c_int;
     static mut g_display_prefs: FIO_display_prefs_t;
 }
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
@@ -104,10 +102,6 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type FILE = _IO_FILE;
-pub type uint8_t = __uint8_t;
-pub type uint64_t = __uint64_t;
-pub type U8 = uint8_t;
-pub type U64 = uint64_t;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
@@ -255,11 +249,11 @@ pub struct IOPoolCtx_t {
 pub struct ReadPoolCtx_t {
     pub base: IOPoolCtx_t,
     pub reachedEof: std::ffi::c_int,
-    pub nextReadOffset: U64,
-    pub waitingOnOffset: U64,
+    pub nextReadOffset: u64,
+    pub waitingOnOffset: u64,
     pub currentJobHeld: *mut std::ffi::c_void,
-    pub coalesceBuffer: *mut U8,
-    pub srcBuffer: *mut U8,
+    pub coalesceBuffer: *mut u8,
+    pub srcBuffer: *mut u8,
     pub srcBufferLoaded: size_t,
     pub completedJobs: [*mut std::ffi::c_void; 10],
     pub completedJobsCount: std::ffi::c_int,
@@ -279,7 +273,7 @@ pub struct IOJob_t {
     pub buffer: *mut std::ffi::c_void,
     pub bufferSize: size_t,
     pub usedBufferSize: size_t,
-    pub offset: U64,
+    pub offset: u64,
 }
 pub const SEEK_CUR: std::ffi::c_int = 1 as std::ffi::c_int;
 pub const MAX_IO_JOBS: std::ffi::c_int = 10 as std::ffi::c_int;
@@ -805,7 +799,7 @@ unsafe extern "C" fn AIO_IOPool_createIoJob(
     (*job).usedBufferSize = 0 as std::ffi::c_int as size_t;
     (*job).file = NULL as *mut FILE;
     (*job).ctx = ctx as *mut std::ffi::c_void;
-    (*job).offset = 0 as std::ffi::c_int as U64;
+    (*job).offset = 0 as std::ffi::c_int as u64;
     job
 }
 unsafe extern "C" fn AIO_IOPool_createThreadPool(
@@ -1186,7 +1180,7 @@ unsafe extern "C" fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IO
     AIO_IOPool_unlockJobsMutex(ctx);
     (*job).usedBufferSize = 0 as std::ffi::c_int as size_t;
     (*job).file = (*ctx).file;
-    (*job).offset = 0 as std::ffi::c_int as U64;
+    (*job).offset = 0 as std::ffi::c_int as u64;
     job
 }
 unsafe extern "C" fn AIO_IOPool_setFile(mut ctx: *mut IOPoolCtx_t, mut file: *mut FILE) {
@@ -1617,7 +1611,7 @@ unsafe extern "C" fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_
             }
         };
         (*ctx).waitingOnOffset = ((*ctx).waitingOnOffset as std::ffi::c_ulong)
-            .wrapping_add((*job).usedBufferSize) as U64 as U64;
+            .wrapping_add((*job).usedBufferSize) as u64 as u64;
     }
     AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
     job
@@ -1705,7 +1699,7 @@ unsafe extern "C" fn AIO_ReadPool_enqueueRead(mut ctx: *mut ReadPoolCtx_t) {
     let job = AIO_IOPool_acquireJob(&mut (*ctx).base);
     (*job).offset = (*ctx).nextReadOffset;
     (*ctx).nextReadOffset =
-        ((*ctx).nextReadOffset as std::ffi::c_ulong).wrapping_add((*job).bufferSize) as U64 as U64;
+        ((*ctx).nextReadOffset as std::ffi::c_ulong).wrapping_add((*job).bufferSize) as u64 as u64;
     AIO_IOPool_enqueueJob(job);
 }
 unsafe extern "C" fn AIO_ReadPool_startReading(mut ctx: *mut ReadPoolCtx_t) {
@@ -1748,8 +1742,8 @@ pub unsafe extern "C" fn AIO_ReadPool_setFile(mut ctx: *mut ReadPoolCtx_t, mut f
         (*ctx).currentJobHeld = NULL as *mut std::ffi::c_void;
     }
     AIO_IOPool_setFile(&mut (*ctx).base, file);
-    (*ctx).nextReadOffset = 0 as std::ffi::c_int as U64;
-    (*ctx).waitingOnOffset = 0 as std::ffi::c_int as U64;
+    (*ctx).nextReadOffset = 0 as std::ffi::c_int as u64;
+    (*ctx).waitingOnOffset = 0 as std::ffi::c_int as u64;
     (*ctx).srcBuffer = (*ctx).coalesceBuffer;
     (*ctx).srcBufferLoaded = 0 as std::ffi::c_int as size_t;
     (*ctx).reachedEof = 0 as std::ffi::c_int;
@@ -1800,7 +1794,7 @@ pub unsafe extern "C" fn AIO_ReadPool_create(
         Some(AIO_ReadPool_executeReadJob as unsafe extern "C" fn(*mut std::ffi::c_void) -> ()),
         bufferSize,
     );
-    (*ctx).coalesceBuffer = malloc(bufferSize * 2 as std::ffi::c_int as size_t) as *mut U8;
+    (*ctx).coalesceBuffer = malloc(bufferSize * 2 as std::ffi::c_int as size_t) as *mut u8;
     if ((*ctx).coalesceBuffer).is_null() {
         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
@@ -1993,7 +1987,7 @@ pub unsafe extern "C" fn AIO_ReadPool_fillBuffer(
         );
         (*ctx).srcBufferLoaded = ((*ctx).srcBufferLoaded).wrapping_add((*job).usedBufferSize);
     } else {
-        (*ctx).srcBuffer = (*job).buffer as *mut U8;
+        (*ctx).srcBuffer = (*job).buffer as *mut u8;
         (*ctx).srcBufferLoaded = (*job).usedBufferSize;
     }
     (*job).usedBufferSize

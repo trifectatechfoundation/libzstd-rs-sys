@@ -1,13 +1,7 @@
 use std::hint::likely;
 
 pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint32_t = std::ffi::c_uint;
-pub type uint8_t = __uint8_t;
-pub type uint32_t = __uint32_t;
-pub type BYTE = uint8_t;
-pub type U32 = uint32_t;
-pub type unalign32 = U32;
+pub type unalign32 = u32;
 pub type ZSTD_ErrorCode = std::ffi::c_uint;
 pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
 pub const ZSTD_error_externalSequences_invalid: ZSTD_ErrorCode = 107;
@@ -107,7 +101,7 @@ fn FSE_readNCount_body(
     let mut nbBits: std::ffi::c_int = 0;
     let mut remaining: std::ffi::c_int = 0;
     let mut threshold: std::ffi::c_int = 0;
-    let mut bitStream: U32 = 0;
+    let mut bitStream: u32 = 0;
     let mut bitCount: std::ffi::c_int = 0;
     let mut charnum = 0 as std::ffi::c_int as std::ffi::c_uint;
     let maxSV1 = (*maxSVPtr).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
@@ -132,7 +126,7 @@ fn FSE_readNCount_body(
     let read_u32_le = |offset| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
 
     bitStream = read_u32_le(ip);
-    nbBits = (bitStream & 0xf as std::ffi::c_int as U32).wrapping_add(FSE_MIN_TABLELOG as U32)
+    nbBits = (bitStream & 0xf as std::ffi::c_int as u32).wrapping_add(FSE_MIN_TABLELOG as u32)
         as std::ffi::c_int;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
         return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
@@ -195,11 +189,11 @@ fn FSE_readNCount_body(
 
         let max = 2 as std::ffi::c_int * threshold - 1 as std::ffi::c_int - remaining;
         let mut count: std::ffi::c_int = 0;
-        if (bitStream & (threshold - 1) as U32) < max as U32 {
-            count = (bitStream & (threshold - 1) as U32) as std::ffi::c_int;
+        if (bitStream & (threshold - 1) as u32) < max as u32 {
+            count = (bitStream & (threshold - 1) as u32) as std::ffi::c_int;
             bitCount += nbBits - 1;
         } else {
-            count = (bitStream & (2 * threshold - 1 as std::ffi::c_int) as U32) as std::ffi::c_int;
+            count = (bitStream & (2 * threshold - 1 as std::ffi::c_int) as u32) as std::ffi::c_int;
             if count >= threshold {
                 count -= max;
             }
@@ -341,8 +335,8 @@ pub unsafe fn HUF_readStats(
     mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
     mut rankStats: &mut [u32; 13],
-    mut nbSymbolsPtr: &mut U32,
-    mut tableLogPtr: &mut U32,
+    mut nbSymbolsPtr: &mut u32,
+    mut tableLogPtr: &mut u32,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
@@ -367,16 +361,16 @@ pub unsafe fn HUF_readStats(
 unsafe fn HUF_readStats_body(
     mut huffWeight: &mut [u8; 256],
     hwSize: size_t,
-    mut rankStats: &mut [U32; 13],
-    mut nbSymbolsPtr: &mut U32,
-    mut tableLogPtr: &mut U32,
+    mut rankStats: &mut [u32; 13],
+    mut nbSymbolsPtr: &mut u32,
+    mut tableLogPtr: &mut u32,
     mut ip: &[u8],
     workspace: &mut [u32; 219],
     mut bmi2: bool,
 ) -> size_t {
     let srcSize = ip.len() as size_t;
 
-    let mut weightTotal: U32 = 0;
+    let mut weightTotal: u32 = 0;
     let mut iSize: size_t = 0;
     let mut oSize: size_t = 0;
     if srcSize == 0 {
@@ -430,15 +424,15 @@ unsafe fn HUF_readStats_body(
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         };
         *rank_stat += 1;
-        weightTotal += (1 << huffWeight[n] >> 1) as U32;
+        weightTotal += (1 << huffWeight[n] >> 1) as u32;
     }
-    if weightTotal == 0 as std::ffi::c_int as U32 {
+    if weightTotal == 0 as std::ffi::c_int as u32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
 
     // Get last non-null symbol weight (implied, total must be 2^n).
     let tableLog = weightTotal.ilog2() + 1;
-    if tableLog > HUF_TABLELOG_MAX as U32 {
+    if tableLog > HUF_TABLELOG_MAX as u32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     *tableLogPtr = tableLog;
@@ -451,7 +445,7 @@ unsafe fn HUF_readStats_body(
     if verif != rest {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    huffWeight[oSize as usize] = lastWeight as BYTE;
+    huffWeight[oSize as usize] = lastWeight as u8;
     rankStats[lastWeight as usize] += 1;
 
     // Check tree construction validity.
@@ -460,16 +454,16 @@ unsafe fn HUF_readStats_body(
     }
 
     // Store results.
-    *nbSymbolsPtr = oSize.wrapping_add(1) as U32;
+    *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
     iSize.wrapping_add(1)
 }
 
 pub unsafe fn HUF_readStats_wksp(
     mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
-    mut rankStats: &mut [U32; 13],
-    mut nbSymbolsPtr: &mut U32,
-    mut tableLogPtr: &mut U32,
+    mut rankStats: &mut [u32; 13],
+    mut nbSymbolsPtr: &mut u32,
+    mut tableLogPtr: &mut u32,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
     workspace: &mut [u32; 219],
@@ -500,9 +494,9 @@ mod tests {
     #[derive(Debug, Clone, PartialEq)]
     struct Input {
         huffWeight: [u8; 256],
-        rankStats: [U32; 13],
-        nbSymbolsPtr: U32,
-        tableLogPtr: U32,
+        rankStats: [u32; 13],
+        nbSymbolsPtr: u32,
+        tableLogPtr: u32,
         src: Vec<u8>,
         workspace: [u32; 219],
         bmi2: bool,
