@@ -47,9 +47,9 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
-use crate::{
-    lib::common::{error_private::ERR_getErrorString, fse_decompress::FSE_decompress_wksp_bmi2},
-    MEM_readLE32,
+use crate::lib::common::{
+    error_private::ERR_getErrorString,
+    fse_decompress::{FSE_DTable, FSE_DTableHeader, FSE_DecompressWksp, FSE_decompress_wksp_bmi2},
 };
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
@@ -343,7 +343,9 @@ pub unsafe fn HUF_readStats(
     // We can remove this at some point, it's just a check that the constants are correct.
     const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
 
-    let mut wksp: [u32; HUF_READ_STATS_WORKSPACE_SIZE_U32] = [0; HUF_READ_STATS_WORKSPACE_SIZE_U32];
+    const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == size_of::<Workspace>() / 4);
+
+    let mut wksp = Workspace::new();
 
     HUF_readStats_wksp(
         huffWeight,
@@ -365,7 +367,7 @@ unsafe fn HUF_readStats_body(
     mut nbSymbolsPtr: &mut u32,
     mut tableLogPtr: &mut u32,
     mut ip: &[u8],
-    workspace: &mut [u32; 219],
+    workspace: &mut Workspace,
     mut bmi2: bool,
 ) -> size_t {
     let srcSize = ip.len() as size_t;
@@ -403,12 +405,7 @@ unsafe fn HUF_readStats_body(
             &ip[1..][..iSize as usize],
             6,
             // TODO this should probably be a (4-byte aligned) byte slice from the start.
-            unsafe {
-                core::slice::from_raw_parts_mut(
-                    workspace.as_mut_ptr().cast::<u8>(),
-                    4 * workspace.len(),
-                )
-            },
+            workspace,
             bmi2,
         );
         if FSE_isError(oSize) != 0 {
@@ -458,6 +455,61 @@ unsafe fn HUF_readStats_body(
     iSize.wrapping_add(1)
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Workspace {
+    a: FSE_DecompressWksp,
+    tables: [FSE_DTable; 219 - 128],
+}
+
+impl Workspace {
+    const fn new() -> Self {
+        Self {
+            a: FSE_DecompressWksp {
+                ncount: [0i16; 256],
+            },
+            tables: [FSE_DTable {
+                header: FSE_DTableHeader {
+                    tableLog: 0,
+                    fastMode: 0,
+                },
+            }; 219 - 128],
+        }
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for Workspace {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Self {
+            a: {
+                let mut arr = [0i16; 256];
+                for elem in &mut arr {
+                    *elem = i16::arbitrary(g);
+                }
+                FSE_DecompressWksp { ncount: arr }
+            },
+            tables: {
+                let mut arr = [FSE_DTable {
+                    header: FSE_DTableHeader {
+                        tableLog: 0,
+                        fastMode: 0,
+                    },
+                }; 91];
+                for elem in &mut arr {
+                    *elem = FSE_DTable {
+                        header: FSE_DTableHeader {
+                            tableLog: u16::arbitrary(g),
+                            fastMode: u16::arbitrary(g),
+                        },
+                    }
+                }
+
+                arr
+            },
+        }
+    }
+}
+
 pub unsafe fn HUF_readStats_wksp(
     mut huffWeight: &mut [u8; 256],
     mut hwSize: size_t,
@@ -466,7 +518,7 @@ pub unsafe fn HUF_readStats_wksp(
     mut tableLogPtr: &mut u32,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    workspace: &mut [u32; 219],
+    workspace: &mut Workspace,
     mut flags: std::ffi::c_int,
 ) -> size_t {
     let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
@@ -498,7 +550,7 @@ mod tests {
         nbSymbolsPtr: u32,
         tableLogPtr: u32,
         src: Vec<u8>,
-        workspace: [u32; 219],
+        workspace: Workspace,
         bmi2: bool,
     }
 
@@ -522,13 +574,7 @@ mod tests {
                 nbSymbolsPtr: u32::arbitrary(g),
                 tableLogPtr: u32::arbitrary(g),
                 src: Vec::<u8>::arbitrary(g),
-                workspace: {
-                    let mut arr = [0u32; 219];
-                    for elem in &mut arr {
-                        *elem = u32::arbitrary(g);
-                    }
-                    arr
-                },
+                workspace: Workspace::arbitrary(g),
                 bmi2: bool::arbitrary(g),
             }
         }
@@ -544,9 +590,12 @@ mod tests {
                         mut nbSymbolsPtr,
                         mut tableLogPtr,
                         src,
-                        mut workspace,
+                        workspace,
                         bmi2,
                     } = input.clone();
+
+                    let mut workspace = unsafe { core::mem::transmute(workspace) } ;
+
                     let v =crate::lib::common::entropy_common_old::HUF_readStats_body(
                         &mut huffWeight,
                         256,
@@ -580,7 +629,7 @@ mod tests {
                         bmi2,
                     );
 
-                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, workspace)
+                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, std::mem::transmute::<_, [u32; 219]>(workspace))
                 };
                 assert_eq!(expected, actual);
                 expected == actual

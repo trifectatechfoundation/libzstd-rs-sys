@@ -47,9 +47,7 @@ pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::{
     lib::common::{
-        error_private::ERR_getErrorString,
-        fse_decompress::{FSE_DTable, FSE_DecompressWksp},
-        fse_decompress_old::FSE_decompress_wksp_bmi2,
+        error_private::ERR_getErrorString, fse_decompress_old::FSE_decompress_wksp_bmi2,
     },
     MEM_readLE32,
 };
@@ -386,13 +384,6 @@ pub unsafe fn HUF_readStats(
     const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
 
     let mut wksp: [u32; HUF_READ_STATS_WORKSPACE_SIZE_U32] = [0; HUF_READ_STATS_WORKSPACE_SIZE_U32];
-
-    struct Workspace {
-        a: FSE_DecompressWksp,
-        b: [FSE_DTable; 219 - 128],
-    }
-
-    const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == size_of::<Workspace>() / 4);
 
     HUF_readStats_wksp(
         huffWeight,

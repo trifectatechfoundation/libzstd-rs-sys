@@ -1,6 +1,6 @@
 use crate::{
-    lib::common::entropy_common::HUF_readStats_wksp, MEM_isLittleEndian, MEM_read64, MEM_readLE16,
-    MEM_readLEST, MEM_write16, MEM_write64,
+    lib::common::entropy_common::{HUF_readStats_wksp, Workspace},
+    MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16, MEM_write64,
 };
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
@@ -96,7 +96,7 @@ pub struct HUF_DEltX1 {
 pub struct HUF_ReadDTableX1_Workspace {
     pub rankVal: [u32; 13],
     pub rankStart: [u32; 13],
-    pub statsWksp: [u32; 219],
+    pub statsWksp: Workspace,
     pub symbols: [u8; 256],
     pub huffWeight: [u8; 256],
 }
@@ -116,7 +116,7 @@ pub struct HUF_ReadDTableX2_Workspace {
     pub rankStart0: [u32; 15],
     pub sortedSymbol: [sortedSymbol_t; 256],
     pub weightList: [u8; 256],
-    pub calleeWksp: [u32; 219],
+    pub calleeWksp: Workspace,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
