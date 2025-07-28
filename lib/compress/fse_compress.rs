@@ -624,8 +624,7 @@ unsafe extern "C" fn FSE_writeNCount_generic(
                 return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
             }
             *out.offset(0 as std::ffi::c_int as isize) = bitStream as u8;
-            *out.offset(1 as std::ffi::c_int as isize) =
-                (bitStream >> 8 as std::ffi::c_int) as u8;
+            *out.offset(1 as std::ffi::c_int as isize) = (bitStream >> 8 as std::ffi::c_int) as u8;
             out = out.offset(2 as std::ffi::c_int as isize);
             bitStream >>= 16 as std::ffi::c_int;
             bitCount -= 16 as std::ffi::c_int;
