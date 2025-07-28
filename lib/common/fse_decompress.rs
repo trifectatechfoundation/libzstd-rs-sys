@@ -347,7 +347,7 @@ impl<'a> FSE_DState_t<'a> {
 unsafe extern "C" fn FSE_decodeSymbol(
     mut DStatePtr: *mut FSE_DState_t,
     mut bitD: *mut BIT_DStream_t,
-) -> std::ffi::c_uchar {
+) -> u8 {
     let DInfo = *((*DStatePtr).table as *const FSE_decode_t).offset((*DStatePtr).state as isize);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
@@ -356,10 +356,10 @@ unsafe extern "C" fn FSE_decodeSymbol(
     symbol
 }
 #[inline]
-unsafe extern "C" fn FSE_decodeSymbolFast(
+unsafe fn FSE_decodeSymbolFast(
     mut DStatePtr: *mut FSE_DState_t,
     mut bitD: *mut BIT_DStream_t,
-) -> std::ffi::c_uchar {
+) -> u8 {
     let DInfo = *((*DStatePtr).table as *const FSE_decode_t).offset((*DStatePtr).state as isize);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
@@ -508,6 +508,13 @@ unsafe fn FSE_decompress_usingDTable_generic(
     mut dt: &DTable,
     fast: bool,
 ) -> size_t {
+    enum Mode {
+        Slow,
+        Fast,
+    }
+
+    let mode = if fast { Mode::Fast } else { Mode::Slow };
+
     let mut op = 0;
     let omax = dst.len();
     let olimit = omax - 3;
@@ -525,35 +532,35 @@ unsafe fn FSE_decompress_usingDTable_generic(
     }
 
     while BIT_reloadDStream(&mut bitD) == StreamStatus::Unfinished && op < olimit {
-        dst[op] = (if fast {
-            FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
-        } else {
-            FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
-        }) as u8;
+        dst[op] = match mode {
+            Mode::Fast => FSE_decodeSymbolFast(&mut state1, &mut bitD),
+            Mode::Slow => FSE_decodeSymbol(&mut state1, &mut bitD),
+        };
+
         if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
             > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         {
             let _ = BIT_reloadDStream(&mut bitD);
         }
-        dst[op + 1] = (if fast {
-            FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
-        } else {
-            FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
-        }) as u8;
-        if (FSE_MAX_TABLELOG * 4 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
-            > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+
+        dst[op + 1] = match mode {
+            Mode::Fast => FSE_decodeSymbolFast(&mut state2, &mut bitD),
+            Mode::Slow => FSE_decodeSymbol(&mut state2, &mut bitD),
+        };
+
+        if (FSE_MAX_TABLELOG * 4 + 7) as std::ffi::c_ulong
+            > (size_of::<BitContainerType>() as std::ffi::c_ulong).wrapping_mul(8)
             && BIT_reloadDStream(&mut bitD) != StreamStatus::Unfinished
         {
             op += 2;
             break;
         }
-        dst[op + 2] = (if fast {
-            FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
-        } else {
-            FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
-        }) as u8;
+
+        dst[op + 2] = match mode {
+            Mode::Fast => FSE_decodeSymbolFast(&mut state1, &mut bitD),
+            Mode::Slow => FSE_decodeSymbol(&mut state1, &mut bitD),
+        };
 
         if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
             > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
@@ -562,11 +569,10 @@ unsafe fn FSE_decompress_usingDTable_generic(
             let _ = BIT_reloadDStream(&mut bitD);
         }
 
-        dst[op + 3] = (if fast {
-            FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
-        } else {
-            FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
-        }) as u8;
+        dst[op + 3] = match mode {
+            Mode::Fast => FSE_decodeSymbolFast(&mut state2, &mut bitD),
+            Mode::Slow => FSE_decodeSymbol(&mut state2, &mut bitD),
+        };
 
         op += 4;
     }
@@ -576,19 +582,17 @@ unsafe fn FSE_decompress_usingDTable_generic(
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
 
-        dst[op] = (if fast {
-            FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
-        } else {
-            FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
-        }) as u8;
+        dst[op] = match mode {
+            Mode::Fast => FSE_decodeSymbolFast(&mut state1, &mut bitD),
+            Mode::Slow => FSE_decodeSymbol(&mut state1, &mut bitD),
+        };
         op += 1;
 
         if let StreamStatus::Overflow = BIT_reloadDStream(&mut bitD) {
-            dst[op] = (if fast {
-                FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
-            } else {
-                FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
-            }) as u8;
+            dst[op] = match mode {
+                Mode::Fast => FSE_decodeSymbolFast(&mut state2, &mut bitD),
+                Mode::Slow => FSE_decodeSymbol(&mut state2, &mut bitD),
+            };
             op += 1;
             break;
         } else {
@@ -596,11 +600,10 @@ unsafe fn FSE_decompress_usingDTable_generic(
                 return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
             }
 
-            dst[op] = (if fast {
-                FSE_decodeSymbolFast(&mut state2, &mut bitD) as std::ffi::c_int
-            } else {
-                FSE_decodeSymbol(&mut state2, &mut bitD) as std::ffi::c_int
-            }) as u8;
+            dst[op] = match mode {
+                Mode::Fast => FSE_decodeSymbolFast(&mut state2, &mut bitD),
+                Mode::Slow => FSE_decodeSymbol(&mut state2, &mut bitD),
+            };
             op += 1;
 
             match BIT_reloadDStream(&mut bitD) {
@@ -608,11 +611,10 @@ unsafe fn FSE_decompress_usingDTable_generic(
                 _ => continue,
             }
 
-            dst[op] = (if fast {
-                FSE_decodeSymbolFast(&mut state1, &mut bitD) as std::ffi::c_int
-            } else {
-                FSE_decodeSymbol(&mut state1, &mut bitD) as std::ffi::c_int
-            }) as u8;
+            dst[op] = match mode {
+                Mode::Fast => FSE_decodeSymbolFast(&mut state1, &mut bitD),
+                Mode::Slow => FSE_decodeSymbol(&mut state1, &mut bitD),
+            };
             op += 1;
 
             break;
