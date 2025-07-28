@@ -1518,8 +1518,7 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
                 (*serialState).ldmState.bucketOffsets as *mut std::ffi::c_void,
                 cMem,
             );
-            (*serialState).ldmState.bucketOffsets =
-                ZSTD_customMalloc(numBuckets, cMem) as *mut u8;
+            (*serialState).ldmState.bucketOffsets = ZSTD_customMalloc(numBuckets, cMem) as *mut u8;
         }
         if ((*serialState).ldmState.hashTable).is_null()
             || ((*serialState).ldmState.bucketOffsets).is_null()

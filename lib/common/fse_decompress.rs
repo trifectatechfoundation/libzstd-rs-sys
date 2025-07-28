@@ -456,8 +456,7 @@ unsafe extern "C" fn FSE_buildDTable_internal(
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as u32;
-        (*tableDecode.offset(u_0 as isize)).nbBits =
-            tableLog.wrapping_sub(nextState.ilog2()) as u8;
+        (*tableDecode.offset(u_0 as isize)).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
         (*tableDecode.offset(u_0 as isize)).newState = (nextState
             << (*tableDecode.offset(u_0 as isize)).nbBits as std::ffi::c_int)
             .wrapping_sub(tableSize) as u16;

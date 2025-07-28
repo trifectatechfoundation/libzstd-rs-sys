@@ -461,9 +461,13 @@ pub(crate) unsafe fn HUF_readStats_body(
             return oSize;
         }
     }
-    core::ptr::write_bytes(rankStats as *mut u8, 0, ((12 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+    core::ptr::write_bytes(
+        rankStats as *mut u8,
+        0,
+        ((12 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong)
-            as libc::size_t);
+            as libc::size_t,
+    );
     weightTotal = 0 as std::ffi::c_int as u32;
     let mut n_0: u32 = 0;
     n_0 = 0 as std::ffi::c_int as u32;
