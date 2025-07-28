@@ -2,6 +2,7 @@ type size_t = std::ffi::c_ulong;
 type unalign32 = u32;
 type unalign64 = u64;
 type C2RustUnnamed = std::ffi::c_uint;
+
 const ZSTD_error_maxCode: C2RustUnnamed = 120;
 const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
 const ZSTD_error_sequenceProducer_failed: C2RustUnnamed = 106;
@@ -38,6 +39,44 @@ const ZSTD_error_version_unsupported: C2RustUnnamed = 12;
 const ZSTD_error_prefix_unknown: C2RustUnnamed = 10;
 const ZSTD_error_GENERIC: C2RustUnnamed = 1;
 const ZSTD_error_no_error: C2RustUnnamed = 0;
+
+enum Error {
+    GENERIC = 1,
+    prefix_unknown = 10,
+    version_unsupported = 12,
+    frameParameter_unsupported = 14,
+    frameParameter_windowTooLarge = 16,
+    corruption_detected = 20,
+    checksum_wrong = 22,
+    literals_headerWrong = 24,
+    dictionary_corrupted = 30,
+    dictionary_wrong = 32,
+    dictionaryCreation_failed = 34,
+    parameter_unsupported = 40,
+    parameter_combination_unsupported = 41,
+    parameter_outOfBound = 42,
+    tableLog_tooLarge = 44,
+    maxSymbolValue_tooLarge = 46,
+    maxSymbolValue_tooSmall = 48,
+    cannotProduce_uncompressedBlock = 49,
+    stabilityCondition_notRespected = 50,
+    stage_wrong = 60,
+    init_missing = 62,
+    memory_allocation = 64,
+    workSpace_tooSmall = 66,
+    dstSize_tooSmall = 70,
+    srcSize_wrong = 72,
+    dstBuffer_null = 74,
+    noForwardProgress_destFull = 80,
+    noForwardProgress_inputEmpty = 82,
+    frameIndex_tooLarge = 100,
+    seekableIO = 102,
+    dstBuffer_wrong = 104,
+    srcBuffer_wrong = 105,
+    sequenceProducer_failed = 106,
+    externalSequences_invalid = 107,
+    maxCode = 120,
+}
 
 type BitContainerType = size_t;
 
@@ -103,73 +142,83 @@ const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
 }
-#[inline]
-unsafe fn BIT_initDStream(bitD: &mut BIT_DStream_t, mut srcBuffer: &[u8]) -> size_t {
-    if srcBuffer.is_empty() {
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+
+impl BIT_DStream_t {
+    unsafe fn new(mut srcBuffer: &[u8]) -> Result<Self, size_t> {
+        let mut bitD = Self {
+            bitContainer: 0,
+            bitsConsumed: 0,
+            ptr: std::ptr::null::<std::ffi::c_char>(),
+            start: std::ptr::null::<std::ffi::c_char>(),
+            limitPtr: std::ptr::null::<std::ffi::c_char>(),
+        };
+
+        if srcBuffer.is_empty() {
+            return Err(-(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t);
+        }
+
+        const USIZE_BYTES: usize = size_of::<BitContainerType>();
+
+        if let Some(chunk) = srcBuffer.last_chunk() {
+            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
+            bitD.limitPtr = (bitD.start).add(USIZE_BYTES);
+
+            bitD.ptr = (srcBuffer.as_ptr() as *const std::ffi::c_char)
+                .add(srcBuffer.len())
+                .offset(-(USIZE_BYTES as isize));
+            bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
+
+            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
+                None => {
+                    /* endMark not present */
+                    return Err(-(ZSTD_error_GENERIC as std::ffi::c_int) as size_t);
+                }
+                Some(v) => {
+                    bitD.bitsConsumed = 8 - v;
+                }
+            }
+        } else {
+            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
+            bitD.limitPtr = (bitD.start)
+                .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
+            bitD.ptr = bitD.start;
+
+            bitD.bitContainer = u64::from(srcBuffer[0]);
+
+            if srcBuffer.len() >= 7 {
+                bitD.bitContainer += u64::from(srcBuffer[6]) << (USIZE_BYTES * 8 - 16);
+            }
+            if srcBuffer.len() >= 6 {
+                bitD.bitContainer += u64::from(srcBuffer[5]) << (USIZE_BYTES * 8 - 24);
+            }
+            if srcBuffer.len() >= 5 {
+                bitD.bitContainer += u64::from(srcBuffer[4]) << (USIZE_BYTES * 8 - 32);
+            }
+            if srcBuffer.len() >= 4 {
+                bitD.bitContainer += u64::from(srcBuffer[3]) << 24;
+            }
+            if srcBuffer.len() >= 3 {
+                bitD.bitContainer += u64::from(srcBuffer[2]) << 16;
+            }
+            if srcBuffer.len() >= 2 {
+                bitD.bitContainer += u64::from(srcBuffer[1]) << 8;
+            }
+
+            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
+                None => {
+                    /* endMark not present */
+                    return Err(-(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t);
+                }
+                Some(v) => {
+                    bitD.bitsConsumed = 8 - v;
+                }
+            }
+
+            bitD.bitsConsumed += ((USIZE_BYTES - srcBuffer.len()) * 8) as u32;
+        }
+
+        Ok(bitD)
     }
-
-    const USIZE_BYTES: usize = size_of::<BitContainerType>();
-
-    if let Some(chunk) = srcBuffer.last_chunk() {
-        bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
-        bitD.limitPtr = (bitD.start).add(USIZE_BYTES);
-
-        bitD.ptr = (srcBuffer.as_ptr() as *const std::ffi::c_char)
-            .add(srcBuffer.len())
-            .offset(-(USIZE_BYTES as isize));
-        bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
-
-        match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-            None => {
-                /* endMark not present */
-                return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
-            }
-            Some(v) => {
-                bitD.bitsConsumed = 8 - v;
-            }
-        }
-    } else {
-        bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
-        bitD.limitPtr = (bitD.start)
-            .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
-        bitD.ptr = bitD.start;
-
-        bitD.bitContainer = u64::from(srcBuffer[0]);
-
-        if srcBuffer.len() >= 7 {
-            bitD.bitContainer += u64::from(srcBuffer[6]) << (USIZE_BYTES * 8 - 16);
-        }
-        if srcBuffer.len() >= 6 {
-            bitD.bitContainer += u64::from(srcBuffer[5]) << (USIZE_BYTES * 8 - 24);
-        }
-        if srcBuffer.len() >= 5 {
-            bitD.bitContainer += u64::from(srcBuffer[4]) << (USIZE_BYTES * 8 - 32);
-        }
-        if srcBuffer.len() >= 4 {
-            bitD.bitContainer += u64::from(srcBuffer[3]) << 24;
-        }
-        if srcBuffer.len() >= 3 {
-            bitD.bitContainer += u64::from(srcBuffer[2]) << 16;
-        }
-        if srcBuffer.len() >= 2 {
-            bitD.bitContainer += u64::from(srcBuffer[1]) << 8;
-        }
-
-        match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-            None => {
-                /* endMark not present */
-                return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
-            }
-            Some(v) => {
-                bitD.bitsConsumed = 8 - v;
-            }
-        }
-
-        bitD.bitsConsumed += ((USIZE_BYTES - srcBuffer.len()) * 8) as u32;
-    }
-
-    srcBuffer.len() as size_t
 }
 
 #[inline(always)]
@@ -470,17 +519,10 @@ unsafe fn FSE_decompress_usingDTable_generic(
     let mut op = ostart;
     let omax = op.offset(maxDstSize as isize);
     let olimit = omax.offset(-(3 as std::ffi::c_int as isize));
-    let mut bitD = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
+    let mut bitD = match BIT_DStream_t::new(cSrc) {
+        Err(e) => return e,
+        Ok(bitD) => bitD,
     };
-    let _var_err__ = BIT_initDStream(&mut bitD, cSrc);
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
-    }
 
     let mut state1 = FSE_DState_t::new(&mut bitD, dt);
     let mut state2 = FSE_DState_t::new(&mut bitD, dt);
