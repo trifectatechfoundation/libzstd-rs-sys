@@ -96,7 +96,7 @@ unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::{
-    lib::common::entropy_common::{FSE_readNCount_bmi2, Workspace},
+    lib::common::entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
     MEM_readLEST, MEM_write64,
 };
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -608,26 +608,23 @@ unsafe fn FSE_decompress_wksp_body(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
-    workSpace: &mut Workspace,
+    workspace: &mut Workspace,
     mut bmi2: std::ffi::c_int,
 ) -> size_t {
     let mut wkspSize = size_of::<Workspace>() as size_t;
-    let mut workSpace = (workSpace as *mut Workspace).cast();
+    let mut workSpace = (workspace as *mut Workspace).cast();
 
     let mut dstCapacity = dst.len() as size_t;
     let mut dst = dst.as_mut_ptr().cast();
 
     let mut tableLog: std::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint;
-    let wksp = workSpace as *mut FSE_DecompressWksp;
-    let dtablePos = (::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong)
-        .wrapping_div(::core::mem::size_of::<FSE_DTable>() as std::ffi::c_ulong);
-    let dtable = (workSpace as *mut FSE_DTable).offset(dtablePos as isize);
+    let dtable = (&mut workspace.dtable as *mut DTable).cast::<FSE_DTable>();
     if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
     let NCountLength = FSE_readNCount_bmi2(
-        &mut (*wksp).ncount,
+        &mut workspace.a.ncount,
         &mut maxSymbolValue,
         &mut tableLog,
         cSrc,
@@ -687,7 +684,7 @@ unsafe fn FSE_decompress_wksp_body(
     ) as size_t as size_t;
     let _var_err__ = FSE_buildDTable_internal(
         dtable,
-        &(*wksp).ncount,
+        &workspace.a.ncount,
         maxSymbolValue,
         tableLog,
         workSpace,
