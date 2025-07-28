@@ -160,43 +160,6 @@ pub type unalign32 = u32;
 pub type unalign64 = u64;
 pub type unalignArch = size_t;
 pub type FSE_CTable = std::ffi::c_uint;
-pub type ZSTD_ErrorCode = std::ffi::c_uint;
-pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
-pub const ZSTD_error_externalSequences_invalid: ZSTD_ErrorCode = 107;
-pub const ZSTD_error_sequenceProducer_failed: ZSTD_ErrorCode = 106;
-pub const ZSTD_error_srcBuffer_wrong: ZSTD_ErrorCode = 105;
-pub const ZSTD_error_dstBuffer_wrong: ZSTD_ErrorCode = 104;
-pub const ZSTD_error_seekableIO: ZSTD_ErrorCode = 102;
-pub const ZSTD_error_frameIndex_tooLarge: ZSTD_ErrorCode = 100;
-pub const ZSTD_error_noForwardProgress_inputEmpty: ZSTD_ErrorCode = 82;
-pub const ZSTD_error_noForwardProgress_destFull: ZSTD_ErrorCode = 80;
-pub const ZSTD_error_dstBuffer_null: ZSTD_ErrorCode = 74;
-pub const ZSTD_error_srcSize_wrong: ZSTD_ErrorCode = 72;
-pub const ZSTD_error_dstSize_tooSmall: ZSTD_ErrorCode = 70;
-pub const ZSTD_error_workSpace_tooSmall: ZSTD_ErrorCode = 66;
-pub const ZSTD_error_memory_allocation: ZSTD_ErrorCode = 64;
-pub const ZSTD_error_init_missing: ZSTD_ErrorCode = 62;
-pub const ZSTD_error_stage_wrong: ZSTD_ErrorCode = 60;
-pub const ZSTD_error_stabilityCondition_notRespected: ZSTD_ErrorCode = 50;
-pub const ZSTD_error_cannotProduce_uncompressedBlock: ZSTD_ErrorCode = 49;
-pub const ZSTD_error_maxSymbolValue_tooSmall: ZSTD_ErrorCode = 48;
-pub const ZSTD_error_maxSymbolValue_tooLarge: ZSTD_ErrorCode = 46;
-pub const ZSTD_error_tableLog_tooLarge: ZSTD_ErrorCode = 44;
-pub const ZSTD_error_parameter_outOfBound: ZSTD_ErrorCode = 42;
-pub const ZSTD_error_parameter_combination_unsupported: ZSTD_ErrorCode = 41;
-pub const ZSTD_error_parameter_unsupported: ZSTD_ErrorCode = 40;
-pub const ZSTD_error_dictionaryCreation_failed: ZSTD_ErrorCode = 34;
-pub const ZSTD_error_dictionary_wrong: ZSTD_ErrorCode = 32;
-pub const ZSTD_error_dictionary_corrupted: ZSTD_ErrorCode = 30;
-pub const ZSTD_error_literals_headerWrong: ZSTD_ErrorCode = 24;
-pub const ZSTD_error_checksum_wrong: ZSTD_ErrorCode = 22;
-pub const ZSTD_error_corruption_detected: ZSTD_ErrorCode = 20;
-pub const ZSTD_error_frameParameter_windowTooLarge: ZSTD_ErrorCode = 16;
-pub const ZSTD_error_frameParameter_unsupported: ZSTD_ErrorCode = 14;
-pub const ZSTD_error_version_unsupported: ZSTD_ErrorCode = 12;
-pub const ZSTD_error_prefix_unknown: ZSTD_ErrorCode = 10;
-pub const ZSTD_error_GENERIC: ZSTD_ErrorCode = 1;
-pub const ZSTD_error_no_error: ZSTD_ErrorCode = 0;
 pub type ERR_enum = ZSTD_ErrorCode;
 pub type FSE_repeat = std::ffi::c_uint;
 pub const FSE_repeat_valid: FSE_repeat = 2;
@@ -557,17 +520,6 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 pub type ZSTD_threadPool = POOL_ctx_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_customMem {
-    pub customAlloc: ZSTD_allocFunction,
-    pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
-}
-pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
-pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
 pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -754,6 +706,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {

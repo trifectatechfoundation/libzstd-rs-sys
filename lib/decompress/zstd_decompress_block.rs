@@ -4,6 +4,7 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
+use crate::lib::zstd::ZSTD_customMem;
 use crate::{
     lib::{
         common::entropy_common::FSE_readNCount,
@@ -219,17 +220,6 @@ pub type ZSTD_dictUses_e = std::ffi::c_int;
 pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
 pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
 pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_customMem {
-    pub customAlloc: ZSTD_allocFunction,
-    pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
-}
-pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
-pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;

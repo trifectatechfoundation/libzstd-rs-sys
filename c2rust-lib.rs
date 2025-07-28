@@ -58,6 +58,7 @@ pub mod lib {
         pub mod zstd_v06;
         pub mod zstd_v07;
     } // mod legacy
+    pub mod zstd;
 } // mod lib
 pub mod programs {
     pub mod benchfn;
