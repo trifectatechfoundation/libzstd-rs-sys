@@ -300,39 +300,36 @@ impl BIT_DStream_t {
 }
 
 #[inline(always)]
-unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
-    if (bitD.bitsConsumed as std::ffi::c_ulong
-        > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
-        as std::ffi::c_long
-        != 0
-    {
+unsafe fn BIT_reloadDStream(bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
+    if bitD.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
         static zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
         bitD.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
+
         return BIT_DStream_overflow;
     }
 
     if bitD.ptr >= bitD.limitPtr {
         bitD.reload();
+
         return BIT_DStream_unfinished;
     }
 
     if bitD.ptr == bitD.start {
-        if (bitD.bitsConsumed as std::ffi::c_ulong)
-            < (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        {
-            return BIT_DStream_endOfBuffer;
-        }
-        return BIT_DStream_completed;
+        return if bitD.bitsConsumed < size_of::<BitContainerType>() as u32 * 8 {
+            BIT_DStream_endOfBuffer
+        } else {
+            BIT_DStream_completed
+        };
     }
-    let mut nbBytes = bitD.bitsConsumed / 8;
-    let mut result = BIT_DStream_unfinished;
-    if (bitD.ptr).sub(nbBytes as usize) < bitD.start {
-        nbBytes = (bitD.ptr).offset_from(bitD.start) as std::ffi::c_long as u32;
 
-        result = BIT_DStream_endOfBuffer;
-    }
+    let mut nbBytes = bitD.bitsConsumed / 8;
+    let result = if (bitD.ptr).sub(nbBytes as usize) < bitD.start {
+        nbBytes = (bitD.ptr).offset_from(bitD.start) as u32;
+
+        BIT_DStream_endOfBuffer
+    } else {
+        BIT_DStream_unfinished
+    };
 
     bitD.ptr = bitD.ptr.sub(nbBytes as usize);
     bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8);
