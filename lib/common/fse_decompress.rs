@@ -283,13 +283,11 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
 unsafe extern "C" fn FSE_initDState(
     mut DStatePtr: &mut FSE_DState_t,
     mut bitD: &mut BIT_DStream_t,
-    mut dt: *const FSE_DTable,
+    mut dt: &DTable,
 ) {
-    let mut ptr = dt as *const std::ffi::c_void;
-    let DTableH = ptr as *const FSE_DTableHeader;
-    (*DStatePtr).state = BIT_readBits(bitD, (*DTableH).tableLog as std::ffi::c_uint);
+    DStatePtr.state = BIT_readBits(bitD, dt.header.tableLog as std::ffi::c_uint);
     BIT_reloadDStream(bitD);
-    (*DStatePtr).table = dt.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void;
+    DStatePtr.table = dt.elements.as_ptr() as *const std::ffi::c_void;
 }
 #[inline]
 unsafe extern "C" fn FSE_decodeSymbol(
@@ -464,7 +462,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
     mut cSrc: &[u8],
-    mut dt: *const FSE_DTable,
+    mut dt: &DTable,
     fast: bool,
 ) -> size_t {
     let ostart = dst as *mut u8;
@@ -675,8 +673,6 @@ unsafe fn FSE_decompress_wksp_body(
         ),
     ) as size_t as size_t;
 
-    let dtable = (&mut workspace.dtable as *mut DTable).cast::<FSE_DTable>();
-
     let _var_err__ = FSE_buildDTable_internal(
         &mut workspace.dtable,
         &workspace.a.ncount,
@@ -689,15 +685,12 @@ unsafe fn FSE_decompress_wksp_body(
         return _var_err__;
     }
 
-    let mut ptr = dtable as *const std::ffi::c_void;
-    let mut DTableH = ptr as *const FSE_DTableHeader;
-
     FSE_decompress_usingDTable_generic(
         dst,
         dstCapacity,
         ip,
-        dtable,
-        (*DTableH).fastMode as u32 != 0,
+        &workspace.dtable,
+        workspace.dtable.header.fastMode != 0,
     )
 }
 unsafe fn FSE_decompress_wksp_body_default(
