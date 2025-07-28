@@ -41,12 +41,7 @@ pub mod lib {
         pub mod zstd_preSplit;
         pub mod zstdmt_compress;
     } // mod compress
-    pub mod decompress {
-        pub mod huf_decompress;
-        pub mod zstd_ddict;
-        pub mod zstd_decompress;
-        pub mod zstd_decompress_block;
-    } // mod decompress
+    pub mod decompress;
     pub mod dictBuilder {
         pub mod cover;
         pub mod divsufsort;
