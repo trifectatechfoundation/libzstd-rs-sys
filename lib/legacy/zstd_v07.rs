@@ -27,21 +27,11 @@ extern "C" {
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __int16_t = std::ffi::c_short;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type __uint64_t = std::ffi::c_ulong;
-pub type int16_t = __int16_t;
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type XXH32_hash_t = uint32_t;
-pub type XXH64_hash_t = uint64_t;
+pub type XXH32_hash_t = u32;
+pub type XXH64_hash_t = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XXH64_state_s {
@@ -61,9 +51,9 @@ pub struct ZSTDv07_frameParams {
     pub dictID: std::ffi::c_uint,
     pub checksumFlag: std::ffi::c_uint,
 }
-pub type U32 = uint32_t;
-pub type BYTE = uint8_t;
-pub type U64 = uint64_t;
+pub type U32 = u32;
+pub type BYTE = u8;
+pub type U64 = u64;
 pub const ZSTD_error_frameParameter_unsupported: ERR_enum = 14;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -71,7 +61,7 @@ pub union C2RustUnnamed {
     pub u: U32,
     pub c: [BYTE; 4],
 }
-pub type U16 = uint16_t;
+pub type U16 = u16;
 pub const ZSTD_error_srcSize_wrong: ERR_enum = 72;
 pub const ZSTD_error_prefix_unknown: ERR_enum = 10;
 pub type ZSTDv07_DCtx = ZSTDv07_DCtx_s;
@@ -185,7 +175,7 @@ pub struct FSEv07_DTableHeader {
     pub tableLog: U16,
     pub fastMode: U16,
 }
-pub type S16 = int16_t;
+pub type S16 = i16;
 pub const ZSTD_error_maxSymbolValue_tooSmall: ERR_enum = 48;
 pub const ZSTD_error_tableLog_tooLarge: ERR_enum = 44;
 pub const ZSTD_error_maxSymbolValue_tooLarge: ERR_enum = 46;

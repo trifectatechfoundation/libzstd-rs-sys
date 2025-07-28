@@ -28,7 +28,7 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> U64;
+    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
     fn __errno_location() -> *mut std::ffi::c_int;
     fn UTIL_getTime() -> UTIL_time_t;
     fn UTIL_clockSpanMicro(clockStart: UTIL_time_t) -> PTime;
@@ -75,9 +75,6 @@ extern "C" {
         parameters: ZDICT_legacy_params_t,
     ) -> size_t;
 }
-pub type __uint32_t = std::ffi::c_uint;
-pub type __int64_t = std::ffi::c_long;
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
@@ -116,13 +113,7 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type FILE = _IO_FILE;
-pub type int64_t = __int64_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
-pub type S64 = int64_t;
-pub type PTime = uint64_t;
+pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_time_t {
@@ -207,7 +198,7 @@ pub struct ZDICT_legacy_params_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fileStats {
-    pub totalSizeToLoad: S64,
+    pub totalSizeToLoad: i64,
     pub nbSamples: std::ffi::c_int,
     pub oneSampleTooLarge: std::ffi::c_int,
 }
@@ -221,19 +212,19 @@ pub const COVER_MEMMULT: std::ffi::c_int = 9 as std::ffi::c_int;
 pub const FASTCOVER_MEMMULT: std::ffi::c_int = 1 as std::ffi::c_int;
 static mut g_maxMemory: size_t = 0;
 pub const NOISELENGTH: std::ffi::c_int = 32 as std::ffi::c_int;
-static mut g_refreshRate: U64 = 0;
+static mut g_refreshRate: u64 = 0;
 static mut g_displayClock: UTIL_time_t = {
     UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
     }
 };
 pub const DEBUG: std::ffi::c_int = 0 as std::ffi::c_int;
-unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> S64 {
+unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
-    if fileSize == UTIL_FILESIZE_UNKNOWN as U64 {
-        -(1 as std::ffi::c_int) as S64
+    if fileSize == UTIL_FILESIZE_UNKNOWN as u64 {
+        -(1 as std::ffi::c_int) as i64
     } else {
-        fileSize as S64
+        fileSize as i64
     }
 }
 unsafe extern "C" fn DiB_loadFiles(
@@ -254,7 +245,7 @@ unsafe extern "C" fn DiB_loadFiles(
     while nbSamplesLoaded < sstSize && fileIndex < nbFiles {
         let mut fileDataLoaded: size_t = 0;
         let fileSize = DiB_getFileSize(*fileNamesTable.offset(fileIndex as isize));
-        if fileSize <= 0 as std::ffi::c_int as S64 {
+        if fileSize <= 0 as std::ffi::c_int as i64 {
             fileIndex += 1;
             fileIndex;
         } else {
@@ -292,20 +283,20 @@ unsafe extern "C" fn DiB_loadFiles(
                 }
             }
             fileDataLoaded = if targetChunkSize > 0 as std::ffi::c_int as size_t {
-                (if fileSize < targetChunkSize as S64 {
+                (if fileSize < targetChunkSize as i64 {
                     fileSize
                 } else {
-                    targetChunkSize as S64
+                    targetChunkSize as i64
                 }) as size_t
             } else {
                 (if fileSize
                     < (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                        as S64
+                        as i64
                 {
                     fileSize
                 } else {
                     (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                        as S64
+                        as i64
                 }) as size_t
             };
             if totalDataLoaded.wrapping_add(fileDataLoaded) > *bufferSizePtr {
@@ -336,7 +327,7 @@ unsafe extern "C" fn DiB_loadFiles(
             *sampleSizes.offset(fresh0 as isize) = fileDataLoaded;
             totalDataLoaded = totalDataLoaded.wrapping_add(fileDataLoaded);
             if targetChunkSize > 0 as std::ffi::c_int as size_t {
-                while (fileDataLoaded as S64) < fileSize && nbSamplesLoaded < sstSize {
+                while (fileDataLoaded as i64) < fileSize && nbSamplesLoaded < sstSize {
                     let chunkSize =
                         if (fileSize as size_t).wrapping_sub(fileDataLoaded) < targetChunkSize {
                             (fileSize as size_t).wrapping_sub(fileDataLoaded)
@@ -402,9 +393,9 @@ unsafe extern "C" fn DiB_loadFiles(
     *bufferSizePtr = totalDataLoaded;
     nbSamplesLoaded
 }
-unsafe extern "C" fn DiB_rand(mut src: *mut U32) -> U32 {
-    static mut prime1: U32 = 2654435761 as std::ffi::c_uint;
-    static mut prime2: U32 = 2246822519 as std::ffi::c_uint;
+unsafe extern "C" fn DiB_rand(mut src: *mut u32) -> u32 {
+    static mut prime1: u32 = 2654435761 as std::ffi::c_uint;
+    static mut prime2: u32 = 2246822519 as std::ffi::c_uint;
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;
@@ -540,7 +531,7 @@ unsafe extern "C" fn DiB_fileStats(
     n = 0 as std::ffi::c_int;
     while n < nbFiles {
         let fileSize = DiB_getFileSize(*fileNamesTable.offset(n as isize));
-        if fileSize == 0 as std::ffi::c_int as S64 {
+        if fileSize == 0 as std::ffi::c_int as i64 {
             if displayLevel >= 3 as std::ffi::c_int {
                 fprintf(
                     stderr,
@@ -556,9 +547,9 @@ unsafe extern "C" fn DiB_fileStats(
                 / chunkSize) as std::ffi::c_int;
             fs.totalSizeToLoad += fileSize;
         } else {
-            if fileSize > SAMPLESIZE_MAX as S64 {
+            if fileSize > SAMPLESIZE_MAX as i64 {
                 fs.oneSampleTooLarge |=
-                    (fileSize > (2 as std::ffi::c_int * SAMPLESIZE_MAX) as S64) as std::ffi::c_int;
+                    (fileSize > (2 as std::ffi::c_int * SAMPLESIZE_MAX) as i64) as std::ffi::c_int;
                 if displayLevel >= 3 as std::ffi::c_int {
                     fprintf(
                         stderr,
@@ -574,11 +565,11 @@ unsafe extern "C" fn DiB_fileStats(
             fs.nbSamples += 1 as std::ffi::c_int;
             fs.totalSizeToLoad += if fileSize
                 < (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                    as S64
+                    as i64
             {
                 fileSize
             } else {
-                (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as S64
+                (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as i64
             };
         }
         n += 1;
@@ -591,7 +582,7 @@ unsafe extern "C" fn DiB_fileStats(
                 as *const std::ffi::c_char,
             nbFiles,
             (fs.totalSizeToLoad
-                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as S64)
+                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as i64)
                 as std::ffi::c_int,
             fs.nbSamples,
         );
@@ -646,24 +637,24 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
     } else {
         FASTCOVER_MEMMULT
     };
-    let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as S64) as std::ffi::c_ulonglong)
+    let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as i64) as std::ffi::c_ulonglong)
         / memMult as size_t;
-    loadedSize = (if (if (maxMem as S64) < fs.totalSizeToLoad {
-        maxMem as S64
+    loadedSize = (if (if (maxMem as i64) < fs.totalSizeToLoad {
+        maxMem as i64
     } else {
         fs.totalSizeToLoad
     }) < (2 as std::ffi::c_int as std::ffi::c_uint)
         .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
-        as S64
+        as i64
     {
-        if (maxMem as S64) < fs.totalSizeToLoad {
-            maxMem as S64
+        if (maxMem as i64) < fs.totalSizeToLoad {
+            maxMem as i64
         } else {
             fs.totalSizeToLoad
         }
     } else {
         (2 as std::ffi::c_int as std::ffi::c_uint)
-            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int) as S64
+            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int) as i64
     }) as size_t;
     if memLimit != 0 as std::ffi::c_int as std::ffi::c_uint {
         if displayLevel >= 2 as std::ffi::c_int {
@@ -761,7 +752,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         exit(14 as std::ffi::c_int);
     }
-    if fs.totalSizeToLoad < maxDictSize as S64 * 8 as std::ffi::c_int as S64 {
+    if fs.totalSizeToLoad < maxDictSize as i64 * 8 as std::ffi::c_int as i64 {
         if displayLevel >= 2 as std::ffi::c_int {
             fprintf(
                 stderr,
@@ -777,13 +768,13 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             );
         }
     }
-    if (loadedSize as S64) < fs.totalSizeToLoad && displayLevel >= 1 as std::ffi::c_int {
+    if (loadedSize as i64) < fs.totalSizeToLoad && displayLevel >= 1 as std::ffi::c_int {
         fprintf(
             stderr,
             b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
                 as *const std::ffi::c_char,
             (fs.totalSizeToLoad
-                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)) as S64)
+                / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)) as i64)
                 as std::ffi::c_uint,
             (loadedSize
                 / (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))

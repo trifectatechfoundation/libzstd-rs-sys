@@ -17,9 +17,7 @@ extern "C" {
     fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __uint64_t = std::ffi::c_ulong;
-pub type uint64_t = __uint64_t;
-pub type PTime = uint64_t;
+pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_time_t {

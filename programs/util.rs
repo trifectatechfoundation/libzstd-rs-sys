@@ -88,7 +88,6 @@ extern "C" {
     fn opendir(__name: *const std::ffi::c_char) -> *mut DIR;
     fn readdir(__dirp: *mut DIR) -> *mut dirent;
 }
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __dev_t = std::ffi::c_ulong;
 pub type __uid_t = std::ffi::c_uint;
 pub type __gid_t = std::ffi::c_uint;
@@ -385,8 +384,6 @@ pub struct stat {
 pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const std::ffi::c_void, *const std::ffi::c_void) -> std::ffi::c_int,
 >;
-pub type uint64_t = __uint64_t;
-pub type U64 = uint64_t;
 pub type stat_t = stat;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1653,7 +1650,7 @@ pub unsafe extern "C" fn UTIL_fakeStderrIsConsole() {
     g_fakeStderrIsConsole = 1 as std::ffi::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_char) -> U64 {
+pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_char) -> u64 {
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -1708,7 +1705,7 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_cha
                 -(1 as std::ffi::c_int),
             );
         }
-        return UTIL_FILESIZE_UNKNOWN as U64;
+        return UTIL_FILESIZE_UNKNOWN as u64;
     }
     let size = UTIL_getFileSizeStat(&mut statbuf);
     if g_traceFileStat != 0 {
@@ -1725,17 +1722,17 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_cha
     size
 }
 #[no_mangle]
-pub unsafe extern "C" fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> U64 {
+pub unsafe extern "C" fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> u64 {
     if UTIL_isRegularFileStat(statbuf) == 0 {
-        return UTIL_FILESIZE_UNKNOWN as U64;
+        return UTIL_FILESIZE_UNKNOWN as u64;
     }
     if (*statbuf).st_mode & __S_IFMT as __mode_t != 0o100000 as std::ffi::c_int as __mode_t {
-        return UTIL_FILESIZE_UNKNOWN as U64;
+        return UTIL_FILESIZE_UNKNOWN as u64;
     }
-    (*statbuf).st_size as U64
+    (*statbuf).st_size as u64
 }
 #[no_mangle]
-pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: U64) -> UTIL_HumanReadableSize_t {
+pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: u64) -> UTIL_HumanReadableSize_t {
     let mut hrs = UTIL_HumanReadableSize_t {
         value: 0.,
         precision: 0,
@@ -1791,7 +1788,7 @@ pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: U64) -> UTIL_Human
             hrs.value = size as std::ffi::c_double;
             hrs.suffix = b" B\0" as *const u8 as *const std::ffi::c_char;
         }
-        if hrs.value >= 100 as std::ffi::c_int as std::ffi::c_double || hrs.value as U64 == size {
+        if hrs.value >= 100 as std::ffi::c_int as std::ffi::c_double || hrs.value as u64 == size {
             hrs.precision = 0 as std::ffi::c_int;
         } else if hrs.value >= 10 as std::ffi::c_int as std::ffi::c_double {
             hrs.precision = 1 as std::ffi::c_int;
@@ -1807,8 +1804,8 @@ pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: U64) -> UTIL_Human
 pub unsafe extern "C" fn UTIL_getTotalFileSize(
     mut fileNamesTable: *const *const std::ffi::c_char,
     mut nbFiles: std::ffi::c_uint,
-) -> U64 {
-    let mut total = 0 as std::ffi::c_int as U64;
+) -> u64 {
+    let mut total = 0 as std::ffi::c_int as u64;
     let mut n: std::ffi::c_uint = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -1829,7 +1826,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
     n = 0 as std::ffi::c_int as std::ffi::c_uint;
     while n < nbFiles {
         let size = UTIL_getFileSize(*fileNamesTable.offset(n as isize));
-        if size == UTIL_FILESIZE_UNKNOWN as U64 {
+        if size == UTIL_FILESIZE_UNKNOWN as u64 {
             if g_traceFileStat != 0 {
                 g_traceDepth -= 1;
                 g_traceDepth;
@@ -1841,7 +1838,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
                     -(1 as std::ffi::c_int),
                 );
             }
-            return UTIL_FILESIZE_UNKNOWN as U64;
+            return UTIL_FILESIZE_UNKNOWN as u64;
         }
         total = total.wrapping_add(size);
         n = n.wrapping_add(1);

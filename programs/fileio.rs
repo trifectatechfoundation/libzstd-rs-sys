@@ -80,7 +80,7 @@ extern "C" {
     fn UTIL_isDirectoryStat(statbuf: *const stat_t) -> std::ffi::c_int;
     fn UTIL_isFIFOStat(statbuf: *const stat_t) -> std::ffi::c_int;
     fn UTIL_isBlockDevStat(statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_getFileSizeStat(statbuf: *const stat_t) -> U64;
+    fn UTIL_getFileSizeStat(statbuf: *const stat_t) -> u64;
     fn UTIL_isFdRegularFile(fd: std::ffi::c_int) -> std::ffi::c_int;
     fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
     fn UTIL_isDirectory(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
@@ -100,8 +100,8 @@ extern "C" {
     ) -> std::ffi::c_int;
     fn UTIL_isFileDescriptorPipe(filename: *const std::ffi::c_char) -> std::ffi::c_int;
     fn UTIL_isConsole(file: *mut FILE) -> std::ffi::c_int;
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> U64;
-    fn UTIL_makeHumanReadableSize(size: U64) -> UTIL_HumanReadableSize_t;
+    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
+    fn UTIL_makeHumanReadableSize(size: u64) -> UTIL_HumanReadableSize_t;
     fn UTIL_compareStr(p1: *const std::ffi::c_void, p2: *const std::ffi::c_void)
         -> std::ffi::c_int;
     fn UTIL_mirrorSourceFilesDirectories(
@@ -251,12 +251,12 @@ extern "C" {
     fn lzma_version_string() -> *const std::ffi::c_char;
     fn lzma_code(strm: *mut lzma_stream, action: lzma_action) -> lzma_ret;
     fn lzma_end(strm: *mut lzma_stream);
-    fn lzma_lzma_preset(options: *mut lzma_options_lzma, preset: uint32_t) -> lzma_bool;
-    fn lzma_easy_encoder(strm: *mut lzma_stream, preset: uint32_t, check: lzma_check) -> lzma_ret;
+    fn lzma_lzma_preset(options: *mut lzma_options_lzma, preset: u32) -> lzma_bool;
+    fn lzma_easy_encoder(strm: *mut lzma_stream, preset: u32, check: lzma_check) -> lzma_ret;
     fn lzma_alone_encoder(strm: *mut lzma_stream, options: *const lzma_options_lzma) -> lzma_ret;
-    fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: uint64_t, flags: uint32_t)
+    fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: u64, flags: u32)
         -> lzma_ret;
-    fn lzma_alone_decoder(strm: *mut lzma_stream, memlimit: uint64_t) -> lzma_ret;
+    fn lzma_alone_decoder(strm: *mut lzma_stream, memlimit: u64) -> lzma_ret;
     fn mmap(
         __addr: *mut std::ffi::c_void,
         __len: size_t,
@@ -267,10 +267,6 @@ extern "C" {
     ) -> *mut std::ffi::c_void;
     fn munmap(__addr: *mut std::ffi::c_void, __len: size_t) -> std::ffi::c_int;
 }
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __dev_t = std::ffi::c_ulong;
 pub type __uid_t = std::ffi::c_uint;
 pub type __gid_t = std::ffi::c_uint;
@@ -405,17 +401,8 @@ pub struct stat {
 pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const std::ffi::c_void, *const std::ffi::c_void) -> std::ffi::c_int,
 >;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type BYTE = uint8_t;
-pub type U8 = uint8_t;
-pub type U16 = uint16_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
-pub type unalign16 = U16;
-pub type unalign32 = U32;
+pub type unalign16 = u16;
+pub type unalign32 = u32;
 pub type stat_t = stat;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -433,7 +420,7 @@ pub struct FileNamesTable {
     pub tableCapacity: size_t,
 }
 pub type __sighandler_t = Option<unsafe extern "C" fn(std::ffi::c_int) -> ()>;
-pub type PTime = uint64_t;
+pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_time_t {
@@ -697,11 +684,11 @@ pub struct cRess_t {
 pub struct ReadPoolCtx_t {
     pub base: IOPoolCtx_t,
     pub reachedEof: std::ffi::c_int,
-    pub nextReadOffset: U64,
-    pub waitingOnOffset: U64,
+    pub nextReadOffset: u64,
+    pub waitingOnOffset: u64,
     pub currentJobHeld: *mut std::ffi::c_void,
-    pub coalesceBuffer: *mut U8,
-    pub srcBuffer: *mut U8,
+    pub coalesceBuffer: *mut u8,
+    pub srcBuffer: *mut u8,
     pub srcBufferLoaded: size_t,
     pub completedJobs: [*mut std::ffi::c_void; 10],
     pub completedJobsCount: std::ffi::c_int,
@@ -737,25 +724,25 @@ pub struct IOJob_t {
     pub buffer: *mut std::ffi::c_void,
     pub bufferSize: size_t,
     pub usedBufferSize: size_t,
-    pub offset: U64,
+    pub offset: u64,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct lzma_stream {
-    pub next_in: *const uint8_t,
+    pub next_in: *const u8,
     pub avail_in: size_t,
-    pub total_in: uint64_t,
-    pub next_out: *mut uint8_t,
+    pub total_in: u64,
+    pub next_out: *mut u8,
     pub avail_out: size_t,
-    pub total_out: uint64_t,
+    pub total_out: u64,
     pub allocator: *const lzma_allocator,
     pub internal: *mut lzma_internal,
     pub reserved_ptr1: *mut std::ffi::c_void,
     pub reserved_ptr2: *mut std::ffi::c_void,
     pub reserved_ptr3: *mut std::ffi::c_void,
     pub reserved_ptr4: *mut std::ffi::c_void,
-    pub seek_pos: uint64_t,
-    pub reserved_int2: uint64_t,
+    pub seek_pos: u64,
+    pub reserved_int2: u64,
     pub reserved_int3: size_t,
     pub reserved_int4: size_t,
     pub reserved_enum1: lzma_reserved_enum,
@@ -809,24 +796,24 @@ pub const LZMA_CHECK_NONE: lzma_check = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct lzma_options_lzma {
-    pub dict_size: uint32_t,
-    pub preset_dict: *const uint8_t,
-    pub preset_dict_size: uint32_t,
-    pub lc: uint32_t,
-    pub lp: uint32_t,
-    pub pb: uint32_t,
+    pub dict_size: u32,
+    pub preset_dict: *const u8,
+    pub preset_dict_size: u32,
+    pub lc: u32,
+    pub lp: u32,
+    pub pb: u32,
     pub mode: lzma_mode,
-    pub nice_len: uint32_t,
+    pub nice_len: u32,
     pub mf: lzma_match_finder,
-    pub depth: uint32_t,
-    pub ext_flags: uint32_t,
-    pub ext_size_low: uint32_t,
-    pub ext_size_high: uint32_t,
-    pub reserved_int4: uint32_t,
-    pub reserved_int5: uint32_t,
-    pub reserved_int6: uint32_t,
-    pub reserved_int7: uint32_t,
-    pub reserved_int8: uint32_t,
+    pub depth: u32,
+    pub ext_flags: u32,
+    pub ext_size_low: u32,
+    pub ext_size_high: u32,
+    pub reserved_int4: u32,
+    pub reserved_int5: u32,
+    pub reserved_int6: u32,
+    pub reserved_int7: u32,
+    pub reserved_int8: u32,
     pub reserved_enum1: lzma_reserved_enum,
     pub reserved_enum2: lzma_reserved_enum,
     pub reserved_enum3: lzma_reserved_enum,
@@ -886,15 +873,15 @@ pub struct dRess_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fileInfo_t {
-    pub decompressedSize: U64,
-    pub compressedSize: U64,
-    pub windowSize: U64,
+    pub decompressedSize: u64,
+    pub compressedSize: u64,
+    pub windowSize: u64,
     pub numActualFrames: std::ffi::c_int,
     pub numSkippableFrames: std::ffi::c_int,
     pub decompUnavailable: std::ffi::c_int,
     pub usesCheck: std::ffi::c_int,
-    pub checksum: [BYTE; 4],
-    pub nbFiles: U32,
+    pub checksum: [u8; 4],
+    pub nbFiles: u32,
     pub dictID: std::ffi::c_uint,
 }
 pub type InfoError = std::ffi::c_uint;
@@ -2024,7 +2011,7 @@ unsafe extern "C" fn FIO_setDictBufferMalloc(
     mut dictFileStat: *mut stat_t,
 ) -> size_t {
     let mut fileHandle = std::ptr::null_mut::<FILE>();
-    let mut fileSize: U64 = 0;
+    let mut fileSize: u64 = 0;
     let mut bufferPtr: *mut *mut std::ffi::c_void = &mut (*dict).dictBuffer;
     if !bufferPtr.is_null() {
     } else {
@@ -2260,7 +2247,7 @@ unsafe extern "C" fn FIO_setDictBufferMMap(
     mut dictFileStat: *mut stat_t,
 ) -> size_t {
     let mut fileHandle: std::ffi::c_int = 0;
-    let mut fileSize: U64 = 0;
+    let mut fileSize: u64 = 0;
     let mut bufferPtr: *mut *mut std::ffi::c_void = &mut (*dict).dictBuffer;
     if !bufferPtr.is_null() {
     } else {
@@ -2781,7 +2768,7 @@ unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
         }
         exit(42 as std::ffi::c_int);
     }
-    if maxSize != -(1 as std::ffi::c_int) as U64 as std::ffi::c_ulonglong {
+    if maxSize != -(1 as std::ffi::c_int) as u64 as std::ffi::c_ulonglong {
     } else {
         __assert_fail(
             b"maxSize != UTIL_FILESIZE_UNKNOWN\0" as *const u8
@@ -2798,7 +2785,7 @@ unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
         );
     }
     'c_21413: {
-        if maxSize != -(1 as std::ffi::c_int) as U64 as std::ffi::c_ulonglong {
+        if maxSize != -(1 as std::ffi::c_int) as u64 as std::ffi::c_ulonglong {
         } else {
             __assert_fail(
                 b"maxSize != UTIL_FILESIZE_UNKNOWN\0" as *const u8
@@ -3052,10 +3039,10 @@ unsafe extern "C" fn setOutBuffer(
     o.pos = pos;
     o
 }
-unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: U32, mut strat: ZSTD_strategy) -> U32 {
+unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
     let btScale =
-        (strat as U32 >= ZSTD_btlazy2 as std::ffi::c_int as U32) as std::ffi::c_int as U32;
-    if hashLog > 1 as std::ffi::c_int as U32 {
+        (strat as u32 >= ZSTD_btlazy2 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
+    if hashLog > 1 as std::ffi::c_int as u32 {
     } else {
         __assert_fail(
             b"hashLog > 1\0" as *const u8 as *const std::ffi::c_char,
@@ -3068,7 +3055,7 @@ unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: U32, mut strat: ZSTD_strategy) -
         );
     }
     'c_20970: {
-        if hashLog > 1 as std::ffi::c_int as U32 {
+        if hashLog > 1 as std::ffi::c_int as u32 {
         } else {
             __assert_fail(
                 b"hashLog > 1\0" as *const u8 as *const std::ffi::c_char,
@@ -3333,7 +3320,7 @@ unsafe extern "C" fn FIO_createCResources(
     if (*prefs).patchFromMode != 0 {
         let dictSize = UTIL_getFileSizeStat(&mut ress.dictFileStat);
         let ssSize = (*prefs).streamSrcSize as std::ffi::c_ulonglong;
-        useMMap |= (dictSize > (*prefs).memLimit as U64) as std::ffi::c_int;
+        useMMap |= (dictSize > (*prefs).memLimit as u64) as std::ffi::c_int;
         FIO_adjustParamsForPatchFromMode(
             prefs,
             &mut comprParams,
@@ -4588,9 +4575,9 @@ unsafe extern "C" fn FIO_freeCResources(ress: *mut cRess_t) {
 unsafe extern "C" fn FIO_compressGzFrame(
     mut ress: *const cRess_t,
     mut srcFileName: *const std::ffi::c_char,
-    srcFileSize: U64,
+    srcFileSize: u64,
     mut compressionLevel: std::ffi::c_int,
-    mut readsize: *mut U64,
+    mut readsize: *mut u64,
 ) -> std::ffi::c_ulonglong {
     let mut inFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
@@ -4722,7 +4709,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
             strm.next_out = (*writeJob).buffer as *mut Bytef;
             strm.avail_out = (*writeJob).bufferSize as uInt;
         }
-        if srcFileSize == UTIL_FILESIZE_UNKNOWN as U64 {
+        if srcFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
             if g_display_prefs.progressSetting as std::ffi::c_uint
                 != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
@@ -4850,7 +4837,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
         }
         exit(79 as std::ffi::c_int);
     }
-    *readsize = inFileSize as U64;
+    *readsize = inFileSize as u64;
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     outFileSize
@@ -4858,29 +4845,29 @@ unsafe extern "C" fn FIO_compressGzFrame(
 unsafe extern "C" fn FIO_compressLzmaFrame(
     mut ress: *mut cRess_t,
     mut srcFileName: *const std::ffi::c_char,
-    srcFileSize: U64,
+    srcFileSize: u64,
     mut compressionLevel: std::ffi::c_int,
-    mut readsize: *mut U64,
+    mut readsize: *mut u64,
     mut plain_lzma: std::ffi::c_int,
 ) -> std::ffi::c_ulonglong {
     let mut inFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
-            next_in: NULL as *const uint8_t,
+            next_in: NULL as *const u8,
             avail_in: 0 as std::ffi::c_int as size_t,
-            total_in: 0 as std::ffi::c_int as uint64_t,
-            next_out: NULL as *mut uint8_t,
+            total_in: 0 as std::ffi::c_int as u64,
+            next_out: NULL as *mut u8,
             avail_out: 0 as std::ffi::c_int as size_t,
-            total_out: 0 as std::ffi::c_int as uint64_t,
+            total_out: 0 as std::ffi::c_int as u64,
             allocator: NULL as *const lzma_allocator,
             internal: NULL as *mut lzma_internal,
             reserved_ptr1: NULL as *mut std::ffi::c_void,
             reserved_ptr2: NULL as *mut std::ffi::c_void,
             reserved_ptr3: NULL as *mut std::ffi::c_void,
             reserved_ptr4: NULL as *mut std::ffi::c_void,
-            seek_pos: 0 as std::ffi::c_int as uint64_t,
-            reserved_int2: 0 as std::ffi::c_int as uint64_t,
+            seek_pos: 0 as std::ffi::c_int as u64,
+            reserved_int2: 0 as std::ffi::c_int as u64,
             reserved_int3: 0 as std::ffi::c_int as size_t,
             reserved_int4: 0 as std::ffi::c_int as size_t,
             reserved_enum1: LZMA_RESERVED_ENUM,
@@ -4899,7 +4886,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     if plain_lzma != 0 {
         let mut opt_lzma = lzma_options_lzma {
             dict_size: 0,
-            preset_dict: std::ptr::null::<uint8_t>(),
+            preset_dict: std::ptr::null::<u8>(),
             preset_dict_size: 0,
             lc: 0,
             lp: 0,
@@ -4923,7 +4910,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
             reserved_ptr1: std::ptr::null_mut::<std::ffi::c_void>(),
             reserved_ptr2: std::ptr::null_mut::<std::ffi::c_void>(),
         };
-        if lzma_lzma_preset(&mut opt_lzma, compressionLevel as uint32_t) != 0 {
+        if lzma_lzma_preset(&mut opt_lzma, compressionLevel as u32) != 0 {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
             }
@@ -4989,7 +4976,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
             exit(82 as std::ffi::c_int);
         }
     } else {
-        ret = lzma_easy_encoder(&mut strm, compressionLevel as uint32_t, LZMA_CHECK_CRC64);
+        ret = lzma_easy_encoder(&mut strm, compressionLevel as u32, LZMA_CHECK_CRC64);
         if ret as std::ffi::c_uint != LZMA_OK as std::ffi::c_int as std::ffi::c_uint {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                 fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
@@ -5025,9 +5012,9 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
         }
     }
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
-    strm.next_out = (*writeJob).buffer as *mut BYTE;
+    strm.next_out = (*writeJob).buffer as *mut u8;
     strm.avail_out = (*writeJob).bufferSize;
-    strm.next_in = std::ptr::null::<uint8_t>();
+    strm.next_in = std::ptr::null::<u8>();
     strm.avail_in = 0 as std::ffi::c_int as size_t;
     loop {
         if strm.avail_in == 0 as std::ffi::c_int as size_t {
@@ -5036,7 +5023,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                 action = LZMA_FINISH;
             }
             inFileSize = inFileSize.wrapping_add(inSize as std::ffi::c_ulonglong);
-            strm.next_in = (*(*ress).readCtx).srcBuffer as *const BYTE;
+            strm.next_in = (*(*ress).readCtx).srcBuffer as *const u8;
             strm.avail_in = (*(*ress).readCtx).srcBufferLoaded;
         }
         let availBefore = strm.avail_in;
@@ -5082,10 +5069,10 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
             (*writeJob).usedBufferSize = compBytes;
             AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
             outFileSize = outFileSize.wrapping_add(compBytes as std::ffi::c_ulonglong);
-            strm.next_out = (*writeJob).buffer as *mut BYTE;
+            strm.next_out = (*writeJob).buffer as *mut u8;
             strm.avail_out = (*writeJob).bufferSize;
         }
-        if srcFileSize == UTIL_FILESIZE_UNKNOWN as U64 {
+        if srcFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
             if g_display_prefs.progressSetting as std::ffi::c_uint
                 != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                 && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
@@ -5138,7 +5125,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
         }
     }
     lzma_end(&mut strm);
-    *readsize = inFileSize as U64;
+    *readsize = inFileSize as u64;
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     outFileSize
@@ -5148,15 +5135,15 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     prefs: *mut FIO_prefs_t,
     mut ressPtr: *const cRess_t,
     mut srcFileName: *const std::ffi::c_char,
-    mut fileSize: U64,
+    mut fileSize: u64,
     mut compressionLevel: std::ffi::c_int,
-    mut readsize: *mut U64,
+    mut readsize: *mut u64,
 ) -> std::ffi::c_ulonglong {
     let ress = *ressPtr;
     let mut writeJob = AIO_WritePool_acquireJob((*ressPtr).writeCtx);
-    let mut compressedfilesize = 0 as std::ffi::c_int as U64;
+    let mut compressedfilesize = 0 as std::ffi::c_int as u64;
     let mut directive = ZSTD_e_continue;
-    let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN as U64;
+    let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN as u64;
     let mut previous_zfp_update = {
         ZSTD_frameProgression {
             ingested: 0 as std::ffi::c_int as std::ffi::c_ulonglong,
@@ -5191,7 +5178,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
             b"compression using zstd format \n\0" as *const u8 as *const std::ffi::c_char,
         );
     }
-    if fileSize != UTIL_FILESIZE_UNKNOWN as U64 {
+    if fileSize != UTIL_FILESIZE_UNKNOWN as u64 {
         pledgedSrcSize = fileSize;
         let mut err: size_t = 0;
         err = ZSTD_CCtx_setPledgedSrcSize(ress.cctx, fileSize as std::ffi::c_ulonglong);
@@ -5355,7 +5342,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
             (1 as std::ffi::c_ulonglong) << windowLog
         } else {
             pledgedSrcSize as std::ffi::c_ulonglong
-        }) as U64,
+        }) as u64,
     );
     if g_display_prefs.displayLevel >= 4 as std::ffi::c_int {
         fprintf(
@@ -5382,7 +5369,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                 inSize as std::ffi::c_uint,
             );
         }
-        *readsize = (*readsize as std::ffi::c_ulong).wrapping_add(inSize) as U64 as U64;
+        *readsize = (*readsize as std::ffi::c_ulong).wrapping_add(inSize) as u64 as u64;
         if (*ress.readCtx).srcBufferLoaded == 0 as std::ffi::c_int as size_t
             || *readsize == fileSize
         {
@@ -5466,7 +5453,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                 (*writeJob).usedBufferSize = outBuff.pos;
                 AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
                 compressedfilesize = (compressedfilesize as std::ffi::c_ulong)
-                    .wrapping_add(outBuff.pos) as U64 as U64;
+                    .wrapping_add(outBuff.pos) as u64 as u64;
             }
             if (*prefs).adaptiveMode != 0 && UTIL_clockSpanMicro(lastAdaptTime) > adaptEveryMicro {
                 let zfp = ZSTD_getFrameProgression(ress.cctx);
@@ -5756,10 +5743,10 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                     ) as std::ffi::c_double
                     * 100 as std::ffi::c_int as std::ffi::c_double;
                 let buffered_hrs = UTIL_makeHumanReadableSize(
-                    (zfp_0.ingested).wrapping_sub(zfp_0.consumed) as U64,
+                    (zfp_0.ingested).wrapping_sub(zfp_0.consumed) as u64,
                 );
-                let consumed_hrs = UTIL_makeHumanReadableSize(zfp_0.consumed as U64);
-                let produced_hrs = UTIL_makeHumanReadableSize(zfp_0.produced as U64);
+                let consumed_hrs = UTIL_makeHumanReadableSize(zfp_0.consumed as u64);
+                let produced_hrs = UTIL_makeHumanReadableSize(zfp_0.produced as u64);
                 g_displayClock = UTIL_getTime();
                 if g_display_prefs.progressSetting as std::ffi::c_uint
                     != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
@@ -5856,7 +5843,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                             consumed_hrs.suffix,
                         );
                     }
-                    if fileSize != UTIL_FILESIZE_UNKNOWN as U64
+                    if fileSize != UTIL_FILESIZE_UNKNOWN as u64
                         && g_display_prefs.progressSetting as std::ffi::c_uint
                             != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
                         && (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
@@ -5892,7 +5879,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
             break;
         }
     }
-    if fileSize != UTIL_FILESIZE_UNKNOWN as U64 && *readsize != fileSize {
+    if fileSize != UTIL_FILESIZE_UNKNOWN as u64 && *readsize != fileSize {
         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const std::ffi::c_char);
         }
@@ -5939,8 +5926,8 @@ unsafe extern "C" fn FIO_compressFilename_internal(
 ) -> std::ffi::c_int {
     let timeStart = UTIL_getTime();
     let cpuStart = clock();
-    let mut readsize = 0 as std::ffi::c_int as U64;
-    let mut compressedfilesize = 0 as std::ffi::c_int as U64;
+    let mut readsize = 0 as std::ffi::c_int as u64;
+    let mut compressedfilesize = 0 as std::ffi::c_int as u64;
     let fileSize = UTIL_getFileSize(srcFileName);
     if g_display_prefs.displayLevel >= 5 as std::ffi::c_int {
         fprintf(
@@ -5958,7 +5945,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                 fileSize,
                 compressionLevel,
                 &mut readsize,
-            ) as U64;
+            ) as u64;
         }
         2 | 3 => {
             compressedfilesize = FIO_compressLzmaFrame(
@@ -5970,7 +5957,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                 ((*prefs).compressionType as std::ffi::c_uint
                     == FIO_lzmaCompression as std::ffi::c_int as std::ffi::c_uint)
                     as std::ffi::c_int,
-            ) as U64;
+            ) as u64;
         }
         4 => {
             if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -6013,7 +6000,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                 fileSize,
                 compressionLevel,
                 &mut readsize,
-            ) as U64;
+            ) as u64;
         }
     }
     (*fCtx).totalBytesInput = ((*fCtx).totalBytesInput).wrapping_add(readsize);
@@ -6034,7 +6021,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
     if FIO_shouldDisplayFileSummary(fCtx) != 0 {
         let mut hr_isize = UTIL_makeHumanReadableSize(readsize);
         let mut hr_osize = UTIL_makeHumanReadableSize(compressedfilesize);
-        if readsize == 0 as std::ffi::c_int as U64 {
+        if readsize == 0 as std::ffi::c_int as u64 {
             if (g_display_prefs.displayLevel >= 2 as std::ffi::c_int
                 || g_display_prefs.progressSetting as std::ffi::c_uint
                     == FIO_ps_always as std::ffi::c_int as std::ffi::c_uint)
@@ -6367,7 +6354,7 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
         },
         __glibc_reserved: [0; 3],
     };
-    let mut fileSize = UTIL_FILESIZE_UNKNOWN as U64;
+    let mut fileSize = UTIL_FILESIZE_UNKNOWN as u64;
     if g_display_prefs.displayLevel >= 6 as std::ffi::c_int {
         fprintf(
             stderr,
@@ -6426,8 +6413,8 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
     if strcmp(srcFileName, stdinmark.as_ptr()) != 0 {
         fileSize = UTIL_getFileSizeStat(&mut srcFileStat);
     }
-    if fileSize != UTIL_FILESIZE_UNKNOWN as U64
-        && fileSize < (ZSTD_BLOCKSIZE_MAX * 3 as std::ffi::c_int) as U64
+    if fileSize != UTIL_FILESIZE_UNKNOWN as u64
+        && fileSize < (ZSTD_BLOCKSIZE_MAX * 3 as std::ffi::c_int) as u64
     {
         AIO_ReadPool_setAsync(ress.readCtx, 0 as std::ffi::c_int);
         AIO_WritePool_setAsync(ress.writeCtx, 0 as std::ffi::c_int);
@@ -7203,7 +7190,7 @@ unsafe extern "C" fn FIO_createDResources(
     FIO_getDictFileStat(dictFileName, &mut statbuf);
     if (*prefs).patchFromMode != 0 {
         let dictSize = UTIL_getFileSizeStat(&mut statbuf);
-        useMMap |= (dictSize > (*prefs).memLimit as U64) as std::ffi::c_int;
+        useMMap |= (dictSize > (*prefs).memLimit as u64) as std::ffi::c_int;
         FIO_adjustMemLimitForPatchFromMode(
             prefs,
             dictSize as std::ffi::c_ulonglong,
@@ -7707,7 +7694,7 @@ unsafe extern "C" fn FIO_zstdErrorHelp(
                     as std::ffi::c_int as std::ffi::c_ulonglong,
             ) as std::ffi::c_uint;
             if windowSize
-                < ((1 as std::ffi::c_ulonglong) << 52 as std::ffi::c_int) as U64
+                < ((1 as std::ffi::c_ulonglong) << 52 as std::ffi::c_int) as u64
                     as std::ffi::c_ulonglong
             {
             } else {
@@ -7727,7 +7714,7 @@ unsafe extern "C" fn FIO_zstdErrorHelp(
             }
             'c_33616: {
                 if windowSize
-                    < ((1 as std::ffi::c_ulonglong) << 52 as std::ffi::c_int) as U64
+                    < ((1 as std::ffi::c_ulonglong) << 52 as std::ffi::c_int) as u64
                         as std::ffi::c_ulonglong
                 {
                 } else {
@@ -7781,9 +7768,9 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
     mut ress: *mut dRess_t,
     prefs: *const FIO_prefs_t,
     mut srcFileName: *const std::ffi::c_char,
-    mut alreadyDecoded: U64,
+    mut alreadyDecoded: u64,
 ) -> std::ffi::c_ulonglong {
-    let mut frameSize = 0 as std::ffi::c_int as U64;
+    let mut frameSize = 0 as std::ffi::c_int as u64;
     let mut srcFName20 = srcFileName;
     let mut writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
     if !writeJob.is_null() {
@@ -7855,7 +7842,7 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
         }
         (*writeJob).usedBufferSize = outBuff.pos;
         AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
-        frameSize = (frameSize as std::ffi::c_ulong).wrapping_add(outBuff.pos) as U64 as U64;
+        frameSize = (frameSize as std::ffi::c_ulong).wrapping_add(outBuff.pos) as u64 as u64;
         if (*fCtx).nbFilesTotal > 1 as std::ffi::c_int {
             if g_display_prefs.progressSetting as std::ffi::c_uint
                 != FIO_ps_never as std::ffi::c_int as std::ffi::c_uint
@@ -8056,20 +8043,20 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
     let mut outFileSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
-            next_in: NULL as *const uint8_t,
+            next_in: NULL as *const u8,
             avail_in: 0 as std::ffi::c_int as size_t,
-            total_in: 0 as std::ffi::c_int as uint64_t,
-            next_out: NULL as *mut uint8_t,
+            total_in: 0 as std::ffi::c_int as u64,
+            next_out: NULL as *mut u8,
             avail_out: 0 as std::ffi::c_int as size_t,
-            total_out: 0 as std::ffi::c_int as uint64_t,
+            total_out: 0 as std::ffi::c_int as u64,
             allocator: NULL as *const lzma_allocator,
             internal: NULL as *mut lzma_internal,
             reserved_ptr1: NULL as *mut std::ffi::c_void,
             reserved_ptr2: NULL as *mut std::ffi::c_void,
             reserved_ptr3: NULL as *mut std::ffi::c_void,
             reserved_ptr4: NULL as *mut std::ffi::c_void,
-            seek_pos: 0 as std::ffi::c_int as uint64_t,
-            reserved_int2: 0 as std::ffi::c_int as uint64_t,
+            seek_pos: 0 as std::ffi::c_int as u64,
+            reserved_int2: 0 as std::ffi::c_int as u64,
             reserved_int3: 0 as std::ffi::c_int as size_t,
             reserved_int4: 0 as std::ffi::c_int as size_t,
             reserved_enum1: LZMA_RESERVED_ENUM,
@@ -8080,12 +8067,12 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
     let mut initRet = LZMA_OK;
     let mut decodingError = 0 as std::ffi::c_int;
     let mut writeJob = NULL as *mut IOJob_t;
-    strm.next_in = std::ptr::null::<uint8_t>();
+    strm.next_in = std::ptr::null::<u8>();
     strm.avail_in = 0 as std::ffi::c_int as size_t;
     if plain_lzma != 0 {
         initRet = lzma_alone_decoder(&mut strm, UINT64_MAX);
     } else {
-        initRet = lzma_stream_decoder(&mut strm, UINT64_MAX, 0 as std::ffi::c_int as uint32_t);
+        initRet = lzma_stream_decoder(&mut strm, UINT64_MAX, 0 as std::ffi::c_int as u32);
     }
     if initRet as std::ffi::c_uint != LZMA_OK as std::ffi::c_int as std::ffi::c_uint {
         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -8104,9 +8091,9 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
         return FIO_ERROR_FRAME_DECODING as std::ffi::c_ulonglong;
     }
     writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
-    strm.next_out = (*writeJob).buffer as *mut BYTE;
+    strm.next_out = (*writeJob).buffer as *mut u8;
     strm.avail_out = (*writeJob).bufferSize;
-    strm.next_in = (*(*ress).readCtx).srcBuffer as *const BYTE;
+    strm.next_in = (*(*ress).readCtx).srcBuffer as *const u8;
     strm.avail_in = (*(*ress).readCtx).srcBufferLoaded;
     loop {
         let mut ret = LZMA_OK;
@@ -8115,7 +8102,7 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
             if (*(*ress).readCtx).srcBufferLoaded == 0 as std::ffi::c_int as size_t {
                 action = LZMA_FINISH;
             }
-            strm.next_in = (*(*ress).readCtx).srcBuffer as *const BYTE;
+            strm.next_in = (*(*ress).readCtx).srcBuffer as *const u8;
             strm.avail_in = (*(*ress).readCtx).srcBufferLoaded;
         }
         ret = lzma_code(&mut strm, action);
@@ -8149,7 +8136,7 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
                 (*writeJob).usedBufferSize = decompBytes;
                 AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
                 outFileSize = outFileSize.wrapping_add(decompBytes as std::ffi::c_ulonglong);
-                strm.next_out = (*writeJob).buffer as *mut BYTE;
+                strm.next_out = (*writeJob).buffer as *mut u8;
                 strm.avail_out = (*writeJob).bufferSize;
             }
             if ret as std::ffi::c_uint == LZMA_STREAM_END as std::ffi::c_int as std::ffi::c_uint {
@@ -8220,9 +8207,9 @@ unsafe extern "C" fn FIO_decompressFrames(
     };
     loop {
         let toRead = 4 as std::ffi::c_int as size_t;
-        let mut buf = std::ptr::null::<BYTE>();
+        let mut buf = std::ptr::null::<u8>();
         AIO_ReadPool_fillBuffer(ress.readCtx, toRead);
-        buf = (*ress.readCtx).srcBuffer as *const BYTE;
+        buf = (*ress.readCtx).srcBuffer as *const u8;
         if (*ress.readCtx).srcBufferLoaded == 0 as std::ffi::c_int as size_t {
             if readSomething == 0 as std::ffi::c_int as std::ffi::c_uint {
                 if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -8257,7 +8244,7 @@ unsafe extern "C" fn FIO_decompressFrames(
             ) != 0
             {
                 let frameSize =
-                    FIO_decompressZstdFrame(fCtx, &mut ress, prefs, srcFileName, filesize as U64);
+                    FIO_decompressZstdFrame(fCtx, &mut ress, prefs, srcFileName, filesize as u64);
                 if frameSize == FIO_ERROR_FRAME_DECODING as std::ffi::c_ulonglong {
                     return 1 as std::ffi::c_int;
                 }
@@ -8291,7 +8278,7 @@ unsafe extern "C" fn FIO_decompressFrames(
                     return 1 as std::ffi::c_int;
                 }
                 filesize = filesize.wrapping_add(frameSize_1);
-            } else if MEM_readLE32(buf as *const std::ffi::c_void) == LZ4_MAGICNUMBER as U32 {
+            } else if MEM_readLE32(buf as *const std::ffi::c_void) == LZ4_MAGICNUMBER as u32 {
                 if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                     fprintf(
                         stderr,
@@ -8438,7 +8425,7 @@ unsafe extern "C" fn FIO_decompressSrcFile(
         __glibc_reserved: [0; 3],
     };
     let mut result: std::ffi::c_int = 0;
-    let mut fileSize = UTIL_FILESIZE_UNKNOWN as U64;
+    let mut fileSize = UTIL_FILESIZE_UNKNOWN as u64;
     if UTIL_isDirectory(srcFileName) != 0 {
         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
             fprintf(
@@ -8456,8 +8443,8 @@ unsafe extern "C" fn FIO_decompressSrcFile(
     if strcmp(srcFileName, stdinmark.as_ptr()) != 0 {
         fileSize = UTIL_getFileSizeStat(&mut srcFileStat);
     }
-    if fileSize != UTIL_FILESIZE_UNKNOWN as U64
-        && fileSize < (ZSTD_BLOCKSIZE_MAX * 3 as std::ffi::c_int) as U64
+    if fileSize != UTIL_FILESIZE_UNKNOWN as u64
+        && fileSize < (ZSTD_BLOCKSIZE_MAX * 3 as std::ffi::c_int) as u64
     {
         AIO_ReadPool_setAsync(ress.readCtx, 0 as std::ffi::c_int);
         AIO_WritePool_setAsync(ress.writeCtx, 0 as std::ffi::c_int);
@@ -8891,11 +8878,11 @@ pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
 }
 unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
     loop {
-        let mut headerBuffer: [BYTE; 18] = [0; 18];
+        let mut headerBuffer: [u8; 18] = [0; 18];
         let numBytesRead = fread(
             headerBuffer.as_mut_ptr() as *mut std::ffi::c_void,
             1 as std::ffi::c_int as std::ffi::c_ulong,
-            ::core::mem::size_of::<[BYTE; 18]>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<[u8; 18]>() as std::ffi::c_ulong,
             srcFile,
         );
         if numBytesRead
@@ -8907,8 +8894,8 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
         {
             if feof(srcFile) != 0
                 && numBytesRead == 0 as std::ffi::c_int as size_t
-                && (*info).compressedSize > 0 as std::ffi::c_int as U64
-                && (*info).compressedSize != UTIL_FILESIZE_UNKNOWN as U64
+                && (*info).compressedSize > 0 as std::ffi::c_int as u64
+                && (*info).compressedSize != UTIL_FILESIZE_UNKNOWN as u64
             {
                 let mut file_position = ftell(srcFile) as std::ffi::c_ulonglong;
                 let mut file_size = (*info).compressedSize as std::ffi::c_ulonglong;
@@ -8971,7 +8958,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                 let frameContentSize = ZSTD_getFrameContentSize(
                     headerBuffer.as_mut_ptr() as *const std::ffi::c_void,
                     numBytesRead,
-                ) as U64;
+                ) as u64;
                 if frameContentSize as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_ERROR
                     || frameContentSize as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
                 {
@@ -9010,7 +8997,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                 } else {
                     (*info).dictID = header.dictID;
                 }
-                (*info).windowSize = header.windowSize as U64;
+                (*info).windowSize = header.windowSize as u64;
                 let headerSize = ZSTD_frameHeaderSize(
                     headerBuffer.as_mut_ptr() as *const std::ffi::c_void,
                     numBytesRead,
@@ -9048,7 +9035,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                 }
                 let mut lastBlock = 0 as std::ffi::c_int;
                 loop {
-                    let mut blockHeaderBuffer: [BYTE; 3] = [0; 3];
+                    let mut blockHeaderBuffer: [u8; 3] = [0; 3];
                     if fread(
                         blockHeaderBuffer.as_mut_ptr() as *mut std::ffi::c_void,
                         1 as std::ffi::c_int as std::ffi::c_ulong,
@@ -9071,11 +9058,11 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                     let blockHeader =
                         MEM_readLE24(blockHeaderBuffer.as_mut_ptr() as *const std::ffi::c_void);
                     let blockTypeID =
-                        blockHeader >> 1 as std::ffi::c_int & 3 as std::ffi::c_int as U32;
+                        blockHeader >> 1 as std::ffi::c_int & 3 as std::ffi::c_int as u32;
                     let isRLE =
-                        (blockTypeID == 1 as std::ffi::c_int as U32) as std::ffi::c_int as U32;
+                        (blockTypeID == 1 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
                     let isWrongBlock =
-                        (blockTypeID == 3 as std::ffi::c_int as U32) as std::ffi::c_int as U32;
+                        (blockTypeID == 3 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
                     let blockSize = if isRLE != 0 {
                         1 as std::ffi::c_int as std::ffi::c_long
                     } else {
@@ -9094,7 +9081,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                         }
                         return info_frame_error;
                     }
-                    lastBlock = (blockHeader & 1 as std::ffi::c_int as U32) as std::ffi::c_int;
+                    lastBlock = (blockHeader & 1 as std::ffi::c_int as u32) as std::ffi::c_int;
                     if fseek(srcFile, blockSize, 1 as std::ffi::c_int) != 0 as std::ffi::c_int {
                         if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
                             fprintf(
@@ -9151,7 +9138,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
                         .offset(4 as std::ffi::c_int as isize)
                         as *const std::ffi::c_void,
                 );
-                let seek = ((8 as std::ffi::c_int as U32).wrapping_add(frameSize) as size_t)
+                let seek = ((8 as std::ffi::c_int as u32).wrapping_add(frameSize) as size_t)
                     .wrapping_sub(numBytesRead) as std::ffi::c_long;
                 if fseek(srcFile, seek, 1 as std::ffi::c_int) != 0 as std::ffi::c_int {
                     if g_display_prefs.displayLevel >= 1 as std::ffi::c_int {
@@ -9223,7 +9210,7 @@ unsafe extern "C" fn getFileInfo_fileConfirmed(
     (*info).compressedSize = UTIL_getFileSizeStat(&mut srcFileStat);
     status = FIO_analyzeFrames(info, srcFile);
     fclose(srcFile);
-    (*info).nbFiles = 1 as std::ffi::c_int as U32;
+    (*info).nbFiles = 1 as std::ffi::c_int as u32;
     status
 }
 unsafe extern "C" fn getFileInfo(
@@ -9253,7 +9240,7 @@ unsafe extern "C" fn displayInfo(
     let window_hrs = UTIL_makeHumanReadableSize((*info).windowSize);
     let compressed_hrs = UTIL_makeHumanReadableSize((*info).compressedSize);
     let decompressed_hrs = UTIL_makeHumanReadableSize((*info).decompressedSize);
-    let ratio = if (*info).compressedSize == 0 as std::ffi::c_int as U64 {
+    let ratio = if (*info).compressedSize == 0 as std::ffi::c_int as u64 {
         0 as std::ffi::c_int as std::ffi::c_double
     } else {
         (*info).decompressedSize as std::ffi::c_double
@@ -9589,7 +9576,7 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
     if numFiles > 1 as std::ffi::c_int as std::ffi::c_uint && displayLevel <= 2 as std::ffi::c_int {
         let compressed_hrs = UTIL_makeHumanReadableSize(total.compressedSize);
         let decompressed_hrs = UTIL_makeHumanReadableSize(total.decompressedSize);
-        let ratio = if total.compressedSize == 0 as std::ffi::c_int as U64 {
+        let ratio = if total.compressedSize == 0 as std::ffi::c_int as u64 {
             0 as std::ffi::c_int as std::ffi::c_double
         } else {
             total.decompressedSize as std::ffi::c_double

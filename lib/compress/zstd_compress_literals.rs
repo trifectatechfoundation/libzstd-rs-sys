@@ -27,17 +27,8 @@ extern "C" {
     ) -> size_t;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type BYTE = uint8_t;
-pub type U16 = uint16_t;
-pub type U32 = uint32_t;
-pub type unalign16 = U16;
-pub type unalign32 = U32;
+pub type unalign16 = u16;
+pub type unalign32 = u32;
 pub type C2RustUnnamed = std::ffi::c_uint;
 pub const ZSTD_error_maxCode: C2RustUnnamed = 120;
 pub const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
@@ -128,36 +119,36 @@ unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
     1 as std::ffi::c_int as std::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn MEM_write16(mut memPtr: *mut std::ffi::c_void, mut value: U16) {
+unsafe extern "C" fn MEM_write16(mut memPtr: *mut std::ffi::c_void, mut value: u16) {
     *(memPtr as *mut unalign16) = value;
 }
 #[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut std::ffi::c_void, mut value: U32) {
+unsafe extern "C" fn MEM_write32(mut memPtr: *mut std::ffi::c_void, mut value: u32) {
     *(memPtr as *mut unalign32) = value;
 }
 #[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
+unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
     in_0.swap_bytes()
 }
 #[inline]
-unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: U16) {
+unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: u16) {
     if MEM_isLittleEndian() != 0 {
         MEM_write16(memPtr, val);
     } else {
-        let mut p = memPtr as *mut BYTE;
-        *p.offset(0 as std::ffi::c_int as isize) = val as BYTE;
+        let mut p = memPtr as *mut u8;
+        *p.offset(0 as std::ffi::c_int as isize) = val as u8;
         *p.offset(1 as std::ffi::c_int as isize) =
-            (val as std::ffi::c_int >> 8 as std::ffi::c_int) as BYTE;
+            (val as std::ffi::c_int >> 8 as std::ffi::c_int) as u8;
     };
 }
 #[inline]
-unsafe extern "C" fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: U32) {
-    MEM_writeLE16(memPtr, val as U16);
-    *(memPtr as *mut BYTE).offset(2 as std::ffi::c_int as isize) =
-        (val >> 16 as std::ffi::c_int) as BYTE;
+unsafe extern "C" fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: u32) {
+    MEM_writeLE16(memPtr, val as u16);
+    *(memPtr as *mut u8).offset(2 as std::ffi::c_int as isize) =
+        (val >> 16 as std::ffi::c_int) as u8;
 }
 #[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: U32) {
+unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: u32) {
     if MEM_isLittleEndian() != 0 {
         MEM_write32(memPtr, val32);
     } else {
@@ -174,9 +165,9 @@ unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_cha
 unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
     let minlog = if strat as std::ffi::c_uint >= ZSTD_btultra as std::ffi::c_int as std::ffi::c_uint
     {
-        (strat as U32).wrapping_sub(1 as std::ffi::c_int as U32)
+        (strat as u32).wrapping_sub(1 as std::ffi::c_int as u32)
     } else {
-        6 as std::ffi::c_int as U32
+        6 as std::ffi::c_int as u32
     };
     (srcSize >> minlog).wrapping_add(2 as std::ffi::c_int as size_t)
 }
@@ -190,35 +181,35 @@ pub unsafe extern "C" fn ZSTD_noCompressLiterals(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    let ostart = dst as *mut BYTE;
+    let ostart = dst as *mut u8;
     let flSize = (1 as std::ffi::c_int
         + (srcSize > 31 as std::ffi::c_int as size_t) as std::ffi::c_int
-        + (srcSize > 4095 as std::ffi::c_int as size_t) as std::ffi::c_int) as U32;
+        + (srcSize > 4095 as std::ffi::c_int as size_t) as std::ffi::c_int) as u32;
     if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     match flSize {
         1 => {
             *ostart.offset(0 as std::ffi::c_int as isize) =
-                (set_basic as std::ffi::c_int as U32 as size_t)
-                    .wrapping_add(srcSize << 3 as std::ffi::c_int) as BYTE;
+                (set_basic as std::ffi::c_int as u32 as size_t)
+                    .wrapping_add(srcSize << 3 as std::ffi::c_int) as u8;
         }
         2 => {
             MEM_writeLE16(
                 ostart as *mut std::ffi::c_void,
-                ((set_basic as std::ffi::c_int as U32)
-                    .wrapping_add(((1 as std::ffi::c_int) << 2 as std::ffi::c_int) as U32)
+                ((set_basic as std::ffi::c_int as u32)
+                    .wrapping_add(((1 as std::ffi::c_int) << 2 as std::ffi::c_int) as u32)
                     as size_t)
-                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as U16,
+                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as u16,
             );
         }
         3 => {
             MEM_writeLE32(
                 ostart as *mut std::ffi::c_void,
-                ((set_basic as std::ffi::c_int as U32)
-                    .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as U32)
+                ((set_basic as std::ffi::c_int as u32)
+                    .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as u32)
                     as size_t)
-                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as U32,
+                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as u32,
             );
         }
         _ => {}
@@ -234,11 +225,11 @@ unsafe extern "C" fn allBytesIdentical(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> std::ffi::c_int {
-    let b = *(src as *const BYTE).offset(0 as std::ffi::c_int as isize);
+    let b = *(src as *const u8).offset(0 as std::ffi::c_int as isize);
     let mut p: size_t = 0;
     p = 1 as std::ffi::c_int as size_t;
     while p < srcSize {
-        if *(src as *const BYTE).offset(p as isize) as std::ffi::c_int != b as std::ffi::c_int {
+        if *(src as *const u8).offset(p as isize) as std::ffi::c_int != b as std::ffi::c_int {
             return 0 as std::ffi::c_int;
         }
         p = p.wrapping_add(1);
@@ -253,38 +244,38 @@ pub unsafe extern "C" fn ZSTD_compressRleLiteralsBlock(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    let ostart = dst as *mut BYTE;
+    let ostart = dst as *mut u8;
     let flSize = (1 as std::ffi::c_int
         + (srcSize > 31 as std::ffi::c_int as size_t) as std::ffi::c_int
-        + (srcSize > 4095 as std::ffi::c_int as size_t) as std::ffi::c_int) as U32;
+        + (srcSize > 4095 as std::ffi::c_int as size_t) as std::ffi::c_int) as u32;
     match flSize {
         1 => {
             *ostart.offset(0 as std::ffi::c_int as isize) =
-                (set_rle as std::ffi::c_int as U32 as size_t)
-                    .wrapping_add(srcSize << 3 as std::ffi::c_int) as BYTE;
+                (set_rle as std::ffi::c_int as u32 as size_t)
+                    .wrapping_add(srcSize << 3 as std::ffi::c_int) as u8;
         }
         2 => {
             MEM_writeLE16(
                 ostart as *mut std::ffi::c_void,
-                ((set_rle as std::ffi::c_int as U32)
-                    .wrapping_add(((1 as std::ffi::c_int) << 2 as std::ffi::c_int) as U32)
+                ((set_rle as std::ffi::c_int as u32)
+                    .wrapping_add(((1 as std::ffi::c_int) << 2 as std::ffi::c_int) as u32)
                     as size_t)
-                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as U16,
+                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as u16,
             );
         }
         3 => {
             MEM_writeLE32(
                 ostart as *mut std::ffi::c_void,
-                ((set_rle as std::ffi::c_int as U32)
-                    .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as U32)
+                ((set_rle as std::ffi::c_int as u32)
+                    .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as u32)
                     as size_t)
-                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as U32,
+                    .wrapping_add(srcSize << 4 as std::ffi::c_int) as u32,
             );
         }
         _ => {}
     }
-    *ostart.offset(flSize as isize) = *(src as *const BYTE);
-    flSize.wrapping_add(1 as std::ffi::c_int as U32) as size_t
+    *ostart.offset(flSize as isize) = *(src as *const u8);
+    flSize.wrapping_add(1 as std::ffi::c_int as u32) as size_t
 }
 unsafe extern "C" fn ZSTD_minLiteralsToCompress(
     mut strategy: ZSTD_strategy,
@@ -324,8 +315,8 @@ pub unsafe extern "C" fn ZSTD_compressLiterals(
         + (srcSize
             >= (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
                 as size_t) as std::ffi::c_int) as size_t;
-    let ostart = dst as *mut BYTE;
-    let mut singleStream = (srcSize < 256 as std::ffi::c_int as size_t) as std::ffi::c_int as U32;
+    let ostart = dst as *mut u8;
+    let mut singleStream = (srcSize < 256 as std::ffi::c_int as size_t) as std::ffi::c_int as u32;
     let mut hType = set_compressed;
     let mut cLitSize: size_t = 0;
     libc::memcpy(
@@ -370,7 +361,7 @@ pub unsafe extern "C" fn ZSTD_compressLiterals(
     if repeat as std::ffi::c_uint == HUF_repeat_valid as std::ffi::c_int as std::ffi::c_uint
         && lhSize == 3 as std::ffi::c_int as size_t
     {
-        singleStream = 1 as std::ffi::c_int as U32;
+        singleStream = 1 as std::ffi::c_int as u32;
     }
     huf_compress = if singleStream != 0 {
         Some(
@@ -453,27 +444,27 @@ pub unsafe extern "C" fn ZSTD_compressLiterals(
             singleStream == 0;
             let lhc = (hType as std::ffi::c_uint)
                 .wrapping_add(
-                    ((singleStream == 0) as std::ffi::c_int as U32) << 2 as std::ffi::c_int,
+                    ((singleStream == 0) as std::ffi::c_int as u32) << 2 as std::ffi::c_int,
                 )
-                .wrapping_add((srcSize as U32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as U32) << 14 as std::ffi::c_int);
+                .wrapping_add((srcSize as u32) << 4 as std::ffi::c_int)
+                .wrapping_add((cLitSize as u32) << 14 as std::ffi::c_int);
             MEM_writeLE24(ostart as *mut std::ffi::c_void, lhc);
         }
         4 => {
             let lhc_0 = (hType as std::ffi::c_uint)
                 .wrapping_add(((2 as std::ffi::c_int) << 2 as std::ffi::c_int) as std::ffi::c_uint)
-                .wrapping_add((srcSize as U32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as U32) << 18 as std::ffi::c_int);
+                .wrapping_add((srcSize as u32) << 4 as std::ffi::c_int)
+                .wrapping_add((cLitSize as u32) << 18 as std::ffi::c_int);
             MEM_writeLE32(ostart as *mut std::ffi::c_void, lhc_0);
         }
         5 => {
             let lhc_1 = (hType as std::ffi::c_uint)
                 .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as std::ffi::c_uint)
-                .wrapping_add((srcSize as U32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as U32) << 22 as std::ffi::c_int);
+                .wrapping_add((srcSize as u32) << 4 as std::ffi::c_int)
+                .wrapping_add((cLitSize as u32) << 22 as std::ffi::c_int);
             MEM_writeLE32(ostart as *mut std::ffi::c_void, lhc_1);
             *ostart.offset(4 as std::ffi::c_int as isize) =
-                (cLitSize >> 10 as std::ffi::c_int) as BYTE;
+                (cLitSize >> 10 as std::ffi::c_int) as u8;
         }
         _ => {}
     }

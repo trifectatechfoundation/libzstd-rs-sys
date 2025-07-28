@@ -54,8 +54,8 @@ extern "C" {
     fn HUF_buildCTable_wksp(
         tree: *mut HUF_CElt,
         count: *const std::ffi::c_uint,
-        maxSymbolValue: U32,
-        maxNbBits: U32,
+        maxSymbolValue: u32,
+        maxNbBits: u32,
         workSpace: *mut std::ffi::c_void,
         wkspSize: size_t,
     ) -> size_t;
@@ -116,10 +116,6 @@ extern "C" {
     ) -> std::ffi::c_int;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __uint8_t = std::ffi::c_uchar;
-pub type __uint16_t = std::ffi::c_ushort;
-pub type __uint32_t = std::ffi::c_uint;
-pub type __uint64_t = std::ffi::c_ulong;
 pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type __clock_t = std::ffi::c_long;
@@ -159,17 +155,9 @@ pub struct _IO_FILE {
 }
 pub type _IO_lock_t = ();
 pub type FILE = _IO_FILE;
-pub type uint8_t = __uint8_t;
-pub type uint16_t = __uint16_t;
-pub type uint32_t = __uint32_t;
-pub type uint64_t = __uint64_t;
-pub type BYTE = uint8_t;
-pub type U16 = uint16_t;
-pub type U32 = uint32_t;
-pub type U64 = uint64_t;
-pub type unalign16 = U16;
-pub type unalign32 = U32;
-pub type unalign64 = U64;
+pub type unalign16 = u16;
+pub type unalign32 = u32;
+pub type unalign64 = u64;
 pub type unalignArch = size_t;
 pub type FSE_CTable = std::ffi::c_uint;
 pub type ZSTD_ErrorCode = std::ffi::c_uint;
@@ -228,7 +216,7 @@ pub struct ZSTD_CCtx_s {
     pub requestedParams: ZSTD_CCtx_params,
     pub appliedParams: ZSTD_CCtx_params,
     pub simpleApiParams: ZSTD_CCtx_params,
-    pub dictID: U32,
+    pub dictID: u32,
     pub dictContentSize: size_t,
     pub workspace: ZSTD_cwksp,
     pub blockSizeMax: size_t,
@@ -261,7 +249,7 @@ pub struct ZSTD_CCtx_s {
     pub outBuffContentSize: size_t,
     pub outBuffFlushedSize: size_t,
     pub streamStage: ZSTD_cStreamStage,
-    pub frameEnded: U32,
+    pub frameEnded: u32,
     pub expectedInBuffer: ZSTD_inBuffer,
     pub stableIn_notConsumed: size_t,
     pub expectedOutBufferSize: size_t,
@@ -290,7 +278,7 @@ pub struct ZSTD_blockSplitCtx {
     pub secondHalfSeqStore: SeqStore_t,
     pub currSeqStore: SeqStore_t,
     pub nextSeqStore: SeqStore_t,
-    pub partitions: [U32; 196],
+    pub partitions: [u32; 196],
     pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
 }
 #[derive(Copy, Clone)]
@@ -305,7 +293,7 @@ pub struct ZSTD_fseCTablesMetadata_t {
     pub llType: SymbolEncodingType_e,
     pub ofType: SymbolEncodingType_e,
     pub mlType: SymbolEncodingType_e,
-    pub fseTablesBuffer: [BYTE; 133],
+    pub fseTablesBuffer: [u8; 133],
     pub fseTablesSize: size_t,
     pub lastCountSize: size_t,
 }
@@ -318,7 +306,7 @@ pub const set_basic: SymbolEncodingType_e = 0;
 #[repr(C)]
 pub struct ZSTD_hufCTablesMetadata_t {
     pub hType: SymbolEncodingType_e,
-    pub hufDesBuffer: [BYTE; 128],
+    pub hufDesBuffer: [u8; 128],
     pub hufDesSize: size_t,
 }
 #[derive(Copy, Clone)]
@@ -326,15 +314,15 @@ pub struct ZSTD_hufCTablesMetadata_t {
 pub struct SeqStore_t {
     pub sequencesStart: *mut SeqDef,
     pub sequences: *mut SeqDef,
-    pub litStart: *mut BYTE,
-    pub lit: *mut BYTE,
-    pub llCode: *mut BYTE,
-    pub mlCode: *mut BYTE,
-    pub ofCode: *mut BYTE,
+    pub litStart: *mut u8,
+    pub lit: *mut u8,
+    pub llCode: *mut u8,
+    pub mlCode: *mut u8,
+    pub ofCode: *mut u8,
     pub maxNbSeq: size_t,
     pub maxNbLit: size_t,
     pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: U32,
+    pub longLengthPos: u32,
 }
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -344,9 +332,9 @@ pub type SeqDef = SeqDef_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SeqDef_s {
-    pub offBase: U32,
-    pub litLength: U16,
-    pub mlBase: U16,
+    pub offBase: u32,
+    pub litLength: u16,
+    pub mlBase: u16,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
@@ -398,17 +386,17 @@ pub struct ZSTD_blockState_t {
 #[repr(C)]
 pub struct ZSTD_MatchState_t {
     pub window: ZSTD_window_t,
-    pub loadedDictEnd: U32,
-    pub nextToUpdate: U32,
-    pub hashLog3: U32,
-    pub rowHashLog: U32,
-    pub tagTable: *mut BYTE,
-    pub hashCache: [U32; 8],
-    pub hashSalt: U64,
-    pub hashSaltEntropy: U32,
-    pub hashTable: *mut U32,
-    pub hashTable3: *mut U32,
-    pub chainTable: *mut U32,
+    pub loadedDictEnd: u32,
+    pub nextToUpdate: u32,
+    pub hashLog3: u32,
+    pub rowHashLog: u32,
+    pub tagTable: *mut u8,
+    pub hashCache: [u32; 8],
+    pub hashSalt: u64,
+    pub hashSaltEntropy: u32,
+    pub hashTable: *mut u32,
+    pub hashTable3: *mut u32,
+    pub chainTable: *mut u32,
     pub forceNonContiguous: std::ffi::c_int,
     pub dedicatedDictSearch: std::ffi::c_int,
     pub opt: optState_t,
@@ -430,9 +418,9 @@ pub struct RawSeqStore_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct rawSeq {
-    pub offset: U32,
-    pub litLength: U32,
-    pub matchLength: U32,
+    pub offset: u32,
+    pub litLength: u32,
+    pub matchLength: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -464,14 +452,14 @@ pub struct optState_t {
     pub offCodeFreq: *mut std::ffi::c_uint,
     pub matchTable: *mut ZSTD_match_t,
     pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: U32,
-    pub litLengthSum: U32,
-    pub matchLengthSum: U32,
-    pub offCodeSum: U32,
-    pub litSumBasePrice: U32,
-    pub litLengthSumBasePrice: U32,
-    pub matchLengthSumBasePrice: U32,
-    pub offCodeSumBasePrice: U32,
+    pub litSum: u32,
+    pub litLengthSum: u32,
+    pub matchLengthSum: u32,
+    pub offCodeSum: u32,
+    pub litSumBasePrice: u32,
+    pub litLengthSumBasePrice: u32,
+    pub matchLengthSumBasePrice: u32,
+    pub offCodeSumBasePrice: u32,
     pub priceType: ZSTD_OptPrice_e,
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
@@ -509,56 +497,56 @@ pub const zop_dynamic: ZSTD_OptPrice_e = 0;
 #[repr(C)]
 pub struct ZSTD_optimal_t {
     pub price: std::ffi::c_int,
-    pub off: U32,
-    pub mlen: U32,
-    pub litlen: U32,
-    pub rep: [U32; 3],
+    pub off: u32,
+    pub mlen: u32,
+    pub litlen: u32,
+    pub rep: [u32; 3],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_match_t {
-    pub off: U32,
-    pub len: U32,
+    pub off: u32,
+    pub len: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_window_t {
-    pub nextSrc: *const BYTE,
-    pub base: *const BYTE,
-    pub dictBase: *const BYTE,
-    pub dictLimit: U32,
-    pub lowLimit: U32,
-    pub nbOverflowCorrections: U32,
+    pub nextSrc: *const u8,
+    pub base: *const u8,
+    pub dictBase: *const u8,
+    pub dictLimit: u32,
+    pub lowLimit: u32,
+    pub nbOverflowCorrections: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_compressedBlockState_t {
     pub entropy: ZSTD_entropyCTables_t,
-    pub rep: [U32; 3],
+    pub rep: [u32; 3],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
     pub window: ZSTD_window_t,
     pub hashTable: *mut ldmEntry_t,
-    pub loadedDictEnd: U32,
-    pub bucketOffsets: *mut BYTE,
+    pub loadedDictEnd: u32,
+    pub bucketOffsets: *mut u8,
     pub splitIndices: [size_t; 64],
     pub matchCandidates: [ldmMatchCandidate_t; 64],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmMatchCandidate_t {
-    pub split: *const BYTE,
-    pub hash: U32,
-    pub checksum: U32,
+    pub split: *const u8,
+    pub hash: u32,
+    pub checksum: u32,
     pub bucket: *mut ldmEntry_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmEntry_t {
-    pub offset: U32,
-    pub checksum: U32,
+    pub offset: u32,
+    pub checksum: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -591,8 +579,8 @@ pub struct XXH64_state_s {
     pub reserved32: XXH32_hash_t,
     pub reserved64: XXH64_hash_t,
 }
-pub type XXH64_hash_t = uint64_t;
-pub type XXH32_hash_t = uint32_t;
+pub type XXH64_hash_t = u64;
+pub type XXH32_hash_t = u32;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cwksp {
@@ -603,7 +591,7 @@ pub struct ZSTD_cwksp {
     pub tableValidEnd: *mut std::ffi::c_void,
     pub allocStart: *mut std::ffi::c_void,
     pub initOnceStart: *mut std::ffi::c_void,
-    pub allocFailed: BYTE,
+    pub allocFailed: u8,
     pub workspaceOversizedDuration: std::ffi::c_int,
     pub phase: ZSTD_cwksp_alloc_phase_e,
     pub isStatic: ZSTD_cwksp_static_alloc_e,
@@ -674,11 +662,11 @@ pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 #[repr(C)]
 pub struct ldmParams_t {
     pub enableLdm: ZSTD_ParamSwitch_e,
-    pub hashLog: U32,
-    pub bucketSizeLog: U32,
-    pub minMatchLength: U32,
-    pub hashRateLog: U32,
-    pub windowLog: U32,
+    pub hashLog: u32,
+    pub bucketSizeLog: u32,
+    pub minMatchLength: u32,
+    pub hashRateLog: u32,
+    pub windowLog: u32,
 }
 pub type ZSTD_dictAttachPref_e = std::ffi::c_uint;
 pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
@@ -741,8 +729,8 @@ pub struct EStats_ress_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct offsetCount_t {
-    pub offset: U32,
-    pub count: U32,
+    pub offset: u32,
+    pub count: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -753,9 +741,9 @@ pub struct ZDICT_legacy_params_t {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct dictItem {
-    pub pos: U32,
-    pub length: U32,
-    pub savings: U32,
+    pub pos: u32,
+    pub length: u32,
+    pub savings: u32,
 }
 pub const MINRATIO: std::ffi::c_int = 4 as std::ffi::c_int;
 pub const ZDICT_MAX_SAMPLES_SIZE: std::ffi::c_uint =
@@ -784,19 +772,19 @@ unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const std::ffi::c_ch
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros32(mut val: U32) -> std::ffi::c_uint {
+unsafe extern "C" fn ZSTD_countTrailingZeros32(mut val: u32) -> std::ffi::c_uint {
     val.trailing_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: U32) -> std::ffi::c_uint {
+unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint {
     val.leading_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: U64) -> std::ffi::c_uint {
+unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: u64) -> std::ffi::c_uint {
     (val as std::ffi::c_ulonglong).trailing_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: U64) -> std::ffi::c_uint {
+unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: u64) -> std::ffi::c_uint {
     (val as std::ffi::c_ulonglong).leading_zeros() as i32 as std::ffi::c_uint
 }
 #[inline]
@@ -805,16 +793,16 @@ unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> std::ffi::c_uint {
         if MEM_64bits() != 0 {
             ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int
         } else {
-            ZSTD_countTrailingZeros32(val as U32) >> 3 as std::ffi::c_int
+            ZSTD_countTrailingZeros32(val as u32) >> 3 as std::ffi::c_int
         }
     } else if MEM_64bits() != 0 {
         ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int
     } else {
-        ZSTD_countLeadingZeros32(val as U32) >> 3 as std::ffi::c_int
+        ZSTD_countLeadingZeros32(val as u32) >> 3 as std::ffi::c_int
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: U32) -> std::ffi::c_uint {
+unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const HUF_WORKSPACE_SIZE: std::ffi::c_int =
@@ -840,10 +828,10 @@ pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_i
 pub const FSE_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const HUF_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: std::ffi::c_int = 3 as std::ffi::c_int;
-static mut repStartValue: [U32; 3] = [
-    1 as std::ffi::c_int as U32,
-    4 as std::ffi::c_int as U32,
-    8 as std::ffi::c_int as U32,
+static mut repStartValue: [u32; 3] = [
+    1 as std::ffi::c_int as u32,
+    4 as std::ffi::c_int as u32,
+    8 as std::ffi::c_int as u32,
 ];
 pub const MaxML: std::ffi::c_int = 52 as std::ffi::c_int;
 pub const MaxLL: std::ffi::c_int = 35 as std::ffi::c_int;
@@ -855,12 +843,12 @@ pub const ZDICT_CONTENTSIZE_MIN: std::ffi::c_int = 128 as std::ffi::c_int;
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const CLOCKS_PER_SEC: std::ffi::c_int = 1000000 as std::ffi::c_int;
 pub const NOISELENGTH: std::ffi::c_int = 32 as std::ffi::c_int;
-static mut g_selectivity_default: U32 = 9 as std::ffi::c_int as U32;
+static mut g_selectivity_default: u32 = 9 as std::ffi::c_int as u32;
 unsafe extern "C" fn ZDICT_clockSpan(mut nPrevious: clock_t) -> clock_t {
     clock() - nPrevious
 }
 unsafe extern "C" fn ZDICT_printHex(mut ptr: *const std::ffi::c_void, mut length: size_t) {
-    let b = ptr as *const BYTE;
+    let b = ptr as *const u8;
     let mut u: size_t = 0;
     u = 0 as std::ffi::c_int as size_t;
     while u < length {
@@ -868,7 +856,7 @@ unsafe extern "C" fn ZDICT_printHex(mut ptr: *const std::ffi::c_void, mut length
         if (c as std::ffi::c_int) < 32 as std::ffi::c_int
             || c as std::ffi::c_int > 126 as std::ffi::c_int
         {
-            c = '.' as i32 as BYTE;
+            c = '.' as i32 as u8;
         }
         fprintf(
             stderr,
@@ -917,7 +905,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     }
     let mut bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong)
         as *mut ZSTD_compressedBlockState_t;
-    let mut wksp = malloc(HUF_WORKSPACE_SIZE as std::ffi::c_ulong) as *mut U32;
+    let mut wksp = malloc(HUF_WORKSPACE_SIZE as std::ffi::c_ulong) as *mut u32;
     if bs.is_null() || wksp.is_null() {
         headerSize = -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
     } else {
@@ -951,24 +939,24 @@ unsafe extern "C" fn ZDICT_count(
     }
 }
 unsafe extern "C" fn ZDICT_initDictItem(mut d: *mut dictItem) {
-    (*d).pos = 1 as std::ffi::c_int as U32;
-    (*d).length = 0 as std::ffi::c_int as U32;
-    (*d).savings = -(1 as std::ffi::c_int) as U32;
+    (*d).pos = 1 as std::ffi::c_int as u32;
+    (*d).length = 0 as std::ffi::c_int as u32;
+    (*d).savings = -(1 as std::ffi::c_int) as u32;
 }
 pub const LLIMIT: std::ffi::c_int = 64 as std::ffi::c_int;
 pub const MINMATCHLENGTH: std::ffi::c_int = 7 as std::ffi::c_int;
 unsafe extern "C" fn ZDICT_analyzePos(
-    mut doneMarks: *mut BYTE,
+    mut doneMarks: *mut u8,
     mut suffix: *const std::ffi::c_uint,
-    mut start: U32,
+    mut start: u32,
     mut buffer: *const std::ffi::c_void,
-    mut minRatio: U32,
-    mut notificationLevel: U32,
+    mut minRatio: u32,
+    mut notificationLevel: u32,
 ) -> dictItem {
-    let mut lengthList: [U32; 64] = [0 as std::ffi::c_int as U32; 64];
-    let mut cumulLength: [U32; 64] = [0 as std::ffi::c_int as U32; 64];
-    let mut savings: [U32; 64] = [0 as std::ffi::c_int as U32; 64];
-    let mut b = buffer as *const BYTE;
+    let mut lengthList: [u32; 64] = [0 as std::ffi::c_int as u32; 64];
+    let mut cumulLength: [u32; 64] = [0 as std::ffi::c_int as u32; 64];
+    let mut savings: [u32; 64] = [0 as std::ffi::c_int as u32; 64];
+    let mut b = buffer as *const u8;
     let mut maxLength = LLIMIT as size_t;
     let mut pos = *suffix.offset(start as isize) as size_t;
     let mut end = start;
@@ -982,7 +970,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
         0 as std::ffi::c_int,
         ::core::mem::size_of::<dictItem>() as std::ffi::c_ulong,
     );
-    *doneMarks.offset(pos as isize) = 1 as std::ffi::c_int as BYTE;
+    *doneMarks.offset(pos as isize) = 1 as std::ffi::c_int as u8;
     if MEM_read16(
         b.offset(pos as isize).offset(0 as std::ffi::c_int as isize) as *const std::ffi::c_void
     ) as std::ffi::c_int
@@ -1003,14 +991,14 @@ unsafe extern "C" fn ZDICT_analyzePos(
         let pattern16 =
             MEM_read16(b.offset(pos as isize).offset(4 as std::ffi::c_int as isize)
                 as *const std::ffi::c_void);
-        let mut u: U32 = 0;
-        let mut patternEnd = 6 as std::ffi::c_int as U32;
+        let mut u: u32 = 0;
+        let mut patternEnd = 6 as std::ffi::c_int as u32;
         while MEM_read16(
             b.offset(pos as isize).offset(patternEnd as isize) as *const std::ffi::c_void
         ) as std::ffi::c_int
             == pattern16 as std::ffi::c_int
         {
-            patternEnd = patternEnd.wrapping_add(2 as std::ffi::c_int as U32);
+            patternEnd = patternEnd.wrapping_add(2 as std::ffi::c_int as u32);
         }
         if *b.offset(pos.wrapping_add(patternEnd as size_t) as isize) as std::ffi::c_int
             == *b.offset(
@@ -1021,10 +1009,10 @@ unsafe extern "C" fn ZDICT_analyzePos(
             patternEnd = patternEnd.wrapping_add(1);
             patternEnd;
         }
-        u = 1 as std::ffi::c_int as U32;
+        u = 1 as std::ffi::c_int as u32;
         while u < patternEnd {
             *doneMarks.offset(pos.wrapping_add(u as size_t) as isize) =
-                1 as std::ffi::c_int as BYTE;
+                1 as std::ffi::c_int as u8;
             u = u.wrapping_add(1);
             u;
         }
@@ -1061,24 +1049,24 @@ unsafe extern "C" fn ZDICT_analyzePos(
         }
     }
     if end.wrapping_sub(start) < minRatio {
-        let mut idx: U32 = 0;
+        let mut idx: u32 = 0;
         idx = start;
         while idx < end {
-            *doneMarks.offset(*suffix.offset(idx as isize) as isize) = 1 as std::ffi::c_int as BYTE;
+            *doneMarks.offset(*suffix.offset(idx as isize) as isize) = 1 as std::ffi::c_int as u8;
             idx = idx.wrapping_add(1);
             idx;
         }
         return solution;
     }
     let mut i: std::ffi::c_int = 0;
-    let mut mml: U32 = 0;
+    let mut mml: u32 = 0;
     let mut refinedStart = start;
     let mut refinedEnd = end;
-    if notificationLevel >= 4 as std::ffi::c_int as U32 {
+    if notificationLevel >= 4 as std::ffi::c_int as u32 {
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         fflush(stderr);
     }
-    if notificationLevel >= 4 as std::ffi::c_int as U32 {
+    if notificationLevel >= 4 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"found %3u matches of length >= %i at pos %7u  \0" as *const u8
@@ -1089,17 +1077,17 @@ unsafe extern "C" fn ZDICT_analyzePos(
         );
         fflush(stderr);
     }
-    if notificationLevel >= 4 as std::ffi::c_int as U32 {
+    if notificationLevel >= 4 as std::ffi::c_int as u32 {
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         fflush(stderr);
     }
-    mml = MINMATCHLENGTH as U32;
+    mml = MINMATCHLENGTH as u32;
     loop {
-        let mut currentChar = 0 as std::ffi::c_int as BYTE;
-        let mut currentCount = 0 as std::ffi::c_int as U32;
+        let mut currentChar = 0 as std::ffi::c_int as u8;
+        let mut currentCount = 0 as std::ffi::c_int as u32;
         let mut currentID = refinedStart;
-        let mut id: U32 = 0;
-        let mut selectedCount = 0 as std::ffi::c_int as U32;
+        let mut id: u32 = 0;
+        let mut selectedCount = 0 as std::ffi::c_int as u32;
         let mut selectedID = currentID;
         id = refinedStart;
         while id < refinedEnd {
@@ -1113,7 +1101,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
                 }
                 currentID = id;
                 currentChar = *b.offset((*suffix.offset(id as isize)).wrapping_add(mml) as isize);
-                currentCount = 0 as std::ffi::c_int as U32;
+                currentCount = 0 as std::ffi::c_int as u32;
             }
             currentCount = currentCount.wrapping_add(1);
             currentCount;
@@ -1138,7 +1126,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     memset(
         lengthList.as_mut_ptr() as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<[U32; 64]>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 64]>() as std::ffi::c_ulong,
     );
     let mut length_1: size_t = 0;
     loop {
@@ -1160,13 +1148,13 @@ unsafe extern "C" fn ZDICT_analyzePos(
     }
     let mut length_2 = MINMATCHLENGTH as size_t;
     while (length_2 >= MINMATCHLENGTH as size_t) as std::ffi::c_int
-        & (start > 0 as std::ffi::c_int as U32) as std::ffi::c_int
+        & (start > 0 as std::ffi::c_int as u32) as std::ffi::c_int
         != 0
     {
         length_2 = ZDICT_count(
             b.offset(pos as isize) as *const std::ffi::c_void,
             b.offset(
-                *suffix.offset(start.wrapping_sub(1 as std::ffi::c_int as U32) as isize) as isize,
+                *suffix.offset(start.wrapping_sub(1 as std::ffi::c_int as u32) as isize) as isize,
             ) as *const std::ffi::c_void,
         );
         if length_2 >= LLIMIT as size_t {
@@ -1183,7 +1171,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     memset(
         cumulLength.as_mut_ptr() as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<[U32; 64]>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 64]>() as std::ffi::c_ulong,
     );
     *cumulLength
         .as_mut_ptr()
@@ -1209,7 +1197,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
         u_0;
     }
     maxLength = u_0 as size_t;
-    let mut l = maxLength as U32;
+    let mut l = maxLength as u32;
     let c = *b.offset(
         pos.wrapping_add(maxLength)
             .wrapping_sub(1 as std::ffi::c_int as size_t) as isize,
@@ -1227,7 +1215,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     if maxLength < MINMATCHLENGTH as size_t {
         return solution;
     }
-    *savings.as_mut_ptr().offset(5 as std::ffi::c_int as isize) = 0 as std::ffi::c_int as U32;
+    *savings.as_mut_ptr().offset(5 as std::ffi::c_int as isize) = 0 as std::ffi::c_int as u32;
     let mut u_1: std::ffi::c_uint = 0;
     u_1 = MINMATCHLENGTH as std::ffi::c_uint;
     while u_1 as size_t <= maxLength {
@@ -1241,7 +1229,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
         u_1 = u_1.wrapping_add(1);
         u_1;
     }
-    if notificationLevel >= 4 as std::ffi::c_int as U32 {
+    if notificationLevel >= 4 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"Selected dict at position %u, of length %u : saves %u (ratio: %.2f)  \n\0"
@@ -1254,15 +1242,15 @@ unsafe extern "C" fn ZDICT_analyzePos(
         );
         fflush(stderr);
     }
-    solution.pos = pos as U32;
-    solution.length = maxLength as U32;
+    solution.pos = pos as u32;
+    solution.length = maxLength as u32;
     solution.savings = *savings.as_mut_ptr().offset(maxLength as isize);
-    let mut id_0: U32 = 0;
+    let mut id_0: u32 = 0;
     id_0 = start;
     while id_0 < end {
-        let mut p: U32 = 0;
-        let mut pEnd: U32 = 0;
-        let mut length_3: U32 = 0;
+        let mut p: u32 = 0;
+        let mut pEnd: u32 = 0;
+        let mut length_3: u32 = 0;
         let testedPos = *suffix.offset(id_0 as isize);
         if testedPos as size_t == pos {
             length_3 = solution.length;
@@ -1270,7 +1258,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
             length_3 = ZDICT_count(
                 b.offset(pos as isize) as *const std::ffi::c_void,
                 b.offset(testedPos as isize) as *const std::ffi::c_void,
-            ) as U32;
+            ) as u32;
             if length_3 > solution.length {
                 length_3 = solution.length;
             }
@@ -1278,7 +1266,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
         pEnd = testedPos.wrapping_add(length_3);
         p = testedPos;
         while p < pEnd {
-            *doneMarks.offset(p as isize) = 1 as std::ffi::c_int as BYTE;
+            *doneMarks.offset(p as isize) = 1 as std::ffi::c_int as u8;
             p = p.wrapping_add(1);
             p;
         }
@@ -1309,14 +1297,14 @@ unsafe extern "C" fn isIncluded(
 unsafe extern "C" fn ZDICT_tryMerge(
     mut table: *mut dictItem,
     mut elt: dictItem,
-    mut eltNbToSkip: U32,
+    mut eltNbToSkip: u32,
     mut buffer: *const std::ffi::c_void,
-) -> U32 {
+) -> u32 {
     let tableSize = (*table).pos;
     let eltEnd = (elt.pos).wrapping_add(elt.length);
     let buf = buffer as *const std::ffi::c_char;
-    let mut u: U32 = 0;
-    u = 1 as std::ffi::c_int as U32;
+    let mut u: u32 = 0;
+    u = 1 as std::ffi::c_int as u32;
     while u < tableSize {
         if (u != eltNbToSkip)
             && (*table.offset(u as isize)).pos > elt.pos
@@ -1329,14 +1317,14 @@ unsafe extern "C" fn ZDICT_tryMerge(
             let fresh3 = &mut (*table.offset(u as isize)).savings;
             *fresh3 = (*fresh3).wrapping_add(elt.savings * addedLength / elt.length);
             let fresh4 = &mut (*table.offset(u as isize)).savings;
-            *fresh4 = (*fresh4).wrapping_add(elt.length / 8 as std::ffi::c_int as U32);
+            *fresh4 = (*fresh4).wrapping_add(elt.length / 8 as std::ffi::c_int as u32);
             elt = *table.offset(u as isize);
-            while u > 1 as std::ffi::c_int as U32
-                && (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize)).savings
+            while u > 1 as std::ffi::c_int as u32
+                && (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize)).savings
                     < elt.savings
             {
                 *table.offset(u as isize) =
-                    *table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize);
+                    *table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize);
                 u = u.wrapping_sub(1);
                 u;
             }
@@ -1346,7 +1334,7 @@ unsafe extern "C" fn ZDICT_tryMerge(
         u = u.wrapping_add(1);
         u;
     }
-    u = 1 as std::ffi::c_int as U32;
+    u = 1 as std::ffi::c_int as u32;
     while u < tableSize {
         if u != eltNbToSkip {
             if ((*table.offset(u as isize)).pos).wrapping_add((*table.offset(u as isize)).length)
@@ -1358,26 +1346,26 @@ unsafe extern "C" fn ZDICT_tryMerge(
                         .wrapping_add((*table.offset(u as isize)).length)
                         as std::ffi::c_int;
                 let fresh5 = &mut (*table.offset(u as isize)).savings;
-                *fresh5 = (*fresh5).wrapping_add(elt.length / 8 as std::ffi::c_int as U32);
+                *fresh5 = (*fresh5).wrapping_add(elt.length / 8 as std::ffi::c_int as u32);
                 if addedLength_0 > 0 as std::ffi::c_int {
                     let fresh6 = &mut (*table.offset(u as isize)).length;
                     *fresh6 = (*fresh6 as std::ffi::c_uint)
                         .wrapping_add(addedLength_0 as std::ffi::c_uint)
-                        as U32 as U32;
+                        as u32 as u32;
                     let fresh7 = &mut (*table.offset(u as isize)).savings;
                     *fresh7 = (*fresh7 as std::ffi::c_uint).wrapping_add(
                         (elt.savings)
                             .wrapping_mul(addedLength_0 as std::ffi::c_uint)
                             .wrapping_div(elt.length),
-                    ) as U32 as U32;
+                    ) as u32 as u32;
                 }
                 elt = *table.offset(u as isize);
-                while u > 1 as std::ffi::c_int as U32
-                    && (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize)).savings
+                while u > 1 as std::ffi::c_int as u32
+                    && (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize)).savings
                         < elt.savings
                 {
                     *table.offset(u as isize) =
-                        *table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize);
+                        *table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize);
                     u = u.wrapping_sub(1);
                     u;
                 }
@@ -1400,23 +1388,23 @@ unsafe extern "C" fn ZDICT_tryMerge(
             {
                 let addedLength_1 = (if (elt.length)
                     .wrapping_sub((*table.offset(u as isize)).length)
-                    > 1 as std::ffi::c_int as U32
+                    > 1 as std::ffi::c_int as u32
                 {
                     (elt.length).wrapping_sub((*table.offset(u as isize)).length)
                 } else {
-                    1 as std::ffi::c_int as U32
+                    1 as std::ffi::c_int as u32
                 }) as size_t;
                 (*table.offset(u as isize)).pos = elt.pos;
                 let fresh8 = &mut (*table.offset(u as isize)).savings;
                 *fresh8 = (*fresh8).wrapping_add(
-                    (elt.savings as size_t * addedLength_1 / elt.length as size_t) as U32,
+                    (elt.savings as size_t * addedLength_1 / elt.length as size_t) as u32,
                 );
                 (*table.offset(u as isize)).length = if elt.length
-                    < ((*table.offset(u as isize)).length).wrapping_add(1 as std::ffi::c_int as U32)
+                    < ((*table.offset(u as isize)).length).wrapping_add(1 as std::ffi::c_int as u32)
                 {
                     elt.length
                 } else {
-                    ((*table.offset(u as isize)).length).wrapping_add(1 as std::ffi::c_int as U32)
+                    ((*table.offset(u as isize)).length).wrapping_add(1 as std::ffi::c_int as u32)
                 };
                 return u;
             }
@@ -1424,18 +1412,18 @@ unsafe extern "C" fn ZDICT_tryMerge(
         u = u.wrapping_add(1);
         u;
     }
-    0 as std::ffi::c_int as U32
+    0 as std::ffi::c_int as u32
 }
-unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: U32) {
+unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: u32) {
     let max = (*table.offset(0 as std::ffi::c_int as isize)).pos;
-    let mut u: U32 = 0;
+    let mut u: u32 = 0;
     if id == 0 {
         return;
     }
     u = id;
-    while u < max.wrapping_sub(1 as std::ffi::c_int as U32) {
+    while u < max.wrapping_sub(1 as std::ffi::c_int as u32) {
         *table.offset(u as isize) =
-            *table.offset(u.wrapping_add(1 as std::ffi::c_int as U32) as isize);
+            *table.offset(u.wrapping_add(1 as std::ffi::c_int as u32) as isize);
         u = u.wrapping_add(1);
         u;
     }
@@ -1444,13 +1432,13 @@ unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: U32)
 }
 unsafe extern "C" fn ZDICT_insertDictItem(
     mut table: *mut dictItem,
-    mut maxSize: U32,
+    mut maxSize: u32,
     mut elt: dictItem,
     mut buffer: *const std::ffi::c_void,
 ) {
-    let mut mergeId = ZDICT_tryMerge(table, elt, 0 as std::ffi::c_int as U32, buffer);
+    let mut mergeId = ZDICT_tryMerge(table, elt, 0 as std::ffi::c_int as u32, buffer);
     if mergeId != 0 {
-        let mut newMerge = 1 as std::ffi::c_int as U32;
+        let mut newMerge = 1 as std::ffi::c_int as u32;
         while newMerge != 0 {
             newMerge = ZDICT_tryMerge(table, *table.offset(mergeId as isize), mergeId, buffer);
             if newMerge != 0 {
@@ -1460,25 +1448,25 @@ unsafe extern "C" fn ZDICT_insertDictItem(
         }
         return;
     }
-    let mut current: U32 = 0;
+    let mut current: u32 = 0;
     let mut nextElt = (*table).pos;
     if nextElt >= maxSize {
-        nextElt = maxSize.wrapping_sub(1 as std::ffi::c_int as U32);
+        nextElt = maxSize.wrapping_sub(1 as std::ffi::c_int as u32);
     }
-    current = nextElt.wrapping_sub(1 as std::ffi::c_int as U32);
+    current = nextElt.wrapping_sub(1 as std::ffi::c_int as u32);
     while (*table.offset(current as isize)).savings < elt.savings {
-        *table.offset(current.wrapping_add(1 as std::ffi::c_int as U32) as isize) =
+        *table.offset(current.wrapping_add(1 as std::ffi::c_int as u32) as isize) =
             *table.offset(current as isize);
         current = current.wrapping_sub(1);
         current;
     }
-    *table.offset(current.wrapping_add(1 as std::ffi::c_int as U32) as isize) = elt;
-    (*table).pos = nextElt.wrapping_add(1 as std::ffi::c_int as U32);
+    *table.offset(current.wrapping_add(1 as std::ffi::c_int as u32) as isize) = elt;
+    (*table).pos = nextElt.wrapping_add(1 as std::ffi::c_int as u32);
 }
-unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> U32 {
-    let mut u: U32 = 0;
-    let mut dictSize = 0 as std::ffi::c_int as U32;
-    u = 1 as std::ffi::c_int as U32;
+unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
+    let mut u: u32 = 0;
+    let mut dictSize = 0 as std::ffi::c_int as u32;
+    u = 1 as std::ffi::c_int as u32;
     while u < (*dictList.offset(0 as std::ffi::c_int as isize)).pos {
         dictSize = dictSize.wrapping_add((*dictList.offset(u as isize)).length);
         u = u.wrapping_add(1);
@@ -1488,13 +1476,13 @@ unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> U32 {
 }
 unsafe extern "C" fn ZDICT_trainBuffer_legacy(
     mut dictList: *mut dictItem,
-    mut dictListSize: U32,
+    mut dictListSize: u32,
     buffer: *const std::ffi::c_void,
     mut bufferSize: size_t,
     mut fileSizes: *const size_t,
     mut nbFiles: std::ffi::c_uint,
     mut minRatio: std::ffi::c_uint,
-    mut notificationLevel: U32,
+    mut notificationLevel: u32,
 ) -> size_t {
     let suffix0 = malloc(
         bufferSize
@@ -1503,22 +1491,22 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
     ) as *mut std::ffi::c_uint;
     let suffix = suffix0.offset(1 as std::ffi::c_int as isize);
     let mut reverseSuffix =
-        malloc(bufferSize.wrapping_mul(::core::mem::size_of::<U32>() as std::ffi::c_ulong))
-            as *mut U32;
+        malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong))
+            as *mut u32;
     let mut doneMarks = malloc(
         bufferSize
             .wrapping_add(16 as std::ffi::c_int as size_t)
-            .wrapping_mul(::core::mem::size_of::<BYTE>() as std::ffi::c_ulong),
-    ) as *mut BYTE;
+            .wrapping_mul(::core::mem::size_of::<u8>() as std::ffi::c_ulong),
+    ) as *mut u8;
     let mut filePos = malloc(
         (nbFiles as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<U32>() as std::ffi::c_ulong),
-    ) as *mut U32;
+            .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
+    ) as *mut u32;
     let mut result = 0 as std::ffi::c_int as size_t;
     let mut displayClock = 0 as std::ffi::c_int as clock_t;
     let refreshRate = CLOCKS_PER_SEC as __clock_t * 3 as std::ffi::c_int as __clock_t
         / 10 as std::ffi::c_int as __clock_t;
-    if notificationLevel >= 2 as std::ffi::c_int as U32 {
+    if notificationLevel >= 2 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"\r%70s\r\0" as *const u8 as *const std::ffi::c_char,
@@ -1538,7 +1526,7 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
             bufferSize.wrapping_add(16 as std::ffi::c_int as size_t),
         );
         if bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t
-            && notificationLevel >= 3 as std::ffi::c_int as U32
+            && notificationLevel >= 3 as std::ffi::c_int as u32
         {
             fprintf(
                 stderr,
@@ -1552,7 +1540,7 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
             nbFiles = nbFiles.wrapping_sub(1);
             bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
         }
-        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+        if notificationLevel >= 2 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"sorting %u files of total size %u MB ...\n\0" as *const u8
@@ -1576,11 +1564,11 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
             let mut pos: size_t = 0;
             pos = 0 as std::ffi::c_int as size_t;
             while pos < bufferSize {
-                *reverseSuffix.offset(*suffix.offset(pos as isize) as isize) = pos as U32;
+                *reverseSuffix.offset(*suffix.offset(pos as isize) as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
                 pos;
             }
-            *filePos.offset(0 as std::ffi::c_int as isize) = 0 as std::ffi::c_int as U32;
+            *filePos.offset(0 as std::ffi::c_int as isize) = 0 as std::ffi::c_int as u32;
             pos = 1 as std::ffi::c_int as size_t;
             while pos < nbFiles as size_t {
                 *filePos.offset(pos as isize) = (*filePos
@@ -1589,18 +1577,18 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                     .wrapping_add(
                         *fileSizes
                             .offset(pos.wrapping_sub(1 as std::ffi::c_int as size_t) as isize),
-                    ) as U32;
+                    ) as u32;
                 pos = pos.wrapping_add(1);
                 pos;
             }
-            if notificationLevel >= 2 as std::ffi::c_int as U32 {
+            if notificationLevel >= 2 as std::ffi::c_int as u32 {
                 fprintf(
                     stderr,
                     b"finding patterns ... \n\0" as *const u8 as *const std::ffi::c_char,
                 );
                 fflush(stderr);
             }
-            if notificationLevel >= 3 as std::ffi::c_int as U32 {
+            if notificationLevel >= 3 as std::ffi::c_int as u32 {
                 fprintf(
                     stderr,
                     b"minimum ratio : %u \n\0" as *const u8 as *const std::ffi::c_char,
@@ -1608,8 +1596,8 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                 );
                 fflush(stderr);
             }
-            let mut cursor: U32 = 0;
-            cursor = 0 as std::ffi::c_int as U32;
+            let mut cursor: u32 = 0;
+            cursor = 0 as std::ffi::c_int as u32;
             while (cursor as size_t) < bufferSize {
                 let mut solution = dictItem {
                     pos: 0,
@@ -1628,13 +1616,13 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                         minRatio,
                         notificationLevel,
                     );
-                    if solution.length == 0 as std::ffi::c_int as U32 {
+                    if solution.length == 0 as std::ffi::c_int as u32 {
                         cursor = cursor.wrapping_add(1);
                         cursor;
                     } else {
                         ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
                         cursor = cursor.wrapping_add(solution.length);
-                        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+                        if notificationLevel >= 2 as std::ffi::c_int as u32 {
                             if ZDICT_clockSpan(displayClock) > refreshRate {
                                 displayClock = clock();
                                 fprintf(
@@ -1645,7 +1633,7 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                                 );
                                 fflush(stderr);
                             }
-                            if notificationLevel >= 4 as std::ffi::c_int as U32 {
+                            if notificationLevel >= 4 as std::ffi::c_int as u32 {
                                 fflush(stderr);
                             }
                         }
@@ -1682,10 +1670,10 @@ unsafe extern "C" fn ZDICT_countEStats(
     mut offsetcodeCount: *mut std::ffi::c_uint,
     mut matchlengthCount: *mut std::ffi::c_uint,
     mut litlengthCount: *mut std::ffi::c_uint,
-    mut repOffsets: *mut U32,
+    mut repOffsets: *mut u32,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    mut notificationLevel: U32,
+    mut notificationLevel: u32,
 ) {
     let blockSizeMax = (if ((1 as std::ffi::c_int) << 17 as std::ffi::c_int)
         < (1 as std::ffi::c_int) << (*params).cParams.windowLog
@@ -1700,7 +1688,7 @@ unsafe extern "C" fn ZDICT_countEStats(
     }
     let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
     if ERR_isError(errorCode) != 0 {
-        if notificationLevel >= 1 as std::ffi::c_int as U32 {
+        if notificationLevel >= 1 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"warning : ZSTD_compressBegin_usingCDict failed \n\0" as *const u8
@@ -1718,7 +1706,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         srcSize,
     );
     if ERR_isError(cSize) != 0 {
-        if notificationLevel >= 3 as std::ffi::c_int as U32 {
+        if notificationLevel >= 3 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"warning : could not compress sample size %u \n\0" as *const u8
@@ -1731,9 +1719,9 @@ unsafe extern "C" fn ZDICT_countEStats(
     }
     if cSize != 0 {
         let seqStorePtr = ZSTD_getSeqStore(esr.zc);
-        let mut bytePtr = std::ptr::null::<BYTE>();
+        let mut bytePtr = std::ptr::null::<u8>();
         bytePtr = (*seqStorePtr).litStart;
-        while bytePtr < (*seqStorePtr).lit as *const BYTE {
+        while bytePtr < (*seqStorePtr).lit as *const u8 {
             let fresh9 = &mut (*countLit.offset(*bytePtr as isize));
             *fresh9 = (*fresh9).wrapping_add(1);
             *fresh9;
@@ -1741,11 +1729,11 @@ unsafe extern "C" fn ZDICT_countEStats(
             bytePtr;
         }
         let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
-            as std::ffi::c_long as U32;
+            as std::ffi::c_long as u32;
         ZSTD_seqToCodes(seqStorePtr);
-        let mut codePtr: *const BYTE = (*seqStorePtr).ofCode;
-        let mut u: U32 = 0;
-        u = 0 as std::ffi::c_int as U32;
+        let mut codePtr: *const u8 = (*seqStorePtr).ofCode;
+        let mut u: u32 = 0;
+        u = 0 as std::ffi::c_int as u32;
         while u < nbSeq {
             let fresh10 = &mut (*offsetcodeCount.offset(*codePtr.offset(u as isize) as isize));
             *fresh10 = (*fresh10).wrapping_add(1);
@@ -1753,9 +1741,9 @@ unsafe extern "C" fn ZDICT_countEStats(
             u = u.wrapping_add(1);
             u;
         }
-        let mut codePtr_0: *const BYTE = (*seqStorePtr).mlCode;
-        let mut u_0: U32 = 0;
-        u_0 = 0 as std::ffi::c_int as U32;
+        let mut codePtr_0: *const u8 = (*seqStorePtr).mlCode;
+        let mut u_0: u32 = 0;
+        u_0 = 0 as std::ffi::c_int as u32;
         while u_0 < nbSeq {
             let fresh11 = &mut (*matchlengthCount.offset(*codePtr_0.offset(u_0 as isize) as isize));
             *fresh11 = (*fresh11).wrapping_add(1);
@@ -1763,9 +1751,9 @@ unsafe extern "C" fn ZDICT_countEStats(
             u_0 = u_0.wrapping_add(1);
             u_0;
         }
-        let mut codePtr_1: *const BYTE = (*seqStorePtr).llCode;
-        let mut u_1: U32 = 0;
-        u_1 = 0 as std::ffi::c_int as U32;
+        let mut codePtr_1: *const u8 = (*seqStorePtr).llCode;
+        let mut u_1: u32 = 0;
+        u_1 = 0 as std::ffi::c_int as u32;
         while u_1 < nbSeq {
             let fresh12 = &mut (*litlengthCount.offset(*codePtr_1.offset(u_1 as isize) as isize));
             *fresh12 = (*fresh12).wrapping_add(1);
@@ -1773,22 +1761,22 @@ unsafe extern "C" fn ZDICT_countEStats(
             u_1 = u_1.wrapping_add(1);
             u_1;
         }
-        if nbSeq >= 2 as std::ffi::c_int as U32 {
+        if nbSeq >= 2 as std::ffi::c_int as u32 {
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
             let mut offset1 = ((*seq.offset(0 as std::ffi::c_int as isize)).offBase)
-                .wrapping_sub(ZSTD_REP_NUM as U32);
+                .wrapping_sub(ZSTD_REP_NUM as u32);
             let mut offset2 = ((*seq.offset(1 as std::ffi::c_int as isize)).offBase)
-                .wrapping_sub(ZSTD_REP_NUM as U32);
-            if offset1 >= MAXREPOFFSET as U32 {
-                offset1 = 0 as std::ffi::c_int as U32;
+                .wrapping_sub(ZSTD_REP_NUM as u32);
+            if offset1 >= MAXREPOFFSET as u32 {
+                offset1 = 0 as std::ffi::c_int as u32;
             }
-            if offset2 >= MAXREPOFFSET as U32 {
-                offset2 = 0 as std::ffi::c_int as U32;
+            if offset2 >= MAXREPOFFSET as u32 {
+                offset2 = 0 as std::ffi::c_int as u32;
             }
             let fresh13 = &mut (*repOffsets.offset(offset1 as isize));
-            *fresh13 = (*fresh13).wrapping_add(3 as std::ffi::c_int as U32);
+            *fresh13 = (*fresh13).wrapping_add(3 as std::ffi::c_int as u32);
             let fresh14 = &mut (*repOffsets.offset(offset2 as isize));
-            *fresh14 = (*fresh14).wrapping_add(1 as std::ffi::c_int as U32);
+            *fresh14 = (*fresh14).wrapping_add(1 as std::ffi::c_int as u32);
         }
     }
 }
@@ -1808,25 +1796,25 @@ unsafe extern "C" fn ZDICT_totalSampleSize(
 }
 unsafe extern "C" fn ZDICT_insertSortCount(
     mut table: *mut offsetCount_t,
-    mut val: U32,
-    mut count: U32,
+    mut val: u32,
+    mut count: u32,
 ) {
-    let mut u: U32 = 0;
+    let mut u: u32 = 0;
     (*table.offset(ZSTD_REP_NUM as isize)).offset = val;
     (*table.offset(ZSTD_REP_NUM as isize)).count = count;
-    u = ZSTD_REP_NUM as U32;
-    while u > 0 as std::ffi::c_int as U32 {
+    u = ZSTD_REP_NUM as u32;
+    while u > 0 as std::ffi::c_int as u32 {
         let mut tmp = offsetCount_t {
             offset: 0,
             count: 0,
         };
-        if (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize)).count
+        if (*table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize)).count
             >= (*table.offset(u as isize)).count
         {
             break;
         }
-        tmp = *table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize);
-        *table.offset(u.wrapping_sub(1 as std::ffi::c_int as U32) as isize) =
+        tmp = *table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize);
+        *table.offset(u.wrapping_sub(1 as std::ffi::c_int as u32) as isize) =
             *table.offset(u as isize);
         *table.offset(u as isize) = tmp;
         u = u.wrapping_sub(1);
@@ -1863,12 +1851,12 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
     let mut offcodeNCount: [std::ffi::c_short; 31] = [0; 31];
     let mut offcodeMax = ZSTD_highbit32(dictBufferSize.wrapping_add(
         (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    ) as U32);
+    ) as u32);
     let mut matchLengthCount: [std::ffi::c_uint; 53] = [0; 53];
     let mut matchLengthNCount: [std::ffi::c_short; 53] = [0; 53];
     let mut litLengthCount: [std::ffi::c_uint; 36] = [0; 36];
     let mut litLengthNCount: [std::ffi::c_short; 36] = [0; 36];
-    let mut repOffset: [U32; 1024] = [0; 1024];
+    let mut repOffset: [u32; 1024] = [0; 1024];
     let mut bestRepOffset: [offsetCount_t; 4] = [offsetCount_t {
         offset: 0,
         count: 0,
@@ -1896,45 +1884,45 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
             noDictIDFlag: 0,
         },
     };
-    let mut u: U32 = 0;
-    let mut huffLog = 11 as std::ffi::c_int as U32;
-    let mut Offlog = OffFSELog as U32;
-    let mut mlLog = MLFSELog as U32;
-    let mut llLog = LLFSELog as U32;
-    let mut total: U32 = 0;
+    let mut u: u32 = 0;
+    let mut huffLog = 11 as std::ffi::c_int as u32;
+    let mut Offlog = OffFSELog as u32;
+    let mut mlLog = MLFSELog as u32;
+    let mut llLog = LLFSELog as u32;
+    let mut total: u32 = 0;
     let mut pos = 0 as std::ffi::c_int as size_t;
     let mut errorCode: size_t = 0;
     let mut eSize = 0 as std::ffi::c_int as size_t;
     let totalSrcSize = ZDICT_totalSampleSize(fileSizes, nbFiles);
     let averageSampleSize = totalSrcSize
         / nbFiles.wrapping_add((nbFiles == 0) as std::ffi::c_int as std::ffi::c_uint) as size_t;
-    let mut dstPtr = dstBuffer as *mut BYTE;
-    let mut wksp: [U32; 1216] = [0; 1216];
-    if offcodeMax > OFFCODE_MAX as U32 {
+    let mut dstPtr = dstBuffer as *mut u8;
+    let mut wksp: [u32; 1216] = [0; 1216];
+    if offcodeMax > OFFCODE_MAX as u32 {
         eSize = -(ZSTD_error_dictionaryCreation_failed as std::ffi::c_int) as size_t;
     } else {
-        u = 0 as std::ffi::c_int as U32;
-        while u < 256 as std::ffi::c_int as U32 {
+        u = 0 as std::ffi::c_int as u32;
+        while u < 256 as std::ffi::c_int as u32 {
             *countLit.as_mut_ptr().offset(u as isize) = 1 as std::ffi::c_int as std::ffi::c_uint;
             u = u.wrapping_add(1);
             u;
         }
-        u = 0 as std::ffi::c_int as U32;
+        u = 0 as std::ffi::c_int as u32;
         while u <= offcodeMax {
             *offcodeCount.as_mut_ptr().offset(u as isize) =
                 1 as std::ffi::c_int as std::ffi::c_uint;
             u = u.wrapping_add(1);
             u;
         }
-        u = 0 as std::ffi::c_int as U32;
-        while u <= MaxML as U32 {
+        u = 0 as std::ffi::c_int as u32;
+        while u <= MaxML as u32 {
             *matchLengthCount.as_mut_ptr().offset(u as isize) =
                 1 as std::ffi::c_int as std::ffi::c_uint;
             u = u.wrapping_add(1);
             u;
         }
-        u = 0 as std::ffi::c_int as U32;
-        while u <= MaxLL as U32 {
+        u = 0 as std::ffi::c_int as u32;
+        while u <= MaxLL as u32 {
             *litLengthCount.as_mut_ptr().offset(u as isize) =
                 1 as std::ffi::c_int as std::ffi::c_uint;
             u = u.wrapping_add(1);
@@ -1943,10 +1931,10 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
         memset(
             repOffset.as_mut_ptr() as *mut std::ffi::c_void,
             0 as std::ffi::c_int,
-            ::core::mem::size_of::<[U32; 1024]>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<[u32; 1024]>() as std::ffi::c_ulong,
         );
         let fresh15 = &mut (*repOffset.as_mut_ptr().offset(8 as std::ffi::c_int as isize));
-        *fresh15 = 1 as std::ffi::c_int as U32;
+        *fresh15 = 1 as std::ffi::c_int as u32;
         let fresh16 = &mut (*repOffset.as_mut_ptr().offset(4 as std::ffi::c_int as isize));
         *fresh16 = *fresh15;
         *repOffset.as_mut_ptr().offset(1 as std::ffi::c_int as isize) = *fresh16;
@@ -1983,7 +1971,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                 fflush(stderr);
             }
         } else {
-            u = 0 as std::ffi::c_int as U32;
+            u = 0 as std::ffi::c_int as u32;
             while u < nbFiles {
                 ZDICT_countEStats(
                     esr,
@@ -2010,7 +1998,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                     );
                     fflush(stderr);
                 }
-                u = 0 as std::ffi::c_int as U32;
+                u = 0 as std::ffi::c_int as u32;
                 while u <= offcodeMax {
                     if notificationLevel >= 4 as std::ffi::c_int as std::ffi::c_uint {
                         fprintf(
@@ -2028,10 +2016,10 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
             let mut maxNbBits = HUF_buildCTable_wksp(
                 hufTable.as_mut_ptr(),
                 countLit.as_mut_ptr(),
-                255 as std::ffi::c_int as U32,
+                255 as std::ffi::c_int as u32,
                 huffLog,
                 wksp.as_mut_ptr() as *mut std::ffi::c_void,
-                ::core::mem::size_of::<[U32; 1216]>() as std::ffi::c_ulong,
+                ::core::mem::size_of::<[u32; 1216]>() as std::ffi::c_ulong,
             );
             if ERR_isError(maxNbBits) != 0 {
                 eSize = maxNbBits;
@@ -2056,16 +2044,16 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                     maxNbBits = HUF_buildCTable_wksp(
                         hufTable.as_mut_ptr(),
                         countLit.as_mut_ptr(),
-                        255 as std::ffi::c_int as U32,
+                        255 as std::ffi::c_int as u32,
                         huffLog,
                         wksp.as_mut_ptr() as *mut std::ffi::c_void,
-                        ::core::mem::size_of::<[U32; 1216]>() as std::ffi::c_ulong,
+                        ::core::mem::size_of::<[u32; 1216]>() as std::ffi::c_ulong,
                     );
                 }
-                huffLog = maxNbBits as U32;
-                let mut offset: U32 = 0;
-                offset = 1 as std::ffi::c_int as U32;
-                while offset < MAXREPOFFSET as U32 {
+                huffLog = maxNbBits as u32;
+                let mut offset: u32 = 0;
+                offset = 1 as std::ffi::c_int as u32;
+                while offset < MAXREPOFFSET as u32 {
                     ZDICT_insertSortCount(
                         bestRepOffset.as_mut_ptr(),
                         offset,
@@ -2074,12 +2062,12 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                     offset = offset.wrapping_add(1);
                     offset;
                 }
-                total = 0 as std::ffi::c_int as U32;
-                u = 0 as std::ffi::c_int as U32;
+                total = 0 as std::ffi::c_int as u32;
+                u = 0 as std::ffi::c_int as u32;
                 while u <= offcodeMax {
                     total = (total as std::ffi::c_uint)
                         .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize))
-                        as U32 as U32;
+                        as u32 as u32;
                     u = u.wrapping_add(1);
                     u;
                 }
@@ -2102,13 +2090,13 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                         fflush(stderr);
                     }
                 } else {
-                    Offlog = errorCode as U32;
-                    total = 0 as std::ffi::c_int as U32;
-                    u = 0 as std::ffi::c_int as U32;
-                    while u <= MaxML as U32 {
+                    Offlog = errorCode as u32;
+                    total = 0 as std::ffi::c_int as u32;
+                    u = 0 as std::ffi::c_int as u32;
+                    while u <= MaxML as u32 {
                         total = (total as std::ffi::c_uint)
                             .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize))
-                            as U32 as U32;
+                            as u32 as u32;
                         u = u.wrapping_add(1);
                         u;
                     }
@@ -2131,13 +2119,13 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                             fflush(stderr);
                         }
                     } else {
-                        mlLog = errorCode as U32;
-                        total = 0 as std::ffi::c_int as U32;
-                        u = 0 as std::ffi::c_int as U32;
-                        while u <= MaxLL as U32 {
+                        mlLog = errorCode as u32;
+                        total = 0 as std::ffi::c_int as u32;
+                        u = 0 as std::ffi::c_int as u32;
+                        while u <= MaxLL as u32 {
                             total = (total as std::ffi::c_uint)
                                 .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize))
-                                as U32 as U32;
+                                as u32 as u32;
                             u = u.wrapping_add(1);
                             u;
                         }
@@ -2161,7 +2149,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                                 fflush(stderr);
                             }
                         } else {
-                            llLog = errorCode as U32;
+                            llLog = errorCode as u32;
                             let hhSize = HUF_writeCTable_wksp(
                                 dstPtr as *mut std::ffi::c_void,
                                 maxDstSize,
@@ -2169,7 +2157,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                                 255 as std::ffi::c_int as std::ffi::c_uint,
                                 huffLog,
                                 wksp.as_mut_ptr() as *mut std::ffi::c_void,
-                                ::core::mem::size_of::<[U32; 1216]>() as std::ffi::c_ulong,
+                                ::core::mem::size_of::<[u32; 1216]>() as std::ffi::c_ulong,
                             );
                             if ERR_isError(hhSize) != 0 {
                                 eSize = hhSize;
@@ -2310,7 +2298,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
     free(esr.workPlace);
     eSize
 }
-unsafe extern "C" fn ZDICT_maxRep(mut reps: *const U32) -> U32 {
+unsafe extern "C" fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
     let mut maxRep = *reps.offset(0 as std::ffi::c_int as isize);
     let mut r: std::ffi::c_int = 0;
     r = 1 as std::ffi::c_int;
@@ -2337,7 +2325,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     mut params: ZDICT_params_t,
 ) -> size_t {
     let mut hSize: size_t = 0;
-    let mut header: [BYTE; 256] = [0; 256];
+    let mut header: [u8; 256] = [0; 256];
     let compressionLevel = if params.compressionLevel == 0 as std::ffi::c_int {
         ZSTD_CLEVEL_DEFAULT
     } else {
@@ -2363,8 +2351,8 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     );
     let compliantID = (randomID
         % ((1 as std::ffi::c_uint) << 31 as std::ffi::c_int)
-            .wrapping_sub(32768 as std::ffi::c_int as std::ffi::c_uint) as U64)
-        .wrapping_add(32768 as std::ffi::c_int as U64) as U32;
+            .wrapping_sub(32768 as std::ffi::c_int as std::ffi::c_uint) as u64)
+        .wrapping_add(32768 as std::ffi::c_int as u64) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID
     } else {
@@ -2375,7 +2363,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         dictID,
     );
     hSize = 8 as std::ffi::c_int as size_t;
-    if notificationLevel >= 2 as std::ffi::c_int as U32 {
+    if notificationLevel >= 2 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"\r%70s\r\0" as *const u8 as *const std::ffi::c_char,
@@ -2383,7 +2371,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         );
         fflush(stderr);
     }
-    if notificationLevel >= 2 as std::ffi::c_int as U32 {
+    if notificationLevel >= 2 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"statistics ... \n\0" as *const u8 as *const std::ffi::c_char,
@@ -2419,7 +2407,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     let dictSize = hSize
         .wrapping_add(paddingSize)
         .wrapping_add(dictContentSize);
-    let outDictHeader = dictBuffer as *mut BYTE;
+    let outDictHeader = dictBuffer as *mut u8;
     let outDictPadding = outDictHeader.offset(hSize as isize);
     let outDictContent = outDictPadding.offset(paddingSize as isize);
     memmove(
@@ -2456,7 +2444,7 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
     };
     let notificationLevel = params.notificationLevel;
     let mut hSize = 8 as std::ffi::c_int as size_t;
-    if notificationLevel >= 2 as std::ffi::c_int as U32 {
+    if notificationLevel >= 2 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"\r%70s\r\0" as *const u8 as *const std::ffi::c_char,
@@ -2464,7 +2452,7 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
         );
         fflush(stderr);
     }
-    if notificationLevel >= 2 as std::ffi::c_int as U32 {
+    if notificationLevel >= 2 as std::ffi::c_int as u32 {
         fprintf(
             stderr,
             b"statistics ... \n\0" as *const u8 as *const std::ffi::c_char,
@@ -2498,8 +2486,8 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
     );
     let compliantID = (randomID
         % ((1 as std::ffi::c_uint) << 31 as std::ffi::c_int)
-            .wrapping_sub(32768 as std::ffi::c_int as std::ffi::c_uint) as U64)
-        .wrapping_add(32768 as std::ffi::c_int as U64) as U32;
+            .wrapping_sub(32768 as std::ffi::c_int as std::ffi::c_uint) as u64)
+        .wrapping_add(32768 as std::ffi::c_int as u64) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID
     } else {
@@ -2537,7 +2525,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         10000 as std::ffi::c_int as std::ffi::c_uint
     } else {
         nbSamples
-    }) > (maxDictSize / 16 as std::ffi::c_int as size_t) as U32
+    }) > (maxDictSize / 16 as std::ffi::c_int as size_t) as u32
     {
         if 10000 as std::ffi::c_int as std::ffi::c_uint > nbSamples {
             10000 as std::ffi::c_int as std::ffi::c_uint
@@ -2545,7 +2533,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             nbSamples
         }
     } else {
-        (maxDictSize / 16 as std::ffi::c_int as size_t) as U32
+        (maxDictSize / 16 as std::ffi::c_int as size_t) as u32
     };
     let dictList = malloc(
         (dictListSize as std::ffi::c_ulong)
@@ -2588,16 +2576,16 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         notificationLevel,
     );
     if params.zParams.notificationLevel >= 3 as std::ffi::c_int as std::ffi::c_uint {
-        let nb = if (25 as std::ffi::c_int as U32)
+        let nb = if (25 as std::ffi::c_int as u32)
             < (*dictList.offset(0 as std::ffi::c_int as isize)).pos
         {
-            25 as std::ffi::c_int as U32
+            25 as std::ffi::c_int as u32
         } else {
             (*dictList.offset(0 as std::ffi::c_int as isize)).pos
         };
         let dictContentSize = ZDICT_dictSize(dictList);
         let mut u: std::ffi::c_uint = 0;
-        if notificationLevel >= 3 as std::ffi::c_int as U32 {
+        if notificationLevel >= 3 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"\n %u segments found, of total size %u \n\0" as *const u8
@@ -2608,7 +2596,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             );
             fflush(stderr);
         }
-        if notificationLevel >= 3 as std::ffi::c_int as U32 {
+        if notificationLevel >= 3 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"list %u best segments \n\0" as *const u8 as *const std::ffi::c_char,
@@ -2631,7 +2619,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
                 free(dictList as *mut std::ffi::c_void);
                 return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
             }
-            if notificationLevel >= 3 as std::ffi::c_int as U32 {
+            if notificationLevel >= 3 as std::ffi::c_int as u32 {
                 fprintf(
                     stderr,
                     b"%3u:%3u bytes at pos %8u, savings %7u bytes |\0" as *const u8
@@ -2648,7 +2636,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
                     as *const std::ffi::c_void,
                 printedLength as size_t,
             );
-            if notificationLevel >= 3 as std::ffi::c_int as U32 {
+            if notificationLevel >= 3 as std::ffi::c_int as u32 {
                 fprintf(stderr, b"| \n\0" as *const u8 as *const std::ffi::c_char);
                 fflush(stderr);
             }
@@ -2662,7 +2650,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         return -(ZSTD_error_dictionaryCreation_failed as std::ffi::c_int) as size_t;
     }
     if (dictContentSize_0 as size_t) < targetDictSize / 4 as std::ffi::c_int as size_t {
-        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+        if notificationLevel >= 2 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"!  warning : selected content significantly smaller than requested (%u < %u) \n\0"
@@ -2673,7 +2661,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             fflush(stderr);
         }
         if samplesBuffSize < 10 as std::ffi::c_int as size_t * targetDictSize
-            && notificationLevel >= 2 as std::ffi::c_int as U32
+            && notificationLevel >= 2 as std::ffi::c_int as u32
         {
             fprintf(
                 stderr,
@@ -2684,7 +2672,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             fflush(stderr);
         }
         if minRep > MINRATIO as std::ffi::c_uint {
-            if notificationLevel >= 2 as std::ffi::c_int as U32 {
+            if notificationLevel >= 2 as std::ffi::c_int as u32 {
                 fprintf(
                     stderr,
                     b"!  consider increasing selectivity to produce larger dictionary (-s%u) \n\0"
@@ -2693,7 +2681,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
                 );
                 fflush(stderr);
             }
-            if notificationLevel >= 2 as std::ffi::c_int as U32 {
+            if notificationLevel >= 2 as std::ffi::c_int as u32 {
                 fprintf(
                     stderr,
                     b"!  note : larger dictionaries are not necessarily better, test its efficiency on samples \n\0"
@@ -2713,7 +2701,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             proposedSelectivity = proposedSelectivity.wrapping_sub(1);
             proposedSelectivity;
         }
-        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+        if notificationLevel >= 2 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"!  note : calculated dictionary significantly larger than requested (%u > %u) \n\0"
@@ -2723,7 +2711,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             );
             fflush(stderr);
         }
-        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+        if notificationLevel >= 2 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"!  consider increasing dictionary size, or produce denser dictionary (-s%u) \n\0"
@@ -2732,7 +2720,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             );
             fflush(stderr);
         }
-        if notificationLevel >= 2 as std::ffi::c_int as U32 {
+        if notificationLevel >= 2 as std::ffi::c_int as u32 {
             fprintf(
                 stderr,
                 b"!  always test dictionary efficiency on real samples \n\0" as *const u8
@@ -2742,9 +2730,9 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
     }
     let max = (*dictList).pos;
-    let mut currentSize = 0 as std::ffi::c_int as U32;
-    let mut n: U32 = 0;
-    n = 1 as std::ffi::c_int as U32;
+    let mut currentSize = 0 as std::ffi::c_int as u32;
+    let mut n: u32 = 0;
+    n = 1 as std::ffi::c_int as u32;
     while n < max {
         currentSize = currentSize.wrapping_add((*dictList.offset(n as isize)).length);
         if currentSize as size_t > targetDictSize {
@@ -2757,13 +2745,13 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
     (*dictList).pos = n;
     dictContentSize_0 = currentSize;
-    let mut u_0: U32 = 0;
-    let mut ptr = (dictBuffer as *mut BYTE).offset(maxDictSize as isize);
-    u_0 = 1 as std::ffi::c_int as U32;
+    let mut u_0: u32 = 0;
+    let mut ptr = (dictBuffer as *mut u8).offset(maxDictSize as isize);
+    u_0 = 1 as std::ffi::c_int as u32;
     while u_0 < (*dictList).pos {
         let mut l = (*dictList.offset(u_0 as isize)).length;
         ptr = ptr.offset(-(l as isize));
-        if ptr < dictBuffer as *mut BYTE {
+        if ptr < dictBuffer as *mut u8 {
             free(dictList as *mut std::ffi::c_void);
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
         }
