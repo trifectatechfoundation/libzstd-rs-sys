@@ -1,11 +1,4 @@
-#[cfg(all(unix, not(target_os = "macos")))]
 fn main() {
-    // add unix dependencies below
-    // println!("cargo:rustc-flags=-l readline");
-}
-
-#[cfg(target_os = "macos")]
-fn main() {
-    // add macos dependencies below
-    // println!("cargo:rustc-flags=-l edit");
+    #[cfg(target_arch = "x86_64")]
+    cc::Build::new().file("lib/decompress/huf_decompress_amd64.S").compile("huf_decompress_amd64");
 }
