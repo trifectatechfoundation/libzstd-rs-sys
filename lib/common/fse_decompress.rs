@@ -96,6 +96,13 @@ const BIT_DStream_completed: BIT_DStream_status = 2;
 const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 const BIT_DStream_unfinished: BIT_DStream_status = 0;
 
+enum Status {
+    Unfinished = 0,
+    EndOfBuffer = 1,
+    Completed = 2,
+    Overflow = 3,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub struct FSE_decode_t {
@@ -284,16 +291,14 @@ unsafe extern "C" fn BIT_readBitsFast(
     value
 }
 #[inline]
-unsafe extern "C" fn BIT_reloadDStream_internal(
-    mut bitD: *mut BIT_DStream_t,
-) -> BIT_DStream_status {
-    (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3 as std::ffi::c_int) as isize));
-    (*bitD).bitsConsumed &= 7 as std::ffi::c_int as std::ffi::c_uint;
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+unsafe fn BIT_reloadDStream_internal(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
+    bitD.ptr = (bitD.ptr).offset(-((bitD.bitsConsumed / 8) as isize));
+    bitD.bitsConsumed &= 7;
+    bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
     BIT_DStream_unfinished
 }
 #[inline(always)]
-unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStream_status {
+unsafe fn BIT_reloadDStream(mut bitD: &mut BIT_DStream_t) -> BIT_DStream_status {
     if ((*bitD).bitsConsumed as std::ffi::c_ulong
         > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
             .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
@@ -499,13 +504,14 @@ fn FSE_buildDTable_internal(
 
 #[inline(always)]
 unsafe fn FSE_decompress_usingDTable_generic(
-    mut dst: *mut std::ffi::c_void,
-    mut maxDstSize: size_t,
+    dst: &mut [u8],
     mut cSrc: &[u8],
     mut dt: &DTable,
     fast: bool,
 ) -> size_t {
-    let ostart = dst as *mut u8;
+    let mut maxDstSize = dst.len() as size_t;
+
+    let ostart = dst.as_mut_ptr();
     let mut op = ostart;
     let omax = op.offset(maxDstSize as isize);
     let olimit = omax.offset(-(3 as std::ffi::c_int as isize));
@@ -521,6 +527,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
     {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
     while (BIT_reloadDStream(&mut bitD) as std::ffi::c_uint
         == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
         as std::ffi::c_int
@@ -630,9 +637,6 @@ unsafe fn FSE_decompress_wksp_body(
 ) -> size_t {
     let mut wkspSize = size_of::<Workspace>() as size_t;
 
-    let mut dstCapacity = dst.len() as size_t;
-    let mut dst = dst.as_mut_ptr().cast();
-
     let mut tableLog: std::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint;
     if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong {
@@ -703,7 +707,6 @@ unsafe fn FSE_decompress_wksp_body(
 
     FSE_decompress_usingDTable_generic(
         dst,
-        dstCapacity,
         ip,
         &workspace.dtable,
         workspace.dtable.header.fastMode != 0,
