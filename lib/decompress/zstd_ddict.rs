@@ -99,17 +99,16 @@ pub struct ZSTD_DDictHashSet {
     pub ddictPtrTableSize: size_t,
     pub ddictPtrCount: size_t,
 }
-pub type ZSTD_DDict = ZSTD_DDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_DDict_s {
-    pub dictBuffer: *mut std::ffi::c_void,
-    pub dictContent: *const std::ffi::c_void,
-    pub dictSize: size_t,
-    pub entropy: ZSTD_entropyDTables_t,
-    pub dictID: u32,
-    pub entropyPresent: u32,
-    pub cMem: ZSTD_customMem,
+pub struct ZSTD_DDict {
+    dictBuffer: *mut std::ffi::c_void,
+    dictContent: *const std::ffi::c_void,
+    dictSize: size_t,
+    entropy: ZSTD_entropyDTables_t,
+    dictID: u32,
+    entropyPresent: u32,
+    cMem: ZSTD_customMem,
 }
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
