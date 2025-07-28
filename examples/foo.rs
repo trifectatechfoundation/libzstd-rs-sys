@@ -5,7 +5,7 @@ use std::ffi::*;
 fn main() {
     // Your compressed data goes here
     // let compressed: &[u8] = include_bytes!("/tmp/foo.txt.zst");
-    let compressed: &[u8] = include_bytes!("/home/folkertdev/rust/zlib-rs/silesia-small.tar.zst");
+    let compressed: &[u8] = include_bytes!("../silesia-small.tar.zst");
     let compressed_ptr = compressed.as_ptr() as *const c_void;
     let compressed_size = compressed.len();
 
