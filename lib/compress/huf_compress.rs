@@ -1,5 +1,3 @@
-use ::libc;
-
 use crate::lib::{
     common::entropy_common::HUF_readStats,
     compress::{

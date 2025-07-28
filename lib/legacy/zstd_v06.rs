@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn memcpy(
         _: *mut std::ffi::c_void,

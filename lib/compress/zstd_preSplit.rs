@@ -1,4 +1,3 @@
-use ::libc;
 extern "C" {
     fn HIST_add(count: *mut std::ffi::c_uint, src: *const std::ffi::c_void, srcSize: size_t);
 }
