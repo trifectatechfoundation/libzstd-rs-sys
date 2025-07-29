@@ -95,11 +95,6 @@ extern "C" {
         src: *const std::ffi::c_void,
         srcSize: size_t,
     ) -> size_t;
-    fn ZSTD_XXH64(
-        input: *const std::ffi::c_void,
-        length: size_t,
-        seed: XXH64_hash_t,
-    ) -> XXH64_hash_t;
     fn ZDICT_optimizeTrainFromBuffer_fastCover(
         dictBuffer: *mut std::ffi::c_void,
         dictBufferCapacity: size_t,
@@ -685,6 +680,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 
@@ -2277,7 +2273,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     );
     let randomID = ZSTD_XXH64(
         customDictContent,
-        dictContentSize,
+        dictContentSize as usize,
         0 as std::ffi::c_int as XXH64_hash_t,
     );
     let compliantID = (randomID
@@ -2412,7 +2408,7 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
         (dictBuffer as *mut std::ffi::c_char)
             .offset(dictBufferCapacity as isize)
             .offset(-(dictContentSize as isize)) as *const std::ffi::c_void,
-        dictContentSize,
+        dictContentSize as usize,
         0 as std::ffi::c_int as XXH64_hash_t,
     );
     let compliantID = (randomID

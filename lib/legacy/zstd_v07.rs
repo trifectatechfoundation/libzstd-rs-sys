@@ -1,3 +1,6 @@
+use crate::lib::common::xxhash::{
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+};
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -18,13 +21,6 @@ extern "C" {
     ) -> *mut std::ffi::c_void;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn ZSTD_XXH64_reset(statePtr: *mut XXH64_state_t, seed: XXH64_hash_t) -> XXH_errorcode;
-    fn ZSTD_XXH64_update(
-        statePtr: *mut XXH64_state_t,
-        input: *const std::ffi::c_void,
-        length: size_t,
-    ) -> XXH_errorcode;
-    fn ZSTD_XXH64_digest(statePtr: *const XXH64_state_t) -> XXH64_hash_t;
     fn ERR_getErrorString(code: ERR_enum) -> *const std::ffi::c_char;
 }
 pub type ptrdiff_t = std::ffi::c_long;
@@ -34,17 +30,6 @@ pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
 pub type XXH32_hash_t = u32;
 pub type XXH64_hash_t = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
-pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv07_frameParams {
@@ -4743,7 +4728,7 @@ unsafe extern "C" fn ZSTDv07_decompressFrame(
             ZSTD_XXH64_update(
                 &mut (*dctx).xxhState,
                 op as *const std::ffi::c_void,
-                decodedSize,
+                decodedSize as usize,
             );
         }
         op = op.offset(decodedSize as isize);
@@ -5012,7 +4997,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressContinue(
             (*dctx).previousDstEnd =
                 (dst as *mut std::ffi::c_char).offset(rSize as isize) as *const std::ffi::c_void;
             if (*dctx).fParams.checksumFlag != 0 {
-                ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize);
+                ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
             }
             return rSize;
         }
