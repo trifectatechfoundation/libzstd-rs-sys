@@ -132,7 +132,7 @@ fn FSE_buildDTable_internal(
     mut normalizedCounter: &[std::ffi::c_short; 256],
     mut maxSymbolValue: std::ffi::c_uint,
     mut tableLog: std::ffi::c_uint,
-) -> size_t {
+) -> Result<(), Error> {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
     let maxSV1 = maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
@@ -146,15 +146,15 @@ fn FSE_buildDTable_internal(
         .wrapping_add(8 as std::ffi::c_int as std::ffi::c_ulonglong)
         > wkspSize as std::ffi::c_ulonglong
     {
-        return -(ZSTD_error_maxSymbolValue_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::maxSymbolValue_tooLarge);
     }
 
     if maxSymbolValue > FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint {
-        return -(ZSTD_error_maxSymbolValue_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::maxSymbolValue_tooLarge);
     }
 
     if tableLog > FSE_MAX_TABLELOG as std::ffi::c_uint {
-        return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::tableLog_tooLarge);
     }
 
     let mut DTableH = FSE_DTableHeader {
@@ -239,7 +239,7 @@ fn FSE_buildDTable_internal(
         }
 
         if position_0 != 0 as std::ffi::c_int as u32 {
-            return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+            return Err(Error::GENERIC);
         }
     }
 
@@ -253,7 +253,7 @@ fn FSE_buildDTable_internal(
             .wrapping_sub(tableSize) as u16;
     }
 
-    0 as std::ffi::c_int as size_t
+    Ok(())
 }
 
 #[inline(always)]
@@ -450,8 +450,9 @@ unsafe fn FSE_decompress_wksp_body(
         maxSymbolValue,
         tableLog,
     );
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
+    match _var_err__ {
+        Ok(()) => {}
+        Err(e) => return -(e as std::ffi::c_int) as size_t,
     }
 
     match FSE_decompress_usingDTable_generic(
