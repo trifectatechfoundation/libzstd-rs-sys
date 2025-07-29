@@ -1,5 +1,5 @@
 use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
-use crate::lib::decompress::{ZSTD_FrameType_e, ZSTD_frame};
+use crate::lib::decompress::{ZSTD_FrameHeader, ZSTD_frame};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -501,19 +501,6 @@ pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_FrameHeader {
-    pub frameContentSize: std::ffi::c_ulonglong,
-    pub windowSize: std::ffi::c_ulonglong,
-    pub blockSizeMax: std::ffi::c_uint,
-    pub frameType: ZSTD_FrameType_e,
-    pub headerSize: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-    pub checksumFlag: std::ffi::c_uint,
-    pub _reserved1: std::ffi::c_uint,
-    pub _reserved2: std::ffi::c_uint,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameProgression {

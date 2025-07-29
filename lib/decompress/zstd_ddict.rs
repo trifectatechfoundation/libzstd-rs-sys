@@ -3,7 +3,7 @@ use libc::free;
 use crate::lib::common::xxhash::XXH64_state_t;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{
-    blockType_e, HUF_DTable, ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
+    blockType_e, HUF_DTable, ZSTD_FrameHeader, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
     ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_litLocation_e, ZSTD_seqSymbol,
 };
 use crate::lib::zstd::*;
@@ -104,19 +104,6 @@ pub struct ZSTD_DDict {
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type U64 = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_FrameHeader {
-    pub frameContentSize: std::ffi::c_ulonglong,
-    pub windowSize: std::ffi::c_ulonglong,
-    pub blockSizeMax: std::ffi::c_uint,
-    pub frameType: ZSTD_FrameType_e,
-    pub headerSize: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-    pub checksumFlag: std::ffi::c_uint,
-    pub _reserved1: std::ffi::c_uint,
-    pub _reserved2: std::ffi::c_uint,
-}
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_dictContentType_e = std::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;

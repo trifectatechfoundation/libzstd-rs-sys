@@ -91,3 +91,17 @@ pub const bt_reserved: blockType_e = 3;
 pub const bt_compressed: blockType_e = 2;
 pub const bt_rle: blockType_e = 1;
 pub const bt_raw: blockType_e = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_FrameHeader {
+    pub frameContentSize: std::ffi::c_ulonglong,
+    pub windowSize: std::ffi::c_ulonglong,
+    pub blockSizeMax: std::ffi::c_uint,
+    pub frameType: ZSTD_FrameType_e,
+    pub headerSize: std::ffi::c_uint,
+    pub dictID: std::ffi::c_uint,
+    pub checksumFlag: std::ffi::c_uint,
+    pub _reserved1: std::ffi::c_uint,
+    pub _reserved2: std::ffi::c_uint,
+}
