@@ -930,7 +930,7 @@ unsafe extern "C" fn FASTCOVER_convertToFastCoverParams(
     (*fastCoverParams).zParams = coverParams.zParams;
     (*fastCoverParams).shrinkDict = coverParams.shrinkDict;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_trainFromBuffer_fastCover)]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -1100,7 +1100,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     free(segmentFreqs as *mut std::ffi::c_void);
     dictionarySize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_fastCover)]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,

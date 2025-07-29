@@ -1673,7 +1673,7 @@ unsafe extern "C" fn ZSTD_updateTree_internal(
     }
     (*ms).nextToUpdate = target;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_updateTree)]
 pub unsafe extern "C" fn ZSTD_updateTree(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
@@ -3276,7 +3276,7 @@ unsafe extern "C" fn ZSTD_compressBlock_opt2(
         dictMode,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btopt)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btopt(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3306,7 +3306,7 @@ unsafe extern "C" fn ZSTD_initStats_ultra(
     (*ms).window.lowLimit = (*ms).window.dictLimit;
     (*ms).nextToUpdate = (*ms).window.dictLimit;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btultra)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btultra(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3316,7 +3316,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btultra(
 ) -> size_t {
     ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_noDict)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btultra2)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btultra2(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3335,7 +3335,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btultra2(
     }
     ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_noDict)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btopt_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btopt_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3345,7 +3345,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btopt_dictMatchState(
 ) -> size_t {
     ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, ZSTD_dictMatchState)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btopt_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btopt_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3355,7 +3355,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btopt_extDict(
 ) -> size_t {
     ZSTD_compressBlock_opt0(ms, seqStore, rep, src, srcSize, ZSTD_extDict)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btultra_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btultra_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -3365,7 +3365,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btultra_dictMatchState(
 ) -> size_t {
     ZSTD_compressBlock_opt2(ms, seqStore, rep, src, srcSize, ZSTD_dictMatchState)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btultra_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btultra_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,

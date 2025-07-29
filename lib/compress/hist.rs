@@ -13,11 +13,11 @@ pub const HIST_WKSP_SIZE_U32: std::ffi::c_int = 1024 as std::ffi::c_int;
 pub const HIST_WKSP_SIZE: std::ffi::c_ulong = (HIST_WKSP_SIZE_U32 as std::ffi::c_ulong)
     .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong);
 pub const HIST_FAST_THRESHOLD: std::ffi::c_int = 1500 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_isError)]
 pub unsafe extern "C" fn HIST_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_add)]
 pub unsafe extern "C" fn HIST_add(
     mut count: *mut std::ffi::c_uint,
     mut src: *const std::ffi::c_void,
@@ -33,7 +33,7 @@ pub unsafe extern "C" fn HIST_add(
         *fresh1;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_count_simple)]
 pub unsafe extern "C" fn HIST_count_simple(
     mut count: *mut std::ffi::c_uint,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,
@@ -215,7 +215,7 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
     );
     max as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_countFast_wksp)]
 pub unsafe extern "C" fn HIST_countFast_wksp(
     mut count: *mut std::ffi::c_uint,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,
@@ -242,7 +242,7 @@ pub unsafe extern "C" fn HIST_countFast_wksp(
         workSpace as *mut u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_count_wksp)]
 pub unsafe extern "C" fn HIST_count_wksp(
     mut count: *mut std::ffi::c_uint,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,
@@ -277,7 +277,7 @@ pub unsafe extern "C" fn HIST_count_wksp(
         workSpaceSize,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_countFast)]
 pub unsafe extern "C" fn HIST_countFast(
     mut count: *mut std::ffi::c_uint,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,
@@ -294,7 +294,7 @@ pub unsafe extern "C" fn HIST_countFast(
         ::core::mem::size_of::<[std::ffi::c_uint; 1024]>() as std::ffi::c_ulong,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HIST_count)]
 pub unsafe extern "C" fn HIST_count(
     mut count: *mut std::ffi::c_uint,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,

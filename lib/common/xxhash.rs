@@ -124,13 +124,10 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
     } else {
         h64 = seed.wrapping_add(XXH_PRIME64_5);
     }
-
     h64 = h64.wrapping_add(input.len() as u64);
-
     XXH64_finalize(h64, remainder, align)
 }
-
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_XXH64)]
 pub unsafe extern "C" fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
     mut len: usize,
@@ -142,11 +139,9 @@ pub unsafe extern "C" fn ZSTD_XXH64(
     } else {
         core::slice::from_raw_parts(input.cast::<u8>(), len)
     };
-
     XXH64_endian_align(slice, seed, Align::Unaligned)
 }
-
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_XXH64_reset)]
 pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
     // SAFETY: all zeros is a valid value of type XXH64_state_t.
     unsafe {
@@ -157,11 +152,9 @@ pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> 
     state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
     state.v[2] = seed.wrapping_add(0);
     state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
-
     XXH_errorcode::XXH_OK
 }
-
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_XXH64_update)]
 pub unsafe extern "C" fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
     mut input: *const c_void,
@@ -215,14 +208,11 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_er
         state.mem64_as_bytes_mut()[..remainder.len()].copy_from_slice(remainder);
         state.memsize = remainder.len() as u32;
     }
-
     XXH_errorcode::XXH_OK
 }
-
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_XXH64_digest)]
 pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
     let mut h64;
-
     if state.total_len >= 32 {
         h64 = (state.v[0].rotate_left(1))
             .wrapping_add(state.v[1].rotate_left(7))

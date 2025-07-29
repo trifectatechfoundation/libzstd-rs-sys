@@ -303,7 +303,7 @@ unsafe extern "C" fn HUF_setValue(mut elt: *mut HUF_CElt, mut value: size_t) {
                 .wrapping_sub(nbBits);
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_readCTableHeader)]
 pub unsafe extern "C" fn HUF_readCTableHeader(mut ctable: *const HUF_CElt) -> HUF_CTableHeader {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
@@ -340,7 +340,7 @@ unsafe extern "C" fn HUF_writeCTableHeader(
         ::core::mem::size_of::<HUF_CTableHeader>() as std::ffi::c_ulong as libc::size_t,
     );
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_writeCTable_wksp)]
 pub unsafe extern "C" fn HUF_writeCTable_wksp(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
@@ -440,7 +440,7 @@ pub unsafe extern "C" fn HUF_writeCTable_wksp(
         .wrapping_div(2 as std::ffi::c_int as std::ffi::c_uint)
         .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_readCTable)]
 pub unsafe extern "C" fn HUF_readCTable(
     mut CTable: *mut HUF_CElt,
     mut maxSymbolValuePtr: *mut std::ffi::c_uint,
@@ -543,7 +543,7 @@ pub unsafe extern "C" fn HUF_readCTable(
     }
     readSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_getNbBitsFromCTable)]
 pub unsafe extern "C" fn HUF_getNbBitsFromCTable(
     mut CTable: *const HUF_CElt,
     mut symbolValue: u32,
@@ -979,7 +979,7 @@ unsafe extern "C" fn HUF_buildCTableFromTree(
     }
     HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_buildCTable_wksp)]
 pub unsafe extern "C" fn HUF_buildCTable_wksp(
     mut CTable: *mut HUF_CElt,
     mut count: *const std::ffi::c_uint,
@@ -1024,7 +1024,7 @@ pub unsafe extern "C" fn HUF_buildCTable_wksp(
     HUF_buildCTableFromTree(CTable, huffNode, nonNullRank, maxSymbolValue, maxNbBits);
     maxNbBits as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_estimateCompressedSize)]
 pub unsafe extern "C" fn HUF_estimateCompressedSize(
     mut CTable: *const HUF_CElt,
     mut count: *const std::ffi::c_uint,
@@ -1043,7 +1043,7 @@ pub unsafe extern "C" fn HUF_estimateCompressedSize(
     }
     nbBits >> 3 as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_validateCTable)]
 pub unsafe extern "C" fn HUF_validateCTable(
     mut CTable: *const HUF_CElt,
     mut count: *const std::ffi::c_uint,
@@ -1067,7 +1067,7 @@ pub unsafe extern "C" fn HUF_validateCTable(
     }
     (bad == 0) as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_compressBound)]
 pub unsafe extern "C" fn HUF_compressBound(mut size: size_t) -> size_t {
     (HUF_CTABLEBOUND as size_t).wrapping_add(
         size.wrapping_add(size >> 8 as std::ffi::c_int)
@@ -1486,7 +1486,7 @@ unsafe extern "C" fn HUF_compress1X_usingCTable_internal(
     }
     HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_compress1X_usingCTable)]
 pub unsafe extern "C" fn HUF_compress1X_usingCTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1599,7 +1599,7 @@ unsafe extern "C" fn HUF_compress4X_usingCTable_internal(
     op = op.offset(cSize_2 as isize);
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_compress4X_usingCTable)]
 pub unsafe extern "C" fn HUF_compress4X_usingCTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1657,7 +1657,7 @@ unsafe extern "C" fn HUF_compressCTable_internal(
 }
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: std::ffi::c_int = 4096 as std::ffi::c_int;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: std::ffi::c_int = 10 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_cardinality)]
 pub unsafe extern "C" fn HUF_cardinality(
     mut count: *const std::ffi::c_uint,
     mut maxSymbolValue: std::ffi::c_uint,
@@ -1674,13 +1674,13 @@ pub unsafe extern "C" fn HUF_cardinality(
     }
     cardinality
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_minTableLog)]
 pub unsafe extern "C" fn HUF_minTableLog(
     mut symbolCardinality: std::ffi::c_uint,
 ) -> std::ffi::c_uint {
     (ZSTD_highbit32(symbolCardinality)).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_optimalTableLog)]
 pub unsafe extern "C" fn HUF_optimalTableLog(
     mut maxTableLog: std::ffi::c_uint,
     mut srcSize: size_t,
@@ -1974,7 +1974,7 @@ unsafe extern "C" fn HUF_compress_internal(
         flags,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_compress1X_repeat)]
 pub unsafe extern "C" fn HUF_compress1X_repeat(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2003,7 +2003,7 @@ pub unsafe extern "C" fn HUF_compress1X_repeat(
         flags,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_compress4X_repeat)]
 pub unsafe extern "C" fn HUF_compress4X_repeat(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,

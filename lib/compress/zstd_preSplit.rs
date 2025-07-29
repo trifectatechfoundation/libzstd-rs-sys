@@ -369,7 +369,7 @@ unsafe extern "C" fn ZSTD_splitBlock_fromBorders(
     }) as size_t
 }
 pub const SEGMENT_SIZE: std::ffi::c_int = 512 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_splitBlock)]
 pub unsafe extern "C" fn ZSTD_splitBlock(
     mut blockStart: *const std::ffi::c_void,
     mut blockSize: size_t,

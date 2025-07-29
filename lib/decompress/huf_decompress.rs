@@ -1992,7 +1992,7 @@ unsafe extern "C" fn HUF_fillDTableX2(
         w;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_readDTableX2_wksp)]
 pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     mut DTable: *mut HUF_DTable,
     mut src: *const std::ffi::c_void,
@@ -3202,7 +3202,7 @@ unsafe extern "C" fn HUF_decompress1X2_usingDTable_internal(
     }
     HUF_decompress1X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_decompress1X2_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X2_DCtx_wksp(
     mut DCtx: *mut HUF_DTable,
     mut dst: *mut std::ffi::c_void,
@@ -3487,7 +3487,7 @@ static mut algoTime: [[algo_time_t; 2]; 16] = [
         },
     ],
 ];
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_selectDecoder)]
 pub unsafe extern "C" fn HUF_selectDecoder(mut dstSize: size_t, mut cSrcSize: size_t) -> u32 {
     let Q = if cSrcSize >= dstSize {
         15 as std::ffi::c_int as u32
@@ -3520,7 +3520,7 @@ pub unsafe extern "C" fn HUF_selectDecoder(mut dstSize: size_t, mut cSrcSize: si
     DTime1 = DTime1.wrapping_add(DTime1 >> 5 as std::ffi::c_int);
     (DTime1 < DTime0) as std::ffi::c_int as u32
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_decompress1X_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut std::ffi::c_void,
@@ -3560,7 +3560,7 @@ pub unsafe extern "C" fn HUF_decompress1X_DCtx_wksp(
         )
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_decompress1X_usingDTable)]
 pub unsafe extern "C" fn HUF_decompress1X_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
@@ -3576,7 +3576,7 @@ pub unsafe extern "C" fn HUF_decompress1X_usingDTable(
         HUF_decompress1X1_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_decompress1X1_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X1_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut std::ffi::c_void,
@@ -3606,7 +3606,7 @@ pub unsafe extern "C" fn HUF_decompress1X1_DCtx_wksp(
         flags,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUF_decompress4X_usingDTable)]
 pub unsafe extern "C" fn HUF_decompress4X_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,

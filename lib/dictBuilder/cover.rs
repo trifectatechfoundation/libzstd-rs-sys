@@ -426,7 +426,7 @@ unsafe extern "C" fn COVER_map_destroy(mut map: *mut COVER_map_t) {
     (*map).data = NULL as *mut COVER_map_pair_t;
     (*map).size = 0 as std::ffi::c_int as u32;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_sum)]
 pub unsafe extern "C" fn COVER_sum(
     mut samplesSizes: *const size_t,
     mut nbSamples: std::ffi::c_uint,
@@ -968,7 +968,7 @@ unsafe extern "C" fn COVER_ctx_init(
     (*ctx).suffix = NULL as *mut u32;
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_warnOnSmallCorpus)]
 pub unsafe extern "C" fn COVER_warnOnSmallCorpus(
     mut maxDictSize: size_t,
     mut nbDmers: size_t,
@@ -990,7 +990,7 @@ pub unsafe extern "C" fn COVER_warnOnSmallCorpus(
         fflush(stderr);
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_computeEpochs)]
 pub unsafe extern "C" fn COVER_computeEpochs(
     mut maxDictSize: u32,
     mut nbDmers: u32,
@@ -1123,7 +1123,7 @@ unsafe extern "C" fn COVER_buildDictionary(
     }
     tail
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_trainFromBuffer_cover)]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -1256,7 +1256,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     COVER_map_destroy(&mut activeDmers);
     dictionarySize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_checkTotalCompressedSize)]
 pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
     parameters: ZDICT_cover_params_t,
     mut samplesSizes: *const size_t,
@@ -1329,7 +1329,7 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
     }
     totalCompressedSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_best_init)]
 pub unsafe extern "C" fn COVER_best_init(mut best: *mut COVER_best_t) {
     if best.is_null() {
         return;
@@ -1346,7 +1346,7 @@ pub unsafe extern "C" fn COVER_best_init(mut best: *mut COVER_best_t) {
         ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
     );
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_best_wait)]
 pub unsafe extern "C" fn COVER_best_wait(mut best: *mut COVER_best_t) {
     if best.is_null() {
         return;
@@ -1357,7 +1357,7 @@ pub unsafe extern "C" fn COVER_best_wait(mut best: *mut COVER_best_t) {
     }
     pthread_mutex_unlock(&mut (*best).mutex);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_best_destroy)]
 pub unsafe extern "C" fn COVER_best_destroy(mut best: *mut COVER_best_t) {
     if best.is_null() {
         return;
@@ -1369,7 +1369,7 @@ pub unsafe extern "C" fn COVER_best_destroy(mut best: *mut COVER_best_t) {
     pthread_mutex_destroy(&mut (*best).mutex);
     pthread_cond_destroy(&mut (*best).cond);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_best_start)]
 pub unsafe extern "C" fn COVER_best_start(mut best: *mut COVER_best_t) {
     if best.is_null() {
         return;
@@ -1379,7 +1379,7 @@ pub unsafe extern "C" fn COVER_best_start(mut best: *mut COVER_best_t) {
     (*best).liveJobs;
     pthread_mutex_unlock(&mut (*best).mutex);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_best_finish)]
 pub unsafe extern "C" fn COVER_best_finish(
     mut best: *mut COVER_best_t,
     mut parameters: ZDICT_cover_params_t,
@@ -1437,22 +1437,22 @@ unsafe extern "C" fn setDictSelection(
     ds.totalCompressedSize = csz;
     ds
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_dictSelectionError)]
 pub unsafe extern "C" fn COVER_dictSelectionError(mut error: size_t) -> COVER_dictSelection_t {
     setDictSelection(NULL as *mut u8, 0 as std::ffi::c_int as size_t, error)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_dictSelectionIsError)]
 pub unsafe extern "C" fn COVER_dictSelectionIsError(
     mut selection: COVER_dictSelection_t,
 ) -> std::ffi::c_uint {
     (ERR_isError(selection.totalCompressedSize) != 0 || (selection.dictContent).is_null())
         as std::ffi::c_int as std::ffi::c_uint
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_dictSelectionFree)]
 pub unsafe extern "C" fn COVER_dictSelectionFree(mut selection: COVER_dictSelection_t) {
     free(selection.dictContent as *mut std::ffi::c_void);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(COVER_selectDict)]
 pub unsafe extern "C" fn COVER_selectDict(
     mut customDictContent: *mut u8,
     mut dictBufferCapacity: size_t,
@@ -1654,7 +1654,7 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
     COVER_dictSelectionFree(selection);
     free(freqs as *mut std::ffi::c_void);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover)]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,

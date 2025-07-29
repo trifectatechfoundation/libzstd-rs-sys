@@ -1067,7 +1067,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch(
     ZSTD_updateDUBT(ms, ip, iLimit, mls);
     ZSTD_DUBT_findBestMatch(ms, ip, iLimit, offBasePtr, mls, dictMode)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_dedicatedDictSearch_lazy_loadDictionary)]
 pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
@@ -1366,7 +1366,7 @@ unsafe extern "C" fn ZSTD_insertAndFindFirstIndex_internal(
     (*ms).nextToUpdate = target;
     *hashTable.offset(ZSTD_hashPtr(ip as *const std::ffi::c_void, hashLog, mls) as isize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_insertAndFindFirstIndex)]
 pub unsafe extern "C" fn ZSTD_insertAndFindFirstIndex(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
@@ -1740,7 +1740,7 @@ unsafe extern "C" fn ZSTD_row_update_internal(
     ZSTD_row_update_internalImpl(ms, idx, target, mls, rowLog, rowMask, useCache);
     (*ms).nextToUpdate = target;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_row_update)]
 pub unsafe extern "C" fn ZSTD_row_update(ms: *mut ZSTD_MatchState_t, mut ip: *const u8) {
     let rowLog = if 4 as std::ffi::c_int as std::ffi::c_uint
         > (if (*ms).cParams.searchLog < 6 as std::ffi::c_int as std::ffi::c_uint {
@@ -4024,7 +4024,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
     };
     iend.offset_from(anchor) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4043,7 +4043,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4062,7 +4062,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dedicatedDictSearch)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4081,7 +4081,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4100,7 +4100,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_row(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dictMatchState_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4119,7 +4119,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dedicatedDictSearch_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4138,7 +4138,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4157,7 +4157,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4176,7 +4176,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dedicatedDictSearch)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4195,7 +4195,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4214,7 +4214,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_row(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dictMatchState_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4233,7 +4233,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dedicatedDictSearch_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4252,7 +4252,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4271,7 +4271,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4290,7 +4290,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dedicatedDictSearch)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4309,7 +4309,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4328,7 +4328,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_row(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dictMatchState_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4347,7 +4347,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dedicatedDictSearch_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4366,7 +4366,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4385,7 +4385,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2(
         ZSTD_noDict,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4786,7 +4786,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
     *rep.offset(1 as std::ffi::c_int as isize) = offset_2;
     iend.offset_from(anchor) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4804,7 +4804,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict(
         0 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_extDict_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4822,7 +4822,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict_row(
         0 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4840,7 +4840,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict(
         1 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_extDict_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4858,7 +4858,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_row(
         1 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4876,7 +4876,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict(
         2 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_extDict_row)]
 pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -4894,7 +4894,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict_row(
         2 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,

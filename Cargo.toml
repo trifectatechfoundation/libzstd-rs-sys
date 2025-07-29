@@ -27,3 +27,8 @@ quickcheck = "1.0.3"
 [dev-dependencies.xxhash-rust]
 version = "0.8.15"
 features = ["xxh64", "xxh32"]
+
+
+[features]
+export-symbols = [] # whether the zlib api symbols are publicly exported
+semver-prefix = ["export-symbols"] # prefix all symbols in a semver-compatible way

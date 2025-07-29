@@ -796,15 +796,15 @@ unsafe extern "C" fn ZDICT_printHex(mut ptr: *const std::ffi::c_void, mut length
         u;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_isError)]
 pub unsafe extern "C" fn ZDICT_isError(mut errorCode: size_t) -> std::ffi::c_uint {
     ERR_isError(errorCode)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_getErrorName)]
 pub unsafe extern "C" fn ZDICT_getErrorName(mut errorCode: size_t) -> *const std::ffi::c_char {
     ERR_getErrorName(errorCode)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_getDictID)]
 pub unsafe extern "C" fn ZDICT_getDictID(
     mut dictBuffer: *const std::ffi::c_void,
     mut dictSize: size_t,
@@ -820,7 +820,7 @@ pub unsafe extern "C" fn ZDICT_getDictID(
             as *const std::ffi::c_void,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_getDictHeaderSize)]
 pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     mut dictBuffer: *const std::ffi::c_void,
     mut dictSize: size_t,
@@ -2240,7 +2240,7 @@ unsafe extern "C" fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
     }
     maxRep
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_finalizeDictionary)]
 pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2704,7 +2704,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
     free(dictList as *mut std::ffi::c_void);
     dictSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_trainFromBuffer_legacy)]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2739,7 +2739,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     free(newBuff);
     result
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_trainFromBuffer)]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2780,7 +2780,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
         &mut params,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZDICT_addEntropyTablesFromBuffer)]
 pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     mut dictBuffer: *mut std::ffi::c_void,
     mut dictContentSize: size_t,
