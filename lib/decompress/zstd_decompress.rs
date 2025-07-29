@@ -447,13 +447,9 @@ pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: std::ffi::c_int = 27 as std::ffi::c_int;
 static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
     {
         ZSTD_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut std::ffi::c_void,
+            customAlloc: None,
+            customFree: None,
+            opaque: core::ptr::null_mut(),
         }
     }
 };
@@ -1054,7 +1050,6 @@ unsafe extern "C" fn ZSTD_decompressLegacyStream(
         1 | 2 | 3 | _ => -(ZSTD_error_version_unsupported as std::ffi::c_int) as size_t,
     }
 }
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT: std::ffi::c_int = 4 as std::ffi::c_int;
 pub const DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT: std::ffi::c_int = 3 as std::ffi::c_int;
 pub const DDICT_HASHSET_TABLE_BASE_SIZE: std::ffi::c_int = 64 as std::ffi::c_int;
@@ -1154,7 +1149,7 @@ unsafe extern "C" fn ZSTD_createDDictHashSet(
         customMem,
     ) as *mut ZSTD_DDictHashSet;
     if ret.is_null() {
-        return NULL as *mut ZSTD_DDictHashSet;
+        return core::ptr::null_mut();
     }
     (*ret).ddictPtrTable = ZSTD_customCalloc(
         (DDICT_HASHSET_TABLE_BASE_SIZE as std::ffi::c_ulong)
@@ -1163,7 +1158,7 @@ unsafe extern "C" fn ZSTD_createDDictHashSet(
     ) as *mut *const ZSTD_DDict;
     if ((*ret).ddictPtrTable).is_null() {
         ZSTD_customFree(ret as *mut std::ffi::c_void, customMem);
-        return NULL as *mut ZSTD_DDictHashSet;
+        return core::ptr::null_mut();
     }
     (*ret).ddictPtrTableSize = DDICT_HASHSET_TABLE_BASE_SIZE as size_t;
     (*ret).ddictPtrCount = 0 as std::ffi::c_int as size_t;
@@ -1233,22 +1228,22 @@ unsafe extern "C" fn ZSTD_DCtx_resetParameters(mut dctx: *mut ZSTD_DCtx) {
 }
 unsafe extern "C" fn ZSTD_initDCtx_internal(mut dctx: *mut ZSTD_DCtx) {
     (*dctx).staticSize = 0 as std::ffi::c_int as size_t;
-    (*dctx).ddict = NULL as *const ZSTD_DDict;
-    (*dctx).ddictLocal = NULL as *mut ZSTD_DDict;
-    (*dctx).dictEnd = NULL as *const std::ffi::c_void;
+    (*dctx).ddict = core::ptr::null();
+    (*dctx).ddictLocal = core::ptr::null_mut();
+    (*dctx).dictEnd = core::ptr::null();
     (*dctx).ddictIsCold = 0 as std::ffi::c_int;
     (*dctx).dictUses = ZSTD_dont_use;
-    (*dctx).inBuff = NULL as *mut std::ffi::c_char;
+    (*dctx).inBuff = core::ptr::null_mut();
     (*dctx).inBuffSize = 0 as std::ffi::c_int as size_t;
     (*dctx).outBuffSize = 0 as std::ffi::c_int as size_t;
     (*dctx).streamStage = zdss_init;
-    (*dctx).legacyContext = NULL as *mut std::ffi::c_void;
+    (*dctx).legacyContext = core::ptr::null_mut();
     (*dctx).previousLegacyVersion = 0 as std::ffi::c_int as u32;
     (*dctx).noForwardProgress = 0 as std::ffi::c_int;
     (*dctx).oversizedDuration = 0 as std::ffi::c_int as size_t;
     (*dctx).isFrameDecompression = 1 as std::ffi::c_int;
     (*dctx).bmi2 = ZSTD_cpuSupportsBmi2();
-    (*dctx).ddictSet = NULL as *mut ZSTD_DDictHashSet;
+    (*dctx).ddictSet = core::ptr::null_mut();
     ZSTD_DCtx_resetParameters(dctx);
 }
 #[no_mangle]
@@ -1258,10 +1253,10 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
 ) -> *mut ZSTD_DCtx {
     let dctx = workspace as *mut ZSTD_DCtx;
     if workspace as size_t & 7 as std::ffi::c_int as size_t != 0 {
-        return NULL as *mut ZSTD_DCtx;
+        return core::ptr::null_mut();
     }
     if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() as std::ffi::c_ulong {
-        return NULL as *mut ZSTD_DCtx;
+        return core::ptr::null_mut();
     }
     ZSTD_initDCtx_internal(dctx);
     (*dctx).staticSize = workspaceSize;
@@ -1273,14 +1268,14 @@ unsafe extern "C" fn ZSTD_createDCtx_internal(mut customMem: ZSTD_customMem) -> 
         ^ (customMem.customFree).is_none() as std::ffi::c_int
         != 0
     {
-        return NULL as *mut ZSTD_DCtx;
+        return core::ptr::null_mut();
     }
     let dctx = ZSTD_customMalloc(
         ::core::mem::size_of::<ZSTD_DCtx>() as std::ffi::c_ulong,
         customMem,
     ) as *mut ZSTD_DCtx;
     if dctx.is_null() {
-        return NULL as *mut ZSTD_DCtx;
+        return core::ptr::null_mut();
     }
     (*dctx).customMem = customMem;
     ZSTD_initDCtx_internal(dctx);
@@ -1296,8 +1291,8 @@ pub unsafe extern "C" fn ZSTD_createDCtx() -> *mut ZSTD_DCtx {
 }
 unsafe extern "C" fn ZSTD_clearDict(mut dctx: *mut ZSTD_DCtx) {
     ZSTD_freeDDict((*dctx).ddictLocal);
-    (*dctx).ddictLocal = NULL as *mut ZSTD_DDict;
-    (*dctx).ddict = NULL as *const ZSTD_DDict;
+    (*dctx).ddictLocal = core::ptr::null_mut();
+    (*dctx).ddict = core::ptr::null();
     (*dctx).dictUses = ZSTD_dont_use;
 }
 #[no_mangle]
@@ -1311,13 +1306,13 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(mut dctx: *mut ZSTD_DCtx) -> size_t {
     let cMem = (*dctx).customMem;
     ZSTD_clearDict(dctx);
     ZSTD_customFree((*dctx).inBuff as *mut std::ffi::c_void, cMem);
-    (*dctx).inBuff = NULL as *mut std::ffi::c_char;
+    (*dctx).inBuff = core::ptr::null_mut();
     if !((*dctx).legacyContext).is_null() {
         ZSTD_freeLegacyStreamContext((*dctx).legacyContext, (*dctx).previousLegacyVersion);
     }
     if !((*dctx).ddictSet).is_null() {
         ZSTD_freeDDictHashSet((*dctx).ddictSet, cMem);
-        (*dctx).ddictSet = NULL as *mut ZSTD_DDictHashSet;
+        (*dctx).ddictSet = core::ptr::null_mut();
     }
     ZSTD_customFree(dctx as *mut std::ffi::c_void, cMem);
     0 as std::ffi::c_int as size_t
@@ -2337,7 +2332,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
         srcSize,
         dict,
         dictSize,
-        NULL as *const ZSTD_DDict,
+        core::ptr::null(),
     )
 }
 unsafe extern "C" fn ZSTD_getDDict(mut dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
@@ -2349,7 +2344,7 @@ unsafe extern "C" fn ZSTD_getDDict(mut dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDic
         }
         0 | _ => {
             ZSTD_clearDict(dctx);
-            NULL as *const ZSTD_DDict
+            core::ptr::null()
         }
     }
 }
@@ -2846,10 +2841,10 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
     (*dctx).processedCSize = 0 as std::ffi::c_int as U64;
     (*dctx).decodedSize = 0 as std::ffi::c_int as U64;
-    (*dctx).previousDstEnd = NULL as *const std::ffi::c_void;
-    (*dctx).prefixStart = NULL as *const std::ffi::c_void;
-    (*dctx).virtualStart = NULL as *const std::ffi::c_void;
-    (*dctx).dictEnd = NULL as *const std::ffi::c_void;
+    (*dctx).previousDstEnd = core::ptr::null();
+    (*dctx).prefixStart = core::ptr::null();
+    (*dctx).virtualStart = core::ptr::null();
+    (*dctx).dictEnd = core::ptr::null();
     *((*dctx).entropy.hufTable)
         .as_mut_ptr()
         .offset(0 as std::ffi::c_int as isize) =
@@ -2963,7 +2958,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
         dstCapacity,
         src,
         srcSize,
-        NULL as *const std::ffi::c_void,
+        core::ptr::null(),
         0 as std::ffi::c_int as size_t,
         ddict,
     )
@@ -3711,7 +3706,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     let dict = if !ddict.is_null() {
                         ZSTD_DDict_dictContent(ddict)
                     } else {
-                        NULL as *const std::ffi::c_void
+                        core::ptr::null()
                     };
                     let dictSize = if !ddict.is_null() {
                         ZSTD_DDict_dictSize(ddict)
