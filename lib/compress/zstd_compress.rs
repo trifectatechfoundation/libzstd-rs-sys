@@ -4,12 +4,8 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
-extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-}
+
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1173,7 +1169,8 @@ pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 unsafe fn ZSTD_hasExtSeqProd(mut params: *const ZSTD_CCtx_params) -> core::ffi::c_int {
     ((*params).extSeqProdFunc).is_some() as core::ffi::c_int
 }
-use libc::free;
+
+use libc::{calloc, free, malloc, size_t};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::ERR_isError;

@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{fflush, fprintf, FILE};
+use libc::{fflush, fprintf, free, malloc, memcpy, memmove, memset, size_t, FILE};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
@@ -22,23 +22,6 @@ use crate::lib::dictBuilder::fastcover::{
 use crate::lib::zstd::*;
 
 extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memmove(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memset(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_int,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
     static mut stderr: *mut FILE;
     fn clock() -> clock_t;
     fn divsufsort(
@@ -48,7 +31,6 @@ extern "C" {
         openMP: core::ffi::c_int,
     ) -> core::ffi::c_int;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type __clock_t = core::ffi::c_long;
 pub type clock_t = __clock_t;
 pub type FSE_CTable = core::ffi::c_uint;

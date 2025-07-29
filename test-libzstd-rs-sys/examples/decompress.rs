@@ -34,8 +34,7 @@ fn rs(compressed: &[u8]) -> i32 {
     let compressed_size = compressed.len();
 
     // Get decompressed size from frame header
-    let decompressed_size =
-        unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size as u64) };
+    let decompressed_size = unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size) };
     if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
         panic!("Not a valid zstd compressed frame!");
     } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
@@ -47,9 +46,9 @@ fn rs(compressed: &[u8]) -> i32 {
     let result = unsafe {
         ZSTD_decompress(
             decompressed.as_mut_ptr() as *mut c_void,
-            decompressed_size,
+            decompressed_size as usize,
             compressed_ptr,
-            compressed_size as u64,
+            compressed_size,
         )
     };
 

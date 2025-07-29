@@ -2,8 +2,9 @@ use core::ptr;
 use std::ffi::CStr;
 
 use libc::{
-    __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
-    remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
+    __errno_location, calloc, clock_t, close, exit, fclose, fdopen, feof, fflush, fileno, fopen,
+    fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, munmap, remove, size_t, strcmp,
+    strcpy, strerror, strlen, strrchr, timespec, FILE,
 };
 use libzstd_rs::lib::common::mem::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
@@ -46,7 +47,6 @@ enum lzma_internal_s {}
 enum internal_state {}
 
 extern "C" {
-    fn close(__fd: core::ffi::c_int) -> core::ffi::c_int;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
@@ -56,33 +56,12 @@ extern "C" {
         __modes: core::ffi::c_int,
         __n: size_t,
     ) -> core::ffi::c_int;
-    fn fread(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn fseek(
-        __stream: *mut FILE,
-        __off: core::ffi::c_long,
-        __whence: core::ffi::c_int,
-    ) -> core::ffi::c_int;
-    fn ftell(__stream: *mut FILE) -> core::ffi::c_long;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
     fn qsort(
         __base: *mut core::ffi::c_void,
         __nmemb: size_t,
         __size: size_t,
         __compar: __compar_fn_t,
     );
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn strlen(_: *const core::ffi::c_char) -> core::ffi::c_ulong;
     fn clock() -> clock_t;
     fn open(
         __file: *const core::ffi::c_char,
@@ -119,17 +98,7 @@ extern "C" {
     fn lzma_alone_encoder(strm: *mut lzma_stream, options: *const lzma_options_lzma) -> lzma_ret;
     fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: u64, flags: u32) -> lzma_ret;
     fn lzma_alone_decoder(strm: *mut lzma_stream, memlimit: u64) -> lzma_ret;
-    fn mmap(
-        __addr: *mut core::ffi::c_void,
-        __len: size_t,
-        __prot: core::ffi::c_int,
-        __flags: core::ffi::c_int,
-        __fd: core::ffi::c_int,
-        __offset: off_t,
-    ) -> *mut core::ffi::c_void;
-    fn munmap(__addr: *mut core::ffi::c_void, __len: size_t) -> core::ffi::c_int;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;

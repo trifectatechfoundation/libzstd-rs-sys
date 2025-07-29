@@ -1,8 +1,8 @@
 use core::ptr;
 
 use libc::{
-    __errno_location, abort, exit, fclose, fflush, fopen, fprintf, setpriority, strerror, strrchr,
-    FILE, PRIO_PROCESS,
+    __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
+    memcpy, memset, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
@@ -28,23 +28,7 @@ use crate::util::{UTIL_getFileSize, UTIL_getTotalFileSize, UTIL_isDirectory};
 extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn fread(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn strlen(_: *const core::ffi::c_char) -> core::ffi::c_ulong;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_cParameter = core::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;

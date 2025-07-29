@@ -1,6 +1,5 @@
 use core::hint::likely;
 
-pub type size_t = core::ffi::c_ulong;
 pub type C2RustUnnamed = core::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed = 32;
 pub const HUF_flags_disableAsm: C2RustUnnamed = 16;
@@ -8,6 +7,8 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
+use libc::size_t;
+
 use crate::lib::common::fse_decompress::{
     Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };

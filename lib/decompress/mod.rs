@@ -1,3 +1,5 @@
+use libc::size_t;
+
 use crate::lib::common::xxhash::XXH64_state_t;
 
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
@@ -140,9 +142,6 @@ pub struct ZSTD_FrameHeader {
     pub _reserved1: core::ffi::c_uint,
     pub _reserved2: core::ffi::c_uint,
 }
-
-// FIXME: make usize
-type size_t = u64;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

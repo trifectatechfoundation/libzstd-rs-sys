@@ -1,7 +1,7 @@
 use core::ffi::{c_uint, c_void};
 use core::mem;
 
-pub type size_t = core::ffi::c_ulong;
+use libc::size_t;
 
 #[inline]
 pub(crate) fn MEM_32bits() -> c_uint {

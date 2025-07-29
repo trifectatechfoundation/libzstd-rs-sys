@@ -1,5 +1,7 @@
 use core::ptr;
 
+use libc::size_t;
+
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::ERR_isError;
@@ -12,7 +14,6 @@ extern "C" {
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
 }
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type HUF_DTable = u32;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
@@ -2014,11 +2015,11 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
     }
     if src.len() == dst.capacity() {
         ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), dst.capacity());
-        return dst.capacity() as size_t;
+        return dst.capacity();
     }
     if src.len() == 1 {
         ptr::write_bytes(dst.as_mut_ptr(), src[0], dst.capacity());
-        return dst.capacity() as size_t;
+        return dst.capacity();
     }
 
     match HUF_selectDecoder(dst.capacity(), src.len()) {

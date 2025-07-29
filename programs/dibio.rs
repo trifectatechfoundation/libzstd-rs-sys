@@ -1,6 +1,9 @@
 use core::ptr;
 
-use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
+use libc::{
+    __errno_location, exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t,
+    strerror, FILE,
+};
 use libzstd_rs::lib::dictBuilder::cover::{
     ZDICT_cover_params_t, ZDICT_optimizeTrainFromBuffer_cover, ZDICT_trainFromBuffer_cover,
 };
@@ -9,7 +12,8 @@ use libzstd_rs::lib::dictBuilder::fastcover::{
     ZDICT_trainFromBuffer_fastCover,
 };
 use libzstd_rs::lib::dictBuilder::zdict::{
-    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_trainFromBuffer_legacy,
+    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_params_t,
+    ZDICT_trainFromBuffer_legacy,
 };
 use libzstd_rs::lib::zstd::*;
 
@@ -18,22 +22,7 @@ use crate::util::UTIL_getFileSize;
 
 extern "C" {
     static mut stderr: *mut FILE;
-    fn fread(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn fwrite(
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
 }
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fileStats {

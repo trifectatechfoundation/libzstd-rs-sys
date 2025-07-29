@@ -1,7 +1,7 @@
 use core::ptr;
 use std::ffi::CStr;
 
-use libc::{exit, fprintf, getchar, getenv, strcmp, strlen, strncmp, strrchr, FILE};
+use libc::{exit, fprintf, getchar, getenv, size_t, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
@@ -48,7 +48,6 @@ extern "C" {
         __function: *const core::ffi::c_char,
     ) -> !;
 }
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FileNamesTable {

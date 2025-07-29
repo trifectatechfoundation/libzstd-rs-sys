@@ -1,7 +1,7 @@
+use libc::size_t;
+
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::ZSTD_DCtx_s;
-
-type size_t = core::ffi::c_ulong;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

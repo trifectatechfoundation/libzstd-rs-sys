@@ -10,7 +10,6 @@ pub use core::arch::x86_64::{
     _mm_setzero_si128, _mm_storeu_si128,
 };
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -104,6 +103,9 @@ pub const search_rowHash: searchMethod_e = 2;
 pub const search_binaryTree: searchMethod_e = 1;
 pub const search_hashChain: searchMethod_e = 0;
 pub type ZSTD_VecMask = u64;
+
+use libc::size_t;
+
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };

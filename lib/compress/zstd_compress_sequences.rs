@@ -1,3 +1,5 @@
+use libc::size_t;
+
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -8,7 +10,6 @@ use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;

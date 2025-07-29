@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::free;
+use libc::{calloc, free, malloc, size_t};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::ERR_isError;
@@ -40,12 +40,6 @@ use crate::lib::decompress::zstd_ddict::{
     ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
 };
 
-extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-}
-
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
@@ -205,7 +199,7 @@ unsafe fn ZSTD_customCalloc(
 ) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        ptr::write_bytes(ptr, 0, size as usize);
+        ptr::write_bytes(ptr, 0, size);
         return ptr;
     }
     calloc(1, size)
@@ -1585,7 +1579,7 @@ unsafe fn ZSTD_setRleBlock(
         }
         return -(ZSTD_error_dstBuffer_null as core::ffi::c_int) as size_t;
     }
-    ptr::write_bytes(dst, b, regenSize as usize);
+    ptr::write_bytes(dst, b, regenSize);
     regenSize
 }
 unsafe fn ZSTD_DCtx_trace_end(
@@ -1744,7 +1738,7 @@ unsafe fn ZSTD_decompressFrame(
             ZSTD_XXH64_update(
                 &mut (*dctx).xxhState,
                 op as *const core::ffi::c_void,
-                decodedSize as usize,
+                decodedSize,
             );
         }
         if decodedSize != 0 {

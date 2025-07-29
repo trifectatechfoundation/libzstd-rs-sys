@@ -1,8 +1,9 @@
 use libc::{
-    __errno_location, exit, fclose, feof, ferror, fprintf, pthread_cond_destroy, pthread_cond_init,
-    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, strerror, FILE,
+    __errno_location, exit, fclose, feof, ferror, fprintf, fread, free, fseek, fwrite, malloc,
+    memcpy, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
+    pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
+    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t,
+    strerror, FILE,
 };
 use libzstd_rs::lib::common::pool::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
@@ -12,32 +13,7 @@ use crate::fileio::g_display_prefs;
 
 extern "C" {
     static mut stderr: *mut FILE;
-    fn fread(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn fwrite(
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn fseek(
-        __stream: *mut FILE,
-        __off: core::ffi::c_long,
-        __whence: core::ffi::c_int,
-    ) -> core::ffi::c_int;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
