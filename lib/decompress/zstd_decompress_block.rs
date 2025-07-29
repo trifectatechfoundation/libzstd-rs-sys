@@ -3377,7 +3377,7 @@ unsafe extern "C" fn ZSTD_execSequence(
     let oMatchEnd = op.offset(sequenceLength as isize);
     let oend_w = oend.offset(-(WILDCOPY_OVERLENGTH as isize));
     let iLitEnd = (*litPtr).offset(sequence.litLength as isize);
-    let mut match_0: *const u8 = oLitEnd.offset(-(sequence.offset as isize));
+    let mut match_0: *const u8 = oLitEnd.wrapping_offset(-(sequence.offset as isize));
     if (iLitEnd > litLimit
         || oMatchEnd > oend_w
         || MEM_32bits() != 0
