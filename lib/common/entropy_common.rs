@@ -2,7 +2,6 @@ use std::hint::likely;
 
 pub type size_t = std::ffi::c_ulong;
 pub type unalign32 = u32;
-pub type ERR_enum = ZSTD_ErrorCode;
 pub type C2RustUnnamed = std::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed = 32;
 pub const HUF_flags_disableAsm: C2RustUnnamed = 16;
@@ -10,26 +9,9 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
-use crate::lib::common::{
-    error_private::ERR_getErrorString,
-    fse_decompress::{
-        Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
-    },
+use crate::lib::common::fse_decompress::{
+    Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };
-use crate::lib::zstd::*;
-const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as std::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const FSE_VERSION_MAJOR: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const FSE_VERSION_MINOR: std::ffi::c_int = 9 as std::ffi::c_int;
 pub const FSE_VERSION_RELEASE: std::ffi::c_int = 0 as std::ffi::c_int;
@@ -47,10 +29,6 @@ const fn ZSTD_countTrailingZeros32(mut val: u32) -> u32 {
 #[inline]
 const fn ZSTD_highbit32(mut val: u32) -> u32 {
     val.ilog2()
-}
-
-pub fn FSE_isError(mut code: size_t) -> std::ffi::c_uint {
-    ERR_isError(code)
 }
 
 #[inline(always)]
@@ -339,14 +317,14 @@ unsafe fn HUF_readStats_body(
     mut ip: &[u8],
     workspace: &mut Workspace,
     mut bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     let srcSize = ip.len() as size_t;
 
     let mut weightTotal: u32 = 0;
     let mut iSize: size_t = 0;
     let mut oSize: size_t = 0;
     if srcSize == 0 {
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return Err(Error::srcSize_wrong);
     }
     iSize = ip[0] as size_t;
     if iSize >= 128 {
@@ -354,10 +332,10 @@ unsafe fn HUF_readStats_body(
         oSize = iSize.wrapping_sub(127);
         iSize = oSize.wrapping_add(1) / 2;
         if iSize.wrapping_add(1) > srcSize {
-            return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+            return Err(Error::srcSize_wrong);
         }
         if oSize >= hwSize {
-            return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+            return Err(Error::corruption_detected);
         }
         ip = &ip[1..];
         for n in (0..oSize as usize).step_by(2) {
@@ -367,9 +345,10 @@ unsafe fn HUF_readStats_body(
     } else {
         // Normal case: header compressed with FSE.
         if iSize.wrapping_add(1) > srcSize {
-            return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+            return Err(Error::srcSize_wrong);
         }
-        let ret = FSE_decompress_wksp_bmi2(
+
+        oSize = FSE_decompress_wksp_bmi2(
             // At most (hwSize-1) values decoded, the last one is implied.
             &mut huffWeight[..hwSize as usize - 1],
             &ip[1..][..iSize as usize],
@@ -377,12 +356,7 @@ unsafe fn HUF_readStats_body(
             // TODO this should probably be a (4-byte aligned) byte slice from the start.
             workspace,
             bmi2,
-        );
-
-        oSize = match ret {
-            Ok(v) => v,
-            Err(e) => return -(e as std::ffi::c_int) as size_t,
-        };
+        )?;
     }
 
     // Collect weight stats.
@@ -390,19 +364,19 @@ unsafe fn HUF_readStats_body(
     weightTotal = 0;
     for n in 0..oSize as usize {
         let Some(rank_stat) = rankStats.get_mut(usize::from(huffWeight[n])) else {
-            return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+            return Err(Error::corruption_detected);
         };
         *rank_stat += 1;
         weightTotal += (1 << huffWeight[n] >> 1) as u32;
     }
     if weightTotal == 0 as std::ffi::c_int as u32 {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
 
     // Get last non-null symbol weight (implied, total must be 2^n).
     let tableLog = weightTotal.ilog2() + 1;
     if tableLog > HUF_TABLELOG_MAX as u32 {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
     *tableLogPtr = tableLog;
 
@@ -412,19 +386,19 @@ unsafe fn HUF_readStats_body(
     let verif = 1u32 << rest.ilog2();
     let lastWeight = rest.ilog2() + 1;
     if verif != rest {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
     huffWeight[oSize as usize] = lastWeight as u8;
     rankStats[lastWeight as usize] += 1;
 
     // Check tree construction validity.
     if rankStats[1] < 2 || rankStats[1] & 1 != 0 {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
 
     // Store results.
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
-    iSize.wrapping_add(1)
+    Ok(iSize.wrapping_add(1))
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -549,7 +523,7 @@ pub unsafe fn HUF_readStats_wksp(
 ) -> size_t {
     let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
 
-    HUF_readStats_body(
+    let ret = HUF_readStats_body(
         huffWeight,
         hwSize,
         rankStats,
@@ -558,7 +532,12 @@ pub unsafe fn HUF_readStats_wksp(
         core::slice::from_raw_parts(src.cast(), srcSize as usize),
         workspace,
         use_bmi2,
-    )
+    );
+
+    match ret {
+        Ok(v) => v,
+        Err(e) => return -(e as std::ffi::c_int) as size_t,
+    }
 }
 
 #[cfg(test)]
@@ -632,6 +611,26 @@ mod tests {
                         &mut workspace,
                         bmi2,
                     );
+
+                    use crate::lib::zstd::*;
+                    pub type ERR_enum = ZSTD_ErrorCode;
+
+                    const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
+                        (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
+                            as std::ffi::c_uint
+                    }
+                    const fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
+                        if ERR_isError(code) == 0 {
+                            return ZSTD_error_no_error;
+                        }
+                        (0 as std::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
+                    }
+
+                    let v = match ERR_getErrorCode(v) {
+                        0 => Ok(v),
+                        code => Err(Error::try_from(code).unwrap()),
+                    };
+
                     (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, workspace)
                 };
                 let actual = {

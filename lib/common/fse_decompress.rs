@@ -1,5 +1,3 @@
-use crate::lib::zstd::*;
-
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
     entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
@@ -46,6 +44,53 @@ pub enum Error {
     maxCode = 120,
 }
 
+impl TryFrom<u32> for Error {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        use Error::*;
+
+        Ok(match value {
+            1 => GENERIC,
+            10 => prefix_unknown,
+            12 => version_unsupported,
+            14 => frameParameter_unsupported,
+            16 => frameParameter_windowTooLarge,
+            20 => corruption_detected,
+            22 => checksum_wrong,
+            24 => literals_headerWrong,
+            30 => dictionary_corrupted,
+            32 => dictionary_wrong,
+            34 => dictionaryCreation_failed,
+            40 => parameter_unsupported,
+            41 => parameter_combination_unsupported,
+            42 => parameter_outOfBound,
+            44 => tableLog_tooLarge,
+            46 => maxSymbolValue_tooLarge,
+            48 => maxSymbolValue_tooSmall,
+            49 => cannotProduce_uncompressedBlock,
+            50 => stabilityCondition_notRespected,
+            60 => stage_wrong,
+            62 => init_missing,
+            64 => memory_allocation,
+            66 => workSpace_tooSmall,
+            70 => dstSize_tooSmall,
+            72 => srcSize_wrong,
+            74 => dstBuffer_null,
+            80 => noForwardProgress_destFull,
+            82 => noForwardProgress_inputEmpty,
+            100 => frameIndex_tooLarge,
+            102 => seekableIO,
+            104 => dstBuffer_wrong,
+            105 => srcBuffer_wrong,
+            106 => sequenceProducer_failed,
+            107 => externalSequences_invalid,
+            120 => maxCode,
+            _ => return Err(()),
+        })
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub struct FSE_decode_t {
@@ -78,11 +123,6 @@ pub(crate) struct FSE_DecompressWksp {
 struct FSE_DState_t<'a> {
     state: usize,
     table: &'a [FSE_decode_t; 90],
-}
-
-const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint
 }
 
 #[inline]
