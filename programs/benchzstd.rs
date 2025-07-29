@@ -1,3 +1,4 @@
+use crate::lib::decompress::ZSTD_DCtx;
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -205,7 +206,6 @@ pub struct BMK_benchParams_t {
 }
 pub type BMK_timedFnState_t = BMK_timedFnState_s;
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
-pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;

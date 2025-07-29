@@ -1,11 +1,11 @@
 use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
-use crate::lib::decompress::{ZSTD_FrameHeader, ZSTD_frame};
+use crate::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type ZSTD_CCtx_s;
-    pub type ZSTD_DCtx_s;
     pub type POOL_ctx_s;
     pub type lzma_internal_s;
     pub type internal_state;
@@ -427,7 +427,6 @@ pub struct UTIL_time_t {
     pub t: PTime,
 }
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
-pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
