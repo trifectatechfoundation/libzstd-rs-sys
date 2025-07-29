@@ -12,9 +12,9 @@ use crate::lib::decompress::huf_decompress::{
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::{
     blockType_e, bt_reserved, bt_rle, HUF_DTable, LL_base, ML_base, OF_base, OF_bits,
-    ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t,
-    ZSTD_forceIgnoreChecksum_e, ZSTD_in_dst, ZSTD_litLocation_e, ZSTD_not_in_dst, ZSTD_seqSymbol,
-    ZSTD_seqSymbol_header, ZSTD_split,
+    ZSTD_FrameHeader, ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
+    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_in_dst, ZSTD_litLocation_e,
+    ZSTD_not_in_dst, ZSTD_seqSymbol, ZSTD_seqSymbol_header, ZSTD_split,
 };
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
@@ -139,19 +139,6 @@ pub struct XXH64_state_s {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_FrameHeader {
-    pub frameContentSize: std::ffi::c_ulonglong,
-    pub windowSize: std::ffi::c_ulonglong,
-    pub blockSizeMax: std::ffi::c_uint,
-    pub frameType: ZSTD_FrameType_e,
-    pub headerSize: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-    pub checksumFlag: std::ffi::c_uint,
-    pub _reserved1: std::ffi::c_uint,
-    pub _reserved2: std::ffi::c_uint,
-}
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type streaming_operation = std::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
