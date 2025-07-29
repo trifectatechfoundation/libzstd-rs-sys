@@ -404,9 +404,17 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const ZSTDv05_MAGICNUMBER: std::ffi::c_uint = 4247762213;
-pub const ZSTDv06_MAGICNUMBER: std::ffi::c_uint = 4247762214;
-pub const ZSTDv07_MAGICNUMBER: std::ffi::c_uint = 4247762215;
+
+const ZSTDv01_magicNumber: u32 = 0xFD2FB51E;
+const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
+
+const ZSTDv02_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB522;
+const ZSTDv03_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB523;
+const ZSTDv04_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB524;
+const ZSTDv05_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB525;
+const ZSTDv06_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB526;
+const ZSTDv07_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB527;
+
 #[inline]
 unsafe extern "C" fn ZSTD_isLegacy(
     mut src: *const std::ffi::c_void,
@@ -418,10 +426,14 @@ unsafe extern "C" fn ZSTD_isLegacy(
     }
     magicNumberLE = MEM_readLE32(src);
     match magicNumberLE {
-        ZSTDv05_MAGICNUMBER => 5 as std::ffi::c_int as std::ffi::c_uint,
-        ZSTDv06_MAGICNUMBER => 6 as std::ffi::c_int as std::ffi::c_uint,
-        ZSTDv07_MAGICNUMBER => 7 as std::ffi::c_int as std::ffi::c_uint,
-        _ => 0 as std::ffi::c_int as std::ffi::c_uint,
+        ZSTDv01_magicNumberLE => 1,
+        ZSTDv02_MAGICNUMBER => 2,
+        ZSTDv03_MAGICNUMBER => 3,
+        ZSTDv04_MAGICNUMBER => 4,
+        ZSTDv05_MAGICNUMBER => 5,
+        ZSTDv06_MAGICNUMBER => 6,
+        ZSTDv07_MAGICNUMBER => 7,
+        _ => 0,
     }
 }
 #[inline]
@@ -1299,6 +1311,7 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
             ret
         };
     }
+
     let mut zfh = ZSTD_FrameHeader {
         frameContentSize: 0,
         windowSize: 0,
