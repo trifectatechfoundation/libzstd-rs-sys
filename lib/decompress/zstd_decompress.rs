@@ -416,16 +416,12 @@ const ZSTDv06_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB526;
 const ZSTDv07_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB527;
 
 #[inline]
-unsafe extern "C" fn ZSTD_isLegacy(
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> std::ffi::c_uint {
-    let mut magicNumberLE: u32 = 0;
-    if srcSize < 4 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as std::ffi::c_uint;
+unsafe fn ZSTD_isLegacy(mut src: *const std::ffi::c_void, mut srcSize: size_t) -> u32 {
+    if srcSize < 4 {
+        return 0;
     }
-    magicNumberLE = MEM_readLE32(src);
-    match magicNumberLE {
+
+    match MEM_readLE32(src) {
         ZSTDv01_magicNumberLE => 1,
         ZSTDv02_MAGICNUMBER => 2,
         ZSTDv03_MAGICNUMBER => 3,
@@ -1300,8 +1296,8 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader(
 }
 #[export_name = crate::prefix!(ZSTD_getFrameContentSize)]
 pub unsafe extern "C" fn ZSTD_getFrameContentSize(
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
+    src: *const std::ffi::c_void,
+    srcSize: size_t,
 ) -> std::ffi::c_ulonglong {
     if ZSTD_isLegacy(src, srcSize) != 0 {
         let ret = ZSTD_getDecompressedSize_legacy(src, srcSize);
