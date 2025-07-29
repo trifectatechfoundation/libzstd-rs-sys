@@ -85,11 +85,6 @@ pub struct blockProperties_t {
     pub blockType: blockType_t,
     pub origSize: u32,
 }
-pub const ZSTD_error_srcSize_wrong: ERR_enum = 72;
-pub const ZSTD_error_maxCode: ERR_enum = 120;
-pub const ZSTD_error_GENERIC: ERR_enum = 1;
-pub const ZSTD_error_dstSize_tooSmall: ERR_enum = 70;
-pub const ZSTD_error_corruption_detected: ERR_enum = 20;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seq_t {
@@ -140,9 +135,6 @@ pub struct FSEv05_DTableHeader {
     pub tableLog: u16,
     pub fastMode: u16,
 }
-pub const ZSTD_error_tableLog_tooLarge: ERR_enum = 44;
-pub const ZSTD_error_maxSymbolValue_tooLarge: ERR_enum = 46;
-pub const ZSTD_error_maxSymbolValue_tooSmall: ERR_enum = 48;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUFv05_DEltX4 {
@@ -150,7 +142,6 @@ pub struct HUFv05_DEltX4 {
     pub nbBits: u8,
     pub length: u8,
 }
-pub const ZSTD_error_dictionary_corrupted: ERR_enum = 30;
 pub type decompressionAlgo = Option<
     unsafe extern "C" fn(*mut std::ffi::c_void, size_t, *const std::ffi::c_void, size_t) -> size_t,
 >;
