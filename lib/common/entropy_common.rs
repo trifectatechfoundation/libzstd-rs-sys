@@ -308,7 +308,7 @@ pub unsafe fn HUF_readStats(
     )
 }
 #[inline(always)]
-unsafe fn HUF_readStats_body(
+fn HUF_readStats_body(
     mut huffWeight: &mut [u8; 256],
     hwSize: size_t,
     mut rankStats: &mut [u32; 13],

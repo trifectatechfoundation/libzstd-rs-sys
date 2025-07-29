@@ -44,6 +44,7 @@ pub enum Error {
     maxCode = 120,
 }
 
+#[cfg(test)]
 impl TryFrom<u32> for Error {
     type Error = ();
 
@@ -126,7 +127,7 @@ struct FSE_DState_t<'a> {
 }
 
 impl<'a> FSE_DState_t<'a> {
-    unsafe fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
+    fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
         let state = bitD.read_bits(dt.header.tableLog as std::ffi::c_uint);
         let _ = bitD.reload();
         let table = &dt.elements;
@@ -297,7 +298,7 @@ fn FSE_buildDTable_internal(
 }
 
 #[inline(always)]
-unsafe fn FSE_decompress_usingDTable_generic(
+fn FSE_decompress_usingDTable_generic(
     dst: &mut [u8],
     mut cSrc: &[u8],
     mut dt: &DTable,
@@ -417,7 +418,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
 }
 
 #[inline(always)]
-unsafe fn FSE_decompress_wksp_body(
+fn FSE_decompress_wksp_body(
     mut dst: &mut [u8],
     mut cSrc: &[u8],
     mut maxLog: std::ffi::c_uint,
@@ -498,7 +499,7 @@ unsafe fn FSE_decompress_wksp_body(
     .map(|e| e as size_t)
 }
 
-unsafe fn FSE_decompress_wksp_body_default(
+fn FSE_decompress_wksp_body_default(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: std::ffi::c_uint,
@@ -507,7 +508,7 @@ unsafe fn FSE_decompress_wksp_body_default(
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0 as std::ffi::c_int)
 }
 
-unsafe fn FSE_decompress_wksp_body_bmi2(
+fn FSE_decompress_wksp_body_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: std::ffi::c_uint,
@@ -516,7 +517,7 @@ unsafe fn FSE_decompress_wksp_body_bmi2(
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1 as std::ffi::c_int)
 }
 
-pub unsafe fn FSE_decompress_wksp_bmi2(
+pub fn FSE_decompress_wksp_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: std::ffi::c_uint,
