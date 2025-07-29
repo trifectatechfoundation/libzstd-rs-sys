@@ -10,13 +10,6 @@ extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn ZSTD_XXH64_reset(statePtr: *mut XXH64_state_t, seed: XXH64_hash_t) -> XXH_errorcode;
-    fn ZSTD_XXH64_update(
-        statePtr: *mut XXH64_state_t,
-        input: *const std::ffi::c_void,
-        length: size_t,
-    ) -> XXH_errorcode;
-    fn ZSTD_XXH64_digest(statePtr: *const XXH64_state_t) -> XXH64_hash_t;
     fn HUF_optimalTableLog(
         maxTableLog: std::ffi::c_uint,
         srcSize: size_t,
@@ -955,17 +948,6 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 pub type ZSTD_threadPool = POOL_ctx_s;
-pub type XXH64_state_t = XXH64_state_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
@@ -1113,9 +1095,6 @@ pub struct seqStoreSplits {
 }
 
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub type XXH_errorcode = std::ffi::c_uint;
-pub const XXH_ERROR: XXH_errorcode = 1;
-pub const XXH_OK: XXH_errorcode = 0;
 pub type unalign64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -2059,6 +2038,9 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::common::xxhash::{
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+};
 use crate::lib::zstd::*;
 use crate::{
     lib::common::entropy_common::FSE_readNCount, MEM_isLittleEndian, MEM_read16, MEM_read32,
@@ -8715,7 +8697,7 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
     let maxDist = (1 as std::ffi::c_int as u32) << (*cctx).appliedParams.cParams.windowLog;
     let mut savings = (*cctx).consumedSrcSize as S64 - (*cctx).producedCSize as S64;
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
-        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize);
+        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize as usize);
     }
     while remaining != 0 {
         let ms: *mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
@@ -10329,7 +10311,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         pledgedSrcSizePlusOne: 0,
         consumedSrcSize: 0,
         producedCSize: 0,
-        xxhState: XXH64_state_s {
+        xxhState: XXH64_state_t {
             total_len: 0,
             v: [0; 4],
             mem64: [0; 4],
@@ -12874,7 +12856,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
-        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize);
+        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize as usize);
     }
     let cBlocksSize = ZSTD_compressSequences_internal(
         cctx,

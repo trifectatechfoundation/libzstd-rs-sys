@@ -1,6 +1,9 @@
 use core::arch::asm;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::xxhash::{
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
+};
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
@@ -50,18 +53,6 @@ extern "C" {
         srcSize: size_t,
         bpPtr: *mut blockProperties_t,
     ) -> size_t;
-    fn ZSTD_XXH64(
-        input: *const std::ffi::c_void,
-        length: size_t,
-        seed: XXH64_hash_t,
-    ) -> XXH64_hash_t;
-    fn ZSTD_XXH64_reset(statePtr: *mut XXH64_state_t, seed: XXH64_hash_t) -> XXH_errorcode;
-    fn ZSTD_XXH64_update(
-        statePtr: *mut XXH64_state_t,
-        input: *const std::ffi::c_void,
-        length: size_t,
-    ) -> XXH_errorcode;
-    fn ZSTD_XXH64_digest(statePtr: *const XXH64_state_t) -> XXH64_hash_t;
     fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx_s) -> ZSTD_TraceCtx;
     fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
     fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const std::ffi::c_void;
@@ -274,17 +265,6 @@ pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
 pub type ZSTD_format_e = std::ffi::c_uint;
 pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
 pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
-pub type XXH64_state_t = XXH64_state_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type blockType_e = std::ffi::c_uint;
@@ -1085,7 +1065,7 @@ unsafe extern "C" fn ZSTD_DDictHashSet_getIndex(
 ) -> size_t {
     let hash = ZSTD_XXH64(
         &mut dictID as *mut u32 as *const std::ffi::c_void,
-        ::core::mem::size_of::<u32>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<u32>(),
         0 as std::ffi::c_int as XXH64_hash_t,
     );
     hash & ((*hashSet).ddictPtrTableSize).wrapping_sub(1 as std::ffi::c_int as size_t)
@@ -2194,7 +2174,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
             ZSTD_XXH64_update(
                 &mut (*dctx).xxhState,
                 op as *const std::ffi::c_void,
-                decodedSize,
+                decodedSize as usize,
             );
         }
         if decodedSize != 0 {
@@ -2589,7 +2569,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             (*dctx).decodedSize =
                 ((*dctx).decodedSize as std::ffi::c_ulong).wrapping_add(rSize) as U64 as U64;
             if (*dctx).validateChecksum != 0 {
-                ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize);
+                ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
             }
             (*dctx).previousDstEnd =
                 (dst as *mut std::ffi::c_char).offset(rSize as isize) as *const std::ffi::c_void;

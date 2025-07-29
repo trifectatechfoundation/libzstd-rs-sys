@@ -1,7 +1,7 @@
-use std::mem::MaybeUninit;
+use std::ffi::c_void;
 
 #[repr(u32)]
-enum XXH_errorcode {
+pub enum XXH_errorcode {
     XXH_ERROR = 1,
     XXH_OK = 0,
 }
@@ -131,7 +131,7 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
 }
 
 #[no_mangle]
-unsafe extern "C" fn ZSTD_XXH64(
+pub unsafe extern "C" fn ZSTD_XXH64(
     mut input: *const std::ffi::c_void,
     mut len: usize,
     mut seed: u64,
@@ -147,15 +147,11 @@ unsafe extern "C" fn ZSTD_XXH64(
 }
 
 #[no_mangle]
-extern "C" fn ZSTD_XXH64_reset(
-    statePtr: &mut MaybeUninit<XXH64_state_t>,
-    mut seed: u64,
-) -> XXH_errorcode {
+pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
     // SAFETY: all zeros is a valid value of type XXH64_state_t.
-    let state = unsafe {
-        core::ptr::write_bytes(statePtr.as_mut_ptr(), 0u8, 1);
-        statePtr.assume_init_mut()
-    };
+    unsafe {
+        core::ptr::write_bytes(state as *mut _, 0u8, 1);
+    }
 
     state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
     state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
@@ -166,16 +162,16 @@ extern "C" fn ZSTD_XXH64_reset(
 }
 
 #[no_mangle]
-unsafe extern "C" fn ZSTD_XXH64_update(
+pub unsafe extern "C" fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
-    mut input: *const u8,
+    mut input: *const c_void,
     mut len: usize,
 ) -> XXH_errorcode {
     if input.is_null() {
         assert_eq!(len, 0);
         XXH_errorcode::XXH_OK
     } else {
-        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input, len))
+        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input as *const u8, len))
     }
 }
 
@@ -249,8 +245,6 @@ pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::mem::MaybeUninit;
-
     use super::*;
 
     use quickcheck::quickcheck;
@@ -271,13 +265,19 @@ mod tests {
     }
 
     fn helper_state_u64(input: &[u8], seed: u64) -> u64 {
-        let mut state = MaybeUninit::uninit();
+        let mut state = XXH64_state_t {
+            total_len: 0,
+            v: [0; 4],
+            mem64: [0; 4],
+            memsize: 0,
+            reserved32: 0,
+            reserved64: 0,
+        };
         ZSTD_XXH64_reset(&mut state, seed);
-        let state = unsafe { state.assume_init_mut() };
 
-        unsafe { ZSTD_XXH64_update(state, input.as_ptr().cast(), input.len()) };
+        unsafe { ZSTD_XXH64_update(&mut state, input.as_ptr().cast(), input.len()) };
 
-        ZSTD_XXH64_digest(state)
+        ZSTD_XXH64_digest(&mut state)
     }
 
     quickcheck! {

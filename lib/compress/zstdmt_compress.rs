@@ -1,5 +1,8 @@
 use ::c2rust_bitfields;
 
+use crate::lib::common::xxhash::{
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+};
 use crate::lib::zstd::*;
 extern "C" {
     pub type ZSTD_CDict_s;
@@ -61,13 +64,6 @@ extern "C" {
         srcSize: size_t,
     ) -> size_t;
     fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx);
-    fn ZSTD_XXH64_reset(statePtr: *mut XXH64_state_t, seed: XXH64_hash_t) -> XXH_errorcode;
-    fn ZSTD_XXH64_update(
-        statePtr: *mut XXH64_state_t,
-        input: *const std::ffi::c_void,
-        length: size_t,
-    ) -> XXH_errorcode;
-    fn ZSTD_XXH64_digest(statePtr: *const XXH64_state_t) -> XXH64_hash_t;
     fn POOL_create_advanced(
         numThreads: size_t,
         queueSize: size_t,
@@ -417,17 +413,6 @@ pub struct ZSTD_window_t {
     pub dictLimit: u32,
     pub lowLimit: u32,
     pub nbOverflowCorrections: u32,
-}
-pub type XXH64_state_t = XXH64_state_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
@@ -1611,7 +1596,7 @@ unsafe extern "C" fn ZSTDMT_serialState_genSequences(
         if (*serialState).params.fParams.checksumFlag != 0
             && src.size > 0 as std::ffi::c_int as size_t
         {
-            ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size);
+            ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size as usize);
         }
     }
     (*serialState).nextJobID = ((*serialState).nextJobID).wrapping_add(1);

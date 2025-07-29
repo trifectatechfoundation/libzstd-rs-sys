@@ -8,11 +8,6 @@ extern "C" {
         rowMatchfinderMode: ZSTD_ParamSwitch_e,
         dictMode: ZSTD_dictMode_e,
     ) -> ZSTD_BlockCompressor_f;
-    fn ZSTD_XXH64(
-        input: *const std::ffi::c_void,
-        length: size_t,
-        seed: XXH64_hash_t,
-    ) -> XXH64_hash_t;
     fn ZSTD_fillHashTable(
         ms: *mut ZSTD_MatchState_t,
         end: *const std::ffi::c_void,
@@ -299,6 +294,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -1412,7 +1408,7 @@ pub unsafe extern "C" fn ZSTD_ldm_fillHashTable(
                     .offset(-(minMatchLength as isize));
                 let xxhash = ZSTD_XXH64(
                     split as *const std::ffi::c_void,
-                    minMatchLength as size_t,
+                    minMatchLength as usize,
                     0 as std::ffi::c_int as XXH64_hash_t,
                 );
                 let hash = (xxhash
@@ -1523,7 +1519,7 @@ unsafe extern "C" fn ZSTD_ldm_generateSequences_internal(
                 .offset(-(minMatchLength as isize));
             let xxhash = ZSTD_XXH64(
                 split as *const std::ffi::c_void,
-                minMatchLength as size_t,
+                minMatchLength as usize,
                 0 as std::ffi::c_int as XXH64_hash_t,
             );
             let hash = (xxhash
