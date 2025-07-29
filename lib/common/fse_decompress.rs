@@ -7,7 +7,8 @@ use crate::lib::common::{
 
 type size_t = std::ffi::c_ulong;
 
-enum Error {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Error {
     GENERIC = 1,
     prefix_unknown = 10,
     version_unsupported = 12,
@@ -261,7 +262,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
     mut cSrc: &[u8],
     mut dt: &DTable,
     fast: bool,
-) -> usize {
+) -> Result<usize, Error> {
     enum Mode {
         Slow,
         Fast,
@@ -273,16 +274,13 @@ unsafe fn FSE_decompress_usingDTable_generic(
     let omax = dst.len();
     let olimit = omax - 3;
 
-    let mut bitD = match BIT_DStream_t::new(cSrc) {
-        Err(e) => return e,
-        Ok(bitD) => bitD,
-    };
+    let mut bitD = BIT_DStream_t::new(cSrc)?;
 
     let mut state1 = FSE_DState_t::new(&mut bitD, dt);
     let mut state2 = FSE_DState_t::new(&mut bitD, dt);
 
     if let StreamStatus::Overflow = bitD.reload() {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as usize;
+        return Err(Error::corruption_detected);
     }
 
     while bitD.reload() == StreamStatus::Unfinished && op < olimit {
@@ -333,7 +331,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
 
     loop {
         if op > omax - 2 {
-            return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as usize;
+            return Err(Error::dstSize_tooSmall);
         }
 
         dst[op] = match mode {
@@ -351,7 +349,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
             break;
         } else {
             if op > omax - 2 {
-                return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as usize;
+                return Err(Error::dstSize_tooSmall);
             }
 
             dst[op] = match mode {
@@ -375,7 +373,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
         }
     }
 
-    op
+    Ok(op)
 }
 
 #[inline(always)]
@@ -456,12 +454,15 @@ unsafe fn FSE_decompress_wksp_body(
         return _var_err__;
     }
 
-    FSE_decompress_usingDTable_generic(
+    match FSE_decompress_usingDTable_generic(
         dst,
         ip,
         &workspace.dtable,
         workspace.dtable.header.fastMode != 0,
-    ) as size_t
+    ) {
+        Ok(v) => v as size_t,
+        Err(e) => -(e as std::ffi::c_int) as size_t,
+    }
 }
 unsafe fn FSE_decompress_wksp_body_default(
     dst: &mut [u8],

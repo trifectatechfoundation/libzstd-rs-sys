@@ -1,5 +1,7 @@
 use crate::lib::zstd::*;
 
+use crate::lib::common::fse_decompress::Error;
+
 type size_t = usize;
 type BitContainerType = usize;
 
@@ -67,7 +69,7 @@ const fn get_middle_bits(
 }
 
 impl BIT_DStream_t {
-    pub unsafe fn new(mut srcBuffer: &[u8]) -> Result<Self, size_t> {
+    pub unsafe fn new(mut srcBuffer: &[u8]) -> Result<Self, Error> {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
@@ -77,7 +79,7 @@ impl BIT_DStream_t {
         };
 
         if srcBuffer.is_empty() {
-            return Err(-(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t);
+            return Err(Error::srcSize_wrong);
         }
 
         const USIZE_BYTES: usize = size_of::<BitContainerType>();
@@ -94,7 +96,7 @@ impl BIT_DStream_t {
             match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
                 None => {
                     /* endMark not present */
-                    return Err(-(ZSTD_error_GENERIC as std::ffi::c_int) as size_t);
+                    return Err(Error::GENERIC);
                 }
                 Some(v) => {
                     bitD.bitsConsumed = 8 - v;
@@ -129,7 +131,7 @@ impl BIT_DStream_t {
             match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
                 None => {
                     /* endMark not present */
-                    return Err(-(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t);
+                    return Err(Error::corruption_detected);
                 }
                 Some(v) => {
                     bitD.bitsConsumed = 8 - v;
