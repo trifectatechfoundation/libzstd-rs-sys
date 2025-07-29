@@ -85,3 +85,9 @@ pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
 pub type ZSTD_FrameType_e = std::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
+
+pub type blockType_e = std::ffi::c_uint;
+pub const bt_reserved: blockType_e = 3;
+pub const bt_compressed: blockType_e = 2;
+pub const bt_rle: blockType_e = 1;
+pub const bt_raw: blockType_e = 0;
