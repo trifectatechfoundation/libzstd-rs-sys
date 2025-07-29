@@ -1323,13 +1323,13 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
         _reserved1: 0,
         _reserved2: 0,
     };
-    if ZSTD_getFrameHeader(&mut zfh, src, srcSize) != 0 as std::ffi::c_int as size_t {
+
+    if ZSTD_getFrameHeader(&mut zfh, src, srcSize) != 0 {
         return ZSTD_CONTENTSIZE_ERROR;
     }
-    if zfh.frameType as std::ffi::c_uint
-        == ZSTD_skippableFrame as std::ffi::c_int as std::ffi::c_uint
-    {
-        0 as std::ffi::c_int as std::ffi::c_ulonglong
+
+    if zfh.frameType == ZSTD_skippableFrame {
+        0
     } else {
         zfh.frameContentSize
     }
