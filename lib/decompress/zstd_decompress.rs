@@ -4,7 +4,7 @@ use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
+    ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
@@ -12,8 +12,8 @@ use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
 use crate::lib::decompress::{
     zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable, LL_base, ML_base,
-    OF_base, OF_bits, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_dont_use,
-    ZSTD_entropyDTables_t, ZSTD_litLocation_e, ZSTD_seqSymbol, ZSTD_use_indefinitely,
+    OF_base, OF_bits, ZSTD_dStage, ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use,
+    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_seqSymbol, ZSTD_use_indefinitely,
     ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader,
     ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock, ZSTDds_decompressLastBlock,
     ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
@@ -67,9 +67,6 @@ pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
-pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
-pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
-pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type blockType_e = std::ffi::c_uint;
