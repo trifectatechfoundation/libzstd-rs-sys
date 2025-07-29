@@ -1,6 +1,5 @@
-extern "C" {
-    fn HIST_add(count: *mut std::ffi::c_uint, src: *const std::ffi::c_void, srcSize: size_t);
-}
+use crate::lib::compress::hist::HIST_add;
+
 pub type size_t = std::ffi::c_ulong;
 pub type unalign16 = u16;
 #[derive(Copy, Clone)]

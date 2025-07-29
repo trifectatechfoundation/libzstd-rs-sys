@@ -1,3 +1,5 @@
+use libc::{free, memset};
+
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -10,15 +12,9 @@ extern "C" {
     fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn clock() -> clock_t;
@@ -651,7 +647,7 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
     memset(
         ctx as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<FASTCOVER_ctx_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<FASTCOVER_ctx_t>(),
     );
     if displayLevel >= 2 as std::ffi::c_int {
         fprintf(
@@ -994,7 +990,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     memset(
         &mut coverParams as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     FASTCOVER_convertToCoverParams(parameters, &mut coverParams);
     if FASTCOVER_checkParameters(
@@ -1310,7 +1306,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     memset(
         &mut coverParams as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     FASTCOVER_convertToCoverParams(*parameters, &mut coverParams);
     accelParams = *FASTCOVER_defaultAccelParameters

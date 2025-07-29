@@ -1,33 +1,6 @@
+use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn HUF_compress4X_repeat(
-        dst: *mut std::ffi::c_void,
-        dstSize: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        hufTable: *mut HUF_CElt,
-        repeat: *mut HUF_repeat,
-        flags: std::ffi::c_int,
-    ) -> size_t;
-    fn HUF_compress1X_repeat(
-        dst: *mut std::ffi::c_void,
-        dstSize: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        hufTable: *mut HUF_CElt,
-        repeat: *mut HUF_repeat,
-        flags: std::ffi::c_int,
-    ) -> size_t;
-}
 pub type size_t = std::ffi::c_ulong;
 pub type unalign16 = u16;
 pub type unalign32 = u32;

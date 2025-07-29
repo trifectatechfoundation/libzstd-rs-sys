@@ -5,12 +5,6 @@ pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 extern "C" {
     fn ZSTD_resetSeqStore(ssPtr: *mut SeqStore_t);
     fn HUF_getNbBitsFromCTable(symbolTable: *const HUF_CElt, symbolValue: u32) -> u32;
-    fn HIST_count_simple(
-        count: *mut std::ffi::c_uint,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> std::ffi::c_uint;
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
@@ -236,6 +230,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;

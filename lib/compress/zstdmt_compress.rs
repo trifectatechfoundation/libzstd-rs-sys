@@ -1,7 +1,16 @@
 use ::c2rust_bitfields;
+use libc::{
+    free, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
+    pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy,
+    pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock,
+    pthread_mutexattr_t,
+};
 
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+};
+use crate::lib::compress::zstd_compress::{
+    ZSTD_compressBound, ZSTD_cycleLog, ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::zstd::*;
 extern "C" {
@@ -9,8 +18,6 @@ extern "C" {
     pub type POOL_ctx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
-    fn ZSTD_compressBound(srcSize: size_t) -> size_t;
     fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
     fn ZSTD_freeCDict(CDict: *mut ZSTD_CDict) -> size_t;
     fn ZSTD_sizeof_CCtx(cctx: *const ZSTD_CCtx) -> size_t;
@@ -45,9 +52,7 @@ extern "C" {
         params: *const ZSTD_CCtx_params,
         pledgedSrcSize: std::ffi::c_ulonglong,
     ) -> size_t;
-    fn ZSTD_writeLastEmptyBlock(dst: *mut std::ffi::c_void, dstCapacity: size_t) -> size_t;
     fn ZSTD_referenceExternalSequences(cctx: *mut ZSTD_CCtx, seq: *mut rawSeq, nbSeq: size_t);
-    fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32;
     fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t);
     fn ZSTD_compressContinue_public(
         cctx: *mut ZSTD_CCtx,
@@ -77,24 +82,6 @@ extern "C" {
         function: POOL_function,
         opaque: *mut std::ffi::c_void,
     ) -> std::ffi::c_int;
-    fn pthread_mutex_init(
-        __mutex: *mut pthread_mutex_t,
-        __mutexattr: *const pthread_mutexattr_t,
-    ) -> std::ffi::c_int;
-    fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-    fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-    fn pthread_cond_init(
-        __cond: *mut pthread_cond_t,
-        __cond_attr: *const pthread_condattr_t,
-    ) -> std::ffi::c_int;
-    fn pthread_cond_destroy(__cond: *mut pthread_cond_t) -> std::ffi::c_int;
-    fn pthread_cond_signal(__cond: *mut pthread_cond_t) -> std::ffi::c_int;
-    fn pthread_cond_broadcast(__cond: *mut pthread_cond_t) -> std::ffi::c_int;
-    fn pthread_cond_wait(
-        __cond: *mut pthread_cond_t,
-        __mutex: *mut pthread_mutex_t,
-    ) -> std::ffi::c_int;
     fn ZSTD_ldm_fillHashTable(
         state: *mut ldmState_t,
         ip: *const u8,
@@ -123,65 +110,9 @@ pub union __atomic_wide_counter {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed {
+struct C2RustUnnamed {
     pub __low: std::ffi::c_uint,
     pub __high: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
-}
-pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_mutex_s {
-    pub __lock: std::ffi::c_int,
-    pub __count: std::ffi::c_uint,
-    pub __owner: std::ffi::c_int,
-    pub __nusers: std::ffi::c_uint,
-    pub __kind: std::ffi::c_int,
-    pub __spins: std::ffi::c_short,
-    pub __elision: std::ffi::c_short,
-    pub __list: __pthread_list_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_cond_s {
-    pub __wseq: __atomic_wide_counter,
-    pub __g1_start: __atomic_wide_counter,
-    pub __g_refs: [std::ffi::c_uint; 2],
-    pub __g_size: [std::ffi::c_uint; 2],
-    pub __g1_orig_size: std::ffi::c_uint,
-    pub __wrefs: std::ffi::c_uint,
-    pub __g_signals: [std::ffi::c_uint; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutexattr_t {
-    pub __size: [std::ffi::c_char; 4],
-    pub __align: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_condattr_t {
-    pub __size: [std::ffi::c_char; 4],
-    pub __align: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [std::ffi::c_char; 40],
-    pub __align: std::ffi::c_long,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_cond_t {
-    pub __data: __pthread_cond_s,
-    pub __size: [std::ffi::c_char; 48],
-    pub __align: std::ffi::c_longlong,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

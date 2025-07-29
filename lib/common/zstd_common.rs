@@ -1,8 +1,6 @@
+use crate::lib::common::error_private::ERR_getErrorString;
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn ERR_getErrorString(code: ERR_enum) -> *const std::ffi::c_char;
-}
 pub type ERR_enum = ZSTD_ErrorCode;
 pub type size_t = std::ffi::c_ulong;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {

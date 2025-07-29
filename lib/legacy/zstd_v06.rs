@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_getErrorString;
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -18,7 +19,6 @@ extern "C" {
     ) -> *mut std::ffi::c_void;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn ERR_getErrorString(code: ERR_enum) -> *const std::ffi::c_char;
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;

@@ -1,26 +1,9 @@
+use crate::lib::compress::fse_compress::{
+    FSE_normalizeCount, FSE_optimalTableLog, FSE_writeNCount,
+};
 use crate::lib::zstd::*;
 
 extern "C" {
-    fn FSE_optimalTableLog(
-        maxTableLog: std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-    ) -> std::ffi::c_uint;
-    fn FSE_normalizeCount(
-        normalizedCounter: *mut std::ffi::c_short,
-        tableLog: std::ffi::c_uint,
-        count: *const std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        useLowProbCount: std::ffi::c_uint,
-    ) -> size_t;
-    fn FSE_writeNCount(
-        buffer: *mut std::ffi::c_void,
-        bufferSize: size_t,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-    ) -> size_t;
     fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: std::ffi::c_uchar) -> size_t;
     fn FSE_buildCTable_wksp(
         ct: *mut FSE_CTable,
