@@ -19,10 +19,12 @@ use crate::lib::decompress::{
 };
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
+
+use crate::lib::legacy::zstd_v05::*;
+use crate::lib::legacy::zstd_v06::*;
+use crate::lib::legacy::zstd_v07::*;
+
 extern "C" {
-    pub type ZBUFFv07_DCtx_s;
-    pub type ZBUFFv06_DCtx_s;
-    pub type ZBUFFv05_DCtx_s;
     pub type ZSTD_CCtx_s;
     pub type ZSTD_CCtx_params_s;
     pub type ZSTDv07_DCtx_s;
@@ -66,42 +68,6 @@ extern "C" {
         src: *const std::ffi::c_void,
         srcSize: size_t,
         streaming: streaming_operation,
-    ) -> size_t;
-    fn ZSTDv05_findFrameSizeInfoLegacy(
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        cSize: *mut size_t,
-        dBound: *mut std::ffi::c_ulonglong,
-    );
-    fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx;
-    fn ZSTDv05_freeDCtx(dctx: *mut ZSTDv05_DCtx) -> size_t;
-    fn ZSTDv05_decompress_usingDict(
-        dctx: *mut ZSTDv05_DCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTDv05_getFrameParams(
-        params: *mut ZSTDv05_parameters,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx;
-    fn ZBUFFv05_freeDCtx(dctx: *mut ZBUFFv05_DCtx) -> size_t;
-    fn ZBUFFv05_decompressInitDictionary(
-        dctx: *mut ZBUFFv05_DCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZBUFFv05_decompressContinue(
-        dctx: *mut ZBUFFv05_DCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacityPtr: *mut size_t,
-        src: *const std::ffi::c_void,
-        srcSizePtr: *mut size_t,
     ) -> size_t;
     fn ZSTDv06_findFrameSizeInfoLegacy(
         src: *const std::ffi::c_void,
@@ -175,7 +141,9 @@ extern "C" {
         src: *const std::ffi::c_void,
         srcSizePtr: *mut size_t,
     ) -> size_t;
+
 }
+
 pub type size_t = std::ffi::c_ulong;
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[derive(Copy, Clone)]
@@ -353,18 +321,6 @@ pub type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
 pub struct ZSTDv06_frameParams_s {
     pub frameContentSize: std::ffi::c_ulonglong,
     pub windowLog: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTDv05_parameters {
-    pub srcSize: U64,
-    pub windowLog: u32,
-    pub contentLog: u32,
-    pub hashLog: u32,
-    pub searchLog: u32,
-    pub searchLength: u32,
-    pub targetLength: u32,
-    pub strategy: ZSTDv05_strategy,
 }
 pub type ZSTDv05_strategy = std::ffi::c_uint;
 pub const ZSTDv05_btopt: ZSTDv05_strategy = 6;
