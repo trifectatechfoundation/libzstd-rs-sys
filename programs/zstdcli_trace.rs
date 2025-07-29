@@ -1,4 +1,6 @@
-use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
+use crate::lib::compress::zstd_compress::{
+    ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s, ZSTD_CCtx_s,
+};
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
 
 extern "C" {
@@ -11,11 +13,6 @@ extern "C" {
     fn UTIL_getTime() -> UTIL_time_t;
     fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
     fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn ZSTD_CCtxParams_getParameter(
-        params: *const ZSTD_CCtx_params,
-        param: ZSTD_cParameter,
-        value: *mut std::ffi::c_int,
-    ) -> size_t;
     fn pthread_mutex_init(
         __mutex: *mut pthread_mutex_t,
         __mutexattr: *const pthread_mutexattr_t,
