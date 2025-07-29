@@ -4,7 +4,7 @@ use crate::lib::common::xxhash::XXH64_state_t;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{
     HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t,
-    ZSTD_litLocation_e, ZSTD_seqSymbol,
+    ZSTD_forceIgnoreChecksum_e, ZSTD_litLocation_e, ZSTD_seqSymbol,
 };
 use crate::lib::zstd::*;
 
@@ -112,9 +112,6 @@ pub struct ZSTD_DDict {
     entropyPresent: u32,
     cMem: ZSTD_customMem,
 }
-pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
-pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
-pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type blockType_e = std::ffi::c_uint;
