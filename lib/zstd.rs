@@ -86,3 +86,7 @@ pub struct ZSTD_outBuffer_s {
     pub size: size_t,
     pub pos: size_t,
 }
+
+pub type ZSTD_bufferMode_e = std::ffi::c_uint;
+pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
+pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
