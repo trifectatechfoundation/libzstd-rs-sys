@@ -234,18 +234,6 @@ pub struct ZSTD_frameSizeInfo {
     pub compressedSize: size_t,
     pub decompressedBound: std::ffi::c_ulonglong,
 }
-pub type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
-pub type ZSTDv05_strategy = std::ffi::c_uint;
-pub const ZSTDv05_btopt: ZSTDv05_strategy = 6;
-pub const ZSTDv05_opt: ZSTDv05_strategy = 5;
-pub const ZSTDv05_btlazy2: ZSTDv05_strategy = 4;
-pub const ZSTDv05_lazy2: ZSTDv05_strategy = 3;
-pub const ZSTDv05_lazy: ZSTDv05_strategy = 2;
-pub const ZSTDv05_greedy: ZSTDv05_strategy = 1;
-pub const ZSTDv05_fast: ZSTDv05_strategy = 0;
-pub type ZSTDv07_DCtx = ZSTDv07_DCtx_s;
-pub type ZSTDv06_DCtx = ZSTDv06_DCtx_s;
-pub type ZSTDv05_DCtx = ZSTDv05_DCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_bounds {
