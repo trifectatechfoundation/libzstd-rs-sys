@@ -11,7 +11,8 @@ use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
-    blockProperties_t, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_getcBlockSize,
+    blockProperties_t, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
+    ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
     bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable,
@@ -41,14 +42,6 @@ use crate::lib::decompress::zstd_ddict::{
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn ZSTD_decompressBlock_internal(
-        dctx: *mut ZSTD_DCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        streaming: streaming_operation,
-    ) -> size_t;
 }
 
 pub type size_t = std::ffi::c_ulong;
