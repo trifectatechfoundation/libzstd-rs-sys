@@ -13,7 +13,7 @@ pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::lib::common::{
     error_private::ERR_getErrorString,
     fse_decompress::{
-        FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
+        Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
     },
 };
 use crate::lib::zstd::*;
@@ -59,7 +59,7 @@ fn FSE_readNCount_body(
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     let hbSize = headerBuffer.len();
 
     let iend = hbSize;
@@ -76,15 +76,13 @@ fn FSE_readNCount_body(
         let mut buffer = [0u8; 8];
         buffer[..hbSize].copy_from_slice(headerBuffer);
 
-        let countSize = FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &mut buffer);
+        let countSize =
+            FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &mut buffer)?;
 
-        if FSE_isError(countSize) != 0 {
-            return countSize;
-        }
         if countSize > hbSize as size_t {
-            return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+            return Err(Error::corruption_detected);
         }
-        return countSize;
+        return Ok(countSize);
     }
 
     normalizedCounter.fill(0);
@@ -95,7 +93,7 @@ fn FSE_readNCount_body(
     nbBits = (bitStream & 0xf as std::ffi::c_int as u32).wrapping_add(FSE_MIN_TABLELOG as u32)
         as std::ffi::c_int;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
-        return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::tableLog_tooLarge);
     }
     bitStream >>= 4;
     bitCount = 4;
@@ -198,19 +196,19 @@ fn FSE_readNCount_body(
     }
 
     if remaining != 1 as std::ffi::c_int {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
     if charnum > maxSV1 {
-        return -(ZSTD_error_maxSymbolValue_tooSmall as std::ffi::c_int) as size_t;
+        return Err(Error::maxSymbolValue_tooSmall);
     }
     if bitCount > 32 as std::ffi::c_int {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
 
     *maxSVPtr = charnum.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint);
     ip += ((bitCount + 7 as std::ffi::c_int) >> 3) as usize;
 
-    ip as size_t
+    Ok(ip as size_t)
 }
 
 fn FSE_readNCount_body_default(
@@ -218,7 +216,7 @@ fn FSE_readNCount_body_default(
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 fn FSE_readNCount_body_bmi2(
@@ -226,7 +224,7 @@ fn FSE_readNCount_body_bmi2(
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
@@ -236,7 +234,7 @@ pub fn FSE_readNCount_bmi2(
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
     mut bmi2: std::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     if bmi2 != 0 {
         FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
     } else {
@@ -251,12 +249,17 @@ pub unsafe fn FSE_readNCount(
     mut headerBuffer: *const std::ffi::c_void,
     mut hbSize: size_t,
 ) -> size_t {
-    FSE_readNCount_slice(
+    let ret = FSE_readNCount_slice(
         normalizedCounter,
         maxSVPtr,
         tableLogPtr,
         core::slice::from_raw_parts(headerBuffer.cast(), hbSize as usize),
-    )
+    );
+
+    match ret {
+        Ok(v) => v,
+        Err(e) => return -(e as std::ffi::c_int) as size_t,
+    }
 }
 
 pub fn FSE_readNCount_slice(
@@ -264,7 +267,7 @@ pub fn FSE_readNCount_slice(
     mut maxSVPtr: &mut std::ffi::c_uint,
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     FSE_readNCount_bmi2(
         normalizedCounter,
         maxSVPtr,
@@ -366,7 +369,7 @@ unsafe fn HUF_readStats_body(
         if iSize.wrapping_add(1) > srcSize {
             return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
         }
-        oSize = FSE_decompress_wksp_bmi2(
+        let ret = FSE_decompress_wksp_bmi2(
             // At most (hwSize-1) values decoded, the last one is implied.
             &mut huffWeight[..hwSize as usize - 1],
             &ip[1..][..iSize as usize],
@@ -375,9 +378,11 @@ unsafe fn HUF_readStats_body(
             workspace,
             bmi2,
         );
-        if FSE_isError(oSize) != 0 {
-            return oSize;
-        }
+
+        oSize = match ret {
+            Ok(v) => v,
+            Err(e) => return -(e as std::ffi::c_int) as size_t,
+        };
     }
 
     // Collect weight stats.
