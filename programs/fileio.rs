@@ -1,4 +1,5 @@
 use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
+use crate::lib::decompress::{ZSTD_FrameType_e, ZSTD_frame};
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -500,9 +501,6 @@ pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-pub type ZSTD_FrameType_e = std::ffi::c_uint;
-pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
-pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {

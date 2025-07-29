@@ -3,8 +3,8 @@ use libc::free;
 use crate::lib::common::xxhash::XXH64_state_t;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{
-    HUF_DTable, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e, ZSTD_entropyDTables_t,
-    ZSTD_forceIgnoreChecksum_e, ZSTD_litLocation_e, ZSTD_seqSymbol,
+    HUF_DTable, ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
+    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_litLocation_e, ZSTD_seqSymbol,
 };
 use crate::lib::zstd::*;
 
@@ -125,9 +125,6 @@ pub struct ZSTD_FrameHeader {
     pub _reserved1: std::ffi::c_uint,
     pub _reserved2: std::ffi::c_uint,
 }
-pub type ZSTD_FrameType_e = std::ffi::c_uint;
-pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
-pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_dictContentType_e = std::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;

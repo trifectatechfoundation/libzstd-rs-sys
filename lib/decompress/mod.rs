@@ -81,3 +81,7 @@ pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
+
+pub type ZSTD_FrameType_e = std::ffi::c_uint;
+pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
+pub const ZSTD_frame: ZSTD_FrameType_e = 0;
