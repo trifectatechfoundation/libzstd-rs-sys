@@ -1,10 +1,10 @@
 use core::ptr;
 
 use libc::{
-    free, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
-    pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy,
-    pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock,
-    pthread_mutexattr_t,
+    calloc, free, malloc, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
+    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
+    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, size_t,
 };
 
 use crate::lib::common::error_private::ERR_isError;
@@ -30,11 +30,6 @@ use crate::lib::compress::zstd_ldm::{
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::*;
-extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-}
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_CCtx_s {
@@ -655,7 +650,7 @@ unsafe extern "C" fn ZSTD_customCalloc(
 ) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        ptr::write_bytes(ptr, 0, size as usize);
+        ptr::write_bytes(ptr, 0, size);
         return ptr;
     }
     calloc(1, size)
@@ -1051,15 +1046,11 @@ unsafe fn ZSTDMT_serialState_reset(
         {
             return 1;
         }
-        ptr::write_bytes(
-            (*serialState).ldmState.hashTable as *mut u8,
-            0,
-            hashSize as usize,
-        );
+        ptr::write_bytes((*serialState).ldmState.hashTable as *mut u8, 0, hashSize);
         ptr::write_bytes(
             (*serialState).ldmState.bucketOffsets as *mut u8,
             0,
-            numBuckets as usize,
+            numBuckets,
         );
         (*serialState).ldmState.loadedDictEnd = 0;
         if dictSize > 0

@@ -1,3 +1,5 @@
+use libc::size_t;
+
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::pool::POOL_ctx;
@@ -19,7 +21,6 @@ use crate::lib::compress::zstd_compress_sequences::{
 };
 use crate::lib::zstd::*;
 
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_Sequence {

@@ -1,9 +1,9 @@
+use libc::size_t;
+
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
     entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
 };
-
-type size_t = core::ffi::c_ulong;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {

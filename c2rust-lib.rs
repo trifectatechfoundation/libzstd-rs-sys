@@ -75,6 +75,5 @@ macro_rules! prefix {
     };
 }
 
+use libc::size_t;
 pub(crate) use prefix;
-
-pub type size_t = core::ffi::c_ulong;

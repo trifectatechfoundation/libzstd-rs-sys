@@ -1,10 +1,11 @@
+use libc::size_t;
+
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress::ZSTD_hufCTables_t;
 use crate::lib::zstd::*;
 
-pub type size_t = core::ffi::c_ulong;
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;

@@ -1,19 +1,9 @@
 use core::ptr;
 
-use libc::abort;
+use libc::{abort, free, malloc, memset, size_t};
 
 use crate::timefn::{UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 
-extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
-    fn memset(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_int,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-}
-pub type size_t = core::ffi::c_ulong;
 pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -1,29 +1,10 @@
 use core::ptr;
 
-use libc::{exit, perror, FILE};
+use libc::{exit, free, fwrite, malloc, memcpy, memset, perror, size_t, FILE};
 
 extern "C" {
     static mut stdout: *mut FILE;
-    fn fwrite(
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memset(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_int,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type fixedPoint_24_8 = u32;
 pub const NULL: core::ffi::c_int = 0;
 pub const LTLOG: core::ffi::c_int = 13;

@@ -1,8 +1,9 @@
-pub type size_t = core::ffi::c_ulong;
 pub type HIST_checkInput_e = core::ffi::c_uint;
 pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
 pub const trustInput: HIST_checkInput_e = 0;
 use core::ptr;
+
+use libc::size_t;
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_read32;

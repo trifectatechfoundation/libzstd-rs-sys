@@ -5,6 +5,8 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
+use libc::size_t;
+
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::{FSE_readNCount, FSE_readNCount_slice};
 use crate::lib::common::error_private::ERR_isError;
@@ -21,7 +23,6 @@ use crate::lib::decompress::{
 use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
 pub const BIT_DStream_completed: BIT_DStream_status = 2;
@@ -3929,6 +3930,8 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
 #[cfg(test)]
 mod test {
     use core::ffi::*;
+
+    use libc::size_t;
 
     #[test]
     fn basic_decompress() {
