@@ -7,6 +7,7 @@ use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
+use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
@@ -24,6 +25,10 @@ use crate::lib::decompress::{
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
 
+use crate::programs::zstdcli_trace::{
+    ZSTD_Trace, ZSTD_trace_decompress_begin, ZSTD_trace_decompress_end,
+};
+
 use crate::lib::legacy::zstd_v05::*;
 use crate::lib::legacy::zstd_v06::*;
 use crate::lib::legacy::zstd_v07::*;
@@ -34,15 +39,8 @@ use crate::lib::decompress::zstd_ddict::{
 };
 
 extern "C" {
-    pub type ZSTD_CCtx_s;
-    pub type ZSTD_CCtx_params_s;
-    pub type ZSTDv07_DCtx_s;
-    pub type ZSTDv06_DCtx_s;
-    pub type ZSTDv05_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx_s) -> ZSTD_TraceCtx;
-    fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
     fn ZSTD_decompressBlock_internal(
         dctx: *mut ZSTD_DCtx,
         dst: *mut std::ffi::c_void,
@@ -54,7 +52,6 @@ extern "C" {
 }
 
 pub type size_t = std::ffi::c_ulong;
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
@@ -73,20 +70,6 @@ pub struct ZSTD_cpuid_t {
 pub type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_Trace {
-    pub version: std::ffi::c_uint,
-    pub streaming: std::ffi::c_int,
-    pub dictionaryID: std::ffi::c_uint,
-    pub dictionaryIsCold: std::ffi::c_int,
-    pub dictionarySize: size_t,
-    pub uncompressedSize: size_t,
-    pub compressedSize: size_t,
-    pub params: *const ZSTD_CCtx_params_s,
-    pub cctx: *const ZSTD_CCtx_s,
-    pub dctx: *const ZSTD_DCtx_s,
-}
 pub type unalign32 = u32;
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
@@ -1740,13 +1723,7 @@ unsafe extern "C" fn ZSTD_DCtx_trace_end(
     mut compressedSize: U64,
     mut streaming: std::ffi::c_int,
 ) {
-    if (*dctx).traceCtx != 0
-        && (Some(
-            ZSTD_trace_decompress_end
-                as unsafe extern "C" fn(ZSTD_TraceCtx, *const ZSTD_Trace) -> (),
-        ))
-        .is_some()
-    {
+    if (*dctx).traceCtx != 0 {
         let mut trace = ZSTD_Trace {
             version: 0,
             streaming: 0,
@@ -2559,15 +2536,7 @@ unsafe extern "C" fn ZSTD_decompress_insertDictionary(
 }
 #[export_name = crate::prefix!(ZSTD_decompressBegin)]
 pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_t {
-    (*dctx).traceCtx = if (Some(
-        ZSTD_trace_decompress_begin as unsafe extern "C" fn(*const ZSTD_DCtx_s) -> ZSTD_TraceCtx,
-    ))
-    .is_some()
-    {
-        ZSTD_trace_decompress_begin(dctx)
-    } else {
-        0 as std::ffi::c_int as ZSTD_TraceCtx
-    };
+    (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
     (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
     (*dctx).processedCSize = 0 as std::ffi::c_int as U64;
