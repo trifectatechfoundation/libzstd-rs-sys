@@ -122,14 +122,6 @@ pub struct ZSTD_DCtx_s {
     pub traceCtx: ZSTD_TraceCtx,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_outBuffer_s {
-    pub dst: *mut std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
 pub type ZSTD_bufferMode_e = std::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;

@@ -258,14 +258,6 @@ pub struct ZSTD_inBuffer_s {
     pub pos: size_t,
 }
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_outBuffer_s {
-    pub dst: *mut std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_DStream = ZSTD_DCtx;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;

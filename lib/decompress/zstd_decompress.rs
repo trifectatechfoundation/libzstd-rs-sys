@@ -28,7 +28,7 @@ use crate::lib::legacy::zstd_v07::*;
 use crate::lib::decompress::zstd_ddict::{
     ZSTD_DCtx_s, ZSTD_DDict_dictContent, ZSTD_DDict_dictSize, ZSTD_FrameHeader,
     ZSTD_copyDDictParameters, ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict,
-    ZSTD_outBuffer_s, ZSTD_sizeof_DDict,
+    ZSTD_sizeof_DDict,
 };
 
 extern "C" {
