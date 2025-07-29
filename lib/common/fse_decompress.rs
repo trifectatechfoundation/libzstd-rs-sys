@@ -383,13 +383,13 @@ unsafe fn FSE_decompress_wksp_body(
     mut maxLog: std::ffi::c_uint,
     workspace: &mut Workspace,
     mut bmi2: std::ffi::c_int,
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut wkspSize = size_of::<Workspace>() as size_t;
 
     let mut tableLog: std::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as std::ffi::c_uint;
     if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong {
-        return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+        return Err(Error::GENERIC);
     }
     let NCountLength = FSE_readNCount_bmi2(
         &mut workspace.a.ncount,
@@ -397,12 +397,10 @@ unsafe fn FSE_decompress_wksp_body(
         &mut tableLog,
         cSrc,
         bmi2,
-    );
-    if ERR_isError(NCountLength) != 0 {
-        return NCountLength;
-    }
+    )?;
+
     if tableLog > maxLog {
-        return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::tableLog_tooLarge);
     }
     let ip = &cSrc[NCountLength as usize..];
     if ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog) + 1 as std::ffi::c_int)
@@ -435,7 +433,7 @@ unsafe fn FSE_decompress_wksp_body(
         )
         > wkspSize as std::ffi::c_ulonglong
     {
-        return -(ZSTD_error_tableLog_tooLarge as std::ffi::c_int) as size_t;
+        return Err(Error::tableLog_tooLarge);
     }
     wkspSize = (wkspSize as std::ffi::c_ulong).wrapping_sub(
         (::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong).wrapping_add(
@@ -444,41 +442,37 @@ unsafe fn FSE_decompress_wksp_body(
         ),
     ) as size_t as size_t;
 
-    let _var_err__ = FSE_buildDTable_internal(
+    let () = FSE_buildDTable_internal(
         &mut workspace.dtable,
         &workspace.a.ncount,
         maxSymbolValue,
         tableLog,
-    );
-    match _var_err__ {
-        Ok(()) => {}
-        Err(e) => return -(e as std::ffi::c_int) as size_t,
-    }
+    )?;
 
-    match FSE_decompress_usingDTable_generic(
+    FSE_decompress_usingDTable_generic(
         dst,
         ip,
         &workspace.dtable,
         workspace.dtable.header.fastMode != 0,
-    ) {
-        Ok(v) => v as size_t,
-        Err(e) => -(e as std::ffi::c_int) as size_t,
-    }
+    )
+    .map(|e| e as size_t)
 }
+
 unsafe fn FSE_decompress_wksp_body_default(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: std::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> size_t {
+) -> Result<size_t, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0 as std::ffi::c_int)
 }
+
 unsafe fn FSE_decompress_wksp_body_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: std::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> size_t {
+) -> Result<size_t, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1 as std::ffi::c_int)
 }
 
@@ -488,7 +482,7 @@ pub unsafe fn FSE_decompress_wksp_bmi2(
     maxLog: std::ffi::c_uint,
     workSpace: &mut Workspace,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     if bmi2 {
         FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace)
     } else {
