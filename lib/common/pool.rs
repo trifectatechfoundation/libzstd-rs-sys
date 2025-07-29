@@ -121,18 +121,18 @@ unsafe extern "C" fn POOL_thread(mut opaque: *mut std::ffi::c_void) -> *mut std:
         pthread_mutex_unlock(&mut (*ctx).queueMutex);
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_createThreadPool)]
 pub unsafe extern "C" fn ZSTD_createThreadPool(mut numThreads: size_t) -> *mut ZSTD_threadPool {
     POOL_create(numThreads, 0 as std::ffi::c_int as size_t)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_create)]
 pub unsafe extern "C" fn POOL_create(
     mut numThreads: size_t,
     mut queueSize: size_t,
 ) -> *mut POOL_ctx {
     POOL_create_advanced(numThreads, queueSize, ZSTD_defaultCMem)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_create_advanced)]
 pub unsafe extern "C" fn POOL_create_advanced(
     mut numThreads: size_t,
     mut queueSize: size_t,
@@ -226,7 +226,7 @@ unsafe extern "C" fn POOL_join(mut ctx: *mut POOL_ctx) {
         i;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_free)]
 pub unsafe extern "C" fn POOL_free(mut ctx: *mut POOL_ctx) {
     if ctx.is_null() {
         return;
@@ -239,7 +239,7 @@ pub unsafe extern "C" fn POOL_free(mut ctx: *mut POOL_ctx) {
     ZSTD_customFree((*ctx).threads as *mut std::ffi::c_void, (*ctx).customMem);
     ZSTD_customFree(ctx as *mut std::ffi::c_void, (*ctx).customMem);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_joinJobs)]
 pub unsafe extern "C" fn POOL_joinJobs(mut ctx: *mut POOL_ctx) {
     pthread_mutex_lock(&mut (*ctx).queueMutex);
     while (*ctx).queueEmpty == 0 || (*ctx).numThreadsBusy > 0 as std::ffi::c_int as size_t {
@@ -247,11 +247,11 @@ pub unsafe extern "C" fn POOL_joinJobs(mut ctx: *mut POOL_ctx) {
     }
     pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_freeThreadPool)]
 pub unsafe extern "C" fn ZSTD_freeThreadPool(mut pool: *mut ZSTD_threadPool) {
     POOL_free(pool);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_sizeof)]
 pub unsafe extern "C" fn POOL_sizeof(mut ctx: *const POOL_ctx) -> size_t {
     if ctx.is_null() {
         return 0 as std::ffi::c_int as size_t;
@@ -315,7 +315,7 @@ unsafe extern "C" fn POOL_resize_internal(
     (*ctx).threadLimit = numThreads;
     0 as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_resize)]
 pub unsafe extern "C" fn POOL_resize(
     mut ctx: *mut POOL_ctx,
     mut numThreads: size_t,
@@ -359,7 +359,7 @@ unsafe extern "C" fn POOL_add_internal(
         ((*ctx).queueTail).wrapping_add(1 as std::ffi::c_int as size_t) % (*ctx).queueSize;
     pthread_cond_signal(&mut (*ctx).queuePopCond);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_add)]
 pub unsafe extern "C" fn POOL_add(
     mut ctx: *mut POOL_ctx,
     mut function: POOL_function,
@@ -372,7 +372,7 @@ pub unsafe extern "C" fn POOL_add(
     POOL_add_internal(ctx, function, opaque);
     pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(POOL_tryAdd)]
 pub unsafe extern "C" fn POOL_tryAdd(
     mut ctx: *mut POOL_ctx,
     mut function: POOL_function,

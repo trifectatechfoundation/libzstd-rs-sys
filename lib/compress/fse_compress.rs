@@ -277,7 +277,7 @@ pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::f
 pub const FSE_DEFAULT_TABLELOG: std::ffi::c_int = FSE_DEFAULT_MEMORY_USAGE - 2 as std::ffi::c_int;
 pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5 as std::ffi::c_int;
 pub const FSE_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_buildCTable_wksp)]
 pub unsafe extern "C" fn FSE_buildCTable_wksp(
     mut ct: *mut FSE_CTable,
     mut normalizedCounter: *const std::ffi::c_short,
@@ -465,7 +465,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_NCountWriteBound)]
 pub unsafe extern "C" fn FSE_NCountWriteBound(
     mut maxSymbolValue: std::ffi::c_uint,
     mut tableLog: std::ffi::c_uint,
@@ -606,7 +606,7 @@ unsafe extern "C" fn FSE_writeNCount_generic(
     out = out.offset(((bitCount + 7 as std::ffi::c_int) / 8 as std::ffi::c_int) as isize);
     out.offset_from(ostart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_writeNCount)]
 pub unsafe extern "C" fn FSE_writeNCount(
     mut buffer: *mut std::ffi::c_void,
     mut bufferSize: size_t,
@@ -647,14 +647,13 @@ unsafe extern "C" fn FSE_minTableLog(
         (ZSTD_highbit32(srcSize as u32)).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
     let mut minBitsSymbols =
         (ZSTD_highbit32(maxSymbolValue)).wrapping_add(2 as std::ffi::c_int as std::ffi::c_uint);
-
     if minBitsSrc < minBitsSymbols {
         minBitsSrc
     } else {
         minBitsSymbols
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_optimalTableLog_internal)]
 pub unsafe extern "C" fn FSE_optimalTableLog_internal(
     mut maxTableLog: std::ffi::c_uint,
     mut srcSize: size_t,
@@ -683,7 +682,7 @@ pub unsafe extern "C" fn FSE_optimalTableLog_internal(
     }
     tableLog
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_optimalTableLog)]
 pub unsafe extern "C" fn FSE_optimalTableLog(
     mut maxTableLog: std::ffi::c_uint,
     mut srcSize: size_t,
@@ -811,7 +810,7 @@ unsafe extern "C" fn FSE_normalizeM2(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_normalizeCount)]
 pub unsafe extern "C" fn FSE_normalizeCount(
     mut normalizedCounter: *mut std::ffi::c_short,
     mut tableLog: std::ffi::c_uint,
@@ -910,7 +909,7 @@ pub unsafe extern "C" fn FSE_normalizeCount(
     }
     tableLog as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_buildCTable_rle)]
 pub unsafe extern "C" fn FSE_buildCTable_rle(
     mut ct: *mut FSE_CTable,
     mut symbolValue: u8,
@@ -1033,7 +1032,7 @@ unsafe extern "C" fn FSE_compress_usingCTable_generic(
     FSE_flushCState(&mut bitC, &mut CState1);
     BIT_closeCStream(&mut bitC)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_compress_usingCTable)]
 pub unsafe extern "C" fn FSE_compress_usingCTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1067,7 +1066,7 @@ pub unsafe extern "C" fn FSE_compress_usingCTable(
         )
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSE_compressBound)]
 pub unsafe extern "C" fn FSE_compressBound(mut size: size_t) -> size_t {
     (FSE_NCOUNTBOUND as std::ffi::c_ulong).wrapping_add(
         size.wrapping_add(size >> 7 as std::ffi::c_int)

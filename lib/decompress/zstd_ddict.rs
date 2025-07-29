@@ -214,17 +214,17 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_DDict_dictContent)]
 pub unsafe extern "C" fn ZSTD_DDict_dictContent(
     mut ddict: *const ZSTD_DDict,
 ) -> *const std::ffi::c_void {
     (*ddict).dictContent
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_DDict_dictSize)]
 pub unsafe extern "C" fn ZSTD_DDict_dictSize(mut ddict: *const ZSTD_DDict) -> size_t {
     (*ddict).dictSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_copyDDictParameters)]
 pub unsafe extern "C" fn ZSTD_copyDDictParameters(
     mut dctx: *mut ZSTD_DCtx,
     mut ddict: *const ZSTD_DDict,
@@ -341,7 +341,7 @@ unsafe extern "C" fn ZSTD_initDDict_internal(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_createDDict_advanced)]
 pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     mut dict: *const std::ffi::c_void,
     mut dictSize: size_t,
@@ -371,7 +371,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
     ddict
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_createDDict)]
 pub unsafe extern "C" fn ZSTD_createDDict(
     mut dict: *const std::ffi::c_void,
     mut dictSize: size_t,
@@ -389,7 +389,7 @@ pub unsafe extern "C" fn ZSTD_createDDict(
     };
     ZSTD_createDDict_advanced(dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto, allocator)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_createDDict_byReference)]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
     mut dictBuffer: *const std::ffi::c_void,
     mut dictSize: size_t,
@@ -413,7 +413,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
         allocator,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_initStaticDDict)]
 pub unsafe extern "C" fn ZSTD_initStaticDDict(
     mut sBuffer: *mut std::ffi::c_void,
     mut sBufferSize: size_t,
@@ -459,7 +459,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     }
     ddict
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_freeDDict)]
 pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0 as std::ffi::c_int as size_t;
@@ -469,7 +469,7 @@ pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
     ZSTD_customFree(ddict as *mut std::ffi::c_void, cMem);
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_estimateDDictSize)]
 pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
@@ -484,7 +484,7 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
         },
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_sizeof_DDict)]
 pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0 as std::ffi::c_int as size_t;
@@ -497,7 +497,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
         },
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_getDictID_fromDDict)]
 pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(
     mut ddict: *const ZSTD_DDict,
 ) -> std::ffi::c_uint {

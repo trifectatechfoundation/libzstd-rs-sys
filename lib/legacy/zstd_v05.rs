@@ -629,7 +629,7 @@ unsafe extern "C" fn FSEv05_tableStep(mut tableSize: u32) -> u32 {
         .wrapping_add(tableSize >> 3 as std::ffi::c_int)
         .wrapping_add(3 as std::ffi::c_int as u32)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_createDTable)]
 pub unsafe extern "C" fn FSEv05_createDTable(mut tableLog: std::ffi::c_uint) -> *mut FSEv05_DTable {
     if tableLog > FSEv05_TABLELOG_ABSOLUTE_MAX as std::ffi::c_uint {
         tableLog = FSEv05_TABLELOG_ABSOLUTE_MAX as std::ffi::c_uint;
@@ -639,11 +639,11 @@ pub unsafe extern "C" fn FSEv05_createDTable(mut tableLog: std::ffi::c_uint) -> 
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
     ) as *mut FSEv05_DTable
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_freeDTable)]
 pub unsafe extern "C" fn FSEv05_freeDTable(mut dt: *mut FSEv05_DTable) {
     free(dt as *mut std::ffi::c_void);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_buildDTable)]
 pub unsafe extern "C" fn FSEv05_buildDTable(
     mut dt: *mut FSEv05_DTable,
     mut normalizedCounter: *const std::ffi::c_short,
@@ -745,11 +745,11 @@ pub unsafe extern "C" fn FSEv05_buildDTable(
     );
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_isError)]
 pub unsafe extern "C" fn FSEv05_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_getErrorName)]
 pub unsafe extern "C" fn FSEv05_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
     ERR_getErrorName(code)
 }
@@ -760,7 +760,7 @@ unsafe extern "C" fn FSEv05_abs(mut a: std::ffi::c_short) -> std::ffi::c_short {
         a as std::ffi::c_int
     }) as std::ffi::c_short
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_readNCount)]
 pub unsafe extern "C" fn FSEv05_readNCount(
     mut normalizedCounter: *mut std::ffi::c_short,
     mut maxSVPtr: *mut std::ffi::c_uint,
@@ -887,7 +887,7 @@ pub unsafe extern "C" fn FSEv05_readNCount(
     }
     ip.offset_from(istart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_buildDTable_rle)]
 pub unsafe extern "C" fn FSEv05_buildDTable_rle(
     mut dt: *mut FSEv05_DTable,
     mut symbolValue: u8,
@@ -903,7 +903,7 @@ pub unsafe extern "C" fn FSEv05_buildDTable_rle(
     (*cell).nbBits = 0 as std::ffi::c_int as std::ffi::c_uchar;
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_buildDTable_raw)]
 pub unsafe extern "C" fn FSEv05_buildDTable_raw(
     mut dt: *mut FSEv05_DTable,
     mut nbBits: std::ffi::c_uint,
@@ -1052,7 +1052,7 @@ unsafe extern "C" fn FSEv05_decompress_usingDTable_generic(
     }
     -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_decompress_usingDTable)]
 pub unsafe extern "C" fn FSEv05_decompress_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut originalSize: size_t,
@@ -1082,7 +1082,7 @@ pub unsafe extern "C" fn FSEv05_decompress_usingDTable(
         0 as std::ffi::c_int as std::ffi::c_uint,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(FSEv05_decompress)]
 pub unsafe extern "C" fn FSEv05_decompress(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
@@ -1134,11 +1134,11 @@ pub unsafe extern "C" fn FSEv05_decompress(
 pub const HUFv05_ABSOLUTEMAX_TABLELOG: std::ffi::c_int = 16 as std::ffi::c_int;
 pub const HUFv05_MAX_TABLELOG: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUFv05_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_isError)]
 pub unsafe extern "C" fn HUFv05_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_getErrorName)]
 pub unsafe extern "C" fn HUFv05_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
     ERR_getErrorName(code)
 }
@@ -1276,7 +1276,7 @@ unsafe extern "C" fn HUFv05_readStats(
     *tableLogPtr = tableLog;
     iSize.wrapping_add(1 as std::ffi::c_int as size_t)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_readDTableX2)]
 pub unsafe extern "C" fn HUFv05_readDTableX2(
     mut DTable: *mut u16,
     mut src: *const std::ffi::c_void,
@@ -1398,7 +1398,7 @@ unsafe extern "C" fn HUFv05_decodeStreamX2(
     }
     pEnd.offset_from(pStart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress1X2_usingDTable)]
 pub unsafe extern "C" fn HUFv05_decompress1X2_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1430,7 +1430,7 @@ pub unsafe extern "C" fn HUFv05_decompress1X2_usingDTable(
     }
     dstSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress1X2)]
 pub unsafe extern "C" fn HUFv05_decompress1X2(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1458,7 +1458,7 @@ pub unsafe extern "C" fn HUFv05_decompress1X2(
         DTable.as_mut_ptr(),
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress4X2_usingDTable)]
 pub unsafe extern "C" fn HUFv05_decompress4X2_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1653,7 +1653,7 @@ pub unsafe extern "C" fn HUFv05_decompress4X2_usingDTable(
     }
     dstSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress4X2)]
 pub unsafe extern "C" fn HUFv05_decompress4X2(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -1820,7 +1820,7 @@ unsafe extern "C" fn HUFv05_fillDTableX4(
         s;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_readDTableX4)]
 pub unsafe extern "C" fn HUFv05_readDTableX4(
     mut DTable: *mut std::ffi::c_uint,
     mut src: *const std::ffi::c_void,
@@ -2032,7 +2032,7 @@ unsafe extern "C" fn HUFv05_decodeStreamX4(
     }
     p.offset_from(pStart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress1X4_usingDTable)]
 pub unsafe extern "C" fn HUFv05_decompress1X4_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2063,7 +2063,7 @@ pub unsafe extern "C" fn HUFv05_decompress1X4_usingDTable(
     }
     dstSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress1X4)]
 pub unsafe extern "C" fn HUFv05_decompress1X4(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2089,7 +2089,7 @@ pub unsafe extern "C" fn HUFv05_decompress1X4(
         DTable.as_mut_ptr(),
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress4X4_usingDTable)]
 pub unsafe extern "C" fn HUFv05_decompress4X4_usingDTable(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2320,7 +2320,7 @@ pub unsafe extern "C" fn HUFv05_decompress4X4_usingDTable(
     }
     dstSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress4X4)]
 pub unsafe extern "C" fn HUFv05_decompress4X4(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2668,7 +2668,7 @@ static mut algoTime: [[algo_time_t; 3]; 16] = [
         },
     ],
 ];
-#[no_mangle]
+#[export_name = crate::prefix!(HUFv05_decompress)]
 pub unsafe extern "C" fn HUFv05_decompress(
     mut dst: *mut std::ffi::c_void,
     mut dstSize: size_t,
@@ -2751,19 +2751,19 @@ unsafe extern "C" fn ZSTDv05_copy4(
 ) {
     memcpy(dst, src, 4 as std::ffi::c_int as std::ffi::c_ulong);
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_isError)]
 pub unsafe extern "C" fn ZSTDv05_isError(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_getErrorName)]
 pub unsafe extern "C" fn ZSTDv05_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
     ERR_getErrorName(code)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_sizeofDCtx)]
 pub unsafe extern "C" fn ZSTDv05_sizeofDCtx() -> size_t {
     ::core::mem::size_of::<ZSTDv05_DCtx>() as std::ffi::c_ulong
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompressBegin)]
 pub unsafe extern "C" fn ZSTDv05_decompressBegin(mut dctx: *mut ZSTDv05_DCtx) -> size_t {
     (*dctx).expected = ZSTDv05_frameHeaderSize_min;
     (*dctx).stage = ZSTDv05ds_getFrameHeaderSize;
@@ -2777,7 +2777,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressBegin(mut dctx: *mut ZSTDv05_DCtx) ->
     (*dctx).flagStaticTables = 0 as std::ffi::c_int as u32;
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_createDCtx)]
 pub unsafe extern "C" fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
     let mut dctx =
         malloc(::core::mem::size_of::<ZSTDv05_DCtx>() as std::ffi::c_ulong) as *mut ZSTDv05_DCtx;
@@ -2787,12 +2787,12 @@ pub unsafe extern "C" fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
     ZSTDv05_decompressBegin(dctx);
     dctx
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_freeDCtx)]
 pub unsafe extern "C" fn ZSTDv05_freeDCtx(mut dctx: *mut ZSTDv05_DCtx) -> size_t {
     free(dctx as *mut std::ffi::c_void);
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_copyDCtx)]
 pub unsafe extern "C" fn ZSTDv05_copyDCtx(
     mut dstDCtx: *mut ZSTDv05_DCtx,
     mut srcDCtx: *const ZSTDv05_DCtx,
@@ -2821,7 +2821,7 @@ unsafe extern "C" fn ZSTDv05_decodeFrameHeader_Part1(
     (*zc).headerSize = ZSTDv05_frameHeaderSize_min;
     (*zc).headerSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_getFrameParams)]
 pub unsafe extern "C" fn ZSTDv05_getFrameParams(
     mut params: *mut ZSTDv05_parameters,
     mut src: *const std::ffi::c_void,
@@ -3799,7 +3799,7 @@ unsafe extern "C" fn ZSTDv05_decompressBlock_internal(
         srcSize,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompressBlock)]
 pub unsafe extern "C" fn ZSTDv05_decompressBlock(
     mut dctx: *mut ZSTDv05_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -3902,7 +3902,7 @@ unsafe extern "C" fn ZSTDv05_decompress_continueDCtx(
     }
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompress_usingPreparedDCtx)]
 pub unsafe extern "C" fn ZSTDv05_decompress_usingPreparedDCtx(
     mut dctx: *mut ZSTDv05_DCtx,
     mut refDCtx: *const ZSTDv05_DCtx,
@@ -3915,7 +3915,7 @@ pub unsafe extern "C" fn ZSTDv05_decompress_usingPreparedDCtx(
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src, srcSize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompress_usingDict)]
 pub unsafe extern "C" fn ZSTDv05_decompress_usingDict(
     mut dctx: *mut ZSTDv05_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -3929,7 +3929,7 @@ pub unsafe extern "C" fn ZSTDv05_decompress_usingDict(
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src, srcSize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompressDCtx)]
 pub unsafe extern "C" fn ZSTDv05_decompressDCtx(
     mut dctx: *mut ZSTDv05_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -3947,7 +3947,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressDCtx(
         0 as std::ffi::c_int as size_t,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompress)]
 pub unsafe extern "C" fn ZSTDv05_decompress(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
@@ -3971,7 +3971,7 @@ unsafe extern "C" fn ZSTD_errorFrameSizeInfoLegacy(
     *cSize = ret;
     *dBound = ZSTD_CONTENTSIZE_ERROR;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_findFrameSizeInfoLegacy)]
 pub unsafe extern "C" fn ZSTDv05_findFrameSizeInfoLegacy(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
@@ -4034,11 +4034,11 @@ pub unsafe extern "C" fn ZSTDv05_findFrameSizeInfoLegacy(
     *cSize = ip.offset_from(src as *const u8) as std::ffi::c_long as size_t;
     *dBound = (nbBlocks * BLOCKSIZE as size_t) as std::ffi::c_ulonglong;
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_nextSrcSizeToDecompress)]
 pub unsafe extern "C" fn ZSTDv05_nextSrcSizeToDecompress(mut dctx: *mut ZSTDv05_DCtx) -> size_t {
     (*dctx).expected
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompressContinue)]
 pub unsafe extern "C" fn ZSTDv05_decompressContinue(
     mut dctx: *mut ZSTDv05_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -4269,7 +4269,7 @@ unsafe extern "C" fn ZSTDv05_decompress_insertDictionary(
     ZSTDv05_refDictContent(dctx, dict, dictSize);
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTDv05_decompressBegin_usingDict)]
 pub unsafe extern "C" fn ZSTDv05_decompressBegin_usingDict(
     mut dctx: *mut ZSTDv05_DCtx,
     mut dict: *const std::ffi::c_void,
@@ -4306,7 +4306,7 @@ unsafe extern "C" fn ZBUFFv05_limitCopy(
     length
 }
 pub const ZSTDv05_frameHeaderSize_max_0: std::ffi::c_int = 5 as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_createDCtx)]
 pub unsafe extern "C" fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
     let mut zbc =
         malloc(::core::mem::size_of::<ZBUFFv05_DCtx>() as std::ffi::c_ulong) as *mut ZBUFFv05_DCtx;
@@ -4322,7 +4322,7 @@ pub unsafe extern "C" fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
     (*zbc).stage = ZBUFFv05ds_init;
     zbc
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_freeDCtx)]
 pub unsafe extern "C" fn ZBUFFv05_freeDCtx(mut zbc: *mut ZBUFFv05_DCtx) -> size_t {
     if zbc.is_null() {
         return 0 as std::ffi::c_int as size_t;
@@ -4333,7 +4333,7 @@ pub unsafe extern "C" fn ZBUFFv05_freeDCtx(mut zbc: *mut ZBUFFv05_DCtx) -> size_
     free(zbc as *mut std::ffi::c_void);
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_decompressInitDictionary)]
 pub unsafe extern "C" fn ZBUFFv05_decompressInitDictionary(
     mut zbc: *mut ZBUFFv05_DCtx,
     mut dict: *const std::ffi::c_void,
@@ -4346,7 +4346,7 @@ pub unsafe extern "C" fn ZBUFFv05_decompressInitDictionary(
     (*zbc).hPos = (*zbc).inPos;
     ZSTDv05_decompressBegin_usingDict((*zbc).zc, dict, dictSize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_decompressInit)]
 pub unsafe extern "C" fn ZBUFFv05_decompressInit(mut zbc: *mut ZBUFFv05_DCtx) -> size_t {
     ZBUFFv05_decompressInitDictionary(
         zbc,
@@ -4354,7 +4354,7 @@ pub unsafe extern "C" fn ZBUFFv05_decompressInit(mut zbc: *mut ZBUFFv05_DCtx) ->
         0 as std::ffi::c_int as size_t,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_decompressContinue)]
 pub unsafe extern "C" fn ZBUFFv05_decompressContinue(
     mut zbc: *mut ZBUFFv05_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -4571,19 +4571,19 @@ pub unsafe extern "C" fn ZBUFFv05_decompressContinue(
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub((*zbc).inPos);
     nextSrcSizeHint
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_isError)]
 pub unsafe extern "C" fn ZBUFFv05_isError(mut errorCode: size_t) -> std::ffi::c_uint {
     ERR_isError(errorCode)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_getErrorName)]
 pub unsafe extern "C" fn ZBUFFv05_getErrorName(mut errorCode: size_t) -> *const std::ffi::c_char {
     ERR_getErrorName(errorCode)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_recommendedDInSize)]
 pub unsafe extern "C" fn ZBUFFv05_recommendedDInSize() -> size_t {
     (BLOCKSIZE as size_t).wrapping_add(ZBUFFv05_blockHeaderSize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZBUFFv05_recommendedDOutSize)]
 pub unsafe extern "C" fn ZBUFFv05_recommendedDOutSize() -> size_t {
     BLOCKSIZE as size_t
 }

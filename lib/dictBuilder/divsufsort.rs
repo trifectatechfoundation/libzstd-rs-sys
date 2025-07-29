@@ -7009,7 +7009,7 @@ unsafe extern "C" fn construct_BWT_indexes(
     }
     orig.offset_from(SA) as std::ffi::c_long as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(divsufsort)]
 pub unsafe extern "C" fn divsufsort(
     mut T: *const std::ffi::c_uchar,
     mut SA: *mut std::ffi::c_int,
@@ -7053,7 +7053,7 @@ pub unsafe extern "C" fn divsufsort(
     free(bucket_A as *mut std::ffi::c_void);
     err
 }
-#[no_mangle]
+#[export_name = crate::prefix!(divbwt)]
 pub unsafe extern "C" fn divbwt(
     mut T: *const std::ffi::c_uchar,
     mut U: *mut std::ffi::c_uchar,

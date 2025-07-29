@@ -646,7 +646,7 @@ unsafe extern "C" fn ZSTD_fillHashTableForCCtx(
         ip = ip.offset(fastHashFillStep as isize);
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_fillHashTable)]
 pub unsafe extern "C" fn ZSTD_fillHashTable(
     mut ms: *mut ZSTD_MatchState_t,
     end: *const std::ffi::c_void,
@@ -1079,7 +1079,7 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_noDict_7_0(
         0 as std::ffi::c_int,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_fast)]
 pub unsafe extern "C" fn ZSTD_compressBlock_fast(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -1455,7 +1455,7 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState_7_0(
         0 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_fast_dictMatchState)]
 pub unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
@@ -1844,7 +1844,7 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_extDict_7_0(
         0 as std::ffi::c_int as u32,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressBlock_fast_extDict)]
 pub unsafe extern "C" fn ZSTD_compressBlock_fast_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,

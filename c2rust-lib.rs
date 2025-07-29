@@ -70,6 +70,29 @@ pub mod programs {
     pub mod zstdcli_trace;
 } // mod programs
 
+#[cfg(feature = "semver-prefix")]
+macro_rules! prefix {
+    ($name:expr) => {
+        concat!(
+            "LIBZ_RS_SYS_v",
+            env!("CARGO_PKG_VERSION_MAJOR"),
+            "_",
+            env!("CARGO_PKG_VERSION_MINOR"),
+            "_x_",
+            stringify!($name)
+        )
+    };
+}
+
+#[cfg(not(feature = "semver-prefix"))]
+macro_rules! prefix {
+    ($name:expr) => {
+        stringify!($name)
+    };
+}
+
+pub(crate) use prefix;
+
 #[inline]
 pub(crate) fn MEM_isLittleEndian() -> std::ffi::c_uint {
     cfg!(target_endian = "little") as _

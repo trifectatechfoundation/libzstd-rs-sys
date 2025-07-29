@@ -1,7 +1,6 @@
 use crate::lib::zstd::ZSTD_ErrorCode;
-
 pub type ERR_enum = ZSTD_ErrorCode;
-#[no_mangle]
+#[export_name = crate::prefix!(ERR_getErrorString)]
 pub unsafe extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const std::ffi::c_char {
     static mut notErrorCode: *const std::ffi::c_char =
         b"Unspecified error code\0" as *const u8 as *const std::ffi::c_char;

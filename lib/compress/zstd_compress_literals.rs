@@ -102,7 +102,7 @@ unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy)
 pub const LitHufLog: std::ffi::c_int = 11 as std::ffi::c_int;
 pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const HUF_OPTIMAL_DEPTH_THRESHOLD: std::ffi::c_int = ZSTD_btultra as std::ffi::c_int;
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_noCompressLiterals)]
 pub unsafe extern "C" fn ZSTD_noCompressLiterals(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
@@ -165,7 +165,7 @@ unsafe extern "C" fn allBytesIdentical(
     }
     1 as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressRleLiteralsBlock)]
 pub unsafe extern "C" fn ZSTD_compressRleLiteralsBlock(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
@@ -221,7 +221,7 @@ unsafe extern "C" fn ZSTD_minLiteralsToCompress(
         (8 as std::ffi::c_int as size_t) << shift
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressLiterals)]
 pub unsafe extern "C" fn ZSTD_compressLiterals(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,

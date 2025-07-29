@@ -732,7 +732,7 @@ unsafe extern "C" fn ZSTD_entropyCost(
     }
     (cost >> 8 as std::ffi::c_int) as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_fseBitCost)]
 pub unsafe extern "C" fn ZSTD_fseBitCost(
     mut ctable: *const FSE_CTable,
     mut count: *const std::ffi::c_uint,
@@ -768,7 +768,7 @@ pub unsafe extern "C" fn ZSTD_fseBitCost(
     }
     cost >> kAccuracyLog
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_crossEntropyCost)]
 pub unsafe extern "C" fn ZSTD_crossEntropyCost(
     mut norm: *const std::ffi::c_short,
     mut accuracyLog: std::ffi::c_uint,
@@ -796,7 +796,7 @@ pub unsafe extern "C" fn ZSTD_crossEntropyCost(
     }
     cost >> 8 as std::ffi::c_int
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_selectEncodingType)]
 pub unsafe extern "C" fn ZSTD_selectEncodingType(
     mut repeatMode: *mut FSE_repeat,
     mut count: *const std::ffi::c_uint,
@@ -866,7 +866,7 @@ pub unsafe extern "C" fn ZSTD_selectEncodingType(
     *repeatMode = FSE_repeat_check;
     set_compressed
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_buildCTable)]
 pub unsafe extern "C" fn ZSTD_buildCTable(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
@@ -1266,7 +1266,7 @@ unsafe extern "C" fn ZSTD_encodeSequences_bmi2(
         longOffsets,
     )
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_encodeSequences)]
 pub unsafe extern "C" fn ZSTD_encodeSequences(
     mut dst: *mut std::ffi::c_void,
     mut dstCapacity: size_t,

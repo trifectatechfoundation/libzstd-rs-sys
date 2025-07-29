@@ -1080,7 +1080,7 @@ unsafe extern "C" fn ZSTD_ldm_gear_feed(
     }
     n
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_adjustParameters)]
 pub unsafe extern "C" fn ZSTD_ldm_adjustParameters(
     mut params: *mut ldmParams_t,
     mut cParams: *const ZSTD_compressionParameters,
@@ -1212,7 +1212,7 @@ pub unsafe extern "C" fn ZSTD_ldm_adjustParameters(
         (*params).hashLog
     };
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_getTableSize)]
 pub unsafe extern "C" fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as std::ffi::c_int as size_t) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
@@ -1232,7 +1232,7 @@ pub unsafe extern "C" fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_
         0 as std::ffi::c_int as size_t
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_getMaxNbSeq)]
 pub unsafe extern "C" fn ZSTD_ldm_getMaxNbSeq(
     mut params: ldmParams_t,
     mut maxChunkSize: size_t,
@@ -1331,7 +1331,7 @@ unsafe extern "C" fn ZSTD_ldm_fillFastTables(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_fillHashTable)]
 pub unsafe extern "C" fn ZSTD_ldm_fillHashTable(
     mut ldmState: *mut ldmState_t,
     mut ip: *const u8,
@@ -1657,7 +1657,7 @@ unsafe extern "C" fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, red
         u;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_generateSequences)]
 pub unsafe extern "C" fn ZSTD_ldm_generateSequences(
     mut ldmState: *mut ldmState_t,
     mut sequences: *mut RawSeqStore_t,
@@ -1734,7 +1734,7 @@ pub unsafe extern "C" fn ZSTD_ldm_generateSequences(
     }
     0 as std::ffi::c_int as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_skipSequences)]
 pub unsafe extern "C" fn ZSTD_ldm_skipSequences(
     mut rawSeqStore: *mut RawSeqStore_t,
     mut srcSize: size_t,
@@ -1791,7 +1791,7 @@ unsafe extern "C" fn maybeSplitSequence(
     ZSTD_ldm_skipSequences(rawSeqStore, remaining as size_t, minMatch);
     sequence
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_skipRawSeqStoreBytes)]
 pub unsafe extern "C" fn ZSTD_ldm_skipRawSeqStoreBytes(
     mut rawSeqStore: *mut RawSeqStore_t,
     mut nbBytes: size_t,
@@ -1812,7 +1812,7 @@ pub unsafe extern "C" fn ZSTD_ldm_skipRawSeqStoreBytes(
         (*rawSeqStore).posInSequence = 0 as std::ffi::c_int as size_t;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_ldm_blockCompress)]
 pub unsafe extern "C" fn ZSTD_ldm_blockCompress(
     mut rawSeqStore: *mut RawSeqStore_t,
     mut ms: *mut ZSTD_MatchState_t,

@@ -705,7 +705,7 @@ unsafe extern "C" fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
         ZSTD_BLOCKSIZE_MAX as std::ffi::c_uint
     }) as size_t)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_getcBlockSize)]
 pub unsafe extern "C" fn ZSTD_getcBlockSize(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
@@ -1342,7 +1342,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
     }
     litCSize.wrapping_add(lhSize)
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_decodeLiteralsBlock_wrapper)]
 pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
     mut dctx: *mut ZSTD_DCtx,
     mut src: *const std::ffi::c_void,
@@ -2867,7 +2867,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body_bmi2(
         wkspSize,
     );
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_buildFSETable)]
 pub unsafe extern "C" fn ZSTD_buildFSETable(
     mut dt: *mut ZSTD_seqSymbol,
     mut normalizedCounter: *const std::ffi::c_short,
@@ -2988,7 +2988,7 @@ unsafe extern "C" fn ZSTD_buildSeqTable(
         _ => -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t,
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_decodeSeqHeaders)]
 pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
     mut dctx: *mut ZSTD_DCtx,
     mut nbSeqPtr: *mut std::ffi::c_int,
@@ -4787,7 +4787,7 @@ unsafe extern "C" fn ZSTD_maxShortOffset() -> size_t {
         maxOffbase.wrapping_sub(ZSTD_REP_NUM as size_t)
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_decompressBlock_internal)]
 pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
     mut dctx: *mut ZSTD_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -4899,7 +4899,7 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
         )
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_checkContinuity)]
 pub unsafe extern "C" fn ZSTD_checkContinuity(
     mut dctx: *mut ZSTD_DCtx,
     mut dst: *const std::ffi::c_void,
@@ -4916,7 +4916,7 @@ pub unsafe extern "C" fn ZSTD_checkContinuity(
         (*dctx).previousDstEnd = dst;
     }
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_decompressBlock_deprecated)]
 pub unsafe extern "C" fn ZSTD_decompressBlock_deprecated(
     mut dctx: *mut ZSTD_DCtx,
     mut dst: *mut std::ffi::c_void,
@@ -4936,7 +4936,7 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_deprecated(
         (dst as *mut std::ffi::c_char).offset(dSize as isize) as *const std::ffi::c_void;
     dSize
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_decompressBlock)]
 pub unsafe extern "C" fn ZSTD_decompressBlock(
     mut dctx: *mut ZSTD_DCtx,
     mut dst: *mut std::ffi::c_void,

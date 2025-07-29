@@ -1798,7 +1798,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
     }
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
-#[no_mangle]
+#[export_name = crate::prefix!(ZSTD_compressSuperBlock)]
 pub unsafe extern "C" fn ZSTD_compressSuperBlock(
     mut zc: *mut ZSTD_CCtx,
     mut dst: *mut std::ffi::c_void,
