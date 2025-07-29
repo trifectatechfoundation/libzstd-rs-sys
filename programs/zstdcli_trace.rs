@@ -1,9 +1,10 @@
+use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
     pub type ZSTD_CCtx_s;
-    pub type ZSTD_DCtx_s;
     pub type ZSTD_CCtx_params_s;
     fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
     fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
@@ -101,7 +102,6 @@ pub struct UTIL_time_t {
 }
 pub type PTime = u64;
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
-pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;

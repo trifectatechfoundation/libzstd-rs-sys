@@ -12,12 +12,13 @@ use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
 use crate::lib::decompress::{
     blockType_e, bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read,
-    HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_FrameHeader, ZSTD_dStage,
-    ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
-    ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame,
-    ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader,
-    ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock,
-    ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
+    HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader,
+    ZSTD_dStage, ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use,
+    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol,
+    ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum,
+    ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader,
+    ZSTDds_decompressBlock, ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize,
+    ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
@@ -27,7 +28,7 @@ use crate::lib::legacy::zstd_v06::*;
 use crate::lib::legacy::zstd_v07::*;
 
 use crate::lib::decompress::zstd_ddict::{
-    ZSTD_DCtx_s, ZSTD_DDict_dictContent, ZSTD_DDict_dictSize, ZSTD_copyDDictParameters,
+    ZSTD_DDict_dictContent, ZSTD_DDict_dictSize, ZSTD_copyDDictParameters,
     ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
 };
 
@@ -58,7 +59,6 @@ extern "C" {
 }
 
 pub type size_t = std::ffi::c_ulong;
-pub type ZSTD_DCtx = ZSTD_DCtx_s;
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
