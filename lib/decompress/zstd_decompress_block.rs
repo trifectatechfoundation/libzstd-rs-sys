@@ -4072,11 +4072,13 @@ unsafe extern "C" fn ZSTD_decompressSequences_body(
             (*dctx).OFTptr,
         );
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, (*dctx).MLTptr);
-        asm!(".p2align 6", options(preserves_flags, att_syntax));
-        asm!("nop", options(preserves_flags, att_syntax));
-        asm!(".p2align 4", options(preserves_flags, att_syntax));
-        asm!("nop", options(preserves_flags, att_syntax));
-        asm!(".p2align 3", options(preserves_flags, att_syntax));
+        if !cfg!(miri) {
+            asm!(".p2align 6", options(preserves_flags, att_syntax));
+            asm!("nop", options(preserves_flags, att_syntax));
+            asm!(".p2align 4", options(preserves_flags, att_syntax));
+            asm!("nop", options(preserves_flags, att_syntax));
+            asm!(".p2align 3", options(preserves_flags, att_syntax));
+        }
         while nbSeq != 0 {
             let sequence = ZSTD_decodeSequence(
                 &mut seqState,
