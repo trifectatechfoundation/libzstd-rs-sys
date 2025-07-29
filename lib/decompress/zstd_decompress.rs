@@ -69,42 +69,6 @@ extern "C" {
         srcSize: size_t,
         streaming: streaming_operation,
     ) -> size_t;
-    fn ZSTDv06_findFrameSizeInfoLegacy(
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        cSize: *mut size_t,
-        dBound: *mut std::ffi::c_ulonglong,
-    );
-    fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx;
-    fn ZSTDv06_freeDCtx(dctx: *mut ZSTDv06_DCtx) -> size_t;
-    fn ZSTDv06_decompress_usingDict(
-        dctx: *mut ZSTDv06_DCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTDv06_getFrameParams(
-        fparamsPtr: *mut ZSTDv06_frameParams,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx;
-    fn ZBUFFv06_freeDCtx(dctx: *mut ZBUFFv06_DCtx) -> size_t;
-    fn ZBUFFv06_decompressInitDictionary(
-        dctx: *mut ZBUFFv06_DCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZBUFFv06_decompressContinue(
-        dctx: *mut ZBUFFv06_DCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacityPtr: *mut size_t,
-        src: *const std::ffi::c_void,
-        srcSizePtr: *mut size_t,
-    ) -> size_t;
     fn ZSTDv07_findFrameSizeInfoLegacy(
         src: *const std::ffi::c_void,
         srcSize: size_t,
@@ -316,12 +280,6 @@ pub struct ZSTDv07_frameParams {
     pub checksumFlag: std::ffi::c_uint,
 }
 pub type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTDv06_frameParams_s {
-    pub frameContentSize: std::ffi::c_ulonglong,
-    pub windowLog: std::ffi::c_uint,
-}
 pub type ZSTDv05_strategy = std::ffi::c_uint;
 pub const ZSTDv05_btopt: ZSTDv05_strategy = 6;
 pub const ZSTDv05_opt: ZSTDv05_strategy = 5;
