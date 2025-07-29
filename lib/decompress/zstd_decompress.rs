@@ -301,14 +301,12 @@ unsafe extern "C" fn ZSTD_limitCopy(
 }
 pub const ZSTD_WORKSPACETOOLARGE_FACTOR: std::ffi::c_int = 3 as std::ffi::c_int;
 pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: std::ffi::c_int = 128 as std::ffi::c_int;
+
 #[inline]
-unsafe extern "C" fn ZSTD_cpuSupportsBmi2() -> std::ffi::c_int {
-    if cfg!(miri) {
-        return 0;
-    }
-    let mut cpuid = ZSTD_cpuid();
-    (ZSTD_cpuid_bmi1(cpuid) != 0 && ZSTD_cpuid_bmi2(cpuid) != 0) as std::ffi::c_int
+unsafe extern "C" fn ZSTD_cpuSupportsBmi2() -> bool {
+    is_x86_feature_detected!("bmi1") && is_x86_feature_detected!("bmi2")
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
     mut size: size_t,
@@ -949,7 +947,7 @@ unsafe extern "C" fn ZSTD_initDCtx_internal(mut dctx: *mut ZSTD_DCtx) {
     (*dctx).noForwardProgress = 0 as std::ffi::c_int;
     (*dctx).oversizedDuration = 0 as std::ffi::c_int as size_t;
     (*dctx).isFrameDecompression = 1 as std::ffi::c_int;
-    (*dctx).bmi2 = ZSTD_cpuSupportsBmi2();
+    (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     (*dctx).ddictSet = core::ptr::null_mut();
     ZSTD_DCtx_resetParameters(dctx);
 }
