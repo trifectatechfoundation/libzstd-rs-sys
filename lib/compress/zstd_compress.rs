@@ -1129,14 +1129,6 @@ pub type ZSTD_EndDirective = std::ffi::c_uint;
 pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
 pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_outBuffer_s {
-    pub dst: *mut std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
 pub type ZSTD_CStream = ZSTD_CCtx;
 pub type ZSTD_dictLoadMethod_e = std::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;

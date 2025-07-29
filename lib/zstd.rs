@@ -77,3 +77,12 @@ pub type ZSTD_allocFunction =
 pub type ZSTD_format_e = std::ffi::c_uint;
 pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
 pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
+
+pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_outBuffer_s {
+    pub dst: *mut std::ffi::c_void,
+    pub size: size_t,
+    pub pos: size_t,
+}

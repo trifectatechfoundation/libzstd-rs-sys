@@ -724,13 +724,6 @@ pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
 pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_outBuffer_s {
-    pub dst: *mut std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_EndDirective = std::ffi::c_uint;
 pub const ZSTD_e_end: ZSTD_EndDirective = 2;
