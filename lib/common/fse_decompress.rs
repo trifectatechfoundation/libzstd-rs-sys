@@ -224,60 +224,48 @@ impl BIT_DStream_t {
 }
 
 #[inline(always)]
-unsafe extern "C" fn BIT_getMiddleBits(
-    mut bitContainer: BitContainerType,
+const fn BIT_getMiddleBits(
+    bitContainer: BitContainerType,
     start: u32,
     nbBits: u32,
 ) -> BitContainerType {
-    let regMask = (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as u32;
-    bitContainer >> (start & regMask)
-        & ((1 as std::ffi::c_int as u64) << nbBits).wrapping_sub(1 as std::ffi::c_int as u64)
+    const MASK: usize = size_of::<BitContainerType>() * 8 - 1;
+    bitContainer >> (start & MASK as u32) & (1u64 << nbBits).wrapping_sub(1)
 }
+
 #[inline(always)]
-unsafe extern "C" fn BIT_lookBits(
-    mut bitD: *const BIT_DStream_t,
-    mut nbBits: u32,
-) -> BitContainerType {
+const fn BIT_lookBits(bitD: &BIT_DStream_t, nbBits: u32) -> BitContainerType {
     BIT_getMiddleBits(
-        (*bitD).bitContainer,
-        (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-            .wrapping_sub((*bitD).bitsConsumed as std::ffi::c_ulong)
+        bitD.bitContainer,
+        (size_of::<BitContainerType>() as u64)
+            .wrapping_mul(8)
+            .wrapping_sub(bitD.bitsConsumed as std::ffi::c_ulong)
             .wrapping_sub(nbBits as std::ffi::c_ulong) as u32,
         nbBits,
     )
 }
+
 #[inline]
-unsafe extern "C" fn BIT_lookBitsFast(
-    mut bitD: *const BIT_DStream_t,
-    mut nbBits: u32,
-) -> BitContainerType {
-    let regMask = (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & regMask)
-        >> (regMask
-            .wrapping_add(1 as std::ffi::c_int as u32)
-            .wrapping_sub(nbBits)
-            & regMask)
+const fn BIT_lookBitsFast(bitD: &BIT_DStream_t, nbBits: u32) -> BitContainerType {
+    const MASK: u32 = (size_of::<BitContainerType>() * 8 - 1) as u32;
+    (*bitD).bitContainer << ((*bitD).bitsConsumed & MASK)
+        >> (MASK.wrapping_add(1).wrapping_sub(nbBits) & MASK)
 }
 
 #[inline(always)]
-fn BIT_skipBits(bitD: &mut BIT_DStream_t, mut nbBits: u32) {
+const fn BIT_skipBits(bitD: &mut BIT_DStream_t, mut nbBits: u32) {
     bitD.bitsConsumed += nbBits;
 }
 
 #[inline(always)]
-unsafe fn BIT_readBits(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> BitContainerType {
+const fn BIT_readBits(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> BitContainerType {
     let value = BIT_lookBits(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
     value
 }
 
 #[inline]
-unsafe fn BIT_readBitsFast(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> size_t {
+const fn BIT_readBitsFast(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> size_t {
     let value = BIT_lookBitsFast(bitD, nbBits);
     BIT_skipBits(bitD, nbBits);
     value
@@ -341,10 +329,7 @@ impl<'a> FSE_DState_t<'a> {
 }
 
 #[inline]
-unsafe extern "C" fn FSE_decodeSymbol(
-    DStatePtr: &mut FSE_DState_t,
-    bitD: &mut BIT_DStream_t,
-) -> u8 {
+fn FSE_decodeSymbol(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) -> u8 {
     let FSE_decode_t {
         nbBits,
         symbol,
@@ -358,7 +343,7 @@ unsafe extern "C" fn FSE_decodeSymbol(
 }
 
 #[inline]
-unsafe fn FSE_decodeSymbolFast(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) -> u8 {
+fn FSE_decodeSymbolFast(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) -> u8 {
     let FSE_decode_t {
         nbBits,
         symbol,
