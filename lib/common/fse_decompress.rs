@@ -1,6 +1,11 @@
+use crate::lib::zstd::*;
+
+use crate::lib::common::{
+    bitstream::{BIT_DStream_t, StreamStatus},
+    entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
+};
+
 type size_t = std::ffi::c_ulong;
-type unalign32 = u32;
-type unalign64 = u64;
 
 enum Error {
     GENERIC = 1,
@@ -43,9 +48,9 @@ enum Error {
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub struct FSE_decode_t {
-    pub newState: std::ffi::c_ushort,
-    pub symbol: std::ffi::c_uchar,
-    pub nbBits: std::ffi::c_uchar,
+    pub newState: u16,
+    pub symbol: u8,
+    pub nbBits: u8,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -73,14 +78,7 @@ struct FSE_DState_t<'a> {
     state: usize,
     table: &'a [FSE_decode_t; 90],
 }
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
-}
-use crate::lib::common::bitstream::{BIT_DStream_t, StreamStatus};
-use crate::lib::common::entropy_common::{DTable, FSE_readNCount_bmi2, Workspace};
-use crate::lib::zstd::*;
+
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
@@ -124,10 +122,9 @@ impl<'a> FSE_DState_t<'a> {
     }
 }
 
-pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
-pub const FSE_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
-pub const FSE_MAX_TABLELOG: std::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
-pub const FSE_isError: fn(size_t) -> std::ffi::c_uint = ERR_isError;
+const FSE_MAX_MEMORY_USAGE: i32 = 14;
+const FSE_MAX_SYMBOL_VALUE: i32 = 255;
+const FSE_MAX_TABLELOG: i32 = FSE_MAX_MEMORY_USAGE - 2;
 
 fn FSE_buildDTable_internal(
     mut dt: &mut DTable,
