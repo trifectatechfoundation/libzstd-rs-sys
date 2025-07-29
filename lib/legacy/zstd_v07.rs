@@ -42,7 +42,6 @@ pub struct ZSTDv07_frameParams {
 pub type U32 = u32;
 pub type BYTE = u8;
 pub type U64 = u64;
-pub const ZSTD_error_frameParameter_unsupported: ERR_enum = 14;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union C2RustUnnamed {
@@ -50,8 +49,6 @@ pub union C2RustUnnamed {
     pub c: [BYTE; 4],
 }
 pub type U16 = u16;
-pub const ZSTD_error_srcSize_wrong: ERR_enum = 72;
-pub const ZSTD_error_prefix_unknown: ERR_enum = 10;
 pub type ZSTDv07_DCtx = ZSTDv07_DCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -111,9 +108,6 @@ pub struct blockProperties_t {
     pub blockType: blockType_t,
     pub origSize: U32,
 }
-pub const ZSTD_error_maxCode: ERR_enum = 120;
-pub const ZSTD_error_GENERIC: ERR_enum = 1;
-pub const ZSTD_error_dstSize_tooSmall: ERR_enum = 70;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seqState_t {
@@ -137,7 +131,6 @@ pub struct BITv07_DStream_t {
     pub ptr: *const std::ffi::c_char,
     pub start: *const std::ffi::c_char,
 }
-pub const ZSTD_error_corruption_detected: ERR_enum = 20;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seq_t {
@@ -164,9 +157,6 @@ pub struct FSEv07_DTableHeader {
     pub fastMode: U16,
 }
 pub type S16 = i16;
-pub const ZSTD_error_maxSymbolValue_tooSmall: ERR_enum = 48;
-pub const ZSTD_error_tableLog_tooLarge: ERR_enum = 44;
-pub const ZSTD_error_maxSymbolValue_tooLarge: ERR_enum = 46;
 pub const lbt_rle: litBlockType_t = 3;
 pub const lbt_raw: litBlockType_t = 2;
 #[derive(Copy, Clone)]
@@ -184,7 +174,6 @@ pub struct HUFv07_DEltX4 {
     pub nbBits: BYTE,
     pub length: BYTE,
 }
-pub const ZSTD_error_dictionary_corrupted: ERR_enum = 30;
 pub const lbt_repeat: litBlockType_t = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -212,8 +201,6 @@ pub struct algo_time_t {
 }
 pub const lbt_huffman: litBlockType_t = 0;
 pub type litBlockType_t = std::ffi::c_uint;
-pub const ZSTD_error_dictionary_wrong: ERR_enum = 32;
-pub const ZSTD_error_memory_allocation: ERR_enum = 64;
 pub type ERR_enum = ZSTD_ErrorCode;
 #[derive(Copy, Clone)]
 #[repr(C)]
