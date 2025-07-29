@@ -606,9 +606,6 @@ pub struct ZSTD_frameParameters {
     pub checksumFlag: std::ffi::c_int,
     pub noDictIDFlag: std::ffi::c_int,
 }
-pub type ZSTD_format_e = std::ffi::c_uint;
-pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
-pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
 pub type ZSTD_compressionStage_e = std::ffi::c_uint;
 pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
 pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;

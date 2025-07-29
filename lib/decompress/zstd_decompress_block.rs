@@ -139,9 +139,6 @@ pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
 pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
-pub type ZSTD_format_e = std::ffi::c_uint;
-pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
-pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
 pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
