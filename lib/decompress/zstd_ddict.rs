@@ -1,4 +1,4 @@
-use libc::free;
+use libc::{free, malloc, size_t};
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE32;
@@ -7,10 +7,6 @@ use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-}
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;

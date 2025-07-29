@@ -1,5 +1,7 @@
 use core::ptr;
 
+use libc::size_t;
+
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
@@ -9,7 +11,6 @@ use crate::lib::compress::fse_compress::{
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp};
 use crate::lib::zstd::*;
-pub type size_t = core::ffi::c_ulong;
 pub type FSE_CTable = core::ffi::c_uint;
 pub type HUF_CElt = size_t;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;

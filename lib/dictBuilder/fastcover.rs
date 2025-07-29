@@ -1,6 +1,9 @@
 use core::ptr;
 
-use libc::{fflush, fprintf, free, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
+use libc::{
+    calloc, fflush, fprintf, free, malloc, memcpy, size_t, FILE, PTHREAD_COND_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
+};
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE64;
@@ -16,16 +19,8 @@ use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
     fn clock() -> clock_t;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type __clock_t = core::ffi::c_long;
 pub type clock_t = __clock_t;
 #[derive(Copy, Clone)]

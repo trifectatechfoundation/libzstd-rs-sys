@@ -1,9 +1,10 @@
 use core::ptr;
 
+use libc::size_t;
+
 use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Fingerprint {

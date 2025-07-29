@@ -4,7 +4,6 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -109,6 +108,9 @@ pub struct ZSTD_optLdm_t {
 pub type base_directive_e = core::ffi::c_uint;
 pub const base_1guaranteed: base_directive_e = 1;
 pub const base_0possible: base_directive_e = 0;
+
+use libc::size_t;
+
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };

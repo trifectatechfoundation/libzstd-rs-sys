@@ -4,15 +4,14 @@ use libc::{
     free, pthread_attr_t, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
     pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_create,
     pthread_join, pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, pthread_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, pthread_t, size_t,
 };
 
 use crate::lib::zstd::{ZSTD_allocFunction, ZSTD_customMem, ZSTD_freeFunction};
 
 extern "C" {
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn calloc(_: size_t, _: size_t) -> *mut core::ffi::c_void;
 }
-pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct POOL_ctx {

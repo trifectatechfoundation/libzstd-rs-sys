@@ -1,9 +1,10 @@
+use libc::size_t;
+
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
 use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type BitContainerType = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

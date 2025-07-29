@@ -1,6 +1,7 @@
+use libc::size_t;
+
 use crate::lib::common::fse_decompress::Error;
 
-type size_t = usize;
 pub type BitContainerType = usize;
 
 /// Bitstream decoder

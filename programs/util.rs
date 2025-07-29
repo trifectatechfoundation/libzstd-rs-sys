@@ -1,22 +1,16 @@
 use std::ffi::CStr;
 
 use libc::{
-    __errno_location, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror,
-    fgets, fileno, fopen, fprintf, getchar, isatty, mkdir, mode_t, opendir, readdir, strchr,
-    strcmp, strdup, strerror, strrchr, strstr, strtol, sysconf, timespec, DIR, FILE,
-    _SC_NPROCESSORS_ONLN,
+    __errno_location, calloc, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof,
+    ferror, fgets, fileno, fopen, fprintf, fread, free, getchar, isatty, malloc, memcpy, mkdir,
+    mode_t, opendir, readdir, realloc, size_t, strchr, strcmp, strdup, strerror, strlen, strncmp,
+    strrchr, strstr, strtol, sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
 };
 
 extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn fread(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_ulong,
-        _: core::ffi::c_ulong,
-        _: *mut FILE,
-    ) -> core::ffi::c_ulong;
     fn stat(__file: *const core::ffi::c_char, __buf: *mut stat) -> core::ffi::c_int;
     fn fstat(__fd: core::ffi::c_int, __buf: *mut stat) -> core::ffi::c_int;
     fn lstat(__file: *const core::ffi::c_char, __buf: *mut stat) -> core::ffi::c_int;
@@ -26,27 +20,12 @@ extern "C" {
         __times: *const timespec,
         __flags: core::ffi::c_int,
     ) -> core::ffi::c_int;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn realloc(_: *mut core::ffi::c_void, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
     fn qsort(
         __base: *mut core::ffi::c_void,
         __nmemb: size_t,
         __size: size_t,
         __compar: __compar_fn_t,
     );
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn strncmp(
-        _: *const core::ffi::c_char,
-        _: *const core::ffi::c_char,
-        _: core::ffi::c_ulong,
-    ) -> core::ffi::c_int;
-    fn strlen(_: *const core::ffi::c_char) -> core::ffi::c_ulong;
 }
 pub type __dev_t = core::ffi::c_ulong;
 pub type __uid_t = core::ffi::c_uint;
@@ -60,7 +39,6 @@ pub type __time_t = core::ffi::c_long;
 pub type __blksize_t = core::ffi::c_long;
 pub type __blkcnt_t = core::ffi::c_long;
 pub type __syscall_slong_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type ptrdiff_t = core::ffi::c_long;
 #[derive(Copy, Clone)]
 #[repr(C)]

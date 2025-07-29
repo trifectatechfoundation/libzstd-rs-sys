@@ -1,5 +1,8 @@
 use core::ptr;
 
+use libc::{free, malloc, memcpy, memmove, memset, size_t};
+
+use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
@@ -7,31 +10,9 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
 use crate::lib::decompress::huf_decompress::DTableDesc;
-use libc::free;
-
-use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memmove(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memset(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_int,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-}
 pub type ptrdiff_t = core::ffi::c_long;
-pub type size_t = core::ffi::c_ulong;
 pub type XXH64_hash_t = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -1,10 +1,11 @@
+use libc::size_t;
+
 use crate::lib::common::error_private::{
     ERR_getErrorCode, ERR_getErrorName, ERR_getErrorString, ERR_isError,
 };
 use crate::lib::zstd::*;
 
 pub type ERR_enum = ZSTD_ErrorCode;
-pub type size_t = core::ffi::c_ulong;
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
 pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
 pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;

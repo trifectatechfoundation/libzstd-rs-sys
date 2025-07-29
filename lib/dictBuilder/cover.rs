@@ -1,11 +1,11 @@
 use core::ptr;
 
 use libc::{
-    fflush, fprintf, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
-    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_COND_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
+    fflush, fprintf, free, malloc, memcmp, memcpy, memset, pthread_cond_broadcast,
+    pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
+    pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
+    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t, FILE,
+    PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
 };
 
 use crate::lib::common::error_private::ERR_isError;
@@ -20,8 +20,6 @@ use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
-    fn free(_: *mut core::ffi::c_void);
     fn qsort_r(
         __base: *mut core::ffi::c_void,
         __nmemb: size_t,
@@ -29,24 +27,8 @@ extern "C" {
         __compar: __compar_d_fn_t,
         __arg: *mut core::ffi::c_void,
     );
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memset(
-        _: *mut core::ffi::c_void,
-        _: core::ffi::c_int,
-        _: core::ffi::c_ulong,
-    ) -> *mut core::ffi::c_void;
-    fn memcmp(
-        _: *const core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: core::ffi::c_ulong,
-    ) -> core::ffi::c_int;
     fn clock() -> clock_t;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type __clock_t = core::ffi::c_long;
 pub type clock_t = __clock_t;
 pub type __compar_d_fn_t = Option<
