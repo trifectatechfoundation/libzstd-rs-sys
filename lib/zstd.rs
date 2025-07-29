@@ -73,3 +73,7 @@ pub type ZSTD_freeFunction =
     Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
 pub type ZSTD_allocFunction =
     Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
+
+pub type ZSTD_format_e = std::ffi::c_uint;
+pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
+pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
