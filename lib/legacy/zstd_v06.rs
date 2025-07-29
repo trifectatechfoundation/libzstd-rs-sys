@@ -873,7 +873,7 @@ pub const FSEv06_MAX_SYMBOL_VALUE: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const FSEv06_MAX_TABLELOG: std::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2 as std::ffi::c_int;
 pub const FSEv06_MIN_TABLELOG: std::ffi::c_int = 5 as std::ffi::c_int;
 pub const FSEv06_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15 as std::ffi::c_int;
-#[export_name = "FSEv06_isError"]
+#[export_name = crate::prefix!(FSEv06_isError)]
 pub unsafe extern "C" fn FSEv06_isError_1(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
@@ -2991,7 +2991,7 @@ pub unsafe extern "C" fn HUFv06_decompress(
     }
     (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
 }
-#[export_name = "ZSTDv06_isError"]
+#[export_name = crate::prefix!(ZSTDv06_isError)]
 pub unsafe extern "C" fn ZSTDv06_isError_0(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }

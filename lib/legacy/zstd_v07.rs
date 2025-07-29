@@ -663,7 +663,7 @@ pub const FSEv07_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15 as std::ffi::c_int;
 pub const HUFv07_TABLELOG_ABSOLUTEMAX: std::ffi::c_int = 16 as std::ffi::c_int;
 pub const HUFv07_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUFv07_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
-#[export_name = "FSEv07_isError"]
+#[export_name = crate::prefix!(FSEv07_isError)]
 pub unsafe extern "C" fn FSEv07_isError_0(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
@@ -3008,7 +3008,7 @@ pub unsafe extern "C" fn HUFv07_decompress1X_DCtx(
         HUFv07_decompress1X2_DCtx(dctx, dst, dstSize, cSrc, cSrcSize)
     }
 }
-#[export_name = "ZSTDv07_isError"]
+#[export_name = crate::prefix!(ZSTDv07_isError)]
 pub unsafe extern "C" fn ZSTDv07_isError_0(mut code: size_t) -> std::ffi::c_uint {
     ERR_isError(code)
 }
