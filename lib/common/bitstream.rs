@@ -69,7 +69,7 @@ const fn get_middle_bits(
 }
 
 impl BIT_DStream_t {
-    pub unsafe fn new(mut srcBuffer: &[u8]) -> Result<Self, Error> {
+    pub fn new(mut srcBuffer: &[u8]) -> Result<Self, Error> {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
@@ -86,11 +86,11 @@ impl BIT_DStream_t {
 
         if let Some(chunk) = srcBuffer.last_chunk() {
             bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
-            bitD.limitPtr = bitD.start.add(USIZE_BYTES);
+            bitD.limitPtr = bitD.start.wrapping_add(USIZE_BYTES);
 
             bitD.ptr = (srcBuffer.as_ptr() as *const std::ffi::c_char)
-                .add(srcBuffer.len())
-                .offset(-(USIZE_BYTES as isize));
+                .wrapping_add(srcBuffer.len())
+                .wrapping_sub(USIZE_BYTES);
             bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
 
             match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
