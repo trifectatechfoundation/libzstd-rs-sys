@@ -1,3 +1,7 @@
+use crate::lib::compress::zstd_compress_literals::{
+    ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
+};
+use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -68,24 +72,6 @@ extern "C" {
         ctable: *const FSE_CTable,
         count: *const std::ffi::c_uint,
         max: std::ffi::c_uint,
-    ) -> size_t;
-    fn ZSTD_crossEntropyCost(
-        norm: *const std::ffi::c_short,
-        accuracyLog: std::ffi::c_uint,
-        count: *const std::ffi::c_uint,
-        max: std::ffi::c_uint,
-    ) -> size_t;
-    fn ZSTD_noCompressLiterals(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressRleLiteralsBlock(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
     ) -> size_t;
 }
 pub type size_t = std::ffi::c_ulong;

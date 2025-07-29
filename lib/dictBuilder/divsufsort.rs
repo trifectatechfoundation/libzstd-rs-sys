@@ -1,3 +1,5 @@
+use libc::free;
+
 extern "C" {
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
@@ -6,7 +8,6 @@ extern "C" {
         __function: *const std::ffi::c_char,
     ) -> !;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
 }
 pub type size_t = std::ffi::c_ulong;
 pub type trbudget_t = _trbudget_t;

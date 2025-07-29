@@ -9,7 +9,6 @@ extern "C" {
     pub type ZSTD_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
     fn HUF_optimalTableLog(
         maxTableLog: std::ffi::c_uint,
         srcSize: size_t,
@@ -93,29 +92,6 @@ extern "C" {
     fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameProgression;
     fn ZSTD_trace_compress_begin(cctx: *const ZSTD_CCtx_s) -> ZSTD_TraceCtx;
     fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
-    fn HIST_count_wksp(
-        count: *mut std::ffi::c_uint,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        workSpace: *mut std::ffi::c_void,
-        workSpaceSize: size_t,
-    ) -> size_t;
-    fn HIST_countFast_wksp(
-        count: *mut std::ffi::c_uint,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        workSpace: *mut std::ffi::c_void,
-        workSpaceSize: size_t,
-    ) -> size_t;
-    fn ZSTD_splitBlock(
-        blockStart: *const std::ffi::c_void,
-        blockSize: size_t,
-        level: std::ffi::c_int,
-        workspace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
     fn ZSTD_selectEncodingType(
         repeatMode: *mut FSE_repeat,
         count: *const std::ffi::c_uint,
@@ -163,12 +139,6 @@ extern "C" {
     ) -> size_t;
     fn ZSTD_fseBitCost(
         ctable: *const FSE_CTable,
-        count: *const std::ffi::c_uint,
-        max: std::ffi::c_uint,
-    ) -> size_t;
-    fn ZSTD_crossEntropyCost(
-        norm: *const std::ffi::c_short,
-        accuracyLog: std::ffi::c_uint,
         count: *const std::ffi::c_uint,
         max: std::ffi::c_uint,
     ) -> size_t;
@@ -2001,14 +1971,19 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use libc::free;
+
+use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
+use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
+use crate::lib::compress::zstd_preSplit::ZSTD_splitBlock;
 use crate::lib::zstd::*;
 use crate::{
-    lib::common::entropy_common::FSE_readNCount, MEM_isLittleEndian, MEM_read16, MEM_read32,
-    MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32,
-    MEM_writeLE64,
+    MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readST,
+    MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
 };
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_OPT_NUM: std::ffi::c_int = (1 as std::ffi::c_int) << 12 as std::ffi::c_int;

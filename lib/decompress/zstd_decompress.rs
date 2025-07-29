@@ -1,5 +1,7 @@
 use core::arch::asm;
 
+use libc::free;
+
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
@@ -28,7 +30,6 @@ extern "C" {
     pub type ZSTDv05_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
     fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t;
     fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> std::ffi::c_uint;
     fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t;
