@@ -9,16 +9,17 @@ use crate::lib::common::xxhash::{
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
-use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
+use crate::lib::decompress::zstd_decompress_block::{
+    blockProperties_t, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_getcBlockSize,
+};
 use crate::lib::decompress::{
-    blockType_e, bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read,
-    HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader,
-    ZSTD_dStage, ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use,
-    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol,
-    ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum,
-    ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader,
-    ZSTDds_decompressBlock, ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize,
-    ZSTDds_skipFrame,
+    bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable,
+    LL_base, ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_dStage,
+    ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
+    ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame,
+    ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader,
+    ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock,
+    ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
@@ -40,12 +41,6 @@ extern "C" {
     pub type ZSTDv05_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn ZSTD_checkContinuity(dctx: *mut ZSTD_DCtx, dst: *const std::ffi::c_void, dstSize: size_t);
-    fn ZSTD_getcBlockSize(
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        bpPtr: *mut blockProperties_t,
-    ) -> size_t;
     fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx_s) -> ZSTD_TraceCtx;
     fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
     fn ZSTD_decompressBlock_internal(
@@ -93,13 +88,6 @@ pub struct ZSTD_Trace {
     pub dctx: *const ZSTD_DCtx_s,
 }
 pub type unalign32 = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct blockProperties_t {
-    pub blockType: blockType_e,
-    pub lastBlock: u32,
-    pub origSize: u32,
-}
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
