@@ -80,9 +80,6 @@ pub struct ZSTD_DCtx_s {
     pub traceCtx: ZSTD_TraceCtx,
 }
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
-pub type ZSTD_bufferMode_e = std::ffi::c_uint;
-pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
-pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
