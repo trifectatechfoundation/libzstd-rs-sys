@@ -3,7 +3,7 @@ use libc::free;
 use crate::lib::common::xxhash::XXH64_state_t;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{
-    HUF_DTable, ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
+    blockType_e, HUF_DTable, ZSTD_FrameType_e, ZSTD_dStage, ZSTD_dStreamStage, ZSTD_dictUses_e,
     ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_litLocation_e, ZSTD_seqSymbol,
 };
 use crate::lib::zstd::*;
@@ -106,11 +106,6 @@ pub struct ZSTD_DDict {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type blockType_e = std::ffi::c_uint;
-pub const bt_reserved: blockType_e = 3;
-pub const bt_compressed: blockType_e = 2;
-pub const bt_rle: blockType_e = 1;
-pub const bt_raw: blockType_e = 0;
 pub type U64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]

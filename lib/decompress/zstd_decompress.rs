@@ -11,13 +11,13 @@ use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::ZSTD_buildFSETable;
 use crate::lib::decompress::{
-    zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable, LL_base, ML_base,
-    OF_base, OF_bits, ZSTD_dStage, ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use,
-    ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol,
-    ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum,
-    ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader,
-    ZSTDds_decompressBlock, ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize,
-    ZSTDds_skipFrame,
+    blockType_e, bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read,
+    HUF_DTable, LL_base, ML_base, OF_base, OF_bits, ZSTD_dStage, ZSTD_d_ignoreChecksum,
+    ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e,
+    ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once,
+    ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader,
+    ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock, ZSTDds_decompressLastBlock,
+    ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
@@ -70,11 +70,6 @@ pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type blockType_e = std::ffi::c_uint;
-pub const bt_reserved: blockType_e = 3;
-pub const bt_compressed: blockType_e = 2;
-pub const bt_rle: blockType_e = 1;
-pub const bt_raw: blockType_e = 0;
 pub type U64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
