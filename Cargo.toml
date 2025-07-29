@@ -1,6 +1,8 @@
 [workspace]
-members = [
-]
+members = [ ]
+
+exclude = [ "fuzz" ]
+
 [package]
 name = "c2rust_out"
 authors = ["C2Rust"]

@@ -1,0 +1,23 @@
+[package]
+name = "c2rust_out-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+zstd-sys = "2.0.15"
+
+[dependencies.c2rust_out]
+path = ".."
+features = ["semver-prefix"]
+
+[[bin]]
+name = "decompress"
+path = "fuzz_targets/decompress.rs"
+test = false
+doc = false
+bench = false
