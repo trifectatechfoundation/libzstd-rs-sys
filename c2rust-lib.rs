@@ -14,6 +14,7 @@ extern crate c2rust_bitfields;
 extern crate libc;
 pub mod lib {
     pub mod common {
+        mod bitstream;
         pub mod debug;
         pub mod entropy_common;
         pub mod entropy_common_old;

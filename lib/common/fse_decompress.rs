@@ -78,26 +78,6 @@ enum Error {
     maxCode = 120,
 }
 
-type BitContainerType = size_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-struct BIT_DStream_t {
-    bitContainer: BitContainerType,
-    bitsConsumed: std::ffi::c_uint,
-    ptr: *const std::ffi::c_char,
-    start: *const std::ffi::c_char,
-    limitPtr: *const std::ffi::c_char,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum StreamStatus {
-    Unfinished = 0,
-    EndOfBuffer = 1,
-    Completed = 2,
-    Overflow = 3,
-}
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C)]
 pub struct FSE_decode_t {
@@ -128,7 +108,7 @@ pub(crate) struct FSE_DecompressWksp {
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct FSE_DState_t<'a> {
-    state: size_t,
+    state: usize,
     table: &'a [FSE_decode_t; 90],
 }
 #[inline]
@@ -136,196 +116,13 @@ unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::{
-    lib::common::entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
-    MEM_readLEST, MEM_write64,
+use crate::lib::common::{
+    bitstream::{BIT_DStream_t, StreamStatus},
+    entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
 };
 const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
-}
-
-impl BIT_DStream_t {
-    unsafe fn new(mut srcBuffer: &[u8]) -> Result<Self, size_t> {
-        let mut bitD = Self {
-            bitContainer: 0,
-            bitsConsumed: 0,
-            ptr: std::ptr::null::<std::ffi::c_char>(),
-            start: std::ptr::null::<std::ffi::c_char>(),
-            limitPtr: std::ptr::null::<std::ffi::c_char>(),
-        };
-
-        if srcBuffer.is_empty() {
-            return Err(-(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t);
-        }
-
-        const USIZE_BYTES: usize = size_of::<BitContainerType>();
-
-        if let Some(chunk) = srcBuffer.last_chunk() {
-            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
-            bitD.limitPtr = (bitD.start).add(USIZE_BYTES);
-
-            bitD.ptr = (srcBuffer.as_ptr() as *const std::ffi::c_char)
-                .add(srcBuffer.len())
-                .offset(-(USIZE_BYTES as isize));
-            bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
-
-            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-                None => {
-                    /* endMark not present */
-                    return Err(-(ZSTD_error_GENERIC as std::ffi::c_int) as size_t);
-                }
-                Some(v) => {
-                    bitD.bitsConsumed = 8 - v;
-                }
-            }
-        } else {
-            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
-            bitD.limitPtr = (bitD.start)
-                .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
-            bitD.ptr = bitD.start;
-
-            bitD.bitContainer = u64::from(srcBuffer[0]);
-
-            if srcBuffer.len() >= 7 {
-                bitD.bitContainer += u64::from(srcBuffer[6]) << (USIZE_BYTES * 8 - 16);
-            }
-            if srcBuffer.len() >= 6 {
-                bitD.bitContainer += u64::from(srcBuffer[5]) << (USIZE_BYTES * 8 - 24);
-            }
-            if srcBuffer.len() >= 5 {
-                bitD.bitContainer += u64::from(srcBuffer[4]) << (USIZE_BYTES * 8 - 32);
-            }
-            if srcBuffer.len() >= 4 {
-                bitD.bitContainer += u64::from(srcBuffer[3]) << 24;
-            }
-            if srcBuffer.len() >= 3 {
-                bitD.bitContainer += u64::from(srcBuffer[2]) << 16;
-            }
-            if srcBuffer.len() >= 2 {
-                bitD.bitContainer += u64::from(srcBuffer[1]) << 8;
-            }
-
-            match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
-                None => {
-                    /* endMark not present */
-                    return Err(-(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t);
-                }
-                Some(v) => {
-                    bitD.bitsConsumed = 8 - v;
-                }
-            }
-
-            bitD.bitsConsumed += ((USIZE_BYTES - srcBuffer.len()) * 8) as u32;
-        }
-
-        Ok(bitD)
-    }
-}
-
-#[inline(always)]
-const fn BIT_getMiddleBits(
-    bitContainer: BitContainerType,
-    start: u32,
-    nbBits: u32,
-) -> BitContainerType {
-    const MASK: usize = size_of::<BitContainerType>() * 8 - 1;
-    bitContainer >> (start & MASK as u32) & (1u64 << nbBits).wrapping_sub(1)
-}
-
-#[inline(always)]
-const fn BIT_lookBits(bitD: &BIT_DStream_t, nbBits: u32) -> BitContainerType {
-    BIT_getMiddleBits(
-        bitD.bitContainer,
-        (size_of::<BitContainerType>() as u64)
-            .wrapping_mul(8)
-            .wrapping_sub(bitD.bitsConsumed as std::ffi::c_ulong)
-            .wrapping_sub(nbBits as std::ffi::c_ulong) as u32,
-        nbBits,
-    )
-}
-
-#[inline]
-const fn BIT_lookBitsFast(bitD: &BIT_DStream_t, nbBits: u32) -> BitContainerType {
-    const MASK: u32 = (size_of::<BitContainerType>() * 8 - 1) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & MASK)
-        >> (MASK.wrapping_add(1).wrapping_sub(nbBits) & MASK)
-}
-
-#[inline(always)]
-const fn BIT_skipBits(bitD: &mut BIT_DStream_t, mut nbBits: u32) {
-    bitD.bitsConsumed += nbBits;
-}
-
-#[inline(always)]
-const fn BIT_readBits(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> BitContainerType {
-    let value = BIT_lookBits(bitD, nbBits);
-    BIT_skipBits(bitD, nbBits);
-    value
-}
-
-#[inline]
-const fn BIT_readBitsFast(bitD: &mut BIT_DStream_t, nbBits: std::ffi::c_uint) -> size_t {
-    let value = BIT_lookBitsFast(bitD, nbBits);
-    BIT_skipBits(bitD, nbBits);
-    value
-}
-
-impl BIT_DStream_t {
-    fn reload_internal(&mut self) {
-        self.ptr = unsafe { (self.ptr).sub(self.bitsConsumed as usize / 8) };
-        self.bitsConsumed &= 7;
-        self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const std::ffi::c_void) };
-    }
-}
-
-#[inline(always)]
-unsafe fn BIT_reloadDStream(bitD: &mut BIT_DStream_t) -> StreamStatus {
-    if bitD.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
-        static zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
-        bitD.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
-
-        return StreamStatus::Overflow;
-    }
-
-    if bitD.ptr >= bitD.limitPtr {
-        bitD.reload_internal();
-
-        return StreamStatus::Unfinished;
-    }
-
-    if bitD.ptr == bitD.start {
-        return if bitD.bitsConsumed < size_of::<BitContainerType>() as u32 * 8 {
-            StreamStatus::EndOfBuffer
-        } else {
-            StreamStatus::Completed
-        };
-    }
-
-    let mut nbBytes = bitD.bitsConsumed / 8;
-    let result = if (bitD.ptr).sub(nbBytes as usize) < bitD.start {
-        nbBytes = (bitD.ptr).offset_from(bitD.start) as u32;
-
-        StreamStatus::EndOfBuffer
-    } else {
-        StreamStatus::Unfinished
-    };
-
-    bitD.ptr = bitD.ptr.sub(nbBytes as usize);
-    bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8);
-    bitD.bitContainer = MEM_readLEST(bitD.ptr as *const std::ffi::c_void);
-
-    result
-}
-
-impl<'a> FSE_DState_t<'a> {
-    unsafe fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
-        let state = BIT_readBits(bitD, dt.header.tableLog as std::ffi::c_uint);
-        let _ = BIT_reloadDStream(bitD);
-        let table = &dt.elements;
-
-        Self { state, table }
-    }
 }
 
 #[inline]
@@ -336,8 +133,8 @@ fn FSE_decodeSymbol(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) -> u
         newState,
     } = DStatePtr.table[DStatePtr.state as usize];
 
-    let lowBits = BIT_readBits(bitD, u32::from(nbBits));
-    DStatePtr.state = size_t::from(newState) + lowBits;
+    let lowBits = bitD.read_bits(u32::from(nbBits));
+    DStatePtr.state = usize::from(newState) + lowBits;
 
     symbol
 }
@@ -350,10 +147,20 @@ fn FSE_decodeSymbolFast(DStatePtr: &mut FSE_DState_t, bitD: &mut BIT_DStream_t) 
         newState,
     } = DStatePtr.table[DStatePtr.state as usize];
 
-    let lowBits = BIT_readBitsFast(bitD, u32::from(nbBits));
-    DStatePtr.state = size_t::from(newState) + lowBits;
+    let lowBits = bitD.read_bits_fast(u32::from(nbBits));
+    DStatePtr.state = usize::from(newState) + lowBits;
 
     symbol
+}
+
+impl<'a> FSE_DState_t<'a> {
+    unsafe fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
+        let state = bitD.read_bits(dt.header.tableLog as std::ffi::c_uint);
+        let _ = bitD.reload();
+        let table = &dt.elements;
+
+        Self { state, table }
+    }
 }
 
 pub const FSE_MAX_MEMORY_USAGE: std::ffi::c_int = 14 as std::ffi::c_int;
@@ -496,7 +303,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
     mut cSrc: &[u8],
     mut dt: &DTable,
     fast: bool,
-) -> size_t {
+) -> usize {
     enum Mode {
         Slow,
         Fast,
@@ -516,21 +323,21 @@ unsafe fn FSE_decompress_usingDTable_generic(
     let mut state1 = FSE_DState_t::new(&mut bitD, dt);
     let mut state2 = FSE_DState_t::new(&mut bitD, dt);
 
-    if let StreamStatus::Overflow = BIT_reloadDStream(&mut bitD) {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+    if let StreamStatus::Overflow = bitD.reload() {
+        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as usize;
     }
 
-    while BIT_reloadDStream(&mut bitD) == StreamStatus::Unfinished && op < olimit {
+    while bitD.reload() == StreamStatus::Unfinished && op < olimit {
         dst[op] = match mode {
             Mode::Fast => FSE_decodeSymbolFast(&mut state1, &mut bitD),
             Mode::Slow => FSE_decodeSymbol(&mut state1, &mut bitD),
         };
 
         if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
-            > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
+            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         {
-            let _ = BIT_reloadDStream(&mut bitD);
+            let _ = bitD.reload();
         }
 
         dst[op + 1] = match mode {
@@ -539,8 +346,8 @@ unsafe fn FSE_decompress_usingDTable_generic(
         };
 
         if (FSE_MAX_TABLELOG * 4 + 7) as std::ffi::c_ulong
-            > (size_of::<BitContainerType>() as std::ffi::c_ulong).wrapping_mul(8)
-            && BIT_reloadDStream(&mut bitD) != StreamStatus::Unfinished
+            > (size_of::<usize>() as std::ffi::c_ulong).wrapping_mul(8)
+            && bitD.reload() != StreamStatus::Unfinished
         {
             op += 2;
             break;
@@ -552,10 +359,10 @@ unsafe fn FSE_decompress_usingDTable_generic(
         };
 
         if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
-            > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
+            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
         {
-            let _ = BIT_reloadDStream(&mut bitD);
+            let _ = bitD.reload();
         }
 
         dst[op + 3] = match mode {
@@ -568,7 +375,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
 
     loop {
         if op > omax - 2 {
-            return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as usize;
         }
 
         dst[op] = match mode {
@@ -577,7 +384,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
         };
         op += 1;
 
-        if let StreamStatus::Overflow = BIT_reloadDStream(&mut bitD) {
+        if let StreamStatus::Overflow = bitD.reload() {
             dst[op] = match mode {
                 Mode::Fast => FSE_decodeSymbolFast(&mut state2, &mut bitD),
                 Mode::Slow => FSE_decodeSymbol(&mut state2, &mut bitD),
@@ -586,7 +393,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
             break;
         } else {
             if op > omax - 2 {
-                return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
+                return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as usize;
             }
 
             dst[op] = match mode {
@@ -595,7 +402,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
             };
             op += 1;
 
-            match BIT_reloadDStream(&mut bitD) {
+            match bitD.reload() {
                 StreamStatus::Overflow => { /* fall through */ }
                 _ => continue,
             }
@@ -610,7 +417,7 @@ unsafe fn FSE_decompress_usingDTable_generic(
         }
     }
 
-    op as size_t
+    op
 }
 
 #[inline(always)]
@@ -696,7 +503,7 @@ unsafe fn FSE_decompress_wksp_body(
         ip,
         &workspace.dtable,
         workspace.dtable.header.fastMode != 0,
-    )
+    ) as size_t
 }
 unsafe fn FSE_decompress_wksp_body_default(
     dst: &mut [u8],
