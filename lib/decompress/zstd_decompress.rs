@@ -1455,9 +1455,9 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         return minInputSize;
     }
-    libc::memset(
-        zfhPtr as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+    core::ptr::write_bytes(
+        zfhPtr as *mut u8,
+        0,
         ::core::mem::size_of::<ZSTD_FrameHeader>() as std::ffi::c_ulong as libc::size_t,
     );
     if format as std::ffi::c_uint != ZSTD_f_zstd1_magicless as std::ffi::c_int as std::ffi::c_uint

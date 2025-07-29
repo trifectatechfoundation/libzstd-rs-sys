@@ -2017,14 +2017,14 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     rankStart = ((*wksp).rankStart0)
         .as_mut_ptr()
         .offset(1 as std::ffi::c_int as isize);
-    libc::memset(
-        ((*wksp).rankStats).as_mut_ptr() as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+    core::ptr::write_bytes(
+        ((*wksp).rankStats).as_mut_ptr() as *mut u8,
+        0,
         ::core::mem::size_of::<[u32; 13]>() as std::ffi::c_ulong as libc::size_t,
     );
-    libc::memset(
-        ((*wksp).rankStart0).as_mut_ptr() as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+    core::ptr::write_bytes(
+        ((*wksp).rankStart0).as_mut_ptr() as *mut u8,
+        0,
         ::core::mem::size_of::<[u32; 15]>() as std::ffi::c_ulong as libc::size_t,
     );
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
