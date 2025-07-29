@@ -2014,8 +2014,8 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     if ::core::mem::size_of::<HUF_ReadDTableX2_Workspace>() as std::ffi::c_ulong > wkspSize {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
-    rankStart = ((*wksp).rankStart0)
-        .as_mut_ptr()
+    rankStart = core::ptr::addr_of_mut!((*wksp).rankStart0)
+        .cast::<u32>()
         .offset(1 as std::ffi::c_int as isize);
     core::ptr::write_bytes(
         ((*wksp).rankStats).as_mut_ptr() as *mut u8,
