@@ -1,11 +1,15 @@
 use libc::{
-    fflush, fprintf, free, memset, pthread_cond_t, pthread_mutex_t, FILE, PTHREAD_COND_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
+    fflush, fprintf, free, memset, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
 };
 
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
-use crate::lib::dictBuilder::cover::ZDICT_cover_params_t;
-use crate::lib::dictBuilder::zdict::ZDICT_params_t;
+use crate::lib::dictBuilder::cover::{
+    COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_s, COVER_best_start,
+    COVER_best_t, COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError,
+    COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_selectDict, COVER_sum,
+    COVER_warnOnSmallCorpus, ZDICT_cover_params_t,
+};
+use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -18,49 +22,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn clock() -> clock_t;
-    fn ZDICT_finalizeDictionary(
-        dstDictBuffer: *mut std::ffi::c_void,
-        maxDictSize: size_t,
-        dictContent: *const std::ffi::c_void,
-        dictContentSize: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: ZDICT_params_t,
-    ) -> size_t;
-    fn COVER_computeEpochs(
-        maxDictSize: u32,
-        nbDmers: u32,
-        k: u32,
-        passes: u32,
-    ) -> COVER_epoch_info_t;
-    fn COVER_warnOnSmallCorpus(maxDictSize: size_t, nbDmers: size_t, displayLevel: std::ffi::c_int);
-    fn COVER_sum(samplesSizes: *const size_t, nbSamples: std::ffi::c_uint) -> size_t;
-    fn COVER_best_init(best: *mut COVER_best_t);
-    fn COVER_best_wait(best: *mut COVER_best_t);
-    fn COVER_best_destroy(best: *mut COVER_best_t);
-    fn COVER_best_start(best: *mut COVER_best_t);
-    fn COVER_best_finish(
-        best: *mut COVER_best_t,
-        parameters: ZDICT_cover_params_t,
-        selection: COVER_dictSelection_t,
-    );
-    fn COVER_dictSelectionIsError(selection: COVER_dictSelection_t) -> std::ffi::c_uint;
-    fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t;
-    fn COVER_dictSelectionFree(selection: COVER_dictSelection_t);
-    fn COVER_selectDict(
-        customDictContent: *mut u8,
-        dictBufferCapacity: size_t,
-        dictContentSize: size_t,
-        samplesBuffer: *const u8,
-        samplesSizes: *const size_t,
-        nbFinalizeSamples: std::ffi::c_uint,
-        nbCheckSamples: size_t,
-        nbSamples: size_t,
-        params: ZDICT_cover_params_t,
-        offsets: *mut size_t,
-        totalCompressedSize: size_t,
-    ) -> COVER_dictSelection_t;
 }
 pub type size_t = std::ffi::c_ulong;
 pub type __clock_t = std::ffi::c_long;
@@ -114,18 +75,6 @@ pub struct COVER_segment_t {
 pub struct COVER_epoch_info_t {
     pub num: u32,
     pub size: u32,
-}
-pub type COVER_best_t = COVER_best_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_best_s {
-    pub mutex: pthread_mutex_t,
-    pub cond: pthread_cond_t,
-    pub liveJobs: size_t,
-    pub dict: *mut std::ffi::c_void,
-    pub dictSize: size_t,
-    pub parameters: ZDICT_cover_params_t,
-    pub compressedSize: size_t,
 }
 pub type FASTCOVER_tryParameters_data_t = FASTCOVER_tryParameters_data_s;
 #[derive(Copy, Clone)]

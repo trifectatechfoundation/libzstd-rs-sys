@@ -14,82 +14,21 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::zstd_compress::{
-    ZSTD_compressBound, ZSTD_cycleLog, ZSTD_writeLastEmptyBlock,
+    rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
+    ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
+    ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
+    ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
+    ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
+    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
+};
+use crate::lib::compress::zstd_ldm::{
+    ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
+    ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::*;
 extern "C" {
-    pub type ZSTD_CDict_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
-    fn ZSTD_freeCDict(CDict: *mut ZSTD_CDict) -> size_t;
-    fn ZSTD_sizeof_CCtx(cctx: *const ZSTD_CCtx) -> size_t;
-    fn ZSTD_sizeof_CDict(cdict: *const ZSTD_CDict) -> size_t;
-    fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx;
-    fn ZSTD_createCDict_advanced(
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-        dictLoadMethod: ZSTD_dictLoadMethod_e,
-        dictContentType: ZSTD_dictContentType_e,
-        cParams: ZSTD_compressionParameters,
-        customMem: ZSTD_customMem,
-    ) -> *mut ZSTD_CDict;
-    fn ZSTD_CCtxParams_setParameter(
-        params: *mut ZSTD_CCtx_params,
-        param: ZSTD_cParameter,
-        value: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_getCParamsFromCCtxParams(
-        CCtxParams: *const ZSTD_CCtx_params,
-        srcSizeHint: u64,
-        dictSize: size_t,
-        mode: ZSTD_CParamMode_e,
-    ) -> ZSTD_compressionParameters;
-    fn ZSTD_compressBegin_advanced_internal(
-        cctx: *mut ZSTD_CCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-        dictContentType: ZSTD_dictContentType_e,
-        dtlm: ZSTD_dictTableLoadMethod_e,
-        cdict: *const ZSTD_CDict,
-        params: *const ZSTD_CCtx_params,
-        pledgedSrcSize: std::ffi::c_ulonglong,
-    ) -> size_t;
-    fn ZSTD_referenceExternalSequences(cctx: *mut ZSTD_CCtx, seq: *mut rawSeq, nbSeq: size_t);
-    fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t);
-    fn ZSTD_compressContinue_public(
-        cctx: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressEnd_public(
-        cctx: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx);
-    fn ZSTD_ldm_fillHashTable(
-        state: *mut ldmState_t,
-        ip: *const u8,
-        iend: *const u8,
-        params: *const ldmParams_t,
-    );
-    fn ZSTD_ldm_generateSequences(
-        ldms: *mut ldmState_t,
-        sequences: *mut RawSeqStore_t,
-        params: *const ldmParams_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t;
-    fn ZSTD_ldm_adjustParameters(
-        params: *mut ldmParams_t,
-        cParams: *const ZSTD_compressionParameters,
-    );
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -266,7 +205,6 @@ pub struct ZSTDMT_CCtx_s {
     #[bitfield(padding)]
     pub c2rust_padding: [u8; 7],
 }
-pub type ZSTD_CDict = ZSTD_CDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct RSyncState_t {
@@ -287,77 +225,8 @@ pub struct SerialState {
     pub ldmWindowCond: pthread_cond_t,
     pub ldmWindow: ZSTD_window_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_window_t {
-    pub nextSrc: *const u8,
-    pub base: *const u8,
-    pub dictBase: *const u8,
-    pub dictLimit: u32,
-    pub lowLimit: u32,
-    pub nbOverflowCorrections: u32,
-}
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmState_t {
-    pub window: ZSTD_window_t,
-    pub hashTable: *mut ldmEntry_t,
-    pub loadedDictEnd: u32,
-    pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
-    pub matchCandidates: [ldmMatchCandidate_t; 64],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmMatchCandidate_t {
-    pub split: *const u8,
-    pub hash: u32,
-    pub checksum: u32,
-    pub bucket: *mut ldmEntry_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmEntry_t {
-    pub offset: u32,
-    pub checksum: u32,
-}
-pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_CCtx_params_s {
-    pub format: ZSTD_format_e,
-    pub cParams: ZSTD_compressionParameters,
-    pub fParams: ZSTD_frameParameters,
-    pub compressionLevel: std::ffi::c_int,
-    pub forceWindow: std::ffi::c_int,
-    pub targetCBlockSize: size_t,
-    pub srcSizeHint: std::ffi::c_int,
-    pub attachDictPref: ZSTD_dictAttachPref_e,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-    pub nbWorkers: std::ffi::c_int,
-    pub jobSize: size_t,
-    pub overlapLog: std::ffi::c_int,
-    pub rsyncable: std::ffi::c_int,
-    pub ldmParams: ldmParams_t,
-    pub enableDedicatedDictSearch: std::ffi::c_int,
-    pub inBufferMode: ZSTD_bufferMode_e,
-    pub outBufferMode: ZSTD_bufferMode_e,
-    pub blockDelimiters: ZSTD_SequenceFormat_e,
-    pub validateSequences: std::ffi::c_int,
-    pub postBlockSplitter: ZSTD_ParamSwitch_e,
-    pub preBlockSplitter_level: std::ffi::c_int,
-    pub maxBlockSize: size_t,
-    pub useRowMatchFinder: ZSTD_ParamSwitch_e,
-    pub deterministicRefPrefix: std::ffi::c_int,
-    pub customMem: ZSTD_customMem,
-    pub prefetchCDictTables: ZSTD_ParamSwitch_e,
-    pub enableMatchFinderFallback: std::ffi::c_int,
-    pub extSeqProdState: *mut std::ffi::c_void,
-    pub extSeqProdFunc: ZSTD_sequenceProducer_F,
-    pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
-}
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
@@ -378,16 +247,6 @@ pub type ZSTD_sequenceProducer_F = Option<
 pub type ZSTD_SequenceFormat_e = std::ffi::c_uint;
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmParams_t {
-    pub enableLdm: ZSTD_ParamSwitch_e,
-    pub hashLog: u32,
-    pub bucketSizeLog: u32,
-    pub minMatchLength: u32,
-    pub hashRateLog: u32,
-    pub windowLog: u32,
-}
 pub type ZSTD_dictAttachPref_e = std::ffi::c_uint;
 pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
 pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
@@ -448,7 +307,6 @@ pub struct ZSTDMT_CCtxPool {
     pub cMem: ZSTD_customMem,
     pub cctxs: *mut *mut ZSTD_CCtx,
 }
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDMT_jobDescription {
@@ -530,22 +388,6 @@ pub struct ZSTD_MatchState_t {
     pub ldmSeqStore: *const RawSeqStore_t,
     pub prefetchCDictTables: std::ffi::c_int,
     pub lazySkipping: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct RawSeqStore_t {
-    pub seq: *mut rawSeq,
-    pub pos: size_t,
-    pub posInSequence: size_t,
-    pub size: size_t,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct rawSeq {
-    pub offset: u32,
-    pub litLength: u32,
-    pub matchLength: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -922,16 +922,6 @@ pub type ZSTD_sequenceProducer_F = Option<
 pub type ZSTD_SequenceFormat_e = std::ffi::c_uint;
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmParams_t {
-    pub enableLdm: ZSTD_ParamSwitch_e,
-    pub hashLog: u32,
-    pub bucketSizeLog: u32,
-    pub minMatchLength: u32,
-    pub hashRateLog: u32,
-    pub windowLog: u32,
-}
 pub type ZSTD_dictAttachPref_e = std::ffi::c_uint;
 pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
 pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
@@ -1920,6 +1910,7 @@ use crate::lib::common::zstd_trace::{
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
+use crate::lib::compress::zstd_ldm::ldmParams_t;
 use crate::lib::compress::zstd_preSplit::ZSTD_splitBlock;
 use crate::lib::zstd::*;
 use crate::{
