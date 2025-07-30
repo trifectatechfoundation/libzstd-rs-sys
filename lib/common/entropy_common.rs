@@ -21,15 +21,6 @@ pub const FSE_VERSION_NUMBER: std::ffi::c_int =
         + FSE_VERSION_RELEASE;
 pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5 as std::ffi::c_int;
 pub const FSE_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15 as std::ffi::c_int;
-#[inline]
-const fn ZSTD_countTrailingZeros32(mut val: u32) -> u32 {
-    val.trailing_zeros() as i32 as u32
-}
-
-#[inline]
-const fn ZSTD_highbit32(mut val: u32) -> u32 {
-    val.ilog2()
-}
 
 #[inline(always)]
 fn FSE_readNCount_body(
