@@ -1,20 +1,10 @@
 use crate::lib::compress::fse_compress::{
-    FSE_normalizeCount, FSE_optimalTableLog, FSE_writeNCount,
+    FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
+    FSE_writeNCount,
 };
 use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: std::ffi::c_uchar) -> size_t;
-    fn FSE_buildCTable_wksp(
-        ct: *mut FSE_CTable,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
-}
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type unalign16 = u16;
