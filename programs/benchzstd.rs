@@ -1,4 +1,4 @@
-use libc::FILE;
+use libc::{fclose, fflush, fopen, fprintf, FILE};
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 use libzstd_rs::lib::zstd::*;
 
@@ -11,10 +11,6 @@ extern "C" {
     pub type ZSTD_DCtx_s;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn fread(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_ulong,

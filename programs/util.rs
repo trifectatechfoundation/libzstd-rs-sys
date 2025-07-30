@@ -1,4 +1,4 @@
-use libc::FILE;
+use libc::{fclose, feof, ferror, fgets, fileno, fopen, fprintf, FILE};
 
 extern "C" {
     pub type _IO_wide_data;
@@ -16,24 +16,13 @@ extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn getc(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fgets(
-        __s: *mut std::ffi::c_char,
-        __n: std::ffi::c_int,
-        __stream: *mut FILE,
-    ) -> *mut std::ffi::c_char;
     fn fread(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_ulong,
         _: std::ffi::c_ulong,
         _: *mut FILE,
     ) -> std::ffi::c_ulong;
-    fn feof(__stream: *mut FILE) -> std::ffi::c_int;
-    fn ferror(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fileno(__stream: *mut FILE) -> std::ffi::c_int;
     fn stat(__file: *const std::ffi::c_char, __buf: *mut stat) -> std::ffi::c_int;
     fn fstat(__fd: std::ffi::c_int, __buf: *mut stat) -> std::ffi::c_int;
     fn lstat(__file: *const std::ffi::c_char, __buf: *mut stat) -> std::ffi::c_int;

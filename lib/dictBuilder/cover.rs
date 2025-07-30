@@ -1,8 +1,9 @@
 use libc::{
-    pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
-    pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy,
-    pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock,
-    pthread_mutexattr_t, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
+    fflush, fprintf, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
+    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
+    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_COND_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
 };
 
 use crate::lib::zstd::*;
@@ -15,8 +16,6 @@ extern "C" {
     pub type ZSTD_CDict_s;
     pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
     fn qsort_r(

@@ -1,4 +1,4 @@
-use libc::FILE;
+use libc::{fclose, fflush, fopen, fprintf, FILE};
 use libzstd_rs::lib::zstd::*;
 
 extern "C" {
@@ -6,10 +6,6 @@ extern "C" {
     pub type _IO_codecvt;
     pub type _IO_marker;
     static mut stderr: *mut FILE;
-    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn fread(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_ulong,

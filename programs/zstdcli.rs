@@ -1,4 +1,4 @@
-use libc::FILE;
+use libc::{fprintf, FILE};
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::zstd::*;
 extern "C" {
@@ -9,7 +9,6 @@ extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn getc(__stream: *mut FILE) -> std::ffi::c_int;
     fn exit(_: std::ffi::c_int) -> !;
     fn getenv(__name: *const std::ffi::c_char) -> *mut std::ffi::c_char;
