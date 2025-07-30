@@ -88,7 +88,8 @@ fn FSE_readNCount_body(
                 if likely(ip <= iend - 7) {
                     ip += 3;
                 } else {
-                    bitCount -= 8 * ((iend - 7) - ip) as i32;
+                    bitCount =
+                        bitCount.wrapping_sub(8 * iend.wrapping_sub(7).wrapping_sub(ip) as i32);
                     bitCount &= 31;
                     ip = iend - 4;
                 }
