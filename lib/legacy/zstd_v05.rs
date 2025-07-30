@@ -1,5 +1,6 @@
 use crate::lib::common::error_private::ERR_getErrorString;
 use crate::lib::zstd::*;
+use crate::{MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16};
 
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
@@ -20,6 +21,18 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
 }
+
+#[inline]
+unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
+        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
+}
+#[inline]
+unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
+        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
+}
+
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type unalign16 = u16;
@@ -195,90 +208,6 @@ pub const ZBUFFv05ds_loadHeader: ZBUFFv05_dStage = 2;
 pub const ZBUFFv05ds_readHeader: ZBUFFv05_dStage = 1;
 pub const ZBUFFv05ds_init: ZBUFFv05_dStage = 0;
 pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    1 as std::ffi::c_int as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const std::ffi::c_void) -> u16 {
-    *(ptr as *const unalign16)
-}
-#[inline]
-unsafe extern "C" fn MEM_read32(mut ptr: *const std::ffi::c_void) -> u32 {
-    *(ptr as *const unalign32)
-}
-#[inline]
-unsafe extern "C" fn MEM_read64(mut ptr: *const std::ffi::c_void) -> u64 {
-    *(ptr as *const unalign64)
-}
-#[inline]
-unsafe extern "C" fn MEM_write16(mut memPtr: *mut std::ffi::c_void, mut value: u16) {
-    *(memPtr as *mut unalign16) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> u16 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read16(memPtr)
-    } else {
-        let mut p = memPtr as *const u8;
-        (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
-            + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as u16
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: u16) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write16(memPtr, val);
-    } else {
-        let mut p = memPtr as *mut u8;
-        *p.offset(0 as std::ffi::c_int as isize) = val as u8;
-        *p.offset(1 as std::ffi::c_int as isize) =
-            (val as std::ffi::c_int >> 8 as std::ffi::c_int) as u8;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read32(memPtr)
-    } else {
-        MEM_swap32(MEM_read32(memPtr))
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read64(memPtr)
-    } else {
-        MEM_swap64(MEM_read64(memPtr))
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
-    if MEM_32bits() != 0 {
-        MEM_readLE32(memPtr) as size_t
-    } else {
-        MEM_readLE64(memPtr)
-    }
-}
 pub const ZSTDv05_MAGICNUMBER: std::ffi::c_uint = 0xfd2fb525 as std::ffi::c_uint;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
