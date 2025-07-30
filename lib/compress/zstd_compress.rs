@@ -937,13 +937,6 @@ pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
 pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
 pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
 pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameParameters {
-    pub contentSizeFlag: std::ffi::c_int,
-    pub checksumFlag: std::ffi::c_int,
-    pub noDictIDFlag: std::ffi::c_int,
-}
 pub type ZSTD_compressionStage_e = std::ffi::c_uint;
 pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
 pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
@@ -1031,12 +1024,6 @@ pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
 pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
 pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
 pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_parameters {
-    pub cParams: ZSTD_compressionParameters,
-    pub fParams: ZSTD_frameParameters,
-}
 pub type ZSTD_ResetDirective = std::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;

@@ -8,6 +8,8 @@ use libzstd_rs::lib::common::pool::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
 };
 
+use crate::fileio::g_display_prefs;
+
 extern "C" {
     static mut stderr: *mut FILE;
     fn fread(
@@ -40,7 +42,6 @@ extern "C" {
         _: *const std::ffi::c_void,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    static mut g_display_prefs: FIO_display_prefs_t;
 }
 pub type size_t = std::ffi::c_ulong;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;

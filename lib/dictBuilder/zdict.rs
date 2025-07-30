@@ -1,6 +1,24 @@
+use libc::{fflush, fprintf, FILE};
+
+use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::pool::POOL_ctx;
+use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
+use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
+use crate::lib::compress::zstd_compress::{
+    SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBegin_usingCDict_deprecated,
+    ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCCtx,
+    ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
+    ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
+};
+use crate::lib::dictBuilder::fastcover::{
+    ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
+};
+use crate::lib::zstd::*;
+use crate::{MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
+
 extern "C" {
     pub type ZSTDMT_CCtx_s;
-    pub type ZSTD_CDict_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
     fn memcpy(
@@ -20,83 +38,6 @@ extern "C" {
     ) -> *mut std::ffi::c_void;
     static mut stderr: *mut FILE;
     fn clock() -> clock_t;
-    fn FSE_normalizeCount(
-        normalizedCounter: *mut std::ffi::c_short,
-        tableLog: std::ffi::c_uint,
-        count: *const std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        useLowProbCount: std::ffi::c_uint,
-    ) -> size_t;
-    fn FSE_writeNCount(
-        buffer: *mut std::ffi::c_void,
-        bufferSize: size_t,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-    ) -> size_t;
-    fn ERR_getErrorString(code: ERR_enum) -> *const std::ffi::c_char;
-    fn HUF_writeCTable_wksp(
-        dst: *mut std::ffi::c_void,
-        maxDstSize: size_t,
-        CTable: *const HUF_CElt,
-        maxSymbolValue: std::ffi::c_uint,
-        huffLog: std::ffi::c_uint,
-        workspace: *mut std::ffi::c_void,
-        workspaceSize: size_t,
-    ) -> size_t;
-    fn HUF_buildCTable_wksp(
-        tree: *mut HUF_CElt,
-        count: *const std::ffi::c_uint,
-        maxSymbolValue: u32,
-        maxNbBits: u32,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
-    fn ZSTD_createCCtx() -> *mut ZSTD_CCtx;
-    fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
-    fn ZSTD_freeCDict(CDict: *mut ZSTD_CDict) -> size_t;
-    fn ZSTD_createCDict_advanced(
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-        dictLoadMethod: ZSTD_dictLoadMethod_e,
-        dictContentType: ZSTD_dictContentType_e,
-        cParams: ZSTD_compressionParameters,
-        customMem: ZSTD_customMem,
-    ) -> *mut ZSTD_CDict;
-    fn ZSTD_getParams(
-        compressionLevel: std::ffi::c_int,
-        estimatedSrcSize: std::ffi::c_ulonglong,
-        dictSize: size_t,
-    ) -> ZSTD_parameters;
-    fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t;
-    fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> std::ffi::c_int;
-    fn ZSTD_loadCEntropy(
-        bs: *mut ZSTD_compressedBlockState_t,
-        workspace: *mut std::ffi::c_void,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState_t);
-    fn ZSTD_compressBegin_usingCDict_deprecated(
-        cctx: *mut ZSTD_CCtx,
-        cdict: *const ZSTD_CDict,
-    ) -> size_t;
-    fn ZSTD_compressBlock_deprecated(
-        cctx: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZDICT_optimizeTrainFromBuffer_fastCover(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: *mut ZDICT_fastCover_params_t,
-    ) -> size_t;
     fn divsufsort(
         T: *const std::ffi::c_uchar,
         SA: *mut std::ffi::c_int,
@@ -118,61 +59,6 @@ pub type HUF_repeat = std::ffi::c_uint;
 pub const HUF_repeat_valid: HUF_repeat = 2;
 pub const HUF_repeat_check: HUF_repeat = 1;
 pub const HUF_repeat_none: HUF_repeat = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_CCtx_s {
-    pub stage: ZSTD_compressionStage_e,
-    pub cParamsChanged: std::ffi::c_int,
-    pub bmi2: std::ffi::c_int,
-    pub requestedParams: ZSTD_CCtx_params,
-    pub appliedParams: ZSTD_CCtx_params,
-    pub simpleApiParams: ZSTD_CCtx_params,
-    pub dictID: u32,
-    pub dictContentSize: size_t,
-    pub workspace: ZSTD_cwksp,
-    pub blockSizeMax: size_t,
-    pub pledgedSrcSizePlusOne: std::ffi::c_ulonglong,
-    pub consumedSrcSize: std::ffi::c_ulonglong,
-    pub producedCSize: std::ffi::c_ulonglong,
-    pub xxhState: XXH64_state_t,
-    pub customMem: ZSTD_customMem,
-    pub pool: *mut ZSTD_threadPool,
-    pub staticSize: size_t,
-    pub seqCollector: SeqCollector,
-    pub isFirstBlock: std::ffi::c_int,
-    pub initialized: std::ffi::c_int,
-    pub seqStore: SeqStore_t,
-    pub ldmState: ldmState_t,
-    pub ldmSequences: *mut rawSeq,
-    pub maxNbLdmSequences: size_t,
-    pub externSeqStore: RawSeqStore_t,
-    pub blockState: ZSTD_blockState_t,
-    pub tmpWorkspace: *mut std::ffi::c_void,
-    pub tmpWkspSize: size_t,
-    pub bufferedPolicy: ZSTD_buffered_policy_e,
-    pub inBuff: *mut std::ffi::c_char,
-    pub inBuffSize: size_t,
-    pub inToCompress: size_t,
-    pub inBuffPos: size_t,
-    pub inBuffTarget: size_t,
-    pub outBuff: *mut std::ffi::c_char,
-    pub outBuffSize: size_t,
-    pub outBuffContentSize: size_t,
-    pub outBuffFlushedSize: size_t,
-    pub streamStage: ZSTD_cStreamStage,
-    pub frameEnded: u32,
-    pub expectedInBuffer: ZSTD_inBuffer,
-    pub stableIn_notConsumed: size_t,
-    pub expectedOutBufferSize: size_t,
-    pub localDict: ZSTD_localDict,
-    pub cdict: *const ZSTD_CDict,
-    pub prefixDict: ZSTD_prefixDict,
-    pub mtctx: *mut ZSTDMT_CCtx,
-    pub traceCtx: ZSTD_TraceCtx,
-    pub blockSplitCtx: ZSTD_blockSplitCtx,
-    pub extSeqBuf: *mut ZSTD_Sequence,
-    pub extSeqBufCapacity: size_t,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_Sequence {
@@ -239,14 +125,6 @@ pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[derive(Copy, Clone)]
@@ -260,7 +138,6 @@ pub type ZSTD_dictContentType_e = std::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-pub type ZSTD_CDict = ZSTD_CDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_localDict {
@@ -409,12 +286,6 @@ pub struct ZSTD_window_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_compressedBlockState_t {
-    pub entropy: ZSTD_entropyCTables_t,
-    pub rep: [u32; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ldmState_t {
     pub window: ZSTD_window_t,
     pub hashTable: *mut ldmEntry_t,
@@ -548,42 +419,14 @@ pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
 pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
 pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
 pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameParameters {
-    pub contentSizeFlag: std::ffi::c_int,
-    pub checksumFlag: std::ffi::c_int,
-    pub noDictIDFlag: std::ffi::c_int,
-}
 pub type ZSTD_compressionStage_e = std::ffi::c_uint;
 pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
 pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
 pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
 pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_parameters {
-    pub cParams: ZSTD_compressionParameters,
-    pub fParams: ZSTD_frameParameters,
-}
 pub type ZSTD_dictLoadMethod_e = std::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_fastCover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub f: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub accel: std::ffi::c_uint,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_params_t {
@@ -626,13 +469,6 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use libc::{fflush, fprintf, FILE};
-
-use crate::lib::common::pool::POOL_ctx;
-use crate::lib::common::xxhash::ZSTD_XXH64;
-use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
-use crate::lib::zstd::*;
-use crate::{MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
