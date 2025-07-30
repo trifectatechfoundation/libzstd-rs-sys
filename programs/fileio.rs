@@ -1,4 +1,6 @@
-use libc::{pthread_cond_t, pthread_mutex_t, FILE};
+use libc::{
+    fclose, fdopen, feof, fflush, fileno, fopen, fprintf, pthread_cond_t, pthread_mutex_t, FILE,
+};
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 
@@ -15,17 +17,12 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
     fn remove(__filename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
-    fn fdopen(__fd: std::ffi::c_int, __modes: *const std::ffi::c_char) -> *mut FILE;
     fn setvbuf(
         __stream: *mut FILE,
         __buf: *mut std::ffi::c_char,
         __modes: std::ffi::c_int,
         __n: size_t,
     ) -> std::ffi::c_int;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn fread(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_ulong,
@@ -38,8 +35,6 @@ extern "C" {
         __whence: std::ffi::c_int,
     ) -> std::ffi::c_int;
     fn ftell(__stream: *mut FILE) -> std::ffi::c_long;
-    fn feof(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fileno(__stream: *mut FILE) -> std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);

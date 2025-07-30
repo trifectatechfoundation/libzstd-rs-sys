@@ -1,6 +1,6 @@
 use libc::{
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_MUTEX_INITIALIZER,
+    fclose, fopen, fprintf, pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock,
+    pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_MUTEX_INITIALIZER,
 };
 use libzstd_rs::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
 use libzstd_rs::lib::compress::zstd_compress::{
@@ -9,12 +9,6 @@ use libzstd_rs::lib::compress::zstd_compress::{
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
-    fn fclose(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fopen(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut FILE;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn UTIL_getTime() -> UTIL_time_t;
     fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
     fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;

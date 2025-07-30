@@ -1,5 +1,5 @@
 use libc::{
-    free, memset, pthread_cond_t, pthread_mutex_t, FILE, PTHREAD_COND_INITIALIZER,
+    fflush, fprintf, free, memset, pthread_cond_t, pthread_mutex_t, FILE, PTHREAD_COND_INITIALIZER,
     PTHREAD_MUTEX_INITIALIZER,
 };
 
@@ -11,8 +11,6 @@ extern "C" {
     pub type _IO_marker;
     pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn memcpy(

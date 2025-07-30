@@ -23,8 +23,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     static mut stderr: *mut FILE;
-    fn fflush(__stream: *mut FILE) -> std::ffi::c_int;
-    fn fprintf(_: *mut FILE, _: *const std::ffi::c_char, _: ...) -> std::ffi::c_int;
     fn clock() -> clock_t;
     fn FSE_normalizeCount(
         normalizedCounter: *mut std::ffi::c_short,
@@ -638,7 +636,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use libc::FILE;
+use libc::{fflush, fprintf, FILE};
 
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
