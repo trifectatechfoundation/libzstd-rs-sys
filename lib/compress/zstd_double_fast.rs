@@ -19,73 +19,10 @@ pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalign64 = u64;
 pub type unalignArch = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_MatchState_t {
-    pub window: ZSTD_window_t,
-    pub loadedDictEnd: u32,
-    pub nextToUpdate: u32,
-    pub hashLog3: u32,
-    pub rowHashLog: u32,
-    pub tagTable: *mut u8,
-    pub hashCache: [u32; 8],
-    pub hashSalt: u64,
-    pub hashSaltEntropy: u32,
-    pub hashTable: *mut u32,
-    pub hashTable3: *mut u32,
-    pub chainTable: *mut u32,
-    pub forceNonContiguous: std::ffi::c_int,
-    pub dedicatedDictSearch: std::ffi::c_int,
-    pub opt: optState_t,
-    pub dictMatchState: *const ZSTD_MatchState_t,
-    pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
-    pub prefetchCDictTables: std::ffi::c_int,
-    pub lazySkipping: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct RawSeqStore_t {
-    pub seq: *mut rawSeq,
-    pub pos: size_t,
-    pub posInSequence: size_t,
-    pub size: size_t,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct rawSeq {
-    pub offset: u32,
-    pub litLength: u32,
-    pub matchLength: u32,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
@@ -186,6 +123,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t};
 use crate::lib::zstd::*;
 use crate::{
     MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readLE64, MEM_readST,

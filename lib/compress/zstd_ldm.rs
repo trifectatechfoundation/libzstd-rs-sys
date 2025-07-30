@@ -2,25 +2,6 @@
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-extern "C" {
-    fn ZSTD_selectBlockCompressor(
-        strat: ZSTD_strategy,
-        rowMatchfinderMode: ZSTD_ParamSwitch_e,
-        dictMode: ZSTD_dictMode_e,
-    ) -> ZSTD_BlockCompressor_f;
-    fn ZSTD_fillHashTable(
-        ms: *mut ZSTD_MatchState_t,
-        end: *const std::ffi::c_void,
-        dtlm: ZSTD_dictTableLoadMethod_e,
-        tfp: ZSTD_tableFillPurpose_e,
-    );
-    fn ZSTD_fillDoubleHashTable(
-        ms: *mut ZSTD_MatchState_t,
-        end: *const std::ffi::c_void,
-        dtlm: ZSTD_dictTableLoadMethod_e,
-        tfp: ZSTD_tableFillPurpose_e,
-    );
-}
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -36,21 +17,6 @@ pub struct __storeu_si128 {
 pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalignArch = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -62,30 +28,6 @@ pub struct SeqDef_s {
     pub offBase: u32,
     pub litLength: u16,
     pub mlBase: u16,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_MatchState_t {
-    pub window: ZSTD_window_t,
-    pub loadedDictEnd: u32,
-    pub nextToUpdate: u32,
-    pub hashLog3: u32,
-    pub rowHashLog: u32,
-    pub tagTable: *mut u8,
-    pub hashCache: [u32; 8],
-    pub hashSalt: u64,
-    pub hashSaltEntropy: u32,
-    pub hashTable: *mut u32,
-    pub hashTable3: *mut u32,
-    pub chainTable: *mut u32,
-    pub forceNonContiguous: std::ffi::c_int,
-    pub dedicatedDictSearch: std::ffi::c_int,
-    pub opt: optState_t,
-    pub dictMatchState: *const ZSTD_MatchState_t,
-    pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
-    pub prefetchCDictTables: std::ffi::c_int,
-    pub lazySkipping: std::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -232,7 +174,9 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::lib::common::xxhash::ZSTD_XXH64;
-use crate::lib::compress::zstd_compress::{rawSeq, RawSeqStore_t, ZSTD_window_t};
+use crate::lib::compress::zstd_compress::{rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t};
+use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
+use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
