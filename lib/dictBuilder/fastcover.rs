@@ -1,4 +1,7 @@
-use libc::{free, memset, FILE};
+use libc::{
+    free, memset, pthread_cond_t, pthread_mutex_t, FILE, PTHREAD_COND_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
+};
 
 use crate::lib::zstd::*;
 
@@ -81,50 +84,6 @@ pub union __atomic_wide_counter {
 pub struct C2RustUnnamed {
     pub __low: std::ffi::c_uint,
     pub __high: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
-}
-pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_mutex_s {
-    pub __lock: std::ffi::c_int,
-    pub __count: std::ffi::c_uint,
-    pub __owner: std::ffi::c_int,
-    pub __nusers: std::ffi::c_uint,
-    pub __kind: std::ffi::c_int,
-    pub __spins: std::ffi::c_short,
-    pub __elision: std::ffi::c_short,
-    pub __list: __pthread_list_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_cond_s {
-    pub __wseq: __atomic_wide_counter,
-    pub __g1_start: __atomic_wide_counter,
-    pub __g_refs: [std::ffi::c_uint; 2],
-    pub __g_size: [std::ffi::c_uint; 2],
-    pub __g1_orig_size: std::ffi::c_uint,
-    pub __wrefs: std::ffi::c_uint,
-    pub __g_signals: [std::ffi::c_uint; 2],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [std::ffi::c_char; 40],
-    pub __align: std::ffi::c_long,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_cond_t {
-    pub __data: __pthread_cond_s,
-    pub __size: [std::ffi::c_char; 48],
-    pub __align: std::ffi::c_longlong,
 }
 pub type unalign64 = u64;
 pub type POOL_ctx = POOL_ctx_s;
@@ -1156,32 +1115,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut d: std::ffi::c_uint = 0;
     let mut k: std::ffi::c_uint = 0;
     let mut best = COVER_best_s {
-        mutex: pthread_mutex_t {
-            __data: __pthread_mutex_s {
-                __lock: 0,
-                __count: 0,
-                __owner: 0,
-                __nusers: 0,
-                __kind: 0,
-                __spins: 0,
-                __elision: 0,
-                __list: __pthread_internal_list {
-                    __prev: std::ptr::null_mut::<__pthread_internal_list>(),
-                    __next: std::ptr::null_mut::<__pthread_internal_list>(),
-                },
-            },
-        },
-        cond: pthread_cond_t {
-            __data: __pthread_cond_s {
-                __wseq: __atomic_wide_counter { __value64: 0 },
-                __g1_start: __atomic_wide_counter { __value64: 0 },
-                __g_refs: [0; 2],
-                __g_size: [0; 2],
-                __g1_orig_size: 0,
-                __wrefs: 0,
-                __g_signals: [0; 2],
-            },
-        },
+        mutex: PTHREAD_MUTEX_INITIALIZER,
+        cond: PTHREAD_COND_INITIALIZER,
         liveJobs: 0,
         dict: std::ptr::null_mut::<std::ffi::c_void>(),
         dictSize: 0,
