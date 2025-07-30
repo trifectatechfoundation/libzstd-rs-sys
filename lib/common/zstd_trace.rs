@@ -21,12 +21,19 @@ pub struct ZSTD_Trace {
 pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 
 extern "C" {
-    #[linkage = "weak"]
-    pub fn ZSTD_trace_compress_begin(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx;
-    #[linkage = "weak"]
-    pub fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
-    #[linkage = "weak"]
-    pub fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx;
-    #[linkage = "weak"]
-    pub fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
+    #[linkage = "extern_weak"]
+    pub static ZSTD_trace_compress_begin:
+        Option<unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx>;
+
+    #[linkage = "extern_weak"]
+    pub static ZSTD_trace_compress_end:
+        Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+
+    #[linkage = "extern_weak"]
+    pub static ZSTD_trace_decompress_begin:
+        Option<unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx>;
+
+    #[linkage = "extern_weak"]
+    pub static ZSTD_trace_decompress_end:
+        Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
 }

@@ -90,8 +90,6 @@ extern "C" {
         cctxParams: *const ZSTD_CCtx_params,
     );
     fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameProgression;
-    fn ZSTD_trace_compress_begin(cctx: *const ZSTD_CCtx_s) -> ZSTD_TraceCtx;
-    fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
     fn ZSTD_selectEncodingType(
         repeatMode: *mut FSE_repeat,
         count: *const std::ffi::c_uint,
@@ -1948,7 +1946,9 @@ use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
-use crate::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
+use crate::lib::common::zstd_trace::{
+    ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
+};
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
 use crate::lib::compress::zstd_preSplit::ZSTD_splitBlock;
@@ -9488,15 +9488,7 @@ unsafe extern "C" fn ZSTD_compressBegin_internal(
     } else {
         dictSize
     };
-    (*cctx).traceCtx = if (Some(
-        ZSTD_trace_compress_begin as unsafe extern "C" fn(*const ZSTD_CCtx_s) -> ZSTD_TraceCtx,
-    ))
-    .is_some()
-    {
-        ZSTD_trace_compress_begin(cctx)
-    } else {
-        0 as std::ffi::c_int as ZSTD_TraceCtx
-    };
+    (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
     if !cdict.is_null()
         && (*cdict).dictContentSize > 0 as std::ffi::c_int as size_t
         && (pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as u64
@@ -9819,12 +9811,7 @@ unsafe extern "C" fn ZSTD_writeEpilogue(
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_trace)]
 pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSize: size_t) {
-    if (*cctx).traceCtx != 0
-        && (Some(
-            ZSTD_trace_compress_end as unsafe extern "C" fn(ZSTD_TraceCtx, *const ZSTD_Trace) -> (),
-        ))
-        .is_some()
-    {
+    if (*cctx).traceCtx != 0 && ZSTD_trace_compress_end.is_some() {
         let streaming = ((*cctx).inBuffSize > 0 as std::ffi::c_int as size_t
             || (*cctx).outBuffSize > 0 as std::ffi::c_int as size_t
             || (*cctx).appliedParams.nbWorkers > 0 as std::ffi::c_int)
@@ -9855,7 +9842,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSiz
             ((*cctx).producedCSize).wrapping_add(extraCSize as std::ffi::c_ulonglong) as size_t;
         trace.params = &mut (*cctx).appliedParams;
         trace.cctx = cctx;
-        ZSTD_trace_compress_end((*cctx).traceCtx, &mut trace);
+        ZSTD_trace_compress_end.unwrap()((*cctx).traceCtx, &mut trace);
     }
     (*cctx).traceCtx = 0 as std::ffi::c_int as ZSTD_TraceCtx;
 }
@@ -11898,15 +11885,7 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
         params.nbWorkers = 0 as std::ffi::c_int;
     }
     if params.nbWorkers > 0 as std::ffi::c_int {
-        (*cctx).traceCtx = if (Some(
-            ZSTD_trace_compress_begin as unsafe extern "C" fn(*const ZSTD_CCtx_s) -> ZSTD_TraceCtx,
-        ))
-        .is_some()
-        {
-            ZSTD_trace_compress_begin(cctx)
-        } else {
-            0 as std::ffi::c_int as ZSTD_TraceCtx
-        };
+        (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
         if ((*cctx).mtctx).is_null() {
             (*cctx).mtctx = ZSTDMT_createCCtx_advanced(
                 params.nbWorkers as u32,
