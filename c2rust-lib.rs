@@ -74,7 +74,7 @@ pub mod programs {
 macro_rules! prefix {
     ($name:expr) => {
         concat!(
-            "LIBZ_RS_SYS_v",
+            "LIBZSTD_RS_SYS_v",
             env!("CARGO_PKG_VERSION_MAJOR"),
             "_",
             env!("CARGO_PKG_VERSION_MINOR"),
