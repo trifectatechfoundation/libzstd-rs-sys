@@ -396,14 +396,6 @@ unsafe extern "C" fn ZSTD_cpuid_bmi2(cpuid: ZSTD_cpuid_t) -> std::ffi::c_int {
     (cpuid.f7b & (1 as std::ffi::c_uint) << 8 as std::ffi::c_int
         != 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
 }
-#[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint {
-    val.leading_zeros() as i32 as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
-    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 
 const ZSTDv01_magicNumber: u32 = 0xFD2FB51E;
 const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
@@ -2947,6 +2939,7 @@ unsafe extern "C" fn ZSTD_dParam_withinBounds(
     }
     1 as std::ffi::c_int
 }
+
 #[export_name = crate::prefix!(ZSTD_DCtx_getParameter)]
 pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
     mut dctx: *mut ZSTD_DCtx,
@@ -2955,37 +2948,37 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
 ) -> size_t {
     match param as std::ffi::c_uint {
         100 => {
-            *value = ZSTD_highbit32((*dctx).maxWindowSize as u32) as std::ffi::c_int;
-            return 0 as std::ffi::c_int as size_t;
+            *value = (*dctx).maxWindowSize.ilog2() as i32;
+            0
         }
         1000 => {
             *value = (*dctx).format as std::ffi::c_int;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
         1001 => {
             *value = (*dctx).outBufferMode as std::ffi::c_int;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
         1002 => {
             *value = (*dctx).forceIgnoreChecksum as std::ffi::c_int;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
         1003 => {
             *value = (*dctx).refMultipleDDicts as std::ffi::c_int;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
         1004 => {
             *value = (*dctx).disableHufAsm;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
         1005 => {
             *value = (*dctx).maxBlockSizeParam;
-            return 0 as std::ffi::c_int as size_t;
+            0
         }
-        _ => {}
+        _ => -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t,
     }
-    -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t
 }
+
 #[export_name = crate::prefix!(ZSTD_DCtx_setParameter)]
 pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
     mut dctx: *mut ZSTD_DCtx,
