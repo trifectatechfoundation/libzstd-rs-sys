@@ -1,6 +1,6 @@
 use libc::{
     exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, pthread_cond_t, pthread_mutex_t,
-    FILE,
+    strcmp, strcpy, strerror, strrchr, FILE,
 };
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
@@ -52,11 +52,7 @@ extern "C" {
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strcpy(_: *mut std::ffi::c_char, _: *const std::ffi::c_char) -> *mut std::ffi::c_char;
-    fn strcmp(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn strrchr(_: *const std::ffi::c_char, _: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn UTIL_requireUserConfirmation(
         prompt: *const std::ffi::c_char,
         abortMsg: *const std::ffi::c_char,

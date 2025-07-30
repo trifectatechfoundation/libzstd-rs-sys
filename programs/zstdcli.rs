@@ -1,4 +1,4 @@
-use libc::{exit, fprintf, getenv, strcmp, strrchr, FILE};
+use libc::{exit, fprintf, getchar, getenv, memset, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::zstd::*;
 extern "C" {
@@ -9,18 +9,6 @@ extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn getc(__stream: *mut FILE) -> std::ffi::c_int;
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn strncmp(
-        _: *const std::ffi::c_char,
-        _: *const std::ffi::c_char,
-        _: std::ffi::c_ulong,
-    ) -> std::ffi::c_int;
-    fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
     static mut g_utilDisplayLevel: std::ffi::c_int;
     fn UTIL_isLink(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
     fn UTIL_isFIFO(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
@@ -369,10 +357,6 @@ pub const zom_bench: zstd_operation_mode = 3;
 pub const zom_test: zstd_operation_mode = 2;
 pub const zom_decompress: zstd_operation_mode = 1;
 pub const zom_compress: zstd_operation_mode = 0;
-#[inline]
-unsafe extern "C" fn getchar() -> std::ffi::c_int {
-    getc(stdin)
-}
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;
 pub const ZSTD_BLOCKSIZE_MAX: std::ffi::c_int = (1 as std::ffi::c_int) << ZSTD_BLOCKSIZELOG_MAX;
@@ -589,8 +573,7 @@ unsafe extern "C" fn usageAdvanced(mut programName: *const std::ffi::c_char) {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const std::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const std::ffi::c_char,
-        (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int,
+        (::core::mem::size_of::<size_t>()).wrapping_mul(8) as std::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const std::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const std::ffi::c_char,
     );
@@ -1162,7 +1145,7 @@ unsafe extern "C" fn parseCoverParameters(
     memset(
         params as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     loop {
         if longCommandWArg(
@@ -1256,7 +1239,7 @@ unsafe extern "C" fn parseFastCoverParameters(
     memset(
         params as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
     );
     loop {
         if longCommandWArg(
@@ -1413,7 +1396,7 @@ unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
     memset(
         &mut params as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     params.d = 8 as std::ffi::c_int as std::ffi::c_uint;
     params.steps = 4 as std::ffi::c_int as std::ffi::c_uint;
@@ -1442,7 +1425,7 @@ unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     memset(
         &mut params as *mut ZDICT_fastCover_params_t as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
     );
     params.d = 8 as std::ffi::c_int as std::ffi::c_uint;
     params.f = 20 as std::ffi::c_int as std::ffi::c_uint;
@@ -1706,31 +1689,23 @@ unsafe extern "C" fn parseCompressionParameters(
     1 as std::ffi::c_int as std::ffi::c_uint
 }
 unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParameters) {
-    (*params).windowLog = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong
-    {
+    (*params).windowLog = (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) as std::ffi::c_uint;
-    (*params).chainLog = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong
-    {
+    (*params).chainLog = (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_CHAINLOG_MAX_32
     } else {
         ZSTD_CHAINLOG_MAX_64
     }) as std::ffi::c_uint;
-    (*params).hashLog = (if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong
-    {
+    (*params).hashLog = (if (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) < 30 as std::ffi::c_int
     {
-        if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 4 as std::ffi::c_int as std::ffi::c_ulong
-        {
+        if ::core::mem::size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1738,9 +1713,7 @@ unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParamete
     } else {
         30 as std::ffi::c_int
     }) as std::ffi::c_uint;
-    (*params).searchLog = ((if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong
-    {
+    (*params).searchLog = ((if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
@@ -1749,17 +1722,13 @@ unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParamete
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as std::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
     g_overlapLog = ZSTD_OVERLAPLOG_MAX as u32;
-    g_ldmHashLog = (if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong
-    {
+    g_ldmHashLog = (if (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) < 30 as std::ffi::c_int
     {
-        if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 4 as std::ffi::c_int as std::ffi::c_ulong
-        {
+        if ::core::mem::size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1784,8 +1753,7 @@ unsafe extern "C" fn printVersion() {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const std::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const std::ffi::c_char,
-        (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int,
+        (::core::mem::size_of::<size_t>()).wrapping_mul(8) as std::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const std::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const std::ffi::c_char,
     );
@@ -2343,7 +2311,7 @@ unsafe fn main_0(
     memset(
         &mut compressionParams as *mut ZSTD_compressionParameters as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
-        ::core::mem::size_of::<ZSTD_compressionParameters>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTD_compressionParameters>(),
     );
     FIO_addAbortHandler();
     argNb = 1 as std::ffi::c_int;
@@ -2757,8 +2725,7 @@ unsafe fn main_0(
                                             &mut coverParams as *mut ZDICT_cover_params_t
                                                 as *mut std::ffi::c_void,
                                             0 as std::ffi::c_int,
-                                            ::core::mem::size_of::<ZDICT_cover_params_t>()
-                                                as std::ffi::c_ulong,
+                                            ::core::mem::size_of::<ZDICT_cover_params_t>(),
                                         );
                                     } else {
                                         let fresh0 = argument;
@@ -2792,8 +2759,7 @@ unsafe fn main_0(
                                             &mut fastCoverParams as *mut ZDICT_fastCover_params_t
                                                 as *mut std::ffi::c_void,
                                             0 as std::ffi::c_int,
-                                            ::core::mem::size_of::<ZDICT_fastCover_params_t>()
-                                                as std::ffi::c_ulong,
+                                            ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
                                         );
                                     } else {
                                         let fresh1 = argument;
@@ -3984,9 +3950,7 @@ unsafe fn main_0(
                                             }
                                         }
                                     }
-                                    if strlen(outDirName)
-                                        == 0 as std::ffi::c_int as std::ffi::c_ulong
-                                    {
+                                    if strlen(outDirName) == 0 {
                                         if g_displayLevel >= 1 as std::ffi::c_int {
                                             fprintf(
                                                 stderr,
@@ -4167,9 +4131,7 @@ unsafe fn main_0(
                                             }
                                         }
                                     }
-                                    if strlen(outMirroredDirName)
-                                        == 0 as std::ffi::c_int as std::ffi::c_ulong
-                                    {
+                                    if strlen(outMirroredDirName) == 0 {
                                         if g_displayLevel >= 1 as std::ffi::c_int {
                                             fprintf(
                                                 stderr,
@@ -4429,9 +4391,7 @@ unsafe fn main_0(
                                         }
                                     }
                                     memLimit = (1 as std::ffi::c_uint)
-                                        << (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                                            == 4 as std::ffi::c_int as std::ffi::c_ulong
-                                        {
+                                        << (if ::core::mem::size_of::<size_t>() == 4 {
                                             ZSTD_WINDOWLOG_MAX_32
                                         } else {
                                             ZSTD_WINDOWLOG_MAX_64
@@ -4940,9 +4900,7 @@ unsafe fn main_0(
                 stderr,
                 b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const std::ffi::c_char,
                 b"Zstandard CLI\0" as *const u8 as *const std::ffi::c_char,
-                (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-                    .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                    as std::ffi::c_int,
+                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as std::ffi::c_int,
                 b"v1.5.8\0" as *const u8 as *const std::ffi::c_char,
                 b"Yann Collet\0" as *const u8 as *const std::ffi::c_char,
             );
@@ -5274,8 +5232,7 @@ unsafe fn main_0(
                                     &mut dictParams as *mut ZDICT_legacy_params_t
                                         as *mut std::ffi::c_void,
                                     0 as std::ffi::c_int,
-                                    ::core::mem::size_of::<ZDICT_legacy_params_t>()
-                                        as std::ffi::c_ulong,
+                                    ::core::mem::size_of::<ZDICT_legacy_params_t>(),
                                 );
                                 dictParams.selectivityLevel = dictSelect;
                                 dictParams.zParams = zParams;
