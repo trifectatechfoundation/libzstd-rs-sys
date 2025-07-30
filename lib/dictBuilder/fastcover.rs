@@ -3,10 +3,12 @@ use libc::{
     PTHREAD_MUTEX_INITIALIZER,
 };
 
+use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
+use crate::lib::dictBuilder::cover::ZDICT_cover_params_t;
+use crate::lib::dictBuilder::zdict::ZDICT_params_t;
 use crate::lib::zstd::*;
 
 extern "C" {
-    pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
@@ -16,9 +18,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn clock() -> clock_t;
-    fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx;
-    fn POOL_free(ctx: *mut POOL_ctx);
-    fn POOL_add(ctx: *mut POOL_ctx, function: POOL_function, opaque: *mut std::ffi::c_void);
     fn ZDICT_finalizeDictionary(
         dstDictBuffer: *mut std::ffi::c_void,
         maxDictSize: size_t,
@@ -67,27 +66,6 @@ pub type size_t = std::ffi::c_ulong;
 pub type __clock_t = std::ffi::c_long;
 pub type clock_t = __clock_t;
 pub type unalign64 = u64;
-pub type POOL_ctx = POOL_ctx_s;
-pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_params_t {
-    pub compressionLevel: std::ffi::c_int,
-    pub notificationLevel: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_cover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_fastCover_params_t {

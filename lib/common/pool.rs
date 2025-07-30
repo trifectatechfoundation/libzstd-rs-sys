@@ -13,32 +13,30 @@ extern "C" {
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct POOL_ctx_s {
-    pub customMem: ZSTD_customMem,
-    pub threads: *mut pthread_t,
-    pub threadCapacity: size_t,
-    pub threadLimit: size_t,
-    pub queue: *mut POOL_job,
-    pub queueHead: size_t,
-    pub queueTail: size_t,
-    pub queueSize: size_t,
-    pub numThreadsBusy: size_t,
-    pub queueEmpty: std::ffi::c_int,
-    pub queueMutex: pthread_mutex_t,
-    pub queuePushCond: pthread_cond_t,
-    pub queuePopCond: pthread_cond_t,
-    pub shutdown: std::ffi::c_int,
+pub struct POOL_ctx {
+    customMem: ZSTD_customMem,
+    threads: *mut pthread_t,
+    threadCapacity: size_t,
+    threadLimit: size_t,
+    queue: *mut POOL_job,
+    queueHead: size_t,
+    queueTail: size_t,
+    queueSize: size_t,
+    numThreadsBusy: size_t,
+    queueEmpty: std::ffi::c_int,
+    queueMutex: pthread_mutex_t,
+    queuePushCond: pthread_cond_t,
+    queuePopCond: pthread_cond_t,
+    shutdown: std::ffi::c_int,
 }
-pub type POOL_job = POOL_job_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct POOL_job_s {
-    pub function: POOL_function,
-    pub opaque: *mut std::ffi::c_void,
+pub struct POOL_job {
+    function: POOL_function,
+    opaque: *mut std::ffi::c_void,
 }
 pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
-pub type ZSTD_threadPool = POOL_ctx_s;
-pub type POOL_ctx = POOL_ctx_s;
+pub type ZSTD_threadPool = POOL_ctx;
 static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
     {
         ZSTD_customMem {
@@ -332,7 +330,7 @@ unsafe extern "C" fn POOL_add_internal(
     mut function: POOL_function,
     mut opaque: *mut std::ffi::c_void,
 ) {
-    let mut job = POOL_job_s {
+    let mut job = POOL_job {
         function: None,
         opaque: std::ptr::null_mut::<std::ffi::c_void>(),
     };

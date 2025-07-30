@@ -8,17 +8,9 @@ use libzstd_rs::lib::compress::zstd_compress::{
 };
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 
-extern "C" {
-    fn UTIL_getTime() -> UTIL_time_t;
-    fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
-    fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct UTIL_time_t {
-    pub t: PTime,
-}
-pub type PTime = u64;
+use crate::timefn::{PTime, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
+use crate::util::UTIL_isRegularFile;
+
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
@@ -65,11 +57,7 @@ pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
 static mut g_mutexInit: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_mutex: pthread_mutex_t = PTHREAD_MUTEX_INITIALIZER;
-static mut g_enableTime: UTIL_time_t = {
-    UTIL_time_t {
-        t: 0 as std::ffi::c_int as PTime,
-    }
-};
+static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 #[no_mangle]
 pub unsafe extern "C" fn TRACE_enable(mut filename: *const std::ffi::c_char) {
     let writeHeader = (UTIL_isRegularFile(filename) == 0) as std::ffi::c_int;

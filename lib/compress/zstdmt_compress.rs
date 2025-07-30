@@ -6,6 +6,9 @@ use libc::{
     pthread_mutexattr_t,
 };
 
+use crate::lib::common::pool::{
+    POOL_create_advanced, POOL_ctx, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd,
+};
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
@@ -16,7 +19,6 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::zstd::*;
 extern "C" {
     pub type ZSTD_CDict_s;
-    pub type POOL_ctx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
@@ -70,19 +72,6 @@ extern "C" {
         srcSize: size_t,
     ) -> size_t;
     fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx);
-    fn POOL_create_advanced(
-        numThreads: size_t,
-        queueSize: size_t,
-        customMem: ZSTD_customMem,
-    ) -> *mut POOL_ctx;
-    fn POOL_free(ctx: *mut POOL_ctx);
-    fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> std::ffi::c_int;
-    fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t;
-    fn POOL_tryAdd(
-        ctx: *mut POOL_ctx,
-        function: POOL_function,
-        opaque: *mut std::ffi::c_void,
-    ) -> std::ffi::c_int;
     fn ZSTD_ldm_fillHashTable(
         state: *mut ldmState_t,
         ip: *const u8,
@@ -483,7 +472,6 @@ pub struct ZSTDMT_jobDescription {
     pub dstFlushed: size_t,
     pub frameChecksumNeeded: std::ffi::c_uint,
 }
-pub type POOL_ctx = POOL_ctx_s;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -652,7 +640,7 @@ pub struct SeqCollector {
     pub seqIndex: size_t,
     pub maxSequences: size_t,
 }
-pub type ZSTD_threadPool = POOL_ctx_s;
+pub type ZSTD_threadPool = POOL_ctx;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cwksp {
@@ -740,7 +728,6 @@ pub struct ZSTD_frameProgression {
     pub nbActiveWorkers: std::ffi::c_uint,
 }
 pub type unalign32 = u32;
-pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;

@@ -5,6 +5,10 @@ use libc::{
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 use libzstd_rs::lib::zstd::*;
 
+use crate::datagen::RDG_genBuffer;
+use crate::lorem::LOREM_genBuffer;
+use crate::util::{UTIL_getFileSize, UTIL_getTotalFileSize, UTIL_isDirectory};
+
 extern "C" {
     pub type BMK_timedFnState_s;
     pub type ZSTD_CCtx_s;
@@ -37,12 +41,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn UTIL_isDirectory(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
-    fn UTIL_getTotalFileSize(
-        fileNamesTable: *const *const std::ffi::c_char,
-        nbFiles: std::ffi::c_uint,
-    ) -> u64;
     fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> std::ffi::c_int;
     fn BMK_extract_runTime(outcome: BMK_runOutcome_t) -> BMK_runTime_t;
     fn BMK_benchTimedFn(
@@ -98,14 +96,6 @@ extern "C" {
         src: *const std::ffi::c_void,
         srcSize: size_t,
     ) -> std::ffi::c_ulonglong;
-    fn RDG_genBuffer(
-        buffer: *mut std::ffi::c_void,
-        size: size_t,
-        matchProba: std::ffi::c_double,
-        litProba: std::ffi::c_double,
-        seed: std::ffi::c_uint,
-    );
-    fn LOREM_genBuffer(buffer: *mut std::ffi::c_void, size: size_t, seed: std::ffi::c_uint);
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]

@@ -1,5 +1,11 @@
 use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
+use libzstd_rs::lib::dictBuilder::cover::ZDICT_cover_params_t;
+use libzstd_rs::lib::dictBuilder::fastcover::ZDICT_fastCover_params_t;
+use libzstd_rs::lib::dictBuilder::zdict::{ZDICT_legacy_params_t, ZDICT_params_t};
 use libzstd_rs::lib::zstd::*;
+
+use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_getTime, UTIL_time_t};
+use crate::util::UTIL_getFileSize;
 
 extern "C" {
     static mut stderr: *mut FILE;
@@ -22,9 +28,6 @@ extern "C" {
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
-    fn UTIL_getTime() -> UTIL_time_t;
-    fn UTIL_clockSpanMicro(clockStart: UTIL_time_t) -> PTime;
     fn ZDICT_isError(errorCode: size_t) -> std::ffi::c_uint;
     fn ZDICT_getErrorName(errorCode: size_t) -> *const std::ffi::c_char;
     fn ZDICT_trainFromBuffer_cover(
@@ -69,51 +72,6 @@ extern "C" {
     ) -> size_t;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type PTime = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct UTIL_time_t {
-    pub t: PTime,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_params_t {
-    pub compressionLevel: std::ffi::c_int,
-    pub notificationLevel: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_cover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_fastCover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub f: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub accel: std::ffi::c_uint,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_legacy_params_t {
-    pub selectivityLevel: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fileStats {

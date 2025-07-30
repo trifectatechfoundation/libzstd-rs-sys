@@ -1,7 +1,8 @@
 use libc::{
     __errno_location, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror,
-    fgets, fileno, fopen, fprintf, getchar, isatty, mkdir, opendir, readdir, strchr, strcmp,
-    strdup, strerror, strrchr, strstr, strtol, sysconf, DIR, FILE, _SC_NPROCESSORS_ONLN,
+    fgets, fileno, fopen, fprintf, getchar, isatty, mkdir, mode_t, opendir, readdir, strchr,
+    strcmp, strdup, strerror, strrchr, strstr, strtol, sysconf, timespec, DIR, FILE,
+    _SC_NPROCESSORS_ONLN,
 };
 
 extern "C" {
@@ -65,13 +66,6 @@ pub type __blkcnt_t = std::ffi::c_long;
 pub type __syscall_slong_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type ptrdiff_t = std::ffi::c_long;
-pub type mode_t = __mode_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct timespec {
-    pub tv_sec: __time_t,
-    pub tv_nsec: __syscall_slong_t,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct stat {
