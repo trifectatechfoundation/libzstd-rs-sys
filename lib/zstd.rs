@@ -64,6 +64,21 @@ pub struct ZSTD_compressionParameters {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct ZSTD_frameParameters {
+    pub contentSizeFlag: std::ffi::c_int,
+    pub checksumFlag: std::ffi::c_int,
+    pub noDictIDFlag: std::ffi::c_int,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct ZSTD_parameters {
+    pub cParams: ZSTD_compressionParameters,
+    pub fParams: ZSTD_frameParameters,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct ZSTD_customMem {
     pub customAlloc: ZSTD_allocFunction,
     pub customFree: ZSTD_freeFunction,

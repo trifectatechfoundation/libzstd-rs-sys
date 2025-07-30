@@ -2,17 +2,28 @@ use libc::{
     __errno_location, abort, exit, fclose, fflush, fopen, fprintf, setpriority, strerror, strrchr,
     FILE, PRIO_PROCESS,
 };
+use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
+use libzstd_rs::lib::compress::zstd_compress::{
+    ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_compress2,
+    ZSTD_compressBound, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_maxCLevel, ZSTD_sizeof_CCtx,
+};
+use libzstd_rs::lib::decompress::zstd_decompress::{
+    ZSTD_DCtx_loadDictionary, ZSTD_DCtx_reset, ZSTD_createDCtx, ZSTD_decompressStream,
+    ZSTD_findDecompressedSize, ZSTD_freeDCtx,
+};
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 use libzstd_rs::lib::zstd::*;
 
+use crate::benchfn::{
+    BMK_benchParams_t, BMK_benchTimedFn, BMK_createTimedFnState, BMK_extract_runTime,
+    BMK_freeTimedFnState, BMK_isCompleted_TimedFn, BMK_isSuccessful_runOutcome, BMK_timedFnState_t,
+};
 use crate::datagen::RDG_genBuffer;
 use crate::lorem::LOREM_genBuffer;
+use crate::timefn::UTIL_support_MT_measurements;
 use crate::util::{UTIL_getFileSize, UTIL_getTotalFileSize, UTIL_isDirectory};
 
 extern "C" {
-    pub type BMK_timedFnState_s;
-    pub type ZSTD_CCtx_s;
-    pub type ZSTD_DCtx_s;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
     fn fread(
@@ -41,104 +52,8 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> std::ffi::c_int;
-    fn BMK_extract_runTime(outcome: BMK_runOutcome_t) -> BMK_runTime_t;
-    fn BMK_benchTimedFn(
-        timedFnState: *mut BMK_timedFnState_t,
-        params: BMK_benchParams_t,
-    ) -> BMK_runOutcome_t;
-    fn BMK_isCompleted_TimedFn(timedFnState: *const BMK_timedFnState_t) -> std::ffi::c_int;
-    fn BMK_createTimedFnState(
-        total_ms: std::ffi::c_uint,
-        run_ms: std::ffi::c_uint,
-    ) -> *mut BMK_timedFnState_t;
-    fn BMK_freeTimedFnState(state: *mut BMK_timedFnState_t);
-    fn UTIL_support_MT_measurements() -> std::ffi::c_int;
-    fn ZSTD_compressBound(srcSize: size_t) -> size_t;
-    fn ZSTD_isError(result: size_t) -> std::ffi::c_uint;
-    fn ZSTD_getErrorName(result: size_t) -> *const std::ffi::c_char;
-    fn ZSTD_maxCLevel() -> std::ffi::c_int;
-    fn ZSTD_createCCtx() -> *mut ZSTD_CCtx;
-    fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
-    fn ZSTD_createDCtx() -> *mut ZSTD_DCtx;
-    fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t;
-    fn ZSTD_CCtx_setParameter(
-        cctx: *mut ZSTD_CCtx,
-        param: ZSTD_cParameter,
-        value: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_CCtx_reset(cctx: *mut ZSTD_CCtx, reset: ZSTD_ResetDirective) -> size_t;
-    fn ZSTD_compress2(
-        cctx: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_DCtx_reset(dctx: *mut ZSTD_DCtx, reset: ZSTD_ResetDirective) -> size_t;
-    fn ZSTD_decompressStream(
-        zds: *mut ZSTD_DStream,
-        output: *mut ZSTD_outBuffer,
-        input: *mut ZSTD_inBuffer,
-    ) -> size_t;
-    fn ZSTD_CCtx_loadDictionary(
-        cctx: *mut ZSTD_CCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTD_DCtx_loadDictionary(
-        dctx: *mut ZSTD_DCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTD_sizeof_CCtx(cctx: *const ZSTD_CCtx) -> size_t;
-    fn ZSTD_findDecompressedSize(
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> std::ffi::c_ulonglong;
 }
 pub type size_t = std::ffi::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct BMK_runTime_t {
-    pub nanoSecPerRun: std::ffi::c_double,
-    pub sumOfReturn: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct BMK_runOutcome_t {
-    pub internal_never_ever_use_directly: BMK_runTime_t,
-    pub error_result_never_ever_use_directly: size_t,
-    pub error_tag_never_ever_use_directly: std::ffi::c_int,
-}
-pub type BMK_benchFn_t = Option<
-    unsafe extern "C" fn(
-        *const std::ffi::c_void,
-        size_t,
-        *mut std::ffi::c_void,
-        size_t,
-        *mut std::ffi::c_void,
-    ) -> size_t,
->;
-pub type BMK_initFn_t = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> size_t>;
-pub type BMK_errorFn_t = Option<unsafe extern "C" fn(size_t) -> std::ffi::c_uint>;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct BMK_benchParams_t {
-    pub benchFn: BMK_benchFn_t,
-    pub benchPayload: *mut std::ffi::c_void,
-    pub initFn: BMK_initFn_t,
-    pub initPayload: *mut std::ffi::c_void,
-    pub errorFn: BMK_errorFn_t,
-    pub blockCount: size_t,
-    pub srcBuffers: *const *const std::ffi::c_void,
-    pub srcSizes: *const size_t,
-    pub dstBuffers: *const *mut std::ffi::c_void,
-    pub dstCapacities: *const size_t,
-    pub blockResults: *mut size_t,
-}
-pub type BMK_timedFnState_t = BMK_timedFnState_s;
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
@@ -183,15 +98,6 @@ pub type ZSTD_ResetDirective = std::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
 pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-pub type ZSTD_DStream = ZSTD_DCtx;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;

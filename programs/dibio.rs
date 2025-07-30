@@ -1,7 +1,14 @@
 use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
-use libzstd_rs::lib::dictBuilder::cover::ZDICT_cover_params_t;
-use libzstd_rs::lib::dictBuilder::fastcover::ZDICT_fastCover_params_t;
-use libzstd_rs::lib::dictBuilder::zdict::{ZDICT_legacy_params_t, ZDICT_params_t};
+use libzstd_rs::lib::dictBuilder::cover::{
+    ZDICT_cover_params_t, ZDICT_optimizeTrainFromBuffer_cover, ZDICT_trainFromBuffer_cover,
+};
+use libzstd_rs::lib::dictBuilder::fastcover::{
+    ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
+    ZDICT_trainFromBuffer_fastCover,
+};
+use libzstd_rs::lib::dictBuilder::zdict::{
+    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_trainFromBuffer_legacy,
+};
 use libzstd_rs::lib::zstd::*;
 
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_getTime, UTIL_time_t};
@@ -28,48 +35,6 @@ extern "C" {
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn ZDICT_isError(errorCode: size_t) -> std::ffi::c_uint;
-    fn ZDICT_getErrorName(errorCode: size_t) -> *const std::ffi::c_char;
-    fn ZDICT_trainFromBuffer_cover(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: ZDICT_cover_params_t,
-    ) -> size_t;
-    fn ZDICT_optimizeTrainFromBuffer_cover(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: *mut ZDICT_cover_params_t,
-    ) -> size_t;
-    fn ZDICT_trainFromBuffer_fastCover(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: ZDICT_fastCover_params_t,
-    ) -> size_t;
-    fn ZDICT_optimizeTrainFromBuffer_fastCover(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: *mut ZDICT_fastCover_params_t,
-    ) -> size_t;
-    fn ZDICT_trainFromBuffer_legacy(
-        dictBuffer: *mut std::ffi::c_void,
-        dictBufferCapacity: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: ZDICT_legacy_params_t,
-    ) -> size_t;
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
