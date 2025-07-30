@@ -348,54 +348,6 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
-#[inline]
-unsafe extern "C" fn ZSTD_cpuid() -> ZSTD_cpuid_t {
-    let mut f1c = 0 as std::ffi::c_int as u32;
-    let mut f1d = 0 as std::ffi::c_int as u32;
-    let mut f7b = 0 as std::ffi::c_int as u32;
-    let mut f7c = 0 as std::ffi::c_int as u32;
-    let mut n: u32 = 0;
-    asm!(
-        "cpuid", inlateout("ax") 0 as std::ffi::c_int => n, out("ecx") _, out("edx") _,
-        options(preserves_flags, pure, readonly, att_syntax)
-    );
-    if n >= 1 as std::ffi::c_int as u32 {
-        let mut f1a: u32 = 0;
-        asm!(
-            "cpuid", inlateout("ax") 1 as std::ffi::c_int => f1a, lateout("cx") f1c,
-            lateout("dx") f1d, options(preserves_flags, pure, readonly, att_syntax)
-        );
-    }
-    if n >= 7 as std::ffi::c_int as u32 {
-        let mut f7a: u32 = 0;
-        asm!(
-            "cpuid\nmov {restmp0:x}, %bx", restmp0 = lateout(reg) f7b, inlateout("ax") 7
-            as std::ffi::c_int => f7a, inlateout("cx") 0 as std::ffi::c_int => f7c,
-            out("edx") _, options(preserves_flags, pure, readonly, att_syntax)
-        );
-    }
-    let mut cpuid = ZSTD_cpuid_t {
-        f1c: 0,
-        f1d: 0,
-        f7b: 0,
-        f7c: 0,
-    };
-    cpuid.f1c = f1c;
-    cpuid.f1d = f1d;
-    cpuid.f7b = f7b;
-    cpuid.f7c = f7c;
-    cpuid
-}
-#[inline]
-unsafe extern "C" fn ZSTD_cpuid_bmi1(cpuid: ZSTD_cpuid_t) -> std::ffi::c_int {
-    (cpuid.f7b & (1 as std::ffi::c_uint) << 3 as std::ffi::c_int
-        != 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
-}
-#[inline]
-unsafe extern "C" fn ZSTD_cpuid_bmi2(cpuid: ZSTD_cpuid_t) -> std::ffi::c_int {
-    (cpuid.f7b & (1 as std::ffi::c_uint) << 8 as std::ffi::c_int
-        != 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
-}
 
 const ZSTDv01_magicNumber: u32 = 0xFD2FB51E;
 const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
