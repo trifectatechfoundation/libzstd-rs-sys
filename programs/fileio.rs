@@ -1,13 +1,34 @@
 use libc::{
-    exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, pthread_cond_t, pthread_mutex_t,
-    strcmp, strcpy, strerror, strrchr, FILE,
+    clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t, pthread_cond_t,
+    strcmp, strcpy, strerror, strrchr, timespec, FILE,
 };
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
+use libzstd_rs::lib::zstd::*;
+use libzstd_rs::{MEM_readLE24, MEM_readLE32};
+
+use crate::fileio_asyncio::{
+    AIO_ReadPool_closeFile, AIO_ReadPool_consumeAndRefill, AIO_ReadPool_consumeBytes,
+    AIO_ReadPool_create, AIO_ReadPool_fillBuffer, AIO_ReadPool_free, AIO_ReadPool_getFile,
+    AIO_ReadPool_setAsync, AIO_ReadPool_setFile, AIO_WritePool_acquireJob, AIO_WritePool_closeFile,
+    AIO_WritePool_create, AIO_WritePool_enqueueAndReacquireWriteJob, AIO_WritePool_free,
+    AIO_WritePool_getFile, AIO_WritePool_releaseIoJob, AIO_WritePool_setAsync,
+    AIO_WritePool_setFile, AIO_WritePool_sparseWriteEnd, AIO_supported, FIO_prefs_t, IOJob_t,
+    ReadPoolCtx_t, WritePoolCtx_t,
+};
+use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
+use crate::util::{
+    stat, stat_t, FileNamesTable, UTIL_HumanReadableSize_t, UTIL_compareStr,
+    UTIL_createMirroredDestDirName, UTIL_getFileSize, UTIL_getFileSizeStat, UTIL_isBlockDevStat,
+    UTIL_isCompressedFile, UTIL_isConsole, UTIL_isDirectory, UTIL_isDirectoryStat, UTIL_isFIFOStat,
+    UTIL_isFdRegularFile, UTIL_isFileDescriptorPipe, UTIL_isRegularFile, UTIL_isRegularFileStat,
+    UTIL_isSameFile, UTIL_isSameFileStat, UTIL_makeHumanReadableSize,
+    UTIL_mirrorSourceFilesDirectories, UTIL_requireUserConfirmation, UTIL_setFDStat, UTIL_stat,
+    UTIL_utime, __off_t,
+};
 
 extern "C" {
     pub type ZSTD_CCtx_s;
-    pub type POOL_ctx_s;
     pub type lzma_internal_s;
     pub type internal_state;
     fn close(__fd: std::ffi::c_int) -> std::ffi::c_int;
@@ -53,56 +74,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn UTIL_requireUserConfirmation(
-        prompt: *const std::ffi::c_char,
-        abortMsg: *const std::ffi::c_char,
-        acceptableLetters: *const std::ffi::c_char,
-        hasStdinInput: std::ffi::c_int,
-    ) -> std::ffi::c_int;
-    fn UTIL_stat(filename: *const std::ffi::c_char, statbuf: *mut stat_t) -> std::ffi::c_int;
-    fn UTIL_setFDStat(
-        fd: std::ffi::c_int,
-        filename: *const std::ffi::c_char,
-        statbuf: *const stat_t,
-    ) -> std::ffi::c_int;
-    fn UTIL_utime(filename: *const std::ffi::c_char, statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_isRegularFileStat(statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_isDirectoryStat(statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_isFIFOStat(statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_isBlockDevStat(statbuf: *const stat_t) -> std::ffi::c_int;
-    fn UTIL_getFileSizeStat(statbuf: *const stat_t) -> u64;
-    fn UTIL_isFdRegularFile(fd: std::ffi::c_int) -> std::ffi::c_int;
-    fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_isDirectory(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_isSameFile(
-        file1: *const std::ffi::c_char,
-        file2: *const std::ffi::c_char,
-    ) -> std::ffi::c_int;
-    fn UTIL_isSameFileStat(
-        file1: *const std::ffi::c_char,
-        file2: *const std::ffi::c_char,
-        file1Stat: *const stat_t,
-        file2Stat: *const stat_t,
-    ) -> std::ffi::c_int;
-    fn UTIL_isCompressedFile(
-        infilename: *const std::ffi::c_char,
-        extensionList: *mut *const std::ffi::c_char,
-    ) -> std::ffi::c_int;
-    fn UTIL_isFileDescriptorPipe(filename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_isConsole(file: *mut FILE) -> std::ffi::c_int;
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
-    fn UTIL_makeHumanReadableSize(size: u64) -> UTIL_HumanReadableSize_t;
-    fn UTIL_compareStr(p1: *const std::ffi::c_void, p2: *const std::ffi::c_void)
-        -> std::ffi::c_int;
-    fn UTIL_mirrorSourceFilesDirectories(
-        fileNamesTable: *mut *const std::ffi::c_char,
-        nbFiles: std::ffi::c_uint,
-        outDirName: *const std::ffi::c_char,
-    );
-    fn UTIL_createMirroredDestDirName(
-        srcFileName: *const std::ffi::c_char,
-        outDirRootName: *const std::ffi::c_char,
-    ) -> *mut std::ffi::c_char;
     fn clock() -> clock_t;
     fn open(__file: *const std::ffi::c_char, __oflag: std::ffi::c_int, _: ...) -> std::ffi::c_int;
     fn __assert_fail(
@@ -113,9 +84,6 @@ extern "C" {
     ) -> !;
     fn __errno_location() -> *mut std::ffi::c_int;
     fn signal(__sig: std::ffi::c_int, __handler: __sighandler_t) -> __sighandler_t;
-    fn UTIL_getTime() -> UTIL_time_t;
-    fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
-    fn UTIL_clockSpanMicro(clockStart: UTIL_time_t) -> PTime;
     fn ZSTD_getFrameContentSize(
         src: *const std::ffi::c_void,
         srcSize: size_t,
@@ -197,26 +165,6 @@ extern "C" {
     fn ZSTD_DCtx_setMaxWindowSize(dctx: *mut ZSTD_DCtx, maxWindowSize: size_t) -> size_t;
     fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZSTD_frameProgression;
     fn ZSTD_toFlushNow(cctx: *mut ZSTD_CCtx) -> size_t;
-    fn AIO_supported() -> std::ffi::c_int;
-    fn AIO_WritePool_releaseIoJob(job: *mut IOJob_t);
-    fn AIO_WritePool_acquireJob(ctx: *mut WritePoolCtx_t) -> *mut IOJob_t;
-    fn AIO_WritePool_enqueueAndReacquireWriteJob(job: *mut *mut IOJob_t);
-    fn AIO_WritePool_sparseWriteEnd(ctx: *mut WritePoolCtx_t);
-    fn AIO_WritePool_setFile(ctx: *mut WritePoolCtx_t, file: *mut FILE);
-    fn AIO_WritePool_getFile(ctx: *const WritePoolCtx_t) -> *mut FILE;
-    fn AIO_WritePool_closeFile(ctx: *mut WritePoolCtx_t) -> std::ffi::c_int;
-    fn AIO_WritePool_create(prefs: *const FIO_prefs_t, bufferSize: size_t) -> *mut WritePoolCtx_t;
-    fn AIO_WritePool_free(ctx: *mut WritePoolCtx_t);
-    fn AIO_WritePool_setAsync(ctx: *mut WritePoolCtx_t, async_0: std::ffi::c_int);
-    fn AIO_ReadPool_create(prefs: *const FIO_prefs_t, bufferSize: size_t) -> *mut ReadPoolCtx_t;
-    fn AIO_ReadPool_free(ctx: *mut ReadPoolCtx_t);
-    fn AIO_ReadPool_setAsync(ctx: *mut ReadPoolCtx_t, async_0: std::ffi::c_int);
-    fn AIO_ReadPool_consumeBytes(ctx: *mut ReadPoolCtx_t, n: size_t);
-    fn AIO_ReadPool_fillBuffer(ctx: *mut ReadPoolCtx_t, n: size_t) -> size_t;
-    fn AIO_ReadPool_consumeAndRefill(ctx: *mut ReadPoolCtx_t) -> size_t;
-    fn AIO_ReadPool_setFile(ctx: *mut ReadPoolCtx_t, file: *mut FILE);
-    fn AIO_ReadPool_getFile(ctx: *const ReadPoolCtx_t) -> *mut FILE;
-    fn AIO_ReadPool_closeFile(ctx: *mut ReadPoolCtx_t) -> std::ffi::c_int;
     fn zlibVersion() -> *const std::ffi::c_char;
     fn deflate(strm: z_streamp, flush: std::ffi::c_int) -> std::ffi::c_int;
     fn deflateEnd(strm: z_streamp) -> std::ffi::c_int;
@@ -252,76 +200,15 @@ extern "C" {
         __prot: std::ffi::c_int,
         __flags: std::ffi::c_int,
         __fd: std::ffi::c_int,
-        __offset: __off_t,
+        __offset: off_t,
     ) -> *mut std::ffi::c_void;
     fn munmap(__addr: *mut std::ffi::c_void, __len: size_t) -> std::ffi::c_int;
 }
-pub type __dev_t = std::ffi::c_ulong;
-pub type __uid_t = std::ffi::c_uint;
-pub type __gid_t = std::ffi::c_uint;
-pub type __ino_t = std::ffi::c_ulong;
-pub type __mode_t = std::ffi::c_uint;
-pub type __nlink_t = std::ffi::c_ulong;
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
-pub type __clock_t = std::ffi::c_long;
-pub type __time_t = std::ffi::c_long;
-pub type __blksize_t = std::ffi::c_long;
-pub type __blkcnt_t = std::ffi::c_long;
-pub type __syscall_slong_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type clock_t = __clock_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct timespec {
-    pub tv_sec: __time_t,
-    pub tv_nsec: __syscall_slong_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct stat {
-    pub st_dev: __dev_t,
-    pub st_ino: __ino_t,
-    pub st_nlink: __nlink_t,
-    pub st_mode: __mode_t,
-    pub st_uid: __uid_t,
-    pub st_gid: __gid_t,
-    pub __pad0: std::ffi::c_int,
-    pub st_rdev: __dev_t,
-    pub st_size: __off_t,
-    pub st_blksize: __blksize_t,
-    pub st_blocks: __blkcnt_t,
-    pub st_atim: timespec,
-    pub st_mtim: timespec,
-    pub st_ctim: timespec,
-    pub __glibc_reserved: [__syscall_slong_t; 3],
-}
 pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const std::ffi::c_void, *const std::ffi::c_void) -> std::ffi::c_int,
 >;
-pub type stat_t = stat;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct UTIL_HumanReadableSize_t {
-    pub value: std::ffi::c_double,
-    pub precision: std::ffi::c_int,
-    pub suffix: *const std::ffi::c_char,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FileNamesTable {
-    pub fileNames: *mut *const std::ffi::c_char,
-    pub buf: *mut std::ffi::c_char,
-    pub tableSize: size_t,
-    pub tableCapacity: size_t,
-}
 pub type __sighandler_t = Option<unsafe extern "C" fn(std::ffi::c_int) -> ()>;
-pub type PTime = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct UTIL_time_t {
-    pub t: PTime,
-}
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
@@ -423,43 +310,6 @@ pub const FIO_lzmaCompression: FIO_compressionType_t = 3;
 pub const FIO_xzCompression: FIO_compressionType_t = 2;
 pub const FIO_gzipCompression: FIO_compressionType_t = 1;
 pub const FIO_zstdCompression: FIO_compressionType_t = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FIO_prefs_s {
-    pub compressionType: FIO_compressionType_t,
-    pub sparseFileSupport: std::ffi::c_int,
-    pub dictIDFlag: std::ffi::c_int,
-    pub checksumFlag: std::ffi::c_int,
-    pub jobSize: std::ffi::c_int,
-    pub overlapLog: std::ffi::c_int,
-    pub adaptiveMode: std::ffi::c_int,
-    pub useRowMatchFinder: std::ffi::c_int,
-    pub rsyncable: std::ffi::c_int,
-    pub minAdaptLevel: std::ffi::c_int,
-    pub maxAdaptLevel: std::ffi::c_int,
-    pub ldmFlag: std::ffi::c_int,
-    pub ldmHashLog: std::ffi::c_int,
-    pub ldmMinMatch: std::ffi::c_int,
-    pub ldmBucketSizeLog: std::ffi::c_int,
-    pub ldmHashRateLog: std::ffi::c_int,
-    pub streamSrcSize: size_t,
-    pub targetCBlockSize: size_t,
-    pub srcSizeHint: std::ffi::c_int,
-    pub testMode: std::ffi::c_int,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-    pub removeSrcFile: std::ffi::c_int,
-    pub overwrite: std::ffi::c_int,
-    pub asyncIO: std::ffi::c_int,
-    pub memLimit: std::ffi::c_uint,
-    pub nbWorkers: std::ffi::c_int,
-    pub excludeCompressedFiles: std::ffi::c_int,
-    pub patchFromMode: std::ffi::c_int,
-    pub contentSize: std::ffi::c_int,
-    pub allowBlockDevices: std::ffi::c_int,
-    pub passThrough: std::ffi::c_int,
-    pub mmapDict: ZSTD_ParamSwitch_e,
-}
-pub type FIO_prefs_t = FIO_prefs_s;
 pub type FIO_dictBufferType_t = std::ffi::c_uint;
 pub const FIO_mmapDict: FIO_dictBufferType_t = 1;
 pub const FIO_mallocDict: FIO_dictBufferType_t = 0;
@@ -491,53 +341,6 @@ pub struct cRess_t {
     pub cctx: *mut ZSTD_CStream,
     pub writeCtx: *mut WritePoolCtx_t,
     pub readCtx: *mut ReadPoolCtx_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ReadPoolCtx_t {
-    pub base: IOPoolCtx_t,
-    pub reachedEof: std::ffi::c_int,
-    pub nextReadOffset: u64,
-    pub waitingOnOffset: u64,
-    pub currentJobHeld: *mut std::ffi::c_void,
-    pub coalesceBuffer: *mut u8,
-    pub srcBuffer: *mut u8,
-    pub srcBufferLoaded: size_t,
-    pub completedJobs: [*mut std::ffi::c_void; 10],
-    pub completedJobsCount: std::ffi::c_int,
-    pub jobCompletedCond: pthread_cond_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct IOPoolCtx_t {
-    pub threadPool: *mut POOL_ctx,
-    pub threadPoolActive: std::ffi::c_int,
-    pub totalIoJobs: std::ffi::c_int,
-    pub prefs: *const FIO_prefs_t,
-    pub poolFunction: POOL_function,
-    pub file: *mut FILE,
-    pub ioJobsMutex: pthread_mutex_t,
-    pub availableJobs: [*mut std::ffi::c_void; 10],
-    pub availableJobsCount: std::ffi::c_int,
-    pub jobBufferSize: size_t,
-}
-pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
-pub type POOL_ctx = POOL_ctx_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct WritePoolCtx_t {
-    pub base: IOPoolCtx_t,
-    pub storedSkips: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct IOJob_t {
-    pub ctx: *mut std::ffi::c_void,
-    pub file: *mut FILE,
-    pub buffer: *mut std::ffi::c_void,
-    pub bufferSize: size_t,
-    pub usedBufferSize: size_t,
-    pub offset: u64,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -705,8 +508,7 @@ pub const info_frame_error: InfoError = 1;
 pub const info_success: InfoError = 0;
 pub const _IOFBF: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const UINT64_MAX: std::ffi::c_ulong = 18446744073709551615 as std::ffi::c_ulong;
-use libzstd_rs::lib::zstd::*;
-use libzstd_rs::{MEM_readLE24, MEM_readLE32};
+
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const S_IRUSR: std::ffi::c_int = __S_IREAD;
@@ -763,11 +565,7 @@ pub static mut g_display_prefs: FIO_display_prefs_t = {
     }
 };
 #[no_mangle]
-pub static mut g_displayClock: UTIL_time_t = {
-    UTIL_time_t {
-        t: 0 as std::ffi::c_int as PTime,
-    }
-};
+pub static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const ZLIB_VERSION: [std::ffi::c_char; 4] =
     unsafe { *::core::mem::transmute::<&[u8; 4], &[std::ffi::c_char; 4]>(b"1.3\0") };
 pub const Z_NO_FLUSH: std::ffi::c_int = 0 as std::ffi::c_int;

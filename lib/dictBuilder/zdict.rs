@@ -1,7 +1,6 @@
 extern "C" {
     pub type ZSTDMT_CCtx_s;
     pub type ZSTD_CDict_s;
-    pub type POOL_ctx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
     fn memcpy(
@@ -446,7 +445,7 @@ pub struct SeqCollector {
     pub seqIndex: size_t,
     pub maxSequences: size_t,
 }
-pub type ZSTD_threadPool = POOL_ctx_s;
+pub type ZSTD_threadPool = POOL_ctx;
 pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -629,6 +628,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
 }
 use libc::{fflush, fprintf, FILE};
 
+use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::zstd::*;

@@ -4,9 +4,11 @@ use libc::{
     pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
     pthread_mutex_unlock, pthread_mutexattr_t, strerror, FILE,
 };
+use libzstd_rs::lib::common::pool::{
+    POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
+};
 
 extern "C" {
-    pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
     fn fread(
         _: *mut std::ffi::c_void,
@@ -38,10 +40,6 @@ extern "C" {
         _: *const std::ffi::c_void,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx;
-    fn POOL_free(ctx: *mut POOL_ctx);
-    fn POOL_joinJobs(ctx: *mut POOL_ctx);
-    fn POOL_add(ctx: *mut POOL_ctx, function: POOL_function, opaque: *mut std::ffi::c_void);
     static mut g_display_prefs: FIO_display_prefs_t;
 }
 pub type size_t = std::ffi::c_ulong;
@@ -115,8 +113,6 @@ pub struct C2RustUnnamed {
     pub __low: std::ffi::c_uint,
     pub __high: std::ffi::c_uint,
 }
-pub type POOL_ctx = POOL_ctx_s;
-pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct IOPoolCtx_t {

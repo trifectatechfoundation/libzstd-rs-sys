@@ -1,5 +1,7 @@
 use libc::abort;
 
+use crate::timefn::{UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
+
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
@@ -14,16 +16,9 @@ extern "C" {
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn UTIL_getTime() -> UTIL_time_t;
-    fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
 }
 pub type size_t = std::ffi::c_ulong;
 pub type PTime = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct UTIL_time_t {
-    pub t: PTime,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_runTime_t {

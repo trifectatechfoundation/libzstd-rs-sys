@@ -1,3 +1,4 @@
+use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -8,7 +9,6 @@ use crate::lib::zstd::*;
 extern "C" {
     pub type ZSTDMT_CCtx_s;
     pub type ZSTD_CDict_s;
-    pub type POOL_ctx_s;
     fn ZSTD_buildBlockEntropyStats(
         seqStorePtr: *const SeqStore_t,
         prevEntropy: *const ZSTD_entropyCTables_t,
@@ -413,7 +413,7 @@ pub struct SeqCollector {
     pub seqIndex: size_t,
     pub maxSequences: size_t,
 }
-pub type ZSTD_threadPool = POOL_ctx_s;
+pub type ZSTD_threadPool = POOL_ctx;
 pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]

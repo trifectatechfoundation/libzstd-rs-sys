@@ -5,7 +5,6 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 extern "C" {
     pub type ZSTDMT_CCtx_s;
-    pub type POOL_ctx_s;
     pub type ZSTD_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
@@ -877,7 +876,7 @@ pub struct SeqCollector {
     pub seqIndex: size_t,
     pub maxSequences: size_t,
 }
-pub type ZSTD_threadPool = POOL_ctx_s;
+pub type ZSTD_threadPool = POOL_ctx;
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
@@ -1943,6 +1942,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };

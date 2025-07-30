@@ -1,37 +1,41 @@
 use libc::{exit, fprintf, getchar, getenv, memset, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
+use libzstd_rs::lib::dictBuilder::cover::ZDICT_cover_params_t;
+use libzstd_rs::lib::dictBuilder::fastcover::ZDICT_fastCover_params_t;
+use libzstd_rs::lib::dictBuilder::zdict::{ZDICT_legacy_params_t, ZDICT_params_t};
 use libzstd_rs::lib::zstd::*;
+
+use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
+use crate::dibio::DiB_trainFromFiles;
+use crate::fileio::{
+    FIO_addAbortHandler, FIO_compressFilename, FIO_compressMultipleFilenames, FIO_createContext,
+    FIO_createPreferences, FIO_decompressFilename, FIO_decompressMultipleFilenames,
+    FIO_determineHasStdinInput, FIO_displayCompressionParameters, FIO_freeContext,
+    FIO_freePreferences, FIO_listMultipleFiles, FIO_lz4Version, FIO_lzmaVersion, FIO_overwriteMode,
+    FIO_setAdaptMax, FIO_setAdaptMin, FIO_setAdaptiveMode, FIO_setAllowBlockDevices,
+    FIO_setAsyncIOFlag, FIO_setChecksumFlag, FIO_setCompressionType, FIO_setContentSize,
+    FIO_setDictIDFlag, FIO_setExcludeCompressedFile, FIO_setHasStdoutOutput, FIO_setJobSize,
+    FIO_setLdmBucketSizeLog, FIO_setLdmFlag, FIO_setLdmHashLog, FIO_setLdmHashRateLog,
+    FIO_setLdmMinMatch, FIO_setLiteralCompressionMode, FIO_setMMapDict, FIO_setMemLimit,
+    FIO_setNbFilesTotal, FIO_setNbWorkers, FIO_setNotificationLevel, FIO_setOverlapLog,
+    FIO_setPassThroughFlag, FIO_setPatchFromMode, FIO_setProgressSetting, FIO_setRemoveSrcFile,
+    FIO_setRsyncable, FIO_setSparseWrite, FIO_setSrcSizeHint, FIO_setStreamSrcSize,
+    FIO_setTargetCBlockSize, FIO_setTestMode, FIO_setUseRowMatchFinder, FIO_zlibVersion,
+};
+use crate::fileio_asyncio::AIO_supported;
+use crate::util::{
+    UTIL_allocateFileNamesTable, UTIL_countLogicalCores, UTIL_countPhysicalCores,
+    UTIL_createFileNamesTable_fromFileList, UTIL_expandFNT, UTIL_fakeStderrIsConsole,
+    UTIL_fakeStdinIsConsole, UTIL_fakeStdoutIsConsole, UTIL_freeFileNamesTable, UTIL_getFileSize,
+    UTIL_isConsole, UTIL_isFIFO, UTIL_isLink, UTIL_mergeFileNamesTable, UTIL_refFilename,
+    UTIL_searchFileNamesTable, UTIL_traceFileStat,
+};
 extern "C" {
     pub type FIO_ctx_s;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
     static mut g_utilDisplayLevel: std::ffi::c_int;
-    fn UTIL_isLink(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_isFIFO(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn UTIL_isConsole(file: *mut FILE) -> std::ffi::c_int;
-    fn UTIL_fakeStdinIsConsole();
-    fn UTIL_fakeStdoutIsConsole();
-    fn UTIL_fakeStderrIsConsole();
-    fn UTIL_traceFileStat();
-    fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
-    fn UTIL_createFileNamesTable_fromFileList(
-        inputFileName: *const std::ffi::c_char,
-    ) -> *mut FileNamesTable;
-    fn UTIL_freeFileNamesTable(table: *mut FileNamesTable);
-    fn UTIL_mergeFileNamesTable(
-        table1: *mut FileNamesTable,
-        table2: *mut FileNamesTable,
-    ) -> *mut FileNamesTable;
-    fn UTIL_expandFNT(fnt: *mut *mut FileNamesTable, followLinks: std::ffi::c_int);
-    fn UTIL_allocateFileNamesTable(tableSize: size_t) -> *mut FileNamesTable;
-    fn UTIL_searchFileNamesTable(
-        table: *mut FileNamesTable,
-        name: *const std::ffi::c_char,
-    ) -> std::ffi::c_int;
-    fn UTIL_refFilename(fnt: *mut FileNamesTable, filename: *const std::ffi::c_char);
-    fn UTIL_countPhysicalCores() -> std::ffi::c_int;
-    fn UTIL_countLogicalCores() -> std::ffi::c_int;
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
         __file: *const std::ffi::c_char,
@@ -46,131 +50,8 @@ extern "C" {
         dictSize: size_t,
     ) -> ZSTD_compressionParameters;
     fn ZSTD_isDeterministicBuild() -> std::ffi::c_int;
-    fn FIO_createPreferences() -> *mut FIO_prefs_t;
-    fn FIO_freePreferences(prefs: *mut FIO_prefs_t);
-    fn FIO_createContext() -> *mut FIO_ctx_t;
-    fn FIO_freeContext(fCtx: *mut FIO_ctx_t);
-    fn FIO_setCompressionType(prefs: *mut FIO_prefs_t, compressionType: FIO_compressionType_t);
-    fn FIO_overwriteMode(prefs: *mut FIO_prefs_t);
-    fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, adapt: std::ffi::c_int);
-    fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, minCLevel: std::ffi::c_int);
-    fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, maxCLevel: std::ffi::c_int);
-    fn FIO_setUseRowMatchFinder(prefs: *mut FIO_prefs_t, useRowMatchFinder: std::ffi::c_int);
-    fn FIO_setJobSize(prefs: *mut FIO_prefs_t, jobSize: std::ffi::c_int);
-    fn FIO_setChecksumFlag(prefs: *mut FIO_prefs_t, checksumFlag: std::ffi::c_int);
-    fn FIO_setDictIDFlag(prefs: *mut FIO_prefs_t, dictIDFlag: std::ffi::c_int);
-    fn FIO_setLdmBucketSizeLog(prefs: *mut FIO_prefs_t, ldmBucketSizeLog: std::ffi::c_int);
-    fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, ldmFlag: std::ffi::c_uint);
-    fn FIO_setLdmHashRateLog(prefs: *mut FIO_prefs_t, ldmHashRateLog: std::ffi::c_int);
-    fn FIO_setLdmHashLog(prefs: *mut FIO_prefs_t, ldmHashLog: std::ffi::c_int);
-    fn FIO_setLdmMinMatch(prefs: *mut FIO_prefs_t, ldmMinMatch: std::ffi::c_int);
-    fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, memLimit: std::ffi::c_uint);
-    fn FIO_setNbWorkers(prefs: *mut FIO_prefs_t, nbWorkers: std::ffi::c_int);
-    fn FIO_setOverlapLog(prefs: *mut FIO_prefs_t, overlapLog: std::ffi::c_int);
-    fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, flag: std::ffi::c_int);
-    fn FIO_setSparseWrite(prefs: *mut FIO_prefs_t, sparse: std::ffi::c_int);
-    fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, rsyncable: std::ffi::c_int);
-    fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, streamSrcSize: size_t);
-    fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, targetCBlockSize: size_t);
-    fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: size_t);
-    fn FIO_setTestMode(prefs: *mut FIO_prefs_t, testMode: std::ffi::c_int);
-    fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mode: ZSTD_ParamSwitch_e);
-    fn FIO_setProgressSetting(progressSetting: FIO_progressSetting_e);
-    fn FIO_setNotificationLevel(level: std::ffi::c_int);
-    fn FIO_setExcludeCompressedFile(
-        prefs: *mut FIO_prefs_t,
-        excludeCompressedFiles: std::ffi::c_int,
-    );
-    fn FIO_setAllowBlockDevices(prefs: *mut FIO_prefs_t, allowBlockDevices: std::ffi::c_int);
-    fn FIO_setPatchFromMode(prefs: *mut FIO_prefs_t, value: std::ffi::c_int);
-    fn FIO_setContentSize(prefs: *mut FIO_prefs_t, value: std::ffi::c_int);
-    fn FIO_displayCompressionParameters(prefs: *const FIO_prefs_t);
-    fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, value: std::ffi::c_int);
-    fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, value: std::ffi::c_int);
-    fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, value: ZSTD_ParamSwitch_e);
-    fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, value: std::ffi::c_int);
-    fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, value: std::ffi::c_int);
-    fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const FileNamesTable);
-    fn FIO_compressFilename(
-        fCtx: *mut FIO_ctx_t,
-        prefs: *mut FIO_prefs_t,
-        outfilename: *const std::ffi::c_char,
-        infilename: *const std::ffi::c_char,
-        dictFileName: *const std::ffi::c_char,
-        compressionLevel: std::ffi::c_int,
-        comprParams: ZSTD_compressionParameters,
-    ) -> std::ffi::c_int;
-    fn FIO_decompressFilename(
-        fCtx: *mut FIO_ctx_t,
-        prefs: *mut FIO_prefs_t,
-        outfilename: *const std::ffi::c_char,
-        infilename: *const std::ffi::c_char,
-        dictFileName: *const std::ffi::c_char,
-    ) -> std::ffi::c_int;
-    fn FIO_listMultipleFiles(
-        numFiles: std::ffi::c_uint,
-        filenameTable: *mut *const std::ffi::c_char,
-        displayLevel: std::ffi::c_int,
-    ) -> std::ffi::c_int;
-    fn FIO_compressMultipleFilenames(
-        fCtx: *mut FIO_ctx_t,
-        prefs: *mut FIO_prefs_t,
-        inFileNamesTable: *mut *const std::ffi::c_char,
-        outMirroredDirName: *const std::ffi::c_char,
-        outDirName: *const std::ffi::c_char,
-        outFileName: *const std::ffi::c_char,
-        suffix: *const std::ffi::c_char,
-        dictFileName: *const std::ffi::c_char,
-        compressionLevel: std::ffi::c_int,
-        comprParams: ZSTD_compressionParameters,
-    ) -> std::ffi::c_int;
-    fn FIO_decompressMultipleFilenames(
-        fCtx: *mut FIO_ctx_t,
-        prefs: *mut FIO_prefs_t,
-        srcNamesTable: *mut *const std::ffi::c_char,
-        outMirroredDirName: *const std::ffi::c_char,
-        outDirName: *const std::ffi::c_char,
-        outFileName: *const std::ffi::c_char,
-        dictFileName: *const std::ffi::c_char,
-    ) -> std::ffi::c_int;
-    fn FIO_addAbortHandler();
-    fn FIO_zlibVersion() -> *const std::ffi::c_char;
-    fn FIO_lz4Version() -> *const std::ffi::c_char;
-    fn FIO_lzmaVersion() -> *const std::ffi::c_char;
-    fn BMK_initAdvancedParams() -> BMK_advancedParams_t;
-    fn BMK_benchFilesAdvanced(
-        fileNamesTable: *const *const std::ffi::c_char,
-        nbFiles: std::ffi::c_uint,
-        dictFileName: *const std::ffi::c_char,
-        startCLevel: std::ffi::c_int,
-        endCLevel: std::ffi::c_int,
-        compressionParams: *const ZSTD_compressionParameters,
-        displayLevel: std::ffi::c_int,
-        adv: *const BMK_advancedParams_t,
-    ) -> std::ffi::c_int;
-    fn BMK_syntheticTest(
-        compressibility: std::ffi::c_double,
-        startingCLevel: std::ffi::c_int,
-        endCLevel: std::ffi::c_int,
-        compressionParams: *const ZSTD_compressionParameters,
-        displayLevel: std::ffi::c_int,
-        adv: *const BMK_advancedParams_t,
-    ) -> std::ffi::c_int;
-    fn DiB_trainFromFiles(
-        dictFileName: *const std::ffi::c_char,
-        maxDictSize: size_t,
-        fileNamesTable: *mut *const std::ffi::c_char,
-        nbFiles: std::ffi::c_int,
-        chunkSize: size_t,
-        params: *mut ZDICT_legacy_params_t,
-        coverParams: *mut ZDICT_cover_params_t,
-        fastCoverParams: *mut ZDICT_fastCover_params_t,
-        optimize: std::ffi::c_int,
-        memLimit: std::ffi::c_uint,
-    ) -> std::ffi::c_int;
     fn TRACE_enable(filename: *const std::ffi::c_char);
     fn TRACE_finish();
-    fn AIO_supported() -> std::ffi::c_int;
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -301,45 +182,6 @@ pub struct BMK_advancedParams_t {
     pub ldmHashRateLog: std::ffi::c_int,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
     pub useRowMatchFinder: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_params_t {
-    pub compressionLevel: std::ffi::c_int,
-    pub notificationLevel: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_cover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_fastCover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub f: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub accel: std::ffi::c_uint,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_legacy_params_t {
-    pub selectivityLevel: std::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
 }
 pub type dictType = std::ffi::c_uint;
 pub const legacy: dictType = 2;
