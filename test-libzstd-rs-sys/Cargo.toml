@@ -1,0 +1,18 @@
+[package]
+name = "test-libzstd-rs-sys"
+readme = "README.md"
+# description.workspace = true
+# version.workspace = true
+edition.workspace = true
+# license.workspace = true
+# repository.workspace = true
+# homepage.workspace = true
+# publish.workspace = true
+# rust-version.workspace = true
+
+[dependencies.c2rust_out]
+path = ".."
+features = ["semver-prefix"]
+
+[dependencies] 
+zstd-sys = "2.0.15"

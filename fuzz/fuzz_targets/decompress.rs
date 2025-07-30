@@ -5,8 +5,8 @@ use libfuzzer_sys::fuzz_target;
 use std::ffi::*;
 
 fn rs(compressed: &[u8]) -> (usize, Vec<u8>) {
-    use c2rust_out::lib::common::zstd_common::ZSTD_getErrorName;
-    use c2rust_out::lib::decompress::zstd_decompress::*;
+    use libzstd_rs::lib::common::zstd_common::ZSTD_getErrorName;
+    use libzstd_rs::lib::decompress::zstd_decompress::*;
 
     let compressed_ptr = compressed.as_ptr() as *const c_void;
     let compressed_size = compressed.len();

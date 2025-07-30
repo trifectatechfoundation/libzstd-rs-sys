@@ -9,6 +9,9 @@
 *.odt binary
 *.png binary
 
+*.zst binary
+*.tar.zst binary
+
 # Visual Studio
 *.sln text eol=crlf
 *.vcxproj* text eol=crlf
@@ -19,3 +22,4 @@
 # Windows
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
