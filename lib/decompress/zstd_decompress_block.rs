@@ -590,11 +590,11 @@ unsafe extern "C" fn ZSTD_copy4(mut dst: *mut std::ffi::c_void, mut src: *const 
     );
 }
 unsafe extern "C" fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
-    ((if (*dctx).isFrameDecompression != 0 {
+    (if (*dctx).isFrameDecompression != 0 {
         (*dctx).fParams.blockSizeMax
     } else {
         ZSTD_BLOCKSIZE_MAX as std::ffi::c_uint
-    }) as size_t)
+    }) as size_t
 }
 #[export_name = crate::prefix!(ZSTD_getcBlockSize)]
 pub unsafe extern "C" fn ZSTD_getcBlockSize(

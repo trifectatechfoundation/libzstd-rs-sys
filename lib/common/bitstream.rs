@@ -1,5 +1,3 @@
-use crate::lib::zstd::*;
-
 use crate::lib::common::fse_decompress::Error;
 
 type size_t = usize;

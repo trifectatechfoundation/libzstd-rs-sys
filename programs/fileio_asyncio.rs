@@ -1,3 +1,5 @@
+use libc::FILE;
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -67,41 +69,6 @@ extern "C" {
 pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _IO_FILE {
-    pub _flags: std::ffi::c_int,
-    pub _IO_read_ptr: *mut std::ffi::c_char,
-    pub _IO_read_end: *mut std::ffi::c_char,
-    pub _IO_read_base: *mut std::ffi::c_char,
-    pub _IO_write_base: *mut std::ffi::c_char,
-    pub _IO_write_ptr: *mut std::ffi::c_char,
-    pub _IO_write_end: *mut std::ffi::c_char,
-    pub _IO_buf_base: *mut std::ffi::c_char,
-    pub _IO_buf_end: *mut std::ffi::c_char,
-    pub _IO_save_base: *mut std::ffi::c_char,
-    pub _IO_backup_base: *mut std::ffi::c_char,
-    pub _IO_save_end: *mut std::ffi::c_char,
-    pub _markers: *mut _IO_marker,
-    pub _chain: *mut _IO_FILE,
-    pub _fileno: std::ffi::c_int,
-    pub _flags2: std::ffi::c_int,
-    pub _old_offset: __off_t,
-    pub _cur_column: std::ffi::c_ushort,
-    pub _vtable_offset: std::ffi::c_schar,
-    pub _shortbuf: [std::ffi::c_char; 1],
-    pub _lock: *mut std::ffi::c_void,
-    pub _offset: __off64_t,
-    pub _codecvt: *mut _IO_codecvt,
-    pub _wide_data: *mut _IO_wide_data,
-    pub _freeres_list: *mut _IO_FILE,
-    pub _freeres_buf: *mut std::ffi::c_void,
-    pub __pad5: size_t,
-    pub _mode: std::ffi::c_int,
-    pub _unused2: [std::ffi::c_char; 20],
-}
-pub type _IO_lock_t = ();
-pub type FILE = _IO_FILE;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;

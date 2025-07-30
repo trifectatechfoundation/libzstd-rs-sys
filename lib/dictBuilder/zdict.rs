@@ -115,41 +115,6 @@ pub type __off_t = std::ffi::c_long;
 pub type __off64_t = std::ffi::c_long;
 pub type __clock_t = std::ffi::c_long;
 pub type clock_t = __clock_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _IO_FILE {
-    pub _flags: std::ffi::c_int,
-    pub _IO_read_ptr: *mut std::ffi::c_char,
-    pub _IO_read_end: *mut std::ffi::c_char,
-    pub _IO_read_base: *mut std::ffi::c_char,
-    pub _IO_write_base: *mut std::ffi::c_char,
-    pub _IO_write_ptr: *mut std::ffi::c_char,
-    pub _IO_write_end: *mut std::ffi::c_char,
-    pub _IO_buf_base: *mut std::ffi::c_char,
-    pub _IO_buf_end: *mut std::ffi::c_char,
-    pub _IO_save_base: *mut std::ffi::c_char,
-    pub _IO_backup_base: *mut std::ffi::c_char,
-    pub _IO_save_end: *mut std::ffi::c_char,
-    pub _markers: *mut _IO_marker,
-    pub _chain: *mut _IO_FILE,
-    pub _fileno: std::ffi::c_int,
-    pub _flags2: std::ffi::c_int,
-    pub _old_offset: __off_t,
-    pub _cur_column: std::ffi::c_ushort,
-    pub _vtable_offset: std::ffi::c_schar,
-    pub _shortbuf: [std::ffi::c_char; 1],
-    pub _lock: *mut std::ffi::c_void,
-    pub _offset: __off64_t,
-    pub _codecvt: *mut _IO_codecvt,
-    pub _wide_data: *mut _IO_wide_data,
-    pub _freeres_list: *mut _IO_FILE,
-    pub _freeres_buf: *mut std::ffi::c_void,
-    pub __pad5: size_t,
-    pub _mode: std::ffi::c_int,
-    pub _unused2: [std::ffi::c_char; 20],
-}
-pub type _IO_lock_t = ();
-pub type FILE = _IO_FILE;
 pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalign64 = u64;
@@ -673,6 +638,8 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
+use libc::FILE;
+
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::zstd::*;
