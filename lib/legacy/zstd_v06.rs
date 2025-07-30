@@ -4144,7 +4144,7 @@ unsafe extern "C" fn ZSTDv06_decompressFrame(
     let iend = ip.offset(srcSize as isize);
     let ostart = dst as *mut u8;
     let mut op = ostart;
-    let oend = ostart.offset(dstCapacity as isize);
+    let oend = ostart.wrapping_offset(dstCapacity as isize);
     let mut remainingSize = srcSize;
     let mut blockProperties = {
         blockProperties_t {
