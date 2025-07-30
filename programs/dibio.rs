@@ -1,10 +1,7 @@
-use libc::{fclose, fflush, fopen, fprintf, FILE};
+use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
 use libzstd_rs::lib::zstd::*;
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     static mut stderr: *mut FILE;
     fn fread(
         _: *mut std::ffi::c_void,
@@ -20,15 +17,12 @@ extern "C" {
     ) -> std::ffi::c_ulong;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn exit(_: std::ffi::c_int) -> !;
     fn memset(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
-    fn __errno_location() -> *mut std::ffi::c_int;
     fn UTIL_getTime() -> UTIL_time_t;
     fn UTIL_clockSpanMicro(clockStart: UTIL_time_t) -> PTime;
     fn ZDICT_isError(errorCode: size_t) -> std::ffi::c_uint;

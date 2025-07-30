@@ -1,9 +1,6 @@
-use libc::FILE;
+use libc::{exit, perror, FILE};
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     static mut stdout: *mut FILE;
     fn fwrite(
         _: *const std::ffi::c_void,
@@ -11,10 +8,8 @@ extern "C" {
         _: std::ffi::c_ulong,
         _: *mut FILE,
     ) -> std::ffi::c_ulong;
-    fn perror(__s: *const std::ffi::c_char);
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn exit(_: std::ffi::c_int) -> !;
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,

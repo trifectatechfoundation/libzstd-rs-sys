@@ -1,4 +1,4 @@
-use libc::{fprintf, FILE};
+use libc::{exit, fprintf, getenv, strcmp, strrchr, FILE};
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::zstd::*;
 extern "C" {
@@ -10,20 +10,16 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
     fn getc(__stream: *mut FILE) -> std::ffi::c_int;
-    fn exit(_: std::ffi::c_int) -> !;
-    fn getenv(__name: *const std::ffi::c_char) -> *mut std::ffi::c_char;
     fn memset(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strcmp(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> std::ffi::c_int;
     fn strncmp(
         _: *const std::ffi::c_char,
         _: *const std::ffi::c_char,
         _: std::ffi::c_ulong,
     ) -> std::ffi::c_int;
-    fn strrchr(_: *const std::ffi::c_char, _: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
     static mut g_utilDisplayLevel: std::ffi::c_int;
     fn UTIL_isLink(infilename: *const std::ffi::c_char) -> std::ffi::c_int;

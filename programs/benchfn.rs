@@ -1,7 +1,8 @@
+use libc::abort;
+
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn abort() -> !;
     fn memset(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_int,
