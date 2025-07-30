@@ -4,489 +4,8 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 extern "C" {
-    pub type ZSTDMT_CCtx_s;
-    pub type ZSTD_DCtx_s;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn HUF_optimalTableLog(
-        maxTableLog: std::ffi::c_uint,
-        srcSize: size_t,
-        maxSymbolValue: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-        table: *mut HUF_CElt,
-        count: *const std::ffi::c_uint,
-        flags: std::ffi::c_int,
-    ) -> std::ffi::c_uint;
-    fn HUF_writeCTable_wksp(
-        dst: *mut std::ffi::c_void,
-        maxDstSize: size_t,
-        CTable: *const HUF_CElt,
-        maxSymbolValue: std::ffi::c_uint,
-        huffLog: std::ffi::c_uint,
-        workspace: *mut std::ffi::c_void,
-        workspaceSize: size_t,
-    ) -> size_t;
-    fn HUF_estimateCompressedSize(
-        CTable: *const HUF_CElt,
-        count: *const std::ffi::c_uint,
-        maxSymbolValue: std::ffi::c_uint,
-    ) -> size_t;
-    fn HUF_validateCTable(
-        CTable: *const HUF_CElt,
-        count: *const std::ffi::c_uint,
-        maxSymbolValue: std::ffi::c_uint,
-    ) -> std::ffi::c_int;
-    fn HUF_buildCTable_wksp(
-        tree: *mut HUF_CElt,
-        count: *const std::ffi::c_uint,
-        maxSymbolValue: u32,
-        maxNbBits: u32,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
-    fn HUF_readCTable(
-        CTable: *mut HUF_CElt,
-        maxSymbolValuePtr: *mut std::ffi::c_uint,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        hasZeroWeights: *mut std::ffi::c_uint,
-    ) -> size_t;
-    fn FSE_buildCTable_wksp(
-        ct: *mut FSE_CTable,
-        normalizedCounter: *const std::ffi::c_short,
-        maxSymbolValue: std::ffi::c_uint,
-        tableLog: std::ffi::c_uint,
-        workSpace: *mut std::ffi::c_void,
-        wkspSize: size_t,
-    ) -> size_t;
-    fn ZSTDMT_createCCtx_advanced(
-        nbWorkers: std::ffi::c_uint,
-        cMem: ZSTD_customMem,
-        pool: *mut ZSTD_threadPool,
-    ) -> *mut ZSTDMT_CCtx;
-    fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t;
-    fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t;
-    fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> size_t;
-    fn ZSTDMT_initCStream_internal(
-        mtctx: *mut ZSTDMT_CCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-        dictContentType: ZSTD_dictContentType_e,
-        cdict: *const ZSTD_CDict,
-        params: ZSTD_CCtx_params,
-        pledgedSrcSize: std::ffi::c_ulonglong,
-    ) -> size_t;
-    fn ZSTDMT_compressStream_generic(
-        mtctx: *mut ZSTDMT_CCtx,
-        output: *mut ZSTD_outBuffer,
-        input: *mut ZSTD_inBuffer,
-        endOp: ZSTD_EndDirective,
-    ) -> size_t;
-    fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t;
-    fn ZSTDMT_updateCParams_whileCompressing(
-        mtctx: *mut ZSTDMT_CCtx,
-        cctxParams: *const ZSTD_CCtx_params,
-    );
-    fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameProgression;
-    fn ZSTD_selectEncodingType(
-        repeatMode: *mut FSE_repeat,
-        count: *const std::ffi::c_uint,
-        max: std::ffi::c_uint,
-        mostFrequent: size_t,
-        nbSeq: size_t,
-        FSELog: std::ffi::c_uint,
-        prevCTable: *const FSE_CTable,
-        defaultNorm: *const std::ffi::c_short,
-        defaultNormLog: u32,
-        isDefaultAllowed: ZSTD_DefaultPolicy_e,
-        strategy: ZSTD_strategy,
-    ) -> SymbolEncodingType_e;
-    fn ZSTD_buildCTable(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        nextCTable: *mut FSE_CTable,
-        FSELog: u32,
-        type_0: SymbolEncodingType_e,
-        count: *mut std::ffi::c_uint,
-        max: u32,
-        codeTable: *const u8,
-        nbSeq: size_t,
-        defaultNorm: *const S16,
-        defaultNormLog: u32,
-        defaultMax: u32,
-        prevCTable: *const FSE_CTable,
-        prevCTableSize: size_t,
-        entropyWorkspace: *mut std::ffi::c_void,
-        entropyWorkspaceSize: size_t,
-    ) -> size_t;
-    fn ZSTD_encodeSequences(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        CTable_MatchLength: *const FSE_CTable,
-        mlCodeTable: *const u8,
-        CTable_OffsetBits: *const FSE_CTable,
-        ofCodeTable: *const u8,
-        CTable_LitLength: *const FSE_CTable,
-        llCodeTable: *const u8,
-        sequences: *const SeqDef,
-        nbSeq: size_t,
-        longOffsets: std::ffi::c_int,
-        bmi2: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_fseBitCost(
-        ctable: *const FSE_CTable,
-        count: *const std::ffi::c_uint,
-        max: std::ffi::c_uint,
-    ) -> size_t;
-    fn ZSTD_compressLiterals(
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        entropyWorkspace: *mut std::ffi::c_void,
-        entropyWorkspaceSize: size_t,
-        prevHuf: *const ZSTD_hufCTables_t,
-        nextHuf: *mut ZSTD_hufCTables_t,
-        strategy: ZSTD_strategy,
-        disableLiteralCompression: std::ffi::c_int,
-        suspectUncompressible: std::ffi::c_int,
-        bmi2: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_fillHashTable(
-        ms: *mut ZSTD_MatchState_t,
-        end: *const std::ffi::c_void,
-        dtlm: ZSTD_dictTableLoadMethod_e,
-        tfp: ZSTD_tableFillPurpose_e,
-    );
-    fn ZSTD_compressBlock_fast(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_fast_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_fast_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_fillDoubleHashTable(
-        ms: *mut ZSTD_MatchState_t,
-        end: *const std::ffi::c_void,
-        dtlm: ZSTD_dictTableLoadMethod_e,
-        tfp: ZSTD_tableFillPurpose_e,
-    );
-    fn ZSTD_compressBlock_doubleFast(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_doubleFast_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_doubleFast_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_insertAndFindFirstIndex(ms: *mut ZSTD_MatchState_t, ip: *const u8) -> u32;
-    fn ZSTD_row_update(ms: *mut ZSTD_MatchState_t, ip: *const u8);
-    fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms: *mut ZSTD_MatchState_t, ip: *const u8);
-    fn ZSTD_compressBlock_greedy(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_dictMatchState_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_greedy_extDict_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_dictMatchState_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy_extDict_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_dictMatchState_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_lazy2_extDict_row(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btlazy2(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btlazy2_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btlazy2_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_updateTree(ms: *mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8);
-    fn ZSTD_compressBlock_btopt(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btopt_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btopt_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btultra(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btultra_dictMatchState(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btultra_extDict(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_compressBlock_btultra2(
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_ldm_fillHashTable(
-        state: *mut ldmState_t,
-        ip: *const u8,
-        iend: *const u8,
-        params: *const ldmParams_t,
-    );
-    fn ZSTD_ldm_generateSequences(
-        ldms: *mut ldmState_t,
-        sequences: *mut RawSeqStore_t,
-        params: *const ldmParams_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_ldm_blockCompress(
-        rawSeqStore: *mut RawSeqStore_t,
-        ms: *mut ZSTD_MatchState_t,
-        seqStore: *mut SeqStore_t,
-        rep: *mut u32,
-        useRowMatchFinder: ZSTD_ParamSwitch_e,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_ldm_skipSequences(rawSeqStore: *mut RawSeqStore_t, srcSize: size_t, minMatch: u32);
-    fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: size_t);
-    fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t;
-    fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t;
-    fn ZSTD_ldm_adjustParameters(
-        params: *mut ldmParams_t,
-        cParams: *const ZSTD_compressionParameters,
-    );
-    fn ZSTD_compressSuperBlock(
-        zc: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        lastBlock: std::ffi::c_uint,
-    ) -> size_t;
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
@@ -630,7 +149,6 @@ pub struct SeqDef_s {
     pub litLength: u16,
     pub mlBase: u16,
 }
-pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -835,30 +353,6 @@ pub struct ZSTD_blockState_t {
     pub prevCBlock: *mut ZSTD_compressedBlockState_t,
     pub nextCBlock: *mut ZSTD_compressedBlockState_t,
     pub matchState: ZSTD_MatchState_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmState_t {
-    pub window: ZSTD_window_t,
-    pub hashTable: *mut ldmEntry_t,
-    pub loadedDictEnd: u32,
-    pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
-    pub matchCandidates: [ldmMatchCandidate_t; 64],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmMatchCandidate_t {
-    pub split: *const u8,
-    pub hash: u32,
-    pub checksum: u32,
-    pub bucket: *mut ldmEntry_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmEntry_t {
-    pub offset: u32,
-    pub checksum: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1908,10 +1402,60 @@ use crate::lib::common::xxhash::{
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
 };
+use crate::lib::compress::fse_compress::FSE_buildCTable_wksp;
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
-use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
-use crate::lib::compress::zstd_ldm::ldmParams_t;
+use crate::lib::compress::huf_compress::{
+    HUF_buildCTable_wksp, HUF_estimateCompressedSize, HUF_optimalTableLog, HUF_readCTable,
+    HUF_validateCTable, HUF_writeCTable_wksp,
+};
+use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
+use crate::lib::compress::zstd_compress_sequences::{
+    ZSTD_buildCTable, ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
+    ZSTD_selectEncodingType,
+};
+use crate::lib::compress::zstd_compress_superblock::ZSTD_compressSuperBlock;
+use crate::lib::compress::zstd_double_fast::{
+    ZSTD_compressBlock_doubleFast, ZSTD_compressBlock_doubleFast_dictMatchState,
+    ZSTD_compressBlock_doubleFast_extDict, ZSTD_fillDoubleHashTable,
+};
+use crate::lib::compress::zstd_fast::{
+    ZSTD_compressBlock_fast, ZSTD_compressBlock_fast_dictMatchState,
+    ZSTD_compressBlock_fast_extDict, ZSTD_fillHashTable,
+};
+use crate::lib::compress::zstd_lazy::{
+    ZSTD_compressBlock_btlazy2, ZSTD_compressBlock_btlazy2_dictMatchState,
+    ZSTD_compressBlock_btlazy2_extDict, ZSTD_compressBlock_greedy,
+    ZSTD_compressBlock_greedy_dedicatedDictSearch,
+    ZSTD_compressBlock_greedy_dedicatedDictSearch_row, ZSTD_compressBlock_greedy_dictMatchState,
+    ZSTD_compressBlock_greedy_dictMatchState_row, ZSTD_compressBlock_greedy_extDict,
+    ZSTD_compressBlock_greedy_extDict_row, ZSTD_compressBlock_greedy_row, ZSTD_compressBlock_lazy,
+    ZSTD_compressBlock_lazy2, ZSTD_compressBlock_lazy2_dedicatedDictSearch,
+    ZSTD_compressBlock_lazy2_dedicatedDictSearch_row, ZSTD_compressBlock_lazy2_dictMatchState,
+    ZSTD_compressBlock_lazy2_dictMatchState_row, ZSTD_compressBlock_lazy2_extDict,
+    ZSTD_compressBlock_lazy2_extDict_row, ZSTD_compressBlock_lazy2_row,
+    ZSTD_compressBlock_lazy_dedicatedDictSearch, ZSTD_compressBlock_lazy_dedicatedDictSearch_row,
+    ZSTD_compressBlock_lazy_dictMatchState, ZSTD_compressBlock_lazy_dictMatchState_row,
+    ZSTD_compressBlock_lazy_extDict, ZSTD_compressBlock_lazy_extDict_row,
+    ZSTD_compressBlock_lazy_row, ZSTD_dedicatedDictSearch_lazy_loadDictionary,
+    ZSTD_insertAndFindFirstIndex, ZSTD_row_update,
+};
+use crate::lib::compress::zstd_ldm::{
+    ldmEntry_t, ldmMatchCandidate_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters,
+    ZSTD_ldm_blockCompress, ZSTD_ldm_fillHashTable, ZSTD_ldm_generateSequences,
+    ZSTD_ldm_getMaxNbSeq, ZSTD_ldm_getTableSize, ZSTD_ldm_skipRawSeqStoreBytes,
+    ZSTD_ldm_skipSequences,
+};
+use crate::lib::compress::zstd_opt::{
+    ZSTD_compressBlock_btopt, ZSTD_compressBlock_btopt_dictMatchState,
+    ZSTD_compressBlock_btopt_extDict, ZSTD_compressBlock_btultra, ZSTD_compressBlock_btultra2,
+    ZSTD_compressBlock_btultra_dictMatchState, ZSTD_compressBlock_btultra_extDict, ZSTD_updateTree,
+};
 use crate::lib::compress::zstd_preSplit::ZSTD_splitBlock;
+use crate::lib::compress::zstdmt_compress::{
+    ZSTDMT_CCtx, ZSTDMT_compressStream_generic, ZSTDMT_createCCtx_advanced, ZSTDMT_freeCCtx,
+    ZSTDMT_getFrameProgression, ZSTDMT_initCStream_internal, ZSTDMT_nextInputSizeHint,
+    ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
+};
 use crate::lib::zstd::*;
 use crate::{
     MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readST,

@@ -21,14 +21,6 @@ pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
@@ -89,15 +81,6 @@ pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = std::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_match_t {
@@ -174,7 +157,10 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::lib::common::xxhash::ZSTD_XXH64;
-use crate::lib::compress::zstd_compress::{rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_selectBlockCompressor, ZSTD_window_t};
+use crate::lib::compress::zstd_compress::{
+    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t,
+    ZSTD_selectBlockCompressor, ZSTD_window_t,
+};
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::*;

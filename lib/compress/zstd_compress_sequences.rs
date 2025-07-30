@@ -1,6 +1,7 @@
 use crate::lib::compress::fse_compress::{
     FSE_normalizeCount, FSE_optimalTableLog, FSE_writeNCount,
 };
+use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -24,14 +25,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
 pub type FSE_repeat = std::ffi::c_uint;
 pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;

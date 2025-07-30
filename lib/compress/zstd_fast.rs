@@ -19,33 +19,10 @@ pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalign64 = u64;
 pub type unalignArch = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
@@ -108,21 +85,6 @@ pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ZSTD_window_t {
     pub nextSrc: *const u8,
     pub base: *const u8,
@@ -148,7 +110,9 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::lib::compress::zstd_compress::ZSTD_MatchState_t;
+use crate::lib::compress::zstd_compress::{
+    SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
+};
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const kSearchStrength: std::ffi::c_int = 8 as std::ffi::c_int;
