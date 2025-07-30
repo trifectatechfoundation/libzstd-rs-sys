@@ -1,6 +1,7 @@
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16};
 use libc::free;
 
 use crate::lib::common::error_private::ERR_getErrorString;
@@ -267,123 +268,6 @@ unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    let one = C2RustUnnamed {
-        u: 1 as std::ffi::c_int as U32,
-    };
-    *(one.c).as_ptr().offset(0 as std::ffi::c_int as isize) as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut memPtr: *const std::ffi::c_void) -> U16 {
-    let mut val: U16 = 0;
-    memcpy(
-        &mut val as *mut U16 as *mut std::ffi::c_void,
-        memPtr,
-        ::core::mem::size_of::<U16>() as std::ffi::c_ulong,
-    );
-    val
-}
-#[inline]
-unsafe extern "C" fn MEM_read32(mut memPtr: *const std::ffi::c_void) -> U32 {
-    let mut val: U32 = 0;
-    memcpy(
-        &mut val as *mut U32 as *mut std::ffi::c_void,
-        memPtr,
-        ::core::mem::size_of::<U32>() as std::ffi::c_ulong,
-    );
-    val
-}
-#[inline]
-unsafe extern "C" fn MEM_read64(mut memPtr: *const std::ffi::c_void) -> U64 {
-    let mut val: U64 = 0;
-    memcpy(
-        &mut val as *mut U64 as *mut std::ffi::c_void,
-        memPtr,
-        ::core::mem::size_of::<U64>() as std::ffi::c_ulong,
-    );
-    val
-}
-#[inline]
-unsafe extern "C" fn MEM_write16(mut memPtr: *mut std::ffi::c_void, mut value: U16) {
-    memcpy(
-        memPtr,
-        &mut value as *mut U16 as *const std::ffi::c_void,
-        ::core::mem::size_of::<U16>() as std::ffi::c_ulong,
-    );
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: U32) -> U32 {
-    in_0 << 24 as std::ffi::c_int & 0xff000000 as std::ffi::c_uint
-        | in_0 << 8 as std::ffi::c_int & 0xff0000 as std::ffi::c_int as U32
-        | in_0 >> 8 as std::ffi::c_int & 0xff00 as std::ffi::c_int as U32
-        | in_0 >> 24 as std::ffi::c_int & 0xff as std::ffi::c_int as U32
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: U64) -> U64 {
-    ((in_0 << 56 as std::ffi::c_int) as std::ffi::c_ulonglong
-        & 0xff00000000000000 as std::ffi::c_ulonglong
-        | (in_0 << 40 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff000000000000 as std::ffi::c_ulonglong
-        | (in_0 << 24 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff0000000000 as std::ffi::c_ulonglong
-        | (in_0 << 8 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff00000000 as std::ffi::c_ulonglong
-        | (in_0 >> 8 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff000000 as std::ffi::c_ulonglong
-        | (in_0 >> 24 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff0000 as std::ffi::c_ulonglong
-        | (in_0 >> 40 as std::ffi::c_int) as std::ffi::c_ulonglong
-            & 0xff00 as std::ffi::c_ulonglong
-        | (in_0 >> 56 as std::ffi::c_int) as std::ffi::c_ulonglong & 0xff as std::ffi::c_ulonglong)
-        as U64
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> U16 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read16(memPtr)
-    } else {
-        let mut p = memPtr as *const BYTE;
-        (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
-            + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as U16
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: U16) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write16(memPtr, val);
-    } else {
-        let mut p = memPtr as *mut BYTE;
-        *p.offset(0 as std::ffi::c_int as isize) = val as BYTE;
-        *p.offset(1 as std::ffi::c_int as isize) =
-            (val as std::ffi::c_int >> 8 as std::ffi::c_int) as BYTE;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> U32 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read32(memPtr)
-    } else {
-        MEM_swap32(MEM_read32(memPtr))
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> U64 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read64(memPtr)
-    } else {
-        MEM_swap64(MEM_read64(memPtr))
-    }
-}
-#[inline]
-unsafe extern "C" fn MEM_readLEST(mut memPtr: *const std::ffi::c_void) -> size_t {
-    if MEM_32bits() != 0 {
-        MEM_readLE32(memPtr) as size_t
-    } else {
-        MEM_readLE64(memPtr)
-    }
 }
 #[inline]
 unsafe extern "C" fn BITv07_highbit32(mut val: U32) -> std::ffi::c_uint {
