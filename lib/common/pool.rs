@@ -13,18 +13,6 @@ extern "C" {
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: std::ffi::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-struct C2RustUnnamed {
-    pub __low: std::ffi::c_uint,
-    pub __high: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct POOL_ctx_s {
     pub customMem: ZSTD_customMem,
     pub threads: *mut pthread_t,

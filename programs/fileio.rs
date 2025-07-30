@@ -1,13 +1,11 @@
 use libc::{
-    fclose, fdopen, feof, fflush, fileno, fopen, fprintf, pthread_cond_t, pthread_mutex_t, FILE,
+    exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, pthread_cond_t, pthread_mutex_t,
+    FILE,
 };
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type ZSTD_CCtx_s;
     pub type POOL_ctx_s;
     pub type lzma_internal_s;
@@ -38,7 +36,6 @@ extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn exit(_: std::ffi::c_int) -> !;
     fn qsort(
         __base: *mut std::ffi::c_void,
         __nmemb: size_t,

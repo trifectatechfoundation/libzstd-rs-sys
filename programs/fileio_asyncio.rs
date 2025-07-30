@@ -1,7 +1,8 @@
 use libc::{
-    fclose, fprintf, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
-    pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
-    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, FILE,
+    __errno_location, exit, fclose, feof, ferror, fprintf, pthread_cond_destroy, pthread_cond_init,
+    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
+    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, strerror, FILE,
 };
 
 extern "C" {
@@ -27,24 +28,19 @@ extern "C" {
         __off: std::ffi::c_long,
         __whence: std::ffi::c_int,
     ) -> std::ffi::c_int;
-    fn feof(__stream: *mut FILE) -> std::ffi::c_int;
-    fn ferror(__stream: *mut FILE) -> std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn exit(_: std::ffi::c_int) -> !;
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
         __file: *const std::ffi::c_char,
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn __errno_location() -> *mut std::ffi::c_int;
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx;
     fn POOL_free(ctx: *mut POOL_ctx);
     fn POOL_joinJobs(ctx: *mut POOL_ctx);

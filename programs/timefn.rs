@@ -1,33 +1,14 @@
-extern "C" {
-    fn perror(__s: *const std::ffi::c_char);
-    fn clock_gettime(__clock_id: clockid_t, __tp: *mut timespec) -> std::ffi::c_int;
-    fn abort() -> !;
-}
-pub type __time_t = std::ffi::c_long;
-pub type __clockid_t = std::ffi::c_int;
-pub type __syscall_slong_t = std::ffi::c_long;
+use libc::{abort, clock_gettime, perror, timespec, CLOCK_MONOTONIC};
+
 pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct UTIL_time_t {
     pub t: PTime,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct timespec {
-    pub tv_sec: __time_t,
-    pub tv_nsec: __syscall_slong_t,
-}
-pub type clockid_t = __clockid_t;
-pub const CLOCK_MONOTONIC: std::ffi::c_int = 1 as std::ffi::c_int;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getTime() -> UTIL_time_t {
-    let mut time = {
-        timespec {
-            tv_sec: 0 as std::ffi::c_int as __time_t,
-            tv_nsec: 0 as std::ffi::c_int as __syscall_slong_t,
-        }
-    };
+    let mut time = core::mem::zeroed::<timespec>();
     if clock_gettime(CLOCK_MONOTONIC, &mut time) != 0 as std::ffi::c_int {
         perror(b"timefn::clock_gettime(CLOCK_MONOTONIC)\0" as *const u8 as *const std::ffi::c_char);
         abort();

@@ -1,11 +1,10 @@
-use libc::{fclose, fflush, fopen, fprintf, FILE};
+use libc::{
+    __errno_location, abort, exit, fclose, fflush, fopen, fprintf, strerror, strrchr, FILE,
+};
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 use libzstd_rs::lib::zstd::*;
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type BMK_timedFnState_s;
     pub type ZSTD_CCtx_s;
     pub type ZSTD_DCtx_s;
@@ -23,12 +22,9 @@ extern "C" {
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn __errno_location() -> *mut std::ffi::c_int;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn abort() -> !;
-    fn exit(_: std::ffi::c_int) -> !;
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,
@@ -39,9 +35,7 @@ extern "C" {
         _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strrchr(_: *const std::ffi::c_char, _: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
     fn setpriority(
         __which: __priority_which_t,
         __who: id_t,

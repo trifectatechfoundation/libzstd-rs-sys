@@ -6,9 +6,6 @@ use libc::{
 use crate::lib::zstd::*;
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;

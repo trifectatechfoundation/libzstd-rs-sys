@@ -1,7 +1,4 @@
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type ZSTDMT_CCtx_s;
     pub type ZSTD_CDict_s;
     pub type POOL_ctx_s;
