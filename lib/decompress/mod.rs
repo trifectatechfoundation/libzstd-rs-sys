@@ -1,5 +1,6 @@
 use crate::lib::common::xxhash::XXH64_state_t;
 
+use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
 use crate::lib::zstd::{ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_format_e, ZSTD_outBuffer};
 
@@ -113,8 +114,6 @@ pub struct ZSTD_FrameHeader {
 
 // FIXME: make usize
 type size_t = u64;
-
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[derive(Copy, Clone)]

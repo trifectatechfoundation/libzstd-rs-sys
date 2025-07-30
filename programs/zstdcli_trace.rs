@@ -1,7 +1,8 @@
-use crate::lib::compress::zstd_compress::{
+use libzstd_rs::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
+use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s, ZSTD_CCtx_s,
 };
-use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
+use libzstd_rs::lib::decompress::ZSTD_DCtx;
 
 extern "C" {
     pub type _IO_wide_data;
@@ -139,21 +140,6 @@ pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_Trace {
-    pub version: std::ffi::c_uint,
-    pub streaming: std::ffi::c_int,
-    pub dictionaryID: std::ffi::c_uint,
-    pub dictionaryIsCold: std::ffi::c_int,
-    pub dictionarySize: size_t,
-    pub uncompressedSize: size_t,
-    pub compressedSize: size_t,
-    pub params: *const ZSTD_CCtx_params_s,
-    pub cctx: *const ZSTD_CCtx_s,
-    pub dctx: *const ZSTD_DCtx_s,
-}
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
 static mut g_mutexInit: std::ffi::c_int = 0 as std::ffi::c_int;

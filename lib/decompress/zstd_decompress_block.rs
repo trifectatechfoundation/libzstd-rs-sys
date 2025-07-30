@@ -52,7 +52,6 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;

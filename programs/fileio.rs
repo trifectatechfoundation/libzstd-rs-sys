@@ -1,5 +1,5 @@
-use crate::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
-use crate::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
+use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
+use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 
 extern "C" {
     pub type _IO_wide_data;
@@ -809,8 +809,8 @@ pub const info_frame_error: InfoError = 1;
 pub const info_success: InfoError = 0;
 pub const _IOFBF: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const UINT64_MAX: std::ffi::c_ulong = 18446744073709551615 as std::ffi::c_ulong;
-use crate::lib::zstd::*;
-use crate::{MEM_readLE24, MEM_readLE32};
+use libzstd_rs::lib::zstd::*;
+use libzstd_rs::{MEM_readLE24, MEM_readLE32};
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const S_IRUSR: std::ffi::c_int = __S_IREAD;

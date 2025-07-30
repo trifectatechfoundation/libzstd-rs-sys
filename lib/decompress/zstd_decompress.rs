@@ -26,7 +26,7 @@ use crate::lib::decompress::{
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
 
-use crate::programs::zstdcli_trace::{
+use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_trace_decompress_begin, ZSTD_trace_decompress_end,
 };
 
