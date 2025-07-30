@@ -7,12 +7,14 @@ use libc::{
 };
 
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
-use crate::lib::dictBuilder::zdict::ZDICT_params_t;
+use crate::lib::compress::zstd_compress::{
+    ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
+    ZSTD_createCDict, ZSTD_freeCCtx, ZSTD_freeCDict,
+};
+use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError, ZDICT_params_t};
 use crate::lib::zstd::*;
 
 extern "C" {
-    pub type ZSTD_CCtx_s;
-    pub type ZSTD_CDict_s;
     static mut stderr: *mut FILE;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
@@ -39,34 +41,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> std::ffi::c_int;
     fn clock() -> clock_t;
-    fn ZSTD_compressBound(srcSize: size_t) -> size_t;
-    fn ZSTD_createCCtx() -> *mut ZSTD_CCtx;
-    fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t;
-    fn ZSTD_createCDict(
-        dictBuffer: *const std::ffi::c_void,
-        dictSize: size_t,
-        compressionLevel: std::ffi::c_int,
-    ) -> *mut ZSTD_CDict;
-    fn ZSTD_freeCDict(CDict: *mut ZSTD_CDict) -> size_t;
-    fn ZSTD_compress_usingCDict(
-        cctx: *mut ZSTD_CCtx,
-        dst: *mut std::ffi::c_void,
-        dstCapacity: size_t,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-        cdict: *const ZSTD_CDict,
-    ) -> size_t;
-    fn ZDICT_finalizeDictionary(
-        dstDictBuffer: *mut std::ffi::c_void,
-        maxDictSize: size_t,
-        dictContent: *const std::ffi::c_void,
-        dictContentSize: size_t,
-        samplesBuffer: *const std::ffi::c_void,
-        samplesSizes: *const size_t,
-        nbSamples: std::ffi::c_uint,
-        parameters: ZDICT_params_t,
-    ) -> size_t;
-    fn ZDICT_isError(errorCode: size_t) -> std::ffi::c_uint;
 }
 pub type size_t = std::ffi::c_ulong;
 pub type __clock_t = std::ffi::c_long;
@@ -79,8 +53,6 @@ pub type __compar_d_fn_t = Option<
     ) -> std::ffi::c_int,
 >;
 pub type unalign64 = u64;
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
-pub type ZSTD_CDict = ZSTD_CDict_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_cover_params_t {

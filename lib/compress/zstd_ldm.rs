@@ -89,22 +89,6 @@ pub struct ZSTD_MatchState_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct RawSeqStore_t {
-    pub seq: *mut rawSeq,
-    pub pos: size_t,
-    pub posInSequence: size_t,
-    pub size: size_t,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct rawSeq {
-    pub offset: u32,
-    pub litLength: u32,
-    pub matchLength: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut std::ffi::c_uint,
     pub litLengthFreq: *mut std::ffi::c_uint,
@@ -180,16 +164,6 @@ pub struct ZSTD_match_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_window_t {
-    pub nextSrc: *const u8,
-    pub base: *const u8,
-    pub dictBase: *const u8,
-    pub dictLimit: u32,
-    pub lowLimit: u32,
-    pub nbOverflowCorrections: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ldmState_t {
     pub window: ZSTD_window_t,
     pub hashTable: *mut ldmEntry_t,
@@ -258,6 +232,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::compress::zstd_compress::{rawSeq, RawSeqStore_t, ZSTD_window_t};
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
