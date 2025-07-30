@@ -1,7 +1,10 @@
 [workspace]
-members = [ ]
+members = ["test-libzstd-rs-sys"]
 
 exclude = [ "fuzz" ]
+
+[workspace.package]
+edition = "2021"
 
 [package]
 name = "c2rust_out"
