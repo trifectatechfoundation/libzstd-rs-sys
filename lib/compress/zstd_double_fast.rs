@@ -85,21 +85,6 @@ pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ZSTD_window_t {
     pub nextSrc: *const u8,
     pub base: *const u8,
@@ -123,7 +108,9 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
-use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t};
+use crate::lib::compress::zstd_compress::{
+    SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
+};
 use crate::lib::zstd::*;
 use crate::{
     MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readLE64, MEM_readST,

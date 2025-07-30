@@ -22,75 +22,6 @@ pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_MatchState_t {
-    pub window: ZSTD_window_t,
-    pub loadedDictEnd: u32,
-    pub nextToUpdate: u32,
-    pub hashLog3: u32,
-    pub rowHashLog: u32,
-    pub tagTable: *mut u8,
-    pub hashCache: [u32; 8],
-    pub hashSalt: u64,
-    pub hashSaltEntropy: u32,
-    pub hashTable: *mut u32,
-    pub hashTable3: *mut u32,
-    pub chainTable: *mut u32,
-    pub forceNonContiguous: std::ffi::c_int,
-    pub dedicatedDictSearch: std::ffi::c_int,
-    pub opt: optState_t,
-    pub dictMatchState: *const ZSTD_MatchState_t,
-    pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
-    pub prefetchCDictTables: std::ffi::c_int,
-    pub lazySkipping: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct RawSeqStore_t {
-    pub seq: *mut rawSeq,
-    pub pos: size_t,
-    pub posInSequence: size_t,
-    pub size: size_t,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct rawSeq {
-    pub offset: u32,
-    pub litLength: u32,
-    pub matchLength: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut std::ffi::c_uint,
-    pub litLengthFreq: *mut std::ffi::c_uint,
-    pub matchLengthFreq: *mut std::ffi::c_uint,
-    pub offCodeFreq: *mut std::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-}
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
@@ -130,21 +61,6 @@ pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = std::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_window_t {
@@ -213,7 +129,10 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
 }
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
-use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_resetSeqStore};
+use crate::lib::compress::zstd_compress::{
+    optState_t, rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
+    ZSTD_resetSeqStore,
+};
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;

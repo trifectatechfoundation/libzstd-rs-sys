@@ -14,12 +14,13 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
-    ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
-    ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
-    ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
-    ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
-    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
+    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
+    ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressBegin_advanced_internal,
+    ZSTD_compressBound, ZSTD_compressContinue_public, ZSTD_compressEnd_public,
+    ZSTD_createCCtx_advanced, ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx,
+    ZSTD_freeCDict, ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_optimal_t,
+    ZSTD_referenceExternalSequences, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t,
+    ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -145,33 +146,10 @@ pub struct ZSTD_hufCTablesMetadata_t {
     pub hufDesBuffer: [u8; 128],
     pub hufDesSize: size_t,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type SeqDef = SeqDef_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqDef_s {
-    pub offBase: u32,
-    pub litLength: u16,
-    pub mlBase: u16,
-}
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
@@ -367,30 +345,6 @@ pub struct ZSTD_blockState_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_MatchState_t {
-    pub window: ZSTD_window_t,
-    pub loadedDictEnd: u32,
-    pub nextToUpdate: u32,
-    pub hashLog3: u32,
-    pub rowHashLog: u32,
-    pub tagTable: *mut u8,
-    pub hashCache: [u32; 8],
-    pub hashSalt: u64,
-    pub hashSaltEntropy: u32,
-    pub hashTable: *mut u32,
-    pub hashTable3: *mut u32,
-    pub chainTable: *mut u32,
-    pub forceNonContiguous: std::ffi::c_int,
-    pub dedicatedDictSearch: std::ffi::c_int,
-    pub opt: optState_t,
-    pub dictMatchState: *const ZSTD_MatchState_t,
-    pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
-    pub prefetchCDictTables: std::ffi::c_int,
-    pub lazySkipping: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut std::ffi::c_uint,
     pub litLengthFreq: *mut std::ffi::c_uint,
@@ -445,15 +399,6 @@ pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = std::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_match_t {
@@ -551,16 +496,6 @@ pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_dictLoadMethod_e = std::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameProgression {
-    pub ingested: std::ffi::c_ulonglong,
-    pub consumed: std::ffi::c_ulonglong,
-    pub produced: std::ffi::c_ulonglong,
-    pub flushed: std::ffi::c_ulonglong,
-    pub currentJobID: std::ffi::c_uint,
-    pub nbActiveWorkers: std::ffi::c_uint,
-}
 pub type unalign32 = u32;
 pub type XXH_errorcode = std::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;

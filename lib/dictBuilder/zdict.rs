@@ -6,10 +6,10 @@ use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
 use crate::lib::compress::zstd_compress::{
-    SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBegin_usingCDict_deprecated,
+    SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressBegin_usingCDict_deprecated,
     ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCCtx,
     ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
-    ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
+    ZSTD_loadCEntropy, ZSTD_optimal_t, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
 };
 use crate::lib::dictBuilder::fastcover::{
     ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
@@ -169,46 +169,6 @@ pub struct ZSTD_blockState_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_MatchState_t {
-    pub window: ZSTD_window_t,
-    pub loadedDictEnd: u32,
-    pub nextToUpdate: u32,
-    pub hashLog3: u32,
-    pub rowHashLog: u32,
-    pub tagTable: *mut u8,
-    pub hashCache: [u32; 8],
-    pub hashSalt: u64,
-    pub hashSaltEntropy: u32,
-    pub hashTable: *mut u32,
-    pub hashTable3: *mut u32,
-    pub chainTable: *mut u32,
-    pub forceNonContiguous: std::ffi::c_int,
-    pub dedicatedDictSearch: std::ffi::c_int,
-    pub opt: optState_t,
-    pub dictMatchState: *const ZSTD_MatchState_t,
-    pub cParams: ZSTD_compressionParameters,
-    pub ldmSeqStore: *const RawSeqStore_t,
-    pub prefetchCDictTables: std::ffi::c_int,
-    pub lazySkipping: std::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct RawSeqStore_t {
-    pub seq: *mut rawSeq,
-    pub pos: size_t,
-    pub posInSequence: size_t,
-    pub size: size_t,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct rawSeq {
-    pub offset: u32,
-    pub litLength: u32,
-    pub matchLength: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut std::ffi::c_uint,
     pub litLengthFreq: *mut std::ffi::c_uint,
@@ -257,15 +217,6 @@ pub struct ZSTD_hufCTables_t {
 pub type ZSTD_OptPrice_e = std::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_optimal_t {
-    pub price: std::ffi::c_int,
-    pub off: u32,
-    pub mlen: u32,
-    pub litlen: u32,
-    pub rep: [u32; 3],
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_match_t {
