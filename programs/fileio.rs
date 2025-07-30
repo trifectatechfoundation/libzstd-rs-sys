@@ -1,8 +1,20 @@
 use libc::{
-    clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t, pthread_cond_t,
-    strcmp, strcpy, strerror, strrchr, timespec, FILE,
+    __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
+    pthread_cond_t, remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
 };
-use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
+use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
+use libzstd_rs::lib::compress::zstd_compress::{
+    ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary_byReference, ZSTD_CCtx_refPrefix,
+    ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize, ZSTD_CStream, ZSTD_CStreamInSize,
+    ZSTD_CStreamOutSize, ZSTD_compressStream2, ZSTD_createCCtx, ZSTD_freeCStream, ZSTD_getCParams,
+    ZSTD_getFrameProgression, ZSTD_maxCLevel, ZSTD_minCLevel, ZSTD_toFlushNow,
+};
+use libzstd_rs::lib::decompress::zstd_decompress::{
+    ZSTD_DCtx_loadDictionary_byReference, ZSTD_DCtx_refPrefix, ZSTD_DCtx_reset,
+    ZSTD_DCtx_setMaxWindowSize, ZSTD_DCtx_setParameter, ZSTD_DStreamInSize, ZSTD_DStreamOutSize,
+    ZSTD_createDStream, ZSTD_decompressStream, ZSTD_frameHeaderSize, ZSTD_freeDStream,
+    ZSTD_getFrameContentSize, ZSTD_getFrameHeader, ZSTD_isFrame,
+};
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 use libzstd_rs::lib::zstd::*;
 use libzstd_rs::{MEM_readLE24, MEM_readLE32};
@@ -28,14 +40,12 @@ use crate::util::{
 };
 
 extern "C" {
-    pub type ZSTD_CCtx_s;
     pub type lzma_internal_s;
     pub type internal_state;
     fn close(__fd: std::ffi::c_int) -> std::ffi::c_int;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn remove(__filename: *const std::ffi::c_char) -> std::ffi::c_int;
     fn setvbuf(
         __stream: *mut FILE,
         __buf: *mut std::ffi::c_char,
@@ -82,89 +92,7 @@ extern "C" {
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn __errno_location() -> *mut std::ffi::c_int;
     fn signal(__sig: std::ffi::c_int, __handler: __sighandler_t) -> __sighandler_t;
-    fn ZSTD_getFrameContentSize(
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> std::ffi::c_ulonglong;
-    fn ZSTD_isError(result: size_t) -> std::ffi::c_uint;
-    fn ZSTD_getErrorCode(functionResult: size_t) -> ZSTD_ErrorCode;
-    fn ZSTD_getErrorName(result: size_t) -> *const std::ffi::c_char;
-    fn ZSTD_createCCtx() -> *mut ZSTD_CCtx;
-    fn ZSTD_CCtx_setParameter(
-        cctx: *mut ZSTD_CCtx,
-        param: ZSTD_cParameter,
-        value: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_CCtx_setPledgedSrcSize(
-        cctx: *mut ZSTD_CCtx,
-        pledgedSrcSize: std::ffi::c_ulonglong,
-    ) -> size_t;
-    fn ZSTD_DCtx_setParameter(
-        dctx: *mut ZSTD_DCtx,
-        param: ZSTD_dParameter,
-        value: std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_DCtx_reset(dctx: *mut ZSTD_DCtx, reset: ZSTD_ResetDirective) -> size_t;
-    fn ZSTD_freeCStream(zcs: *mut ZSTD_CStream) -> size_t;
-    fn ZSTD_compressStream2(
-        cctx: *mut ZSTD_CCtx,
-        output: *mut ZSTD_outBuffer,
-        input: *mut ZSTD_inBuffer,
-        endOp: ZSTD_EndDirective,
-    ) -> size_t;
-    fn ZSTD_CStreamInSize() -> size_t;
-    fn ZSTD_CStreamOutSize() -> size_t;
-    fn ZSTD_createDStream() -> *mut ZSTD_DStream;
-    fn ZSTD_freeDStream(zds: *mut ZSTD_DStream) -> size_t;
-    fn ZSTD_decompressStream(
-        zds: *mut ZSTD_DStream,
-        output: *mut ZSTD_outBuffer,
-        input: *mut ZSTD_inBuffer,
-    ) -> size_t;
-    fn ZSTD_DStreamInSize() -> size_t;
-    fn ZSTD_DStreamOutSize() -> size_t;
-    fn ZSTD_CCtx_refPrefix(
-        cctx: *mut ZSTD_CCtx,
-        prefix: *const std::ffi::c_void,
-        prefixSize: size_t,
-    ) -> size_t;
-    fn ZSTD_DCtx_refPrefix(
-        dctx: *mut ZSTD_DCtx,
-        prefix: *const std::ffi::c_void,
-        prefixSize: size_t,
-    ) -> size_t;
-    fn ZSTD_frameHeaderSize(src: *const std::ffi::c_void, srcSize: size_t) -> size_t;
-    fn ZSTD_getFrameHeader(
-        zfhPtr: *mut ZSTD_FrameHeader,
-        src: *const std::ffi::c_void,
-        srcSize: size_t,
-    ) -> size_t;
-    fn ZSTD_getCParams(
-        compressionLevel: std::ffi::c_int,
-        estimatedSrcSize: std::ffi::c_ulonglong,
-        dictSize: size_t,
-    ) -> ZSTD_compressionParameters;
-    fn ZSTD_CCtx_loadDictionary_byReference(
-        cctx: *mut ZSTD_CCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTD_CCtx_getParameter(
-        cctx: *const ZSTD_CCtx,
-        param: ZSTD_cParameter,
-        value: *mut std::ffi::c_int,
-    ) -> size_t;
-    fn ZSTD_isFrame(buffer: *const std::ffi::c_void, size: size_t) -> std::ffi::c_uint;
-    fn ZSTD_DCtx_loadDictionary_byReference(
-        dctx: *mut ZSTD_DCtx,
-        dict: *const std::ffi::c_void,
-        dictSize: size_t,
-    ) -> size_t;
-    fn ZSTD_DCtx_setMaxWindowSize(dctx: *mut ZSTD_DCtx, maxWindowSize: size_t) -> size_t;
-    fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZSTD_frameProgression;
-    fn ZSTD_toFlushNow(cctx: *mut ZSTD_CCtx) -> size_t;
     fn zlibVersion() -> *const std::ffi::c_char;
     fn deflate(strm: z_streamp, flush: std::ffi::c_int) -> std::ffi::c_int;
     fn deflateEnd(strm: z_streamp) -> std::ffi::c_int;
@@ -209,7 +137,6 @@ pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const std::ffi::c_void, *const std::ffi::c_void) -> std::ffi::c_int,
 >;
 pub type __sighandler_t = Option<unsafe extern "C" fn(std::ffi::c_int) -> ()>;
-pub type ZSTD_CCtx = ZSTD_CCtx_s;
 pub type ZSTD_cParameter = std::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
@@ -262,15 +189,6 @@ pub const ZSTD_d_experimentalParam3: ZSTD_dParameter = 1002;
 pub const ZSTD_d_experimentalParam2: ZSTD_dParameter = 1001;
 pub const ZSTD_d_experimentalParam1: ZSTD_dParameter = 1000;
 pub const ZSTD_d_windowLogMax: ZSTD_dParameter = 100;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-pub type ZSTD_CStream = ZSTD_CCtx;
 pub type ZSTD_EndDirective = std::ffi::c_uint;
 pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
@@ -283,16 +201,6 @@ pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameProgression {
-    pub ingested: std::ffi::c_ulonglong,
-    pub consumed: std::ffi::c_ulonglong,
-    pub produced: std::ffi::c_ulonglong,
-    pub flushed: std::ffi::c_ulonglong,
-    pub currentJobID: std::ffi::c_uint,
-    pub nbActiveWorkers: std::ffi::c_uint,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FIO_display_prefs_s {
