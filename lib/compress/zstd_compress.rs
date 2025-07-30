@@ -822,14 +822,6 @@ pub struct ZSTD_localDict {
     pub dictContentType: ZSTD_dictContentType_e,
     pub cdict: *mut ZSTD_CDict,
 }
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
 pub type ZSTD_cStreamStage = std::ffi::c_uint;
 pub const zcss_flush: ZSTD_cStreamStage = 2;
 pub const zcss_load: ZSTD_cStreamStage = 1;
@@ -1129,16 +1121,6 @@ pub struct BlockSummary {
     pub nbSequences: size_t,
     pub blockSize: size_t,
     pub litSize: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_frameProgression {
-    pub ingested: std::ffi::c_ulonglong,
-    pub consumed: std::ffi::c_ulonglong,
-    pub produced: std::ffi::c_ulonglong,
-    pub flushed: std::ffi::c_ulonglong,
-    pub currentJobID: std::ffi::c_uint,
-    pub nbActiveWorkers: std::ffi::c_uint,
 }
 pub type C2RustUnnamed_0 = std::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;

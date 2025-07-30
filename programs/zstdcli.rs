@@ -1,5 +1,8 @@
 use libc::{exit, fprintf, getchar, getenv, memset, strcmp, strlen, strncmp, strrchr, FILE};
-use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
+use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
+use libzstd_rs::lib::compress::zstd_compress::{
+    ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
+};
 use libzstd_rs::lib::dictBuilder::cover::ZDICT_cover_params_t;
 use libzstd_rs::lib::dictBuilder::fastcover::ZDICT_fastCover_params_t;
 use libzstd_rs::lib::dictBuilder::zdict::{ZDICT_legacy_params_t, ZDICT_params_t};
@@ -24,34 +27,24 @@ use crate::fileio::{
 };
 use crate::fileio_asyncio::AIO_supported;
 use crate::util::{
-    UTIL_allocateFileNamesTable, UTIL_countLogicalCores, UTIL_countPhysicalCores,
-    UTIL_createFileNamesTable_fromFileList, UTIL_expandFNT, UTIL_fakeStderrIsConsole,
-    UTIL_fakeStdinIsConsole, UTIL_fakeStdoutIsConsole, UTIL_freeFileNamesTable, UTIL_getFileSize,
-    UTIL_isConsole, UTIL_isFIFO, UTIL_isLink, UTIL_mergeFileNamesTable, UTIL_refFilename,
-    UTIL_searchFileNamesTable, UTIL_traceFileStat,
+    g_utilDisplayLevel, UTIL_allocateFileNamesTable, UTIL_countLogicalCores,
+    UTIL_countPhysicalCores, UTIL_createFileNamesTable_fromFileList, UTIL_expandFNT,
+    UTIL_fakeStderrIsConsole, UTIL_fakeStdinIsConsole, UTIL_fakeStdoutIsConsole,
+    UTIL_freeFileNamesTable, UTIL_getFileSize, UTIL_isConsole, UTIL_isFIFO, UTIL_isLink,
+    UTIL_mergeFileNamesTable, UTIL_refFilename, UTIL_searchFileNamesTable, UTIL_traceFileStat,
 };
+use crate::zstdcli_trace::{TRACE_enable, TRACE_finish};
 extern "C" {
     pub type FIO_ctx_s;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    static mut g_utilDisplayLevel: std::ffi::c_int;
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
         __file: *const std::ffi::c_char,
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn ZSTD_versionString() -> *const std::ffi::c_char;
-    fn ZSTD_cParam_getBounds(cParam: ZSTD_cParameter) -> ZSTD_bounds;
-    fn ZSTD_getCParams(
-        compressionLevel: std::ffi::c_int,
-        estimatedSrcSize: std::ffi::c_ulonglong,
-        dictSize: size_t,
-    ) -> ZSTD_compressionParameters;
-    fn ZSTD_isDeterministicBuild() -> std::ffi::c_int;
-    fn TRACE_enable(filename: *const std::ffi::c_char);
-    fn TRACE_finish();
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]

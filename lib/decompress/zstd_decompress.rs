@@ -99,14 +99,6 @@ pub const ZSTD_d_experimentalParam3: ZSTD_dParameter = 1002;
 pub const ZSTD_d_experimentalParam2: ZSTD_dParameter = 1001;
 pub const ZSTD_d_experimentalParam1: ZSTD_dParameter = 1000;
 pub const ZSTD_d_windowLogMax: ZSTD_dParameter = 100;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const std::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 pub type ZSTD_DStream = ZSTD_DCtx;
 pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub type ZSTD_nextInputType_e = std::ffi::c_uint;
