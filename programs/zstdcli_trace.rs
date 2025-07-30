@@ -1,4 +1,7 @@
-use libc::FILE;
+use libc::{
+    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_MUTEX_INITIALIZER,
+};
 use libzstd_rs::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s, ZSTD_CCtx_s,
@@ -15,48 +18,6 @@ extern "C" {
     fn UTIL_getTime() -> UTIL_time_t;
     fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime;
     fn UTIL_isRegularFile(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
-    fn pthread_mutex_init(
-        __mutex: *mut pthread_mutex_t,
-        __mutexattr: *const pthread_mutexattr_t,
-    ) -> std::ffi::c_int;
-    fn pthread_mutex_destroy(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-    fn pthread_mutex_lock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-    fn pthread_mutex_unlock(__mutex: *mut pthread_mutex_t) -> std::ffi::c_int;
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutex_t {
-    pub __data: __pthread_mutex_s,
-    pub __size: [std::ffi::c_char; 40],
-    pub __align: std::ffi::c_long,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_mutex_s {
-    pub __lock: std::ffi::c_int,
-    pub __count: std::ffi::c_uint,
-    pub __owner: std::ffi::c_int,
-    pub __nusers: std::ffi::c_uint,
-    pub __kind: std::ffi::c_int,
-    pub __spins: std::ffi::c_short,
-    pub __elision: std::ffi::c_short,
-    pub __list: __pthread_list_t,
-}
-pub type __pthread_list_t = __pthread_internal_list;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct __pthread_internal_list {
-    pub __prev: *mut __pthread_internal_list,
-    pub __next: *mut __pthread_internal_list,
-}
-pub type size_t = std::ffi::c_ulong;
-pub type __off64_t = std::ffi::c_long;
-pub type __off_t = std::ffi::c_long;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union pthread_mutexattr_t {
-    pub __size: [std::ffi::c_char; 4],
-    pub __align: std::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -109,21 +70,7 @@ pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
 static mut g_mutexInit: std::ffi::c_int = 0 as std::ffi::c_int;
-static mut g_mutex: pthread_mutex_t = pthread_mutex_t {
-    __data: __pthread_mutex_s {
-        __lock: 0,
-        __count: 0,
-        __owner: 0,
-        __nusers: 0,
-        __kind: 0,
-        __spins: 0,
-        __elision: 0,
-        __list: __pthread_internal_list {
-            __prev: std::ptr::null::<__pthread_internal_list>() as *mut __pthread_internal_list,
-            __next: std::ptr::null::<__pthread_internal_list>() as *mut __pthread_internal_list,
-        },
-    },
-};
+static mut g_mutex: pthread_mutex_t = PTHREAD_MUTEX_INITIALIZER;
 static mut g_enableTime: UTIL_time_t = {
     UTIL_time_t {
         t: 0 as std::ffi::c_int as PTime,
