@@ -1,5 +1,5 @@
-use c2rust_out::lib::common::zstd_common::ZSTD_getErrorName;
-use c2rust_out::lib::decompress::zstd_decompress::*;
+use libzstd_rs::lib::common::zstd_common::ZSTD_getErrorName;
+use libzstd_rs::lib::decompress::zstd_decompress::*;
 use std::ffi::*;
 
 fn main() {

@@ -1,14 +1,13 @@
 use libc::free;
 
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
-use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_entropyDTables_t};
+use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
 
 extern "C" {
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;

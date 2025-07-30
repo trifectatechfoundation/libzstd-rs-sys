@@ -633,7 +633,6 @@ pub struct SeqDef_s {
     pub litLength: u16,
     pub mlBase: u16,
 }
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[derive(Copy, Clone)]
@@ -1023,20 +1022,6 @@ pub struct seqStoreSplits {
 
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
 pub type unalign64 = u64;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_Trace {
-    pub version: std::ffi::c_uint,
-    pub streaming: std::ffi::c_int,
-    pub dictionaryID: std::ffi::c_uint,
-    pub dictionaryIsCold: std::ffi::c_int,
-    pub dictionarySize: size_t,
-    pub uncompressedSize: size_t,
-    pub compressedSize: size_t,
-    pub params: *const ZSTD_CCtx_params_s,
-    pub cctx: *const ZSTD_CCtx_s,
-    pub dctx: *const ZSTD_DCtx_s,
-}
 pub type ZSTD_dictTableLoadMethod_e = std::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -1963,6 +1948,7 @@ use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::zstd_compress_sequences::ZSTD_crossEntropyCost;
 use crate::lib::compress::zstd_preSplit::ZSTD_splitBlock;
@@ -9851,9 +9837,9 @@ pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSiz
             dictionarySize: 0,
             uncompressedSize: 0,
             compressedSize: 0,
-            params: std::ptr::null::<ZSTD_CCtx_params_s>(),
-            cctx: std::ptr::null::<ZSTD_CCtx_s>(),
-            dctx: std::ptr::null::<ZSTD_DCtx_s>(),
+            params: std::ptr::null(),
+            cctx: std::ptr::null(),
+            dctx: std::ptr::null(),
         };
         libc::memset(
             &mut trace as *mut ZSTD_Trace as *mut std::ffi::c_void,

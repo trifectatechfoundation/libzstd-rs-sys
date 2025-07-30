@@ -9,6 +9,7 @@
 #![feature(core_intrinsics)]
 #![feature(extern_types)]
 #![feature(likely_unlikely)]
+#![feature(linkage)]
 #[macro_use]
 extern crate c2rust_bitfields;
 extern crate libc;
@@ -25,6 +26,7 @@ pub mod lib {
         pub mod threading;
         pub mod xxhash;
         pub mod zstd_common;
+        pub mod zstd_trace;
     } // mod common
     pub mod compress {
         pub mod fse_compress;
@@ -56,19 +58,6 @@ pub mod lib {
     } // mod legacy
     pub mod zstd;
 } // mod lib
-pub mod programs {
-    pub mod benchfn;
-    pub mod benchzstd;
-    pub mod datagen;
-    pub mod dibio;
-    pub mod fileio;
-    pub mod fileio_asyncio;
-    pub mod lorem;
-    pub mod timefn;
-    pub mod util;
-    pub mod zstdcli;
-    pub mod zstdcli_trace;
-} // mod programs
 
 #[cfg(feature = "semver-prefix")]
 macro_rules! prefix {
@@ -151,14 +140,14 @@ pub(crate) unsafe fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> u16 {
     }
 }
 #[inline]
-pub(crate) unsafe fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> u32 {
+pub unsafe fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> u32 {
     (MEM_readLE16(memPtr) as u32).wrapping_add(
         (*(memPtr as *const u8).offset(2 as std::ffi::c_int as isize) as u32)
             << 16 as std::ffi::c_int,
     )
 }
 #[inline]
-pub(crate) unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
+pub unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
     if MEM_isLittleEndian() != 0 {
         MEM_read32(memPtr)
     } else {
@@ -166,7 +155,7 @@ pub(crate) unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
     }
 }
 #[inline]
-pub(crate) unsafe fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val32: u16) {
+pub unsafe fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val32: u16) {
     if MEM_isLittleEndian() != 0 {
         MEM_write16(memPtr, val32);
     } else {
@@ -174,13 +163,13 @@ pub(crate) unsafe fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val32:
     };
 }
 #[inline]
-pub(crate) unsafe fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: u32) {
+pub unsafe fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: u32) {
     MEM_writeLE16(memPtr, val as u16);
     *(memPtr as *mut u8).offset(2 as std::ffi::c_int as isize) =
         (val >> 16 as std::ffi::c_int) as u8;
 }
 #[inline]
-pub(crate) unsafe fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: u32) {
+pub unsafe fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: u32) {
     if MEM_isLittleEndian() != 0 {
         MEM_write32(memPtr, val32);
     } else {
@@ -188,7 +177,7 @@ pub(crate) unsafe fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32:
     };
 }
 #[inline]
-pub(crate) unsafe fn MEM_writeLE64(mut memPtr: *mut std::ffi::c_void, mut val64: u64) {
+pub unsafe fn MEM_writeLE64(mut memPtr: *mut std::ffi::c_void, mut val64: u64) {
     if MEM_isLittleEndian() != 0 {
         MEM_write64(memPtr, val64);
     } else {
@@ -196,7 +185,7 @@ pub(crate) unsafe fn MEM_writeLE64(mut memPtr: *mut std::ffi::c_void, mut val64:
     };
 }
 #[inline]
-pub(crate) unsafe fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
+pub unsafe fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
     if MEM_isLittleEndian() != 0 {
         MEM_read64(memPtr)
     } else {

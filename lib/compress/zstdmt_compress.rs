@@ -9,6 +9,7 @@ use libc::{
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_cycleLog, ZSTD_writeLastEmptyBlock,
 };
@@ -243,7 +244,6 @@ pub struct SeqDef_s {
     pub litLength: u16,
     pub mlBase: u16,
 }
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]

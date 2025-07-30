@@ -12,9 +12,13 @@ edition = "2021"
 autobins = false
 
 [lib]
-name = "c2rust_out"
+name = "libzstd_rs"
 path = "c2rust-lib.rs"
 crate-type = ["staticlib", "rlib"]
+
+[[bin]]
+name = "programs"
+path = "programs/main.rs"
 
 [dependencies]
 c2rust-bitfields = "0.3"

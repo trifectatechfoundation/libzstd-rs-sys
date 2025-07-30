@@ -1,4 +1,4 @@
-use crate::lib::zstd::*;
+use libzstd_rs::lib::zstd::*;
 
 extern "C" {
     pub type _IO_wide_data;
