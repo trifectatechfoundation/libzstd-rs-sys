@@ -273,18 +273,6 @@ pub type size_t = std::ffi::c_ulong;
 pub type clock_t = __clock_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: std::ffi::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed {
-    pub __low: std::ffi::c_uint,
-    pub __high: std::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct timespec {
     pub tv_sec: __time_t,
     pub tv_nsec: __syscall_slong_t,
@@ -311,8 +299,6 @@ pub struct stat {
 pub type __compar_fn_t = Option<
     unsafe extern "C" fn(*const std::ffi::c_void, *const std::ffi::c_void) -> std::ffi::c_int,
 >;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
 pub type stat_t = stat;
 #[derive(Copy, Clone)]
 #[repr(C)]

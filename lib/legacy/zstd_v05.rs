@@ -35,9 +35,6 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
 
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type ZSTDv05_DCtx = ZSTDv05_DCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]

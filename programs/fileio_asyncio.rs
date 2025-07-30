@@ -6,9 +6,6 @@ use libc::{
 };
 
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type POOL_ctx_s;
     static mut stderr: *mut FILE;
     fn fread(
@@ -47,8 +44,6 @@ extern "C" {
     fn POOL_add(ctx: *mut POOL_ctx, function: POOL_function, opaque: *mut std::ffi::c_void);
     static mut g_display_prefs: FIO_display_prefs_t;
 }
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;

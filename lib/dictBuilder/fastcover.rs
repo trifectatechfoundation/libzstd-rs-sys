@@ -64,22 +64,8 @@ extern "C" {
     ) -> COVER_dictSelection_t;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
 pub type __clock_t = std::ffi::c_long;
 pub type clock_t = __clock_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: std::ffi::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed {
-    pub __low: std::ffi::c_uint,
-    pub __high: std::ffi::c_uint,
-}
 pub type unalign64 = u64;
 pub type POOL_ctx = POOL_ctx_s;
 pub type POOL_function = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> ()>;

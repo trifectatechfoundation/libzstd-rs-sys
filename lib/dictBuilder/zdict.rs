@@ -106,14 +106,8 @@ extern "C" {
     ) -> std::ffi::c_int;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
 pub type __clock_t = std::ffi::c_long;
 pub type clock_t = __clock_t;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
-pub type unalignArch = size_t;
 pub type FSE_CTable = std::ffi::c_uint;
 pub type ERR_enum = ZSTD_ErrorCode;
 pub type FSE_repeat = std::ffi::c_uint;
