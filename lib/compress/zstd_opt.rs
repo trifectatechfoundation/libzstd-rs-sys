@@ -2,10 +2,6 @@
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-extern "C" {
-    fn ZSTD_resetSeqStore(ssPtr: *mut SeqStore_t);
-    fn HUF_getNbBitsFromCTable(symbolTable: *const HUF_CElt, symbolValue: u32) -> u32;
-}
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -22,21 +18,6 @@ pub type unalign16 = u16;
 pub type unalign32 = u32;
 pub type unalign64 = u64;
 pub type unalignArch = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
 pub type ZSTD_longLengthType_e = std::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -231,6 +212,8 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
 }
 use crate::lib::compress::hist::HIST_count_simple;
+use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
+use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_resetSeqStore};
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;
