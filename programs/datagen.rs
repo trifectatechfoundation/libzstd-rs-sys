@@ -22,8 +22,6 @@ extern "C" {
     ) -> *mut std::ffi::c_void;
 }
 pub type size_t = std::ffi::c_ulong;
-pub type __off64_t = std::ffi::c_long;
-pub type __off_t = std::ffi::c_long;
 pub type fixedPoint_24_8 = u32;
 pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
 pub const LTLOG: std::ffi::c_int = 13 as std::ffi::c_int;

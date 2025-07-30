@@ -27,9 +27,6 @@ pub struct __loadu_si128 {
 pub struct __storeu_si128 {
     pub __v: __m128i,
 }
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type BitContainerType = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]

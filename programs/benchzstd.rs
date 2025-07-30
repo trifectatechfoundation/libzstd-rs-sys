@@ -107,11 +107,7 @@ extern "C" {
     );
     fn LOREM_genBuffer(buffer: *mut std::ffi::c_void, size: size_t, seed: std::ffi::c_uint);
 }
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
-pub type __id_t = std::ffi::c_uint;
 pub type size_t = std::ffi::c_ulong;
-pub type id_t = __id_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_runTime_t {

@@ -68,8 +68,6 @@ extern "C" {
         parameters: ZDICT_legacy_params_t,
     ) -> size_t;
 }
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 pub type PTime = u64;
 #[derive(Copy, Clone)]

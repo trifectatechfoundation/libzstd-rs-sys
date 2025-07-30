@@ -26,10 +26,6 @@ extern "C" {
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type XXH_errorcode = std::ffi::c_uint;
-pub const XXH_ERROR: XXH_errorcode = 1;
-pub const XXH_OK: XXH_errorcode = 0;
-pub type XXH32_hash_t = u32;
 pub type XXH64_hash_t = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]

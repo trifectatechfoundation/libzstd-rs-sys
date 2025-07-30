@@ -2,9 +2,6 @@ use libc::{exit, fprintf, getchar, getenv, memset, strcmp, strlen, strncmp, strr
 use libzstd_rs::lib::compress::zstd_compress::{ZSTD_maxCLevel, ZSTD_minCLevel};
 use libzstd_rs::lib::zstd::*;
 extern "C" {
-    pub type _IO_wide_data;
-    pub type _IO_codecvt;
-    pub type _IO_marker;
     pub type FIO_ctx_s;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
@@ -175,8 +172,6 @@ extern "C" {
     fn TRACE_finish();
     fn AIO_supported() -> std::ffi::c_int;
 }
-pub type __off_t = std::ffi::c_long;
-pub type __off64_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
