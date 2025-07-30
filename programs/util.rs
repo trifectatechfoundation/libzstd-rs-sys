@@ -1,17 +1,16 @@
 use libc::{
-    chmod, chown, fchmod, fchown, fclose, feof, ferror, fgets, fileno, fopen, fprintf, isatty,
-    mkdir, strtol, sysconf, FILE, _SC_NPROCESSORS_ONLN,
+    __errno_location, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror,
+    fgets, fileno, fopen, fprintf, getchar, isatty, mkdir, opendir, readdir, strchr, strcmp,
+    strdup, strerror, strrchr, strstr, strtol, sysconf, DIR, FILE, _SC_NPROCESSORS_ONLN,
 };
 
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
     pub type _IO_marker;
-    pub type __dirstream;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn getc(__stream: *mut FILE) -> std::ffi::c_int;
     fn fread(
         _: *mut std::ffi::c_void,
         _: std::ffi::c_ulong,
@@ -31,7 +30,6 @@ extern "C" {
     fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn realloc(_: *mut std::ffi::c_void, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn exit(_: std::ffi::c_int) -> !;
     fn qsort(
         __base: *mut std::ffi::c_void,
         __nmemb: size_t,
@@ -43,28 +41,18 @@ extern "C" {
         _: *const std::ffi::c_void,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
-    fn strcmp(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> std::ffi::c_int;
     fn strncmp(
         _: *const std::ffi::c_char,
         _: *const std::ffi::c_char,
         _: std::ffi::c_ulong,
     ) -> std::ffi::c_int;
-    fn strdup(_: *const std::ffi::c_char) -> *mut std::ffi::c_char;
-    fn strchr(_: *const std::ffi::c_char, _: std::ffi::c_int) -> *mut std::ffi::c_char;
-    fn strrchr(_: *const std::ffi::c_char, _: std::ffi::c_int) -> *mut std::ffi::c_char;
-    fn strstr(_: *const std::ffi::c_char, _: *const std::ffi::c_char) -> *mut std::ffi::c_char;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn strerror(_: std::ffi::c_int) -> *mut std::ffi::c_char;
-    fn __errno_location() -> *mut std::ffi::c_int;
     fn __assert_fail(
         __assertion: *const std::ffi::c_char,
         __file: *const std::ffi::c_char,
         __line: std::ffi::c_uint,
         __function: *const std::ffi::c_char,
     ) -> !;
-    fn closedir(__dirp: *mut DIR) -> std::ffi::c_int;
-    fn opendir(__name: *const std::ffi::c_char) -> *mut DIR;
-    fn readdir(__dirp: *mut DIR) -> *mut dirent;
 }
 pub type __dev_t = std::ffi::c_ulong;
 pub type __uid_t = std::ffi::c_uint;
@@ -131,21 +119,7 @@ pub struct FileNamesTable {
     pub tableSize: size_t,
     pub tableCapacity: size_t,
 }
-pub type DIR = __dirstream;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct dirent {
-    pub d_ino: __ino_t,
-    pub d_off: __off_t,
-    pub d_reclen: std::ffi::c_ushort,
-    pub d_type: std::ffi::c_uchar,
-    pub d_name: [std::ffi::c_char; 256],
-}
 pub const EOF: std::ffi::c_int = -(1 as std::ffi::c_int);
-#[inline]
-unsafe extern "C" fn getchar() -> std::ffi::c_int {
-    getc(stdin)
-}
 #[inline]
 unsafe extern "C" fn atoi(mut __nptr: *const std::ffi::c_char) -> std::ffi::c_int {
     strtol(

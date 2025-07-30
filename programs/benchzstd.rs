@@ -1,5 +1,6 @@
 use libc::{
-    __errno_location, abort, exit, fclose, fflush, fopen, fprintf, strerror, strrchr, FILE,
+    __errno_location, abort, exit, fclose, fflush, fopen, fprintf, setpriority, strerror, strrchr,
+    FILE, PRIO_PROCESS,
 };
 use libzstd_rs::lib::decompress::ZSTD_DCtx;
 use libzstd_rs::lib::zstd::*;
@@ -36,11 +37,6 @@ extern "C" {
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
-    fn setpriority(
-        __which: __priority_which_t,
-        __who: id_t,
-        __prio: std::ffi::c_int,
-    ) -> std::ffi::c_int;
     fn UTIL_isDirectory(infilename: *const std::ffi::c_char) -> std::ffi::c_int;
     fn UTIL_getFileSize(infilename: *const std::ffi::c_char) -> u64;
     fn UTIL_getTotalFileSize(
@@ -116,11 +112,6 @@ pub type __off64_t = std::ffi::c_long;
 pub type __id_t = std::ffi::c_uint;
 pub type size_t = std::ffi::c_ulong;
 pub type id_t = __id_t;
-pub type __priority_which = std::ffi::c_uint;
-pub const PRIO_USER: __priority_which = 2;
-pub const PRIO_PGRP: __priority_which = 1;
-pub const PRIO_PROCESS: __priority_which = 0;
-pub type __priority_which_t = std::ffi::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_runTime_t {
@@ -283,7 +274,6 @@ pub struct BMK_initCCtxArgs {
     pub adv: *const BMK_advancedParams_t,
 }
 pub const BMK_TIMETEST_DEFAULT_S: std::ffi::c_int = 3 as std::ffi::c_int;
-pub const PRIO_PROCESS_0: std::ffi::c_int = PRIO_PROCESS as std::ffi::c_int;
 pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
 pub const ZSTD_CONTENTSIZE_UNKNOWN: std::ffi::c_ulonglong =
     (0 as std::ffi::c_ulonglong).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong);
@@ -2540,11 +2530,7 @@ unsafe extern "C" fn BMK_benchCLevels(
             );
             fflush(NULL as *mut FILE);
         }
-        setpriority(
-            PRIO_PROCESS_0,
-            0 as std::ffi::c_int as id_t,
-            -(20 as std::ffi::c_int),
-        );
+        setpriority(PRIO_PROCESS, 0, -20);
     }
     if displayLevel == 1 as std::ffi::c_int && (*adv).additionalParam == 0 {
         fprintf(
