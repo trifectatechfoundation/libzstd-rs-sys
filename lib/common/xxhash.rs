@@ -11,7 +11,7 @@ enum Align {
     Unaligned,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct XXH64_state_t {
     pub total_len: u64,
@@ -141,12 +141,10 @@ pub unsafe extern "C" fn ZSTD_XXH64(
     };
     XXH64_endian_align(slice, seed, Align::Unaligned)
 }
+
 #[export_name = crate::prefix!(ZSTD_XXH64_reset)]
 pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
-    // SAFETY: all zeros is a valid value of type XXH64_state_t.
-    unsafe {
-        core::ptr::write_bytes(state as *mut _, 0u8, 1);
-    }
+    *state = XXH64_state_t::default();
 
     state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
     state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
@@ -154,6 +152,7 @@ pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> 
     state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
     XXH_errorcode::XXH_OK
 }
+
 #[export_name = crate::prefix!(ZSTD_XXH64_update)]
 pub unsafe extern "C" fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
