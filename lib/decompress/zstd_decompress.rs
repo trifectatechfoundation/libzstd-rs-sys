@@ -1069,44 +1069,40 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut srcSize: size_t,
     mut format: ZSTD_format_e,
 ) -> size_t {
+    let Some(zfhPtr) = zfhPtr.as_mut() else {
+        return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+    };
+
     let Ok(format) = Format::try_from(format) else {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     };
 
-    let mut ip = src as *const u8;
     if srcSize > 0 && src.is_null() {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
 
+    get_frame_header_advanced(
+        zfhPtr,
+        core::slice::from_raw_parts(src as *const u8, srcSize as usize),
+        format,
+    )
+}
+
+unsafe fn get_frame_header_advanced(
+    zfhPtr: &mut ZSTD_FrameHeader,
+    src: &[u8],
+    format: Format,
+) -> size_t {
+    let mut ip = src.as_ptr() as *const u8;
+
     let minInputSize = ZSTD_startingInputLength(format);
-    if srcSize < minInputSize {
-        if srcSize > 0 && format != Format::ZSTD_f_zstd1_magicless {
-            let toCopy = if (4 as std::ffi::c_int as size_t) < srcSize {
-                4 as std::ffi::c_int as size_t
-            } else {
-                srcSize
-            };
-
-            let mut hbuf = ZSTD_MAGICNUMBER.to_le_bytes();
-            libc::memcpy(
-                hbuf.as_mut_ptr() as *mut std::ffi::c_void,
-                src,
-                toCopy as libc::size_t,
-            );
-
-            if MEM_readLE32(hbuf.as_mut_ptr() as *const std::ffi::c_void) != ZSTD_MAGICNUMBER {
-                MEM_writeLE32(
-                    hbuf.as_mut_ptr() as *mut std::ffi::c_void,
-                    ZSTD_MAGIC_SKIPPABLE_START as u32,
-                );
-                libc::memcpy(
-                    hbuf.as_mut_ptr() as *mut std::ffi::c_void,
-                    src,
-                    toCopy as libc::size_t,
-                );
-                if MEM_readLE32(hbuf.as_mut_ptr() as *const std::ffi::c_void)
-                    & ZSTD_MAGIC_SKIPPABLE_MASK
-                    != ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
+    if src.len() < minInputSize as usize {
+        if !src.is_empty() && format != Format::ZSTD_f_zstd1_magicless {
+            if src != &ZSTD_MAGICNUMBER.to_le_bytes()[..src.len()] {
+                let mut hbuf = ZSTD_MAGIC_SKIPPABLE_START.to_le_bytes();
+                hbuf[..src.len()].copy_from_slice(src);
+                if u32::from_le_bytes(hbuf) & ZSTD_MAGIC_SKIPPABLE_MASK
+                    != ZSTD_MAGIC_SKIPPABLE_START as u32
                 {
                     return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
                 }
@@ -1114,6 +1110,9 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         return minInputSize;
     }
+
+    let srcSize = src.len() as u64;
+    let src = src.as_ptr().cast();
 
     core::ptr::write_bytes(zfhPtr, 0u8, 1);
 
