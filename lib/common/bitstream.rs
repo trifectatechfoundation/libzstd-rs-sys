@@ -1,7 +1,7 @@
 use crate::lib::common::fse_decompress::Error;
 
 type size_t = usize;
-type BitContainerType = usize;
+pub type BitContainerType = usize;
 
 /// Bitstream decoder
 ///
@@ -15,11 +15,11 @@ type BitContainerType = usize;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BIT_DStream_t {
-    bitContainer: usize,
-    bitsConsumed: std::ffi::c_uint,
-    ptr: *const std::ffi::c_char,
-    start: *const std::ffi::c_char,
-    limitPtr: *const std::ffi::c_char,
+    pub bitContainer: usize,
+    pub bitsConsumed: std::ffi::c_uint,
+    pub ptr: *const std::ffi::c_char,
+    pub start: *const std::ffi::c_char,
+    pub limitPtr: *const std::ffi::c_char,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
