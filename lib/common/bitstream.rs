@@ -210,6 +210,16 @@ impl BIT_DStream_t {
         self.bitContainer = unsafe { core::ptr::read_unaligned(self.ptr as *const usize) }.to_le();
     }
 
+    #[inline]
+    pub fn reload_fast(&mut self) -> StreamStatus {
+        if self.ptr < self.limitPtr {
+            StreamStatus::Overflow
+        } else {
+            unsafe { self.reload_internal() };
+            StreamStatus::Unfinished
+        }
+    }
+
     ///  Refill from the buffer
     ///
     ///  ## Returns
