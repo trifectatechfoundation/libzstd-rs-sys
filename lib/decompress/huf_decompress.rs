@@ -1074,18 +1074,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_body(
             let fresh38 = op4;
             op4 = op4.offset(1);
             *fresh38 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD1) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD2) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD3) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD4) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
+            endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
+            endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
+            endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
+            endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
         }
     }
     if op1 > opStart2 {
@@ -2417,12 +2409,8 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_body(
             op2 = op2.offset(
                 HUF_decodeSymbolX2(op2 as *mut std::ffi::c_void, &mut bitD2, dt, dtLog) as isize,
             );
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD1) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD2) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
+            endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
+            endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
             if MEM_64bits() != 0 {
                 op3 = op3.offset(HUF_decodeSymbolX2(
                     op3 as *mut std::ffi::c_void,
@@ -2477,12 +2465,8 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_body(
             op4 = op4.offset(
                 HUF_decodeSymbolX2(op4 as *mut std::ffi::c_void, &mut bitD4, dt, dtLog) as isize,
             );
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD3) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
-            endSignal &= (BIT_reloadDStreamFast(&mut bitD4) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int as u32;
+            endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
+            endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
         }
     }
     if op1 > opStart2 {
