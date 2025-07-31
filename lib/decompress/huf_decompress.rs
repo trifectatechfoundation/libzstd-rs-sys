@@ -1,3 +1,4 @@
+use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType};
 use crate::lib::zstd::*;
 use crate::{
     lib::common::entropy_common::{HUF_readStats_wksp, Workspace},
@@ -9,19 +10,6 @@ extern "C" {
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
-pub type BitContainerType = size_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct BIT_DStream_t {
-    pub bitContainer: BitContainerType,
-    pub bitsConsumed: std::ffi::c_uint,
-    pub ptr: *const std::ffi::c_char,
-    pub start: *const std::ffi::c_char,
-    pub limitPtr: *const std::ffi::c_char,
-}
 pub type BIT_DStream_status = std::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
 pub const BIT_DStream_completed: BIT_DStream_status = 2;
@@ -168,7 +156,7 @@ unsafe extern "C" fn BIT_initDStream(
         (*bitD).ptr = (srcBuffer as *const std::ffi::c_char)
             .offset(srcSize as isize)
             .offset(-(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize));
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
         let lastByte = *(srcBuffer as *const u8)
             .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
         (*bitD).bitsConsumed = if lastByte as std::ffi::c_int != 0 {
@@ -299,7 +287,7 @@ unsafe extern "C" fn BIT_reloadDStream_internal(
 ) -> BIT_DStream_status {
     (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3 as std::ffi::c_int) as isize));
     (*bitD).bitsConsumed &= 7 as std::ffi::c_int as std::ffi::c_uint;
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
     BIT_DStream_unfinished
 }
 #[inline]
@@ -342,7 +330,7 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
     (*bitD).ptr = ((*bitD).ptr).offset(-(nbBytes as isize));
     (*bitD).bitsConsumed =
         ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as u32);
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void);
+    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
     result
 }
 #[inline]
@@ -571,7 +559,8 @@ unsafe extern "C" fn HUF_initRemainingDStream(
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     (*bit).bitContainer =
-        MEM_readLEST(*((*args).ip).as_ptr().offset(stream as isize) as *const std::ffi::c_void);
+        MEM_readLEST(*((*args).ip).as_ptr().offset(stream as isize) as *const std::ffi::c_void)
+            as usize;
     (*bit).bitsConsumed =
         ZSTD_countTrailingZeros64(*((*args).bits).as_ptr().offset(stream as isize));
     (*bit).start = (*args).ilowest as *const std::ffi::c_char;
