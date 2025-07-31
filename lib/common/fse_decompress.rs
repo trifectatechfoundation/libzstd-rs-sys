@@ -44,6 +44,12 @@ pub enum Error {
     maxCode = 120,
 }
 
+impl Error {
+    pub fn to_error_code(self) -> u64 {
+        -(self as std::ffi::c_int) as size_t
+    }
+}
+
 #[cfg(test)]
 impl TryFrom<u32> for Error {
     type Error = ();
