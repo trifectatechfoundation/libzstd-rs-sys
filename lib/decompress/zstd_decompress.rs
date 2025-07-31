@@ -378,52 +378,54 @@ unsafe extern "C" fn ZSTD_getDecompressedSize_legacy(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> std::ffi::c_ulonglong {
-    let version = ZSTD_isLegacy(src, srcSize);
-    if version < 5 as std::ffi::c_int as u32 {
-        return 0 as std::ffi::c_int as std::ffi::c_ulonglong;
-    }
-    if version == 5 as std::ffi::c_int as u32 {
-        let mut fParams = ZSTDv05_parameters {
-            srcSize: 0,
-            windowLog: 0,
-            contentLog: 0,
-            hashLog: 0,
-            searchLog: 0,
-            searchLength: 0,
-            targetLength: 0,
-            strategy: ZSTDv05_fast,
-        };
-        let frResult = ZSTDv05_getFrameParams(&mut fParams, src, srcSize);
-        if frResult != 0 as std::ffi::c_int as size_t {
-            return 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+    match ZSTD_isLegacy(src, srcSize) {
+        5 => {
+            let mut fParams = ZSTDv05_parameters {
+                srcSize: 0,
+                windowLog: 0,
+                contentLog: 0,
+                hashLog: 0,
+                searchLog: 0,
+                searchLength: 0,
+                targetLength: 0,
+                strategy: ZSTDv05_fast,
+            };
+            let frResult = ZSTDv05_getFrameParams(&mut fParams, src, srcSize);
+            if frResult != 0 {
+                return 0;
+            }
+
+            fParams.srcSize as std::ffi::c_ulonglong
         }
-        return fParams.srcSize as std::ffi::c_ulonglong;
-    }
-    if version == 6 as std::ffi::c_int as u32 {
-        let mut fParams_0 = ZSTDv06_frameParams_s {
-            frameContentSize: 0,
-            windowLog: 0,
-        };
-        let frResult_0 = ZSTDv06_getFrameParams(&mut fParams_0, src, srcSize);
-        if frResult_0 != 0 as std::ffi::c_int as size_t {
-            return 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+        6 => {
+            let mut fParams_0 = ZSTDv06_frameParams_s {
+                frameContentSize: 0,
+                windowLog: 0,
+            };
+            let frResult_0 = ZSTDv06_getFrameParams(&mut fParams_0, src, srcSize);
+            if frResult_0 != 0 {
+                return 0;
+            }
+
+            fParams_0.frameContentSize
         }
-        return fParams_0.frameContentSize;
-    }
-    if version == 7 as std::ffi::c_int as u32 {
-        let mut fParams_1 = ZSTDv07_frameParams {
-            frameContentSize: 0,
-            windowSize: 0,
-            dictID: 0,
-            checksumFlag: 0,
-        };
-        let frResult_1 = ZSTDv07_getFrameParams(&mut fParams_1, src, srcSize);
-        if frResult_1 != 0 as std::ffi::c_int as size_t {
-            return 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+        7 => {
+            let mut fParams_1 = ZSTDv07_frameParams {
+                frameContentSize: 0,
+                windowSize: 0,
+                dictID: 0,
+                checksumFlag: 0,
+            };
+            let frResult_1 = ZSTDv07_getFrameParams(&mut fParams_1, src, srcSize);
+            if frResult_1 != 0 {
+                return 0;
+            }
+
+            fParams_1.frameContentSize
         }
-        return fParams_1.frameContentSize;
+
+        _ => 0,
     }
-    0 as std::ffi::c_int as std::ffi::c_ulonglong
 }
 #[inline]
 unsafe extern "C" fn ZSTD_decompressLegacy(
