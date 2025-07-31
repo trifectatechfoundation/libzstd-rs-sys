@@ -369,7 +369,7 @@ pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_CCtx_params_s {
-    pub format: ZSTD_format_e,
+    pub format: Format,
     pub cParams: ZSTD_compressionParameters,
     pub fParams: ZSTD_frameParameters,
     pub compressionLevel: std::ffi::c_int,
@@ -2926,7 +2926,7 @@ unsafe extern "C" fn ZSTD_makeCCtxParamsFromCParams(
     mut cParams: ZSTD_compressionParameters,
 ) -> ZSTD_CCtx_params {
     let mut cctxParams = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -3297,8 +3297,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         10 => {
-            bounds.lowerBound = ZSTD_f_zstd1 as std::ffi::c_int;
-            bounds.upperBound = ZSTD_f_zstd1_magicless as std::ffi::c_int;
+            bounds.lowerBound = Format::ZSTD_f_zstd1 as std::ffi::c_int;
+            bounds.upperBound = Format::ZSTD_f_zstd1_magicless as std::ffi::c_int;
             bounds
         }
         1001 => {
@@ -3440,10 +3440,11 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
 ) -> size_t {
     match param as std::ffi::c_uint {
         10 => {
-            if ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam2, value) == 0 {
+            let Ok(format) = Format::try_from(value as ZSTD_format_e) else {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
-            }
-            (*CCtxParams).format = value as ZSTD_format_e;
+            };
+
+            (*CCtxParams).format = format;
             (*CCtxParams).format as size_t
         }
         100 => {
@@ -8277,7 +8278,7 @@ unsafe extern "C" fn ZSTD_writeFrameHeader(
     if dstCapacity < 18 as std::ffi::c_int as size_t {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
-    if (*params).format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint {
+    if (*params).format == Format::ZSTD_f_zstd1 {
         MEM_writeLE32(dst, ZSTD_MAGICNUMBER);
         pos = 4 as std::ffi::c_int as size_t;
     }
@@ -9090,7 +9091,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     mut pledgedSrcSize: std::ffi::c_ulonglong,
 ) -> size_t {
     let mut cctxParams = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -9163,7 +9164,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingDict_deprecated(
     mut compressionLevel: std::ffi::c_int,
 ) -> size_t {
     let mut cctxParams = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -9529,7 +9530,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         cParamsChanged: 0,
         bmi2: 0,
         requestedParams: ZSTD_CCtx_params_s {
-            format: ZSTD_f_zstd1,
+            format: Format::ZSTD_f_zstd1,
             cParams: ZSTD_compressionParameters {
                 windowLog: 0,
                 chainLog: 0,
@@ -9584,7 +9585,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             searchForExternalRepcodes: ZSTD_ps_auto,
         },
         appliedParams: ZSTD_CCtx_params_s {
-            format: ZSTD_f_zstd1,
+            format: Format::ZSTD_f_zstd1,
             cParams: ZSTD_compressionParameters {
                 windowLog: 0,
                 chainLog: 0,
@@ -9639,7 +9640,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             searchForExternalRepcodes: ZSTD_ps_auto,
         },
         simpleApiParams: ZSTD_CCtx_params_s {
-            format: ZSTD_f_zstd1,
+            format: Format::ZSTD_f_zstd1,
             cParams: ZSTD_compressionParameters {
                 windowLog: 0,
                 chainLog: 0,
@@ -10166,7 +10167,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     mut customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let mut cctxParams = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -10416,7 +10417,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
             .wrapping_add(matchStateSize);
     let mut cdict = std::ptr::null_mut::<ZSTD_CDict>();
     let mut params = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -10538,7 +10539,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
     pledgedSrcSize: std::ffi::c_ulonglong,
 ) -> size_t {
     let mut cctxParams = ZSTD_CCtx_params_s {
-        format: ZSTD_f_zstd1,
+        format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
             windowLog: 0,
             chainLog: 0,
@@ -11500,9 +11501,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             (*input).pos = (*input).size;
             (*cctx).expectedInBuffer = *input;
             (*cctx).stableIn_notConsumed = ((*cctx).stableIn_notConsumed).wrapping_add(inputSize);
-            return (if (*cctx).requestedParams.format as std::ffi::c_uint
-                == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-            {
+            return (if (*cctx).requestedParams.format == Format::ZSTD_f_zstd1 {
                 6 as std::ffi::c_int
             } else {
                 2 as std::ffi::c_int
