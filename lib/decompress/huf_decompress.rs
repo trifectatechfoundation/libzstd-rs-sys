@@ -264,20 +264,6 @@ unsafe extern "C" fn BIT_initDStream(
     srcSize
 }
 #[inline]
-unsafe extern "C" fn BIT_lookBitsFast(
-    mut bitD: *const BIT_DStream_t,
-    mut nbBits: u32,
-) -> BitContainerType {
-    let regMask = (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & regMask)
-        >> (regMask
-            .wrapping_add(1 as std::ffi::c_int as u32)
-            .wrapping_sub(nbBits)
-            & regMask)
-}
-#[inline]
 unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start
         && (*DStream).bitsConsumed as std::ffi::c_ulong
@@ -862,19 +848,15 @@ unsafe extern "C" fn HUF_decompress1X1_usingDTable_internal_body(
     let oend = ZSTD_maybeNullPtrAdd(op as *mut std::ffi::c_void, dstSize as ptrdiff_t) as *mut u8;
     let mut dtPtr = DTable.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void;
     let dt = dtPtr as *const HUF_DEltX1;
-    let mut bitD = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
     let dtd = HUF_getDTableDesc(DTable);
     let dtLog = dtd.tableLog as u32;
-    let _var_err__ = BIT_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
-    }
+
+    let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+    let mut bitD = match BIT_DStream_t::new(src) {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+
     HUF_decodeStreamX1(op, &mut bitD, oend, dt, dtLog);
     if BIT_endOfDStream(&mut bitD) == 0 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -2090,7 +2072,7 @@ unsafe extern "C" fn HUF_decodeLastSymbolX2(
     mut dt: *const HUF_DEltX2,
     dtLog: u32,
 ) -> u32 {
-    let val = BIT_lookBitsFast(DStream, dtLog);
+    let val = DStream.look_bits_fast(dtLog);
     libc::memcpy(
         op,
         &(*dt.offset(val as isize)).sequence as *const u16 as *const std::ffi::c_void,
