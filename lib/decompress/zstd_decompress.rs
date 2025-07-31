@@ -1,5 +1,3 @@
-use core::arch::asm;
-
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
@@ -863,16 +861,15 @@ pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     ::core::mem::size_of::<ZSTD_DCtx>() as std::ffi::c_ulong
 }
 
-const fn ZSTD_startingInputLength(format: ZSTD_format_e) -> size_t {
-    if format == ZSTD_f_zstd1 {
-        5
-    } else {
-        1
+const fn ZSTD_startingInputLength(format: Format) -> size_t {
+    match format {
+        Format::ZSTD_f_zstd1 => 5,
+        Format::ZSTD_f_zstd1_magicless => 1,
     }
 }
 
 unsafe extern "C" fn ZSTD_DCtx_resetParameters(mut dctx: *mut ZSTD_DCtx) {
-    (*dctx).format = ZSTD_f_zstd1;
+    (*dctx).format = Format::ZSTD_f_zstd1;
     (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
     (*dctx).outBufferMode = ZSTD_bm_buffered;
     (*dctx).forceIgnoreChecksum = ZSTD_d_validateChecksum;
@@ -1030,7 +1027,7 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
 unsafe extern "C" fn ZSTD_frameHeaderSize_internal(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    mut format: ZSTD_format_e,
+    mut format: Format,
 ) -> size_t {
     let minInputSize = ZSTD_startingInputLength(format);
     if srcSize < minInputSize {
@@ -1053,7 +1050,7 @@ pub unsafe extern "C" fn ZSTD_frameHeaderSize(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    ZSTD_frameHeaderSize_internal(src, srcSize, ZSTD_f_zstd1)
+    ZSTD_frameHeaderSize_internal(src, srcSize, Format::ZSTD_f_zstd1)
 }
 
 #[export_name = crate::prefix!(ZSTD_getFrameHeader)]
@@ -1062,7 +1059,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, ZSTD_f_zstd1)
+    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, Format::ZSTD_f_zstd1 as _)
 }
 
 #[export_name = crate::prefix!(ZSTD_getFrameHeader_advanced)]
@@ -1072,6 +1069,10 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut srcSize: size_t,
     mut format: ZSTD_format_e,
 ) -> size_t {
+    let Ok(format) = Format::try_from(format) else {
+        return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+    };
+
     let mut ip = src as *const u8;
     if srcSize > 0 && src.is_null() {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
@@ -1079,7 +1080,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 
     let minInputSize = ZSTD_startingInputLength(format);
     if srcSize < minInputSize {
-        if srcSize > 0 && format != ZSTD_f_zstd1_magicless {
+        if srcSize > 0 && format != Format::ZSTD_f_zstd1_magicless {
             let toCopy = if (4 as std::ffi::c_int as size_t) < srcSize {
                 4 as std::ffi::c_int as size_t
             } else {
@@ -1116,7 +1117,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 
     core::ptr::write_bytes(zfhPtr, 0u8, 1);
 
-    if format != ZSTD_f_zstd1_magicless && MEM_readLE32(src) != ZSTD_MAGICNUMBER {
+    if format != Format::ZSTD_f_zstd1_magicless && MEM_readLE32(src) != ZSTD_MAGICNUMBER {
         if MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
             == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
         {
@@ -1340,7 +1341,7 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
     mut srcSize: size_t,
 ) -> std::ffi::c_ulonglong {
     let mut totalDstSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
-    while srcSize >= ZSTD_startingInputLength(ZSTD_f_zstd1) {
+    while srcSize >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
         let magicNumber = MEM_readLE32(src);
         if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
         {
@@ -1390,7 +1391,7 @@ unsafe extern "C" fn ZSTD_decodeFrameHeader(
     mut headerSize: size_t,
 ) -> size_t {
     let result =
-        ZSTD_getFrameHeader_advanced(&mut (*dctx).fParams, src, headerSize, (*dctx).format);
+        ZSTD_getFrameHeader_advanced(&mut (*dctx).fParams, src, headerSize, (*dctx).format as _);
     if ERR_isError(result) != 0 {
         return result;
     }
@@ -1432,7 +1433,7 @@ unsafe extern "C" fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeI
 unsafe extern "C" fn ZSTD_findFrameSizeInfo(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    mut format: ZSTD_format_e,
+    mut format: Format,
 ) -> ZSTD_frameSizeInfo {
     let mut frameSizeInfo = ZSTD_frameSizeInfo {
         nbBlocks: 0,
@@ -1444,12 +1445,10 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
         0 as std::ffi::c_int,
         ::core::mem::size_of::<ZSTD_frameSizeInfo>() as std::ffi::c_ulong as libc::size_t,
     );
-    if format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-        && ZSTD_isLegacy(src, srcSize) != 0
-    {
+    if format == Format::ZSTD_f_zstd1 && ZSTD_isLegacy(src, srcSize) != 0 {
         return ZSTD_findFrameSizeInfoLegacy(src, srcSize);
     }
-    if format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
+    if format == Format::ZSTD_f_zstd1
         && srcSize >= ZSTD_SKIPPABLEHEADERSIZE as size_t
         && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
             == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
@@ -1472,7 +1471,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
             _reserved1: 0,
             _reserved2: 0,
         };
-        let ret = ZSTD_getFrameHeader_advanced(&mut zfh, src, srcSize, format);
+        let ret = ZSTD_getFrameHeader_advanced(&mut zfh, src, srcSize, format as _);
         if ERR_isError(ret) != 0 {
             return ZSTD_errorFrameSizeInfo(ret);
         }
@@ -1533,7 +1532,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
 unsafe extern "C" fn ZSTD_findFrameCompressedSize_advanced(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    mut format: ZSTD_format_e,
+    mut format: Format,
 ) -> size_t {
     let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, format);
     frameSizeInfo.compressedSize
@@ -1543,7 +1542,7 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    ZSTD_findFrameCompressedSize_advanced(src, srcSize, ZSTD_f_zstd1)
+    ZSTD_findFrameCompressedSize_advanced(src, srcSize, Format::ZSTD_f_zstd1)
 }
 #[export_name = crate::prefix!(ZSTD_decompressBound)]
 pub unsafe extern "C" fn ZSTD_decompressBound(
@@ -1552,7 +1551,7 @@ pub unsafe extern "C" fn ZSTD_decompressBound(
 ) -> std::ffi::c_ulonglong {
     let mut bound = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
     while srcSize > 0 as std::ffi::c_int as size_t {
-        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, ZSTD_f_zstd1);
+        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, Format::ZSTD_f_zstd1);
         let compressedSize = frameSizeInfo.compressedSize;
         let decompressedBound = frameSizeInfo.decompressedBound;
         if ERR_isError(compressedSize) != 0 || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
@@ -1572,7 +1571,7 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
     let mut margin = 0 as std::ffi::c_int as size_t;
     let mut maxBlockSize = 0 as std::ffi::c_int as std::ffi::c_uint;
     while srcSize > 0 as std::ffi::c_int as size_t {
-        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, ZSTD_f_zstd1);
+        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, Format::ZSTD_f_zstd1);
         let compressedSize = frameSizeInfo.compressedSize;
         let decompressedBound = frameSizeInfo.decompressedBound;
         let mut zfh = ZSTD_FrameHeader {
@@ -1719,9 +1718,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
     let mut op = ostart;
     let mut remainingSrcSize = *srcSizePtr;
     if remainingSrcSize
-        < ((if (*dctx).format as std::ffi::c_uint
-            == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-        {
+        < ((if (*dctx).format == Format::ZSTD_f_zstd1 {
             6 as std::ffi::c_int
         } else {
             2 as std::ffi::c_int
@@ -1732,9 +1729,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
     }
     let frameHeaderSize = ZSTD_frameHeaderSize_internal(
         ip as *const std::ffi::c_void,
-        (if (*dctx).format as std::ffi::c_uint
-            == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-        {
+        (if (*dctx).format == Format::ZSTD_f_zstd1 {
             5 as std::ffi::c_int
         } else {
             1 as std::ffi::c_int
@@ -1884,9 +1879,7 @@ unsafe extern "C" fn ZSTD_decompressMultiFrame(
         dictSize = ZSTD_DDict_dictSize(ddict);
     }
     while srcSize >= ZSTD_startingInputLength((*dctx).format) {
-        if (*dctx).format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-            && ZSTD_isLegacy(src, srcSize) != 0
-        {
+        if (*dctx).format == Format::ZSTD_f_zstd1 && ZSTD_isLegacy(src, srcSize) != 0 {
             let mut decodedSize: size_t = 0;
             let frameSize = ZSTD_findFrameCompressedSizeLegacy(src, srcSize);
             if ERR_isError(frameSize) != 0 {
@@ -1916,10 +1909,7 @@ unsafe extern "C" fn ZSTD_decompressMultiFrame(
             src = (src as *const u8).offset(frameSize as isize) as *const std::ffi::c_void;
             srcSize = srcSize.wrapping_sub(frameSize);
         } else {
-            if (*dctx).format as std::ffi::c_uint
-                == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-                && srcSize >= 4 as std::ffi::c_int as size_t
-            {
+            if (*dctx).format == Format::ZSTD_f_zstd1 && srcSize >= 4 as std::ffi::c_int as size_t {
                 let magicNumber = MEM_readLE32(src);
                 if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
@@ -2092,8 +2082,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         ((*dctx).processedCSize as std::ffi::c_ulong).wrapping_add(srcSize) as U64 as U64;
     match (*dctx).stage as std::ffi::c_uint {
         0 => {
-            if (*dctx).format as std::ffi::c_uint
-                == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
+            if (*dctx).format == Format::ZSTD_f_zstd1
                 && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
             {
@@ -2844,8 +2833,8 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(mut dParam: ZSTD_dParameter) -> Z
             return bounds;
         }
         1000 => {
-            bounds.lowerBound = ZSTD_f_zstd1 as std::ffi::c_int;
-            bounds.upperBound = ZSTD_f_zstd1_magicless as std::ffi::c_int;
+            bounds.lowerBound = Format::ZSTD_f_zstd1 as std::ffi::c_int;
+            bounds.upperBound = Format::ZSTD_f_zstd1_magicless as std::ffi::c_int;
             return bounds;
         }
         1001 => {
@@ -2955,11 +2944,13 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0 as std::ffi::c_int as size_t;
         }
         1000 => {
-            if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam1, value) == 0 {
+            let Ok(format) = Format::try_from(value as ZSTD_format_e) else {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
-            }
-            (*dctx).format = value as ZSTD_format_e;
-            return 0 as std::ffi::c_int as size_t;
+            };
+
+            (*dctx).format = format;
+
+            return 0;
         }
         1001 => {
             if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam2, value) == 0 {
@@ -3339,7 +3330,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 &mut (*zds).fParams,
                 ((*zds).headerBuffer).as_mut_ptr() as *const std::ffi::c_void,
                 (*zds).lhSize,
-                (*zds).format,
+                (*zds).format as _,
             );
             if (*zds).refMultipleDDicts as std::ffi::c_uint != 0 && !((*zds).ddictSet).is_null() {
                 ZSTD_DCtx_selectFrameDDict(zds);
@@ -3409,23 +3400,19 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         &mut (*zds).fParams,
                         ((*zds).headerBuffer).as_mut_ptr() as *const std::ffi::c_void,
                         (*zds).lhSize,
-                        (*zds).format,
+                        (*zds).format as _,
                     );
                     if ERR_isError(err_code_1) != 0 {
                         return err_code_1;
                     }
-                    return (if (if (*zds).format as std::ffi::c_uint
-                        == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-                    {
+                    return (if (if (*zds).format == Format::ZSTD_f_zstd1 {
                         6 as std::ffi::c_int
                     } else {
                         2 as std::ffi::c_int
                     }) as size_t
                         > hSize
                     {
-                        (if (*zds).format as std::ffi::c_uint
-                            == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
-                        {
+                        (if (*zds).format == Format::ZSTD_f_zstd1 {
                             6 as std::ffi::c_int
                         } else {
                             2 as std::ffi::c_int
@@ -3505,8 +3492,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         if ERR_isError(err_code_2) != 0 {
                             return err_code_2;
                         }
-                        if (*zds).format as std::ffi::c_uint
-                            == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint
+                        if (*zds).format == Format::ZSTD_f_zstd1
                             && MEM_readLE32(
                                 ((*zds).headerBuffer).as_mut_ptr() as *const std::ffi::c_void
                             ) & ZSTD_MAGIC_SKIPPABLE_MASK

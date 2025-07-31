@@ -90,8 +90,25 @@ pub type ZSTD_allocFunction =
     Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
 
 pub type ZSTD_format_e = std::ffi::c_uint;
-pub const ZSTD_f_zstd1_magicless: ZSTD_format_e = 1;
-pub const ZSTD_f_zstd1: ZSTD_format_e = 0;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum Format {
+    ZSTD_f_zstd1 = 0,
+    ZSTD_f_zstd1_magicless = 1,
+}
+
+impl TryFrom<ZSTD_format_e> for Format {
+    type Error = ();
+
+    fn try_from(value: ZSTD_format_e) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::ZSTD_f_zstd1),
+            1 => Ok(Self::ZSTD_f_zstd1_magicless),
+            _ => Err(()),
+        }
+    }
+}
 
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 #[derive(Copy, Clone)]

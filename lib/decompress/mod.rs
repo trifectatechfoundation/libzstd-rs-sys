@@ -2,7 +2,7 @@ use crate::lib::common::xxhash::XXH64_state_t;
 
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
-use crate::lib::zstd::{ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_format_e, ZSTD_outBuffer};
+use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
@@ -139,7 +139,7 @@ pub struct ZSTD_DCtx_s {
     pub fseEntropy: u32,
     pub xxhState: XXH64_state_t,
     pub headerSize: size_t,
-    pub format: ZSTD_format_e,
+    pub format: Format,
     pub forceIgnoreChecksum: ZSTD_forceIgnoreChecksum_e,
     pub validateChecksum: u32,
     pub litPtr: *const u8,

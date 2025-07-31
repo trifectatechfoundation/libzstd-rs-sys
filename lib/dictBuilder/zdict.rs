@@ -306,7 +306,7 @@ pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_CCtx_params_s {
-    pub format: ZSTD_format_e,
+    pub format: Format,
     pub cParams: ZSTD_compressionParameters,
     pub fParams: ZSTD_frameParameters,
     pub compressionLevel: std::ffi::c_int,
