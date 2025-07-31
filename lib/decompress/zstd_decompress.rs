@@ -353,11 +353,15 @@ const ZSTDv07_MAGICNUMBER: std::ffi::c_uint = 0xFD2FB527;
 
 #[inline]
 unsafe fn ZSTD_isLegacy(mut src: *const std::ffi::c_void, mut srcSize: size_t) -> u32 {
-    if srcSize < 4 {
-        return 0;
-    }
+    is_legacy(unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize) })
+}
 
-    match MEM_readLE32(src) {
+fn is_legacy(src: &[u8]) -> u32 {
+    let Some(chunk) = src.first_chunk() else {
+        return 0;
+    };
+
+    match u32::from_ne_bytes(*chunk).to_le() {
         ZSTDv01_magicNumberLE => 1,
         ZSTDv02_MAGICNUMBER => 2,
         ZSTDv03_MAGICNUMBER => 3,
@@ -368,6 +372,7 @@ unsafe fn ZSTD_isLegacy(mut src: *const std::ffi::c_void, mut srcSize: size_t) -
         _ => 0,
     }
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_getDecompressedSize_legacy(
     mut src: *const std::ffi::c_void,
@@ -1235,8 +1240,13 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
     src: *const std::ffi::c_void,
     srcSize: size_t,
 ) -> std::ffi::c_ulonglong {
-    if ZSTD_isLegacy(src, srcSize) != 0 {
-        let ret = ZSTD_getDecompressedSize_legacy(src, srcSize);
+    let src = unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize) };
+    get_frame_content_size(src)
+}
+
+fn get_frame_content_size(src: &[u8]) -> u64 {
+    if is_legacy(src) != 0 {
+        let ret = unsafe { ZSTD_getDecompressedSize_legacy(src.as_ptr().cast(), src.len() as _) };
         return if ret == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
             ZSTD_CONTENTSIZE_UNKNOWN
         } else {
@@ -1256,7 +1266,7 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
         _reserved2: 0,
     };
 
-    if ZSTD_getFrameHeader(&mut zfh, src, srcSize) != 0 {
+    if unsafe { ZSTD_getFrameHeader(&mut zfh, src.as_ptr().cast(), src.len() as _) != 0 } {
         return ZSTD_CONTENTSIZE_ERROR;
     }
 
