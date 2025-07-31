@@ -1,4 +1,4 @@
-use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType};
+use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::zstd::*;
 use crate::{
     lib::common::entropy_common::{HUF_readStats_wksp, Workspace},
@@ -854,16 +854,14 @@ unsafe extern "C" fn HUF_decodeSymbolX1(
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeStreamX1(
     mut p: *mut u8,
-    bitDPtr: *mut BIT_DStream_t,
+    bitDPtr: &mut BIT_DStream_t,
     pEnd: *mut u8,
     dt: *const HUF_DEltX1,
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
     if pEnd.offset_from(p) as std::ffi::c_long > 3 as std::ffi::c_int as std::ffi::c_long {
-        while (BIT_reloadDStream(bitDPtr) as std::ffi::c_uint
-            == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-            as std::ffi::c_int
+        while (bitDPtr.reload() == StreamStatus::Unfinished) as std::ffi::c_int
             & (p < pEnd.offset(-(3 as std::ffi::c_int as isize))) as std::ffi::c_int
             != 0
         {
@@ -887,12 +885,10 @@ unsafe extern "C" fn HUF_decodeStreamX1(
             *fresh20 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
         }
     } else {
-        BIT_reloadDStream(bitDPtr);
+        bitDPtr.reload();
     }
     if MEM_32bits() != 0 {
-        while (BIT_reloadDStream(bitDPtr) as std::ffi::c_uint
-            == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-            as std::ffi::c_int
+        while (bitDPtr.reload() == StreamStatus::Unfinished) as std::ffi::c_int
             & (p < pEnd) as std::ffi::c_int
             != 0
         {
