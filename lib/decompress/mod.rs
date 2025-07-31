@@ -99,7 +99,7 @@ pub const bt_compressed: blockType_e = 2;
 pub const bt_rle: blockType_e = 1;
 pub const bt_raw: blockType_e = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
     pub frameContentSize: std::ffi::c_ulonglong,
