@@ -160,18 +160,8 @@ static mut repStartValue: [u32; 3] = [
     8 as std::ffi::c_int as u32,
 ];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10 as std::ffi::c_int;
-static mut ZSTD_fcs_fieldSize: [size_t; 4] = [
-    0 as std::ffi::c_int as size_t,
-    2 as std::ffi::c_int as size_t,
-    4 as std::ffi::c_int as size_t,
-    8 as std::ffi::c_int as size_t,
-];
-static mut ZSTD_did_fieldSize: [size_t; 4] = [
-    0 as std::ffi::c_int as size_t,
-    1 as std::ffi::c_int as size_t,
-    2 as std::ffi::c_int as size_t,
-    4 as std::ffi::c_int as size_t,
-];
+static ZSTD_fcs_fieldSize: [size_t; 4] = [0, 2, 4, 8];
+static ZSTD_did_fieldSize: [size_t; 4] = [0, 1, 2, 4];
 pub const ZSTD_FRAMEIDSIZE: std::ffi::c_int = 4 as std::ffi::c_int;
 pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3 as std::ffi::c_int;
 static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
@@ -1024,6 +1014,7 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
     }
     0 as std::ffi::c_int as std::ffi::c_uint
 }
+
 unsafe extern "C" fn ZSTD_frameHeaderSize_internal(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
@@ -1045,6 +1036,24 @@ unsafe extern "C" fn ZSTD_frameHeaderSize_internal(
         .wrapping_add(*ZSTD_fcs_fieldSize.as_ptr().offset(fcsId as isize))
         .wrapping_add((singleSegment != 0 && fcsId == 0) as std::ffi::c_int as size_t)
 }
+
+fn frame_header_size_internal(src: &[u8], format: Format) -> size_t {
+    let minInputSize = ZSTD_startingInputLength(format);
+    let Some([.., fhd]) = src.get(..minInputSize as usize) else {
+        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+    };
+
+    let dictID = fhd & 0b11;
+    let singleSegment = (fhd >> 5 & 1) != 0;
+    let fcsId = fhd >> 6;
+
+    minInputSize
+        + !singleSegment as size_t
+        + ZSTD_did_fieldSize[usize::from(dictID)]
+        + ZSTD_fcs_fieldSize[usize::from(fcsId)]
+        + (singleSegment && fcsId == 0) as size_t
+}
+
 #[export_name = crate::prefix!(ZSTD_frameHeaderSize)]
 pub unsafe extern "C" fn ZSTD_frameHeaderSize(
     mut src: *const std::ffi::c_void,
@@ -1069,10 +1078,14 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut srcSize: size_t,
     mut format: ZSTD_format_e,
 ) -> size_t {
+    // Apparently some sanitizers require this?
+    unsafe { zfhPtr.write(ZSTD_FrameHeader::default()) };
+
     let Some(zfhPtr) = zfhPtr.as_mut() else {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     };
 
+    // Compatibility: this is stricter than zstd.
     let Ok(format) = Format::try_from(format) else {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     };
@@ -1088,13 +1101,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     )
 }
 
-unsafe fn get_frame_header_advanced(
-    zfhPtr: &mut ZSTD_FrameHeader,
-    src: &[u8],
-    format: Format,
-) -> size_t {
-    let mut ip = src.as_ptr() as *const u8;
-
+fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: Format) -> size_t {
     let minInputSize = ZSTD_startingInputLength(format);
     if src.len() < minInputSize as usize {
         if !src.is_empty() && format != Format::ZSTD_f_zstd1_magicless {
@@ -1111,27 +1118,21 @@ unsafe fn get_frame_header_advanced(
         return minInputSize;
     }
 
-    let srcSize = src.len() as u64;
-    let src = src.as_ptr().cast();
+    let first_word = u32::from_le_bytes(*src.first_chunk().unwrap());
 
-    core::ptr::write_bytes(zfhPtr, 0u8, 1);
-
-    if format != Format::ZSTD_f_zstd1_magicless && MEM_readLE32(src) != ZSTD_MAGICNUMBER {
-        if MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
-            == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
+    if format != Format::ZSTD_f_zstd1_magicless && first_word != ZSTD_MAGICNUMBER {
+        if first_word & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
         {
-            if srcSize < ZSTD_SKIPPABLEHEADERSIZE as size_t {
+            if src.len() < ZSTD_SKIPPABLEHEADERSIZE as usize {
                 return ZSTD_SKIPPABLEHEADERSIZE as size_t;
             }
 
-            let dictID = (MEM_readLE32(src)).wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
-            let frameContentSize = MEM_readLE32(
-                (src as *const std::ffi::c_char).offset(ZSTD_FRAMEIDSIZE as isize)
-                    as *const std::ffi::c_void,
-            ) as std::ffi::c_ulonglong;
+            let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+            let frameContentSize =
+                u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE as usize..].first_chunk().unwrap());
 
             *zfhPtr = ZSTD_FrameHeader {
-                frameContentSize: frameContentSize,
+                frameContentSize: u64::from(frameContentSize),
                 windowSize: 0,
                 blockSizeMax: 0,
                 frameType: ZSTD_skippableFrame,
@@ -1147,27 +1148,27 @@ unsafe fn get_frame_header_advanced(
         return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
     }
 
-    let fhsize = ZSTD_frameHeaderSize_internal(src, srcSize, format);
-    if srcSize < fhsize {
+    let fhsize = frame_header_size_internal(src, format);
+    if src.len() < fhsize as usize {
         return fhsize;
     }
-    let fhdByte = *ip.offset(minInputSize.wrapping_sub(1) as isize);
+
+    let fhdByte = src[minInputSize as usize - 1];
     let dictIDSizeCode = fhdByte & 0b11;
     let checksumFlag = u32::from(fhdByte) >> 2 & 1;
     let singleSegment = (u32::from(fhdByte) >> 5 & 1) != 0;
     let fcsID = (u32::from(fhdByte) >> 6) as u32;
+
     let mut windowSize = 0;
-    let mut dictID = 0;
 
     if fhdByte & 0x8 != 0 {
         return -(ZSTD_error_frameParameter_unsupported as std::ffi::c_int) as size_t;
     }
 
-    let mut pos = minInputSize;
+    let mut pos = minInputSize as usize;
     if !singleSegment {
-        let fresh2 = pos;
-        pos = pos.wrapping_add(1);
-        let wlByte = *ip.offset(fresh2 as isize);
+        let wlByte = src[pos];
+        pos += 1;
         let windowLog = ((i32::from(wlByte) / 8) + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
 
         if windowLog > (if size_of::<usize>() == 4 { 30 } else { 31 }) as u32 {
@@ -1178,28 +1179,31 @@ unsafe fn get_frame_header_advanced(
         windowSize = windowSize.wrapping_add((windowSize / 8) * (wlByte & 7) as u64);
     }
 
+    let dictID;
     match dictIDSizeCode {
         1 => {
-            dictID = *ip.offset(pos as isize) as u32;
-            pos = pos.wrapping_add(1);
+            dictID = u32::from(src[pos]);
+            pos += 1;
         }
         2 => {
-            dictID = MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void) as u32;
-            pos = pos.wrapping_add(2);
+            dictID = u32::from(u16::from_le_bytes(src[pos..][..2].try_into().unwrap()));
+            pos += 2;
         }
         3 => {
-            dictID = MEM_readLE32(ip.offset(pos as isize) as *const std::ffi::c_void);
-            pos = pos.wrapping_add(4);
+            dictID = u32::from_le_bytes(src[pos..][..4].try_into().unwrap());
+            pos += 4;
         }
-        0 | _ => {}
+        _ => {
+            dictID = 0;
+        }
     }
 
     let frameContentSize = match fcsID {
-        1 => MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void) as u64 + 256,
-        2 => MEM_readLE32(ip.offset(pos as isize) as *const std::ffi::c_void) as u64,
-        3 => MEM_readLE64(ip.offset(pos as isize) as *const std::ffi::c_void),
-        _ if singleSegment => *ip.offset(pos as isize) as u64,
-        _ => ZSTD_CONTENTSIZE_UNKNOWN as U64,
+        1 => u64::from(u16::from_le_bytes(src[pos..][..2].try_into().unwrap())) + 256,
+        2 => u64::from(u32::from_le_bytes(src[pos..][..4].try_into().unwrap())),
+        3 => u64::from_le_bytes(src[pos..][..8].try_into().unwrap()),
+        _ if singleSegment => u64::from(src[pos]),
+        _ => ZSTD_CONTENTSIZE_UNKNOWN,
     };
 
     if singleSegment {
@@ -1250,7 +1254,7 @@ fn get_frame_content_size(src: &[u8]) -> u64 {
         _reserved2: 0,
     };
 
-    if unsafe { ZSTD_getFrameHeader(&mut zfh, src.as_ptr().cast(), src.len() as _) != 0 } {
+    if get_frame_header_advanced(&mut zfh, src, Format::ZSTD_f_zstd1) != 0 {
         return ZSTD_CONTENTSIZE_ERROR;
     }
 
