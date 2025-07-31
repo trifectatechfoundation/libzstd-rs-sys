@@ -862,13 +862,15 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(mut dctx: *const ZSTD_DCtx) -> size_t 
 pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     ::core::mem::size_of::<ZSTD_DCtx>() as std::ffi::c_ulong
 }
-unsafe extern "C" fn ZSTD_startingInputLength(mut format: ZSTD_format_e) -> size_t {
-    (if format as std::ffi::c_uint == ZSTD_f_zstd1 as std::ffi::c_int as std::ffi::c_uint {
-        5 as std::ffi::c_int
+
+const fn ZSTD_startingInputLength(format: ZSTD_format_e) -> size_t {
+    if format == ZSTD_f_zstd1 {
+        5
     } else {
-        1 as std::ffi::c_int
-    }) as size_t
+        1
+    }
 }
+
 unsafe extern "C" fn ZSTD_DCtx_resetParameters(mut dctx: *mut ZSTD_DCtx) {
     (*dctx).format = ZSTD_f_zstd1;
     (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
@@ -1053,6 +1055,16 @@ pub unsafe extern "C" fn ZSTD_frameHeaderSize(
 ) -> size_t {
     ZSTD_frameHeaderSize_internal(src, srcSize, ZSTD_f_zstd1)
 }
+
+#[export_name = crate::prefix!(ZSTD_getFrameHeader)]
+pub unsafe extern "C" fn ZSTD_getFrameHeader(
+    mut zfhPtr: *mut ZSTD_FrameHeader,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+) -> size_t {
+    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, ZSTD_f_zstd1)
+}
+
 #[export_name = crate::prefix!(ZSTD_getFrameHeader_advanced)]
 pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut zfhPtr: *mut ZSTD_FrameHeader,
@@ -1223,16 +1235,10 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }) as std::ffi::c_uint;
     (*zfhPtr).dictID = dictID;
     (*zfhPtr).checksumFlag = checksumFlag;
-    0 as std::ffi::c_int as size_t
+
+    0
 }
-#[export_name = crate::prefix!(ZSTD_getFrameHeader)]
-pub unsafe extern "C" fn ZSTD_getFrameHeader(
-    mut zfhPtr: *mut ZSTD_FrameHeader,
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> size_t {
-    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, ZSTD_f_zstd1)
-}
+
 #[export_name = crate::prefix!(ZSTD_getFrameContentSize)]
 pub unsafe extern "C" fn ZSTD_getFrameContentSize(
     src: *const std::ffi::c_void,
