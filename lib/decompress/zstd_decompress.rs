@@ -374,11 +374,10 @@ fn is_legacy(src: &[u8]) -> u32 {
 }
 
 #[inline]
-unsafe extern "C" fn ZSTD_getDecompressedSize_legacy(
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> std::ffi::c_ulonglong {
-    match ZSTD_isLegacy(src, srcSize) {
+fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
+    let ptr = src.as_ptr().cast();
+
+    match is_legacy(src) {
         5 => {
             let mut fParams = ZSTDv05_parameters {
                 srcSize: 0,
@@ -390,24 +389,22 @@ unsafe extern "C" fn ZSTD_getDecompressedSize_legacy(
                 targetLength: 0,
                 strategy: ZSTDv05_fast,
             };
-            let frResult = ZSTDv05_getFrameParams(&mut fParams, src, srcSize);
-            if frResult != 0 {
-                return 0;
-            }
 
-            fParams.srcSize as std::ffi::c_ulonglong
+            match unsafe { ZSTDv05_getFrameParams(&mut fParams, ptr, src.len() as _) } {
+                0 => Some(fParams.srcSize as std::ffi::c_ulonglong),
+                _ => None,
+            }
         }
         6 => {
             let mut fParams_0 = ZSTDv06_frameParams_s {
                 frameContentSize: 0,
                 windowLog: 0,
             };
-            let frResult_0 = ZSTDv06_getFrameParams(&mut fParams_0, src, srcSize);
-            if frResult_0 != 0 {
-                return 0;
-            }
 
-            fParams_0.frameContentSize
+            match unsafe { ZSTDv06_getFrameParams(&mut fParams_0, ptr, src.len() as _) } {
+                0 => Some(fParams_0.frameContentSize),
+                _ => None,
+            }
         }
         7 => {
             let mut fParams_1 = ZSTDv07_frameParams {
@@ -416,15 +413,14 @@ unsafe extern "C" fn ZSTD_getDecompressedSize_legacy(
                 dictID: 0,
                 checksumFlag: 0,
             };
-            let frResult_1 = ZSTDv07_getFrameParams(&mut fParams_1, src, srcSize);
-            if frResult_1 != 0 {
-                return 0;
-            }
 
-            fParams_1.frameContentSize
+            match unsafe { ZSTDv07_getFrameParams(&mut fParams_1, ptr, src.len() as _) } {
+                0 => Some(fParams_1.frameContentSize),
+                _ => None,
+            }
         }
 
-        _ => 0,
+        _ => None,
     }
 }
 #[inline]
@@ -1248,11 +1244,9 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
 
 fn get_frame_content_size(src: &[u8]) -> u64 {
     if is_legacy(src) != 0 {
-        let ret = unsafe { ZSTD_getDecompressedSize_legacy(src.as_ptr().cast(), src.len() as _) };
-        return if ret == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
-            ZSTD_CONTENTSIZE_UNKNOWN
-        } else {
-            ret
+        return match get_decompressed_size_legacy(src) {
+            None | Some(0) => ZSTD_CONTENTSIZE_UNKNOWN,
+            Some(decompressed_size) => decompressed_size,
         };
     }
 
