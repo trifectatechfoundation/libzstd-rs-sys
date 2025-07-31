@@ -277,26 +277,6 @@ unsafe extern "C" fn BIT_lookBitsFast(
             .wrapping_sub(nbBits)
             & regMask)
 }
-#[inline(always)]
-unsafe extern "C" fn BIT_skipBits(mut bitD: *mut BIT_DStream_t, mut nbBits: u32) {
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(nbBits);
-}
-#[inline]
-unsafe extern "C" fn BIT_reloadDStream_internal(
-    mut bitD: *mut BIT_DStream_t,
-) -> BIT_DStream_status {
-    (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3 as std::ffi::c_int) as isize));
-    (*bitD).bitsConsumed &= 7 as std::ffi::c_int as std::ffi::c_uint;
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
-    BIT_DStream_unfinished
-}
-#[inline]
-unsafe extern "C" fn BIT_reloadDStreamFast(mut bitD: *mut BIT_DStream_t) -> BIT_DStream_status {
-    if ((*bitD).ptr < (*bitD).limitPtr) as std::ffi::c_int as std::ffi::c_long != 0 {
-        return BIT_DStream_overflow;
-    }
-    BIT_reloadDStream_internal(bitD)
-}
 #[inline]
 unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start
@@ -804,17 +784,19 @@ pub unsafe fn HUF_readDTableX1_wksp(
     }
     iSize
 }
+
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeSymbolX1(
-    mut Dstream: *mut BIT_DStream_t,
-    mut dt: *const HUF_DEltX1,
+    Dstream: &mut BIT_DStream_t,
+    dt: *const HUF_DEltX1,
     dtLog: u32,
 ) -> u8 {
-    let val = BIT_lookBitsFast(Dstream, dtLog);
+    let val = Dstream.look_bits_fast(dtLog);
     let c = (*dt.offset(val as isize)).byte;
-    BIT_skipBits(Dstream, (*dt.offset(val as isize)).nbBits as u32);
+    Dstream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
     c
 }
+
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeStreamX1(
     mut p: *mut u8,
@@ -2083,26 +2065,28 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     );
     iSize
 }
+
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeSymbolX2(
     mut op: *mut std::ffi::c_void,
-    mut DStream: *mut BIT_DStream_t,
+    mut DStream: &mut BIT_DStream_t,
     mut dt: *const HUF_DEltX2,
     dtLog: u32,
 ) -> u32 {
-    let val = BIT_lookBitsFast(DStream, dtLog);
+    let val = DStream.look_bits_fast(dtLog);
     libc::memcpy(
         op,
         &(*dt.offset(val as isize)).sequence as *const u16 as *const std::ffi::c_void,
-        2 as std::ffi::c_int as std::ffi::c_ulong as libc::size_t,
+        2,
     );
-    BIT_skipBits(DStream, (*dt.offset(val as isize)).nbBits as u32);
+    DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
     (*dt.offset(val as isize)).length as u32
 }
+
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeLastSymbolX2(
     mut op: *mut std::ffi::c_void,
-    mut DStream: *mut BIT_DStream_t,
+    mut DStream: &mut BIT_DStream_t,
     mut dt: *const HUF_DEltX2,
     dtLog: u32,
 ) -> u32 {
@@ -2113,12 +2097,12 @@ unsafe extern "C" fn HUF_decodeLastSymbolX2(
         1 as std::ffi::c_int as std::ffi::c_ulong as libc::size_t,
     );
     if (*dt.offset(val as isize)).length as std::ffi::c_int == 1 as std::ffi::c_int {
-        BIT_skipBits(DStream, (*dt.offset(val as isize)).nbBits as u32);
+        DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
     } else if ((*DStream).bitsConsumed as std::ffi::c_ulong)
         < (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
             .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
     {
-        BIT_skipBits(DStream, (*dt.offset(val as isize)).nbBits as u32);
+        DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
         if (*DStream).bitsConsumed as std::ffi::c_ulong
             > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                 .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
