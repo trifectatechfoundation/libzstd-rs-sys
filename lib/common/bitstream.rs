@@ -161,7 +161,7 @@ impl BIT_DStream_t {
 
     /// Like [`look_bits`], but only works when `nbBits >= 1`
     #[inline]
-    const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
+    pub const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
 
@@ -171,7 +171,7 @@ impl BIT_DStream_t {
     }
 
     #[inline(always)]
-    const fn skip_bits(&mut self, mut nbBits: u32) {
+    pub const fn skip_bits(&mut self, mut nbBits: u32) {
         self.bitsConsumed += nbBits;
     }
 
