@@ -1124,18 +1124,25 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
             if srcSize < ZSTD_SKIPPABLEHEADERSIZE as size_t {
                 return ZSTD_SKIPPABLEHEADERSIZE as size_t;
             }
-            libc::memset(
-                zfhPtr as *mut std::ffi::c_void,
-                0 as std::ffi::c_int,
-                ::core::mem::size_of::<ZSTD_FrameHeader>() as std::ffi::c_ulong as libc::size_t,
-            );
-            (*zfhPtr).frameType = ZSTD_skippableFrame;
-            (*zfhPtr).dictID = (MEM_readLE32(src)).wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
-            (*zfhPtr).headerSize = ZSTD_SKIPPABLEHEADERSIZE as std::ffi::c_uint;
-            (*zfhPtr).frameContentSize = MEM_readLE32(
+
+            let dictID = (MEM_readLE32(src)).wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+            let frameContentSize = MEM_readLE32(
                 (src as *const std::ffi::c_char).offset(ZSTD_FRAMEIDSIZE as isize)
                     as *const std::ffi::c_void,
             ) as std::ffi::c_ulonglong;
+
+            *zfhPtr = ZSTD_FrameHeader {
+                frameContentSize: frameContentSize,
+                windowSize: 0,
+                blockSizeMax: 0,
+                frameType: ZSTD_skippableFrame,
+                headerSize: ZSTD_SKIPPABLEHEADERSIZE as std::ffi::c_uint,
+                dictID: dictID,
+                checksumFlag: 0,
+                _reserved1: 0,
+                _reserved2: 0,
+            };
+
             return 0 as std::ffi::c_int as size_t;
         }
         return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
@@ -1145,14 +1152,12 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     if srcSize < fhsize {
         return fhsize;
     }
-    (*zfhPtr).headerSize = fhsize as u32;
     let fhdByte = *ip.offset(minInputSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
     let mut pos = minInputSize;
     let dictIDSizeCode = (fhdByte as std::ffi::c_int & 3 as std::ffi::c_int) as u32;
     let checksumFlag =
         (fhdByte as std::ffi::c_int >> 2 as std::ffi::c_int & 1 as std::ffi::c_int) as u32;
-    let singleSegment =
-        (fhdByte as std::ffi::c_int >> 5 as std::ffi::c_int & 1 as std::ffi::c_int) as u32;
+    let singleSegment = (fhdByte as std::ffi::c_int >> 5 & 1) != 0;
     let fcsID = (fhdByte as std::ffi::c_int >> 6 as std::ffi::c_int) as u32;
     let mut windowSize = 0 as std::ffi::c_int as U64;
     let mut dictID = 0 as std::ffi::c_int as u32;
@@ -1162,7 +1167,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         return -(ZSTD_error_frameParameter_unsupported as std::ffi::c_int) as size_t;
     }
 
-    if singleSegment == 0 {
+    if !singleSegment {
         let fresh2 = pos;
         pos = pos.wrapping_add(1);
         let wlByte = *ip.offset(fresh2 as isize);
@@ -1214,27 +1219,27 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
             frameContentSize = MEM_readLE64(ip.offset(pos as isize) as *const std::ffi::c_void);
         }
         0 | _ => {
-            if singleSegment != 0 {
+            if singleSegment {
                 frameContentSize = *ip.offset(pos as isize) as U64;
             }
         }
     }
 
-    if singleSegment != 0 {
+    if singleSegment {
         windowSize = frameContentSize;
     }
 
-    (*zfhPtr).frameType = ZSTD_frame;
-    (*zfhPtr).frameContentSize = frameContentSize as std::ffi::c_ulonglong;
-    (*zfhPtr).windowSize = windowSize as std::ffi::c_ulonglong;
-    (*zfhPtr).blockSizeMax =
-        (if windowSize < ((1 as std::ffi::c_int) << 17 as std::ffi::c_int) as U64 {
-            windowSize
-        } else {
-            ((1 as std::ffi::c_int) << 17 as std::ffi::c_int) as U64
-        }) as std::ffi::c_uint;
-    (*zfhPtr).dictID = dictID;
-    (*zfhPtr).checksumFlag = checksumFlag;
+    *zfhPtr = ZSTD_FrameHeader {
+        frameContentSize: frameContentSize as std::ffi::c_ulonglong,
+        windowSize: windowSize as std::ffi::c_ulonglong,
+        blockSizeMax: Ord::min(windowSize, 1 << 17) as u32,
+        frameType: ZSTD_frame,
+        headerSize: fhsize as u32,
+        dictID,
+        checksumFlag,
+        _reserved1: 0,
+        _reserved2: 0,
+    };
 
     0
 }
