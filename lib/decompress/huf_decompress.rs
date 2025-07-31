@@ -297,42 +297,6 @@ unsafe extern "C" fn BIT_reloadDStreamFast(mut bitD: *mut BIT_DStream_t) -> BIT_
     }
     BIT_reloadDStream_internal(bitD)
 }
-#[inline(always)]
-unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStream_status {
-    if ((*bitD).bitsConsumed as std::ffi::c_ulong
-        > (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
-        as std::ffi::c_long
-        != 0
-    {
-        static mut zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
-        (*bitD).ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
-        return BIT_DStream_overflow;
-    }
-    if (*bitD).ptr >= (*bitD).limitPtr {
-        return BIT_reloadDStream_internal(bitD);
-    }
-    if (*bitD).ptr == (*bitD).start {
-        if ((*bitD).bitsConsumed as std::ffi::c_ulong)
-            < (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-        {
-            return BIT_DStream_endOfBuffer;
-        }
-        return BIT_DStream_completed;
-    }
-    let mut nbBytes = (*bitD).bitsConsumed >> 3 as std::ffi::c_int;
-    let mut result = BIT_DStream_unfinished;
-    if ((*bitD).ptr).offset(-(nbBytes as isize)) < (*bitD).start {
-        nbBytes = ((*bitD).ptr).offset_from((*bitD).start) as std::ffi::c_long as u32;
-        result = BIT_DStream_endOfBuffer;
-    }
-    (*bitD).ptr = ((*bitD).ptr).offset(-(nbBytes as isize));
-    (*bitD).bitsConsumed =
-        ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8 as std::ffi::c_int as u32);
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
-    result
-}
 #[inline]
 unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start
@@ -2178,7 +2142,7 @@ unsafe extern "C" fn HUF_decodeLastSymbolX2(
 #[inline(always)]
 unsafe extern "C" fn HUF_decodeStreamX2(
     mut p: *mut u8,
-    mut bitDPtr: *mut BIT_DStream_t,
+    mut bitDPtr: &mut BIT_DStream_t,
     pEnd: *mut u8,
     dt: *const HUF_DEltX2,
     dtLog: u32,
@@ -2188,9 +2152,7 @@ unsafe extern "C" fn HUF_decodeStreamX2(
         >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong
     {
         if dtLog <= 11 as std::ffi::c_int as u32 && MEM_64bits() != 0 {
-            while (BIT_reloadDStream(bitDPtr) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int
+            while (bitDPtr.reload() == StreamStatus::Unfinished) as std::ffi::c_int
                 & (p < pEnd.offset(-(9 as std::ffi::c_int as isize))) as std::ffi::c_int
                 != 0
             {
@@ -2211,9 +2173,7 @@ unsafe extern "C" fn HUF_decodeStreamX2(
                 );
             }
         } else {
-            while (BIT_reloadDStream(bitDPtr) as std::ffi::c_uint
-                == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int
+            while (bitDPtr.reload() == StreamStatus::Unfinished) as std::ffi::c_int
                 & (p < pEnd.offset(
                     -((::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
                         .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong)
@@ -2242,12 +2202,10 @@ unsafe extern "C" fn HUF_decodeStreamX2(
             }
         }
     } else {
-        BIT_reloadDStream(bitDPtr);
+        bitDPtr.reload();
     }
     if pEnd.offset_from(p) as std::ffi::c_long as size_t >= 2 as std::ffi::c_int as size_t {
-        while (BIT_reloadDStream(bitDPtr) as std::ffi::c_uint
-            == BIT_DStream_unfinished as std::ffi::c_int as std::ffi::c_uint)
-            as std::ffi::c_int
+        while (bitDPtr.reload() == StreamStatus::Unfinished) as std::ffi::c_int
             & (p <= pEnd.offset(-(2 as std::ffi::c_int as isize))) as std::ffi::c_int
             != 0
         {
