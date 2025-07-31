@@ -1073,27 +1073,26 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut format: ZSTD_format_e,
 ) -> size_t {
     let mut ip = src as *const u8;
-    let minInputSize = ZSTD_startingInputLength(format);
-    if srcSize > 0 as std::ffi::c_int as size_t && src.is_null() {
+    if srcSize > 0 && src.is_null() {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
+
+    let minInputSize = ZSTD_startingInputLength(format);
     if srcSize < minInputSize {
-        if srcSize > 0 as std::ffi::c_int as size_t
-            && format as std::ffi::c_uint
-                != ZSTD_f_zstd1_magicless as std::ffi::c_int as std::ffi::c_uint
-        {
+        if srcSize > 0 && format != ZSTD_f_zstd1_magicless {
             let toCopy = if (4 as std::ffi::c_int as size_t) < srcSize {
                 4 as std::ffi::c_int as size_t
             } else {
                 srcSize
             };
-            let mut hbuf: [std::ffi::c_uchar; 4] = [0; 4];
-            MEM_writeLE32(hbuf.as_mut_ptr() as *mut std::ffi::c_void, ZSTD_MAGICNUMBER);
+
+            let mut hbuf = ZSTD_MAGICNUMBER.to_le_bytes();
             libc::memcpy(
                 hbuf.as_mut_ptr() as *mut std::ffi::c_void,
                 src,
                 toCopy as libc::size_t,
             );
+
             if MEM_readLE32(hbuf.as_mut_ptr() as *const std::ffi::c_void) != ZSTD_MAGICNUMBER {
                 MEM_writeLE32(
                     hbuf.as_mut_ptr() as *mut std::ffi::c_void,
@@ -1114,14 +1113,10 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         return minInputSize;
     }
-    core::ptr::write_bytes(
-        zfhPtr as *mut u8,
-        0,
-        ::core::mem::size_of::<ZSTD_FrameHeader>() as std::ffi::c_ulong as libc::size_t,
-    );
-    if format as std::ffi::c_uint != ZSTD_f_zstd1_magicless as std::ffi::c_int as std::ffi::c_uint
-        && MEM_readLE32(src) != ZSTD_MAGICNUMBER
-    {
+
+    core::ptr::write_bytes(zfhPtr, 0u8, 1);
+
+    if format != ZSTD_f_zstd1_magicless && MEM_readLE32(src) != ZSTD_MAGICNUMBER {
         if MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
             == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
         {
@@ -1144,6 +1139,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
     }
+
     let fhsize = ZSTD_frameHeaderSize_internal(src, srcSize, format);
     if srcSize < fhsize {
         return fhsize;
@@ -1160,9 +1156,11 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     let mut windowSize = 0 as std::ffi::c_int as U64;
     let mut dictID = 0 as std::ffi::c_int as u32;
     let mut frameContentSize = ZSTD_CONTENTSIZE_UNKNOWN as U64;
+
     if fhdByte as std::ffi::c_int & 0x8 as std::ffi::c_int != 0 as std::ffi::c_int {
         return -(ZSTD_error_frameParameter_unsupported as std::ffi::c_int) as size_t;
     }
+
     if singleSegment == 0 {
         let fresh2 = pos;
         pos = pos.wrapping_add(1);
@@ -1170,12 +1168,10 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         let windowLog = ((wlByte as std::ffi::c_int >> 3 as std::ffi::c_int)
             + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
         if windowLog
-            > (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
-                30 as std::ffi::c_int
+            > (if ::core::mem::size_of::<size_t>() == 4 {
+                30
             } else {
-                31 as std::ffi::c_int
+                31
             }) as u32
         {
             return -(ZSTD_error_frameParameter_windowTooLarge as std::ffi::c_int) as size_t;
@@ -1186,11 +1182,11 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
                 * (wlByte as std::ffi::c_int & 7 as std::ffi::c_int) as U64,
         );
     }
+
     match dictIDSizeCode {
         1 => {
             dictID = *ip.offset(pos as isize) as u32;
             pos = pos.wrapping_add(1);
-            pos;
         }
         2 => {
             dictID = MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void) as u32;
@@ -1202,6 +1198,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         0 | _ => {}
     }
+
     match fcsID {
         1 => {
             frameContentSize = (MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void)
@@ -1221,9 +1218,11 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
             }
         }
     }
+
     if singleSegment != 0 {
         windowSize = frameContentSize;
     }
+
     (*zfhPtr).frameType = ZSTD_frame;
     (*zfhPtr).frameContentSize = frameContentSize as std::ffi::c_ulonglong;
     (*zfhPtr).windowSize = windowSize as std::ffi::c_ulonglong;
