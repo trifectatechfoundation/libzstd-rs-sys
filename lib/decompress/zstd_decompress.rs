@@ -1143,7 +1143,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
                 _reserved2: 0,
             };
 
-            return 0 as std::ffi::c_int as size_t;
+            return 0;
         }
         return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
     }
@@ -1152,41 +1152,31 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     if srcSize < fhsize {
         return fhsize;
     }
-    let fhdByte = *ip.offset(minInputSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
-    let mut pos = minInputSize;
-    let dictIDSizeCode = (fhdByte as std::ffi::c_int & 3 as std::ffi::c_int) as u32;
-    let checksumFlag =
-        (fhdByte as std::ffi::c_int >> 2 as std::ffi::c_int & 1 as std::ffi::c_int) as u32;
-    let singleSegment = (fhdByte as std::ffi::c_int >> 5 & 1) != 0;
-    let fcsID = (fhdByte as std::ffi::c_int >> 6 as std::ffi::c_int) as u32;
-    let mut windowSize = 0 as std::ffi::c_int as U64;
-    let mut dictID = 0 as std::ffi::c_int as u32;
-    let mut frameContentSize = ZSTD_CONTENTSIZE_UNKNOWN as U64;
+    let fhdByte = *ip.offset(minInputSize.wrapping_sub(1) as isize);
+    let dictIDSizeCode = fhdByte & 0b11;
+    let checksumFlag = u32::from(fhdByte) >> 2 & 1;
+    let singleSegment = (u32::from(fhdByte) >> 5 & 1) != 0;
+    let fcsID = (u32::from(fhdByte) >> 6) as u32;
+    let mut windowSize = 0;
+    let mut dictID = 0;
 
-    if fhdByte as std::ffi::c_int & 0x8 as std::ffi::c_int != 0 as std::ffi::c_int {
+    if fhdByte & 0x8 != 0 {
         return -(ZSTD_error_frameParameter_unsupported as std::ffi::c_int) as size_t;
     }
 
+    let mut pos = minInputSize;
     if !singleSegment {
         let fresh2 = pos;
         pos = pos.wrapping_add(1);
         let wlByte = *ip.offset(fresh2 as isize);
-        let windowLog = ((wlByte as std::ffi::c_int >> 3 as std::ffi::c_int)
-            + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
-        if windowLog
-            > (if ::core::mem::size_of::<size_t>() == 4 {
-                30
-            } else {
-                31
-            }) as u32
-        {
+        let windowLog = ((i32::from(wlByte) / 8) + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
+
+        if windowLog > (if size_of::<usize>() == 4 { 30 } else { 31 }) as u32 {
             return -(ZSTD_error_frameParameter_windowTooLarge as std::ffi::c_int) as size_t;
         }
-        windowSize = ((1 as std::ffi::c_ulonglong) << windowLog) as U64;
-        windowSize = windowSize.wrapping_add(
-            (windowSize >> 3 as std::ffi::c_int)
-                * (wlByte as std::ffi::c_int & 7 as std::ffi::c_int) as U64,
-        );
+
+        windowSize = 1u64 << windowLog;
+        windowSize = windowSize.wrapping_add((windowSize / 8) * (wlByte & 7) as u64);
     }
 
     match dictIDSizeCode {
@@ -1196,34 +1186,22 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
         }
         2 => {
             dictID = MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void) as u32;
-            pos = pos.wrapping_add(2 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(2);
         }
         3 => {
             dictID = MEM_readLE32(ip.offset(pos as isize) as *const std::ffi::c_void);
-            pos = pos.wrapping_add(4 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(4);
         }
         0 | _ => {}
     }
 
-    match fcsID {
-        1 => {
-            frameContentSize = (MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void)
-                as std::ffi::c_int
-                + 256 as std::ffi::c_int) as U64;
-        }
-        2 => {
-            frameContentSize =
-                MEM_readLE32(ip.offset(pos as isize) as *const std::ffi::c_void) as U64;
-        }
-        3 => {
-            frameContentSize = MEM_readLE64(ip.offset(pos as isize) as *const std::ffi::c_void);
-        }
-        0 | _ => {
-            if singleSegment {
-                frameContentSize = *ip.offset(pos as isize) as U64;
-            }
-        }
-    }
+    let frameContentSize = match fcsID {
+        1 => MEM_readLE16(ip.offset(pos as isize) as *const std::ffi::c_void) as u64 + 256,
+        2 => MEM_readLE32(ip.offset(pos as isize) as *const std::ffi::c_void) as u64,
+        3 => MEM_readLE64(ip.offset(pos as isize) as *const std::ffi::c_void),
+        _ if singleSegment => *ip.offset(pos as isize) as u64,
+        _ => ZSTD_CONTENTSIZE_UNKNOWN as U64,
+    };
 
     if singleSegment {
         windowSize = frameContentSize;
