@@ -2,6 +2,7 @@ use crate::lib::common::xxhash::XXH64_state_t;
 
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
+use crate::lib::decompress::zstd_decompress::ZSTD_SKIPPABLEHEADERSIZE;
 use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
