@@ -3438,9 +3438,9 @@ unsafe extern "C" fn ZSTDv05_execSequence(
     let oLitEnd = op.offset(sequence.litLength as isize);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.offset(sequenceLength as isize);
-    let oend_8 = oend.offset(-(8 as std::ffi::c_int as isize));
+    let oend_8 = oend.wrapping_sub(8);
     let litEnd = (*litPtr).offset(sequence.litLength as isize);
-    let mut match_0: *const u8 = oLitEnd.offset(-(sequence.offset as isize));
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
     let seqLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from(op) as std::ffi::c_long as size_t {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;

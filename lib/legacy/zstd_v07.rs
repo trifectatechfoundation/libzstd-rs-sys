@@ -4179,9 +4179,9 @@ unsafe extern "C" fn ZSTDv07_execSequence(
     let oLitEnd = op.offset(sequence.litLength as isize);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.offset(sequenceLength as isize);
-    let oend_w = oend.offset(-(WILDCOPY_OVERLENGTH as isize));
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
     let iLitEnd = (*litPtr).offset(sequence.litLength as isize);
-    let mut match_0: *const BYTE = oLitEnd.offset(-(sequence.offset as isize));
+    let mut match_0: *const BYTE = oLitEnd.wrapping_sub(sequence.offset as usize);
     if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH as size_t)
         > oend.offset_from(op) as std::ffi::c_long as size_t
     {
