@@ -258,19 +258,13 @@ unsafe extern "C" fn BIT_initDStream(
     }
     srcSize
 }
-#[inline]
-unsafe extern "C" fn BIT_endOfDStream(mut DStream: *const BIT_DStream_t) -> std::ffi::c_uint {
-    ((*DStream).ptr == (*DStream).start
-        && (*DStream).bitsConsumed as std::ffi::c_ulong
-            == (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)) as std::ffi::c_int
-        as std::ffi::c_uint
-}
+
 pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
 pub const HUF_DECODER_FAST_TABLELOG: std::ffi::c_int = 11 as std::ffi::c_int;
 pub const HUF_ENABLE_FAST_DECODE: std::ffi::c_int = 1 as std::ffi::c_int;
 pub const HUF_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
+
 unsafe extern "C" fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDesc {
     let mut dtd = DTableDesc {
         maxTableLog: 0,
@@ -285,6 +279,7 @@ unsafe extern "C" fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDe
     );
     dtd
 }
+
 unsafe extern "C" fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7 as std::ffi::c_int as isize);
     let bitsConsumed = (if lastByte as std::ffi::c_int != 0 {
@@ -853,9 +848,11 @@ unsafe extern "C" fn HUF_decompress1X1_usingDTable_internal_body(
     };
 
     HUF_decodeStreamX1(op, &mut bitD, oend, dt, dtLog);
-    if BIT_endOfDStream(&mut bitD) == 0 {
+
+    if !bitD.is_empty() {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
     dstSize
 }
 #[inline(always)]
@@ -1052,13 +1049,11 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_body(
     HUF_decodeStreamX1(op2, &mut bitD2, opStart3, dt, dtLog);
     HUF_decodeStreamX1(op3, &mut bitD3, opStart4, dt, dtLog);
     HUF_decodeStreamX1(op4, &mut bitD4, oend, dt, dtLog);
-    let endCheck = BIT_endOfDStream(&mut bitD1)
-        & BIT_endOfDStream(&mut bitD2)
-        & BIT_endOfDStream(&mut bitD3)
-        & BIT_endOfDStream(&mut bitD4);
-    if endCheck == 0 {
+
+    if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
     dstSize
 }
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_bmi2(
@@ -2205,7 +2200,7 @@ unsafe extern "C" fn HUF_decompress1X2_usingDTable_internal_body(
     let dt = dtPtr as *const HUF_DEltX2;
     let dtd = HUF_getDTableDesc(DTable);
     HUF_decodeStreamX2(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
-    if BIT_endOfDStream(&mut bitD) == 0 {
+    if !bitD.is_empty() {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
     dstSize
@@ -2443,13 +2438,11 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_body(
     HUF_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUF_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUF_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    let endCheck = BIT_endOfDStream(&mut bitD1)
-        & BIT_endOfDStream(&mut bitD2)
-        & BIT_endOfDStream(&mut bitD3)
-        & BIT_endOfDStream(&mut bitD4);
-    if endCheck == 0 {
+
+    if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
+
     dstSize
 }
 unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_bmi2(
