@@ -463,31 +463,35 @@ unsafe extern "C" fn HUF_DecompressFastArgs_init(
     (*args).dt = dt;
     1 as std::ffi::c_int as size_t
 }
-unsafe extern "C" fn HUF_initRemainingDStream(
-    mut bit: *mut BIT_DStream_t,
-    mut args: *const HUF_DecompressFastArgs,
-    mut stream: std::ffi::c_int,
-    mut segmentEnd: *mut u8,
-) -> size_t {
-    if *((*args).op).as_ptr().offset(stream as isize) > segmentEnd {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+unsafe fn init_remaining_dstream(
+    args: &HUF_DecompressFastArgs,
+    stream: std::ffi::c_int,
+    segmentEnd: *mut u8,
+) -> Result<BIT_DStream_t, size_t> {
+    if *(args.op).as_ptr().offset(stream as isize) > segmentEnd {
+        return Err(-(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t);
     }
-    if *((*args).ip).as_ptr().offset(stream as isize)
-        < (*((*args).iend).as_ptr().offset(stream as isize))
-            .offset(-(8 as std::ffi::c_int as isize))
+    if *(args.ip).as_ptr().offset(stream as isize)
+        < (*(args.iend).as_ptr().offset(stream as isize)).sub(8)
     {
-        return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
+        return Err(-(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t);
     }
-    (*bit).bitContainer =
-        MEM_readLEST(*((*args).ip).as_ptr().offset(stream as isize) as *const std::ffi::c_void)
+
+    let bitContainer =
+        MEM_readLEST(*(args.ip).as_ptr().offset(stream as isize) as *const std::ffi::c_void)
             as usize;
-    (*bit).bitsConsumed =
-        ZSTD_countTrailingZeros64(*((*args).bits).as_ptr().offset(stream as isize));
-    (*bit).start = (*args).ilowest as *const std::ffi::c_char;
-    (*bit).limitPtr =
-        ((*bit).start).offset(::core::mem::size_of::<size_t>() as std::ffi::c_ulong as isize);
-    (*bit).ptr = *((*args).ip).as_ptr().offset(stream as isize) as *const std::ffi::c_char;
-    0 as std::ffi::c_int as size_t
+    let bitsConsumed = (*args.bits.as_ptr().offset(stream as isize)).trailing_zeros();
+    let start = args.ilowest as *const std::ffi::c_char;
+    let limitPtr = start.add(::core::mem::size_of::<size_t>());
+    let ptr = *(args.ip).as_ptr().offset(stream as isize) as *const std::ffi::c_char;
+
+    Ok(BIT_DStream_t {
+        bitContainer,
+        bitsConsumed,
+        ptr,
+        start,
+        limitPtr,
+    })
 }
 unsafe extern "C" fn HUF_DEltX1_set4(mut symbol: u8, mut nbBits: u8) -> u64 {
     let mut D4: u64 = 0;
@@ -1408,22 +1412,17 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast(
     let mut i: std::ffi::c_int = 0;
     i = 0 as std::ffi::c_int;
     while i < 4 as std::ffi::c_int {
-        let mut bit = BIT_DStream_t {
-            bitContainer: 0,
-            bitsConsumed: 0,
-            ptr: std::ptr::null::<std::ffi::c_char>(),
-            start: std::ptr::null::<std::ffi::c_char>(),
-            limitPtr: std::ptr::null::<std::ffi::c_char>(),
-        };
         if segmentSize <= oend.offset_from(segmentEnd) as std::ffi::c_long as size_t {
             segmentEnd = segmentEnd.offset(segmentSize as isize);
         } else {
             segmentEnd = oend;
         }
-        let err_code_0 = HUF_initRemainingDStream(&mut bit, &mut args, i, segmentEnd);
-        if ERR_isError(err_code_0) != 0 {
-            return err_code_0;
-        }
+
+        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
+
         let fresh47 = &mut (*(args.op).as_mut_ptr().offset(i as isize));
         *fresh47 = (*fresh47).offset(HUF_decodeStreamX1(
             *(args.op).as_mut_ptr().offset(i as isize),
@@ -2968,22 +2967,17 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast(
     let mut i: std::ffi::c_int = 0;
     i = 0 as std::ffi::c_int;
     while i < 4 as std::ffi::c_int {
-        let mut bit = BIT_DStream_t {
-            bitContainer: 0,
-            bitsConsumed: 0,
-            ptr: std::ptr::null::<std::ffi::c_char>(),
-            start: std::ptr::null::<std::ffi::c_char>(),
-            limitPtr: std::ptr::null::<std::ffi::c_char>(),
-        };
         if segmentSize <= oend.offset_from(segmentEnd) as std::ffi::c_long as size_t {
             segmentEnd = segmentEnd.offset(segmentSize as isize);
         } else {
             segmentEnd = oend;
         }
-        let err_code_0 = HUF_initRemainingDStream(&mut bit, &mut args, i, segmentEnd);
-        if ERR_isError(err_code_0) != 0 {
-            return err_code_0;
-        }
+
+        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
+
         let fresh84 = &mut (*(args.op).as_mut_ptr().offset(i as isize));
         *fresh84 = (*fresh84).offset(HUF_decodeStreamX2(
             *(args.op).as_mut_ptr().offset(i as isize),
