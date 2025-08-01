@@ -130,134 +130,6 @@ unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: u64) -> std::ffi::c_uint
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-#[inline]
-unsafe extern "C" fn BIT_initDStream(
-    mut bitD: *mut BIT_DStream_t,
-    mut srcBuffer: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> size_t {
-    if srcSize < 1 as std::ffi::c_int as size_t {
-        libc::memset(
-            bitD as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
-            ::core::mem::size_of::<BIT_DStream_t>() as std::ffi::c_ulong as libc::size_t,
-        );
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
-    }
-    (*bitD).start = srcBuffer as *const std::ffi::c_char;
-    (*bitD).limitPtr = ((*bitD).start)
-        .offset(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize);
-    if srcSize >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
-        (*bitD).ptr = (srcBuffer as *const std::ffi::c_char)
-            .offset(srcSize as isize)
-            .offset(-(::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong as isize));
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const std::ffi::c_void) as usize;
-        let lastByte = *(srcBuffer as *const u8)
-            .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
-        (*bitD).bitsConsumed = if lastByte as std::ffi::c_int != 0 {
-            (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_highbit32(lastByte as u32))
-        } else {
-            0 as std::ffi::c_int as std::ffi::c_uint
-        };
-        if lastByte as std::ffi::c_int == 0 as std::ffi::c_int {
-            return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
-        }
-    } else {
-        (*bitD).ptr = (*bitD).start;
-        (*bitD).bitContainer = *((*bitD).start as *const u8) as BitContainerType;
-        let mut current_block_32: u64;
-        match srcSize {
-            7 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const u8).offset(6 as std::ffi::c_int as isize)
-                        as BitContainerType)
-                        << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                            .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                            .wrapping_sub(16 as std::ffi::c_int as std::ffi::c_ulong),
-                );
-                current_block_32 = 10674155929662485793;
-            }
-            6 => {
-                current_block_32 = 10674155929662485793;
-            }
-            5 => {
-                current_block_32 = 16118346003814681330;
-            }
-            4 => {
-                current_block_32 = 11138735194807316286;
-            }
-            3 => {
-                current_block_32 = 3119509932921184778;
-            }
-            2 => {
-                current_block_32 = 13845399199001887291;
-            }
-            _ => {
-                current_block_32 = 16203760046146113240;
-            }
-        }
-        if current_block_32 == 10674155929662485793 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(5 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                        .wrapping_sub(24 as std::ffi::c_int as std::ffi::c_ulong),
-            );
-            current_block_32 = 16118346003814681330;
-        }
-        if current_block_32 == 16118346003814681330 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(4 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong)
-                        .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                        .wrapping_sub(32 as std::ffi::c_int as std::ffi::c_ulong),
-            );
-            current_block_32 = 11138735194807316286;
-        }
-        if current_block_32 == 11138735194807316286 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(3 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 24 as std::ffi::c_int,
-            );
-            current_block_32 = 3119509932921184778;
-        }
-        if current_block_32 == 3119509932921184778 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(2 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 16 as std::ffi::c_int,
-            );
-            current_block_32 = 13845399199001887291;
-        }
-        if current_block_32 == 13845399199001887291 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(1 as std::ffi::c_int as isize)
-                    as BitContainerType)
-                    << 8 as std::ffi::c_int,
-            );
-        }
-        let lastByte_0 = *(srcBuffer as *const u8)
-            .offset(srcSize.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
-        (*bitD).bitsConsumed = if lastByte_0 as std::ffi::c_int != 0 {
-            (8 as std::ffi::c_int as std::ffi::c_uint)
-                .wrapping_sub(ZSTD_highbit32(lastByte_0 as u32))
-        } else {
-            0 as std::ffi::c_int as std::ffi::c_uint
-        };
-        if lastByte_0 as std::ffi::c_int == 0 as std::ffi::c_int {
-            return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
-        }
-        (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
-            (::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong).wrapping_sub(srcSize)
-                as u32
-                * 8 as std::ffi::c_int as u32,
-        );
-    }
-    srcSize
-}
 
 pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
@@ -879,34 +751,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_body(
     let olimit = oend.offset(-(3 as std::ffi::c_int as isize));
     let dtPtr = DTable.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void;
     let dt = dtPtr as *const HUF_DEltX1;
-    let mut bitD1 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD2 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD3 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD4 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
     let length1 = MEM_readLE16(istart as *const std::ffi::c_void) as size_t;
     let length2 =
         MEM_readLE16(istart.offset(2 as std::ffi::c_int as isize) as *const std::ffi::c_void)
@@ -942,22 +786,28 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_body(
     if opStart4 > oend {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    let _var_err__ = BIT_initDStream(&mut bitD1, istart1 as *const std::ffi::c_void, length1);
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
-    }
-    let _var_err___0 = BIT_initDStream(&mut bitD2, istart2 as *const std::ffi::c_void, length2);
-    if ERR_isError(_var_err___0) != 0 {
-        return _var_err___0;
-    }
-    let _var_err___1 = BIT_initDStream(&mut bitD3, istart3 as *const std::ffi::c_void, length3);
-    if ERR_isError(_var_err___1) != 0 {
-        return _var_err___1;
-    }
-    let _var_err___2 = BIT_initDStream(&mut bitD4, istart4 as *const std::ffi::c_void, length4);
-    if ERR_isError(_var_err___2) != 0 {
-        return _var_err___2;
-    }
+
+    let mut bitD1 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart1, length1 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD2 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart2, length2 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD3 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart3, length3 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD4 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart4, length4 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+
     if oend.offset_from(op4) as std::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
     {
@@ -2181,17 +2031,12 @@ unsafe extern "C" fn HUF_decompress1X2_usingDTable_internal_body(
     mut cSrcSize: size_t,
     mut DTable: *const HUF_DTable,
 ) -> size_t {
-    let mut bitD = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
+    let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+    let mut bitD = match BIT_DStream_t::new(src) {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
     };
-    let _var_err__ = BIT_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
-    }
+
     let ostart = dst as *mut u8;
     let oend =
         ZSTD_maybeNullPtrAdd(ostart as *mut std::ffi::c_void, dstSize as ptrdiff_t) as *mut u8;
@@ -2227,34 +2072,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_body(
     );
     let dtPtr = DTable.offset(1 as std::ffi::c_int as isize) as *const std::ffi::c_void;
     let dt = dtPtr as *const HUF_DEltX2;
-    let mut bitD1 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD2 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD3 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
-    let mut bitD4 = BIT_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: std::ptr::null::<std::ffi::c_char>(),
-        start: std::ptr::null::<std::ffi::c_char>(),
-        limitPtr: std::ptr::null::<std::ffi::c_char>(),
-    };
     let length1 = MEM_readLE16(istart as *const std::ffi::c_void) as size_t;
     let length2 =
         MEM_readLE16(istart.offset(2 as std::ffi::c_int as isize) as *const std::ffi::c_void)
@@ -2290,22 +2107,28 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_body(
     if opStart4 > oend {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
-    let _var_err__ = BIT_initDStream(&mut bitD1, istart1 as *const std::ffi::c_void, length1);
-    if ERR_isError(_var_err__) != 0 {
-        return _var_err__;
-    }
-    let _var_err___0 = BIT_initDStream(&mut bitD2, istart2 as *const std::ffi::c_void, length2);
-    if ERR_isError(_var_err___0) != 0 {
-        return _var_err___0;
-    }
-    let _var_err___1 = BIT_initDStream(&mut bitD3, istart3 as *const std::ffi::c_void, length3);
-    if ERR_isError(_var_err___1) != 0 {
-        return _var_err___1;
-    }
-    let _var_err___2 = BIT_initDStream(&mut bitD4, istart4 as *const std::ffi::c_void, length4);
-    if ERR_isError(_var_err___2) != 0 {
-        return _var_err___2;
-    }
+
+    let mut bitD1 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart1, length1 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD2 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart2, length2 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD3 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart3, length3 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+    let mut bitD4 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart4, length4 as usize))
+    {
+        Ok(v) => v,
+        Err(e) => return e.to_error_code(),
+    };
+
     if oend.offset_from(op4) as std::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
     {
