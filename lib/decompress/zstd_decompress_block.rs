@@ -178,11 +178,10 @@ unsafe extern "C" fn BIT_initDStream(
         ptr::write_bytes(bitD as *mut u8, 0, ::core::mem::size_of::<BIT_DStream_t>());
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    (*bitD).start = srcBuffer as *const core::ffi::c_char;
-    (*bitD).limitPtr = ((*bitD).start)
-        .offset(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize);
-    if srcSize >= ::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong {
-        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
+    (*bitD).start = srcBuffer as *const std::ffi::c_char;
+    (*bitD).limitPtr = ((*bitD).start).wrapping_add(::core::mem::size_of::<BitContainerType>());
+    if srcSize >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
+        (*bitD).ptr = (srcBuffer as *const std::ffi::c_char)
             .offset(srcSize as isize)
             .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
@@ -2940,9 +2939,9 @@ unsafe extern "C" fn ZSTD_execSequenceEnd(
     let oLitEnd = op.offset(sequence.litLength as isize);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).offset(sequence.litLength as isize);
-    let mut match_0: *const u8 = oLitEnd.offset(-(sequence.offset as isize));
-    let oend_w = oend.offset(-(WILDCOPY_OVERLENGTH as isize));
-    if sequenceLength > oend.offset_from(op) as core::ffi::c_long as size_t {
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
+    if sequenceLength > oend.offset_from(op) as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     if sequence.litLength > litLimit.offset_from(*litPtr) as core::ffi::c_long as size_t {
@@ -3057,7 +3056,7 @@ unsafe extern "C" fn ZSTD_execSequence(
     let oLitEnd = op.offset(sequence.litLength as isize);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.offset(sequenceLength as isize);
-    let oend_w = oend.offset(-(WILDCOPY_OVERLENGTH as isize));
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
     let iLitEnd = (*litPtr).offset(sequence.litLength as isize);
     let mut match_0: *const u8 = oLitEnd.wrapping_offset(-(sequence.offset as isize));
     if (iLitEnd > litLimit
@@ -4535,4 +4534,43 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
     mut srcSize: size_t,
 ) -> size_t {
     ZSTD_decompressBlock_deprecated(dctx, dst, dstCapacity, src, srcSize)
+}
+
+#[cfg(test)]
+mod test {
+    use core::ffi::*;
+
+    #[test]
+    fn basic_decompress() {
+        rs(&[40, 181, 47, 253, 48, 21, 44, 0, 0, 0, 253, 49, 0, 21]);
+    }
+
+    fn rs(compressed: &[u8]) -> (usize, Vec<u8>) {
+        use crate::lib::decompress::zstd_decompress::*;
+
+        let compressed_ptr = compressed.as_ptr() as *const c_void;
+        let compressed_size = compressed.len();
+
+        // Get decompressed size from frame header
+        let decompressed_size =
+            unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size as u64) };
+        if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
+            return (decompressed_size as usize, vec![]);
+        } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
+            return (decompressed_size as usize, vec![]);
+        }
+
+        // Allocate buffer for decompressed output
+        let mut decompressed = vec![0u8; Ord::min(decompressed_size as usize, 1 << 20)];
+        let result = unsafe {
+            ZSTD_decompress(
+                decompressed.as_mut_ptr() as *mut c_void,
+                decompressed.len() as u64,
+                compressed_ptr,
+                compressed_size as u64,
+            )
+        };
+
+        (result as usize, decompressed)
+    }
 }
