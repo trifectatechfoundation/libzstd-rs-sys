@@ -264,6 +264,11 @@ impl BIT_DStream_t {
 
         result
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.ptr == self.start
+            && self.bitsConsumed as usize == size_of::<BitContainerType>().wrapping_mul(8)
+    }
 }
 
 #[cfg(test)]
