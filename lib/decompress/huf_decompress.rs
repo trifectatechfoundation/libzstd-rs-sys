@@ -116,20 +116,6 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint
 }
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
-#[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint {
-    val.leading_zeros() as i32 as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: u64) -> std::ffi::c_uint {
-    (val as std::ffi::c_ulonglong).trailing_zeros() as i32 as std::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
-    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 
 pub const HUF_TABLELOG_MAX: std::ffi::c_int = 12 as std::ffi::c_int;
 pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
@@ -155,7 +141,7 @@ unsafe extern "C" fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDe
 unsafe extern "C" fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7 as std::ffi::c_int as isize);
     let bitsConsumed = (if lastByte as std::ffi::c_int != 0 {
-        (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_highbit32(lastByte as u32))
+        (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(lastByte.ilog2())
     } else {
         0 as std::ffi::c_int as std::ffi::c_uint
     }) as size_t;
@@ -1150,9 +1136,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
             *(*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize))
                 .offset(4 as std::ffi::c_int as isize) =
                 (entry_18 >> 8 as std::ffi::c_int & 0xff as std::ffi::c_int) as u8;
-            let ctz =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(0 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz = {
+                let mut val = *bits.as_mut_ptr().offset(0 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits = ctz & 7 as std::ffi::c_int;
             let nbBytes = ctz >> 3 as std::ffi::c_int;
             let fresh39 = &mut (*op.as_mut_ptr().offset(0 as std::ffi::c_int as isize));
@@ -1164,9 +1151,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                     as *const std::ffi::c_void)
                     | 1 as std::ffi::c_int as u64;
             *bits.as_mut_ptr().offset(0 as std::ffi::c_int as isize) <<= nbBits;
-            let ctz_0 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(1 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_0 = {
+                let mut val = *bits.as_mut_ptr().offset(1 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_0 = ctz_0 & 7 as std::ffi::c_int;
             let nbBytes_0 = ctz_0 >> 3 as std::ffi::c_int;
             let fresh41 = &mut (*op.as_mut_ptr().offset(1 as std::ffi::c_int as isize));
@@ -1178,9 +1166,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                     as *const std::ffi::c_void)
                     | 1 as std::ffi::c_int as u64;
             *bits.as_mut_ptr().offset(1 as std::ffi::c_int as isize) <<= nbBits_0;
-            let ctz_1 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(2 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_1 = {
+                let mut val = *bits.as_mut_ptr().offset(2 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_1 = ctz_1 & 7 as std::ffi::c_int;
             let nbBytes_1 = ctz_1 >> 3 as std::ffi::c_int;
             let fresh43 = &mut (*op.as_mut_ptr().offset(2 as std::ffi::c_int as isize));
@@ -1192,9 +1181,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                     as *const std::ffi::c_void)
                     | 1 as std::ffi::c_int as u64;
             *bits.as_mut_ptr().offset(2 as std::ffi::c_int as isize) <<= nbBits_1;
-            let ctz_2 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_2 = {
+                let mut val = *bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_2 = ctz_2 & 7 as std::ffi::c_int;
             let nbBytes_2 = ctz_2 >> 3 as std::ffi::c_int;
             let fresh45 = &mut (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
@@ -2647,9 +2637,10 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 let fresh76 = &mut (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
                 *fresh76 = (*fresh76).offset(entry_20.length as std::ffi::c_int as isize);
             }
-            let ctz =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(0 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz = {
+                let mut val = *bits.as_mut_ptr().offset(0 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits = ctz & 7 as std::ffi::c_int;
             let nbBytes = ctz >> 3 as std::ffi::c_int;
             let fresh77 = &mut (*ip.as_mut_ptr().offset(0 as std::ffi::c_int as isize));
@@ -2672,9 +2663,10 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 let fresh78 = &mut (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
                 *fresh78 = (*fresh78).offset(entry_21.length as std::ffi::c_int as isize);
             }
-            let ctz_0 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(1 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_0 = {
+                let mut val = *bits.as_mut_ptr().offset(1 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_0 = ctz_0 & 7 as std::ffi::c_int;
             let nbBytes_0 = ctz_0 >> 3 as std::ffi::c_int;
             let fresh79 = &mut (*ip.as_mut_ptr().offset(1 as std::ffi::c_int as isize));
@@ -2697,9 +2689,10 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 let fresh80 = &mut (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
                 *fresh80 = (*fresh80).offset(entry_22.length as std::ffi::c_int as isize);
             }
-            let ctz_1 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(2 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_1 = {
+                let mut val = *bits.as_mut_ptr().offset(2 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_1 = ctz_1 & 7 as std::ffi::c_int;
             let nbBytes_1 = ctz_1 >> 3 as std::ffi::c_int;
             let fresh81 = &mut (*ip.as_mut_ptr().offset(2 as std::ffi::c_int as isize));
@@ -2722,9 +2715,10 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 let fresh82 = &mut (*op.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
                 *fresh82 = (*fresh82).offset(entry_23.length as std::ffi::c_int as isize);
             }
-            let ctz_2 =
-                ZSTD_countTrailingZeros64(*bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize))
-                    as std::ffi::c_int;
+            let ctz_2 = {
+                let mut val = *bits.as_mut_ptr().offset(3 as std::ffi::c_int as isize);
+                val.trailing_zeros()
+            } as std::ffi::c_int;
             let nbBits_2 = ctz_2 & 7 as std::ffi::c_int;
             let nbBytes_2 = ctz_2 >> 3 as std::ffi::c_int;
             let fresh83 = &mut (*ip.as_mut_ptr().offset(3 as std::ffi::c_int as isize));
