@@ -10,11 +10,6 @@ extern "C" {
 }
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
-pub type BIT_DStream_status = std::ffi::c_uint;
-pub const BIT_DStream_overflow: BIT_DStream_status = 3;
-pub const BIT_DStream_completed: BIT_DStream_status = 2;
-pub const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
-pub const BIT_DStream_unfinished: BIT_DStream_status = 0;
 pub type HUF_DTable = u32;
 pub type C2RustUnnamed_0 = std::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
