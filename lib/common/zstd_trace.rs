@@ -20,20 +20,53 @@ pub struct ZSTD_Trace {
 
 pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
 
-extern "C" {
-    #[linkage = "extern_weak"]
-    pub static ZSTD_trace_compress_begin:
-        Option<unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx>;
+pub use statics::*;
 
-    #[linkage = "extern_weak"]
-    pub static ZSTD_trace_compress_end:
-        Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+#[cfg(not(miri))]
+mod statics {
+    use super::{ZSTD_CCtx, ZSTD_Trace, ZSTD_TraceCtx};
+    use crate::lib::decompress::ZSTD_DCtx;
 
-    #[linkage = "extern_weak"]
-    pub static ZSTD_trace_decompress_begin:
-        Option<unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx>;
+    extern "C" {
+        #[linkage = "extern_weak"]
+        pub static ZSTD_trace_compress_begin:
+            Option<unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx>;
 
-    #[linkage = "extern_weak"]
-    pub static ZSTD_trace_decompress_end:
-        Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+        #[linkage = "extern_weak"]
+        pub static ZSTD_trace_compress_end:
+            Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+
+        #[linkage = "extern_weak"]
+        pub static ZSTD_trace_decompress_begin:
+            Option<unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx>;
+
+        #[linkage = "extern_weak"]
+        pub static ZSTD_trace_decompress_end:
+            Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+    }
+}
+
+#[cfg(miri)]
+mod statics {
+    use super::{ZSTD_CCtx, ZSTD_Trace, ZSTD_TraceCtx};
+    use crate::lib::decompress::ZSTD_DCtx;
+
+    pub static ZSTD_trace_compress_begin: Option<
+        unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx,
+    > = None;
+
+    #[cfg(miri)]
+    pub static ZSTD_trace_compress_end: Option<
+        unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
+    > = None;
+
+    #[cfg(miri)]
+    pub static ZSTD_trace_decompress_begin: Option<
+        unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx,
+    > = None;
+
+    #[cfg(miri)]
+    pub static ZSTD_trace_decompress_end: Option<
+        unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
+    > = None;
 }
