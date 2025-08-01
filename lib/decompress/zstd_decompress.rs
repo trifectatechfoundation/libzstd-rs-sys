@@ -349,7 +349,7 @@ fn is_legacy(src: &[u8]) -> u32 {
         return 0;
     };
 
-    match u32::from_ne_bytes(*chunk).to_le() {
+    match u32::from_le_bytes(*chunk) {
         ZSTDv01_magicNumberLE => 1,
         ZSTDv02_MAGICNUMBER => 2,
         ZSTDv03_MAGICNUMBER => 3,
