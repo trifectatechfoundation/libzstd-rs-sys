@@ -146,179 +146,11 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint
 }
-#[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
-#[inline]
-unsafe extern "C" fn BIT_initDStream(
-    mut bitD: &mut BIT_DStream_t,
-    mut srcBuffer: *const std::ffi::c_void,
-    mut srcSize: size_t,
-) -> size_t {
-    if srcSize < 1 {
-        ptr::write_bytes(bitD, 0u8, 1);
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
-    }
-    (*bitD).start = srcBuffer as *const std::ffi::c_char;
-    (*bitD).limitPtr = ((*bitD).start).wrapping_add(::core::mem::size_of::<BitContainerType>());
-    if srcSize >= ::core::mem::size_of::<BitContainerType>() as std::ffi::c_ulong {
-        (*bitD).ptr = (srcBuffer as *const std::ffi::c_char)
-            .offset(srcSize as isize)
-            .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void) as usize;
-        let lastByte = *(srcBuffer as *const u8).offset(srcSize.wrapping_sub(1) as isize);
-        (*bitD).bitsConsumed = if lastByte as core::ffi::c_int != 0 {
-            (8 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_sub(ZSTD_highbit32(lastByte as u32))
-        } else {
-            0
-        };
-        if lastByte as core::ffi::c_int == 0 {
-            return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
-        }
-    } else {
-        (*bitD).ptr = (*bitD).start;
-        (*bitD).bitContainer = *((*bitD).start as *const u8) as BitContainerType;
-        let mut current_block_32: u64;
-        match srcSize {
-            7 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const u8).offset(6) as BitContainerType)
-                        << (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-                            .wrapping_mul(8)
-                            .wrapping_sub(16),
-                );
-                current_block_32 = 3850282667991058540;
-            }
-            6 => {
-                current_block_32 = 3850282667991058540;
-            }
-            5 => {
-                current_block_32 = 4516348661728506741;
-            }
-            4 => {
-                current_block_32 = 17535799132721701948;
-            }
-            3 => {
-                current_block_32 = 8749097731461952757;
-            }
-            2 => {
-                current_block_32 = 2662887031065336898;
-            }
-            _ => {
-                current_block_32 = 16203760046146113240;
-            }
-        }
-        if current_block_32 == 3850282667991058540 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(5) as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-                        .wrapping_mul(8)
-                        .wrapping_sub(24),
-            );
-            current_block_32 = 4516348661728506741;
-        }
-        if current_block_32 == 4516348661728506741 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(4) as BitContainerType)
-                    << (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-                        .wrapping_mul(8)
-                        .wrapping_sub(32),
-            );
-            current_block_32 = 17535799132721701948;
-        }
-        if current_block_32 == 17535799132721701948 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(3) as BitContainerType) << 24);
-            current_block_32 = 8749097731461952757;
-        }
-        if current_block_32 == 8749097731461952757 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(2) as BitContainerType) << 16);
-            current_block_32 = 2662887031065336898;
-        }
-        if current_block_32 == 2662887031065336898 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(1) as BitContainerType) << 8);
-        }
-        let lastByte_0 = *(srcBuffer as *const u8).offset(srcSize.wrapping_sub(1) as isize);
-        (*bitD).bitsConsumed = if lastByte_0 as core::ffi::c_int != 0 {
-            (8 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_sub(ZSTD_highbit32(lastByte_0 as u32))
-        } else {
-            0
-        };
-        if lastByte_0 as core::ffi::c_int == 0 {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-        }
-        (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
-            (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_sub(srcSize)
-                as u32
-                * 8,
-        );
-    }
-    srcSize
-}
-#[inline(always)]
-unsafe extern "C" fn BIT_getMiddleBits(
-    mut bitContainer: BitContainerType,
-    start: u32,
-    nbBits: u32,
-) -> BitContainerType {
-    let regMask = (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-        .wrapping_mul(8)
-        .wrapping_sub(1) as u32;
-    bitContainer >> (start & regMask)
-        & ((1 as std::ffi::c_int as usize) << nbBits).wrapping_sub(1 as std::ffi::c_int as usize)
-}
-#[inline(always)]
-unsafe extern "C" fn BIT_lookBits(
-    mut bitD: *const BIT_DStream_t,
-    mut nbBits: u32,
-) -> BitContainerType {
-    BIT_getMiddleBits(
-        (*bitD).bitContainer,
-        (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-            .wrapping_mul(8)
-            .wrapping_sub((*bitD).bitsConsumed as core::ffi::c_ulong)
-            .wrapping_sub(nbBits as core::ffi::c_ulong) as u32,
-        nbBits,
-    )
-}
-#[inline]
-unsafe extern "C" fn BIT_lookBitsFast(
-    mut bitD: *const BIT_DStream_t,
-    mut nbBits: u32,
-) -> BitContainerType {
-    let regMask = (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-        .wrapping_mul(8)
-        .wrapping_sub(1) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & regMask)
-        >> (regMask.wrapping_add(1).wrapping_sub(nbBits) & regMask)
-}
-#[inline(always)]
-unsafe extern "C" fn BIT_skipBits(mut bitD: *mut BIT_DStream_t, mut nbBits: u32) {
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(nbBits);
-}
-#[inline(always)]
-unsafe extern "C" fn BIT_readBits(
-    mut bitD: *mut BIT_DStream_t,
-    mut nbBits: core::ffi::c_uint,
-) -> BitContainerType {
-    let value = BIT_lookBits(bitD, nbBits);
-    BIT_skipBits(bitD, nbBits);
-    value
-}
-pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: std::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_WINDOWLOG_MAX_32: std::ffi::c_int = 30;
+pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
+pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 #[inline]
 unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
@@ -2447,8 +2279,10 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as u32;
-        (*tableDecode.offset(u_0 as isize)).nbBits =
-            tableLog.wrapping_sub(ZSTD_highbit32(nextState)) as u8;
+        (*tableDecode.offset(u_0 as isize)).nbBits = tableLog.wrapping_sub({
+            let mut val = nextState;
+            val.ilog2()
+        }) as u8;
         (*tableDecode.offset(u_0 as isize)).nextState = (nextState
             << (*tableDecode.offset(u_0 as isize)).nbBits as core::ffi::c_int)
             .wrapping_sub(tableSize) as u16;
@@ -3165,7 +2999,7 @@ unsafe extern "C" fn ZSTD_execSequenceSplitLitBuffer(
 }
 
 unsafe fn ZSTD_initFseState(
-    mut DStatePtr: &mut ZSTD_fseState,
+    mut DStatePtr: *mut ZSTD_fseState,
     mut bitD: &mut BIT_DStream_t,
     mut dt: *const ZSTD_seqSymbol,
 ) {
@@ -3281,7 +3115,7 @@ unsafe extern "C" fn ZSTD_decodeSequence(
         }
     }
     seq.offset = offset;
-    if mlBits as std::ffi::c_int > 0 {
+    if mlBits as core::ffi::c_int > 0 {
         seq.matchLength = (seq.matchLength).wrapping_add(
             (*seqState)
                 .DStream
@@ -3306,7 +3140,7 @@ unsafe extern "C" fn ZSTD_decodeSequence(
     {
         (*seqState).DStream.reload();
     }
-    if llBits as std::ffi::c_int > 0 {
+    if llBits as core::ffi::c_int > 0 {
         seq.litLength = (seq.litLength).wrapping_add(
             (*seqState)
                 .DStream
@@ -3392,9 +3226,11 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
         }
-        if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-        }
+        let src = core::slice::from_raw_parts(seqStart.cast::<u8>(), seqSize as usize);
+        seqState.DStream = match BIT_DStream_t::new(src) {
+            Ok(v) => v,
+            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+        };
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, (*dctx).LLTptr);
         ZSTD_initFseState(
             &mut seqState.stateOffb,
@@ -3627,9 +3463,11 @@ unsafe extern "C" fn ZSTD_decompressSequences_body(
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
         }
-        if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-        }
+        let src = core::slice::from_raw_parts(seqStart.cast::<u8>(), seqSize as usize);
+        seqState.DStream = match BIT_DStream_t::new(src) {
+            Ok(v) => v,
+            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+        };
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, (*dctx).LLTptr);
         ZSTD_initFseState(
             &mut seqState.stateOffb,
@@ -3815,9 +3653,11 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i += 1;
         }
-        if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-        }
+        let src = core::slice::from_raw_parts(seqStart.cast::<u8>(), seqSize as usize);
+        seqState.DStream = match BIT_DStream_t::new(src) {
+            Ok(v) => v,
+            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+        };
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, (*dctx).LLTptr);
         ZSTD_initFseState(
             &mut seqState.stateOffb,
