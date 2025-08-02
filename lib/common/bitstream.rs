@@ -12,7 +12,7 @@ pub type BitContainerType = usize;
 /// *  A reload guarantee a minimum of ((8*sizeof(bitD->bitContainer))-7) bits when its result is BIT_DStream_unfinished.
 /// *  Otherwise, it can be less than that, so proceed accordingly.
 /// *  Checking if DStream has reached its end can be performed with BIT_endOfDStream().
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct BIT_DStream_t {
     pub bitContainer: usize,
