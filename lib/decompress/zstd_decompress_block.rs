@@ -61,9 +61,29 @@ pub struct XXH64_state_s {
 }
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type streaming_operation = core::ffi::c_uint;
+
+pub type streaming_operation = std::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum StreamingOperation {
+    NotStreaming = 0,
+    IsStreaming = 1,
+}
+
+impl TryFrom<u32> for StreamingOperation {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::NotStreaming),
+            1 => Ok(Self::IsStreaming),
+            _ => Err(()),
+        }
+    }
+}
+
 pub type ZSTD_longOffset_e = core::ffi::c_uint;
 pub const ZSTD_lo_isLongOffset: ZSTD_longOffset_e = 1;
 pub const ZSTD_lo_isRegularOffset: ZSTD_longOffset_e = 0;
@@ -280,17 +300,17 @@ pub unsafe extern "C" fn ZSTD_getcBlockSize(
     }
     cSize as size_t
 }
-unsafe extern "C" fn ZSTD_allocateLiteralsBuffer(
+unsafe fn ZSTD_allocateLiteralsBuffer(
     mut dctx: *mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     litSize: size_t,
-    streaming: streaming_operation,
+    streaming: StreamingOperation,
     expectedWriteSize: size_t,
     splitImmediately: core::ffi::c_uint,
 ) {
     let blockSizeMax = ZSTD_blockSizeMax(dctx);
-    if streaming as core::ffi::c_uint == not_streaming as core::ffi::c_int as core::ffi::c_uint
+    if streaming == StreamingOperation::NotStreaming
         && dstCapacity
             > blockSizeMax
                 .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
@@ -364,13 +384,14 @@ unsafe extern "C" fn ZSTD_allocateLiteralsBuffer(
         (*dctx).litBufferLocation = LitLocation::ZSTD_split;
     };
 }
-unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
+
+unsafe fn ZSTD_decodeLiteralsBlock(
     mut dctx: *mut ZSTD_DCtx,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    streaming: streaming_operation,
+    streaming: StreamingOperation,
 ) -> size_t {
     // for a non-null block
     const MIN_CBLOCK_SIZE: size_t = 1 /*litCSize*/ + 1/* RLE or RAW */;
@@ -841,7 +862,14 @@ pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
     mut dstCapacity: size_t,
 ) -> size_t {
     (*dctx).isFrameDecompression = 0;
-    ZSTD_decodeLiteralsBlock(dctx, src, srcSize, dst, dstCapacity, not_streaming)
+    ZSTD_decodeLiteralsBlock(
+        dctx,
+        src,
+        srcSize,
+        dst,
+        dstCapacity,
+        StreamingOperation::NotStreaming,
+    )
 }
 static LL_defaultDTable: [ZSTD_seqSymbol; 65] = [
     {
@@ -4167,6 +4195,9 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
     mut srcSize: size_t,
     streaming: streaming_operation,
 ) -> size_t {
+    let Ok(streaming) = StreamingOperation::try_from(streaming) else {
+        todo!()
+    };
     ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, srcSize, streaming)
 }
 
@@ -4176,7 +4207,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     mut dstCapacity: size_t,
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
-    streaming: streaming_operation,
+    streaming: StreamingOperation,
 ) -> size_t {
     let mut ip = src as *const u8;
     if srcSize > ZSTD_blockSizeMax(dctx) {
