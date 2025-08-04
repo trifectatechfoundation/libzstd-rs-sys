@@ -79,10 +79,13 @@ pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
 pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
 pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
 
-pub type ZSTD_litLocation_e = core::ffi::c_uint;
-pub const ZSTD_split: ZSTD_litLocation_e = 2;
-pub const ZSTD_in_dst: ZSTD_litLocation_e = 1;
-pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LitLocation {
+    ZSTD_split = 2,
+    ZSTD_in_dst = 1,
+    ZSTD_not_in_dst = 0,
+}
 
 pub type ZSTD_forceIgnoreChecksum_e = core::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
@@ -177,7 +180,7 @@ pub struct ZSTD_DCtx_s {
     pub expectedOutBuffer: ZSTD_outBuffer,
     pub litBuffer: *mut u8,
     pub litBufferEnd: *const u8,
-    pub litBufferLocation: ZSTD_litLocation_e,
+    pub litBufferLocation: LitLocation,
     pub litExtraBuffer: [u8; 65568],
     pub headerBuffer: [u8; 18],
     pub oversizedDuration: size_t,
