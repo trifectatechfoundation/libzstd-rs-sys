@@ -282,7 +282,7 @@ pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
 pub type C2RustUnnamed_1 = std::ffi::c_uint;
 pub const bt_reserved: C2RustUnnamed_1 = 3;
 pub const bt_rle: C2RustUnnamed_1 = 1;
-pub const ZSTD_TARGETCBLOCKSIZE_MIN: std::ffi::c_int = 1340 as std::ffi::c_int;
+pub const ZSTD_TARGETCBLOCKSIZE_MIN: std::ffi::c_int = 1340;
 #[inline]
 unsafe extern "C" fn ZSTD_getSequenceLength(
     mut seqStore: *const SeqStore_t,
@@ -320,8 +320,8 @@ unsafe extern "C" fn ZSTD_noCompressBlock(
     mut lastBlock: u32,
 ) -> size_t {
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-        .wrapping_add((srcSize << 3 as std::ffi::c_int) as u32);
+        .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1)
+        .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
@@ -336,38 +336,35 @@ unsafe extern "C" fn ZSTD_noCompressBlock(
 #[inline]
 unsafe extern "C" fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(1 as std::ffi::c_int as isize);
-        *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-        *rep.offset(0 as std::ffi::c_int as isize) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        *rep.offset(2) = *rep.offset(1);
+        *rep.offset(1) = *rep.offset(0);
+        *rep.offset(0) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
-        let repCode = offBase
-            .wrapping_sub(1 as std::ffi::c_int as u32)
-            .wrapping_add(ll0);
-        if repCode > 0 as std::ffi::c_int as u32 {
+        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
+        if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep.offset(0 as std::ffi::c_int as isize))
-                    .wrapping_sub(1 as std::ffi::c_int as u32)
+                (*rep.offset(0)).wrapping_sub(1)
             } else {
                 *rep.offset(repCode as isize)
             };
-            *rep.offset(2 as std::ffi::c_int as isize) = if repCode >= 2 as std::ffi::c_int as u32 {
-                *rep.offset(1 as std::ffi::c_int as isize)
+            *rep.offset(2) = if repCode >= 2 {
+                *rep.offset(1)
             } else {
-                *rep.offset(2 as std::ffi::c_int as isize)
+                *rep.offset(2)
             };
-            *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(0 as std::ffi::c_int as isize) = currentOffset;
+            *rep.offset(1) = *rep.offset(0);
+            *rep.offset(0) = currentOffset;
         }
     };
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
-    1 as std::ffi::c_int as std::ffi::c_uint
+    1
 }
 #[inline]
 unsafe extern "C" fn MEM_write16(mut memPtr: *mut std::ffi::c_void, mut value: u16) {
@@ -387,16 +384,14 @@ unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val: u
         MEM_write16(memPtr, val);
     } else {
         let mut p = memPtr as *mut u8;
-        *p.offset(0 as std::ffi::c_int as isize) = val as u8;
-        *p.offset(1 as std::ffi::c_int as isize) =
-            (val as std::ffi::c_int >> 8 as std::ffi::c_int) as u8;
+        *p.offset(0) = val as u8;
+        *p.offset(1) = (val as std::ffi::c_int >> 8) as u8;
     };
 }
 #[inline]
 unsafe extern "C" fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: u32) {
     MEM_writeLE16(memPtr, val as u16);
-    *(memPtr as *mut u8).offset(2 as std::ffi::c_int as isize) =
-        (val >> 16 as std::ffi::c_int) as u8;
+    *(memPtr as *mut u8).offset(2) = (val >> 16) as u8;
 }
 #[inline]
 unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: u32) {
@@ -407,237 +402,152 @@ unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32:
     };
 }
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-pub const ZSTD_REP_NUM: std::ffi::c_int = 3 as std::ffi::c_int;
-pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3 as std::ffi::c_int;
+pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
+pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
 static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
-pub const MINMATCH: std::ffi::c_int = 3 as std::ffi::c_int;
-pub const MaxML: std::ffi::c_int = 52 as std::ffi::c_int;
-pub const MaxLL: std::ffi::c_int = 35 as std::ffi::c_int;
-pub const DefaultMaxOff: std::ffi::c_int = 28 as std::ffi::c_int;
-pub const MaxOff: std::ffi::c_int = 31 as std::ffi::c_int;
+pub const MINMATCH: std::ffi::c_int = 3;
+pub const MaxML: std::ffi::c_int = 52;
+pub const MaxLL: std::ffi::c_int = 35;
+pub const DefaultMaxOff: std::ffi::c_int = 28;
+pub const MaxOff: std::ffi::c_int = 31;
 static mut LL_bits: [u8; 36] = [
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    6 as std::ffi::c_int as u8,
-    7 as std::ffi::c_int as u8,
-    8 as std::ffi::c_int as u8,
-    9 as std::ffi::c_int as u8,
-    10 as std::ffi::c_int as u8,
-    11 as std::ffi::c_int as u8,
-    12 as std::ffi::c_int as u8,
-    13 as std::ffi::c_int as u8,
-    14 as std::ffi::c_int as u8,
-    15 as std::ffi::c_int as u8,
-    16 as std::ffi::c_int as u8,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
+    12, 13, 14, 15, 16,
 ];
 static mut LL_defaultNorm: [i16; 36] = [
-    4 as std::ffi::c_int as i16,
-    3 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    3 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
+    4,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
-pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6 as std::ffi::c_int;
+pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6;
 static mut LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
 static mut ML_bits: [u8; 53] = [
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    5 as std::ffi::c_int as u8,
-    7 as std::ffi::c_int as u8,
-    8 as std::ffi::c_int as u8,
-    9 as std::ffi::c_int as u8,
-    10 as std::ffi::c_int as u8,
-    11 as std::ffi::c_int as u8,
-    12 as std::ffi::c_int as u8,
-    13 as std::ffi::c_int as u8,
-    14 as std::ffi::c_int as u8,
-    15 as std::ffi::c_int as u8,
-    16 as std::ffi::c_int as u8,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
 static mut ML_defaultNorm: [i16; 53] = [
-    1 as std::ffi::c_int as i16,
-    4 as std::ffi::c_int as i16,
-    3 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
+    1,
+    4,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
-pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6 as std::ffi::c_int;
+pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6;
 static mut ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
 static mut OF_defaultNorm: [i16; 29] = [
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    2 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    1 as std::ffi::c_int as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
-    -(1 as std::ffi::c_int) as i16,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
-pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5 as std::ffi::c_int;
+pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5;
 static mut OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
@@ -645,9 +555,9 @@ unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
-pub const STREAM_ACCUMULATOR_MIN_32: std::ffi::c_int = 25 as std::ffi::c_int;
-pub const STREAM_ACCUMULATOR_MIN_64: std::ffi::c_int = 57 as std::ffi::c_int;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const STREAM_ACCUMULATOR_MIN_32: std::ffi::c_int = 25;
+pub const STREAM_ACCUMULATOR_MIN_64: std::ffi::c_int = 57;
+pub const NULL: std::ffi::c_int = 0;
 unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     mut hufTable: *const HUF_CElt,
     mut hufMetadata: *const ZSTD_hufCTablesMetadata_t,
@@ -659,32 +569,23 @@ unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     mut writeEntropy: std::ffi::c_int,
     mut entropyWritten: *mut std::ffi::c_int,
 ) -> size_t {
-    let header = (if writeEntropy != 0 {
-        200 as std::ffi::c_int
-    } else {
-        0 as std::ffi::c_int
-    }) as size_t;
-    let lhSize = (3 as std::ffi::c_int
-        + (litSize
-            >= ((1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                as size_t)
-                .wrapping_sub(header)) as std::ffi::c_int
-        + (litSize
-            >= ((16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                as size_t)
-                .wrapping_sub(header)) as std::ffi::c_int) as size_t;
+    let header = (if writeEntropy != 0 { 200 } else { 0 }) as size_t;
+    let lhSize = (3
+        + (litSize >= ((1 * ((1) << 10)) as size_t).wrapping_sub(header)) as std::ffi::c_int
+        + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as std::ffi::c_int)
+        as size_t;
     let ostart = dst as *mut u8;
     let oend = ostart.offset(dstSize as isize);
     let mut op = ostart.offset(lhSize as isize);
-    let singleStream = (lhSize == 3 as std::ffi::c_int as size_t) as std::ffi::c_int as u32;
+    let singleStream = (lhSize == 3) as std::ffi::c_int as u32;
     let mut hType = (if writeEntropy != 0 {
         (*hufMetadata).hType as std::ffi::c_uint
     } else {
         set_repeat as std::ffi::c_int as std::ffi::c_uint
     }) as SymbolEncodingType_e;
     let mut cLitSize = 0 as std::ffi::c_int as size_t;
-    *entropyWritten = 0 as std::ffi::c_int;
-    if litSize == 0 as std::ffi::c_int as size_t
+    *entropyWritten = 0;
+    if litSize == 0
         || (*hufMetadata).hType as std::ffi::c_uint
             == set_basic as std::ffi::c_int as std::ffi::c_uint
     {
@@ -714,7 +615,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     let flags = if bmi2 != 0 {
         HUF_flags_bmi2 as std::ffi::c_int
     } else {
-        0 as std::ffi::c_int
+        0
     };
     let cSize = if singleStream != 0 {
         HUF_compress1X_usingCTable(
@@ -737,52 +638,44 @@ unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     };
     op = op.offset(cSize as isize);
     cLitSize = cLitSize.wrapping_add(cSize);
-    if cSize == 0 as std::ffi::c_int as size_t || ERR_isError(cSize) != 0 {
-        return 0 as std::ffi::c_int as size_t;
+    if cSize == 0 || ERR_isError(cSize) != 0 {
+        return 0;
     }
     if writeEntropy == 0 && cLitSize >= litSize {
         return ZSTD_noCompressLiterals(dst, dstSize, literals as *const std::ffi::c_void, litSize);
     }
     if lhSize
-        < (3 as std::ffi::c_int
-            + (cLitSize
-                >= (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                    as size_t) as std::ffi::c_int
-            + (cLitSize
-                >= (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                    as size_t) as std::ffi::c_int) as size_t
+        < (3 + (cLitSize >= (1 * ((1) << 10)) as size_t) as std::ffi::c_int
+            + (cLitSize >= (16 * ((1) << 10)) as size_t) as std::ffi::c_int) as size_t
     {
         return ZSTD_noCompressLiterals(dst, dstSize, literals as *const std::ffi::c_void, litSize);
     }
     match lhSize {
         3 => {
             let lhc = (hType as std::ffi::c_uint)
-                .wrapping_add(
-                    ((singleStream == 0) as std::ffi::c_int as u32) << 2 as std::ffi::c_int,
-                )
-                .wrapping_add((litSize as u32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as u32) << 14 as std::ffi::c_int);
+                .wrapping_add(((singleStream == 0) as std::ffi::c_int as u32) << 2)
+                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut std::ffi::c_void, lhc);
         }
         4 => {
             let lhc_0 = (hType as std::ffi::c_uint)
-                .wrapping_add(((2 as std::ffi::c_int) << 2 as std::ffi::c_int) as std::ffi::c_uint)
-                .wrapping_add((litSize as u32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as u32) << 18 as std::ffi::c_int);
+                .wrapping_add(((2) << 2) as std::ffi::c_uint)
+                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((cLitSize as u32) << 18);
             MEM_writeLE32(ostart as *mut std::ffi::c_void, lhc_0);
         }
         5 => {
             let lhc_1 = (hType as std::ffi::c_uint)
-                .wrapping_add(((3 as std::ffi::c_int) << 2 as std::ffi::c_int) as std::ffi::c_uint)
-                .wrapping_add((litSize as u32) << 4 as std::ffi::c_int)
-                .wrapping_add((cLitSize as u32) << 22 as std::ffi::c_int);
+                .wrapping_add(((3) << 2) as std::ffi::c_uint)
+                .wrapping_add((litSize as u32) << 4)
+                .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut std::ffi::c_void, lhc_1);
-            *ostart.offset(4 as std::ffi::c_int as isize) =
-                (cLitSize >> 10 as std::ffi::c_int) as u8;
+            *ostart.offset(4) = (cLitSize >> 10) as u8;
         }
         _ => {}
     }
-    *entropyWritten = 1 as std::ffi::c_int;
+    *entropyWritten = 1;
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
 unsafe extern "C" fn ZSTD_seqDecompressedSize(
@@ -795,7 +688,7 @@ unsafe extern "C" fn ZSTD_seqDecompressedSize(
     let mut matchLengthSum = 0 as std::ffi::c_int as size_t;
     let mut litLengthSum = 0 as std::ffi::c_int as size_t;
     let mut n: size_t = 0;
-    n = 0 as std::ffi::c_int as size_t;
+    n = 0;
     while n < nbSeqs {
         let seqLen = ZSTD_getSequenceLength(seqStore, sequences.offset(n as isize));
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
@@ -831,30 +724,27 @@ unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
     let oend = ostart.offset(dstCapacity as isize);
     let mut op = ostart;
     let mut seqHead = std::ptr::null_mut::<u8>();
-    *entropyWritten = 0 as std::ffi::c_int;
-    if (oend.offset_from(op) as std::ffi::c_long)
-        < (3 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_long
-    {
+    *entropyWritten = 0;
+    if (oend.offset_from(op) as std::ffi::c_long) < (3 + 1) as std::ffi::c_long {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
-    if nbSeq < 128 as std::ffi::c_int as size_t {
+    if nbSeq < 128 {
         let fresh0 = op;
         op = op.offset(1);
         *fresh0 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op.offset(0 as std::ffi::c_int as isize) =
-            (nbSeq >> 8 as std::ffi::c_int).wrapping_add(0x80 as std::ffi::c_int as size_t) as u8;
-        *op.offset(1 as std::ffi::c_int as isize) = nbSeq as u8;
-        op = op.offset(2 as std::ffi::c_int as isize);
+        *op.offset(0) = (nbSeq >> 8).wrapping_add(0x80 as std::ffi::c_int as size_t) as u8;
+        *op.offset(1) = nbSeq as u8;
+        op = op.offset(2);
     } else {
-        *op.offset(0 as std::ffi::c_int as isize) = 0xff as std::ffi::c_int as u8;
+        *op.offset(0) = 0xff as std::ffi::c_int as u8;
         MEM_writeLE16(
-            op.offset(1 as std::ffi::c_int as isize) as *mut std::ffi::c_void,
+            op.offset(1) as *mut std::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,
         );
-        op = op.offset(3 as std::ffi::c_int as isize);
+        op = op.offset(3);
     }
-    if nbSeq == 0 as std::ffi::c_int as size_t {
+    if nbSeq == 0 {
         return op.offset_from(ostart) as std::ffi::c_long as size_t;
     }
     let fresh1 = op;
@@ -864,9 +754,9 @@ unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
         let LLtype = (*fseMetadata).llType as u32;
         let Offtype = (*fseMetadata).ofType as u32;
         let MLtype = (*fseMetadata).mlType as u32;
-        *seqHead = (LLtype << 6 as std::ffi::c_int)
-            .wrapping_add(Offtype << 4 as std::ffi::c_int)
-            .wrapping_add(MLtype << 2 as std::ffi::c_int) as u8;
+        *seqHead = (LLtype << 6)
+            .wrapping_add(Offtype << 4)
+            .wrapping_add(MLtype << 2) as u8;
         libc::memcpy(
             op as *mut std::ffi::c_void,
             ((*fseMetadata).fseTablesBuffer).as_ptr() as *const std::ffi::c_void,
@@ -875,9 +765,9 @@ unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
         op = op.offset((*fseMetadata).fseTablesSize as isize);
     } else {
         let repeat = set_repeat as std::ffi::c_int as u32;
-        *seqHead = (repeat << 6 as std::ffi::c_int)
-            .wrapping_add(repeat << 4 as std::ffi::c_int)
-            .wrapping_add(repeat << 2 as std::ffi::c_int) as u8;
+        *seqHead = (repeat << 6)
+            .wrapping_add(repeat << 4)
+            .wrapping_add(repeat << 2) as u8;
     }
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut std::ffi::c_void,
@@ -900,15 +790,14 @@ unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
     op = op.offset(bitstreamSize as isize);
     if writeEntropy != 0
         && (*fseMetadata).lastCountSize != 0
-        && ((*fseMetadata).lastCountSize).wrapping_add(bitstreamSize)
-            < 4 as std::ffi::c_int as size_t
+        && ((*fseMetadata).lastCountSize).wrapping_add(bitstreamSize) < 4
     {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
-    if (op.offset_from(seqHead) as std::ffi::c_long) < 4 as std::ffi::c_int as std::ffi::c_long {
-        return 0 as std::ffi::c_int as size_t;
+    if (op.offset_from(seqHead) as std::ffi::c_long) < 4 {
+        return 0;
     }
-    *entropyWritten = 1 as std::ffi::c_int;
+    *entropyWritten = 1;
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
 unsafe extern "C" fn ZSTD_compressSubBlock(
@@ -949,8 +838,8 @@ unsafe extern "C" fn ZSTD_compressSubBlock(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    if cLitSize == 0 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as size_t;
+    if cLitSize == 0 {
+        return 0;
     }
     op = op.offset(cLitSize as isize);
     let mut cSeqSize = ZSTD_compressSubBlock_sequences(
@@ -972,15 +861,15 @@ unsafe extern "C" fn ZSTD_compressSubBlock(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    if cSeqSize == 0 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as size_t;
+    if cSeqSize == 0 {
+        return 0;
     }
     op = op.offset(cSeqSize as isize);
     let mut cSize =
         (op.offset_from(ostart) as std::ffi::c_long as size_t).wrapping_sub(ZSTD_blockHeaderSize);
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-        .wrapping_add((cSize << 3 as std::ffi::c_int) as u32);
+        .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1)
+        .wrapping_add((cSize << 3) as u32);
     MEM_writeLE24(ostart as *mut std::ffi::c_void, cBlockHeader24);
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
@@ -994,15 +883,15 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_literal(
     mut writeEntropy: std::ffi::c_int,
 ) -> size_t {
     let countWksp = workspace as *mut std::ffi::c_uint;
-    let mut maxSymbolValue = 255 as std::ffi::c_int as std::ffi::c_uint;
-    let mut literalSectionHeaderSize = 3 as std::ffi::c_int as size_t;
+    let mut maxSymbolValue = 255;
+    let mut literalSectionHeaderSize = 3;
     if (*hufMetadata).hType as std::ffi::c_uint == set_basic as std::ffi::c_int as std::ffi::c_uint
     {
         return litSize;
     } else if (*hufMetadata).hType as std::ffi::c_uint
         == set_rle as std::ffi::c_int as std::ffi::c_uint
     {
-        return 1 as std::ffi::c_int as size_t;
+        return 1;
     } else if (*hufMetadata).hType as std::ffi::c_uint
         == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || (*hufMetadata).hType as std::ffi::c_uint
@@ -1026,7 +915,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_literal(
         }
         return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
     mut type_0: SymbolEncodingType_e,
@@ -1045,7 +934,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
     let mut ctp = codeTable;
     let ctStart = ctp;
     let ctEnd = ctStart.offset(nbSeq as isize);
-    let mut cSymbolTypeSizeEstimateInBits = 0 as std::ffi::c_int as size_t;
+    let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
     HIST_countFast_wksp(
         countWksp,
@@ -1062,14 +951,14 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
             -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t
         };
     } else if type_0 as std::ffi::c_uint == set_rle as std::ffi::c_int as std::ffi::c_uint {
-        cSymbolTypeSizeEstimateInBits = 0 as std::ffi::c_int as size_t;
+        cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 as std::ffi::c_uint == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || type_0 as std::ffi::c_uint == set_repeat as std::ffi::c_int as std::ffi::c_uint
     {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) != 0 {
-        return nbSeq * 10 as std::ffi::c_int as size_t;
+        return nbSeq * 10;
     }
     while ctp < ctEnd {
         if !additionalBits.is_null() {
@@ -1082,7 +971,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
         ctp = ctp.offset(1);
         ctp;
     }
-    cSymbolTypeSizeEstimateInBits / 8 as std::ffi::c_int as size_t
+    cSymbolTypeSizeEstimateInBits / 8
 }
 unsafe extern "C" fn ZSTD_estimateSubBlockSize_sequences(
     mut ofCodeTable: *const u8,
@@ -1095,9 +984,9 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_sequences(
     mut wkspSize: size_t,
     mut writeEntropy: std::ffi::c_int,
 ) -> size_t {
-    let sequencesSectionHeaderSize = 3 as std::ffi::c_int as size_t;
+    let sequencesSectionHeaderSize = 3;
     let mut cSeqSizeEstimate = 0 as std::ffi::c_int as size_t;
-    if nbSeq == 0 as std::ffi::c_int as size_t {
+    if nbSeq == 0 {
         return sequencesSectionHeaderSize;
     }
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateSubBlockSize_symbolType(
@@ -1194,23 +1083,23 @@ unsafe extern "C" fn ZSTD_needSequenceEntropyTables(
         || (*fseMetadata).llType as std::ffi::c_uint
             == set_rle as std::ffi::c_int as std::ffi::c_uint
     {
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     if (*fseMetadata).mlType as std::ffi::c_uint
         == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || (*fseMetadata).mlType as std::ffi::c_uint
             == set_rle as std::ffi::c_int as std::ffi::c_uint
     {
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     if (*fseMetadata).ofType as std::ffi::c_uint
         == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || (*fseMetadata).ofType as std::ffi::c_uint
             == set_rle as std::ffi::c_int as std::ffi::c_uint
     {
-        return 1 as std::ffi::c_int;
+        return 1;
     }
-    0 as std::ffi::c_int
+    0
 }
 unsafe extern "C" fn countLiterals(
     mut seqStore: *const SeqStore_t,
@@ -1219,7 +1108,7 @@ unsafe extern "C" fn countLiterals(
 ) -> size_t {
     let mut n: size_t = 0;
     let mut total = 0 as std::ffi::c_int as size_t;
-    n = 0 as std::ffi::c_int as size_t;
+    n = 0;
     while n < seqCount {
         total = total.wrapping_add(
             (ZSTD_getSequenceLength(seqStore, sp.offset(n as isize))).litLength as size_t,
@@ -1229,7 +1118,7 @@ unsafe extern "C" fn countLiterals(
     }
     total
 }
-pub const BYTESCALE: std::ffi::c_int = 256 as std::ffi::c_int;
+pub const BYTESCALE: std::ffi::c_int = 256;
 unsafe extern "C" fn sizeBlockSequences(
     mut sp: *const SeqDef,
     mut nbSeqs: size_t,
@@ -1240,21 +1129,17 @@ unsafe extern "C" fn sizeBlockSequences(
 ) -> size_t {
     let mut n: size_t = 0;
     let mut budget = 0 as std::ffi::c_int as size_t;
-    let mut inSize = 0 as std::ffi::c_int as size_t;
-    let headerSize =
-        firstSubBlock as size_t * 120 as std::ffi::c_int as size_t * BYTESCALE as size_t;
+    let mut inSize = 0;
+    let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
     budget = budget.wrapping_add(headerSize);
-    budget = budget.wrapping_add(
-        ((*sp.offset(0 as std::ffi::c_int as isize)).litLength as size_t * avgLitCost)
-            .wrapping_add(avgSeqCost),
-    );
+    budget = budget
+        .wrapping_add(((*sp.offset(0)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
     if budget > targetBudget {
-        return 1 as std::ffi::c_int as size_t;
+        return 1;
     }
-    inSize = ((*sp.offset(0 as std::ffi::c_int as isize)).litLength as std::ffi::c_int
-        + ((*sp.offset(0 as std::ffi::c_int as isize)).mlBase as std::ffi::c_int + MINMATCH))
-        as size_t;
-    n = 1 as std::ffi::c_int as size_t;
+    inSize = ((*sp.offset(0)).litLength as std::ffi::c_int
+        + ((*sp.offset(0)).mlBase as std::ffi::c_int + MINMATCH)) as size_t;
+    n = 1;
     while n < nbSeqs {
         let mut currentCost =
             ((*sp.offset(n as isize)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
@@ -1312,8 +1197,8 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
     let mut writeLitEntropy = ((*entropyMetadata).hufMetadata.hType as std::ffi::c_uint
         == set_compressed as std::ffi::c_int as std::ffi::c_uint)
         as std::ffi::c_int;
-    let mut writeSeqEntropy = 1 as std::ffi::c_int;
-    if nbSeqs > 0 as std::ffi::c_int as size_t {
+    let mut writeSeqEntropy = 1;
+    if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
             lp,
             nbLiterals,
@@ -1335,41 +1220,36 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
         };
         let avgSeqCost =
             (ebs.estBlockSize).wrapping_sub(ebs.estLitSize) * BYTESCALE as size_t / nbSeqs;
-        let nbSubBlocks = if (ebs.estBlockSize)
-            .wrapping_add(targetCBlockSize / 2 as std::ffi::c_int as size_t)
-            / targetCBlockSize
-            > 1 as std::ffi::c_int as size_t
-        {
-            (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2 as std::ffi::c_int as size_t)
-                / targetCBlockSize
-        } else {
-            1 as std::ffi::c_int as size_t
-        };
+        let nbSubBlocks =
+            if (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize > 1 {
+                (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize
+            } else {
+                1
+            };
         let mut n: size_t = 0;
         let mut avgBlockBudget: size_t = 0;
-        let mut blockBudgetSupp = 0 as std::ffi::c_int as size_t;
+        let mut blockBudgetSupp = 0;
         avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;
         if ebs.estBlockSize > srcSize {
-            return 0 as std::ffi::c_int as size_t;
+            return 0;
         }
-        n = 0 as std::ffi::c_int as size_t;
-        while n < nbSubBlocks.wrapping_sub(1 as std::ffi::c_int as size_t) {
+        n = 0;
+        while n < nbSubBlocks.wrapping_sub(1) {
             let seqCount = sizeBlockSequences(
                 sp,
                 send.offset_from(sp) as std::ffi::c_long as size_t,
                 avgBlockBudget.wrapping_add(blockBudgetSupp),
                 avgLitCost,
                 avgSeqCost,
-                (n == 0 as std::ffi::c_int as size_t) as std::ffi::c_int,
+                (n == 0) as std::ffi::c_int,
             );
             if sp.offset(seqCount as isize) == send {
                 break;
             }
-            let mut litEntropyWritten = 0 as std::ffi::c_int;
-            let mut seqEntropyWritten = 0 as std::ffi::c_int;
+            let mut litEntropyWritten = 0;
+            let mut seqEntropyWritten = 0;
             let mut litSize = countLiterals(seqStorePtr, sp, seqCount);
-            let decompressedSize =
-                ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, 0 as std::ffi::c_int);
+            let decompressedSize = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, 0);
             let cSize = ZSTD_compressSubBlock(
                 &mut (*nextCBlock).entropy,
                 entropyMetadata,
@@ -1388,13 +1268,13 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
                 writeSeqEntropy,
                 &mut litEntropyWritten,
                 &mut seqEntropyWritten,
-                0 as std::ffi::c_int as u32,
+                0,
             );
             let err_code = cSize;
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
-            if cSize > 0 as std::ffi::c_int as size_t && cSize < decompressedSize {
+            if cSize > 0 && cSize < decompressedSize {
                 ip = ip.offset(decompressedSize as isize);
                 lp = lp.offset(litSize as isize);
                 op = op.offset(cSize as isize);
@@ -1402,24 +1282,23 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
                 mlCodePtr = mlCodePtr.offset(seqCount as isize);
                 ofCodePtr = ofCodePtr.offset(seqCount as isize);
                 if litEntropyWritten != 0 {
-                    writeLitEntropy = 0 as std::ffi::c_int;
+                    writeLitEntropy = 0;
                 }
                 if seqEntropyWritten != 0 {
-                    writeSeqEntropy = 0 as std::ffi::c_int;
+                    writeSeqEntropy = 0;
                 }
                 sp = sp.offset(seqCount as isize);
-                blockBudgetSupp = 0 as std::ffi::c_int as size_t;
+                blockBudgetSupp = 0;
             }
             n = n.wrapping_add(1);
             n;
         }
     }
-    let mut litEntropyWritten_0 = 0 as std::ffi::c_int;
-    let mut seqEntropyWritten_0 = 0 as std::ffi::c_int;
+    let mut litEntropyWritten_0 = 0;
+    let mut seqEntropyWritten_0 = 0;
     let mut litSize_0 = lend.offset_from(lp) as std::ffi::c_long as size_t;
     let mut seqCount_0 = send.offset_from(sp) as std::ffi::c_long as size_t;
-    let decompressedSize_0 =
-        ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, 1 as std::ffi::c_int);
+    let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, 1);
     let cSize_0 = ZSTD_compressSubBlock(
         &mut (*nextCBlock).entropy,
         entropyMetadata,
@@ -1444,7 +1323,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    if cSize_0 > 0 as std::ffi::c_int as size_t && cSize_0 < decompressedSize_0 {
+    if cSize_0 > 0 && cSize_0 < decompressedSize_0 {
         ip = ip.offset(decompressedSize_0 as isize);
         lp = lp.offset(litSize_0 as isize);
         op = op.offset(cSize_0 as isize);
@@ -1452,10 +1331,10 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
         mlCodePtr = mlCodePtr.offset(seqCount_0 as isize);
         ofCodePtr = ofCodePtr.offset(seqCount_0 as isize);
         if litEntropyWritten_0 != 0 {
-            writeLitEntropy = 0 as std::ffi::c_int;
+            writeLitEntropy = 0;
         }
         if seqEntropyWritten_0 != 0 {
-            writeSeqEntropy = 0 as std::ffi::c_int;
+            writeSeqEntropy = 0;
         }
         sp = sp.offset(seqCount_0 as isize);
     }
@@ -1468,7 +1347,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
     }
     if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&(*entropyMetadata).fseMetadata) != 0
     {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     if ip < iend {
         let rSize = iend.offset_from(ip) as std::ffi::c_long as size_t;
@@ -1497,8 +1376,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
                 ZSTD_updateRep(
                     (rep.rep).as_mut_ptr(),
                     (*seq).offBase,
-                    ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength
-                        == 0 as std::ffi::c_int as u32) as std::ffi::c_int
+                    ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0) as std::ffi::c_int
                         as u32,
                 );
                 seq = seq.offset(1);

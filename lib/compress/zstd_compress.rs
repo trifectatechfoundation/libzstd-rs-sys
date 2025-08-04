@@ -602,49 +602,47 @@ pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 pub type C2RustUnnamed_1 = std::ffi::c_uint;
 pub const bt_reserved: C2RustUnnamed_1 = 3;
 pub type C2RustUnnamed_2 = std::ffi::c_uint;
-pub const ZSTD_VERSION_MAJOR: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const ZSTD_VERSION_MINOR: std::ffi::c_int = 5 as std::ffi::c_int;
-pub const ZSTD_VERSION_RELEASE: std::ffi::c_int = 8 as std::ffi::c_int;
+pub const ZSTD_VERSION_MAJOR: std::ffi::c_int = 1;
+pub const ZSTD_VERSION_MINOR: std::ffi::c_int = 5;
+pub const ZSTD_VERSION_RELEASE: std::ffi::c_int = 8;
 pub const ZSTD_VERSION_NUMBER: std::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 as std::ffi::c_int * 100 as std::ffi::c_int
-        + ZSTD_VERSION_MINOR * 100 as std::ffi::c_int
-        + ZSTD_VERSION_RELEASE;
-pub const ZSTD_CLEVEL_DEFAULT: std::ffi::c_int = 3 as std::ffi::c_int;
+    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
+pub const ZSTD_CLEVEL_DEFAULT: std::ffi::c_int = 3;
 pub const ZSTD_MAGICNUMBER: std::ffi::c_uint = 0xfd2fb528 as std::ffi::c_uint;
 pub const ZSTD_MAGIC_DICTIONARY: std::ffi::c_uint = 0xec30a437 as std::ffi::c_uint;
 pub const ZSTD_MAGIC_SKIPPABLE_START: std::ffi::c_int = 0x184d2a50 as std::ffi::c_int;
-pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17 as std::ffi::c_int;
-pub const ZSTD_BLOCKSIZE_MAX: std::ffi::c_int = (1 as std::ffi::c_int) << ZSTD_BLOCKSIZELOG_MAX;
+pub const ZSTD_BLOCKSIZELOG_MAX: std::ffi::c_int = 17;
+pub const ZSTD_BLOCKSIZE_MAX: std::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: std::ffi::c_ulonglong =
     (0 as std::ffi::c_ulonglong).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong);
-pub const ZSTD_SKIPPABLEHEADERSIZE: std::ffi::c_int = 8 as std::ffi::c_int;
-pub const ZSTD_WINDOWLOG_MAX_32: std::ffi::c_int = 30 as std::ffi::c_int;
-pub const ZSTD_WINDOWLOG_MAX_64: std::ffi::c_int = 31 as std::ffi::c_int;
-pub const ZSTD_WINDOWLOG_MIN: std::ffi::c_int = 10 as std::ffi::c_int;
-pub const ZSTD_HASHLOG_MIN: std::ffi::c_int = 6 as std::ffi::c_int;
-pub const ZSTD_CHAINLOG_MAX_32: std::ffi::c_int = 29 as std::ffi::c_int;
-pub const ZSTD_CHAINLOG_MAX_64: std::ffi::c_int = 30 as std::ffi::c_int;
+pub const ZSTD_SKIPPABLEHEADERSIZE: std::ffi::c_int = 8;
+pub const ZSTD_WINDOWLOG_MAX_32: std::ffi::c_int = 30;
+pub const ZSTD_WINDOWLOG_MAX_64: std::ffi::c_int = 31;
+pub const ZSTD_WINDOWLOG_MIN: std::ffi::c_int = 10;
+pub const ZSTD_HASHLOG_MIN: std::ffi::c_int = 6;
+pub const ZSTD_CHAINLOG_MAX_32: std::ffi::c_int = 29;
+pub const ZSTD_CHAINLOG_MAX_64: std::ffi::c_int = 30;
 pub const ZSTD_CHAINLOG_MIN: std::ffi::c_int = ZSTD_HASHLOG_MIN;
-pub const ZSTD_SEARCHLOG_MIN: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const ZSTD_MINMATCH_MAX: std::ffi::c_int = 7 as std::ffi::c_int;
-pub const ZSTD_MINMATCH_MIN: std::ffi::c_int = 3 as std::ffi::c_int;
+pub const ZSTD_SEARCHLOG_MIN: std::ffi::c_int = 1;
+pub const ZSTD_MINMATCH_MAX: std::ffi::c_int = 7;
+pub const ZSTD_MINMATCH_MIN: std::ffi::c_int = 3;
 pub const ZSTD_TARGETLENGTH_MAX: std::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
-pub const ZSTD_TARGETLENGTH_MIN: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const ZSTD_TARGETLENGTH_MIN: std::ffi::c_int = 0;
 pub const ZSTD_STRATEGY_MIN: std::ffi::c_int = ZSTD_fast as std::ffi::c_int;
 pub const ZSTD_STRATEGY_MAX: std::ffi::c_int = ZSTD_btultra2 as std::ffi::c_int;
-pub const ZSTD_BLOCKSIZE_MAX_MIN: std::ffi::c_int = (1 as std::ffi::c_int) << 10 as std::ffi::c_int;
-pub const ZSTD_OVERLAPLOG_MIN: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const ZSTD_OVERLAPLOG_MAX: std::ffi::c_int = 9 as std::ffi::c_int;
-pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: std::ffi::c_int = 27 as std::ffi::c_int;
+pub const ZSTD_BLOCKSIZE_MAX_MIN: std::ffi::c_int = (1) << 10;
+pub const ZSTD_OVERLAPLOG_MIN: std::ffi::c_int = 0;
+pub const ZSTD_OVERLAPLOG_MAX: std::ffi::c_int = 9;
+pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: std::ffi::c_int = 27;
 pub const ZSTD_LDM_HASHLOG_MIN: std::ffi::c_int = ZSTD_HASHLOG_MIN;
-pub const ZSTD_LDM_MINMATCH_MIN: std::ffi::c_int = 4 as std::ffi::c_int;
-pub const ZSTD_LDM_MINMATCH_MAX: std::ffi::c_int = 4096 as std::ffi::c_int;
-pub const ZSTD_LDM_BUCKETSIZELOG_MIN: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const ZSTD_LDM_BUCKETSIZELOG_MAX: std::ffi::c_int = 8 as std::ffi::c_int;
-pub const ZSTD_LDM_HASHRATELOG_MIN: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const ZSTD_TARGETCBLOCKSIZE_MIN: std::ffi::c_int = 1340 as std::ffi::c_int;
+pub const ZSTD_LDM_MINMATCH_MIN: std::ffi::c_int = 4;
+pub const ZSTD_LDM_MINMATCH_MAX: std::ffi::c_int = 4096;
+pub const ZSTD_LDM_BUCKETSIZELOG_MIN: std::ffi::c_int = 1;
+pub const ZSTD_LDM_BUCKETSIZELOG_MAX: std::ffi::c_int = 8;
+pub const ZSTD_LDM_HASHRATELOG_MIN: std::ffi::c_int = 0;
+pub const ZSTD_TARGETCBLOCKSIZE_MIN: std::ffi::c_int = 1340;
 pub const ZSTD_TARGETCBLOCKSIZE_MAX: std::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
-pub const ZSTD_SRCSIZEHINT_MIN: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const ZSTD_SRCSIZEHINT_MIN: std::ffi::c_int = 0;
 pub const ZSTD_SRCSIZEHINT_MAX: std::ffi::c_int = INT_MAX;
 static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
     {
@@ -670,7 +668,7 @@ pub const ZSTD_c_stableInBuffer: std::ffi::c_int = 1006;
 pub const ZSTD_c_stableOutBuffer: std::ffi::c_int = 1007;
 pub const ZSTD_c_blockDelimiters: std::ffi::c_int = 1008;
 pub const ZSTD_c_validateSequences: std::ffi::c_int = 1009;
-pub const ZSTD_BLOCKSPLITTER_LEVEL_MAX: std::ffi::c_int = 6 as std::ffi::c_int;
+pub const ZSTD_BLOCKSPLITTER_LEVEL_MAX: std::ffi::c_int = 6;
 pub const ZSTD_c_blockSplitterLevel: std::ffi::c_int = 1017;
 pub const ZSTD_c_splitAfterSequences: std::ffi::c_int = 1010;
 pub const ZSTD_c_useRowMatchFinder: std::ffi::c_int = 1011;
@@ -679,90 +677,29 @@ pub const ZSTD_c_prefetchCDictTables: std::ffi::c_int = 1013;
 pub const ZSTD_c_enableSeqProducerFallback: std::ffi::c_int = 1014;
 pub const ZSTD_c_maxBlockSize: std::ffi::c_int = 1015;
 pub const ZSTD_c_repcodeResolution: std::ffi::c_int = 1016;
-pub const HASH_READ_SIZE: std::ffi::c_int = 8 as std::ffi::c_int;
-pub const ZSTD_DUBT_UNSORTED_MARK: std::ffi::c_int = 1 as std::ffi::c_int;
+pub const HASH_READ_SIZE: std::ffi::c_int = 8;
+pub const ZSTD_DUBT_UNSORTED_MARK: std::ffi::c_int = 1;
 static mut kNullRawSeqStore: RawSeqStore_t = {
     RawSeqStore_t {
         seq: NULL as *mut rawSeq,
-        pos: 0 as std::ffi::c_int as size_t,
-        posInSequence: 0 as std::ffi::c_int as size_t,
-        size: 0 as std::ffi::c_int as size_t,
-        capacity: 0 as std::ffi::c_int as size_t,
+        pos: 0,
+        posInSequence: 0,
+        size: 0,
+        capacity: 0,
     }
 };
-pub const ZSTD_OPT_SIZE: std::ffi::c_int = ZSTD_OPT_NUM + 3 as std::ffi::c_int;
-pub const ZSTD_WINDOW_START_INDEX: std::ffi::c_int = 2 as std::ffi::c_int;
-pub const ZSTD_MAX_NB_BLOCK_SPLITS: std::ffi::c_int = 196 as std::ffi::c_int;
+pub const ZSTD_OPT_SIZE: std::ffi::c_int = ZSTD_OPT_NUM + 3;
+pub const ZSTD_WINDOW_START_INDEX: std::ffi::c_int = 2;
+pub const ZSTD_MAX_NB_BLOCK_SPLITS: std::ffi::c_int = 196;
 #[inline]
 unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
     static mut LL_Code: [u8; 64] = [
-        0 as std::ffi::c_int as u8,
-        1 as std::ffi::c_int as u8,
-        2 as std::ffi::c_int as u8,
-        3 as std::ffi::c_int as u8,
-        4 as std::ffi::c_int as u8,
-        5 as std::ffi::c_int as u8,
-        6 as std::ffi::c_int as u8,
-        7 as std::ffi::c_int as u8,
-        8 as std::ffi::c_int as u8,
-        9 as std::ffi::c_int as u8,
-        10 as std::ffi::c_int as u8,
-        11 as std::ffi::c_int as u8,
-        12 as std::ffi::c_int as u8,
-        13 as std::ffi::c_int as u8,
-        14 as std::ffi::c_int as u8,
-        15 as std::ffi::c_int as u8,
-        16 as std::ffi::c_int as u8,
-        16 as std::ffi::c_int as u8,
-        17 as std::ffi::c_int as u8,
-        17 as std::ffi::c_int as u8,
-        18 as std::ffi::c_int as u8,
-        18 as std::ffi::c_int as u8,
-        19 as std::ffi::c_int as u8,
-        19 as std::ffi::c_int as u8,
-        20 as std::ffi::c_int as u8,
-        20 as std::ffi::c_int as u8,
-        20 as std::ffi::c_int as u8,
-        20 as std::ffi::c_int as u8,
-        21 as std::ffi::c_int as u8,
-        21 as std::ffi::c_int as u8,
-        21 as std::ffi::c_int as u8,
-        21 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
+        20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
+        24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     ];
-    static mut LL_deltaCode: u32 = 19 as std::ffi::c_int as u32;
-    if litLength > 63 as std::ffi::c_int as u32 {
+    static mut LL_deltaCode: u32 = 19;
+    if litLength > 63 {
         (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
     } else {
         *LL_Code.as_ptr().offset(litLength as isize) as std::ffi::c_uint
@@ -771,137 +708,15 @@ unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
 #[inline]
 unsafe extern "C" fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
     static mut ML_Code: [u8; 128] = [
-        0 as std::ffi::c_int as u8,
-        1 as std::ffi::c_int as u8,
-        2 as std::ffi::c_int as u8,
-        3 as std::ffi::c_int as u8,
-        4 as std::ffi::c_int as u8,
-        5 as std::ffi::c_int as u8,
-        6 as std::ffi::c_int as u8,
-        7 as std::ffi::c_int as u8,
-        8 as std::ffi::c_int as u8,
-        9 as std::ffi::c_int as u8,
-        10 as std::ffi::c_int as u8,
-        11 as std::ffi::c_int as u8,
-        12 as std::ffi::c_int as u8,
-        13 as std::ffi::c_int as u8,
-        14 as std::ffi::c_int as u8,
-        15 as std::ffi::c_int as u8,
-        16 as std::ffi::c_int as u8,
-        17 as std::ffi::c_int as u8,
-        18 as std::ffi::c_int as u8,
-        19 as std::ffi::c_int as u8,
-        20 as std::ffi::c_int as u8,
-        21 as std::ffi::c_int as u8,
-        22 as std::ffi::c_int as u8,
-        23 as std::ffi::c_int as u8,
-        24 as std::ffi::c_int as u8,
-        25 as std::ffi::c_int as u8,
-        26 as std::ffi::c_int as u8,
-        27 as std::ffi::c_int as u8,
-        28 as std::ffi::c_int as u8,
-        29 as std::ffi::c_int as u8,
-        30 as std::ffi::c_int as u8,
-        31 as std::ffi::c_int as u8,
-        32 as std::ffi::c_int as u8,
-        32 as std::ffi::c_int as u8,
-        33 as std::ffi::c_int as u8,
-        33 as std::ffi::c_int as u8,
-        34 as std::ffi::c_int as u8,
-        34 as std::ffi::c_int as u8,
-        35 as std::ffi::c_int as u8,
-        35 as std::ffi::c_int as u8,
-        36 as std::ffi::c_int as u8,
-        36 as std::ffi::c_int as u8,
-        36 as std::ffi::c_int as u8,
-        36 as std::ffi::c_int as u8,
-        37 as std::ffi::c_int as u8,
-        37 as std::ffi::c_int as u8,
-        37 as std::ffi::c_int as u8,
-        37 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        38 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        39 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        40 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        41 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
-        42 as std::ffi::c_int as u8,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
+        38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
+        40, 40, 40, 40, 40, 40, 40, 40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,
+        41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
+        42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
     ];
-    static mut ML_deltaCode: u32 = 36 as std::ffi::c_int as u32;
-    if mlBase > 127 as std::ffi::c_int as u32 {
+    static mut ML_deltaCode: u32 = 36;
+    if mlBase > 127 {
         (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
     } else {
         *ML_Code.as_ptr().offset(mlBase as isize) as std::ffi::c_uint
@@ -914,15 +729,15 @@ unsafe extern "C" fn ZSTD_cParam_withinBounds(
 ) -> std::ffi::c_int {
     let bounds = ZSTD_cParam_getBounds(cParam);
     if ERR_isError(bounds.error) != 0 {
-        return 0 as std::ffi::c_int;
+        return 0;
     }
     if value < bounds.lowerBound {
-        return 0 as std::ffi::c_int;
+        return 0;
     }
     if value > bounds.upperBound {
-        return 0 as std::ffi::c_int;
+        return 0;
     }
-    1 as std::ffi::c_int
+    1
 }
 #[inline]
 unsafe extern "C" fn ZSTD_noCompressBlock(
@@ -933,8 +748,8 @@ unsafe extern "C" fn ZSTD_noCompressBlock(
     mut lastBlock: u32,
 ) -> size_t {
     let cBlockHeader24 = lastBlock
-        .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-        .wrapping_add((srcSize << 3 as std::ffi::c_int) as u32);
+        .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1)
+        .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
@@ -956,37 +771,36 @@ unsafe extern "C" fn ZSTD_rleCompressBlock(
 ) -> size_t {
     let op = dst as *mut u8;
     let cBlockHeader = lastBlock
-        .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-        .wrapping_add((srcSize << 3 as std::ffi::c_int) as u32);
-    if dstCapacity < 4 as std::ffi::c_int as size_t {
+        .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1)
+        .wrapping_add((srcSize << 3) as u32);
+    if dstCapacity < 4 {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     MEM_writeLE24(op as *mut std::ffi::c_void, cBlockHeader);
-    *op.offset(3 as std::ffi::c_int as isize) = src;
-    4 as std::ffi::c_int as size_t
+    *op.offset(3) = src;
+    4
 }
 #[inline]
 unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
     let minlog = if strat as std::ffi::c_uint >= ZSTD_btultra as std::ffi::c_int as std::ffi::c_uint
     {
-        (strat as u32).wrapping_sub(1 as std::ffi::c_int as u32)
+        (strat as u32).wrapping_sub(1)
     } else {
-        6 as std::ffi::c_int as u32
+        6
     };
-    (srcSize >> minlog).wrapping_add(2 as std::ffi::c_int as size_t)
+    (srcSize >> minlog).wrapping_add(2)
 }
 #[inline]
 unsafe extern "C" fn ZSTD_literalsCompressionIsDisabled(
     mut cctxParams: *const ZSTD_CCtx_params,
 ) -> std::ffi::c_int {
     match (*cctxParams).literalCompressionMode as std::ffi::c_uint {
-        1 => 0 as std::ffi::c_int,
-        2 => 1 as std::ffi::c_int,
+        1 => 0,
+        2 => 1,
         0 | _ => {
             ((*cctxParams).cParams.strategy as std::ffi::c_uint
                 == ZSTD_fast as std::ffi::c_int as std::ffi::c_uint
-                && (*cctxParams).cParams.targetLength > 0 as std::ffi::c_int as std::ffi::c_uint)
-                as std::ffi::c_int
+                && (*cctxParams).cParams.targetLength > 0) as std::ffi::c_int
         }
     }
 }
@@ -1014,8 +828,8 @@ unsafe extern "C" fn ZSTD_safecopyLiterals(
         *fresh1 = *fresh0;
     }
 }
-pub const REPCODE1_TO_OFFBASE: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const REPCODE3_TO_OFFBASE: std::ffi::c_int = 3 as std::ffi::c_int;
+pub const REPCODE1_TO_OFFBASE: std::ffi::c_int = 1;
+pub const REPCODE3_TO_OFFBASE: std::ffi::c_int = 3;
 #[inline(always)]
 unsafe extern "C" fn ZSTD_storeSeqOnly(
     mut seqStorePtr: *mut SeqStore_t,
@@ -1030,9 +844,8 @@ unsafe extern "C" fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as std::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0 as std::ffi::c_int as isize)).litLength =
-        litLength as u16;
-    (*((*seqStorePtr).sequences).offset(0 as std::ffi::c_int as isize)).offBase = offBase;
+    (*((*seqStorePtr).sequences).offset(0)).litLength = litLength as u16;
+    (*((*seqStorePtr).sequences).offset(0)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as size_t);
     if (mlBase > 0xffff as std::ffi::c_int as size_t) as std::ffi::c_int as std::ffi::c_long != 0 {
         (*seqStorePtr).longLengthType = ZSTD_llt_matchLength;
@@ -1040,7 +853,7 @@ unsafe extern "C" fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as std::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0 as std::ffi::c_int as isize)).mlBase = mlBase as u16;
+    (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
     (*seqStorePtr).sequences;
 }
@@ -1060,12 +873,11 @@ unsafe extern "C" fn ZSTD_storeSeq(
             (*seqStorePtr).lit as *mut std::ffi::c_void,
             literals as *const std::ffi::c_void,
         );
-        if litLength > 16 as std::ffi::c_int as size_t {
+        if litLength > 16 {
             ZSTD_wildcopy(
-                ((*seqStorePtr).lit).offset(16 as std::ffi::c_int as isize)
-                    as *mut std::ffi::c_void,
-                literals.offset(16 as std::ffi::c_int as isize) as *const std::ffi::c_void,
-                litLength.wrapping_sub(16 as std::ffi::c_int as size_t),
+                ((*seqStorePtr).lit).offset(16) as *mut std::ffi::c_void,
+                literals.offset(16) as *const std::ffi::c_void,
+                litLength.wrapping_sub(16),
                 ZSTD_no_overlap,
             );
         }
@@ -1078,27 +890,24 @@ unsafe extern "C" fn ZSTD_storeSeq(
 #[inline]
 unsafe extern "C" fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(1 as std::ffi::c_int as isize);
-        *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-        *rep.offset(0 as std::ffi::c_int as isize) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        *rep.offset(2) = *rep.offset(1);
+        *rep.offset(1) = *rep.offset(0);
+        *rep.offset(0) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
-        let repCode = offBase
-            .wrapping_sub(1 as std::ffi::c_int as u32)
-            .wrapping_add(ll0);
-        if repCode > 0 as std::ffi::c_int as u32 {
+        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
+        if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep.offset(0 as std::ffi::c_int as isize))
-                    .wrapping_sub(1 as std::ffi::c_int as u32)
+                (*rep.offset(0)).wrapping_sub(1)
             } else {
                 *rep.offset(repCode as isize)
             };
-            *rep.offset(2 as std::ffi::c_int as isize) = if repCode >= 2 as std::ffi::c_int as u32 {
-                *rep.offset(1 as std::ffi::c_int as isize)
+            *rep.offset(2) = if repCode >= 2 {
+                *rep.offset(1)
             } else {
-                *rep.offset(2 as std::ffi::c_int as isize)
+                *rep.offset(2)
             };
-            *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(0 as std::ffi::c_int as isize) = currentOffset;
+            *rep.offset(1) = *rep.offset(0);
+            *rep.offset(0) = currentOffset;
         }
     };
 }
@@ -1110,8 +919,7 @@ unsafe extern "C" fn ZSTD_count(
 ) -> size_t {
     let pStart = pIn;
     let pInLoopLimit = pInLimit.offset(
-        -((::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-            .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulong) as isize),
+        -((::core::mem::size_of::<size_t>() as std::ffi::c_ulong).wrapping_sub(1) as isize),
     );
     if pIn < pInLoopLimit {
         let diff = MEM_readST(pMatch as *const std::ffi::c_void)
@@ -1135,19 +943,19 @@ unsafe extern "C" fn ZSTD_count(
         }
     }
     if MEM_64bits() != 0
-        && pIn < pInLimit.offset(-(3 as std::ffi::c_int as isize))
+        && pIn < pInLimit.offset(-(3))
         && MEM_read32(pMatch as *const std::ffi::c_void)
             == MEM_read32(pIn as *const std::ffi::c_void)
     {
-        pIn = pIn.offset(4 as std::ffi::c_int as isize);
-        pMatch = pMatch.offset(4 as std::ffi::c_int as isize);
+        pIn = pIn.offset(4);
+        pMatch = pMatch.offset(4);
     }
-    if pIn < pInLimit.offset(-(1 as std::ffi::c_int as isize))
+    if pIn < pInLimit.offset(-(1))
         && MEM_read16(pMatch as *const std::ffi::c_void) as std::ffi::c_int
             == MEM_read16(pIn as *const std::ffi::c_void) as std::ffi::c_int
     {
-        pIn = pIn.offset(2 as std::ffi::c_int as isize);
-        pMatch = pMatch.offset(2 as std::ffi::c_int as isize);
+        pIn = pIn.offset(2);
+        pMatch = pMatch.offset(2);
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
@@ -1180,7 +988,7 @@ unsafe extern "C" fn ZSTD_matchState_dictMode(mut ms: *const ZSTD_MatchState_t) 
         ZSTD_noDict as std::ffi::c_int
     }) as ZSTD_dictMode_e
 }
-pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: std::ffi::c_int = 0;
 #[inline]
 unsafe extern "C" fn ZSTD_window_canOverflowCorrect(
     window: ZSTD_window_t,
@@ -1198,7 +1006,7 @@ unsafe extern "C" fn ZSTD_window_canOverflowCorrect(
             cycleSize
         })
         .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-    let adjustment = (window.nbOverflowCorrections).wrapping_add(1 as std::ffi::c_int as u32);
+    let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
     let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
         minIndexToOverflowCorrect * adjustment
     } else {
@@ -1236,17 +1044,17 @@ unsafe extern "C" fn ZSTD_window_correctOverflow(
     mut src: *const std::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as std::ffi::c_uint) << cycleLog;
-    let cycleMask = cycleSize.wrapping_sub(1 as std::ffi::c_int as u32);
+    let cycleMask = cycleSize.wrapping_sub(1);
     let curr = (src as *const u8).offset_from((*window).base) as std::ffi::c_long as u32;
     let currentCycle = curr & cycleMask;
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        if cycleSize > 2 as std::ffi::c_int as u32 {
+        if cycleSize > 2 {
             cycleSize
         } else {
-            2 as std::ffi::c_int as u32
+            2
         }
     } else {
-        0 as std::ffi::c_int as u32
+        0
     };
     let newCurrent = currentCycle
         .wrapping_add(currentCycleCorrection)
@@ -1286,7 +1094,7 @@ unsafe extern "C" fn ZSTD_window_enforceMaxDist(
     let loadedDictEnd = if !loadedDictEndPtr.is_null() {
         *loadedDictEndPtr
     } else {
-        0 as std::ffi::c_int as u32
+        0
     };
     if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
         let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
@@ -1297,7 +1105,7 @@ unsafe extern "C" fn ZSTD_window_enforceMaxDist(
             (*window).dictLimit = (*window).lowLimit;
         }
         if !loadedDictEndPtr.is_null() {
-            *loadedDictEndPtr = 0 as std::ffi::c_int as u32;
+            *loadedDictEndPtr = 0;
         }
         if !dictMatchStatePtr.is_null() {
             *dictMatchStatePtr = NULL as *const ZSTD_MatchState_t;
@@ -1316,17 +1124,17 @@ unsafe extern "C" fn ZSTD_checkDictValidity(
         (blockEnd as *const u8).offset_from((*window).base) as std::ffi::c_long as u32;
     let loadedDictEnd = *loadedDictEndPtr;
     if blockEndIdx > loadedDictEnd.wrapping_add(maxDist) || loadedDictEnd != (*window).dictLimit {
-        *loadedDictEndPtr = 0 as std::ffi::c_int as u32;
+        *loadedDictEndPtr = 0;
         *dictMatchStatePtr = NULL as *const ZSTD_MatchState_t;
     } else {
-        *loadedDictEndPtr != 0 as std::ffi::c_int as u32;
+        *loadedDictEndPtr != 0;
     };
 }
 #[inline]
 unsafe extern "C" fn ZSTD_window_init(mut window: *mut ZSTD_window_t) {
     libc::memset(
         window as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_window_t>() as std::ffi::c_ulong as libc::size_t,
     );
     (*window).base = b" \0" as *const u8 as *const std::ffi::c_char as *const u8;
@@ -1334,7 +1142,7 @@ unsafe extern "C" fn ZSTD_window_init(mut window: *mut ZSTD_window_t) {
     (*window).dictLimit = ZSTD_WINDOW_START_INDEX as u32;
     (*window).lowLimit = ZSTD_WINDOW_START_INDEX as u32;
     (*window).nextSrc = ((*window).base).offset(ZSTD_WINDOW_START_INDEX as isize);
-    (*window).nbOverflowCorrections = 0 as std::ffi::c_int as u32;
+    (*window).nbOverflowCorrections = 0;
 }
 #[inline]
 unsafe extern "C" fn ZSTD_window_update(
@@ -1344,8 +1152,8 @@ unsafe extern "C" fn ZSTD_window_update(
     mut forceNonContiguous: std::ffi::c_int,
 ) -> u32 {
     let ip = src as *const u8;
-    let mut contiguous = 1 as std::ffi::c_int as u32;
-    if srcSize == 0 as std::ffi::c_int as size_t {
+    let mut contiguous = 1;
+    if srcSize == 0 {
         return contiguous;
     }
     if src != (*window).nextSrc as *const std::ffi::c_void || forceNonContiguous != 0 {
@@ -1358,7 +1166,7 @@ unsafe extern "C" fn ZSTD_window_update(
         if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
             (*window).lowLimit = (*window).dictLimit;
         }
-        contiguous = 0 as std::ffi::c_int as u32;
+        contiguous = 0;
     }
     (*window).nextSrc = ip.offset(srcSize as isize);
     if (ip.offset(srcSize as isize) > ((*window).dictBase).offset((*window).lowLimit as isize))
@@ -1377,20 +1185,20 @@ unsafe extern "C" fn ZSTD_window_update(
     }
     contiguous
 }
-pub const ZSTD_SHORT_CACHE_TAG_BITS: std::ffi::c_int = 8 as std::ffi::c_int;
+pub const ZSTD_SHORT_CACHE_TAG_BITS: std::ffi::c_int = 8;
 #[inline]
 unsafe extern "C" fn ZSTD_hasExtSeqProd(mut params: *const ZSTD_CCtx_params) -> std::ffi::c_int {
     ((*params).extSeqProdFunc).is_some() as std::ffi::c_int
 }
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 4 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-        == 8 as std::ffi::c_int as std::ffi::c_ulong) as std::ffi::c_int as std::ffi::c_uint
+    (::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 8) as std::ffi::c_int
+        as std::ffi::c_uint
 }
 use libc::free;
 
@@ -1462,263 +1270,170 @@ use crate::{
     MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
 };
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-pub const ZSTD_OPT_NUM: std::ffi::c_int = (1 as std::ffi::c_int) << 12 as std::ffi::c_int;
-pub const ZSTD_REP_NUM: std::ffi::c_int = 3 as std::ffi::c_int;
-static mut repStartValue: [u32; 3] = [
-    1 as std::ffi::c_int as u32,
-    4 as std::ffi::c_int as u32,
-    8 as std::ffi::c_int as u32,
-];
-pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10 as std::ffi::c_int;
-pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3 as std::ffi::c_int;
+pub const ZSTD_OPT_NUM: std::ffi::c_int = (1) << 12;
+pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
+static mut repStartValue: [u32; 3] = [1, 4, 8];
+pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10;
+pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
 static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
-pub const MIN_CBLOCK_SIZE: std::ffi::c_int = 1 as std::ffi::c_int + 1 as std::ffi::c_int;
+pub const MIN_CBLOCK_SIZE: std::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
-pub const MINMATCH: std::ffi::c_int = 3 as std::ffi::c_int;
-pub const Litbits: std::ffi::c_int = 8 as std::ffi::c_int;
-pub const LitHufLog: std::ffi::c_int = 11 as std::ffi::c_int;
-pub const MaxML: std::ffi::c_int = 52 as std::ffi::c_int;
-pub const MaxLL: std::ffi::c_int = 35 as std::ffi::c_int;
-pub const DefaultMaxOff: std::ffi::c_int = 28 as std::ffi::c_int;
-pub const MaxOff: std::ffi::c_int = 31 as std::ffi::c_int;
-pub const MLFSELog: std::ffi::c_int = 9 as std::ffi::c_int;
-pub const LLFSELog: std::ffi::c_int = 9 as std::ffi::c_int;
-pub const OffFSELog: std::ffi::c_int = 8 as std::ffi::c_int;
+pub const MINMATCH: std::ffi::c_int = 3;
+pub const Litbits: std::ffi::c_int = 8;
+pub const LitHufLog: std::ffi::c_int = 11;
+pub const MaxML: std::ffi::c_int = 52;
+pub const MaxLL: std::ffi::c_int = 35;
+pub const DefaultMaxOff: std::ffi::c_int = 28;
+pub const MaxOff: std::ffi::c_int = 31;
+pub const MLFSELog: std::ffi::c_int = 9;
+pub const LLFSELog: std::ffi::c_int = 9;
+pub const OffFSELog: std::ffi::c_int = 8;
 static mut LL_bits: [u8; 36] = [
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    6 as std::ffi::c_int as u8,
-    7 as std::ffi::c_int as u8,
-    8 as std::ffi::c_int as u8,
-    9 as std::ffi::c_int as u8,
-    10 as std::ffi::c_int as u8,
-    11 as std::ffi::c_int as u8,
-    12 as std::ffi::c_int as u8,
-    13 as std::ffi::c_int as u8,
-    14 as std::ffi::c_int as u8,
-    15 as std::ffi::c_int as u8,
-    16 as std::ffi::c_int as u8,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
+    12, 13, 14, 15, 16,
 ];
 static mut LL_defaultNorm: [S16; 36] = [
-    4 as std::ffi::c_int as S16,
-    3 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    3 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
+    4,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
 ];
-pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6 as std::ffi::c_int;
+pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6;
 static mut LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
 static mut ML_bits: [u8; 53] = [
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    0 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    1 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    2 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    3 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    4 as std::ffi::c_int as u8,
-    5 as std::ffi::c_int as u8,
-    7 as std::ffi::c_int as u8,
-    8 as std::ffi::c_int as u8,
-    9 as std::ffi::c_int as u8,
-    10 as std::ffi::c_int as u8,
-    11 as std::ffi::c_int as u8,
-    12 as std::ffi::c_int as u8,
-    13 as std::ffi::c_int as u8,
-    14 as std::ffi::c_int as u8,
-    15 as std::ffi::c_int as u8,
-    16 as std::ffi::c_int as u8,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
 static mut ML_defaultNorm: [S16; 53] = [
-    1 as std::ffi::c_int as S16,
-    4 as std::ffi::c_int as S16,
-    3 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
+    1,
+    4,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
 ];
-pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6 as std::ffi::c_int;
+pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6;
 static mut ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
 static mut OF_defaultNorm: [S16; 29] = [
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    2 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    1 as std::ffi::c_int as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
-    -(1 as std::ffi::c_int) as S16,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
+    -(1) as S16,
 ];
-pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5 as std::ffi::c_int;
+pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5;
 static mut OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 unsafe extern "C" fn ZSTD_copy8(mut dst: *mut std::ffi::c_void, mut src: *const std::ffi::c_void) {
-    libc::memcpy(
-        dst,
-        src,
-        8 as std::ffi::c_int as std::ffi::c_ulong as libc::size_t,
-    );
+    libc::memcpy(dst, src, 8 as libc::size_t);
 }
 unsafe extern "C" fn ZSTD_copy16(mut dst: *mut std::ffi::c_void, mut src: *const std::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
-pub const WILDCOPY_OVERLENGTH: std::ffi::c_int = 32 as std::ffi::c_int;
-pub const WILDCOPY_VECLEN: std::ffi::c_int = 16 as std::ffi::c_int;
+pub const WILDCOPY_OVERLENGTH: std::ffi::c_int = 32;
+pub const WILDCOPY_VECLEN: std::ffi::c_int = 16;
 #[inline(always)]
 unsafe extern "C" fn ZSTD_wildcopy(
     mut dst: *mut std::ffi::c_void,
@@ -1736,26 +1451,26 @@ unsafe extern "C" fn ZSTD_wildcopy(
     {
         loop {
             ZSTD_copy8(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
-            op = op.offset(8 as std::ffi::c_int as isize);
-            ip = ip.offset(8 as std::ffi::c_int as isize);
+            op = op.offset(8);
+            ip = ip.offset(8);
             if op >= oend {
                 break;
             }
         }
     } else {
         ZSTD_copy16(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
-        if 16 as std::ffi::c_int as size_t >= length {
+        if 16 >= length {
             return;
         }
-        op = op.offset(16 as std::ffi::c_int as isize);
-        ip = ip.offset(16 as std::ffi::c_int as isize);
+        op = op.offset(16);
+        ip = ip.offset(16);
         loop {
             ZSTD_copy16(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
-            op = op.offset(16 as std::ffi::c_int as isize);
-            ip = ip.offset(16 as std::ffi::c_int as isize);
+            op = op.offset(16);
+            ip = ip.offset(16);
             ZSTD_copy16(op as *mut std::ffi::c_void, ip as *const std::ffi::c_void);
-            op = op.offset(16 as std::ffi::c_int as isize);
-            ip = ip.offset(16 as std::ffi::c_int as isize);
+            op = op.offset(16);
+            ip = ip.offset(16);
             if op >= oend {
                 break;
             }
@@ -1774,30 +1489,30 @@ unsafe extern "C" fn ZSTD_limitCopy(
     } else {
         srcSize
     };
-    if length > 0 as std::ffi::c_int as size_t {
+    if length > 0 {
         libc::memcpy(dst, src, length as libc::size_t);
     }
     length
 }
-pub const ZSTD_WORKSPACETOOLARGE_FACTOR: std::ffi::c_int = 3 as std::ffi::c_int;
-pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: std::ffi::c_int = 128 as std::ffi::c_int;
+pub const ZSTD_WORKSPACETOOLARGE_FACTOR: std::ffi::c_int = 3;
+pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: std::ffi::c_int = 128;
 #[inline]
 unsafe extern "C" fn ZSTD_cpuSupportsBmi2() -> std::ffi::c_int {
     let mut cpuid = ZSTD_cpuid();
     (ZSTD_cpuid_bmi1(cpuid) != 0 && ZSTD_cpuid_bmi2(cpuid) != 0) as std::ffi::c_int
 }
-pub const ZSTD_CWKSP_ALIGNMENT_BYTES: std::ffi::c_int = 64 as std::ffi::c_int;
+pub const ZSTD_CWKSP_ALIGNMENT_BYTES: std::ffi::c_int = 64;
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_assert_internal_consistency(mut ws: *mut ZSTD_cwksp) {}
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_align(mut size: size_t, mut align: size_t) -> size_t {
-    let mask = align.wrapping_sub(1 as std::ffi::c_int as size_t);
+    let mask = align.wrapping_sub(1);
     size.wrapping_add(mask) & !mask
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_alloc_size(mut size: size_t) -> size_t {
-    if size == 0 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as size_t;
+    if size == 0 {
+        return 0;
     }
     size
 }
@@ -1814,14 +1529,14 @@ unsafe extern "C" fn ZSTD_cwksp_aligned64_alloc_size(mut size: size_t) -> size_t
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_slack_space_required() -> size_t {
-    (ZSTD_CWKSP_ALIGNMENT_BYTES * 2 as std::ffi::c_int) as size_t
+    (ZSTD_CWKSP_ALIGNMENT_BYTES * 2) as size_t
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_bytes_to_align_ptr(
     mut ptr: *mut std::ffi::c_void,
     alignBytes: size_t,
 ) -> size_t {
-    let alignBytesMask = alignBytes.wrapping_sub(1 as std::ffi::c_int as size_t);
+    let alignBytesMask = alignBytes.wrapping_sub(1);
 
     alignBytes.wrapping_sub(ptr as size_t & alignBytesMask) & alignBytesMask
 }
@@ -1842,7 +1557,7 @@ unsafe extern "C" fn ZSTD_cwksp_reserve_internal_buffer_space(
     let bottom = (*ws).tableEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if alloc < bottom {
-        (*ws).allocFailed = 1 as std::ffi::c_int as u8;
+        (*ws).allocFailed = 1;
         return NULL as *mut std::ffi::c_void;
     }
     if alloc < (*ws).tableValidEnd {
@@ -1881,7 +1596,7 @@ unsafe extern "C" fn ZSTD_cwksp_internal_advance_phase(
         (*ws).phase = phase;
         ZSTD_cwksp_assert_internal_consistency(ws);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_owns_buffer(
@@ -1899,9 +1614,7 @@ unsafe extern "C" fn ZSTD_cwksp_reserve_internal(
     mut phase: ZSTD_cwksp_alloc_phase_e,
 ) -> *mut std::ffi::c_void {
     let mut alloc = std::ptr::null_mut::<std::ffi::c_void>();
-    if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) != 0
-        || bytes == 0 as std::ffi::c_int as size_t
-    {
+    if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) != 0 || bytes == 0 {
         return NULL as *mut std::ffi::c_void;
     }
     alloc = ZSTD_cwksp_reserve_internal_buffer_space(ws, bytes);
@@ -1924,7 +1637,7 @@ unsafe extern "C" fn ZSTD_cwksp_reserve_aligned_init_once(
     if !ptr.is_null() && ptr < (*ws).initOnceStart {
         libc::memset(
             ptr,
-            0 as std::ffi::c_int,
+            0,
             (if (((*ws).initOnceStart as *mut u8).offset_from(ptr as *mut u8) as std::ffi::c_long
                 as size_t)
                 < alignedBytes
@@ -1969,7 +1682,7 @@ unsafe extern "C" fn ZSTD_cwksp_reserve_table(
     top = (*ws).allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
-        (*ws).allocFailed = 1 as std::ffi::c_int as u8;
+        (*ws).allocFailed = 1;
         return NULL as *mut std::ffi::c_void;
     }
     (*ws).tableEnd = end;
@@ -1991,7 +1704,7 @@ unsafe extern "C" fn ZSTD_cwksp_reserve_object(
         != ZSTD_cwksp_alloc_objects as std::ffi::c_int as std::ffi::c_uint
         || end > (*ws).workspaceEnd
     {
-        (*ws).allocFailed = 1 as std::ffi::c_int as u8;
+        (*ws).allocFailed = 1;
         return NULL as *mut std::ffi::c_void;
     }
     (*ws).objectEnd = end;
@@ -2016,7 +1729,7 @@ unsafe extern "C" fn ZSTD_cwksp_clean_tables(mut ws: *mut ZSTD_cwksp) {
     if (*ws).tableValidEnd < (*ws).tableEnd {
         libc::memset(
             (*ws).tableValidEnd,
-            0 as std::ffi::c_int,
+            0,
             ((*ws).tableEnd as *mut u8).offset_from((*ws).tableValidEnd as *mut u8)
                 as std::ffi::c_long as size_t as libc::size_t,
         );
@@ -2032,7 +1745,7 @@ unsafe extern "C" fn ZSTD_cwksp_clear_tables(mut ws: *mut ZSTD_cwksp) {
 unsafe extern "C" fn ZSTD_cwksp_clear(mut ws: *mut ZSTD_cwksp) {
     (*ws).tableEnd = (*ws).objectEnd;
     (*ws).allocStart = ZSTD_cwksp_initialAllocStart(ws);
-    (*ws).allocFailed = 0 as std::ffi::c_int as u8;
+    (*ws).allocFailed = 0;
     if (*ws).phase as std::ffi::c_uint
         > ZSTD_cwksp_alloc_aligned_init_once as std::ffi::c_int as std::ffi::c_uint
     {
@@ -2060,7 +1773,7 @@ unsafe extern "C" fn ZSTD_cwksp_init(
     (*ws).phase = ZSTD_cwksp_alloc_objects;
     (*ws).isStatic = isStatic;
     ZSTD_cwksp_clear(ws);
-    (*ws).workspaceOversizedDuration = 0 as std::ffi::c_int;
+    (*ws).workspaceOversizedDuration = 0;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 #[inline]
@@ -2074,14 +1787,14 @@ unsafe extern "C" fn ZSTD_cwksp_create(
         return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
     }
     ZSTD_cwksp_init(ws, workspace, size, ZSTD_cwksp_dynamic_alloc);
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cwksp_free(mut ws: *mut ZSTD_cwksp, mut customMem: ZSTD_customMem) {
     let mut ptr = (*ws).workspace;
     libc::memset(
         ws as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_cwksp>() as std::ffi::c_ulong as libc::size_t,
     );
     ZSTD_customFree(ptr, customMem);
@@ -2091,7 +1804,7 @@ unsafe extern "C" fn ZSTD_cwksp_move(mut dst: *mut ZSTD_cwksp, mut src: *mut ZST
     *dst = *src;
     libc::memset(
         src as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_cwksp>() as std::ffi::c_ulong as libc::size_t,
     );
 }
@@ -2139,15 +1852,13 @@ unsafe extern "C" fn ZSTD_cwksp_bump_oversized_duration(
         (*ws).workspaceOversizedDuration += 1;
         (*ws).workspaceOversizedDuration;
     } else {
-        (*ws).workspaceOversizedDuration = 0 as std::ffi::c_int;
+        (*ws).workspaceOversizedDuration = 0;
     };
 }
-pub const HUF_WORKSPACE_SIZE: std::ffi::c_int =
-    ((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int;
-pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255 as std::ffi::c_int;
+pub const HUF_WORKSPACE_SIZE: std::ffi::c_int = ((8) << 10) + 512;
+pub const HUF_SYMBOLVALUE_MAX: std::ffi::c_int = 255;
 pub const HUF_OPTIMAL_DEPTH_THRESHOLD: std::ffi::c_int = ZSTD_btultra as std::ffi::c_int;
-pub const ZSTDMT_JOBSIZE_MIN: std::ffi::c_int =
-    512 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int);
+pub const ZSTDMT_JOBSIZE_MIN: std::ffi::c_int = 512 * ((1) << 10);
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
     mut size: size_t,
@@ -2165,10 +1876,10 @@ unsafe extern "C" fn ZSTD_customCalloc(
 ) -> *mut std::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        libc::memset(ptr, 0 as std::ffi::c_int, size as libc::size_t);
+        libc::memset(ptr, 0, size as libc::size_t);
         return ptr;
     }
-    calloc(1 as std::ffi::c_int as std::ffi::c_ulong, size)
+    calloc(1, size)
 }
 #[inline]
 unsafe extern "C" fn ZSTD_customFree(
@@ -2209,14 +1920,14 @@ unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: u64) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> std::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val) >> 3 as std::ffi::c_int
+            ZSTD_countTrailingZeros64(val) >> 3
         } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3 as std::ffi::c_int
+            ZSTD_countTrailingZeros32(val as u32) >> 3
         }
     } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val) >> 3 as std::ffi::c_int
+        ZSTD_countLeadingZeros64(val) >> 3
     } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3 as std::ffi::c_int
+        ZSTD_countLeadingZeros32(val as u32) >> 3
     }
 }
 #[inline]
@@ -2231,31 +1942,31 @@ unsafe extern "C" fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
             << ((0 as std::ffi::c_uint).wrapping_sub(count)
                 & 0x3f as std::ffi::c_int as std::ffi::c_uint)
 }
-pub const STREAM_ACCUMULATOR_MIN_32: std::ffi::c_int = 25 as std::ffi::c_int;
-pub const STREAM_ACCUMULATOR_MIN_64: std::ffi::c_int = 57 as std::ffi::c_int;
+pub const STREAM_ACCUMULATOR_MIN_32: std::ffi::c_int = 25;
+pub const STREAM_ACCUMULATOR_MIN_64: std::ffi::c_int = 57;
 #[inline]
 unsafe extern "C" fn ZSTD_cpuid() -> ZSTD_cpuid_t {
-    let mut f1c = 0 as std::ffi::c_int as u32;
-    let mut f1d = 0 as std::ffi::c_int as u32;
-    let mut f7b = 0 as std::ffi::c_int as u32;
-    let mut f7c = 0 as std::ffi::c_int as u32;
+    let mut f1c = 0;
+    let mut f1d = 0;
+    let mut f7b = 0;
+    let mut f7c = 0;
     let mut n: u32 = 0;
     asm!(
-        "cpuid", inlateout("ax") 0 as std::ffi::c_int => n, out("ecx") _, out("edx") _,
+        "cpuid", inlateout("ax") 0 => n, out("ecx") _, out("edx") _,
         options(preserves_flags, pure, readonly, att_syntax)
     );
-    if n >= 1 as std::ffi::c_int as u32 {
+    if n >= 1 {
         let mut f1a: u32 = 0;
         asm!(
-            "cpuid", inlateout("ax") 1 as std::ffi::c_int => f1a, lateout("cx") f1c,
+            "cpuid", inlateout("ax") 1 => f1a, lateout("cx") f1c,
             lateout("dx") f1d, options(preserves_flags, pure, readonly, att_syntax)
         );
     }
-    if n >= 7 as std::ffi::c_int as u32 {
+    if n >= 7 {
         let mut f7a: u32 = 0;
         asm!(
             "cpuid\nmov {restmp0:x}, %bx", restmp0 = lateout(reg) f7b, inlateout("ax") 7
-            as std::ffi::c_int => f7a, inlateout("cx") 0 as std::ffi::c_int => f7c,
+            as std::ffi::c_int => f7a, inlateout("cx") 0 => f7c,
             out("edx") _, options(preserves_flags, pure, readonly, att_syntax)
         );
     }
@@ -2273,13 +1984,11 @@ unsafe extern "C" fn ZSTD_cpuid() -> ZSTD_cpuid_t {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cpuid_bmi1(cpuid: ZSTD_cpuid_t) -> std::ffi::c_int {
-    (cpuid.f7b & (1 as std::ffi::c_uint) << 3 as std::ffi::c_int
-        != 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+    (cpuid.f7b & (1) << 3 != 0) as std::ffi::c_int
 }
 #[inline]
 unsafe extern "C" fn ZSTD_cpuid_bmi2(cpuid: ZSTD_cpuid_t) -> std::ffi::c_int {
-    (cpuid.f7b & (1 as std::ffi::c_uint) << 8 as std::ffi::c_int
-        != 0 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+    (cpuid.f7b & (1) << 8 != 0) as std::ffi::c_int
 }
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST: unsafe extern "C" fn(
     *mut ZSTD_MatchState_t,
@@ -2302,8 +2011,8 @@ pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST_EXTDICT: unsafe extern "C" fn(
     *const std::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_doubleFast_extDict;
-pub const ZSTD_LAZY_DDSS_BUCKET_LOG: std::ffi::c_int = 2 as std::ffi::c_int;
-pub const ZSTD_ROW_HASH_TAG_BITS: std::ffi::c_int = 8 as std::ffi::c_int;
+pub const ZSTD_LAZY_DDSS_BUCKET_LOG: std::ffi::c_int = 2;
+pub const ZSTD_ROW_HASH_TAG_BITS: std::ffi::c_int = 8;
 pub const ZSTD_COMPRESSBLOCK_GREEDY: unsafe extern "C" fn(
     *mut ZSTD_MatchState_t,
     *mut SeqStore_t,
@@ -2542,34 +2251,28 @@ pub const ZSTD_COMPRESSBLOCK_BTULTRA2: unsafe extern "C" fn(
     *const std::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btultra2;
-pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: std::ffi::c_int = 27 as std::ffi::c_int;
+pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: std::ffi::c_int = 27;
 pub const INT_MAX: std::ffi::c_int = __INT_MAX__;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const NULL: std::ffi::c_int = 0;
 #[export_name = crate::prefix!(ZSTD_compressBound)]
 pub unsafe extern "C" fn ZSTD_compressBound(mut srcSize: size_t) -> size_t {
     let r = if srcSize as std::ffi::c_ulonglong
-        >= (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 8 as std::ffi::c_int as std::ffi::c_ulong
-        {
+        >= (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 8 {
             0xff00ff00ff00ff00 as std::ffi::c_ulonglong
         } else {
             0xff00ff00 as std::ffi::c_uint as std::ffi::c_ulonglong
         }) {
-        0 as std::ffi::c_int as size_t
+        0
     } else {
         srcSize
-            .wrapping_add(srcSize >> 8 as std::ffi::c_int)
-            .wrapping_add(
-                if srcSize < ((128 as std::ffi::c_int) << 10 as std::ffi::c_int) as size_t {
-                    (((128 as std::ffi::c_int) << 10 as std::ffi::c_int) as size_t)
-                        .wrapping_sub(srcSize)
-                        >> 11 as std::ffi::c_int
-                } else {
-                    0 as std::ffi::c_int as size_t
-                },
-            )
+            .wrapping_add(srcSize >> 8)
+            .wrapping_add(if srcSize < ((128) << 10) as size_t {
+                (((128) << 10) as size_t).wrapping_sub(srcSize) >> 11
+            } else {
+                0
+            })
     };
-    if r == 0 as std::ffi::c_int as size_t {
+    if r == 0 {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
     r
@@ -2581,7 +2284,7 @@ pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
 unsafe extern "C" fn ZSTD_initCCtx(mut cctx: *mut ZSTD_CCtx, mut memManager: ZSTD_customMem) {
     libc::memset(
         cctx as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_CCtx>() as std::ffi::c_ulong as libc::size_t,
     );
     (*cctx).customMem = memManager;
@@ -2628,7 +2331,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     if workspaceSize <= ::core::mem::size_of::<ZSTD_CCtx>() as std::ffi::c_ulong {
         return NULL as *mut ZSTD_CCtx;
     }
-    if workspace as size_t & 7 as std::ffi::c_int as size_t != 0 {
+    if workspace as size_t & 7 != 0 {
         return NULL as *mut ZSTD_CCtx;
     }
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_static_alloc);
@@ -2641,39 +2344,24 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     }
     libc::memset(
         cctx as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_CCtx>() as std::ffi::c_ulong as libc::size_t,
     );
     ZSTD_cwksp_move(&mut (*cctx).workspace, &mut ws);
     (*cctx).staticSize = workspaceSize;
     if ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
-        (if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-            as std::ffi::c_ulong)
-            .wrapping_add(
-                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                    ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                        35 as std::ffi::c_int
-                    } else {
-                        52 as std::ffi::c_int
-                    }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                ),
-            )
-            > 8208 as std::ffi::c_int as std::ffi::c_ulong
+        (if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+        ) > 8208
         {
-            ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                as std::ffi::c_ulong)
-                .wrapping_add(
-                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                            35 as std::ffi::c_int
-                        } else {
-                            52 as std::ffi::c_int
-                        }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                    ),
-                )
+            ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+            )
         } else {
-            8208 as std::ffi::c_int as std::ffi::c_ulong
+            8208
         })
         .wrapping_add((2 as std::ffi::c_int as std::ffi::c_ulong).wrapping_mul(
             ::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong,
@@ -2692,60 +2380,30 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     ) as *mut ZSTD_compressedBlockState_t;
     (*cctx).tmpWorkspace = ZSTD_cwksp_reserve_object(
         &mut (*cctx).workspace,
-        if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-            as std::ffi::c_ulong)
-            .wrapping_add(
-                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                    ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                        35 as std::ffi::c_int
-                    } else {
-                        52 as std::ffi::c_int
-                    }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                ),
-            )
-            > 8208 as std::ffi::c_int as std::ffi::c_ulong
+        if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+        ) > 8208
         {
-            ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                as std::ffi::c_ulong)
-                .wrapping_add(
-                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                            35 as std::ffi::c_int
-                        } else {
-                            52 as std::ffi::c_int
-                        }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                    ),
-                )
+            ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+            )
         } else {
-            8208 as std::ffi::c_int as std::ffi::c_ulong
+            8208
         },
     );
-    (*cctx).tmpWkspSize = if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int)
-        + 512 as std::ffi::c_int) as std::ffi::c_ulong)
-        .wrapping_add(
-            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                    35 as std::ffi::c_int
-                } else {
-                    52 as std::ffi::c_int
-                }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-            ),
-        )
-        > 8208 as std::ffi::c_int as std::ffi::c_ulong
+    (*cctx).tmpWkspSize = if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+        (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+            .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+    ) > 8208
     {
-        ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-            as std::ffi::c_ulong)
-            .wrapping_add(
-                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                    ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                        35 as std::ffi::c_int
-                    } else {
-                        52 as std::ffi::c_int
-                    }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                ),
-            )
+        ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+        )
     } else {
-        8208 as std::ffi::c_int as std::ffi::c_ulong
+        8208
     };
     (*cctx).bmi2 = ZSTD_cpuid_bmi2(ZSTD_cpuid());
     cctx
@@ -2755,12 +2413,12 @@ unsafe extern "C" fn ZSTD_clearAllDicts(mut cctx: *mut ZSTD_CCtx) {
     ZSTD_freeCDict((*cctx).localDict.cdict);
     libc::memset(
         &mut (*cctx).localDict as *mut ZSTD_localDict as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_localDict>() as std::ffi::c_ulong as libc::size_t,
     );
     libc::memset(
         &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_prefixDict>() as std::ffi::c_ulong as libc::size_t,
     );
     (*cctx).cdict = NULL as *const ZSTD_CDict;
@@ -2769,7 +2427,7 @@ unsafe extern "C" fn ZSTD_sizeof_localDict(mut dict: ZSTD_localDict) -> size_t {
     let bufferSize = if !(dict.dictBuffer).is_null() {
         dict.dictSize
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let cdictSize = ZSTD_sizeof_CDict(dict.cdict);
     bufferSize.wrapping_add(cdictSize)
@@ -2783,7 +2441,7 @@ unsafe extern "C" fn ZSTD_freeCCtxContent(mut cctx: *mut ZSTD_CCtx) {
 #[export_name = crate::prefix!(ZSTD_freeCCtx)]
 pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     if (*cctx).staticSize != 0 {
         return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
@@ -2794,7 +2452,7 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
     if cctxInWorkspace == 0 {
         ZSTD_customFree(cctx as *mut std::ffi::c_void, (*cctx).customMem);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_sizeof_mtctx(mut cctx: *const ZSTD_CCtx) -> size_t {
     ZSTDMT_sizeof_CCtx((*cctx).mtctx)
@@ -2802,10 +2460,10 @@ unsafe extern "C" fn ZSTD_sizeof_mtctx(mut cctx: *const ZSTD_CCtx) -> size_t {
 #[export_name = crate::prefix!(ZSTD_sizeof_CCtx)]
 pub unsafe extern "C" fn ZSTD_sizeof_CCtx(mut cctx: *const ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     (if (*cctx).workspace.workspace == cctx as *mut std::ffi::c_void {
-        0 as std::ffi::c_int as std::ffi::c_ulong
+        0
     } else {
         ::core::mem::size_of::<ZSTD_CCtx>() as std::ffi::c_ulong
     })
@@ -2838,7 +2496,7 @@ unsafe extern "C" fn ZSTD_resolveRowMatchFinderMode(
     mut mode: ZSTD_ParamSwitch_e,
     cParams: *const ZSTD_compressionParameters,
 ) -> ZSTD_ParamSwitch_e {
-    let kWindowLogLowerBound = 14 as std::ffi::c_int as std::ffi::c_uint;
+    let kWindowLogLowerBound = 14;
     if mode as std::ffi::c_uint != ZSTD_ps_auto as std::ffi::c_int as std::ffi::c_uint {
         return mode;
     }
@@ -2859,7 +2517,7 @@ unsafe extern "C" fn ZSTD_resolveBlockSplitterMode(
         return mode;
     }
     (if (*cParams).strategy as std::ffi::c_uint >= ZSTD_btopt as std::ffi::c_int as std::ffi::c_uint
-        && (*cParams).windowLog >= 17 as std::ffi::c_int as std::ffi::c_uint
+        && (*cParams).windowLog >= 17
     {
         ZSTD_ps_enable as std::ffi::c_int
     } else {
@@ -2883,7 +2541,7 @@ unsafe extern "C" fn ZSTD_resolveEnableLdm(
         return mode;
     }
     (if (*cParams).strategy as std::ffi::c_uint >= ZSTD_btopt as std::ffi::c_int as std::ffi::c_uint
-        && (*cParams).windowLog >= 27 as std::ffi::c_int as std::ffi::c_uint
+        && (*cParams).windowLog >= 27
     {
         ZSTD_ps_enable as std::ffi::c_int
     } else {
@@ -2896,7 +2554,7 @@ unsafe extern "C" fn ZSTD_resolveExternalSequenceValidation(
     mode
 }
 unsafe extern "C" fn ZSTD_resolveMaxBlockSize(mut maxBlockSize: size_t) -> size_t {
-    if maxBlockSize == 0 as std::ffi::c_int as size_t {
+    if maxBlockSize == 0 {
         ZSTD_BLOCKSIZE_MAX as size_t
     } else {
         maxBlockSize
@@ -2909,7 +2567,7 @@ unsafe extern "C" fn ZSTD_resolveExternalRepcodeSearch(
     if value as std::ffi::c_uint != ZSTD_ps_auto as std::ffi::c_int as std::ffi::c_uint {
         return value;
     }
-    if cLevel < 10 as std::ffi::c_int {
+    if cLevel < 10 {
         ZSTD_ps_disable
     } else {
         ZSTD_ps_enable
@@ -2934,7 +2592,7 @@ unsafe extern "C" fn ZSTD_makeCCtxParamsFromCParams(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -3030,10 +2688,10 @@ pub unsafe extern "C" fn ZSTD_createCCtxParams() -> *mut ZSTD_CCtx_params {
 #[export_name = crate::prefix!(ZSTD_freeCCtxParams)]
 pub unsafe extern "C" fn ZSTD_freeCCtxParams(mut params: *mut ZSTD_CCtx_params) -> size_t {
     if params.is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     ZSTD_customFree(params as *mut std::ffi::c_void, (*params).customMem);
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtxParams_reset)]
 pub unsafe extern "C" fn ZSTD_CCtxParams_reset(mut params: *mut ZSTD_CCtx_params) -> size_t {
@@ -3049,14 +2707,14 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init(
     }
     libc::memset(
         cctxParams as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_CCtx_params>() as std::ffi::c_ulong as libc::size_t,
     );
     (*cctxParams).compressionLevel = compressionLevel;
-    (*cctxParams).fParams.contentSizeFlag = 1 as std::ffi::c_int;
-    0 as std::ffi::c_int as size_t
+    (*cctxParams).fParams.contentSizeFlag = 1;
+    0
 }
-pub const ZSTD_NO_CLEVEL: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const ZSTD_NO_CLEVEL: std::ffi::c_int = 0;
 unsafe extern "C" fn ZSTD_CCtxParams_init_internal(
     mut cctxParams: *mut ZSTD_CCtx_params,
     mut params: *const ZSTD_parameters,
@@ -3064,7 +2722,7 @@ unsafe extern "C" fn ZSTD_CCtxParams_init_internal(
 ) {
     libc::memset(
         cctxParams as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_CCtx_params>() as std::ffi::c_ulong as libc::size_t,
     );
     (*cctxParams).cParams = (*params).cParams;
@@ -3097,7 +2755,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
         return err_code;
     }
     ZSTD_CCtxParams_init_internal(cctxParams, &mut params, ZSTD_NO_CLEVEL);
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_CCtxParams_setZstdParams(
     mut cctxParams: *mut ZSTD_CCtx_params,
@@ -3111,9 +2769,9 @@ unsafe extern "C" fn ZSTD_CCtxParams_setZstdParams(
 pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZSTD_bounds {
     let mut bounds = {
         ZSTD_bounds {
-            error: 0 as std::ffi::c_int as size_t,
-            lowerBound: 0 as std::ffi::c_int,
-            upperBound: 0 as std::ffi::c_int,
+            error: 0,
+            lowerBound: 0,
+            upperBound: 0,
         }
     };
     match param as std::ffi::c_uint {
@@ -3124,9 +2782,7 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
         101 => {
             bounds.lowerBound = ZSTD_WINDOWLOG_MIN;
-            bounds.upperBound = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
@@ -3135,31 +2791,25 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
         102 => {
             bounds.lowerBound = ZSTD_HASHLOG_MIN;
-            bounds.upperBound = if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
-            }) < 30 as std::ffi::c_int
+            }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                    == 4 as std::ffi::c_int as std::ffi::c_ulong
-                {
+                if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                     ZSTD_WINDOWLOG_MAX_32
                 } else {
                     ZSTD_WINDOWLOG_MAX_64
                 }
             } else {
-                30 as std::ffi::c_int
+                30
             };
             bounds
         }
         103 => {
             bounds.lowerBound = ZSTD_CHAINLOG_MIN;
-            bounds.upperBound = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_CHAINLOG_MAX_32
             } else {
                 ZSTD_CHAINLOG_MAX_64
@@ -3168,13 +2818,11 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
         104 => {
             bounds.lowerBound = ZSTD_SEARCHLOG_MIN;
-            bounds.upperBound = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
-            }) - 1 as std::ffi::c_int;
+            }) - 1;
             bounds
         }
         105 => {
@@ -3193,38 +2841,36 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         200 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         201 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         202 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         400 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = if ::core::mem::size_of::<*mut std::ffi::c_void>()
-                as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
-                64 as std::ffi::c_int
-            } else {
-                256 as std::ffi::c_int
-            };
+            bounds.lowerBound = 0;
+            bounds.upperBound =
+                if ::core::mem::size_of::<*mut std::ffi::c_void>() as std::ffi::c_ulong == 4 {
+                    64
+                } else {
+                    256
+                };
             bounds
         }
         401 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
+            bounds.lowerBound = 0;
             bounds.upperBound = if MEM_32bits() != 0 {
-                512 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)
+                512 * ((1) << 20)
             } else {
-                1024 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)
+                1024 * ((1) << 20)
             };
             bounds
         }
@@ -3234,8 +2880,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         1005 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         160 => {
@@ -3245,23 +2891,19 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
         161 => {
             bounds.lowerBound = ZSTD_LDM_HASHLOG_MIN;
-            bounds.upperBound = if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = if (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
-            }) < 30 as std::ffi::c_int
+            }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                    == 4 as std::ffi::c_int as std::ffi::c_ulong
-                {
+                if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                     ZSTD_WINDOWLOG_MAX_32
                 } else {
                     ZSTD_WINDOWLOG_MAX_64
                 }
             } else {
-                30 as std::ffi::c_int
+                30
             };
             bounds
         }
@@ -3277,9 +2919,7 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
         164 => {
             bounds.lowerBound = ZSTD_LDM_HASHRATELOG_MIN;
-            bounds.upperBound = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-                == 4 as std::ffi::c_int as std::ffi::c_ulong
-            {
+            bounds.upperBound = (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
@@ -3287,13 +2927,13 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         500 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         1000 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         10 => {
@@ -3332,8 +2972,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         1009 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         1010 => {
@@ -3342,7 +2982,7 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         1017 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
+            bounds.lowerBound = 0;
             bounds.upperBound = ZSTD_BLOCKSPLITTER_LEVEL_MAX;
             bounds
         }
@@ -3352,8 +2992,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         1012 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         1013 => {
@@ -3362,8 +3002,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
             bounds
         }
         1014 => {
-            bounds.lowerBound = 0 as std::ffi::c_int;
-            bounds.upperBound = 1 as std::ffi::c_int;
+            bounds.lowerBound = 0;
+            bounds.upperBound = 1;
             bounds
         }
         1015 => {
@@ -3396,14 +3036,14 @@ unsafe extern "C" fn ZSTD_cParam_clampBounds(
     if *value > bounds.upperBound {
         *value = bounds.upperBound;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_isUpdateAuthorized(mut param: ZSTD_cParameter) -> std::ffi::c_int {
     match param as std::ffi::c_uint {
-        100 | 102 | 103 | 104 | 105 | 106 | 107 | 1017 => 1 as std::ffi::c_int,
+        100 | 102 | 103 | 104 | 105 | 106 | 107 | 1017 => 1,
         10 | 101 | 200 | 201 | 202 | 1000 | 400 | 401 | 402 | 500 | 1005 | 160 | 161 | 162
         | 163 | 164 | 1001 | 1002 | 130 | 1004 | 1006 | 1007 | 1008 | 1009 | 1010 | 1011 | 1012
-        | 1013 | 1014 | 1015 | 1016 | _ => 0 as std::ffi::c_int,
+        | 1013 | 1014 | 1015 | 1016 | _ => 0,
     }
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setParameter)]
@@ -3414,14 +3054,14 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
 ) -> size_t {
     if (*cctx).streamStage as std::ffi::c_uint != zcss_init as std::ffi::c_int as std::ffi::c_uint {
         if ZSTD_isUpdateAuthorized(param) != 0 {
-            (*cctx).cParamsChanged = 1 as std::ffi::c_int;
+            (*cctx).cParamsChanged = 1;
         } else {
             return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
         }
     }
     match param as std::ffi::c_uint {
         400 => {
-            if value != 0 as std::ffi::c_int && (*cctx).staticSize != 0 {
+            if value != 0 && (*cctx).staticSize != 0 {
                 return -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t;
             }
         }
@@ -3452,55 +3092,46 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
-            if value == 0 as std::ffi::c_int {
+            if value == 0 {
                 (*CCtxParams).compressionLevel = ZSTD_CLEVEL_DEFAULT;
             } else {
                 (*CCtxParams).compressionLevel = value;
             }
-            if (*CCtxParams).compressionLevel >= 0 as std::ffi::c_int {
+            if (*CCtxParams).compressionLevel >= 0 {
                 return (*CCtxParams).compressionLevel as size_t;
             }
-            0 as std::ffi::c_int as size_t
+            0
         }
         101 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_windowLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_windowLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.windowLog = value as u32;
             (*CCtxParams).cParams.windowLog as size_t
         }
         102 => {
-            if value != 0 as std::ffi::c_int && ZSTD_cParam_withinBounds(ZSTD_c_hashLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_hashLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.hashLog = value as u32;
             (*CCtxParams).cParams.hashLog as size_t
         }
         103 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_chainLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_chainLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.chainLog = value as u32;
             (*CCtxParams).cParams.chainLog as size_t
         }
         104 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_searchLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_searchLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.searchLog = value as u32;
             value as size_t
         }
         105 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_minMatch, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_minMatch, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.minMatch = value as u32;
@@ -3514,21 +3145,18 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).cParams.targetLength as size_t
         }
         107 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_strategy, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_strategy, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).cParams.strategy = value as ZSTD_strategy;
             (*CCtxParams).cParams.strategy as size_t
         }
         200 => {
-            (*CCtxParams).fParams.contentSizeFlag =
-                (value != 0 as std::ffi::c_int) as std::ffi::c_int;
+            (*CCtxParams).fParams.contentSizeFlag = (value != 0) as std::ffi::c_int;
             (*CCtxParams).fParams.contentSizeFlag as size_t
         }
         201 => {
-            (*CCtxParams).fParams.checksumFlag = (value != 0 as std::ffi::c_int) as std::ffi::c_int;
+            (*CCtxParams).fParams.checksumFlag = (value != 0) as std::ffi::c_int;
             (*CCtxParams).fParams.checksumFlag as size_t
         }
         202 => {
@@ -3536,7 +3164,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             ((*CCtxParams).fParams.noDictIDFlag == 0) as std::ffi::c_int as size_t
         }
         1000 => {
-            (*CCtxParams).forceWindow = (value != 0 as std::ffi::c_int) as std::ffi::c_int;
+            (*CCtxParams).forceWindow = (value != 0) as std::ffi::c_int;
             (*CCtxParams).forceWindow as size_t
         }
         1001 => {
@@ -3564,7 +3192,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).nbWorkers as size_t
         }
         401 => {
-            if value != 0 as std::ffi::c_int && value < ZSTDMT_JOBSIZE_MIN {
+            if value != 0 && value < ZSTDMT_JOBSIZE_MIN {
                 value = ZSTDMT_JOBSIZE_MIN;
             }
             let err_code_1 = ZSTD_cParam_clampBounds(param, &mut value);
@@ -3591,8 +3219,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).rsyncable as size_t
         }
         1005 => {
-            (*CCtxParams).enableDedicatedDictSearch =
-                (value != 0 as std::ffi::c_int) as std::ffi::c_int;
+            (*CCtxParams).enableDedicatedDictSearch = (value != 0) as std::ffi::c_int;
             (*CCtxParams).enableDedicatedDictSearch as size_t
         }
         160 => {
@@ -3603,48 +3230,36 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).ldmParams.enableLdm as size_t
         }
         161 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_ldmHashLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_ldmHashLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).ldmParams.hashLog = value as u32;
             (*CCtxParams).ldmParams.hashLog as size_t
         }
         162 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_ldmMinMatch, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_ldmMinMatch, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).ldmParams.minMatchLength = value as u32;
             (*CCtxParams).ldmParams.minMatchLength as size_t
         }
         163 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_ldmBucketSizeLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_ldmBucketSizeLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).ldmParams.bucketSizeLog = value as u32;
             (*CCtxParams).ldmParams.bucketSizeLog as size_t
         }
         164 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_ldmHashRateLog, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_ldmHashRateLog, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).ldmParams.hashRateLog = value as u32;
             (*CCtxParams).ldmParams.hashRateLog as size_t
         }
         130 => {
-            if value != 0 as std::ffi::c_int {
-                value = if value > 1340 as std::ffi::c_int {
-                    value
-                } else {
-                    1340 as std::ffi::c_int
-                };
+            if value != 0 {
+                value = if value > 1340 { value } else { 1340 };
                 if ZSTD_cParam_withinBounds(ZSTD_c_targetCBlockSize, value) == 0 {
                     return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
                 }
@@ -3653,9 +3268,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).targetCBlockSize
         }
         1004 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam7, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam7, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).srcSizeHint = value;
@@ -3732,9 +3345,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).enableMatchFinderFallback as size_t
         }
         1015 => {
-            if value != 0 as std::ffi::c_int
-                && ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam18, value) == 0
-            {
+            if value != 0 && ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam18, value) == 0 {
                 return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
             }
             (*CCtxParams).maxBlockSize = value as size_t;
@@ -3884,7 +3495,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
         }
         _ => return -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t,
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setParametersUsingCCtxParams)]
 pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
@@ -3898,7 +3509,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
     (*cctx).requestedParams = *params;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setCParams)]
 pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
@@ -3947,7 +3558,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
     if ERR_isError(err_code_6) != 0 {
         return err_code_6;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setFParams)]
 pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
@@ -3957,7 +3568,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_c_contentSizeFlag,
-        (fparams.contentSizeFlag != 0 as std::ffi::c_int) as std::ffi::c_int,
+        (fparams.contentSizeFlag != 0) as std::ffi::c_int,
     );
     if ERR_isError(err_code) != 0 {
         return err_code;
@@ -3965,7 +3576,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code_0 = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_c_checksumFlag,
-        (fparams.checksumFlag != 0 as std::ffi::c_int) as std::ffi::c_int,
+        (fparams.checksumFlag != 0) as std::ffi::c_int,
     );
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
@@ -3973,12 +3584,12 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     let err_code_1 = ZSTD_CCtx_setParameter(
         cctx,
         ZSTD_c_dictIDFlag,
-        (fparams.noDictIDFlag == 0 as std::ffi::c_int) as std::ffi::c_int,
+        (fparams.noDictIDFlag == 0) as std::ffi::c_int,
     );
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setParams)]
 pub unsafe extern "C" fn ZSTD_CCtx_setParams(
@@ -3997,7 +3608,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize)]
 pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
@@ -4007,17 +3618,16 @@ pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
     if (*cctx).streamStage as std::ffi::c_uint != zcss_init as std::ffi::c_int as std::ffi::c_uint {
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
-    (*cctx).pledgedSrcSizePlusOne =
-        pledgedSrcSize.wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulonglong);
-    0 as std::ffi::c_int as size_t
+    (*cctx).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1);
+    0
 }
 unsafe extern "C" fn ZSTD_initLocalDict(mut cctx: *mut ZSTD_CCtx) -> size_t {
     let dl: *mut ZSTD_localDict = &mut (*cctx).localDict;
     if ((*dl).dict).is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     if !((*dl).cdict).is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     (*dl).cdict = ZSTD_createCDict_advanced2(
         (*dl).dict,
@@ -4031,7 +3641,7 @@ unsafe extern "C" fn ZSTD_initLocalDict(mut cctx: *mut ZSTD_CCtx) -> size_t {
         return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
     }
     (*cctx).cdict = (*dl).cdict;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_advanced)]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
@@ -4045,8 +3655,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
     ZSTD_clearAllDicts(cctx);
-    if dict.is_null() || dictSize == 0 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as size_t;
+    if dict.is_null() || dictSize == 0 {
+        return 0;
     }
     if dictLoadMethod as std::ffi::c_uint == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint {
         (*cctx).localDict.dict = dict;
@@ -4065,7 +3675,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
     }
     (*cctx).localDict.dictSize = dictSize;
     (*cctx).localDict.dictContentType = dictContentType;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_byReference)]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_byReference(
@@ -4093,7 +3703,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
     }
     ZSTD_clearAllDicts(cctx);
     (*cctx).cdict = cdict;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_refThreadPool)]
 pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
@@ -4104,7 +3714,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
     (*cctx).pool = pool;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_refPrefix)]
 pub unsafe extern "C" fn ZSTD_CCtx_refPrefix(
@@ -4125,12 +3735,12 @@ pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
     ZSTD_clearAllDicts(cctx);
-    if !prefix.is_null() && prefixSize > 0 as std::ffi::c_int as size_t {
+    if !prefix.is_null() && prefixSize > 0 {
         (*cctx).prefixDict.dict = prefix;
         (*cctx).prefixDict.dictSize = prefixSize;
         (*cctx).prefixDict.dictContentType = dictContentType;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_CCtx_reset)]
 pub unsafe extern "C" fn ZSTD_CCtx_reset(
@@ -4142,7 +3752,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
             == ZSTD_reset_session_and_parameters as std::ffi::c_int as std::ffi::c_uint
     {
         (*cctx).streamStage = zcss_init;
-        (*cctx).pledgedSrcSizePlusOne = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+        (*cctx).pledgedSrcSizePlusOne = 0;
     }
     if reset as std::ffi::c_uint == ZSTD_reset_parameters as std::ffi::c_int as std::ffi::c_uint
         || reset as std::ffi::c_uint
@@ -4156,7 +3766,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
         ZSTD_clearAllDicts(cctx);
         return ZSTD_CCtxParams_reset(&mut (*cctx).requestedParams);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_checkCParams)]
 pub unsafe extern "C" fn ZSTD_checkCParams(mut cParams: ZSTD_compressionParameters) -> size_t {
@@ -4181,7 +3791,7 @@ pub unsafe extern "C" fn ZSTD_checkCParams(mut cParams: ZSTD_compressionParamete
     if ZSTD_cParam_withinBounds(ZSTD_c_strategy, cParams.strategy as std::ffi::c_int) == 0 {
         return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_clampCParams(
     mut cParams: ZSTD_compressionParameters,
@@ -4241,32 +3851,27 @@ unsafe extern "C" fn ZSTD_dictAndWindowLog(
     mut srcSize: u64,
     mut dictSize: u64,
 ) -> u32 {
-    let maxWindowSize = ((1 as std::ffi::c_ulonglong)
-        << (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 4 as std::ffi::c_int as std::ffi::c_ulong
-        {
+    let maxWindowSize = ((1)
+        << (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
         })) as u64;
-    if dictSize == 0 as std::ffi::c_int as u64 {
+    if dictSize == 0 {
         return windowLog;
     }
-    let windowSize = ((1 as std::ffi::c_ulonglong) << windowLog) as u64;
+    let windowSize = ((1) << windowLog) as u64;
     let dictAndWindowSize = dictSize.wrapping_add(windowSize);
     if windowSize >= dictSize.wrapping_add(srcSize) {
         windowLog
     } else if dictAndWindowSize >= maxWindowSize {
-        (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 4 as std::ffi::c_int as std::ffi::c_ulong
-        {
+        (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
         }) as u32
     } else {
-        (ZSTD_highbit32((dictAndWindowSize as u32).wrapping_sub(1 as std::ffi::c_int as u32)))
-            .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+        (ZSTD_highbit32((dictAndWindowSize as u32).wrapping_sub(1))).wrapping_add(1)
     }
 }
 unsafe extern "C" fn ZSTD_adjustCParams_internal(
@@ -4276,15 +3881,13 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
     mut mode: ZSTD_CParamMode_e,
     mut useRowMatchFinder: ZSTD_ParamSwitch_e,
 ) -> ZSTD_compressionParameters {
-    let minSrcSize = 513 as std::ffi::c_int as u64;
-    let maxWindowResize = ((1 as std::ffi::c_ulonglong)
-        << ((if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
-            == 4 as std::ffi::c_int as std::ffi::c_ulong
-        {
+    let minSrcSize = 513;
+    let maxWindowResize = ((1)
+        << ((if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
-        }) - 1 as std::ffi::c_int)) as u64;
+        }) - 1)) as u64;
     match mode as std::ffi::c_uint {
         2 => {
             if dictSize != 0 && srcSize == ZSTD_CONTENTSIZE_UNKNOWN {
@@ -4292,18 +3895,17 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
             }
         }
         1 => {
-            dictSize = 0 as std::ffi::c_int as size_t;
+            dictSize = 0;
         }
         3 | 0 | _ => {}
     }
     if srcSize <= maxWindowResize as std::ffi::c_ulonglong && dictSize <= maxWindowResize {
         let tSize = srcSize.wrapping_add(dictSize as std::ffi::c_ulonglong) as u32;
-        static mut hashSizeMin: u32 = ((1 as std::ffi::c_int) << ZSTD_HASHLOG_MIN) as u32;
+        static mut hashSizeMin: u32 = ((1) << ZSTD_HASHLOG_MIN) as u32;
         let srcLog = if tSize < hashSizeMin {
             ZSTD_HASHLOG_MIN as std::ffi::c_uint
         } else {
-            (ZSTD_highbit32(tSize.wrapping_sub(1 as std::ffi::c_int as u32)))
-                .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+            (ZSTD_highbit32(tSize.wrapping_sub(1))).wrapping_add(1)
         };
         if cPar.windowLog > srcLog {
             cPar.windowLog = srcLog;
@@ -4312,8 +3914,8 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
     if srcSize != ZSTD_CONTENTSIZE_UNKNOWN {
         let dictAndWindowLog = ZSTD_dictAndWindowLog(cPar.windowLog, srcSize as u64, dictSize);
         let cycleLog = ZSTD_cycleLog(cPar.chainLog, cPar.strategy);
-        if cPar.hashLog > dictAndWindowLog.wrapping_add(1 as std::ffi::c_int as u32) {
-            cPar.hashLog = dictAndWindowLog.wrapping_add(1 as std::ffi::c_int as u32);
+        if cPar.hashLog > dictAndWindowLog.wrapping_add(1) {
+            cPar.hashLog = dictAndWindowLog.wrapping_add(1);
         }
         if cycleLog > dictAndWindowLog {
             cPar.chainLog = (cPar.chainLog).wrapping_sub(cycleLog.wrapping_sub(dictAndWindowLog));
@@ -4325,7 +3927,7 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
     if mode as std::ffi::c_uint == ZSTD_cpm_createCDict as std::ffi::c_int as std::ffi::c_uint
         && ZSTD_CDictIndicesAreTagged(&mut cPar) != 0
     {
-        let maxShortCacheHashLog = (32 as std::ffi::c_int - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
+        let maxShortCacheHashLog = (32 - ZSTD_SHORT_CACHE_TAG_BITS) as u32;
         if cPar.hashLog > maxShortCacheHashLog {
             cPar.hashLog = maxShortCacheHashLog;
         }
@@ -4338,19 +3940,19 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
         useRowMatchFinder = ZSTD_ps_enable;
     }
     if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) != 0 {
-        let rowLog = if 4 as std::ffi::c_int as std::ffi::c_uint
-            > (if cPar.searchLog < 6 as std::ffi::c_int as std::ffi::c_uint {
+        let rowLog = if 4
+            > (if cPar.searchLog < 6 {
                 cPar.searchLog
             } else {
-                6 as std::ffi::c_int as std::ffi::c_uint
+                6
             }) {
-            4 as std::ffi::c_int as std::ffi::c_uint
-        } else if cPar.searchLog < 6 as std::ffi::c_int as std::ffi::c_uint {
+            4
+        } else if cPar.searchLog < 6 {
             cPar.searchLog
         } else {
-            6 as std::ffi::c_int as std::ffi::c_uint
+            6
         };
-        let maxRowHashLog = (32 as std::ffi::c_int - ZSTD_ROW_HASH_TAG_BITS) as u32;
+        let maxRowHashLog = (32 - ZSTD_ROW_HASH_TAG_BITS) as u32;
         let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
         if cPar.hashLog > maxHashLog {
             cPar.hashLog = maxHashLog;
@@ -4365,7 +3967,7 @@ pub unsafe extern "C" fn ZSTD_adjustCParams(
     mut dictSize: size_t,
 ) -> ZSTD_compressionParameters {
     cPar = ZSTD_clampCParams(cPar);
-    if srcSize == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    if srcSize == 0 {
         srcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
     ZSTD_adjustCParams_internal(cPar, srcSize, dictSize, ZSTD_cpm_unknown, ZSTD_ps_auto)
@@ -4410,10 +4012,10 @@ pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
         searchLog: 0,
         minMatch: 0,
         targetLength: 0,
-        strategy: 0 as ZSTD_strategy,
+        strategy: 0,
     };
     if srcSizeHint as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-        && (*CCtxParams).srcSizeHint > 0 as std::ffi::c_int
+        && (*CCtxParams).srcSizeHint > 0
     {
         srcSizeHint = (*CCtxParams).srcSizeHint as u64;
     }
@@ -4454,16 +4056,15 @@ unsafe extern "C" fn ZSTD_sizeof_matchState(
         0 as std::ffi::c_int as size_t
     };
     let hSize = (1 as std::ffi::c_int as size_t) << (*cParams).hashLog;
-    let hashLog3 =
-        if forCCtx != 0 && (*cParams).minMatch == 3 as std::ffi::c_int as std::ffi::c_uint {
-            if (17 as std::ffi::c_int as std::ffi::c_uint) < (*cParams).windowLog {
-                17 as std::ffi::c_int as std::ffi::c_uint
-            } else {
-                (*cParams).windowLog
-            }
+    let hashLog3 = if forCCtx != 0 && (*cParams).minMatch == 3 {
+        if (17) < (*cParams).windowLog {
+            17
         } else {
-            0 as std::ffi::c_int as std::ffi::c_uint
-        };
+            (*cParams).windowLog
+        }
+    } else {
+        0
+    };
     let h3Size = if hashLog3 != 0 {
         (1 as std::ffi::c_int as size_t) << hashLog3
     } else {
@@ -4474,19 +4075,19 @@ unsafe extern "C" fn ZSTD_sizeof_matchState(
         .wrapping_add(hSize.wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong))
         .wrapping_add(h3Size.wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong));
     let optPotentialSpace = (ZSTD_cwksp_aligned64_alloc_size(
-        ((MaxML + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+        ((MaxML + 1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
     ))
     .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-        ((MaxLL + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+        ((MaxLL + 1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
     ))
     .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-        ((MaxOff + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+        ((MaxOff + 1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
     ))
     .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-        (((1 as std::ffi::c_int) << Litbits) as std::ffi::c_ulong)
+        (((1) << Litbits) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
     ))
     .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
@@ -4501,7 +4102,7 @@ unsafe extern "C" fn ZSTD_sizeof_matchState(
         if ZSTD_rowMatchFinderUsed((*cParams).strategy, useRowMatchFinder) != 0 {
             ZSTD_cwksp_aligned64_alloc_size(hSize)
         } else {
-            0 as std::ffi::c_int as size_t
+            0
         };
     let optSpace = if forCCtx != 0
         && (*cParams).strategy as std::ffi::c_uint
@@ -4509,7 +4110,7 @@ unsafe extern "C" fn ZSTD_sizeof_matchState(
     {
         optPotentialSpace
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let slackSpace = ZSTD_cwksp_slack_space_required();
     tableSpace
@@ -4522,12 +4123,11 @@ unsafe extern "C" fn ZSTD_maxNbSeq(
     mut minMatch: std::ffi::c_uint,
     mut useSequenceProducer: std::ffi::c_int,
 ) -> size_t {
-    let divider =
-        (if minMatch == 3 as std::ffi::c_int as std::ffi::c_uint || useSequenceProducer != 0 {
-            3 as std::ffi::c_int
-        } else {
-            4 as std::ffi::c_int
-        }) as u32;
+    let divider = (if minMatch == 3 || useSequenceProducer != 0 {
+        3
+    } else {
+        4
+    }) as u32;
     blockSize / divider as size_t
 }
 unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
@@ -4541,19 +4141,15 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     mut useSequenceProducer: std::ffi::c_int,
     mut maxBlockSize: size_t,
 ) -> size_t {
-    let windowSize = (if 1 as std::ffi::c_ulonglong
-        > (if (1 as std::ffi::c_ulonglong) << (*cParams).windowLog
-            < pledgedSrcSize as std::ffi::c_ulonglong
-        {
-            (1 as std::ffi::c_ulonglong) << (*cParams).windowLog
+    let windowSize = (if 1
+        > (if (1) << (*cParams).windowLog < pledgedSrcSize as std::ffi::c_ulonglong {
+            (1) << (*cParams).windowLog
         } else {
             pledgedSrcSize as std::ffi::c_ulonglong
         }) {
-        1 as std::ffi::c_ulonglong
-    } else if (1 as std::ffi::c_ulonglong) << (*cParams).windowLog
-        < pledgedSrcSize as std::ffi::c_ulonglong
-    {
-        (1 as std::ffi::c_ulonglong) << (*cParams).windowLog
+        1
+    } else if (1) << (*cParams).windowLog < pledgedSrcSize as std::ffi::c_ulonglong {
+        (1) << (*cParams).windowLog
     } else {
         pledgedSrcSize as std::ffi::c_ulonglong
     }) as size_t;
@@ -4569,50 +4165,28 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
                 maxNbSeq.wrapping_mul(::core::mem::size_of::<SeqDef>() as std::ffi::c_ulong),
             ))
             .wrapping_add(
-                3 as std::ffi::c_int as size_t
-                    * ZSTD_cwksp_alloc_size(
-                        maxNbSeq.wrapping_mul(::core::mem::size_of::<u8>() as std::ffi::c_ulong),
-                    ),
+                3 * ZSTD_cwksp_alloc_size(
+                    maxNbSeq.wrapping_mul(::core::mem::size_of::<u8>() as std::ffi::c_ulong),
+                ),
             );
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
-        if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-            as std::ffi::c_ulong)
-            .wrapping_add(
-                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                    ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                        35 as std::ffi::c_int
-                    } else {
-                        52 as std::ffi::c_int
-                    }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                ),
-            )
-            > 8208 as std::ffi::c_int as std::ffi::c_ulong
+        if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+        ) > 8208
         {
-            ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                as std::ffi::c_ulong)
-                .wrapping_add(
-                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                            35 as std::ffi::c_int
-                        } else {
-                            52 as std::ffi::c_int
-                        }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                    ),
-                )
+            ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+            )
         } else {
-            8208 as std::ffi::c_int as std::ffi::c_ulong
+            8208
         },
     );
-    let blockStateSpace = 2 as std::ffi::c_int as size_t
-        * ZSTD_cwksp_alloc_size(
-            ::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong
-        );
-    let matchStateSize = ZSTD_sizeof_matchState(
-        cParams,
-        useRowMatchFinder,
-        0 as std::ffi::c_int,
-        1 as std::ffi::c_int as u32,
-    );
+    let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(::core::mem::size_of::<
+        ZSTD_compressedBlockState_t,
+    >() as std::ffi::c_ulong);
+    let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, 0, 1);
     let ldmSpace = ZSTD_ldm_getTableSize(*ldmParams);
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
     let ldmSeqSpace = if (*ldmParams).enableLdm as std::ffi::c_uint
@@ -4622,14 +4196,14 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
             maxNbLdmSeq.wrapping_mul(::core::mem::size_of::<rawSeq>() as std::ffi::c_ulong),
         )
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let bufferSpace =
         (ZSTD_cwksp_alloc_size(buffInSize)).wrapping_add(ZSTD_cwksp_alloc_size(buffOutSize));
     let cctxSpace = if isStatic != 0 {
         ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CCtx>() as std::ffi::c_ulong)
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let maxNbExternalSeq = ZSTD_sequenceBound(blockSize);
     let externalSeqSpace = if useSequenceProducer != 0 {
@@ -4638,7 +4212,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
                 .wrapping_mul(::core::mem::size_of::<ZSTD_Sequence>() as std::ffi::c_ulong),
         )
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
 
     cctxSpace
@@ -4658,20 +4232,20 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
     let cParams = ZSTD_getCParamsFromCCtxParams(
         params,
         ZSTD_CONTENTSIZE_UNKNOWN as u64,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTD_cpm_noAttachDict,
     );
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode((*params).useRowMatchFinder, &cParams);
-    if (*params).nbWorkers > 0 as std::ffi::c_int {
+    if (*params).nbWorkers > 0 {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
     ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &cParams,
         &(*params).ldmParams,
-        1 as std::ffi::c_int,
+        1,
         useRowMatchFinder,
-        0 as std::ffi::c_int as size_t,
-        0 as std::ffi::c_int as size_t,
+        0,
+        0,
         ZSTD_CONTENTSIZE_UNKNOWN as u64,
         ZSTD_hasExtSeqProd(params),
         (*params).maxBlockSize,
@@ -4702,13 +4276,13 @@ static mut srcSizeTiers: [std::ffi::c_ulonglong; 4] = [0; 4];
 unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
     mut compressionLevel: std::ffi::c_int,
 ) -> size_t {
-    let mut tier = 0 as std::ffi::c_int;
-    let mut largestSize = 0 as std::ffi::c_int as size_t;
-    while tier < 4 as std::ffi::c_int {
+    let mut tier = 0;
+    let mut largestSize = 0;
+    while tier < 4 {
         let cParams = ZSTD_getCParams_internal(
             compressionLevel,
             *srcSizeTiers.as_ptr().offset(tier as isize),
-            0 as std::ffi::c_int as size_t,
+            0,
             ZSTD_cpm_noAttachDict,
         );
         largestSize = if ZSTD_estimateCCtxSize_usingCParams(cParams) > largestSize {
@@ -4724,11 +4298,11 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
 #[export_name = crate::prefix!(ZSTD_estimateCCtxSize)]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: std::ffi::c_int) -> size_t {
     let mut level: std::ffi::c_int = 0;
-    let mut memBudget = 0 as std::ffi::c_int as size_t;
-    level = if compressionLevel < 1 as std::ffi::c_int {
+    let mut memBudget = 0;
+    level = if compressionLevel < 1 {
         compressionLevel
     } else {
-        1 as std::ffi::c_int
+        1
     };
     while level <= compressionLevel {
         let newMB = ZSTD_estimateCCtxSize_internal(level);
@@ -4744,42 +4318,40 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: std::ffi::c
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     mut params: *const ZSTD_CCtx_params,
 ) -> size_t {
-    if (*params).nbWorkers > 0 as std::ffi::c_int {
+    if (*params).nbWorkers > 0 {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
     let cParams = ZSTD_getCParamsFromCCtxParams(
         params,
         ZSTD_CONTENTSIZE_UNKNOWN as u64,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTD_cpm_noAttachDict,
     );
-    let blockSize = if ZSTD_resolveMaxBlockSize((*params).maxBlockSize)
-        < (1 as std::ffi::c_int as size_t) << cParams.windowLog
-    {
+    let blockSize = if ZSTD_resolveMaxBlockSize((*params).maxBlockSize) < (1) << cParams.windowLog {
         ZSTD_resolveMaxBlockSize((*params).maxBlockSize)
     } else {
-        (1 as std::ffi::c_int as size_t) << cParams.windowLog
+        (1) << cParams.windowLog
     };
     let inBuffSize = if (*params).inBufferMode as std::ffi::c_uint
         == ZSTD_bm_buffered as std::ffi::c_int as std::ffi::c_uint
     {
         ((1 as std::ffi::c_int as size_t) << cParams.windowLog).wrapping_add(blockSize)
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let outBuffSize = if (*params).outBufferMode as std::ffi::c_uint
         == ZSTD_bm_buffered as std::ffi::c_int as std::ffi::c_uint
     {
-        (ZSTD_compressBound(blockSize)).wrapping_add(1 as std::ffi::c_int as size_t)
+        (ZSTD_compressBound(blockSize)).wrapping_add(1)
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let useRowMatchFinder =
         ZSTD_resolveRowMatchFinderMode((*params).useRowMatchFinder, &(*params).cParams);
     ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &cParams,
         &(*params).ldmParams,
-        1 as std::ffi::c_int,
+        1,
         useRowMatchFinder,
         inBuffSize,
         outBuffSize,
@@ -4815,7 +4387,7 @@ unsafe extern "C" fn ZSTD_estimateCStreamSize_internal(
     let cParams = ZSTD_getCParams_internal(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTD_cpm_noAttachDict,
     );
     ZSTD_estimateCStreamSize_usingCParams(cParams)
@@ -4823,11 +4395,11 @@ unsafe extern "C" fn ZSTD_estimateCStreamSize_internal(
 #[export_name = crate::prefix!(ZSTD_estimateCStreamSize)]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize(mut compressionLevel: std::ffi::c_int) -> size_t {
     let mut level: std::ffi::c_int = 0;
-    let mut memBudget = 0 as std::ffi::c_int as size_t;
-    level = if compressionLevel < 1 as std::ffi::c_int {
+    let mut memBudget = 0;
+    level = if compressionLevel < 1 {
         compressionLevel
     } else {
-        1 as std::ffi::c_int
+        1
     };
     while level <= compressionLevel {
         let newMB = ZSTD_estimateCStreamSize_internal(level);
@@ -4843,7 +4415,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize(mut compressionLevel: std::ffi
 pub unsafe extern "C" fn ZSTD_getFrameProgression(
     mut cctx: *const ZSTD_CCtx,
 ) -> ZSTD_frameProgression {
-    if (*cctx).appliedParams.nbWorkers > 0 as std::ffi::c_int {
+    if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_getFrameProgression((*cctx).mtctx);
     }
     let mut fp = ZSTD_frameProgression {
@@ -4855,7 +4427,7 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(
         nbActiveWorkers: 0,
     };
     let buffered = if ((*cctx).inBuff).is_null() {
-        0 as std::ffi::c_int as size_t
+        0
     } else {
         ((*cctx).inBuffPos).wrapping_sub((*cctx).inToCompress)
     };
@@ -4864,16 +4436,16 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(
     fp.consumed = (*cctx).consumedSrcSize;
     fp.produced = (*cctx).producedCSize;
     fp.flushed = (*cctx).producedCSize;
-    fp.currentJobID = 0 as std::ffi::c_int as std::ffi::c_uint;
-    fp.nbActiveWorkers = 0 as std::ffi::c_int as std::ffi::c_uint;
+    fp.currentJobID = 0;
+    fp.nbActiveWorkers = 0;
     fp
 }
 #[export_name = crate::prefix!(ZSTD_toFlushNow)]
 pub unsafe extern "C" fn ZSTD_toFlushNow(mut cctx: *mut ZSTD_CCtx) -> size_t {
-    if (*cctx).appliedParams.nbWorkers > 0 as std::ffi::c_int {
+    if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_toFlushNow((*cctx).mtctx);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_assertEqualCParams(
     mut cParams1: ZSTD_compressionParameters,
@@ -4883,7 +4455,7 @@ unsafe extern "C" fn ZSTD_assertEqualCParams(
 #[export_name = crate::prefix!(ZSTD_reset_compressedBlockState)]
 pub unsafe extern "C" fn ZSTD_reset_compressedBlockState(mut bs: *mut ZSTD_compressedBlockState_t) {
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
+    i = 0;
     while i < ZSTD_REP_NUM {
         *((*bs).rep).as_mut_ptr().offset(i as isize) = *repStartValue.as_ptr().offset(i as isize);
         i += 1;
@@ -4897,23 +4469,21 @@ pub unsafe extern "C" fn ZSTD_reset_compressedBlockState(mut bs: *mut ZSTD_compr
 unsafe extern "C" fn ZSTD_invalidateMatchState(mut ms: *mut ZSTD_MatchState_t) {
     ZSTD_window_clear(&mut (*ms).window);
     (*ms).nextToUpdate = (*ms).window.dictLimit;
-    (*ms).loadedDictEnd = 0 as std::ffi::c_int as u32;
-    (*ms).opt.litLengthSum = 0 as std::ffi::c_int as u32;
+    (*ms).loadedDictEnd = 0;
+    (*ms).opt.litLengthSum = 0;
     (*ms).dictMatchState = NULL as *const ZSTD_MatchState_t;
 }
 unsafe extern "C" fn ZSTD_bitmix(mut val: u64, mut len: u64) -> u64 {
-    val ^= ZSTD_rotateRight_U64(val, 49 as std::ffi::c_int as u32)
-        ^ ZSTD_rotateRight_U64(val, 24 as std::ffi::c_int as u32);
+    val ^= ZSTD_rotateRight_U64(val, 49) ^ ZSTD_rotateRight_U64(val, 24);
     val = (val as std::ffi::c_ulonglong).wrapping_mul(0x9fb21c651e98df25 as std::ffi::c_ulonglong)
         as u64 as u64;
-    val ^= (val >> 35 as std::ffi::c_int).wrapping_add(len);
+    val ^= (val >> 35).wrapping_add(len);
     val = (val as std::ffi::c_ulonglong).wrapping_mul(0x9fb21c651e98df25 as std::ffi::c_ulonglong)
         as u64 as u64;
-    val ^ val >> 28 as std::ffi::c_int
+    val ^ val >> 28
 }
 unsafe extern "C" fn ZSTD_advanceHashSalt(mut ms: *mut ZSTD_MatchState_t) {
-    (*ms).hashSalt = ZSTD_bitmix((*ms).hashSalt, 8 as std::ffi::c_int as u64)
-        ^ ZSTD_bitmix((*ms).hashSaltEntropy as u64, 4 as std::ffi::c_int as u64);
+    (*ms).hashSalt = ZSTD_bitmix((*ms).hashSalt, 8) ^ ZSTD_bitmix((*ms).hashSaltEntropy as u64, 4);
 }
 unsafe extern "C" fn ZSTD_reset_matchState(
     mut ms: *mut ZSTD_MatchState_t,
@@ -4940,15 +4510,15 @@ unsafe extern "C" fn ZSTD_reset_matchState(
     let hSize = (1 as std::ffi::c_int as size_t) << (*cParams).hashLog;
     let hashLog3 = if forWho as std::ffi::c_uint
         == ZSTD_resetTarget_CCtx as std::ffi::c_int as std::ffi::c_uint
-        && (*cParams).minMatch == 3 as std::ffi::c_int as std::ffi::c_uint
+        && (*cParams).minMatch == 3
     {
-        if (17 as std::ffi::c_int as std::ffi::c_uint) < (*cParams).windowLog {
-            17 as std::ffi::c_int as std::ffi::c_uint
+        if (17) < (*cParams).windowLog {
+            17
         } else {
             (*cParams).windowLog
         }
     } else {
-        0 as std::ffi::c_int as std::ffi::c_uint
+        0
     };
     let h3Size = if hashLog3 != 0 {
         (1 as std::ffi::c_int as size_t) << hashLog3
@@ -4960,7 +4530,7 @@ unsafe extern "C" fn ZSTD_reset_matchState(
         ZSTD_cwksp_mark_tables_dirty(ws);
     }
     (*ms).hashLog3 = hashLog3;
-    (*ms).lazySkipping = 0 as std::ffi::c_int;
+    (*ms).lazySkipping = 0;
     ZSTD_invalidateMatchState(ms);
     ZSTD_cwksp_clear_tables(ws);
     (*ms).hashTable = ZSTD_cwksp_reserve_table(
@@ -4992,22 +4562,22 @@ unsafe extern "C" fn ZSTD_reset_matchState(
             (*ms).tagTable = ZSTD_cwksp_reserve_aligned64(ws, tagTableSize) as *mut u8;
             libc::memset(
                 (*ms).tagTable as *mut std::ffi::c_void,
-                0 as std::ffi::c_int,
+                0,
                 tagTableSize as libc::size_t,
             );
-            (*ms).hashSalt = 0 as std::ffi::c_int as u64;
+            (*ms).hashSalt = 0;
         }
-        let rowLog = if 4 as std::ffi::c_int as std::ffi::c_uint
-            > (if (*cParams).searchLog < 6 as std::ffi::c_int as std::ffi::c_uint {
+        let rowLog = if 4
+            > (if (*cParams).searchLog < 6 {
                 (*cParams).searchLog
             } else {
-                6 as std::ffi::c_int as std::ffi::c_uint
+                6
             }) {
-            4 as std::ffi::c_int as std::ffi::c_uint
-        } else if (*cParams).searchLog < 6 as std::ffi::c_int as std::ffi::c_uint {
+            4
+        } else if (*cParams).searchLog < 6 {
             (*cParams).searchLog
         } else {
-            6 as std::ffi::c_int as std::ffi::c_uint
+            6
         };
         (*ms).rowHashLog = ((*cParams).hashLog).wrapping_sub(rowLog);
     }
@@ -5017,22 +4587,22 @@ unsafe extern "C" fn ZSTD_reset_matchState(
     {
         (*ms).opt.litFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
-            (((1 as std::ffi::c_int) << Litbits) as std::ffi::c_ulong)
+            (((1) << Litbits) as std::ffi::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
         ) as *mut std::ffi::c_uint;
         (*ms).opt.litLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
-            ((MaxLL + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+            ((MaxLL + 1) as std::ffi::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
         ) as *mut std::ffi::c_uint;
         (*ms).opt.matchLengthFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
-            ((MaxML + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+            ((MaxML + 1) as std::ffi::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
         ) as *mut std::ffi::c_uint;
         (*ms).opt.offCodeFreq = ZSTD_cwksp_reserve_aligned64(
             ws,
-            ((MaxOff + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+            ((MaxOff + 1) as std::ffi::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
         ) as *mut std::ffi::c_uint;
         (*ms).opt.matchTable = ZSTD_cwksp_reserve_aligned64(
@@ -5050,10 +4620,9 @@ unsafe extern "C" fn ZSTD_reset_matchState(
     if ZSTD_cwksp_reserve_failed(ws) != 0 {
         return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
-pub const ZSTD_INDEXOVERFLOW_MARGIN: std::ffi::c_int =
-    16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int);
+pub const ZSTD_INDEXOVERFLOW_MARGIN: std::ffi::c_int = 16 * ((1) << 20);
 unsafe extern "C" fn ZSTD_indexTooCloseToMax(mut w: ZSTD_window_t) -> std::ffi::c_int {
     ((w.nextSrc).offset_from(w.base) as std::ffi::c_long as size_t
         > (if MEM_64bits() != 0 {
@@ -5085,7 +4654,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
     let ws: *mut ZSTD_cwksp = &mut (*zc).workspace;
-    (*zc).isFirstBlock = 1 as std::ffi::c_int;
+    (*zc).isFirstBlock = 1;
     (*zc).appliedParams = *params;
     params = &mut (*zc).appliedParams;
     if (*params).ldmParams.enableLdm as std::ffi::c_uint
@@ -5093,15 +4662,15 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     {
         ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &(*params).cParams);
     }
-    let windowSize = if 1 as std::ffi::c_int as size_t
-        > (if (1 as std::ffi::c_int as u64) << (*params).cParams.windowLog < pledgedSrcSize {
-            (1 as std::ffi::c_int as u64) << (*params).cParams.windowLog
+    let windowSize = if 1
+        > (if (1) << (*params).cParams.windowLog < pledgedSrcSize {
+            (1) << (*params).cParams.windowLog
         } else {
             pledgedSrcSize
         }) {
-        1 as std::ffi::c_int as size_t
-    } else if (1 as std::ffi::c_int as u64) << (*params).cParams.windowLog < pledgedSrcSize {
-        (1 as std::ffi::c_int as u64) << (*params).cParams.windowLog
+        1
+    } else if (1) << (*params).cParams.windowLog < pledgedSrcSize {
+        (1) << (*params).cParams.windowLog
     } else {
         pledgedSrcSize
     };
@@ -5120,9 +4689,9 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         && (*params).outBufferMode as std::ffi::c_uint
             == ZSTD_bm_buffered as std::ffi::c_int as std::ffi::c_uint
     {
-        (ZSTD_compressBound(blockSize)).wrapping_add(1 as std::ffi::c_int as size_t)
+        (ZSTD_compressBound(blockSize)).wrapping_add(1)
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let buffInSize = if zbuff as std::ffi::c_uint
         == ZSTDb_buffered as std::ffi::c_int as std::ffi::c_uint
@@ -5131,7 +4700,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     {
         windowSize.wrapping_add(blockSize)
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq((*params).ldmParams, blockSize);
     let indexTooClose = ZSTD_indexTooCloseToMax((*zc).blockState.matchState.window);
@@ -5144,7 +4713,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     let neededSpace = ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         &(*params).cParams,
         &(*params).ldmParams,
-        ((*zc).staticSize != 0 as std::ffi::c_int as size_t) as std::ffi::c_int,
+        ((*zc).staticSize != 0) as std::ffi::c_int,
         (*params).useRowMatchFinder,
         buffInSize,
         buffOutSize,
@@ -5157,7 +4726,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         return err_code;
     }
     if (*zc).staticSize == 0 {
-        ZSTD_cwksp_bump_oversized_duration(ws, 0 as std::ffi::c_int as size_t);
+        ZSTD_cwksp_bump_oversized_duration(ws, 0);
     }
     let workspaceTooSmall = (ZSTD_cwksp_sizeof(ws) < neededSpace) as std::ffi::c_int;
     let workspaceWasteful = ZSTD_cwksp_check_wasteful(ws, neededSpace);
@@ -5188,65 +4757,33 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         }
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
-            if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                as std::ffi::c_ulong)
-                .wrapping_add(
-                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                            35 as std::ffi::c_int
-                        } else {
-                            52 as std::ffi::c_int
-                        }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                    ),
-                )
-                > 8208 as std::ffi::c_int as std::ffi::c_ulong
+            if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+            ) > 8208
             {
-                ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                    as std::ffi::c_ulong)
-                    .wrapping_add(
-                        (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
-                            .wrapping_mul(
-                                ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                                    35 as std::ffi::c_int
-                                } else {
-                                    52 as std::ffi::c_int
-                                }) + 2 as std::ffi::c_int)
-                                    as std::ffi::c_ulong,
-                            ),
-                    )
+                ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                        .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+                )
             } else {
-                8208 as std::ffi::c_int as std::ffi::c_ulong
+                8208
             },
         );
         if ((*zc).tmpWorkspace).is_null() {
             return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
         }
-        (*zc).tmpWkspSize = if ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int)
-            + 512 as std::ffi::c_int) as std::ffi::c_ulong)
-            .wrapping_add(
-                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                    ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                        35 as std::ffi::c_int
-                    } else {
-                        52 as std::ffi::c_int
-                    }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                ),
-            )
-            > 8208 as std::ffi::c_int as std::ffi::c_ulong
+        (*zc).tmpWkspSize = if ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+            (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+        ) > 8208
         {
-            ((((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int)
-                as std::ffi::c_ulong)
-                .wrapping_add(
-                    (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong).wrapping_mul(
-                        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-                            35 as std::ffi::c_int
-                        } else {
-                            52 as std::ffi::c_int
-                        }) + 2 as std::ffi::c_int) as std::ffi::c_ulong,
-                    ),
-                )
+            ((((8) << 10) + 512) as std::ffi::c_ulong).wrapping_add(
+                (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
+                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as std::ffi::c_ulong),
+            )
         } else {
-            8208 as std::ffi::c_int as std::ffi::c_ulong
+            8208
         };
     }
     ZSTD_cwksp_clear(ws);
@@ -5254,18 +4791,17 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     (*zc).blockState.matchState.prefetchCDictTables =
         ((*params).prefetchCDictTables as std::ffi::c_uint
             == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int;
-    (*zc).pledgedSrcSizePlusOne =
-        pledgedSrcSize.wrapping_add(1 as std::ffi::c_int as u64) as std::ffi::c_ulonglong;
-    (*zc).consumedSrcSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
-    (*zc).producedCSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+    (*zc).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1) as std::ffi::c_ulonglong;
+    (*zc).consumedSrcSize = 0;
+    (*zc).producedCSize = 0;
     if pledgedSrcSize as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN {
-        (*zc).appliedParams.fParams.contentSizeFlag = 0 as std::ffi::c_int;
+        (*zc).appliedParams.fParams.contentSizeFlag = 0;
     }
     (*zc).blockSizeMax = blockSize;
-    ZSTD_XXH64_reset(&mut (*zc).xxhState, 0 as std::ffi::c_int as XXH64_hash_t);
+    ZSTD_XXH64_reset(&mut (*zc).xxhState, 0);
     (*zc).stage = ZSTDcs_init;
-    (*zc).dictID = 0 as std::ffi::c_int as u32;
-    (*zc).dictContentSize = 0 as std::ffi::c_int as size_t;
+    (*zc).dictID = 0;
+    (*zc).dictContentSize = 0;
     ZSTD_reset_compressedBlockState((*zc).blockState.prevCBlock);
     let err_code_1 = ZSTD_reset_matchState(
         &mut (*zc).blockState.matchState,
@@ -5293,7 +4829,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         ) as *mut ldmEntry_t;
         libc::memset(
             (*zc).ldmState.hashTable as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+            0,
             ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as std::ffi::c_ulong)
                 as libc::size_t,
         );
@@ -5303,7 +4839,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         ) as *mut rawSeq;
         (*zc).maxNbLdmSequences = maxNbLdmSeq;
         ZSTD_window_init(&mut (*zc).ldmState.window);
-        (*zc).ldmState.loadedDictEnd = 0 as std::ffi::c_int as u32;
+        (*zc).ldmState.loadedDictEnd = 0;
     }
     if ZSTD_hasExtSeqProd(params) != 0 {
         let maxNbExternalSeq = ZSTD_sequenceBound(blockSize);
@@ -5325,16 +4861,16 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
     if (*params).ldmParams.enableLdm as std::ffi::c_uint
         == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
     {
-        let numBuckets = (1 as std::ffi::c_int as size_t)
-            << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
+        let numBuckets =
+            (1) << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
         (*zc).ldmState.bucketOffsets = ZSTD_cwksp_reserve_buffer(ws, numBuckets);
         libc::memset(
             (*zc).ldmState.bucketOffsets as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+            0,
             numBuckets as libc::size_t,
         );
     }
-    ZSTD_referenceExternalSequences(zc, NULL as *mut rawSeq, 0 as std::ffi::c_int as size_t);
+    ZSTD_referenceExternalSequences(zc, NULL as *mut rawSeq, 0);
     (*zc).seqStore.maxNbSeq = maxNbSeq;
     (*zc).seqStore.llCode = ZSTD_cwksp_reserve_buffer(
         ws,
@@ -5348,32 +4884,32 @@ unsafe extern "C" fn ZSTD_resetCCtx_internal(
         ws,
         maxNbSeq.wrapping_mul(::core::mem::size_of::<u8>() as std::ffi::c_ulong),
     );
-    (*zc).initialized = 1 as std::ffi::c_int;
-    0 as std::ffi::c_int as size_t
+    (*zc).initialized = 1;
+    0
 }
 #[export_name = crate::prefix!(ZSTD_invalidateRepCodes)]
 pub unsafe extern "C" fn ZSTD_invalidateRepCodes(mut cctx: *mut ZSTD_CCtx) {
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
+    i = 0;
     while i < ZSTD_REP_NUM {
         *((*(*cctx).blockState.prevCBlock).rep)
             .as_mut_ptr()
-            .offset(i as isize) = 0 as std::ffi::c_int as u32;
+            .offset(i as isize) = 0;
         i += 1;
         i;
     }
 }
 static mut attachDictSizeCutoffs: [size_t; 10] = [
-    (8 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (8 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (8 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
-    (8 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t,
+    (8 * ((1) << 10)) as size_t,
+    (8 * ((1) << 10)) as size_t,
+    (16 * ((1) << 10)) as size_t,
+    (32 * ((1) << 10)) as size_t,
+    (32 * ((1) << 10)) as size_t,
+    (32 * ((1) << 10)) as size_t,
+    (32 * ((1) << 10)) as size_t,
+    (32 * ((1) << 10)) as size_t,
+    (8 * ((1) << 10)) as size_t,
+    (8 * ((1) << 10)) as size_t,
 ];
 unsafe extern "C" fn ZSTD_shouldAttachDict(
     mut cdict: *const ZSTD_CDict,
@@ -5418,7 +4954,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byAttachingCDict(
         cctx,
         &mut params,
         pledgedSrcSize,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTDcrp_makeClean,
         zbuff,
     );
@@ -5428,7 +4964,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byAttachingCDict(
     let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
         as std::ffi::c_long as u32;
     let cdictLen = cdictEnd.wrapping_sub((*cdict).matchState.window.dictLimit);
-    if cdictLen != 0 as std::ffi::c_int as u32 {
+    if cdictLen != 0 {
         (*cctx).blockState.matchState.dictMatchState = &(*cdict).matchState;
         if (*cctx).blockState.matchState.window.dictLimit < cdictEnd {
             (*cctx).blockState.matchState.window.nextSrc =
@@ -5445,7 +4981,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byAttachingCDict(
         &(*cdict).cBlockState as *const ZSTD_compressedBlockState_t as *const std::ffi::c_void,
         ::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_copyCDictTableIntoCCtx(
     mut dst: *mut u32,
@@ -5455,7 +4991,7 @@ unsafe extern "C" fn ZSTD_copyCDictTableIntoCCtx(
 ) {
     if ZSTD_CDictIndicesAreTagged(cParams) != 0 {
         let mut i: size_t = 0;
-        i = 0 as std::ffi::c_int as size_t;
+        i = 0;
         while i < tableSize {
             let taggedIndex = *src.offset(i as isize);
             let index = taggedIndex >> ZSTD_SHORT_CACHE_TAG_BITS;
@@ -5488,7 +5024,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byCopyingCDict(
         cctx,
         &mut params,
         pledgedSrcSize,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTDcrp_leaveDirty,
         zbuff,
     );
@@ -5496,17 +5032,13 @@ unsafe extern "C" fn ZSTD_resetCCtx_byCopyingCDict(
         return err_code;
     }
     ZSTD_cwksp_mark_tables_dirty(&mut (*cctx).workspace);
-    let chainSize = if ZSTD_allocateChainTable(
-        (*cdict_cParams).strategy,
-        (*cdict).useRowMatchFinder,
-        0 as std::ffi::c_int as u32,
-    ) != 0
-    {
-        (1 as std::ffi::c_int as size_t) << (*cdict_cParams).chainLog
-    } else {
-        0 as std::ffi::c_int as size_t
-    };
-    let hSize = (1 as std::ffi::c_int as size_t) << (*cdict_cParams).hashLog;
+    let chainSize =
+        if ZSTD_allocateChainTable((*cdict_cParams).strategy, (*cdict).useRowMatchFinder, 0) != 0 {
+            (1) << (*cdict_cParams).chainLog
+        } else {
+            0
+        };
+    let hSize = (1) << (*cdict_cParams).hashLog;
     ZSTD_copyCDictTableIntoCCtx(
         (*cctx).blockState.matchState.hashTable,
         (*cdict).matchState.hashTable,
@@ -5516,7 +5048,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byCopyingCDict(
     if ZSTD_allocateChainTable(
         (*cctx).appliedParams.cParams.strategy,
         (*cctx).appliedParams.useRowMatchFinder,
-        0 as std::ffi::c_int as u32,
+        0,
     ) != 0
     {
         ZSTD_copyCDictTableIntoCCtx(
@@ -5543,7 +5075,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byCopyingCDict(
     };
     libc::memset(
         (*cctx).blockState.matchState.hashTable3 as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         h3Size.wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong) as libc::size_t,
     );
     ZSTD_cwksp_mark_tables_clean(&mut (*cctx).workspace);
@@ -5559,7 +5091,7 @@ unsafe extern "C" fn ZSTD_resetCCtx_byCopyingCDict(
         &(*cdict).cBlockState as *const ZSTD_compressedBlockState_t as *const std::ffi::c_void,
         ::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_resetCCtx_usingCDict(
     mut cctx: *mut ZSTD_CCtx,
@@ -5600,7 +5132,7 @@ unsafe extern "C" fn ZSTD_copyCCtx_internal(
         dstCCtx,
         &mut params,
         pledgedSrcSize,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTDcrp_leaveDirty,
         zbuff,
     );
@@ -5608,7 +5140,7 @@ unsafe extern "C" fn ZSTD_copyCCtx_internal(
     let chainSize = if ZSTD_allocateChainTable(
         (*srcCCtx).appliedParams.cParams.strategy,
         (*srcCCtx).appliedParams.useRowMatchFinder,
-        0 as std::ffi::c_int as u32,
+        0,
     ) != 0
     {
         (1 as std::ffi::c_int as size_t) << (*srcCCtx).appliedParams.cParams.chainLog
@@ -5650,7 +5182,7 @@ unsafe extern "C" fn ZSTD_copyCCtx_internal(
         (*srcCCtx).blockState.prevCBlock as *const std::ffi::c_void,
         ::core::mem::size_of::<ZSTD_compressedBlockState_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_copyCCtx)]
 pub unsafe extern "C" fn ZSTD_copyCCtx(
@@ -5660,19 +5192,19 @@ pub unsafe extern "C" fn ZSTD_copyCCtx(
 ) -> size_t {
     let mut fParams = {
         ZSTD_frameParameters {
-            contentSizeFlag: 1 as std::ffi::c_int,
-            checksumFlag: 0 as std::ffi::c_int,
-            noDictIDFlag: 0 as std::ffi::c_int,
+            contentSizeFlag: 1,
+            checksumFlag: 0,
+            noDictIDFlag: 0,
         }
     };
     let zbuff = (*srcCCtx).bufferedPolicy;
-    if pledgedSrcSize == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    if pledgedSrcSize == 0 {
         pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     }
     fParams.contentSizeFlag = (pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN) as std::ffi::c_int;
     ZSTD_copyCCtx_internal(dstCCtx, srcCCtx, fParams, pledgedSrcSize as u64, zbuff)
 }
-pub const ZSTD_ROWSIZE: std::ffi::c_int = 16 as std::ffi::c_int;
+pub const ZSTD_ROWSIZE: std::ffi::c_int = 16;
 #[inline(always)]
 unsafe extern "C" fn ZSTD_reduceTable_internal(
     table: *mut u32,
@@ -5681,20 +5213,20 @@ unsafe extern "C" fn ZSTD_reduceTable_internal(
     preserveMark: std::ffi::c_int,
 ) {
     let nbRows = size as std::ffi::c_int / ZSTD_ROWSIZE;
-    let mut cellNb = 0 as std::ffi::c_int;
+    let mut cellNb = 0;
     let mut rowNb: std::ffi::c_int = 0;
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-    rowNb = 0 as std::ffi::c_int;
+    rowNb = 0;
     while rowNb < nbRows {
         let mut column: std::ffi::c_int = 0;
-        column = 0 as std::ffi::c_int;
+        column = 0;
         while column < ZSTD_ROWSIZE {
             let mut newVal: u32 = 0;
             if preserveMark != 0 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
             {
                 newVal = ZSTD_DUBT_UNSORTED_MARK as u32;
             } else if *table.offset(cellNb as isize) < reducerThreshold {
-                newVal = 0 as std::ffi::c_int as u32;
+                newVal = 0;
             } else {
                 newVal = (*table.offset(cellNb as isize)).wrapping_sub(reducerValue);
             }
@@ -5709,17 +5241,17 @@ unsafe extern "C" fn ZSTD_reduceTable_internal(
     }
 }
 unsafe extern "C" fn ZSTD_reduceTable(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, 0 as std::ffi::c_int);
+    ZSTD_reduceTable_internal(table, size, reducerValue, 0);
 }
 unsafe extern "C" fn ZSTD_reduceTable_btlazy2(table: *mut u32, size: u32, reducerValue: u32) {
-    ZSTD_reduceTable_internal(table, size, reducerValue, 1 as std::ffi::c_int);
+    ZSTD_reduceTable_internal(table, size, reducerValue, 1);
 }
 unsafe extern "C" fn ZSTD_reduceIndex(
     mut ms: *mut ZSTD_MatchState_t,
     mut params: *const ZSTD_CCtx_params,
     reducerValue: u32,
 ) {
-    let hSize = (1 as std::ffi::c_int as u32) << (*params).cParams.hashLog;
+    let hSize = (1) << (*params).cParams.hashLog;
     ZSTD_reduceTable((*ms).hashTable, hSize, reducerValue);
     if ZSTD_allocateChainTable(
         (*params).cParams.strategy,
@@ -5727,7 +5259,7 @@ unsafe extern "C" fn ZSTD_reduceIndex(
         (*ms).dedicatedDictSearch as u32,
     ) != 0
     {
-        let chainSize = (1 as std::ffi::c_int as u32) << (*params).cParams.chainLog;
+        let chainSize = (1) << (*params).cParams.chainLog;
         if (*params).cParams.strategy as std::ffi::c_uint
             == ZSTD_btlazy2 as std::ffi::c_int as std::ffi::c_uint
         {
@@ -5737,7 +5269,7 @@ unsafe extern "C" fn ZSTD_reduceIndex(
         }
     }
     if (*ms).hashLog3 != 0 {
-        let h3Size = (1 as std::ffi::c_int as u32) << (*ms).hashLog3;
+        let h3Size = (1) << (*ms).hashLog3;
         ZSTD_reduceTable((*ms).hashTable3, h3Size, reducerValue);
     }
 }
@@ -5750,8 +5282,8 @@ pub unsafe extern "C" fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> 
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as std::ffi::c_long as u32;
     let mut u: u32 = 0;
-    let mut longOffsets = 0 as std::ffi::c_int;
-    u = 0 as std::ffi::c_int as u32;
+    let mut longOffsets = 0;
+    u = 0;
     while u < nbSeq {
         let llv = (*sequences.offset(u as isize)).litLength as u32;
         let ofCode = ZSTD_highbit32((*sequences.offset(u as isize)).offBase);
@@ -5767,7 +5299,7 @@ pub unsafe extern "C" fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> 
                     STREAM_ACCUMULATOR_MIN_64
                 }) as u32
         {
-            longOffsets = 1 as std::ffi::c_int;
+            longOffsets = 1;
         }
         u = u.wrapping_add(1);
         u;
@@ -5787,7 +5319,7 @@ pub unsafe extern "C" fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> 
 unsafe extern "C" fn ZSTD_useTargetCBlockSize(
     mut cctxParams: *const ZSTD_CCtx_params,
 ) -> std::ffi::c_int {
-    ((*cctxParams).targetCBlockSize != 0 as std::ffi::c_int as size_t) as std::ffi::c_int
+    ((*cctxParams).targetCBlockSize != 0) as std::ffi::c_int
 }
 unsafe extern "C" fn ZSTD_blockSplitterEnabled(
     mut cctxParams: *mut ZSTD_CCtx_params,
@@ -5824,7 +5356,7 @@ unsafe extern "C" fn ZSTD_buildSequencesStatistics(
         lastCountSize: 0,
         longOffsets: 0,
     };
-    stats.lastCountSize = 0 as std::ffi::c_int as size_t;
+    stats.lastCountSize = 0;
     stats.longOffsets = ZSTD_seqToCodes(seqStorePtr);
     let mut max = MaxLL as std::ffi::c_uint;
     let mostFrequent = HIST_countFast_wksp(
@@ -5981,7 +5513,7 @@ unsafe extern "C" fn ZSTD_buildSequencesStatistics(
     stats.size = op.offset_from(ostart) as std::ffi::c_long as size_t;
     stats
 }
-pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: std::ffi::c_int = 20 as std::ffi::c_int;
+pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: std::ffi::c_int = 20;
 #[inline]
 unsafe extern "C" fn ZSTD_entropyCompressSeqStore_internal(
     mut dst: *mut std::ffi::c_void,
@@ -6011,25 +5543,16 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_internal(
     let oend = ostart.offset(dstCapacity as isize);
     let mut op = ostart;
     let mut lastCountSize: size_t = 0;
-    let mut longOffsets = 0 as std::ffi::c_int;
-    entropyWorkspace = count.offset(
-        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-            35 as std::ffi::c_int
-        } else {
-            52 as std::ffi::c_int
-        }) + 1 as std::ffi::c_int) as isize,
-    ) as *mut std::ffi::c_void;
+    let mut longOffsets = 0;
+    entropyWorkspace =
+        count.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize) as *mut std::ffi::c_void;
     entropyWkspSize = (entropyWkspSize as std::ffi::c_ulong).wrapping_sub(
-        (((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-            35 as std::ffi::c_int
-        } else {
-            52 as std::ffi::c_int
-        }) + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+        (((if 35 > 52 { 35 } else { 52 }) + 1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
     ) as size_t as size_t;
     let numSequences = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as std::ffi::c_long as size_t;
-    let suspectUncompressible = (numSequences == 0 as std::ffi::c_int as size_t
+    let suspectUncompressible = (numSequences == 0
         || litSize / numSequences >= SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO as size_t)
         as std::ffi::c_int;
     let cSize = ZSTD_compressLiterals(
@@ -6051,29 +5574,26 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_internal(
         return err_code;
     }
     op = op.offset(cSize as isize);
-    if (oend.offset_from(op) as std::ffi::c_long)
-        < (3 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_long
-    {
+    if (oend.offset_from(op) as std::ffi::c_long) < (3 + 1) as std::ffi::c_long {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
-    if nbSeq < 128 as std::ffi::c_int as size_t {
+    if nbSeq < 128 {
         let fresh2 = op;
         op = op.offset(1);
         *fresh2 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op.offset(0 as std::ffi::c_int as isize) =
-            (nbSeq >> 8 as std::ffi::c_int).wrapping_add(0x80 as std::ffi::c_int as size_t) as u8;
-        *op.offset(1 as std::ffi::c_int as isize) = nbSeq as u8;
-        op = op.offset(2 as std::ffi::c_int as isize);
+        *op.offset(0) = (nbSeq >> 8).wrapping_add(0x80 as std::ffi::c_int as size_t) as u8;
+        *op.offset(1) = nbSeq as u8;
+        op = op.offset(2);
     } else {
-        *op.offset(0 as std::ffi::c_int as isize) = 0xff as std::ffi::c_int as u8;
+        *op.offset(0) = 0xff as std::ffi::c_int as u8;
         MEM_writeLE16(
-            op.offset(1 as std::ffi::c_int as isize) as *mut std::ffi::c_void,
+            op.offset(1) as *mut std::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,
         );
-        op = op.offset(3 as std::ffi::c_int as isize);
+        op = op.offset(3);
     }
-    if nbSeq == 0 as std::ffi::c_int as size_t {
+    if nbSeq == 0 {
         libc::memcpy(
             &mut (*nextEntropy).fse as *mut ZSTD_fseCTables_t as *mut std::ffi::c_void,
             &(*prevEntropy).fse as *const ZSTD_fseCTables_t as *const std::ffi::c_void,
@@ -6100,9 +5620,9 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_internal(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    *seqHead = (stats.LLtype << 6 as std::ffi::c_int)
-        .wrapping_add(stats.Offtype << 4 as std::ffi::c_int)
-        .wrapping_add(stats.MLtype << 2 as std::ffi::c_int) as u8;
+    *seqHead = (stats.LLtype << 6)
+        .wrapping_add(stats.Offtype << 4)
+        .wrapping_add(stats.MLtype << 2) as u8;
     lastCountSize = stats.lastCountSize;
     op = op.offset(stats.size as isize);
     longOffsets = stats.longOffsets;
@@ -6125,10 +5645,8 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_internal(
         return err_code_1;
     }
     op = op.offset(bitstreamSize as isize);
-    if lastCountSize != 0
-        && lastCountSize.wrapping_add(bitstreamSize) < 4 as std::ffi::c_int as size_t
-    {
-        return 0 as std::ffi::c_int as size_t;
+    if lastCountSize != 0 && lastCountSize.wrapping_add(bitstreamSize) < 4 {
+        return 0;
     }
     op.offset_from(ostart) as std::ffi::c_long as size_t
 }
@@ -6159,14 +5677,14 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         entropyWkspSize,
         bmi2,
     );
-    if cSize == 0 as std::ffi::c_int as size_t {
-        return 0 as std::ffi::c_int as size_t;
+    if cSize == 0 {
+        return 0;
     }
     if (cSize == -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t) as std::ffi::c_int
         & (blockSize <= dstCapacity) as std::ffi::c_int
         != 0
     {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     let err_code = cSize;
     if ERR_isError(err_code) != 0 {
@@ -6174,7 +5692,7 @@ unsafe extern "C" fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     }
     let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, (*cctxParams).cParams.strategy));
     if cSize >= maxCSize {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     cSize
 }
@@ -6398,24 +5916,19 @@ unsafe extern "C" fn ZSTD_postProcessSequenceProducerResult(
     if nbExternalSeqs > outSeqsCapacity {
         return -(ZSTD_error_sequenceProducer_failed as std::ffi::c_int) as size_t;
     }
-    if nbExternalSeqs == 0 as std::ffi::c_int as size_t && srcSize > 0 as std::ffi::c_int as size_t
-    {
+    if nbExternalSeqs == 0 && srcSize > 0 {
         return -(ZSTD_error_sequenceProducer_failed as std::ffi::c_int) as size_t;
     }
-    if srcSize == 0 as std::ffi::c_int as size_t {
+    if srcSize == 0 {
         libc::memset(
-            &mut *outSeqs.offset(0 as std::ffi::c_int as isize) as *mut ZSTD_Sequence
-                as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+            &mut *outSeqs.offset(0) as *mut ZSTD_Sequence as *mut std::ffi::c_void,
+            0,
             ::core::mem::size_of::<ZSTD_Sequence>() as std::ffi::c_ulong as libc::size_t,
         );
-        return 1 as std::ffi::c_int as size_t;
+        return 1;
     }
-    let lastSeq =
-        *outSeqs.offset(nbExternalSeqs.wrapping_sub(1 as std::ffi::c_int as size_t) as isize);
-    if lastSeq.offset == 0 as std::ffi::c_int as std::ffi::c_uint
-        && lastSeq.matchLength == 0 as std::ffi::c_int as std::ffi::c_uint
-    {
+    let lastSeq = *outSeqs.offset(nbExternalSeqs.wrapping_sub(1) as isize);
+    if lastSeq.offset == 0 && lastSeq.matchLength == 0 {
         return nbExternalSeqs;
     }
     if nbExternalSeqs == outSeqsCapacity {
@@ -6424,10 +5937,10 @@ unsafe extern "C" fn ZSTD_postProcessSequenceProducerResult(
     libc::memset(
         &mut *outSeqs.offset(nbExternalSeqs as isize) as *mut ZSTD_Sequence
             as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_Sequence>() as std::ffi::c_ulong as libc::size_t,
     );
-    nbExternalSeqs.wrapping_add(1 as std::ffi::c_int as size_t)
+    nbExternalSeqs.wrapping_add(1)
 }
 unsafe extern "C" fn ZSTD_fastSequenceLengthSum(
     mut seqBuf: *const ZSTD_Sequence,
@@ -6436,9 +5949,9 @@ unsafe extern "C" fn ZSTD_fastSequenceLengthSum(
     let mut matchLenSum: size_t = 0;
     let mut litLenSum: size_t = 0;
     let mut i: size_t = 0;
-    matchLenSum = 0 as std::ffi::c_int as size_t;
-    litLenSum = 0 as std::ffi::c_int as size_t;
-    i = 0 as std::ffi::c_int as size_t;
+    matchLenSum = 0;
+    litLenSum = 0;
+    i = 0;
     while i < seqBufSize {
         litLenSum = litLenSum.wrapping_add((*seqBuf.offset(i as isize)).litLength as size_t);
         matchLenSum = matchLenSum.wrapping_add((*seqBuf.offset(i as isize)).matchLength as size_t);
@@ -6462,8 +5975,8 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
     if srcSize
         < (MIN_CBLOCK_SIZE as size_t)
             .wrapping_add(ZSTD_blockHeaderSize)
-            .wrapping_add(1 as std::ffi::c_int as size_t)
-            .wrapping_add(1 as std::ffi::c_int as size_t)
+            .wrapping_add(1)
+            .wrapping_add(1)
     {
         if (*zc).appliedParams.cParams.strategy as std::ffi::c_uint
             >= ZSTD_btopt as std::ffi::c_int as std::ffi::c_uint
@@ -6485,25 +5998,20 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
     let istart = src as *const u8;
     let curr = istart.offset_from(base) as std::ffi::c_long as u32;
     ::core::mem::size_of::<ptrdiff_t>();
-    8 as std::ffi::c_int as std::ffi::c_ulong;
-    if curr > ((*ms).nextToUpdate).wrapping_add(384 as std::ffi::c_int as u32) {
+    8;
+    if curr > ((*ms).nextToUpdate).wrapping_add(384) {
         (*ms).nextToUpdate = curr.wrapping_sub(
-            if (192 as std::ffi::c_int as u32)
-                < curr
-                    .wrapping_sub((*ms).nextToUpdate)
-                    .wrapping_sub(384 as std::ffi::c_int as u32)
-            {
-                192 as std::ffi::c_int as u32
+            if (192) < curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(384) {
+                192
             } else {
-                curr.wrapping_sub((*ms).nextToUpdate)
-                    .wrapping_sub(384 as std::ffi::c_int as u32)
+                curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(384)
             },
         );
     }
     let dictMode = ZSTD_matchState_dictMode(ms);
     let mut lastLLSize: size_t = 0;
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
+    i = 0;
     while i < ZSTD_REP_NUM {
         *((*(*zc).blockState.nextCBlock).rep)
             .as_mut_ptr()
@@ -6555,7 +6063,7 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
             srcSize,
         );
     } else if ZSTD_hasExtSeqProd(&mut (*zc).appliedParams) != 0 {
-        let windowSize = (1 as std::ffi::c_int as u32) << (*zc).appliedParams.cParams.windowLog;
+        let windowSize = (1) << (*zc).appliedParams.cParams.windowLog;
         let nbExternalSeqs = ((*zc).appliedParams.extSeqProdFunc).unwrap_unchecked()(
             (*zc).appliedParams.extSeqProdState,
             (*zc).extSeqBuf,
@@ -6563,7 +6071,7 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
             src,
             srcSize,
             NULL as *const std::ffi::c_void,
-            0 as std::ffi::c_int as size_t,
+            0,
             (*zc).appliedParams.compressionLevel,
             windowSize as size_t,
         );
@@ -6576,9 +6084,9 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
         if ERR_isError(nbPostProcessedSeqs) == 0 {
             let mut seqPos = {
                 ZSTD_SequencePosition {
-                    idx: 0 as std::ffi::c_int as u32,
-                    posInSequence: 0 as std::ffi::c_int as u32,
-                    posInSrc: 0 as std::ffi::c_int as size_t,
+                    idx: 0,
+                    posInSequence: 0,
+                    posInSrc: 0,
                 }
             };
             let seqLenSum = ZSTD_fastSequenceLengthSum((*zc).extSeqBuf, nbPostProcessedSeqs);
@@ -6647,12 +6155,12 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
     let nbInSequences = ((*seqStore).sequences).offset_from(inSeqs) as std::ffi::c_long as size_t;
     let nbInLiterals =
         ((*seqStore).lit).offset_from((*seqStore).litStart) as std::ffi::c_long as size_t;
-    let mut outSeqs = if (*seqCollector).seqIndex == 0 as std::ffi::c_int as size_t {
+    let mut outSeqs = if (*seqCollector).seqIndex == 0 {
         (*seqCollector).seqStart
     } else {
         ((*seqCollector).seqStart).offset((*seqCollector).seqIndex as isize)
     };
-    let nbOutSequences = nbInSequences.wrapping_add(1 as std::ffi::c_int as size_t);
+    let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0 as std::ffi::c_int as size_t;
     let mut repcodes = repcodes_s { rep: [0; 3] };
     let mut i: size_t = 0;
@@ -6664,14 +6172,14 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
         prevRepcodes as *const std::ffi::c_void,
         ::core::mem::size_of::<Repcodes_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    i = 0 as std::ffi::c_int as size_t;
+    i = 0;
     while i < nbInSequences {
         let mut rawOffset: u32 = 0;
         (*outSeqs.offset(i as isize)).litLength =
             (*inSeqs.offset(i as isize)).litLength as std::ffi::c_uint;
         (*outSeqs.offset(i as isize)).matchLength =
             ((*inSeqs.offset(i as isize)).mlBase as std::ffi::c_int + MINMATCH) as std::ffi::c_uint;
-        (*outSeqs.offset(i as isize)).rep = 0 as std::ffi::c_int as std::ffi::c_uint;
+        (*outSeqs.offset(i as isize)).rep = 0;
         if i == (*seqStore).longLengthPos as size_t {
             if (*seqStore).longLengthType as std::ffi::c_uint
                 == ZSTD_llt_literalLength as std::ffi::c_int as std::ffi::c_uint
@@ -6685,20 +6193,17 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
                 *fresh5 = (*fresh5).wrapping_add(0x10000 as std::ffi::c_int as std::ffi::c_uint);
             }
         }
-        if 1 as std::ffi::c_int as u32 <= (*inSeqs.offset(i as isize)).offBase
+        if 1 <= (*inSeqs.offset(i as isize)).offBase
             && (*inSeqs.offset(i as isize)).offBase <= ZSTD_REP_NUM as u32
         {
             let repcode = (*inSeqs.offset(i as isize)).offBase;
             (*outSeqs.offset(i as isize)).rep = repcode;
-            if (*outSeqs.offset(i as isize)).litLength != 0 as std::ffi::c_int as std::ffi::c_uint {
+            if (*outSeqs.offset(i as isize)).litLength != 0 {
                 rawOffset = *(repcodes.rep)
                     .as_mut_ptr()
-                    .offset(repcode.wrapping_sub(1 as std::ffi::c_int as u32) as isize);
-            } else if repcode == 3 as std::ffi::c_int as u32 {
-                rawOffset = (*(repcodes.rep)
-                    .as_mut_ptr()
-                    .offset(0 as std::ffi::c_int as isize))
-                .wrapping_sub(1 as std::ffi::c_int as u32);
+                    .offset(repcode.wrapping_sub(1) as isize);
+            } else if repcode == 3 {
+                rawOffset = (*(repcodes.rep).as_mut_ptr().offset(0)).wrapping_sub(1);
             } else {
                 rawOffset = *(repcodes.rep).as_mut_ptr().offset(repcode as isize);
             }
@@ -6709,8 +6214,8 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
         ZSTD_updateRep(
             (repcodes.rep).as_mut_ptr(),
             (*inSeqs.offset(i as isize)).offBase,
-            ((*inSeqs.offset(i as isize)).litLength as std::ffi::c_int == 0 as std::ffi::c_int)
-                as std::ffi::c_int as u32,
+            ((*inSeqs.offset(i as isize)).litLength as std::ffi::c_int == 0) as std::ffi::c_int
+                as u32,
         );
         nbOutLiterals =
             nbOutLiterals.wrapping_add((*outSeqs.offset(i as isize)).litLength as size_t);
@@ -6719,18 +6224,15 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
     }
     let lastLLSize = nbInLiterals.wrapping_sub(nbOutLiterals);
     (*outSeqs.offset(nbInSequences as isize)).litLength = lastLLSize as u32;
-    (*outSeqs.offset(nbInSequences as isize)).matchLength =
-        0 as std::ffi::c_int as std::ffi::c_uint;
-    (*outSeqs.offset(nbInSequences as isize)).offset = 0 as std::ffi::c_int as std::ffi::c_uint;
+    (*outSeqs.offset(nbInSequences as isize)).matchLength = 0;
+    (*outSeqs.offset(nbInSequences as isize)).offset = 0;
     (*seqCollector).seqIndex = ((*seqCollector).seqIndex).wrapping_add(nbOutSequences);
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_sequenceBound)]
 pub unsafe extern "C" fn ZSTD_sequenceBound(mut srcSize: size_t) -> size_t {
-    let maxNbSeq =
-        (srcSize / ZSTD_MINMATCH_MIN as size_t).wrapping_add(1 as std::ffi::c_int as size_t);
-    let maxNbDelims =
-        (srcSize / ZSTD_BLOCKSIZE_MAX_MIN as size_t).wrapping_add(1 as std::ffi::c_int as size_t);
+    let maxNbSeq = (srcSize / ZSTD_MINMATCH_MIN as size_t).wrapping_add(1);
+    let maxNbDelims = (srcSize / ZSTD_BLOCKSIZE_MAX_MIN as size_t).wrapping_add(1);
     maxNbSeq.wrapping_add(maxNbDelims)
 }
 #[export_name = crate::prefix!(ZSTD_generateSequences)]
@@ -6754,7 +6256,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    if targetCBlockSize != 0 as std::ffi::c_int {
+    if targetCBlockSize != 0 {
         return -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t;
     }
     let mut nbWorkers: std::ffi::c_int = 0;
@@ -6762,16 +6264,16 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    if nbWorkers != 0 as std::ffi::c_int {
+    if nbWorkers != 0 {
         return -(ZSTD_error_parameter_unsupported as std::ffi::c_int) as size_t;
     }
     dst = ZSTD_customMalloc(dstCapacity, ZSTD_defaultCMem);
     if dst.is_null() {
         return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
     }
-    seqCollector.collectSequences = 1 as std::ffi::c_int;
+    seqCollector.collectSequences = 1;
     seqCollector.seqStart = outSeqs;
-    seqCollector.seqIndex = 0 as std::ffi::c_int as size_t;
+    seqCollector.seqIndex = 0;
     seqCollector.maxSequences = outSeqsSize;
     (*zc).seqCollector = seqCollector;
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);
@@ -6787,17 +6289,14 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     mut sequences: *mut ZSTD_Sequence,
     mut seqsSize: size_t,
 ) -> size_t {
-    let mut in_0 = 0 as std::ffi::c_int as size_t;
+    let mut in_0 = 0;
     let mut out = 0 as std::ffi::c_int as size_t;
     while in_0 < seqsSize {
-        if (*sequences.offset(in_0 as isize)).offset == 0 as std::ffi::c_int as std::ffi::c_uint
-            && (*sequences.offset(in_0 as isize)).matchLength
-                == 0 as std::ffi::c_int as std::ffi::c_uint
+        if (*sequences.offset(in_0 as isize)).offset == 0
+            && (*sequences.offset(in_0 as isize)).matchLength == 0
         {
-            if in_0 != seqsSize.wrapping_sub(1 as std::ffi::c_int as size_t) {
-                let fresh6 = &mut (*sequences
-                    .offset(in_0.wrapping_add(1 as std::ffi::c_int as size_t) as isize))
-                .litLength;
+            if in_0 != seqsSize.wrapping_sub(1) {
+                let fresh6 = &mut (*sequences.offset(in_0.wrapping_add(1) as isize)).litLength;
                 *fresh6 = (*fresh6).wrapping_add((*sequences.offset(in_0 as isize)).litLength);
             }
         } else {
@@ -6812,35 +6311,31 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
 }
 unsafe extern "C" fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> std::ffi::c_int {
     let mut ip = src;
-    let value = *ip.offset(0 as std::ffi::c_int as isize);
+    let value = *ip.offset(0);
     let valueST = (value as u64 as std::ffi::c_ulonglong)
         .wrapping_mul(0x101010101010101 as std::ffi::c_ulonglong) as size_t;
-    let unrollSize = (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-        .wrapping_mul(4 as std::ffi::c_int as std::ffi::c_ulong);
-    let unrollMask = unrollSize.wrapping_sub(1 as std::ffi::c_int as size_t);
+    let unrollSize = (::core::mem::size_of::<size_t>() as std::ffi::c_ulong).wrapping_mul(4);
+    let unrollMask = unrollSize.wrapping_sub(1);
     let prefixLength = length & unrollMask;
     let mut i: size_t = 0;
-    if length == 1 as std::ffi::c_int as size_t {
-        return 1 as std::ffi::c_int;
+    if length == 1 {
+        return 1;
     }
     if prefixLength != 0
-        && ZSTD_count(
-            ip.offset(1 as std::ffi::c_int as isize),
-            ip,
-            ip.offset(prefixLength as isize),
-        ) != prefixLength.wrapping_sub(1 as std::ffi::c_int as size_t)
+        && ZSTD_count(ip.offset(1), ip, ip.offset(prefixLength as isize))
+            != prefixLength.wrapping_sub(1)
     {
-        return 0 as std::ffi::c_int;
+        return 0;
     }
     i = prefixLength;
     while i != length {
         let mut u: size_t = 0;
-        u = 0 as std::ffi::c_int as size_t;
+        u = 0;
         while u < unrollSize {
             if MEM_readST(ip.offset(i as isize).offset(u as isize) as *const std::ffi::c_void)
                 != valueST
             {
-                return 0 as std::ffi::c_int;
+                return 0;
             }
             u = (u as std::ffi::c_ulong)
                 .wrapping_add(::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
@@ -6848,14 +6343,13 @@ unsafe extern "C" fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> std::
         }
         i = i.wrapping_add(unrollSize);
     }
-    1 as std::ffi::c_int
+    1
 }
 unsafe extern "C" fn ZSTD_maybeRLE(mut seqStore: *const SeqStore_t) -> std::ffi::c_int {
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as std::ffi::c_long
         as size_t;
     let nbLits = ((*seqStore).lit).offset_from((*seqStore).litStart) as std::ffi::c_long as size_t;
-    (nbSeqs < 4 as std::ffi::c_int as size_t && nbLits < 10 as std::ffi::c_int as size_t)
-        as std::ffi::c_int
+    (nbSeqs < 4 && nbLits < 10) as std::ffi::c_int
 }
 unsafe extern "C" fn ZSTD_blockState_confirmRepcodesAndEntropyTables(bs: *mut ZSTD_blockState_t) {
     std::mem::swap(&mut (*bs).prevCBlock, &mut (*bs).nextCBlock);
@@ -6866,14 +6360,14 @@ unsafe extern "C" fn writeBlockHeader(
     mut blockSize: size_t,
     mut lastBlock: u32,
 ) {
-    let cBlockHeader = if cSize == 1 as std::ffi::c_int as size_t {
+    let cBlockHeader = if cSize == 1 {
         lastBlock
-            .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-            .wrapping_add((blockSize << 3 as std::ffi::c_int) as u32)
+            .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1)
+            .wrapping_add((blockSize << 3) as u32)
     } else {
         lastBlock
-            .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-            .wrapping_add((cSize << 3 as std::ffi::c_int) as u32)
+            .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1)
+            .wrapping_add((cSize << 3) as u32)
     };
     MEM_writeLE24(op, cBlockHeader);
 }
@@ -6892,7 +6386,7 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
     let wkspEnd = wkspStart.offset(wkspSize as isize);
     let countWkspStart = wkspStart;
     let countWksp = workspace as *mut std::ffi::c_uint;
-    let countWkspSize = ((HUF_SYMBOLVALUE_MAX + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+    let countWkspSize = ((HUF_SYMBOLVALUE_MAX + 1) as std::ffi::c_ulong)
         .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong);
     let nodeWksp = countWkspStart.offset(countWkspSize as isize);
     let nodeWkspSize = wkspEnd.offset_from(nodeWksp) as std::ffi::c_long as size_t;
@@ -6906,18 +6400,18 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
     );
     if literalsCompressionIsDisabled != 0 {
         (*hufMetadata).hType = set_basic;
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     let minLitSize = (if (*prevHuf).repeatMode as std::ffi::c_uint
         == HUF_repeat_valid as std::ffi::c_int as std::ffi::c_uint
     {
-        6 as std::ffi::c_int
+        6
     } else {
         COMPRESS_LITERALS_SIZE_MIN
     }) as size_t;
     if srcSize <= minLitSize {
         (*hufMetadata).hType = set_basic;
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     let largest = HIST_count_wksp(
         countWksp,
@@ -6933,11 +6427,11 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
     }
     if largest == srcSize {
         (*hufMetadata).hType = set_rle;
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
-    if largest <= (srcSize >> 7 as std::ffi::c_int).wrapping_add(4 as std::ffi::c_int as size_t) {
+    if largest <= (srcSize >> 7).wrapping_add(4) {
         (*hufMetadata).hType = set_basic;
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     if repeat as std::ffi::c_uint == HUF_repeat_check as std::ffi::c_int as std::ffi::c_uint
         && HUF_validateCTable(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue) == 0
@@ -6946,7 +6440,7 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
     }
     libc::memset(
         ((*nextHuf).CTable).as_mut_ptr() as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<[HUF_CElt; 257]>() as std::ffi::c_ulong as libc::size_t,
     );
     huffLog = HUF_optimalTableLog(
@@ -6987,8 +6481,7 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
         let oldCSize =
             HUF_estimateCompressedSize(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue);
         if oldCSize < srcSize
-            && (oldCSize <= hSize.wrapping_add(newCSize)
-                || hSize.wrapping_add(12 as std::ffi::c_int as size_t) >= srcSize)
+            && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
             libc::memcpy(
                 nextHuf as *mut std::ffi::c_void,
@@ -6996,7 +6489,7 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
                 ::core::mem::size_of::<ZSTD_hufCTables_t>() as std::ffi::c_ulong as libc::size_t,
             );
             (*hufMetadata).hType = set_repeat;
-            return 0 as std::ffi::c_int as size_t;
+            return 0;
         }
     }
     if newCSize.wrapping_add(hSize) >= srcSize {
@@ -7006,13 +6499,13 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_literals(
             ::core::mem::size_of::<ZSTD_hufCTables_t>() as std::ffi::c_ulong as libc::size_t,
         );
         (*hufMetadata).hType = set_basic;
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     (*hufMetadata).hType = set_compressed;
     (*nextHuf).repeatMode = HUF_repeat_check;
     hSize
 }
-pub const COMPRESS_LITERALS_SIZE_MIN: std::ffi::c_int = 63 as std::ffi::c_int;
+pub const COMPRESS_LITERALS_SIZE_MIN: std::ffi::c_int = 63;
 unsafe extern "C" fn ZSTD_buildDummySequencesStatistics(
     mut nextEntropy: *mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
@@ -7021,9 +6514,9 @@ unsafe extern "C" fn ZSTD_buildDummySequencesStatistics(
             LLtype: set_basic as std::ffi::c_int as u32,
             Offtype: set_basic as std::ffi::c_int as u32,
             MLtype: set_basic as std::ffi::c_int as u32,
-            size: 0 as std::ffi::c_int as size_t,
-            lastCountSize: 0 as std::ffi::c_int as size_t,
-            longOffsets: 0 as std::ffi::c_int,
+            size: 0,
+            lastCountSize: 0,
+            longOffsets: 0,
         }
     };
     (*nextEntropy).litlength_repeatMode = FSE_repeat_none;
@@ -7047,19 +6540,10 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_sequences(
     let oend = ostart.offset(::core::mem::size_of::<[u8; 133]>() as std::ffi::c_ulong as isize);
     let mut op = ostart;
     let mut countWorkspace = workspace as *mut std::ffi::c_uint;
-    let mut entropyWorkspace = countWorkspace.offset(
-        ((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-            35 as std::ffi::c_int
-        } else {
-            52 as std::ffi::c_int
-        }) + 1 as std::ffi::c_int) as isize,
-    );
+    let mut entropyWorkspace =
+        countWorkspace.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize);
     let mut entropyWorkspaceSize = wkspSize.wrapping_sub(
-        (((if 35 as std::ffi::c_int > 52 as std::ffi::c_int {
-            35 as std::ffi::c_int
-        } else {
-            52 as std::ffi::c_int
-        }) + 1 as std::ffi::c_int) as std::ffi::c_ulong)
+        (((if 35 > 52 { 35 } else { 52 }) + 1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong),
     );
     let mut stats = ZSTD_symbolEncodingTypeStats_t {
@@ -7070,7 +6554,7 @@ unsafe extern "C" fn ZSTD_buildBlockEntropyStats_sequences(
         lastCountSize: 0,
         longOffsets: 0,
     };
-    stats = if nbSeq != 0 as std::ffi::c_int as size_t {
+    stats = if nbSeq != 0 {
         ZSTD_buildSequencesStatistics(
             seqStorePtr,
             nbSeq,
@@ -7114,7 +6598,7 @@ pub unsafe extern "C" fn ZSTD_buildBlockEntropyStats(
     let hufFlags = if huf_useOptDepth != 0 {
         HUF_flags_optimalDepth as std::ffi::c_int
     } else {
-        0 as std::ffi::c_int
+        0
     };
     (*entropyMetadata).hufMetadata.hufDesSize = ZSTD_buildBlockEntropyStats_literals(
         (*seqStorePtr).litStart as *mut std::ffi::c_void,
@@ -7144,7 +6628,7 @@ pub unsafe extern "C" fn ZSTD_buildBlockEntropyStats(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_estimateBlockSize_literal(
     mut literals: *const u8,
@@ -7157,21 +6641,17 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_literal(
 ) -> size_t {
     let countWksp = workspace as *mut std::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as std::ffi::c_uint;
-    let mut literalSectionHeaderSize = (3 as std::ffi::c_int
-        + (litSize
-            >= (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t)
-            as std::ffi::c_int
-        + (litSize
-            >= (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-                as size_t) as std::ffi::c_int) as size_t;
-    let mut singleStream = (litSize < 256 as std::ffi::c_int as size_t) as std::ffi::c_int as u32;
+    let mut literalSectionHeaderSize =
+        (3 + (litSize >= (1 * ((1) << 10)) as size_t) as std::ffi::c_int
+            + (litSize >= (16 * ((1) << 10)) as size_t) as std::ffi::c_int) as size_t;
+    let mut singleStream = (litSize < 256) as std::ffi::c_int as u32;
     if (*hufMetadata).hType as std::ffi::c_uint == set_basic as std::ffi::c_int as std::ffi::c_uint
     {
         return litSize;
     } else if (*hufMetadata).hType as std::ffi::c_uint
         == set_rle as std::ffi::c_int as std::ffi::c_uint
     {
-        return 1 as std::ffi::c_int as size_t;
+        return 1;
     } else if (*hufMetadata).hType as std::ffi::c_uint
         == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || (*hufMetadata).hType as std::ffi::c_uint
@@ -7194,11 +6674,11 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_literal(
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add((*hufMetadata).hufDesSize);
         }
         if singleStream == 0 {
-            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(6 as std::ffi::c_int as size_t);
+            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(6);
         }
         return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_estimateBlockSize_symbolType(
     mut type_0: SymbolEncodingType_e,
@@ -7217,7 +6697,7 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_symbolType(
     let mut ctp = codeTable;
     let ctStart = ctp;
     let ctEnd = ctStart.offset(nbSeq as isize);
-    let mut cSymbolTypeSizeEstimateInBits = 0 as std::ffi::c_int as size_t;
+    let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
     HIST_countFast_wksp(
         countWksp,
@@ -7231,14 +6711,14 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_symbolType(
         cSymbolTypeSizeEstimateInBits =
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max);
     } else if type_0 as std::ffi::c_uint == set_rle as std::ffi::c_int as std::ffi::c_uint {
-        cSymbolTypeSizeEstimateInBits = 0 as std::ffi::c_int as size_t;
+        cSymbolTypeSizeEstimateInBits = 0;
     } else if type_0 as std::ffi::c_uint == set_compressed as std::ffi::c_int as std::ffi::c_uint
         || type_0 as std::ffi::c_uint == set_repeat as std::ffi::c_int as std::ffi::c_uint
     {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
     if ERR_isError(cSymbolTypeSizeEstimateInBits) != 0 {
-        return nbSeq * 10 as std::ffi::c_int as size_t;
+        return nbSeq * 10;
     }
     while ctp < ctEnd {
         if !additionalBits.is_null() {
@@ -7251,7 +6731,7 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_symbolType(
         ctp = ctp.offset(1);
         ctp;
     }
-    cSymbolTypeSizeEstimateInBits >> 3 as std::ffi::c_int
+    cSymbolTypeSizeEstimateInBits >> 3
 }
 unsafe extern "C" fn ZSTD_estimateBlockSize_sequences(
     mut ofCodeTable: *const u8,
@@ -7264,11 +6744,10 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_sequences(
     mut wkspSize: size_t,
     mut writeEntropy: std::ffi::c_int,
 ) -> size_t {
-    let mut sequencesSectionHeaderSize = (1 as std::ffi::c_int
-        + 1 as std::ffi::c_int
-        + (nbSeq >= 128 as std::ffi::c_int as size_t) as std::ffi::c_int
-        + (nbSeq >= LONGNBSEQ as size_t) as std::ffi::c_int)
-        as size_t;
+    let mut sequencesSectionHeaderSize =
+        (1 + 1
+            + (nbSeq >= 128) as std::ffi::c_int
+            + (nbSeq >= LONGNBSEQ as size_t) as std::ffi::c_int) as size_t;
     let mut cSeqSizeEstimate = 0 as std::ffi::c_int as size_t;
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
         (*fseMetadata).ofType,
@@ -7384,7 +6863,7 @@ unsafe extern "C" fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         (*zc).tmpWkspSize,
         ((*entropyMetadata).hufMetadata.hType as std::ffi::c_uint
             == set_compressed as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int,
-        1 as std::ffi::c_int,
+        1,
     )
 }
 unsafe extern "C" fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t {
@@ -7392,7 +6871,7 @@ unsafe extern "C" fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as std::ffi::c_long
         as size_t;
     let mut i: size_t = 0;
-    i = 0 as std::ffi::c_int as size_t;
+    i = 0;
     while i < nbSeqs {
         let seq = *((*seqStore).sequencesStart).offset(i as isize);
         literalsBytes = literalsBytes.wrapping_add(seq.litLength as size_t);
@@ -7412,7 +6891,7 @@ unsafe extern "C" fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as std::ffi::c_long
         as size_t;
     let mut i: size_t = 0;
-    i = 0 as std::ffi::c_int as size_t;
+    i = 0;
     while i < nbSeqs {
         let mut seq = *((*seqStore).sequencesStart).offset(i as isize);
         matchBytes = matchBytes.wrapping_add((seq.mlBase as std::ffi::c_int + MINMATCH) as size_t);
@@ -7434,7 +6913,7 @@ unsafe extern "C" fn ZSTD_deriveSeqStoreChunk(
     mut endIdx: size_t,
 ) {
     *resultSeqStore = *originalSeqStore;
-    if startIdx > 0 as std::ffi::c_int as size_t {
+    if startIdx > 0 {
         (*resultSeqStore).sequences =
             ((*originalSeqStore).sequencesStart).offset(startIdx as isize);
         (*resultSeqStore).litStart = ((*resultSeqStore).litStart)
@@ -7471,12 +6950,9 @@ unsafe extern "C" fn ZSTD_resolveRepcodeToRawOffset(
     offBase: u32,
     ll0: u32,
 ) -> u32 {
-    let adjustedRepCode = offBase
-        .wrapping_sub(1 as std::ffi::c_int as u32)
-        .wrapping_add(ll0);
+    let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
-        return (*rep.offset(0 as std::ffi::c_int as isize))
-            .wrapping_sub(1 as std::ffi::c_int as u32);
+        return (*rep.offset(0)).wrapping_sub(1);
     }
     *rep.offset(adjustedRepCode as isize)
 }
@@ -7486,7 +6962,7 @@ unsafe extern "C" fn ZSTD_seqStore_resolveOffCodes(
     seqStore: *const SeqStore_t,
     nbSeq: u32,
 ) {
-    let mut idx = 0 as std::ffi::c_int as u32;
+    let mut idx = 0;
     let longLitLenIdx = if (*seqStore).longLengthType as std::ffi::c_uint
         == ZSTD_llt_literalLength as std::ffi::c_int as std::ffi::c_uint
     {
@@ -7496,10 +6972,10 @@ unsafe extern "C" fn ZSTD_seqStore_resolveOffCodes(
     };
     while idx < nbSeq {
         let seq = ((*seqStore).sequencesStart).offset(idx as isize);
-        let ll0 = ((*seq).litLength as std::ffi::c_int == 0 as std::ffi::c_int
-            && idx != longLitLenIdx) as std::ffi::c_int as u32;
+        let ll0 = ((*seq).litLength as std::ffi::c_int == 0 && idx != longLitLenIdx)
+            as std::ffi::c_int as u32;
         let offBase = (*seq).offBase;
-        if 1 as std::ffi::c_int as u32 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
+        if 1 <= offBase && offBase <= ZSTD_REP_NUM as u32 {
             let dRawOffset = ZSTD_resolveRepcodeToRawOffset(
                 ((*dRepcodes).rep).as_mut_ptr() as *const u32,
                 offBase,
@@ -7532,7 +7008,7 @@ unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
     mut lastBlock: u32,
     mut isPartition: u32,
 ) -> size_t {
-    let rleMaxLength = 25 as std::ffi::c_int as u32;
+    let rleMaxLength = 25;
     let mut op = dst as *mut u8;
     let mut ip = src as *const u8;
     let mut cSize: size_t = 0;
@@ -7570,7 +7046,7 @@ unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
         && cSeqsSize < rleMaxLength as size_t
         && ZSTD_isRLE(src as *const u8, srcSize) != 0
     {
-        cSeqsSize = 1 as std::ffi::c_int as size_t;
+        cSeqsSize = 1;
     }
     if (*zc).seqCollector.collectSequences != 0 {
         let err_code_0 = ZSTD_copyBlockSequences(
@@ -7582,9 +7058,9 @@ unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
             return err_code_0;
         }
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
-    if cSeqsSize == 0 as std::ffi::c_int as size_t {
+    if cSeqsSize == 0 {
         cSize = ZSTD_noCompressBlock(
             op as *mut std::ffi::c_void,
             dstCapacity,
@@ -7597,7 +7073,7 @@ unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
             return err_code_1;
         }
         *dRep = dRepOriginal;
-    } else if cSeqsSize == 1 as std::ffi::c_int as size_t {
+    } else if cSeqsSize == 1 {
         cSize = ZSTD_rleCompressBlock(
             op as *mut std::ffi::c_void,
             dstCapacity,
@@ -7628,7 +7104,7 @@ unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
     }
     cSize
 }
-pub const MIN_SEQUENCES_BLOCK_SPLITTING: std::ffi::c_int = 300 as std::ffi::c_int;
+pub const MIN_SEQUENCES_BLOCK_SPLITTING: std::ffi::c_int = 300;
 unsafe extern "C" fn ZSTD_deriveBlockSplitsHelper(
     mut splits: *mut seqStoreSplits,
     mut startIdx: size_t,
@@ -7642,7 +7118,7 @@ unsafe extern "C" fn ZSTD_deriveBlockSplitsHelper(
     let mut estimatedOriginalSize: size_t = 0;
     let mut estimatedFirstHalfSize: size_t = 0;
     let mut estimatedSecondHalfSize: size_t = 0;
-    let mut midIdx = startIdx.wrapping_add(endIdx) / 2 as std::ffi::c_int as size_t;
+    let mut midIdx = startIdx.wrapping_add(endIdx) / 2;
     if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING as size_t
         || (*splits).idx >= ZSTD_MAX_NB_BLOCK_SPLITS as size_t
     {
@@ -7681,17 +7157,11 @@ unsafe extern "C" fn ZSTD_deriveBlockSplits(
         idx: 0,
     };
     splits.splitLocations = partitions;
-    splits.idx = 0 as std::ffi::c_int as size_t;
-    if nbSeq <= 4 as std::ffi::c_int as u32 {
-        return 0 as std::ffi::c_int as size_t;
+    splits.idx = 0;
+    if nbSeq <= 4 {
+        return 0;
     }
-    ZSTD_deriveBlockSplitsHelper(
-        &mut splits,
-        0 as std::ffi::c_int as size_t,
-        nbSeq as size_t,
-        zc,
-        &mut (*zc).seqStore,
-    );
+    ZSTD_deriveBlockSplitsHelper(&mut splits, 0, nbSeq as size_t, zc, &mut (*zc).seqStore);
     *(splits.splitLocations).offset(splits.idx as isize) = nbSeq;
     splits.idx
 }
@@ -7707,7 +7177,7 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
     let mut cSize = 0 as std::ffi::c_int as size_t;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let mut i = 0 as std::ffi::c_int as size_t;
+    let mut i = 0;
     let mut srcBytesTotal = 0 as std::ffi::c_int as size_t;
     let partitions = ((*zc).blockSplitCtx.partitions).as_mut_ptr();
     let nextSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
@@ -7727,10 +7197,10 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
     );
     libc::memset(
         nextSeqStore as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<SeqStore_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    if numSplits == 0 as std::ffi::c_int as size_t {
+    if numSplits == 0 {
         let mut cSizeSingleBlock = ZSTD_compressSeqStore_singleBlock(
             zc,
             &mut (*zc).seqStore,
@@ -7741,7 +7211,7 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
             ip as *const std::ffi::c_void,
             blockSize,
             lastBlock,
-            0 as std::ffi::c_int as u32,
+            0,
         );
         let err_code = cSizeSingleBlock;
         if ERR_isError(err_code) != 0 {
@@ -7752,14 +7222,14 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
     ZSTD_deriveSeqStoreChunk(
         currSeqStore,
         &mut (*zc).seqStore,
-        0 as std::ffi::c_int as size_t,
-        *partitions.offset(0 as std::ffi::c_int as isize) as size_t,
+        0,
+        *partitions.offset(0) as size_t,
     );
-    i = 0 as std::ffi::c_int as size_t;
+    i = 0;
     while i <= numSplits {
         let mut cSizeChunk: size_t = 0;
         let lastPartition = (i == numSplits) as std::ffi::c_int as u32;
-        let mut lastBlockEntireSrc = 0 as std::ffi::c_int as u32;
+        let mut lastBlockEntireSrc = 0;
         let mut srcBytes = (ZSTD_countSeqStoreLiteralsBytes(currSeqStore))
             .wrapping_add(ZSTD_countSeqStoreMatchBytes(currSeqStore));
         srcBytesTotal = srcBytesTotal.wrapping_add(srcBytes);
@@ -7771,8 +7241,7 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
                 nextSeqStore,
                 &mut (*zc).seqStore,
                 *partitions.offset(i as isize) as size_t,
-                *partitions.offset(i.wrapping_add(1 as std::ffi::c_int as size_t) as isize)
-                    as size_t,
+                *partitions.offset(i.wrapping_add(1) as isize) as size_t,
             );
         }
         cSizeChunk = ZSTD_compressSeqStore_singleBlock(
@@ -7785,7 +7254,7 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
             ip as *const std::ffi::c_void,
             srcBytes,
             lastBlockEntireSrc,
-            1 as std::ffi::c_int as u32,
+            1,
         );
         let err_code_0 = cSizeChunk;
         if ERR_isError(err_code_0) != 0 {
@@ -7868,7 +7337,7 @@ unsafe extern "C" fn ZSTD_compressBlock_internal(
     mut srcSize: size_t,
     mut frame: u32,
 ) -> size_t {
-    let rleMaxLength = 25 as std::ffi::c_int as u32;
+    let rleMaxLength = 25;
     let mut cSize: size_t = 0;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
@@ -7881,7 +7350,7 @@ unsafe extern "C" fn ZSTD_compressBlock_internal(
         if (*zc).seqCollector.collectSequences != 0 {
             return -(ZSTD_error_sequenceProducer_failed as std::ffi::c_int) as size_t;
         }
-        cSize = 0 as std::ffi::c_int as size_t;
+        cSize = 0;
     } else {
         if (*zc).seqCollector.collectSequences != 0 {
             let err_code_0 = ZSTD_copyBlockSequences(
@@ -7893,7 +7362,7 @@ unsafe extern "C" fn ZSTD_compressBlock_internal(
                 return err_code_0;
             }
             ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
-            return 0 as std::ffi::c_int as size_t;
+            return 0;
         }
         cSize = ZSTD_entropyCompressSeqStore(
             &mut (*zc).seqStore,
@@ -7912,11 +7381,11 @@ unsafe extern "C" fn ZSTD_compressBlock_internal(
             && cSize < rleMaxLength as size_t
             && ZSTD_isRLE(ip, srcSize) != 0
         {
-            cSize = 1 as std::ffi::c_int as size_t;
-            *op.offset(0 as std::ffi::c_int as isize) = *ip.offset(0 as std::ffi::c_int as isize);
+            cSize = 1;
+            *op.offset(0) = *ip.offset(0);
         }
     }
-    if ERR_isError(cSize) == 0 && cSize > 1 as std::ffi::c_int as size_t {
+    if ERR_isError(cSize) == 0 && cSize > 1 {
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
     }
     if (*(*zc).blockState.prevCBlock)
@@ -7962,9 +7431,7 @@ unsafe extern "C" fn ZSTD_compressBlock_targetCBlockSize_body(
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
-            if cSize != 0 as std::ffi::c_int as size_t
-                && cSize < maxCSize.wrapping_add(ZSTD_blockHeaderSize)
-            {
+            if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_blockHeaderSize) {
                 ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
                 return cSize;
             }
@@ -7980,7 +7447,7 @@ unsafe extern "C" fn ZSTD_compressBlock_targetCBlockSize(
     mut srcSize: size_t,
     mut lastBlock: u32,
 ) -> size_t {
-    let mut cSize = 0 as std::ffi::c_int as size_t;
+    let mut cSize = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
     if ERR_isError(err_code) != 0 {
@@ -8020,7 +7487,7 @@ unsafe extern "C" fn ZSTD_overflowCorrectIfNeeded(
     mut iend: *const std::ffi::c_void,
 ) {
     let cycleLog = ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy);
-    let maxDist = (1 as std::ffi::c_int as u32) << (*params).cParams.windowLog;
+    let maxDist = (1) << (*params).cParams.windowLog;
     if ZSTD_window_needOverflowCorrection(
         (*ms).window,
         cycleLog,
@@ -8035,11 +7502,11 @@ unsafe extern "C" fn ZSTD_overflowCorrectIfNeeded(
         ZSTD_reduceIndex(ms, params, correction);
         ZSTD_cwksp_mark_tables_clean(ws);
         if (*ms).nextToUpdate < correction {
-            (*ms).nextToUpdate = 0 as std::ffi::c_int as u32;
+            (*ms).nextToUpdate = 0;
         } else {
             (*ms).nextToUpdate = ((*ms).nextToUpdate).wrapping_sub(correction);
         }
-        (*ms).loadedDictEnd = 0 as std::ffi::c_int as u32;
+        (*ms).loadedDictEnd = 0;
         (*ms).dictMatchState = NULL as *const ZSTD_MatchState_t;
     }
 }
@@ -8052,41 +7519,24 @@ unsafe extern "C" fn ZSTD_optimalBlockSize(
     mut strat: ZSTD_strategy,
     mut savings: S64,
 ) -> size_t {
-    static mut splitLevels: [std::ffi::c_int; 10] = [
-        0 as std::ffi::c_int,
-        0 as std::ffi::c_int,
-        1 as std::ffi::c_int,
-        2 as std::ffi::c_int,
-        2 as std::ffi::c_int,
-        3 as std::ffi::c_int,
-        3 as std::ffi::c_int,
-        4 as std::ffi::c_int,
-        4 as std::ffi::c_int,
-        4 as std::ffi::c_int,
-    ];
-    if srcSize
-        < (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t
-        || blockSizeMax
-            < (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t
-    {
+    static mut splitLevels: [std::ffi::c_int; 10] = [0, 0, 1, 2, 2, 3, 3, 4, 4, 4];
+    if srcSize < (128 * ((1) << 10)) as size_t || blockSizeMax < (128 * ((1) << 10)) as size_t {
         return if srcSize < blockSizeMax {
             srcSize
         } else {
             blockSizeMax
         };
     }
-    if savings < 3 as std::ffi::c_int as S64 {
-        return (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-            as size_t;
+    if savings < 3 {
+        return (128 * ((1) << 10)) as size_t;
     }
-    if splitLevel == 1 as std::ffi::c_int {
-        return (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-            as size_t;
+    if splitLevel == 1 {
+        return (128 * ((1) << 10)) as size_t;
     }
-    if splitLevel == 0 as std::ffi::c_int {
+    if splitLevel == 0 {
         splitLevel = *splitLevels.as_ptr().offset(strat as isize);
     } else {
-        splitLevel -= 2 as std::ffi::c_int;
+        splitLevel -= 2;
     }
     ZSTD_splitBlock(
         src,
@@ -8109,7 +7559,7 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
     let mut ip = src as *const u8;
     let ostart = dst as *mut u8;
     let mut op = ostart;
-    let maxDist = (1 as std::ffi::c_int as u32) << (*cctx).appliedParams.cParams.windowLog;
+    let maxDist = (1) << (*cctx).appliedParams.cParams.windowLog;
     let mut savings = (*cctx).consumedSrcSize as S64 - (*cctx).producedCSize as S64;
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
         ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize as usize);
@@ -8128,8 +7578,8 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
         let lastBlock = lastFrameChunk & (blockSize == remaining) as std::ffi::c_int as u32;
         if dstCapacity
             < ZSTD_blockHeaderSize
-                .wrapping_add((1 as std::ffi::c_int + 1 as std::ffi::c_int) as size_t)
-                .wrapping_add(1 as std::ffi::c_int as size_t)
+                .wrapping_add((1 + 1) as size_t)
+                .wrapping_add(1)
         {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
@@ -8191,13 +7641,13 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
                 dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
                 ip as *const std::ffi::c_void,
                 blockSize,
-                1 as std::ffi::c_int as u32,
+                1,
             );
             let err_code_1 = cSize;
             if ERR_isError(err_code_1) != 0 {
                 return err_code_1;
             }
-            if cSize == 0 as std::ffi::c_int as size_t {
+            if cSize == 0 {
                 cSize = ZSTD_noCompressBlock(
                     op as *mut std::ffi::c_void,
                     dstCapacity,
@@ -8210,16 +7660,14 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
                     return err_code_2;
                 }
             } else {
-                let cBlockHeader = if cSize == 1 as std::ffi::c_int as size_t {
+                let cBlockHeader = if cSize == 1 {
                     lastBlock
-                        .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-                        .wrapping_add((blockSize << 3 as std::ffi::c_int) as u32)
+                        .wrapping_add((bt_rle as std::ffi::c_int as u32) << 1)
+                        .wrapping_add((blockSize << 3) as u32)
                 } else {
                     lastBlock
-                        .wrapping_add(
-                            (bt_compressed as std::ffi::c_int as u32) << 1 as std::ffi::c_int,
-                        )
-                        .wrapping_add((cSize << 3 as std::ffi::c_int) as u32)
+                        .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1)
+                        .wrapping_add((cSize << 3) as u32)
                 };
                 MEM_writeLE24(op as *mut std::ffi::c_void, cBlockHeader);
                 cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
@@ -8230,7 +7678,7 @@ unsafe extern "C" fn ZSTD_compress_frameChunk(
         remaining = remaining.wrapping_sub(blockSize);
         op = op.offset(cSize as isize);
         dstCapacity = dstCapacity.wrapping_sub(cSize);
-        (*cctx).isFirstBlock = 0 as std::ffi::c_int;
+        (*cctx).isFirstBlock = 0;
     }
     if lastFrameChunk != 0 && op > ostart {
         (*cctx).stage = ZSTDcs_ending;
@@ -8245,42 +7693,39 @@ unsafe extern "C" fn ZSTD_writeFrameHeader(
     mut dictID: u32,
 ) -> size_t {
     let op = dst as *mut u8;
-    let dictIDSizeCodeLength = ((dictID > 0 as std::ffi::c_int as u32) as std::ffi::c_int
-        + (dictID >= 256 as std::ffi::c_int as u32) as std::ffi::c_int
-        + (dictID >= 65536 as std::ffi::c_int as u32) as std::ffi::c_int)
-        as u32;
+    let dictIDSizeCodeLength = ((dictID > 0) as std::ffi::c_int
+        + (dictID >= 256) as std::ffi::c_int
+        + (dictID >= 65536) as std::ffi::c_int) as u32;
     let dictIDSizeCode = if (*params).fParams.noDictIDFlag != 0 {
-        0 as std::ffi::c_int as u32
+        0
     } else {
         dictIDSizeCodeLength
     };
-    let checksumFlag =
-        ((*params).fParams.checksumFlag > 0 as std::ffi::c_int) as std::ffi::c_int as u32;
-    let windowSize = (1 as std::ffi::c_int as u32) << (*params).cParams.windowLog;
+    let checksumFlag = ((*params).fParams.checksumFlag > 0) as std::ffi::c_int as u32;
+    let windowSize = (1) << (*params).cParams.windowLog;
     let singleSegment = ((*params).fParams.contentSizeFlag != 0
         && windowSize as u64 >= pledgedSrcSize) as std::ffi::c_int as u32;
     let windowLogByte = (((*params).cParams.windowLog)
         .wrapping_sub(ZSTD_WINDOWLOG_ABSOLUTEMIN as std::ffi::c_uint)
-        << 3 as std::ffi::c_int) as u8;
+        << 3) as u8;
     let fcsCode = (if (*params).fParams.contentSizeFlag != 0 {
-        (pledgedSrcSize >= 256 as std::ffi::c_int as u64) as std::ffi::c_int
-            + (pledgedSrcSize >= (65536 as std::ffi::c_int + 256 as std::ffi::c_int) as u64)
-                as std::ffi::c_int
+        (pledgedSrcSize >= 256) as std::ffi::c_int
+            + (pledgedSrcSize >= (65536 + 256) as u64) as std::ffi::c_int
             + (pledgedSrcSize >= 0xffffffff as std::ffi::c_uint as u64) as std::ffi::c_int
     } else {
-        0 as std::ffi::c_int
+        0
     }) as u32;
     let frameHeaderDescriptionByte = dictIDSizeCode
-        .wrapping_add(checksumFlag << 2 as std::ffi::c_int)
-        .wrapping_add(singleSegment << 5 as std::ffi::c_int)
-        .wrapping_add(fcsCode << 6 as std::ffi::c_int) as u8;
+        .wrapping_add(checksumFlag << 2)
+        .wrapping_add(singleSegment << 5)
+        .wrapping_add(fcsCode << 6) as u8;
     let mut pos = 0 as std::ffi::c_int as size_t;
-    if dstCapacity < 18 as std::ffi::c_int as size_t {
+    if dstCapacity < 18 {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     if (*params).format == Format::ZSTD_f_zstd1 {
         MEM_writeLE32(dst, ZSTD_MAGICNUMBER);
-        pos = 4 as std::ffi::c_int as size_t;
+        pos = 4;
     }
     let fresh7 = pos;
     pos = pos.wrapping_add(1);
@@ -8301,11 +7746,11 @@ unsafe extern "C" fn ZSTD_writeFrameHeader(
                 op.offset(pos as isize) as *mut std::ffi::c_void,
                 dictID as u16,
             );
-            pos = pos.wrapping_add(2 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(2);
         }
         3 => {
             MEM_writeLE32(op.offset(pos as isize) as *mut std::ffi::c_void, dictID);
-            pos = pos.wrapping_add(4 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(4);
         }
         0 | _ => {}
     }
@@ -8313,23 +7758,23 @@ unsafe extern "C" fn ZSTD_writeFrameHeader(
         1 => {
             MEM_writeLE16(
                 op.offset(pos as isize) as *mut std::ffi::c_void,
-                pledgedSrcSize.wrapping_sub(256 as std::ffi::c_int as u64) as u16,
+                pledgedSrcSize.wrapping_sub(256) as u16,
             );
-            pos = pos.wrapping_add(2 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(2);
         }
         2 => {
             MEM_writeLE32(
                 op.offset(pos as isize) as *mut std::ffi::c_void,
                 pledgedSrcSize as u32,
             );
-            pos = pos.wrapping_add(4 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(4);
         }
         3 => {
             MEM_writeLE64(
                 op.offset(pos as isize) as *mut std::ffi::c_void,
                 pledgedSrcSize,
             );
-            pos = pos.wrapping_add(8 as std::ffi::c_int as size_t);
+            pos = pos.wrapping_add(8);
         }
         0 | _ => {
             if singleSegment != 0 {
@@ -8350,25 +7795,22 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     mut magicVariant: std::ffi::c_uint,
 ) -> size_t {
     let mut op = dst as *mut u8;
-    if dstCapacity < srcSize.wrapping_add(8 as std::ffi::c_int as size_t) {
+    if dstCapacity < srcSize.wrapping_add(8) {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     if srcSize > 0xffffffff as std::ffi::c_uint as size_t {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    if magicVariant > 15 as std::ffi::c_int as std::ffi::c_uint {
+    if magicVariant > 15 {
         return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
     }
     MEM_writeLE32(
         op as *mut std::ffi::c_void,
         (ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint).wrapping_add(magicVariant),
     );
-    MEM_writeLE32(
-        op.offset(4 as std::ffi::c_int as isize) as *mut std::ffi::c_void,
-        srcSize as u32,
-    );
+    MEM_writeLE32(op.offset(4) as *mut std::ffi::c_void, srcSize as u32);
     libc::memcpy(
-        op.offset(8 as std::ffi::c_int as isize) as *mut std::ffi::c_void,
+        op.offset(8) as *mut std::ffi::c_void,
         src,
         srcSize as libc::size_t,
     );
@@ -8396,8 +7838,8 @@ pub unsafe extern "C" fn ZSTD_referenceExternalSequences(
     (*cctx).externSeqStore.seq = seq;
     (*cctx).externSeqStore.size = nbSeq;
     (*cctx).externSeqStore.capacity = nbSeq;
-    (*cctx).externSeqStore.pos = 0 as std::ffi::c_int as size_t;
-    (*cctx).externSeqStore.posInSequence = 0 as std::ffi::c_int as size_t;
+    (*cctx).externSeqStore.pos = 0;
+    (*cctx).externSeqStore.posInSequence = 0;
 }
 unsafe extern "C" fn ZSTD_compressContinue_internal(
     mut cctx: *mut ZSTD_CCtx,
@@ -8409,7 +7851,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     mut lastFrameChunk: u32,
 ) -> size_t {
     let ms: *mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
-    let mut fhSize = 0 as std::ffi::c_int as size_t;
+    let mut fhSize = 0;
     if (*cctx).stage as std::ffi::c_uint == ZSTDcs_created as std::ffi::c_int as std::ffi::c_uint {
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
@@ -8420,8 +7862,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
             dst,
             dstCapacity,
             &mut (*cctx).appliedParams,
-            ((*cctx).pledgedSrcSizePlusOne)
-                .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong) as u64,
+            ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1) as u64,
             (*cctx).dictID,
         );
         let err_code = fhSize;
@@ -8436,18 +7877,13 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         return fhSize;
     }
     if ZSTD_window_update(&mut (*ms).window, src, srcSize, (*ms).forceNonContiguous) == 0 {
-        (*ms).forceNonContiguous = 0 as std::ffi::c_int;
+        (*ms).forceNonContiguous = 0;
         (*ms).nextToUpdate = (*ms).window.dictLimit;
     }
     if (*cctx).appliedParams.ldmParams.enableLdm as std::ffi::c_uint
         == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
     {
-        ZSTD_window_update(
-            &mut (*cctx).ldmState.window,
-            src,
-            srcSize,
-            0 as std::ffi::c_int,
-        );
+        ZSTD_window_update(&mut (*cctx).ldmState.window, src, srcSize, 0);
     }
     if frame == 0 {
         ZSTD_overflowCorrectIfNeeded(
@@ -8461,14 +7897,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     let cSize = if frame != 0 {
         ZSTD_compress_frameChunk(cctx, dst, dstCapacity, src, srcSize, lastFrameChunk)
     } else {
-        ZSTD_compressBlock_internal(
-            cctx,
-            dst,
-            dstCapacity,
-            src,
-            srcSize,
-            0 as std::ffi::c_int as u32,
-        )
+        ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, 0)
     };
     let err_code_0 = cSize;
     if ERR_isError(err_code_0) != 0 {
@@ -8478,9 +7907,8 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         ((*cctx).consumedSrcSize).wrapping_add(srcSize as std::ffi::c_ulonglong);
     (*cctx).producedCSize =
         ((*cctx).producedCSize).wrapping_add(cSize.wrapping_add(fhSize) as std::ffi::c_ulonglong);
-    if (*cctx).pledgedSrcSizePlusOne != 0 as std::ffi::c_int as std::ffi::c_ulonglong
-        && ((*cctx).consumedSrcSize).wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulonglong)
-            > (*cctx).pledgedSrcSizePlusOne
+    if (*cctx).pledgedSrcSizePlusOne != 0
+        && ((*cctx).consumedSrcSize).wrapping_add(1) > (*cctx).pledgedSrcSizePlusOne
     {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
@@ -8494,15 +7922,7 @@ pub unsafe extern "C" fn ZSTD_compressContinue_public(
     mut src: *const std::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    ZSTD_compressContinue_internal(
-        cctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        1 as std::ffi::c_int as u32,
-        0 as std::ffi::c_int as u32,
-    )
+    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 0)
 }
 #[export_name = crate::prefix!(ZSTD_compressContinue)]
 pub unsafe extern "C" fn ZSTD_compressContinue(
@@ -8516,10 +7936,10 @@ pub unsafe extern "C" fn ZSTD_compressContinue(
 }
 unsafe extern "C" fn ZSTD_getBlockSize_deprecated(mut cctx: *const ZSTD_CCtx) -> size_t {
     let cParams = (*cctx).appliedParams.cParams;
-    if (*cctx).appliedParams.maxBlockSize < (1 as std::ffi::c_int as size_t) << cParams.windowLog {
+    if (*cctx).appliedParams.maxBlockSize < (1) << cParams.windowLog {
         (*cctx).appliedParams.maxBlockSize
     } else {
-        (1 as std::ffi::c_int as size_t) << cParams.windowLog
+        (1) << cParams.windowLog
     }
 }
 #[export_name = crate::prefix!(ZSTD_getBlockSize)]
@@ -8538,15 +7958,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     if srcSize > blockSizeMax {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    ZSTD_compressContinue_internal(
-        cctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        0 as std::ffi::c_int as u32,
-        0 as std::ffi::c_int as u32,
-    )
+    ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 0, 0)
 }
 #[export_name = crate::prefix!(ZSTD_compressBlock)]
 pub unsafe extern "C" fn ZSTD_compressBlock(
@@ -8611,36 +8023,34 @@ unsafe extern "C" fn ZSTD_loadDictionaryContent(
     {
         loadLdmDict != 0;
     }
-    ZSTD_window_update(&mut (*ms).window, src, srcSize, 0 as std::ffi::c_int);
+    ZSTD_window_update(&mut (*ms).window, src, srcSize, 0);
     if loadLdmDict != 0 {
-        ZSTD_window_update(&mut (*ls).window, src, srcSize, 0 as std::ffi::c_int);
+        ZSTD_window_update(&mut (*ls).window, src, srcSize, 0);
         (*ls).loadedDictEnd = if (*params).forceWindow != 0 {
-            0 as std::ffi::c_int as u32
+            0
         } else {
             iend.offset_from((*ls).window.base) as std::ffi::c_long as u32
         };
         ZSTD_ldm_fillHashTable(ls, ip, iend, &(*params).ldmParams);
     }
-    let mut maxDictSize_0 = (1 as std::ffi::c_uint)
-        << (if (if ((*params).cParams.hashLog)
-            .wrapping_add(3 as std::ffi::c_int as std::ffi::c_uint)
-            > ((*params).cParams.chainLog).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+    let mut maxDictSize_0 = (1)
+        << (if (if ((*params).cParams.hashLog).wrapping_add(3)
+            > ((*params).cParams.chainLog).wrapping_add(1)
         {
-            ((*params).cParams.hashLog).wrapping_add(3 as std::ffi::c_int as std::ffi::c_uint)
+            ((*params).cParams.hashLog).wrapping_add(3)
         } else {
-            ((*params).cParams.chainLog).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
-        }) < 31 as std::ffi::c_int as std::ffi::c_uint
+            ((*params).cParams.chainLog).wrapping_add(1)
+        }) < 31
         {
-            if ((*params).cParams.hashLog).wrapping_add(3 as std::ffi::c_int as std::ffi::c_uint)
-                > ((*params).cParams.chainLog)
-                    .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+            if ((*params).cParams.hashLog).wrapping_add(3)
+                > ((*params).cParams.chainLog).wrapping_add(1)
             {
-                ((*params).cParams.hashLog).wrapping_add(3 as std::ffi::c_int as std::ffi::c_uint)
+                ((*params).cParams.hashLog).wrapping_add(3)
             } else {
-                ((*params).cParams.chainLog).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+                ((*params).cParams.chainLog).wrapping_add(1)
             }
         } else {
-            31 as std::ffi::c_int as std::ffi::c_uint
+            31
         });
     if srcSize > maxDictSize_0 as size_t {
         ip = iend.offset(-(maxDictSize_0 as isize));
@@ -8649,13 +8059,13 @@ unsafe extern "C" fn ZSTD_loadDictionaryContent(
     }
     (*ms).nextToUpdate = ip.offset_from((*ms).window.base) as std::ffi::c_long as u32;
     (*ms).loadedDictEnd = if (*params).forceWindow != 0 {
-        0 as std::ffi::c_int as u32
+        0
     } else {
         iend.offset_from((*ms).window.base) as std::ffi::c_long as u32
     };
     (*ms).forceNonContiguous = (*params).deterministicRefPrefix;
     if srcSize <= HASH_READ_SIZE as size_t {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     ZSTD_overflowCorrectIfNeeded(
         ms,
@@ -8680,10 +8090,10 @@ unsafe extern "C" fn ZSTD_loadDictionaryContent(
             } else if (*params).useRowMatchFinder as std::ffi::c_uint
                 == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint
             {
-                let tagTableSize = (1 as std::ffi::c_int as size_t) << (*params).cParams.hashLog;
+                let tagTableSize = (1) << (*params).cParams.hashLog;
                 libc::memset(
                     (*ms).tagTable as *mut std::ffi::c_void,
-                    0 as std::ffi::c_int,
+                    0,
                     tagTableSize as libc::size_t,
                 );
                 ZSTD_row_update(ms, iend.offset(-(HASH_READ_SIZE as isize)));
@@ -8697,7 +8107,7 @@ unsafe extern "C" fn ZSTD_loadDictionaryContent(
         _ => {}
     }
     (*ms).nextToUpdate = iend.offset_from((*ms).window.base) as std::ffi::c_long as u32;
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_dictNCountRepeat(
     mut normalizedCounter: *mut std::ffi::c_short,
@@ -8708,9 +8118,9 @@ unsafe extern "C" fn ZSTD_dictNCountRepeat(
     if dictMaxSymbolValue < maxSymbolValue {
         return FSE_repeat_check;
     }
-    s = 0 as std::ffi::c_int as u32;
+    s = 0;
     while s <= maxSymbolValue {
-        if *normalizedCounter.offset(s as isize) as std::ffi::c_int == 0 as std::ffi::c_int {
+        if *normalizedCounter.offset(s as isize) as std::ffi::c_int == 0 {
             return FSE_repeat_check;
         }
         s = s.wrapping_add(1);
@@ -8729,10 +8139,10 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
     let mut offcodeMaxValue = MaxOff as std::ffi::c_uint;
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.offset(dictSize as isize);
-    dictPtr = dictPtr.offset(8 as std::ffi::c_int as isize);
+    dictPtr = dictPtr.offset(8);
     (*bs).entropy.huf.repeatMode = HUF_repeat_check;
-    let mut maxSymbolValue = 255 as std::ffi::c_int as std::ffi::c_uint;
-    let mut hasZeroWeights = 1 as std::ffi::c_int as std::ffi::c_uint;
+    let mut maxSymbolValue = 255;
+    let mut hasZeroWeights = 1;
     let hufHeaderSize = HUF_readCTable(
         ((*bs).entropy.huf.CTable).as_mut_ptr(),
         &mut maxSymbolValue,
@@ -8740,7 +8150,7 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
         dictEnd.offset_from(dictPtr) as std::ffi::c_long as size_t,
         &mut hasZeroWeights,
     );
-    if hasZeroWeights == 0 && maxSymbolValue == 255 as std::ffi::c_int as std::ffi::c_uint {
+    if hasZeroWeights == 0 && maxSymbolValue == 255 {
         (*bs).entropy.huf.repeatMode = HUF_repeat_valid;
     }
     if ERR_isError(hufHeaderSize) != 0 {
@@ -8758,16 +8168,16 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
     if ERR_isError(offcodeHeaderSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
-    if offcodeLog > 8 as std::ffi::c_int as std::ffi::c_uint {
+    if offcodeLog > 8 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
     if ERR_isError(FSE_buildCTable_wksp(
         ((*bs).entropy.fse.offcodeCTable).as_mut_ptr(),
         offcodeNCount.as_mut_ptr(),
-        31 as std::ffi::c_int as std::ffi::c_uint,
+        31,
         offcodeLog,
         workspace,
-        (((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int) as size_t,
+        (((8) << 10) + 512) as size_t,
     )) != 0
     {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
@@ -8786,7 +8196,7 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
     if ERR_isError(matchlengthHeaderSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
-    if matchlengthLog > 9 as std::ffi::c_int as std::ffi::c_uint {
+    if matchlengthLog > 9 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
     if ERR_isError(FSE_buildCTable_wksp(
@@ -8795,7 +8205,7 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
         matchlengthMaxValue,
         matchlengthLog,
         workspace,
-        (((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int) as size_t,
+        (((8) << 10) + 512) as size_t,
     )) != 0
     {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
@@ -8819,7 +8229,7 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
     if ERR_isError(litlengthHeaderSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
-    if litlengthLog > 9 as std::ffi::c_int as std::ffi::c_uint {
+    if litlengthLog > 9 {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
     if ERR_isError(FSE_buildCTable_wksp(
@@ -8828,7 +8238,7 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
         litlengthMaxValue,
         litlengthLog,
         workspace,
-        (((8 as std::ffi::c_int) << 10 as std::ffi::c_int) + 512 as std::ffi::c_int) as size_t,
+        (((8) << 10) + 512) as size_t,
     )) != 0
     {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
@@ -8839,22 +8249,16 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
         MaxLL as std::ffi::c_uint,
     );
     dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
-    if dictPtr.offset(12 as std::ffi::c_int as isize) > dictEnd {
+    if dictPtr.offset(12) > dictEnd {
         return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
     }
-    *((*bs).rep)
-        .as_mut_ptr()
-        .offset(0 as std::ffi::c_int as isize) =
-        MEM_readLE32(dictPtr.offset(0 as std::ffi::c_int as isize) as *const std::ffi::c_void);
-    *((*bs).rep)
-        .as_mut_ptr()
-        .offset(1 as std::ffi::c_int as isize) =
-        MEM_readLE32(dictPtr.offset(4 as std::ffi::c_int as isize) as *const std::ffi::c_void);
-    *((*bs).rep)
-        .as_mut_ptr()
-        .offset(2 as std::ffi::c_int as isize) =
-        MEM_readLE32(dictPtr.offset(8 as std::ffi::c_int as isize) as *const std::ffi::c_void);
-    dictPtr = dictPtr.offset(12 as std::ffi::c_int as isize);
+    *((*bs).rep).as_mut_ptr().offset(0) =
+        MEM_readLE32(dictPtr.offset(0) as *const std::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().offset(1) =
+        MEM_readLE32(dictPtr.offset(4) as *const std::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().offset(2) =
+        MEM_readLE32(dictPtr.offset(8) as *const std::ffi::c_void);
+    dictPtr = dictPtr.offset(12);
     let dictContentSize = dictEnd.offset_from(dictPtr) as std::ffi::c_long as size_t;
     let mut offcodeMax = MaxOff as u32;
     if dictContentSize
@@ -8862,24 +8266,18 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
             (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as u32,
         ) as size_t
     {
-        let maxOffset = (dictContentSize as u32).wrapping_add(
-            (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as u32,
-        );
+        let maxOffset = (dictContentSize as u32).wrapping_add((128 * ((1) << 10)) as u32);
         offcodeMax = ZSTD_highbit32(maxOffset);
     }
     (*bs).entropy.fse.offcode_repeatMode = ZSTD_dictNCountRepeat(
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
-        if offcodeMax < 31 as std::ffi::c_int as u32 {
-            offcodeMax
-        } else {
-            31 as std::ffi::c_int as u32
-        },
+        if offcodeMax < 31 { offcodeMax } else { 31 },
     );
     let mut u: u32 = 0;
-    u = 0 as std::ffi::c_int as u32;
-    while u < 3 as std::ffi::c_int as u32 {
-        if *((*bs).rep).as_mut_ptr().offset(u as isize) == 0 as std::ffi::c_int as u32 {
+    u = 0;
+    while u < 3 {
+        if *((*bs).rep).as_mut_ptr().offset(u as isize) == 0 {
             return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
         }
         if *((*bs).rep).as_mut_ptr().offset(u as isize) as size_t > dictContentSize {
@@ -8906,9 +8304,9 @@ unsafe extern "C" fn ZSTD_loadZstdDictionary(
     let mut dictID: size_t = 0;
     let mut eSize: size_t = 0;
     dictID = (if (*params).fParams.noDictIDFlag != 0 {
-        0 as std::ffi::c_int as u32
+        0
     } else {
-        MEM_readLE32(dictPtr.offset(4 as std::ffi::c_int as isize) as *const std::ffi::c_void)
+        MEM_readLE32(dictPtr.offset(4) as *const std::ffi::c_void)
     }) as size_t;
     eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
     let err_code = eSize;
@@ -8945,13 +8343,13 @@ unsafe extern "C" fn ZSTD_compress_insertDictionary(
     mut tfp: ZSTD_tableFillPurpose_e,
     mut workspace: *mut std::ffi::c_void,
 ) -> size_t {
-    if dict.is_null() || dictSize < 8 as std::ffi::c_int as size_t {
+    if dict.is_null() || dictSize < 8 {
         if dictContentType as std::ffi::c_uint
             == ZSTD_dct_fullDict as std::ffi::c_int as std::ffi::c_uint
         {
             return -(ZSTD_error_dictionary_wrong as std::ffi::c_int) as size_t;
         }
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     ZSTD_reset_compressedBlockState(bs);
     if dictContentType as std::ffi::c_uint
@@ -8973,10 +8371,8 @@ unsafe extern "C" fn ZSTD_compress_insertDictionary(
     }
     ZSTD_loadZstdDictionary(bs, ms, ws, params, dict, dictSize, dtlm, tfp, workspace)
 }
-pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: std::ffi::c_int =
-    128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int);
-pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: std::ffi::c_ulonglong =
-    6 as std::ffi::c_ulonglong;
+pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: std::ffi::c_int = 128 * ((1) << 10);
+pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: std::ffi::c_ulonglong = 6;
 unsafe extern "C" fn ZSTD_compressBegin_internal(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const std::ffi::c_void,
@@ -8995,13 +8391,13 @@ unsafe extern "C" fn ZSTD_compressBegin_internal(
     };
     (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
     if !cdict.is_null()
-        && (*cdict).dictContentSize > 0 as std::ffi::c_int as size_t
+        && (*cdict).dictContentSize > 0
         && (pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as u64
             || (pledgedSrcSize as std::ffi::c_ulonglong)
                 < ((*cdict).dictContentSize as std::ffi::c_ulonglong)
                     .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
             || pledgedSrcSize as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-            || (*cdict).compressionLevel == 0 as std::ffi::c_int)
+            || (*cdict).compressionLevel == 0)
         && (*params).attachDictPref as std::ffi::c_uint
             != ZSTD_dictForceLoad as std::ffi::c_int as std::ffi::c_uint
     {
@@ -9053,7 +8449,7 @@ unsafe extern "C" fn ZSTD_compressBegin_internal(
     }
     (*cctx).dictID = dictID as u32;
     (*cctx).dictContentSize = dictContentSize;
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_compressBegin_advanced_internal)]
 pub unsafe extern "C" fn ZSTD_compressBegin_advanced_internal(
@@ -9099,7 +8495,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -9172,7 +8568,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingDict_deprecated(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -9227,7 +8623,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingDict_deprecated(
     ZSTD_CCtxParams_init_internal(
         &mut cctxParams,
         &params,
-        if compressionLevel == 0 as std::ffi::c_int {
+        if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
         } else {
             compressionLevel
@@ -9262,7 +8658,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin(
     ZSTD_compressBegin_usingDict_deprecated(
         cctx,
         NULL as *const std::ffi::c_void,
-        0 as std::ffi::c_int as size_t,
+        0,
         compressionLevel,
     )
 }
@@ -9277,13 +8673,7 @@ unsafe extern "C" fn ZSTD_writeEpilogue(
         return -(ZSTD_error_stage_wrong as std::ffi::c_int) as size_t;
     }
     if (*cctx).stage as std::ffi::c_uint == ZSTDcs_init as std::ffi::c_int as std::ffi::c_uint {
-        let mut fhSize = ZSTD_writeFrameHeader(
-            dst,
-            dstCapacity,
-            &mut (*cctx).appliedParams,
-            0 as std::ffi::c_int as u64,
-            0 as std::ffi::c_int as u32,
-        );
+        let mut fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &mut (*cctx).appliedParams, 0, 0);
         let err_code = fhSize;
         if ERR_isError(err_code) != 0 {
             return err_code;
@@ -9305,11 +8695,11 @@ unsafe extern "C" fn ZSTD_writeEpilogue(
     }
     if (*cctx).appliedParams.fParams.checksumFlag != 0 {
         let checksum = ZSTD_XXH64_digest(&mut (*cctx).xxhState) as u32;
-        if dstCapacity < 4 as std::ffi::c_int as size_t {
+        if dstCapacity < 4 {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
         MEM_writeLE32(op as *mut std::ffi::c_void, checksum);
-        op = op.offset(4 as std::ffi::c_int as isize);
+        op = op.offset(4);
     }
     (*cctx).stage = ZSTDcs_created;
     op.offset_from(ostart) as std::ffi::c_long as size_t
@@ -9317,10 +8707,9 @@ unsafe extern "C" fn ZSTD_writeEpilogue(
 #[export_name = crate::prefix!(ZSTD_CCtx_trace)]
 pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSize: size_t) {
     if (*cctx).traceCtx != 0 && ZSTD_trace_compress_end.is_some() {
-        let streaming = ((*cctx).inBuffSize > 0 as std::ffi::c_int as size_t
-            || (*cctx).outBuffSize > 0 as std::ffi::c_int as size_t
-            || (*cctx).appliedParams.nbWorkers > 0 as std::ffi::c_int)
-            as std::ffi::c_int;
+        let streaming = ((*cctx).inBuffSize > 0
+            || (*cctx).outBuffSize > 0
+            || (*cctx).appliedParams.nbWorkers > 0) as std::ffi::c_int;
         let mut trace = ZSTD_Trace {
             version: 0,
             streaming: 0,
@@ -9335,7 +8724,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSiz
         };
         libc::memset(
             &mut trace as *mut ZSTD_Trace as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+            0,
             ::core::mem::size_of::<ZSTD_Trace>() as std::ffi::c_ulong as libc::size_t,
         );
         trace.version = ZSTD_VERSION_NUMBER as std::ffi::c_uint;
@@ -9349,7 +8738,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSiz
         trace.cctx = cctx;
         ZSTD_trace_compress_end.unwrap()((*cctx).traceCtx, &mut trace);
     }
-    (*cctx).traceCtx = 0 as std::ffi::c_int as ZSTD_TraceCtx;
+    (*cctx).traceCtx = 0;
 }
 #[export_name = crate::prefix!(ZSTD_compressEnd_public)]
 pub unsafe extern "C" fn ZSTD_compressEnd_public(
@@ -9360,15 +8749,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     mut srcSize: size_t,
 ) -> size_t {
     let mut endResult: size_t = 0;
-    let cSize = ZSTD_compressContinue_internal(
-        cctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        1 as std::ffi::c_int as u32,
-        1 as std::ffi::c_int as u32,
-    );
+    let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 1);
     let err_code = cSize;
     if ERR_isError(err_code) != 0 {
         return err_code;
@@ -9382,9 +8763,8 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    if (*cctx).pledgedSrcSizePlusOne != 0 as std::ffi::c_int as std::ffi::c_ulonglong
-        && (*cctx).pledgedSrcSizePlusOne
-            != ((*cctx).consumedSrcSize).wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulonglong)
+    if (*cctx).pledgedSrcSizePlusOne != 0
+        && (*cctx).pledgedSrcSizePlusOne != ((*cctx).consumedSrcSize).wrapping_add(1)
     {
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
@@ -9469,17 +8849,13 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
     let params = ZSTD_getParams_internal(
         compressionLevel,
         srcSize as std::ffi::c_ulonglong,
-        if !dict.is_null() {
-            dictSize
-        } else {
-            0 as std::ffi::c_int as size_t
-        },
+        if !dict.is_null() { dictSize } else { 0 },
         ZSTD_cpm_noAttachDict,
     );
     ZSTD_CCtxParams_init_internal(
         &mut (*cctx).simpleApiParams,
         &params,
-        if compressionLevel == 0 as std::ffi::c_int {
+        if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
         } else {
             compressionLevel
@@ -9512,7 +8888,7 @@ pub unsafe extern "C" fn ZSTD_compressCCtx(
         src,
         srcSize,
         NULL as *const std::ffi::c_void,
-        0 as std::ffi::c_int as size_t,
+        0,
         compressionLevel,
     )
 }
@@ -9538,7 +8914,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 searchLog: 0,
                 minMatch: 0,
                 targetLength: 0,
-                strategy: 0 as ZSTD_strategy,
+                strategy: 0,
             },
             fParams: ZSTD_frameParameters {
                 contentSizeFlag: 0,
@@ -9593,7 +8969,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 searchLog: 0,
                 minMatch: 0,
                 targetLength: 0,
-                strategy: 0 as ZSTD_strategy,
+                strategy: 0,
             },
             fParams: ZSTD_frameParameters {
                 contentSizeFlag: 0,
@@ -9648,7 +9024,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                 searchLog: 0,
                 minMatch: 0,
                 targetLength: 0,
-                strategy: 0 as ZSTD_strategy,
+                strategy: 0,
             },
             fParams: ZSTD_frameParameters {
                 contentSizeFlag: 0,
@@ -9830,7 +9206,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                     searchLog: 0,
                     minMatch: 0,
                     targetLength: 0,
-                    strategy: 0 as ZSTD_strategy,
+                    strategy: 0,
                 },
                 ldmSeqStore: std::ptr::null::<RawSeqStore_t>(),
                 prefetchCDictTables: 0,
@@ -9982,14 +9358,14 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
         .wrapping_add(ZSTD_sizeof_matchState(
             &mut cParams,
             ZSTD_resolveRowMatchFinderMode(ZSTD_ps_auto, &mut cParams),
-            1 as std::ffi::c_int,
-            0 as std::ffi::c_int as u32,
+            1,
+            0,
         ))
         .wrapping_add(
             if dictLoadMethod as std::ffi::c_uint
                 == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
             {
-                0 as std::ffi::c_int as size_t
+                0
             } else {
                 ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
                     dictSize,
@@ -10014,10 +9390,10 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize(
 #[export_name = crate::prefix!(ZSTD_sizeof_CDict)]
 pub unsafe extern "C" fn ZSTD_sizeof_CDict(mut cdict: *const ZSTD_CDict) -> size_t {
     if cdict.is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     (if (*cdict).workspace.workspace == cdict as *mut std::ffi::c_void {
-        0 as std::ffi::c_int as std::ffi::c_ulong
+        0
     } else {
         ::core::mem::size_of::<ZSTD_CDict>() as std::ffi::c_ulong
     })
@@ -10071,7 +9447,7 @@ unsafe extern "C" fn ZSTD_initCDict_internal(
         return err_code;
     }
     params.compressionLevel = ZSTD_CLEVEL_DEFAULT;
-    params.fParams.contentSizeFlag = 1 as std::ffi::c_int;
+    params.fParams.contentSizeFlag = 1;
     let dictID = ZSTD_compress_insertDictionary(
         &mut (*cdict).cBlockState,
         &mut (*cdict).matchState,
@@ -10090,7 +9466,7 @@ unsafe extern "C" fn ZSTD_initCDict_internal(
         return err_code_0;
     }
     (*cdict).dictID = dictID as u32;
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_createCDict_advanced_internal(
     mut dictSize: size_t,
@@ -10113,13 +9489,13 @@ unsafe extern "C" fn ZSTD_createCDict_advanced_internal(
                 &mut cParams,
                 useRowMatchFinder,
                 enableDedicatedDictSearch,
-                0 as std::ffi::c_int as u32,
+                0,
             ))
             .wrapping_add(
                 if dictLoadMethod as std::ffi::c_uint
                     == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
                 {
-                    0 as std::ffi::c_int as size_t
+                    0
                 } else {
                     ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
                         dictSize,
@@ -10175,7 +9551,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -10223,10 +9599,10 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     };
     libc::memset(
         &mut cctxParams as *mut ZSTD_CCtx_params as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_CCtx_params>() as std::ffi::c_ulong as libc::size_t,
     );
-    ZSTD_CCtxParams_init(&mut cctxParams, 0 as std::ffi::c_int);
+    ZSTD_CCtxParams_init(&mut cctxParams, 0);
     cctxParams.cParams = cParams;
     cctxParams.customMem = customMem;
     ZSTD_createCDict_advanced2(
@@ -10255,7 +9631,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         searchLog: 0,
         minMatch: 0,
         targetLength: 0,
-        strategy: 0 as ZSTD_strategy,
+        strategy: 0,
     };
     let mut cdict = std::ptr::null_mut::<ZSTD_CDict>();
     if (customMem.customAlloc).is_none() as std::ffi::c_int
@@ -10276,7 +9652,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         );
     }
     if ZSTD_dedicatedDictSearch_isSupported(&mut cParams) == 0 {
-        cctxParams.enableDedicatedDictSearch = 0 as std::ffi::c_int;
+        cctxParams.enableDedicatedDictSearch = 0;
         cParams = ZSTD_getCParamsFromCCtxParams(
             &mut cctxParams,
             ZSTD_CONTENTSIZE_UNKNOWN as u64,
@@ -10331,7 +9707,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
         ZSTD_defaultCMem,
     );
     if !cdict.is_null() {
-        (*cdict).compressionLevel = if compressionLevel == 0 as std::ffi::c_int {
+        (*cdict).compressionLevel = if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
         } else {
             compressionLevel
@@ -10360,7 +9736,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
         ZSTD_defaultCMem,
     );
     if !cdict.is_null() {
-        (*cdict).compressionLevel = if compressionLevel == 0 as std::ffi::c_int {
+        (*cdict).compressionLevel = if compressionLevel == 0 {
             ZSTD_CLEVEL_DEFAULT
         } else {
             compressionLevel
@@ -10371,7 +9747,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
 #[export_name = crate::prefix!(ZSTD_freeCDict)]
 pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
     if cdict.is_null() {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     let cMem = (*cdict).customMem;
     let mut cdictInWorkspace =
@@ -10380,7 +9756,7 @@ pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
     if cdictInWorkspace == 0 {
         ZSTD_customFree(cdict as *mut std::ffi::c_void, cMem);
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initStaticCDict)]
 pub unsafe extern "C" fn ZSTD_initStaticCDict(
@@ -10393,19 +9769,14 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     mut cParams: ZSTD_compressionParameters,
 ) -> *const ZSTD_CDict {
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode(ZSTD_ps_auto, &mut cParams);
-    let matchStateSize = ZSTD_sizeof_matchState(
-        &mut cParams,
-        useRowMatchFinder,
-        1 as std::ffi::c_int,
-        0 as std::ffi::c_int as u32,
-    );
+    let matchStateSize = ZSTD_sizeof_matchState(&mut cParams, useRowMatchFinder, 1, 0);
     let neededSize =
         (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>() as std::ffi::c_ulong))
             .wrapping_add(
                 if dictLoadMethod as std::ffi::c_uint
                     == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
                 {
-                    0 as std::ffi::c_int as size_t
+                    0
                 } else {
                     ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
                         dictSize,
@@ -10425,7 +9796,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -10471,7 +9842,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         extSeqProdFunc: None,
         searchForExternalRepcodes: ZSTD_ps_auto,
     };
-    if workspace as size_t & 7 as std::ffi::c_int as size_t != 0 {
+    if workspace as size_t & 7 != 0 {
         return NULL as *const ZSTD_CDict;
     }
     let mut ws = ZSTD_cwksp {
@@ -10499,7 +9870,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     if workspaceSize < neededSize {
         return NULL as *const ZSTD_CDict;
     }
-    ZSTD_CCtxParams_init(&mut params, 0 as std::ffi::c_int);
+    ZSTD_CCtxParams_init(&mut params, 0);
     params.cParams = cParams;
     params.useRowMatchFinder = useRowMatchFinder;
     (*cdict).useRowMatchFinder = useRowMatchFinder;
@@ -10528,7 +9899,7 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromCDict(
     mut cdict: *const ZSTD_CDict,
 ) -> std::ffi::c_uint {
     if cdict.is_null() {
-        return 0 as std::ffi::c_int as std::ffi::c_uint;
+        return 0;
     }
     (*cdict).dictID
 }
@@ -10547,7 +9918,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -10604,7 +9975,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -10619,7 +9990,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
             < ((*cdict).dictContentSize as std::ffi::c_ulonglong)
                 .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
         || pledgedSrcSize == ZSTD_CONTENTSIZE_UNKNOWN
-        || (*cdict).compressionLevel == 0 as std::ffi::c_int
+        || (*cdict).compressionLevel == 0
     {
         ZSTD_getCParamsFromCDict(cdict)
     } else {
@@ -10631,18 +10002,15 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
     };
     ZSTD_CCtxParams_init_internal(&mut cctxParams, &mut params, (*cdict).compressionLevel);
     if pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN {
-        let limitedSrcSize = (if pledgedSrcSize
-            < ((1 as std::ffi::c_uint) << 19 as std::ffi::c_int) as std::ffi::c_ulonglong
-        {
+        let limitedSrcSize = (if pledgedSrcSize < ((1) << 19) as std::ffi::c_ulonglong {
             pledgedSrcSize
         } else {
-            ((1 as std::ffi::c_uint) << 19 as std::ffi::c_int) as std::ffi::c_ulonglong
+            ((1) << 19) as std::ffi::c_ulonglong
         }) as u32;
-        let limitedSrcLog = if limitedSrcSize > 1 as std::ffi::c_int as u32 {
-            (ZSTD_highbit32(limitedSrcSize.wrapping_sub(1 as std::ffi::c_int as u32)))
-                .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
+        let limitedSrcLog = if limitedSrcSize > 1 {
+            (ZSTD_highbit32(limitedSrcSize.wrapping_sub(1))).wrapping_add(1)
         } else {
-            1 as std::ffi::c_int as std::ffi::c_uint
+            1
         };
         cctxParams.cParams.windowLog = if cctxParams.cParams.windowLog > limitedSrcLog {
             cctxParams.cParams.windowLog
@@ -10653,7 +10021,7 @@ unsafe extern "C" fn ZSTD_compressBegin_usingCDict_internal(
     ZSTD_compressBegin_internal(
         cctx,
         NULL as *const std::ffi::c_void,
-        0 as std::ffi::c_int as size_t,
+        0,
         ZSTD_dct_auto,
         ZSTD_dtlm_fast,
         cdict,
@@ -10678,9 +10046,9 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
 ) -> size_t {
     let fParams = {
         ZSTD_frameParameters {
-            contentSizeFlag: 0 as std::ffi::c_int,
-            checksumFlag: 0 as std::ffi::c_int,
-            noDictIDFlag: 0 as std::ffi::c_int,
+            contentSizeFlag: 0,
+            checksumFlag: 0,
+            noDictIDFlag: 0,
         }
     };
     ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, ZSTD_CONTENTSIZE_UNKNOWN)
@@ -10735,9 +10103,9 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict(
 ) -> size_t {
     let fParams = {
         ZSTD_frameParameters {
-            contentSizeFlag: 1 as std::ffi::c_int,
-            checksumFlag: 0 as std::ffi::c_int,
-            noDictIDFlag: 0 as std::ffi::c_int,
+            contentSizeFlag: 1,
+            checksumFlag: 0,
+            noDictIDFlag: 0,
         }
     };
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
@@ -10771,7 +10139,7 @@ pub unsafe extern "C" fn ZSTD_CStreamInSize() -> size_t {
 pub unsafe extern "C" fn ZSTD_CStreamOutSize() -> size_t {
     (ZSTD_compressBound(ZSTD_BLOCKSIZE_MAX as size_t))
         .wrapping_add(ZSTD_blockHeaderSize)
-        .wrapping_add(4 as std::ffi::c_int as size_t)
+        .wrapping_add(4)
 }
 unsafe extern "C" fn ZSTD_getCParamMode(
     mut cdict: *const ZSTD_CDict,
@@ -10789,7 +10157,7 @@ pub unsafe extern "C" fn ZSTD_resetCStream(
     mut zcs: *mut ZSTD_CStream,
     mut pss: std::ffi::c_ulonglong,
 ) -> size_t {
-    let pledgedSrcSize = (if pss == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    let pledgedSrcSize = (if pss == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
     } else {
         pss
@@ -10802,7 +10170,7 @@ pub unsafe extern "C" fn ZSTD_resetCStream(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_internal)]
 pub unsafe extern "C" fn ZSTD_initCStream_internal(
@@ -10833,7 +10201,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_internal(
             return err_code_2;
         }
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_usingCDict_advanced)]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
@@ -10855,7 +10223,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_usingCDict)]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
@@ -10870,7 +10238,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_advanced)]
 pub unsafe extern "C" fn ZSTD_initCStream_advanced(
@@ -10880,9 +10248,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     mut params: ZSTD_parameters,
     mut pss: std::ffi::c_ulonglong,
 ) -> size_t {
-    let pledgedSrcSize = (if pss == 0 as std::ffi::c_int as std::ffi::c_ulonglong
-        && params.fParams.contentSizeFlag == 0 as std::ffi::c_int
-    {
+    let pledgedSrcSize = (if pss == 0 && params.fParams.contentSizeFlag == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
     } else {
         pss
@@ -10904,7 +10270,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     if ERR_isError(err_code_2) != 0 {
         return err_code_2;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_usingDict)]
 pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
@@ -10925,7 +10291,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream_srcSize)]
 pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
@@ -10933,7 +10299,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     mut compressionLevel: std::ffi::c_int,
     mut pss: std::ffi::c_ulonglong,
 ) -> size_t {
-    let pledgedSrcSize = (if pss == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    let pledgedSrcSize = (if pss == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
     } else {
         pss
@@ -10954,7 +10320,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     if ERR_isError(err_code_2) != 0 {
         return err_code_2;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_initCStream)]
 pub unsafe extern "C" fn ZSTD_initCStream(
@@ -10973,7 +10339,7 @@ pub unsafe extern "C" fn ZSTD_initCStream(
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_nextInputSizeHint(mut cctx: *const ZSTD_CCtx) -> size_t {
     if (*cctx).appliedParams.inBufferMode as std::ffi::c_uint
@@ -10982,7 +10348,7 @@ unsafe extern "C" fn ZSTD_nextInputSizeHint(mut cctx: *const ZSTD_CCtx) -> size_
         return ((*cctx).blockSizeMax).wrapping_sub((*cctx).stableIn_notConsumed);
     }
     let mut hintInSize = ((*cctx).inBuffTarget).wrapping_sub((*cctx).inBuffPos);
-    if hintInSize == 0 as std::ffi::c_int as size_t {
+    if hintInSize == 0 {
         hintInSize = (*cctx).blockSizeMax;
     }
     hintInSize
@@ -11015,7 +10381,7 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
     } else {
         ostart
     };
-    let mut someMoreWork = 1 as std::ffi::c_int as u32;
+    let mut someMoreWork = 1;
     if (*zcs).appliedParams.inBufferMode as std::ffi::c_uint
         == ZSTD_bm_stable as std::ffi::c_int as std::ffi::c_uint
     {
@@ -11023,7 +10389,7 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
         if !ip.is_null() {
             ip = ip.offset(-((*zcs).stableIn_notConsumed as isize));
         }
-        (*zcs).stableIn_notConsumed = 0 as std::ffi::c_int as size_t;
+        (*zcs).stableIn_notConsumed = 0;
     }
     (*zcs).appliedParams.inBufferMode as std::ffi::c_uint
         == ZSTD_bm_buffered as std::ffi::c_int as std::ffi::c_uint;
@@ -11042,7 +10408,7 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                         >= ZSTD_compressBound(iend.offset_from(ip) as std::ffi::c_long as size_t)
                         || (*zcs).appliedParams.outBufferMode as std::ffi::c_uint
                             == ZSTD_bm_stable as std::ffi::c_int as std::ffi::c_uint)
-                    && (*zcs).inBuffPos == 0 as std::ffi::c_int as size_t
+                    && (*zcs).inBuffPos == 0
                 {
                     let cSize = ZSTD_compressEnd_public(
                         zcs,
@@ -11057,9 +10423,9 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                     }
                     ip = iend;
                     op = op.offset(cSize as isize);
-                    (*zcs).frameEnded = 1 as std::ffi::c_int as u32;
+                    (*zcs).frameEnded = 1;
                     ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-                    someMoreWork = 0 as std::ffi::c_int as u32;
+                    someMoreWork = 0;
                     current_block_156 = 16754622181974910496;
                 } else {
                     if (*zcs).appliedParams.inBufferMode as std::ffi::c_uint
@@ -11081,13 +10447,13 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                             == ZSTD_e_continue as std::ffi::c_int as std::ffi::c_uint
                             && (*zcs).inBuffPos < (*zcs).inBuffTarget
                         {
-                            someMoreWork = 0 as std::ffi::c_int as u32;
+                            someMoreWork = 0;
                             current_block_156 = 16754622181974910496;
                         } else if flushMode as std::ffi::c_uint
                             == ZSTD_e_flush as std::ffi::c_int as std::ffi::c_uint
                             && (*zcs).inBuffPos == (*zcs).inToCompress
                         {
-                            someMoreWork = 0 as std::ffi::c_int as u32;
+                            someMoreWork = 0;
                             current_block_156 = 16754622181974910496;
                         } else {
                             current_block_156 = 13910774313357589740;
@@ -11100,13 +10466,13 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                         (*zcs).stableIn_notConsumed =
                             iend.offset_from(ip) as std::ffi::c_long as size_t;
                         ip = iend;
-                        someMoreWork = 0 as std::ffi::c_int as u32;
+                        someMoreWork = 0;
                         current_block_156 = 16754622181974910496;
                     } else if flushMode as std::ffi::c_uint
                         == ZSTD_e_flush as std::ffi::c_int as std::ffi::c_uint
                         && ip == iend
                     {
-                        someMoreWork = 0 as std::ffi::c_int as u32;
+                        someMoreWork = 0;
                         current_block_156 = 16754622181974910496;
                     } else {
                         current_block_156 = 13910774313357589740;
@@ -11172,7 +10538,7 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                                 (*zcs).inBuffTarget =
                                     ((*zcs).inBuffPos).wrapping_add((*zcs).blockSizeMax);
                                 if (*zcs).inBuffTarget > (*zcs).inBuffSize {
-                                    (*zcs).inBuffPos = 0 as std::ffi::c_int as size_t;
+                                    (*zcs).inBuffPos = 0;
                                     (*zcs).inBuffTarget = (*zcs).blockSizeMax;
                                 }
                                 lastBlock == 0;
@@ -11213,13 +10579,13 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
                             if cDst == op as *mut std::ffi::c_void {
                                 op = op.offset(cSize_0 as isize);
                                 if (*zcs).frameEnded != 0 {
-                                    someMoreWork = 0 as std::ffi::c_int as u32;
+                                    someMoreWork = 0;
                                     ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
                                 }
                                 current_block_156 = 16754622181974910496;
                             } else {
                                 (*zcs).outBuffContentSize = cSize_0;
-                                (*zcs).outBuffFlushedSize = 0 as std::ffi::c_int as size_t;
+                                (*zcs).outBuffFlushedSize = 0;
                                 (*zcs).streamStage = zcss_flush;
                                 current_block_156 = 5431927413890720344;
                             }
@@ -11248,12 +10614,12 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
             }
             (*zcs).outBuffFlushedSize = ((*zcs).outBuffFlushedSize).wrapping_add(flushed);
             if toFlush != flushed {
-                someMoreWork = 0 as std::ffi::c_int as u32;
+                someMoreWork = 0;
             } else {
-                (*zcs).outBuffFlushedSize = 0 as std::ffi::c_int as size_t;
+                (*zcs).outBuffFlushedSize = 0;
                 (*zcs).outBuffContentSize = (*zcs).outBuffFlushedSize;
                 if (*zcs).frameEnded != 0 {
-                    someMoreWork = 0 as std::ffi::c_int as u32;
+                    someMoreWork = 0;
                     ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
                 } else {
                     (*zcs).streamStage = zcss_load;
@@ -11264,12 +10630,12 @@ unsafe extern "C" fn ZSTD_compressStream_generic(
     (*input).pos = ip.offset_from(istart) as std::ffi::c_long as size_t;
     (*output).pos = op.offset_from(ostart) as std::ffi::c_long as size_t;
     if (*zcs).frameEnded != 0 {
-        return 0 as std::ffi::c_int as size_t;
+        return 0;
     }
     ZSTD_nextInputSizeHint(zcs)
 }
 unsafe extern "C" fn ZSTD_nextInputSizeHint_MTorST(mut cctx: *const ZSTD_CCtx) -> size_t {
-    if (*cctx).appliedParams.nbWorkers >= 1 as std::ffi::c_int {
+    if (*cctx).appliedParams.nbWorkers >= 1 {
         return ZSTDMT_nextInputSizeHint((*cctx).mtctx);
     }
     ZSTD_nextInputSizeHint(cctx)
@@ -11324,7 +10690,7 @@ unsafe extern "C" fn ZSTD_checkBufferStability(
             return -(ZSTD_error_stabilityCondition_notRespected as std::ffi::c_int) as size_t;
         }
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
     mut cctx: *mut ZSTD_CCtx,
@@ -11339,33 +10705,30 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
     }
     libc::memset(
         &mut (*cctx).prefixDict as *mut ZSTD_prefixDict as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_prefixDict>() as std::ffi::c_ulong as libc::size_t,
     );
     if !((*cctx).cdict).is_null() && ((*cctx).localDict.cdict).is_null() {
         params.compressionLevel = (*(*cctx).cdict).compressionLevel;
     }
     if endOp as std::ffi::c_uint == ZSTD_e_end as std::ffi::c_int as std::ffi::c_uint {
-        (*cctx).pledgedSrcSizePlusOne =
-            inSize.wrapping_add(1 as std::ffi::c_int as size_t) as std::ffi::c_ulonglong;
+        (*cctx).pledgedSrcSizePlusOne = inSize.wrapping_add(1) as std::ffi::c_ulonglong;
     }
     let dictSize = if !(prefixDict.dict).is_null() {
         prefixDict.dictSize
     } else if !((*cctx).cdict).is_null() {
         (*(*cctx).cdict).dictContentSize
     } else {
-        0 as std::ffi::c_int as size_t
+        0
     };
     let mode = ZSTD_getCParamMode(
         (*cctx).cdict,
         &mut params,
-        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong)
-            as u64,
+        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1) as u64,
     );
     params.cParams = ZSTD_getCParamsFromCCtxParams(
         &mut params,
-        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong)
-            as u64,
+        ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1) as u64,
         dictSize,
         mode,
     );
@@ -11381,15 +10744,15 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
         params.searchForExternalRepcodes,
         params.compressionLevel,
     );
-    if ZSTD_hasExtSeqProd(&mut params) != 0 && params.nbWorkers >= 1 as std::ffi::c_int {
+    if ZSTD_hasExtSeqProd(&mut params) != 0 && params.nbWorkers >= 1 {
         return -(ZSTD_error_parameter_combination_unsupported as std::ffi::c_int) as size_t;
     }
-    if ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong)
+    if ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1)
         <= ZSTDMT_JOBSIZE_MIN as std::ffi::c_ulonglong
     {
-        params.nbWorkers = 0 as std::ffi::c_int;
+        params.nbWorkers = 0;
     }
-    if params.nbWorkers > 0 as std::ffi::c_int {
+    if params.nbWorkers > 0 {
         (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
         if ((*cctx).mtctx).is_null() {
             (*cctx).mtctx = ZSTDMT_createCCtx_advanced(
@@ -11408,8 +10771,7 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
             prefixDict.dictContentType,
             (*cctx).cdict,
             params,
-            ((*cctx).pledgedSrcSizePlusOne)
-                .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong),
+            ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
         );
         if ERR_isError(err_code_0) != 0 {
             return err_code_0;
@@ -11417,21 +10779,19 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
         (*cctx).dictID = if !((*cctx).cdict).is_null() {
             (*(*cctx).cdict).dictID
         } else {
-            0 as std::ffi::c_int as u32
+            0
         };
         (*cctx).dictContentSize = if !((*cctx).cdict).is_null() {
             (*(*cctx).cdict).dictContentSize
         } else {
             prefixDict.dictSize
         };
-        (*cctx).consumedSrcSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
-        (*cctx).producedCSize = 0 as std::ffi::c_int as std::ffi::c_ulonglong;
+        (*cctx).consumedSrcSize = 0;
+        (*cctx).producedCSize = 0;
         (*cctx).streamStage = zcss_load;
         (*cctx).appliedParams = params;
     } else {
-        let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne)
-            .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong)
-            as u64;
+        let pledgedSrcSize = ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1) as u64;
         let err_code_1 = ZSTD_compressBegin_internal(
             cctx,
             prefixDict.dict,
@@ -11446,8 +10806,8 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
         if ERR_isError(err_code_1) != 0 {
             return err_code_1;
         }
-        (*cctx).inToCompress = 0 as std::ffi::c_int as size_t;
-        (*cctx).inBuffPos = 0 as std::ffi::c_int as size_t;
+        (*cctx).inToCompress = 0;
+        (*cctx).inBuffPos = 0;
         if (*cctx).appliedParams.inBufferMode as std::ffi::c_uint
             == ZSTD_bm_buffered as std::ffi::c_int as std::ffi::c_uint
         {
@@ -11455,14 +10815,14 @@ unsafe extern "C" fn ZSTD_CCtx_init_compressStream2(
                 ((*cctx).blockSizeMax == pledgedSrcSize) as std::ffi::c_int as size_t,
             );
         } else {
-            (*cctx).inBuffTarget = 0 as std::ffi::c_int as size_t;
+            (*cctx).inBuffTarget = 0;
         }
-        (*cctx).outBuffFlushedSize = 0 as std::ffi::c_int as size_t;
+        (*cctx).outBuffFlushedSize = 0;
         (*cctx).outBuffContentSize = (*cctx).outBuffFlushedSize;
         (*cctx).streamStage = zcss_load;
-        (*cctx).frameEnded = 0 as std::ffi::c_int as u32;
+        (*cctx).frameEnded = 0;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[export_name = crate::prefix!(ZSTD_compressStream2)]
 pub unsafe extern "C" fn ZSTD_compressStream2(
@@ -11502,9 +10862,9 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             (*cctx).expectedInBuffer = *input;
             (*cctx).stableIn_notConsumed = ((*cctx).stableIn_notConsumed).wrapping_add(inputSize);
             return (if (*cctx).requestedParams.format == Format::ZSTD_f_zstd1 {
-                6 as std::ffi::c_int
+                6
             } else {
-                2 as std::ffi::c_int
+                2
             }) as size_t;
         }
         let err_code = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize);
@@ -11517,15 +10877,15 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
     if ERR_isError(err_code_0) != 0 {
         return err_code_0;
     }
-    if (*cctx).appliedParams.nbWorkers > 0 as std::ffi::c_int {
+    if (*cctx).appliedParams.nbWorkers > 0 {
         let mut flushMin: size_t = 0;
         if (*cctx).cParamsChanged != 0 {
             ZSTDMT_updateCParams_whileCompressing((*cctx).mtctx, &mut (*cctx).requestedParams);
-            (*cctx).cParamsChanged = 0 as std::ffi::c_int;
+            (*cctx).cParamsChanged = 0;
         }
         if (*cctx).stableIn_notConsumed != 0 {
             (*input).pos = ((*input).pos).wrapping_sub((*cctx).stableIn_notConsumed);
-            (*cctx).stableIn_notConsumed = 0 as std::ffi::c_int as size_t;
+            (*cctx).stableIn_notConsumed = 0;
         }
         loop {
             let ipos = (*input).pos;
@@ -11537,10 +10897,10 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 .wrapping_add(((*output).pos).wrapping_sub(opos) as std::ffi::c_ulonglong);
             if ERR_isError(flushMin) != 0
                 || endOp as std::ffi::c_uint == ZSTD_e_end as std::ffi::c_int as std::ffi::c_uint
-                    && flushMin == 0 as std::ffi::c_int as size_t
+                    && flushMin == 0
             {
-                if flushMin == 0 as std::ffi::c_int as size_t {
-                    ZSTD_CCtx_trace(cctx, 0 as std::ffi::c_int as size_t);
+                if flushMin == 0 {
+                    ZSTD_CCtx_trace(cctx, 0);
                 }
                 ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
             }
@@ -11556,8 +10916,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 {
                     break;
                 }
-            } else if flushMin == 0 as std::ffi::c_int as size_t || (*output).pos == (*output).size
-            {
+            } else if flushMin == 0 || (*output).pos == (*output).size {
                 break;
             }
         }
@@ -11616,8 +10975,8 @@ pub unsafe extern "C" fn ZSTD_compress2(
     ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
     (*cctx).requestedParams.inBufferMode = ZSTD_bm_stable;
     (*cctx).requestedParams.outBufferMode = ZSTD_bm_stable;
-    let mut oPos = 0 as std::ffi::c_int as size_t;
-    let mut iPos = 0 as std::ffi::c_int as size_t;
+    let mut oPos = 0;
+    let mut iPos = 0;
     let result = ZSTD_compressStream2_simpleArgs(
         cctx,
         dst,
@@ -11634,7 +10993,7 @@ pub unsafe extern "C" fn ZSTD_compress2(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    if result != 0 as std::ffi::c_int as size_t {
+    if result != 0 {
         return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
     }
     oPos
@@ -11648,25 +11007,24 @@ unsafe extern "C" fn ZSTD_validateSequence(
     mut dictSize: size_t,
     mut useSequenceProducer: std::ffi::c_int,
 ) -> size_t {
-    let windowSize = (1 as std::ffi::c_uint) << windowLog;
+    let windowSize = (1) << windowLog;
     let offsetBound = if posInSrc > windowSize as size_t {
         windowSize as size_t
     } else {
         posInSrc.wrapping_add(dictSize)
     };
-    let matchLenLowerBound = (if minMatch == 3 as std::ffi::c_int as u32 || useSequenceProducer != 0
-    {
-        3 as std::ffi::c_int
+    let matchLenLowerBound = (if minMatch == 3 || useSequenceProducer != 0 {
+        3
     } else {
-        4 as std::ffi::c_int
+        4
     }) as size_t;
-    if offBase as size_t > offsetBound.wrapping_add(3 as std::ffi::c_int as size_t) {
+    if offBase as size_t > offsetBound.wrapping_add(3) {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
     if (matchLength as size_t) < matchLenLowerBound {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
-    0 as std::ffi::c_int as size_t
+    0
 }
 unsafe extern "C" fn ZSTD_finalizeOffBase(
     mut rawOffset: u32,
@@ -11674,17 +11032,13 @@ unsafe extern "C" fn ZSTD_finalizeOffBase(
     mut ll0: u32,
 ) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
-    if ll0 == 0 && rawOffset == *rep.offset(0 as std::ffi::c_int as isize) {
+    if ll0 == 0 && rawOffset == *rep.offset(0) {
         offBase = REPCODE1_TO_OFFBASE as u32;
     } else if rawOffset == *rep.offset(1 as std::ffi::c_int as isize) {
         offBase = (2 as std::ffi::c_int as u32).wrapping_sub(ll0);
     } else if rawOffset == *rep.offset(2 as std::ffi::c_int as isize) {
         offBase = (3 as std::ffi::c_int as u32).wrapping_sub(ll0);
-    } else if ll0 != 0
-        && rawOffset
-            == (*rep.offset(0 as std::ffi::c_int as isize))
-                .wrapping_sub(1 as std::ffi::c_int as u32)
-    {
+    } else if ll0 != 0 && rawOffset == (*rep.offset(0)).wrapping_sub(1) {
         offBase = REPCODE3_TO_OFFBASE as u32;
     }
     offBase
@@ -11709,7 +11063,7 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
     } else if !((*cctx).prefixDict.dict).is_null() {
         dictSize = (*cctx).prefixDict.dictSize as u32;
     } else {
-        dictSize = 0 as std::ffi::c_int as u32;
+        dictSize = 0;
     }
     libc::memcpy(
         (updatedRepcodes.rep).as_mut_ptr() as *mut std::ffi::c_void,
@@ -11717,8 +11071,8 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
         ::core::mem::size_of::<Repcodes_t>() as std::ffi::c_ulong as libc::size_t,
     );
     while (idx as size_t) < inSeqsSize
-        && ((*inSeqs.offset(idx as isize)).matchLength != 0 as std::ffi::c_int as std::ffi::c_uint
-            || (*inSeqs.offset(idx as isize)).offset != 0 as std::ffi::c_int as std::ffi::c_uint)
+        && ((*inSeqs.offset(idx as isize)).matchLength != 0
+            || (*inSeqs.offset(idx as isize)).offset != 0)
     {
         let litLength = (*inSeqs.offset(idx as isize)).litLength;
         let matchLength = (*inSeqs.offset(idx as isize)).matchLength;
@@ -11729,7 +11083,7 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
             offBase = ((*inSeqs.offset(idx as isize)).offset)
                 .wrapping_add(ZSTD_REP_NUM as std::ffi::c_uint);
         } else {
-            let ll0 = (litLength == 0 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
+            let ll0 = (litLength == 0) as std::ffi::c_int as u32;
             offBase = ZSTD_finalizeOffBase(
                 (*inSeqs.offset(idx as isize)).offset,
                 (updatedRepcodes.rep).as_mut_ptr() as *const u32,
@@ -11776,28 +11130,19 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
         && idx != startIdx
     {
         let rep = (updatedRepcodes.rep).as_mut_ptr();
-        let mut lastSeqIdx = idx.wrapping_sub(1 as std::ffi::c_int as u32);
-        if lastSeqIdx >= startIdx.wrapping_add(2 as std::ffi::c_int as u32) {
-            *rep.offset(2 as std::ffi::c_int as isize) = (*inSeqs
-                .offset(lastSeqIdx.wrapping_sub(2 as std::ffi::c_int as u32) as isize))
-            .offset;
-            *rep.offset(1 as std::ffi::c_int as isize) = (*inSeqs
-                .offset(lastSeqIdx.wrapping_sub(1 as std::ffi::c_int as u32) as isize))
-            .offset;
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(lastSeqIdx as isize)).offset;
-        } else if lastSeqIdx == startIdx.wrapping_add(1 as std::ffi::c_int as u32) {
-            *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(1 as std::ffi::c_int as isize) = (*inSeqs
-                .offset(lastSeqIdx.wrapping_sub(1 as std::ffi::c_int as u32) as isize))
-            .offset;
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(lastSeqIdx as isize)).offset;
+        let mut lastSeqIdx = idx.wrapping_sub(1);
+        if lastSeqIdx >= startIdx.wrapping_add(2) {
+            *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+        } else if lastSeqIdx == startIdx.wrapping_add(1) {
+            *rep.offset(2) = *rep.offset(0);
+            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else {
-            *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(1 as std::ffi::c_int as isize);
-            *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            *rep.offset(2) = *rep.offset(1);
+            *rep.offset(1) = *rep.offset(0);
+            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         }
     }
     libc::memcpy(
@@ -11818,7 +11163,7 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
     if ip != iend {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
-    (*seqPos).idx = idx.wrapping_add(1 as std::ffi::c_int as u32);
+    (*seqPos).idx = idx.wrapping_add(1);
     blockSize
 }
 unsafe extern "C" fn ZSTD_transferSequences_noDelim(
@@ -11838,14 +11183,14 @@ unsafe extern "C" fn ZSTD_transferSequences_noDelim(
     let mut ip = istart;
     let mut iend = istart.offset(blockSize as isize);
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
-    let mut bytesAdjustment = 0 as std::ffi::c_int as u32;
-    let mut finalMatchSplit = 0 as std::ffi::c_int as u32;
+    let mut bytesAdjustment = 0;
+    let mut finalMatchSplit = 0;
     if !((*cctx).cdict).is_null() {
         dictSize = (*(*cctx).cdict).dictContentSize;
     } else if !((*cctx).prefixDict.dict).is_null() {
         dictSize = (*cctx).prefixDict.dictSize;
     } else {
-        dictSize = 0 as std::ffi::c_int as size_t;
+        dictSize = 0;
     }
     libc::memcpy(
         (updatedRepcodes.rep).as_mut_ptr() as *mut std::ffi::c_void,
@@ -11861,7 +11206,7 @@ unsafe extern "C" fn ZSTD_transferSequences_noDelim(
         if endPosInSequence >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             if startPosInSequence >= litLength {
                 startPosInSequence = startPosInSequence.wrapping_sub(litLength);
-                litLength = 0 as std::ffi::c_int as u32;
+                litLength = 0;
                 matchLength = matchLength.wrapping_sub(startPosInSequence);
             } else {
                 litLength = litLength.wrapping_sub(startPosInSequence);
@@ -11869,14 +11214,14 @@ unsafe extern "C" fn ZSTD_transferSequences_noDelim(
             endPosInSequence = (endPosInSequence as std::ffi::c_uint)
                 .wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength))
                 as u32 as u32;
-            startPosInSequence = 0 as std::ffi::c_int as u32;
+            startPosInSequence = 0;
         } else {
             if endPosInSequence <= litLength {
                 break;
             }
             let mut firstHalfMatchLength: u32 = 0;
             litLength = if startPosInSequence >= litLength {
-                0 as std::ffi::c_int as u32
+                0
             } else {
                 litLength.wrapping_sub(startPosInSequence)
             };
@@ -11899,14 +11244,14 @@ unsafe extern "C" fn ZSTD_transferSequences_noDelim(
                     firstHalfMatchLength = firstHalfMatchLength.wrapping_sub(bytesAdjustment);
                 }
                 matchLength = firstHalfMatchLength;
-                finalMatchSplit = 1 as std::ffi::c_int as u32;
+                finalMatchSplit = 1;
             } else {
                 bytesAdjustment = endPosInSequence.wrapping_sub(currSeq.litLength);
                 endPosInSequence = currSeq.litLength;
                 break;
             }
         }
-        let ll0 = (litLength == 0 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
+        let ll0 = (litLength == 0) as std::ffi::c_int as u32;
         offBase = ZSTD_finalizeOffBase(
             rawOffset,
             (updatedRepcodes.rep).as_mut_ptr() as *const u32,
@@ -11998,20 +11343,17 @@ unsafe extern "C" fn blockSize_explicitDelimiter(
     mut inSeqsSize: size_t,
     mut seqPos: ZSTD_SequencePosition,
 ) -> size_t {
-    let mut end = 0 as std::ffi::c_int;
+    let mut end = 0;
     let mut blockSize = 0 as std::ffi::c_int as size_t;
     let mut spos = seqPos.idx as size_t;
     while spos < inSeqsSize {
-        end = ((*inSeqs.offset(spos as isize)).offset == 0 as std::ffi::c_int as std::ffi::c_uint)
-            as std::ffi::c_int;
+        end = ((*inSeqs.offset(spos as isize)).offset == 0) as std::ffi::c_int;
         blockSize = blockSize.wrapping_add(
             ((*inSeqs.offset(spos as isize)).litLength)
                 .wrapping_add((*inSeqs.offset(spos as isize)).matchLength) as size_t,
         );
         if end != 0 {
-            if (*inSeqs.offset(spos as isize)).matchLength
-                != 0 as std::ffi::c_int as std::ffi::c_uint
-            {
+            if (*inSeqs.offset(spos as isize)).matchLength != 0 {
                 return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
             }
             break;
@@ -12067,18 +11409,18 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
     let mut remaining = srcSize;
     let mut seqPos = {
         ZSTD_SequencePosition {
-            idx: 0 as std::ffi::c_int as u32,
-            posInSequence: 0 as std::ffi::c_int as u32,
-            posInSrc: 0 as std::ffi::c_int as size_t,
+            idx: 0,
+            posInSequence: 0,
+            posInSrc: 0,
         }
     };
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let sequenceCopier = ZSTD_selectSequenceCopier((*cctx).appliedParams.blockDelimiters);
-    if remaining == 0 as std::ffi::c_int as size_t {
+    if remaining == 0 {
         let cBlockHeader24 = (1 as std::ffi::c_int as u32)
             .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1 as std::ffi::c_int);
-        if dstCapacity < 4 as std::ffi::c_int as size_t {
+        if dstCapacity < 4 {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
         MEM_writeLE32(op as *mut std::ffi::c_void, cBlockHeader24);
@@ -12119,8 +11461,8 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
         if blockSize
             < (MIN_CBLOCK_SIZE as size_t)
                 .wrapping_add(ZSTD_blockHeaderSize)
-                .wrapping_add(1 as std::ffi::c_int as size_t)
-                .wrapping_add(1 as std::ffi::c_int as size_t)
+                .wrapping_add(1)
+                .wrapping_add(1)
         {
             cBlockSize = ZSTD_noCompressBlock(
                 op as *mut std::ffi::c_void,
@@ -12162,9 +11504,9 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
                 && ZSTD_maybeRLE(&mut (*cctx).seqStore) != 0
                 && ZSTD_isRLE(ip, blockSize) != 0
             {
-                compressedSeqsSize = 1 as std::ffi::c_int as size_t;
+                compressedSeqsSize = 1;
             }
-            if compressedSeqsSize == 0 as std::ffi::c_int as size_t {
+            if compressedSeqsSize == 0 {
                 cBlockSize = ZSTD_noCompressBlock(
                     op as *mut std::ffi::c_void,
                     dstCapacity,
@@ -12176,7 +11518,7 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
                 if ERR_isError(err_code_3) != 0 {
                     return err_code_3;
                 }
-            } else if compressedSeqsSize == 1 as std::ffi::c_int as size_t {
+            } else if compressedSeqsSize == 1 {
                 cBlockSize = ZSTD_rleCompressBlock(
                     op as *mut std::ffi::c_void,
                     dstCapacity,
@@ -12203,8 +11545,8 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
                         .offcode_repeatMode = FSE_repeat_check;
                 }
                 cBlockHeader = lastBlock
-                    .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-                    .wrapping_add((compressedSeqsSize << 3 as std::ffi::c_int) as u32);
+                    .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1)
+                    .wrapping_add((compressedSeqsSize << 3) as u32);
                 MEM_writeLE24(op as *mut std::ffi::c_void, cBlockHeader);
                 cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
             }
@@ -12216,7 +11558,7 @@ unsafe extern "C" fn ZSTD_compressSequences_internal(
             op = op.offset(cBlockSize as isize);
             remaining = remaining.wrapping_sub(blockSize);
             dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
-            (*cctx).isFirstBlock = 0 as std::ffi::c_int;
+            (*cctx).isFirstBlock = 0;
         }
     }
     cSize
@@ -12267,14 +11609,14 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     dstCapacity = dstCapacity.wrapping_sub(cBlocksSize);
     if (*cctx).appliedParams.fParams.checksumFlag != 0 {
         let checksum = ZSTD_XXH64_digest(&mut (*cctx).xxhState) as u32;
-        if dstCapacity < 4 as std::ffi::c_int as size_t {
+        if dstCapacity < 4 {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
         MEM_writeLE32(
             (dst as *mut std::ffi::c_char).offset(cSize as isize) as *mut std::ffi::c_void,
             checksum,
         );
-        cSize = cSize.wrapping_add(4 as std::ffi::c_int as size_t);
+        cSize = cSize.wrapping_add(4);
     }
     cSize
 }
@@ -12284,9 +11626,9 @@ pub unsafe extern "C" fn convertSequences_noRepcodes(
     mut inSeqs: *const ZSTD_Sequence,
     mut nbSequences: size_t,
 ) -> size_t {
-    let mut longLen = 0 as std::ffi::c_int as size_t;
+    let mut longLen = 0;
     let mut n: size_t = 0;
-    n = 0 as std::ffi::c_int as size_t;
+    n = 0;
     while n < nbSequences {
         (*dstSeqs.offset(n as isize)).offBase =
             ((*inSeqs.offset(n as isize)).offset).wrapping_add(ZSTD_REP_NUM as std::ffi::c_uint);
@@ -12294,20 +11636,16 @@ pub unsafe extern "C" fn convertSequences_noRepcodes(
         (*dstSeqs.offset(n as isize)).mlBase = ((*inSeqs.offset(n as isize)).matchLength)
             .wrapping_sub(MINMATCH as std::ffi::c_uint)
             as u16;
-        if ((*inSeqs.offset(n as isize)).matchLength
-            > (65535 as std::ffi::c_int + 3 as std::ffi::c_int) as std::ffi::c_uint)
+        if ((*inSeqs.offset(n as isize)).matchLength > (65535 + 3) as std::ffi::c_uint)
             as std::ffi::c_int as std::ffi::c_long
             != 0
         {
-            longLen = n.wrapping_add(1 as std::ffi::c_int as size_t);
+            longLen = n.wrapping_add(1);
         }
-        if ((*inSeqs.offset(n as isize)).litLength > 65535 as std::ffi::c_int as std::ffi::c_uint)
-            as std::ffi::c_int as std::ffi::c_long
+        if ((*inSeqs.offset(n as isize)).litLength > 65535) as std::ffi::c_int as std::ffi::c_long
             != 0
         {
-            longLen = n
-                .wrapping_add(nbSequences)
-                .wrapping_add(1 as std::ffi::c_int as size_t);
+            longLen = n.wrapping_add(nbSequences).wrapping_add(1);
         }
         n = n.wrapping_add(1);
         n;
@@ -12322,7 +11660,7 @@ pub unsafe extern "C" fn ZSTD_convertBlockSequences(
     mut repcodeResolution: std::ffi::c_int,
 ) -> size_t {
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
-    let mut seqNb = 0 as std::ffi::c_int as size_t;
+    let mut seqNb = 0;
     if nbSequences >= (*cctx).seqStore.maxNbSeq {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
@@ -12335,30 +11673,28 @@ pub unsafe extern "C" fn ZSTD_convertBlockSequences(
         let longl = convertSequences_noRepcodes(
             (*cctx).seqStore.sequencesStart,
             inSeqs,
-            nbSequences.wrapping_sub(1 as std::ffi::c_int as size_t),
+            nbSequences.wrapping_sub(1),
         );
         (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart)
             .offset(nbSequences as isize)
-            .offset(-(1 as std::ffi::c_int as isize));
+            .offset(-(1));
         if longl != 0 {
-            if longl <= nbSequences.wrapping_sub(1 as std::ffi::c_int as size_t) {
+            if longl <= nbSequences.wrapping_sub(1) {
                 (*cctx).seqStore.longLengthType = ZSTD_llt_matchLength;
-                (*cctx).seqStore.longLengthPos =
-                    longl.wrapping_sub(1 as std::ffi::c_int as size_t) as u32;
+                (*cctx).seqStore.longLengthPos = longl.wrapping_sub(1) as u32;
             } else {
                 (*cctx).seqStore.longLengthType = ZSTD_llt_literalLength;
                 (*cctx).seqStore.longLengthPos = longl
-                    .wrapping_sub(nbSequences.wrapping_sub(1 as std::ffi::c_int as size_t))
-                    .wrapping_sub(1 as std::ffi::c_int as size_t)
-                    as u32;
+                    .wrapping_sub(nbSequences.wrapping_sub(1))
+                    .wrapping_sub(1) as u32;
             }
         }
     } else {
-        seqNb = 0 as std::ffi::c_int as size_t;
-        while seqNb < nbSequences.wrapping_sub(1 as std::ffi::c_int as size_t) {
+        seqNb = 0;
+        while seqNb < nbSequences.wrapping_sub(1) {
             let litLength = (*inSeqs.offset(seqNb as isize)).litLength;
             let matchLength = (*inSeqs.offset(seqNb as isize)).matchLength;
-            let ll0 = (litLength == 0 as std::ffi::c_int as u32) as std::ffi::c_int as u32;
+            let ll0 = (litLength == 0) as std::ffi::c_int as u32;
             let offBase = ZSTD_finalizeOffBase(
                 (*inSeqs.offset(seqNb as isize)).offset,
                 (updatedRepcodes.rep).as_mut_ptr() as *const u32,
@@ -12375,29 +11711,21 @@ pub unsafe extern "C" fn ZSTD_convertBlockSequences(
             seqNb;
         }
     }
-    if repcodeResolution == 0 && nbSequences > 1 as std::ffi::c_int as size_t {
+    if repcodeResolution == 0 && nbSequences > 1 {
         let rep = (updatedRepcodes.rep).as_mut_ptr();
-        if nbSequences >= 4 as std::ffi::c_int as size_t {
-            let mut lastSeqIdx = (nbSequences as u32).wrapping_sub(2 as std::ffi::c_int as u32);
-            *rep.offset(2 as std::ffi::c_int as isize) = (*inSeqs
-                .offset(lastSeqIdx.wrapping_sub(2 as std::ffi::c_int as u32) as isize))
-            .offset;
-            *rep.offset(1 as std::ffi::c_int as isize) = (*inSeqs
-                .offset(lastSeqIdx.wrapping_sub(1 as std::ffi::c_int as u32) as isize))
-            .offset;
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(lastSeqIdx as isize)).offset;
-        } else if nbSequences == 3 as std::ffi::c_int as size_t {
-            *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(1 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(0 as std::ffi::c_int as isize)).offset;
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(1 as std::ffi::c_int as isize)).offset;
+        if nbSequences >= 4 {
+            let mut lastSeqIdx = (nbSequences as u32).wrapping_sub(2);
+            *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+        } else if nbSequences == 3 {
+            *rep.offset(2) = *rep.offset(0);
+            *rep.offset(1) = (*inSeqs.offset(0)).offset;
+            *rep.offset(0) = (*inSeqs.offset(1)).offset;
         } else {
-            *rep.offset(2 as std::ffi::c_int as isize) = *rep.offset(1 as std::ffi::c_int as isize);
-            *rep.offset(1 as std::ffi::c_int as isize) = *rep.offset(0 as std::ffi::c_int as isize);
-            *rep.offset(0 as std::ffi::c_int as isize) =
-                (*inSeqs.offset(0 as std::ffi::c_int as isize)).offset;
+            *rep.offset(2) = *rep.offset(1);
+            *rep.offset(1) = *rep.offset(0);
+            *rep.offset(0) = (*inSeqs.offset(0)).offset;
         }
     }
     libc::memcpy(
@@ -12405,7 +11733,7 @@ pub unsafe extern "C" fn ZSTD_convertBlockSequences(
         (updatedRepcodes.rep).as_mut_ptr() as *const std::ffi::c_void,
         ::core::mem::size_of::<Repcodes_t>() as std::ffi::c_ulong as libc::size_t,
     );
-    0 as std::ffi::c_int as size_t
+    0
 }
 #[inline(always)]
 unsafe extern "C" fn matchLengthHalfIsZero(mut litMatchLength: u64) -> std::ffi::c_int {
@@ -12413,7 +11741,7 @@ unsafe extern "C" fn matchLengthHalfIsZero(mut litMatchLength: u64) -> std::ffi:
         (litMatchLength as std::ffi::c_ulonglong <= 0xffffffff as std::ffi::c_ulonglong)
             as std::ffi::c_int
     } else {
-        (litMatchLength as u32 == 0 as std::ffi::c_int as u32) as std::ffi::c_int
+        (litMatchLength as u32 == 0) as std::ffi::c_int
     }
 }
 #[export_name = crate::prefix!(ZSTD_get1BlockSummary)]
@@ -12439,39 +11767,38 @@ pub unsafe extern "C" fn ZSTD_get1BlockSummary(
                 break;
             }
             litMatchLength = MEM_read64(
-                &(*seqs.offset(n.wrapping_add(1 as std::ffi::c_int as size_t) as isize)).litLength
-                    as *const std::ffi::c_uint as *const std::ffi::c_void,
+                &(*seqs.offset(n.wrapping_add(1) as isize)).litLength as *const std::ffi::c_uint
+                    as *const std::ffi::c_void,
             );
             litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
             if matchLengthHalfIsZero(litMatchLength) != 0 {
-                n = n.wrapping_add(1 as std::ffi::c_int as size_t);
+                n = n.wrapping_add(1);
                 current_block = 13744635599856597681;
                 break;
             } else {
                 litMatchLength = MEM_read64(
-                    &(*seqs.offset(n.wrapping_add(2 as std::ffi::c_int as size_t) as isize))
-                        .litLength as *const std::ffi::c_uint
+                    &(*seqs.offset(n.wrapping_add(2) as isize)).litLength as *const std::ffi::c_uint
                         as *const std::ffi::c_void,
                 );
                 litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
                 if matchLengthHalfIsZero(litMatchLength) != 0 {
-                    n = n.wrapping_add(2 as std::ffi::c_int as size_t);
+                    n = n.wrapping_add(2);
                     current_block = 13744635599856597681;
                     break;
                 } else {
                     litMatchLength = MEM_read64(
-                        &(*seqs.offset(n.wrapping_add(3 as std::ffi::c_int as size_t) as isize))
-                            .litLength as *const std::ffi::c_uint
+                        &(*seqs.offset(n.wrapping_add(3) as isize)).litLength
+                            as *const std::ffi::c_uint
                             as *const std::ffi::c_void,
                     );
                     litMatchSize3 = litMatchSize3.wrapping_add(litMatchLength);
                     if matchLengthHalfIsZero(litMatchLength) != 0 {
-                        n = n.wrapping_add(3 as std::ffi::c_int as size_t);
+                        n = n.wrapping_add(3);
                         current_block = 13744635599856597681;
                         break;
                     } else {
-                        n = n.wrapping_add(4 as std::ffi::c_int as size_t);
-                        if n >= nbSeqs.wrapping_sub(3 as std::ffi::c_int as size_t) {
+                        n = n.wrapping_add(4);
+                        if n >= nbSeqs.wrapping_sub(3) {
                             current_block = 2668756484064249700;
                             break;
                         }
@@ -12495,13 +11822,12 @@ pub unsafe extern "C" fn ZSTD_get1BlockSummary(
                     blockSize: 0,
                     litSize: 0,
                 };
-                bs_0.nbSequences = n.wrapping_add(1 as std::ffi::c_int as size_t);
+                bs_0.nbSequences = n.wrapping_add(1);
                 if MEM_isLittleEndian() != 0 {
                     bs_0.litSize = litMatchSize0 as u32 as size_t;
-                    bs_0.blockSize =
-                        (bs_0.litSize).wrapping_add(litMatchSize0 >> 32 as std::ffi::c_int);
+                    bs_0.blockSize = (bs_0.litSize).wrapping_add(litMatchSize0 >> 32);
                 } else {
-                    bs_0.litSize = litMatchSize0 >> 32 as std::ffi::c_int;
+                    bs_0.litSize = litMatchSize0 >> 32;
                     bs_0.blockSize = (bs_0.litSize).wrapping_add(litMatchSize0 as u32 as size_t);
                 }
                 return bs_0;
@@ -12550,16 +11876,13 @@ unsafe extern "C" fn ZSTD_compressSequencesAndLiterals_internal(
     let repcodeResolution = ((*cctx).appliedParams.searchForExternalRepcodes as std::ffi::c_uint
         == ZSTD_ps_enable as std::ffi::c_int as std::ffi::c_uint)
         as std::ffi::c_int;
-    if nbSequences == 0 as std::ffi::c_int as size_t {
+    if nbSequences == 0 {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
-    if nbSequences == 1 as std::ffi::c_int as size_t
-        && (*inSeqs.offset(0 as std::ffi::c_int as isize)).litLength
-            == 0 as std::ffi::c_int as std::ffi::c_uint
-    {
+    if nbSequences == 1 && (*inSeqs.offset(0)).litLength == 0 {
         let cBlockHeader24 = (1 as std::ffi::c_int as u32)
             .wrapping_add((bt_raw as std::ffi::c_int as u32) << 1 as std::ffi::c_int);
-        if dstCapacity < 3 as std::ffi::c_int as size_t {
+        if dstCapacity < 3 {
             return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
         }
         MEM_writeLE24(op as *mut std::ffi::c_void, cBlockHeader24);
@@ -12611,12 +11934,12 @@ unsafe extern "C" fn ZSTD_compressSequencesAndLiterals_internal(
             return err_code_1;
         }
         if compressedSeqsSize > (*cctx).blockSizeMax {
-            compressedSeqsSize = 0 as std::ffi::c_int as size_t;
+            compressedSeqsSize = 0;
         }
         litSize = litSize.wrapping_sub(block.litSize);
         literals = (literals as *const std::ffi::c_char).offset(block.litSize as isize)
             as *const std::ffi::c_void;
-        if compressedSeqsSize == 0 as std::ffi::c_int as size_t {
+        if compressedSeqsSize == 0 {
             return -(ZSTD_error_cannotProduce_uncompressedBlock as std::ffi::c_int) as size_t;
         } else {
             let mut cBlockHeader: u32 = 0;
@@ -12633,23 +11956,23 @@ unsafe extern "C" fn ZSTD_compressSequencesAndLiterals_internal(
                     .offcode_repeatMode = FSE_repeat_check;
             }
             cBlockHeader = lastBlock
-                .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1 as std::ffi::c_int)
-                .wrapping_add((compressedSeqsSize << 3 as std::ffi::c_int) as u32);
+                .wrapping_add((bt_compressed as std::ffi::c_int as u32) << 1)
+                .wrapping_add((compressedSeqsSize << 3) as u32);
             MEM_writeLE24(op as *mut std::ffi::c_void, cBlockHeader);
             cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
         }
         cSize = cSize.wrapping_add(cBlockSize);
         op = op.offset(cBlockSize as isize);
         dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
-        (*cctx).isFirstBlock = 0 as std::ffi::c_int;
+        (*cctx).isFirstBlock = 0;
         if lastBlock != 0 {
             break;
         }
     }
-    if litSize != 0 as std::ffi::c_int as size_t {
+    if litSize != 0 {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
-    if remaining != 0 as std::ffi::c_int as size_t {
+    if remaining != 0 {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
     }
     cSize
@@ -12718,8 +12041,8 @@ unsafe extern "C" fn inBuffer_forEndFlush(mut zcs: *const ZSTD_CStream) -> ZSTD_
     let nullInput = {
         ZSTD_inBuffer_s {
             src: NULL as *const std::ffi::c_void,
-            size: 0 as std::ffi::c_int as size_t,
-            pos: 0 as std::ffi::c_int as size_t,
+            size: 0,
+            pos: 0,
         }
     };
     let stableInput = ((*zcs).appliedParams.inBufferMode as std::ffi::c_uint
@@ -12751,18 +12074,18 @@ pub unsafe extern "C" fn ZSTD_endStream(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    if (*zcs).appliedParams.nbWorkers > 0 as std::ffi::c_int {
+    if (*zcs).appliedParams.nbWorkers > 0 {
         return remainingToFlush;
     }
     let lastBlockSize = (if (*zcs).frameEnded != 0 {
-        0 as std::ffi::c_int
+        0
     } else {
         ZSTD_BLOCKHEADERSIZE
     }) as size_t;
     let checksumSize = (if (*zcs).frameEnded != 0 {
-        0 as std::ffi::c_int
+        0
     } else {
-        (*zcs).appliedParams.fParams.checksumFlag * 4 as std::ffi::c_int
+        (*zcs).appliedParams.fParams.checksumFlag * 4
     }) as size_t;
 
     remainingToFlush
@@ -12783,7 +12106,7 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_isSupported(
         && (*cParams).strategy as std::ffi::c_uint
             <= ZSTD_lazy2 as std::ffi::c_int as std::ffi::c_uint
         && (*cParams).hashLog > (*cParams).chainLog
-        && (*cParams).chainLog <= 24 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+        && (*cParams).chainLog <= 24) as std::ffi::c_int
 }
 unsafe extern "C" fn ZSTD_dedicatedDictSearch_revertCParams(
     mut cParams: *mut ZSTD_compressionParameters,
@@ -12802,16 +12125,12 @@ unsafe extern "C" fn ZSTD_getCParamRowSize(
     mut mode: ZSTD_CParamMode_e,
 ) -> u64 {
     if mode as std::ffi::c_uint == 1 {
-        dictSize = 0 as std::ffi::c_int as size_t;
+        dictSize = 0;
     }
     let unknown =
         (srcSizeHint as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN) as std::ffi::c_int;
-    let addedSize = (if unknown != 0 && dictSize > 0 as std::ffi::c_int as size_t {
-        500 as std::ffi::c_int
-    } else {
-        0 as std::ffi::c_int
-    }) as size_t;
-    (if unknown != 0 && dictSize == 0 as std::ffi::c_int as size_t {
+    let addedSize = (if unknown != 0 && dictSize > 0 { 500 } else { 0 }) as size_t;
+    (if unknown != 0 && dictSize == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
     } else {
         srcSizeHint.wrapping_add(dictSize).wrapping_add(addedSize) as std::ffi::c_ulonglong
@@ -12823,7 +12142,7 @@ pub unsafe extern "C" fn ZSTD_getCParams(
     mut srcSizeHint: std::ffi::c_ulonglong,
     mut dictSize: size_t,
 ) -> ZSTD_compressionParameters {
-    if srcSizeHint == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
     ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, ZSTD_cpm_unknown)
@@ -12834,265 +12153,265 @@ pub unsafe extern "C" fn ZSTD_getParams(
     mut srcSizeHint: std::ffi::c_ulonglong,
     mut dictSize: size_t,
 ) -> ZSTD_parameters {
-    if srcSizeHint == 0 as std::ffi::c_int as std::ffi::c_ulonglong {
+    if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
     }
     ZSTD_getParams_internal(compressionLevel, srcSizeHint, dictSize, ZSTD_cpm_unknown)
 }
-pub const __INT_MAX__: std::ffi::c_int = 2147483647 as std::ffi::c_int;
-pub const ZSTD_MAX_CLEVEL: std::ffi::c_int = 22 as std::ffi::c_int;
+pub const __INT_MAX__: std::ffi::c_int = 2147483647;
+pub const ZSTD_MAX_CLEVEL: std::ffi::c_int = 22;
 static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     [
         {
             ZSTD_compressionParameters {
-                windowLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 6 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 1 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 19,
+                chainLog: 12,
+                hashLog: 13,
+                searchLog: 1,
+                minMatch: 6,
+                targetLength: 1,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 7 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 19,
+                chainLog: 13,
+                hashLog: 14,
+                searchLog: 1,
+                minMatch: 7,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 20 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 6 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 20,
+                chainLog: 15,
+                hashLog: 16,
+                searchLog: 1,
+                minMatch: 6,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 18,
+                hashLog: 18,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 2 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 3,
+                minMatch: 5,
+                targetLength: 2,
                 strategy: ZSTD_greedy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 4 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 3,
+                minMatch: 5,
+                targetLength: 4,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 20 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 19,
+                hashLog: 20,
+                searchLog: 4,
+                minMatch: 5,
+                targetLength: 8,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 20 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 16 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 21,
+                chainLog: 19,
+                hashLog: 20,
+                searchLog: 4,
+                minMatch: 5,
+                targetLength: 16,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 20 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 16 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 20,
+                hashLog: 21,
+                searchLog: 4,
+                minMatch: 5,
+                targetLength: 16,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 16 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 21,
+                hashLog: 22,
+                searchLog: 5,
+                minMatch: 5,
+                targetLength: 16,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 21 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 16 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 21,
+                hashLog: 22,
+                searchLog: 6,
+                minMatch: 5,
+                targetLength: 16,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 22,
+                hashLog: 23,
+                searchLog: 6,
+                minMatch: 5,
+                targetLength: 32,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 22,
+                hashLog: 22,
+                searchLog: 4,
+                minMatch: 5,
+                targetLength: 32,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 22,
+                hashLog: 23,
+                searchLog: 5,
+                minMatch: 5,
+                targetLength: 32,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 23,
+                hashLog: 23,
+                searchLog: 6,
+                minMatch: 5,
+                targetLength: 32,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 48 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 22,
+                chainLog: 22,
+                hashLog: 22,
+                searchLog: 5,
+                minMatch: 5,
+                targetLength: 48,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 64 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 23,
+                chainLog: 23,
+                hashLog: 22,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 64,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 64 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 23,
+                chainLog: 23,
+                hashLog: 22,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 64,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 24 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 22 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 23,
+                chainLog: 24,
+                hashLog: 22,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 25 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 25 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 23 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 25,
+                chainLog: 25,
+                hashLog: 23,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 26 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 26 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 24 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 26,
+                chainLog: 26,
+                hashLog: 24,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 27 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 27 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 25 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 9 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 999 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 27,
+                chainLog: 27,
+                hashLog: 25,
+                searchLog: 9,
+                minMatch: 3,
+                targetLength: 999,
                 strategy: ZSTD_btultra2,
             }
         },
@@ -13100,254 +12419,254 @@ static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     [
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 1 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 12,
+                hashLog: 13,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 1,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 6 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 13,
+                hashLog: 14,
+                searchLog: 1,
+                minMatch: 6,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 16,
+                hashLog: 16,
+                searchLog: 1,
+                minMatch: 4,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 2 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 3,
+                minMatch: 5,
+                targetLength: 2,
                 strategy: ZSTD_greedy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 2 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 17,
+                hashLog: 18,
+                searchLog: 5,
+                minMatch: 5,
+                targetLength: 2,
                 strategy: ZSTD_greedy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 4 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 3,
+                minMatch: 5,
+                targetLength: 4,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 4 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 4,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 6,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 12 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 12,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 12 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 7,
+                minMatch: 4,
+                targetLength: 12,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 16 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 16,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 4,
+                minMatch: 3,
+                targetLength: 32,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 128 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 18,
+                hashLog: 19,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 128,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 128 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 128,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 8,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 128 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 128,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 8,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 10 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 10,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 12,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 19 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 999 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 18,
+                chainLog: 19,
+                hashLog: 19,
+                searchLog: 13,
+                minMatch: 3,
+                targetLength: 999,
                 strategy: ZSTD_btultra2,
             }
         },
@@ -13355,254 +12674,254 @@ static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     [
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 1 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 12,
+                hashLog: 12,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 1,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 6 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 12,
+                hashLog: 13,
+                searchLog: 1,
+                minMatch: 6,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 13,
+                hashLog: 15,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 2 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 15,
+                hashLog: 16,
+                searchLog: 2,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 2 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 17,
+                hashLog: 17,
+                searchLog: 2,
+                minMatch: 4,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 2 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 2,
                 strategy: ZSTD_greedy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 4 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 4,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 16 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 16,
+                hashLog: 17,
+                searchLog: 6,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 17,
+                hashLog: 17,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 12 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 7,
+                minMatch: 4,
+                targetLength: 12,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 12 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 12,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 4,
+                minMatch: 3,
+                targetLength: 32,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 128 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 128,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 8,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 10 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 10,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 5,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 9 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 9,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 18 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 17 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 11 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 999 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 17,
+                chainLog: 18,
+                hashLog: 17,
+                searchLog: 11,
+                minMatch: 3,
+                targetLength: 999,
                 strategy: ZSTD_btultra2,
             }
         },
@@ -13610,254 +12929,254 @@ static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     [
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 12 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 13 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 1 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 12,
+                hashLog: 13,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 1,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 5 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 15,
+                searchLog: 1,
+                minMatch: 5,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 1 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 15,
+                searchLog: 1,
+                minMatch: 4,
+                targetLength: 0,
                 strategy: ZSTD_fast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 2 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 0 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 15,
+                searchLog: 2,
+                minMatch: 4,
+                targetLength: 0,
                 strategy: ZSTD_dfast,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 2 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 2,
                 strategy: ZSTD_greedy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 4 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 4,
                 strategy: ZSTD_lazy,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 4,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 6,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 14,
+                hashLog: 14,
+                searchLog: 8,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_lazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 14,
+                searchLog: 5,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 9 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 8 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 14,
+                searchLog: 9,
+                minMatch: 4,
+                targetLength: 8,
                 strategy: ZSTD_btlazy2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 3 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 4 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 12 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 14,
+                searchLog: 3,
+                minMatch: 4,
+                targetLength: 12,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 4 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 24 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 14,
+                searchLog: 4,
+                minMatch: 3,
+                targetLength: 24,
                 strategy: ZSTD_btopt,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 32 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 14,
+                searchLog: 5,
+                minMatch: 3,
+                targetLength: 32,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 64 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 64,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 5 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 48 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 5,
+                minMatch: 3,
+                targetLength: 48,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 6 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 128 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 6,
+                minMatch: 3,
+                targetLength: 128,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 7 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 7,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 256 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 8,
+                minMatch: 3,
+                targetLength: 256,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 8 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 8,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 9 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 512 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 9,
+                minMatch: 3,
+                targetLength: 512,
                 strategy: ZSTD_btultra2,
             }
         },
         {
             ZSTD_compressionParameters {
-                windowLog: 14 as std::ffi::c_int as std::ffi::c_uint,
-                chainLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                hashLog: 15 as std::ffi::c_int as std::ffi::c_uint,
-                searchLog: 10 as std::ffi::c_int as std::ffi::c_uint,
-                minMatch: 3 as std::ffi::c_int as std::ffi::c_uint,
-                targetLength: 999 as std::ffi::c_int as std::ffi::c_uint,
+                windowLog: 14,
+                chainLog: 15,
+                hashLog: 15,
+                searchLog: 10,
+                minMatch: 3,
+                targetLength: 999,
                 strategy: ZSTD_btultra2,
             }
         },
@@ -13871,12 +13190,7 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_getCParams(
     compressionLevel: std::ffi::c_int,
     dictSize: size_t,
 ) -> ZSTD_compressionParameters {
-    let mut cParams = ZSTD_getCParams_internal(
-        compressionLevel,
-        0 as std::ffi::c_int as std::ffi::c_ulonglong,
-        dictSize,
-        ZSTD_cpm_createCDict,
-    );
+    let mut cParams = ZSTD_getCParams_internal(compressionLevel, 0, dictSize, ZSTD_cpm_createCDict);
     if let 3..=5 = cParams.strategy as std::ffi::c_uint {
         cParams.hashLog =
             (cParams.hashLog).wrapping_add(ZSTD_LAZY_DDSS_BUCKET_LOG as std::ffi::c_uint);
@@ -13890,20 +13204,14 @@ unsafe extern "C" fn ZSTD_getCParams_internal(
     mut mode: ZSTD_CParamMode_e,
 ) -> ZSTD_compressionParameters {
     let rSize = ZSTD_getCParamRowSize(srcSizeHint as u64, dictSize, mode);
-    let tableID = ((rSize
-        <= (256 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as u64)
-        as std::ffi::c_int
-        + (rSize
-            <= (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as u64)
-            as std::ffi::c_int
-        + (rSize
-            <= (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as u64)
-            as std::ffi::c_int) as u32;
+    let tableID = ((rSize <= (256 * ((1) << 10)) as u64) as std::ffi::c_int
+        + (rSize <= (128 * ((1) << 10)) as u64) as std::ffi::c_int
+        + (rSize <= (16 * ((1) << 10)) as u64) as std::ffi::c_int) as u32;
     let mut row: std::ffi::c_int = 0;
-    if compressionLevel == 0 as std::ffi::c_int {
+    if compressionLevel == 0 {
         row = ZSTD_CLEVEL_DEFAULT;
-    } else if compressionLevel < 0 as std::ffi::c_int {
-        row = 0 as std::ffi::c_int;
+    } else if compressionLevel < 0 {
+        row = 0;
     } else if compressionLevel > ZSTD_MAX_CLEVEL {
         row = ZSTD_MAX_CLEVEL;
     } else {
@@ -13912,7 +13220,7 @@ unsafe extern "C" fn ZSTD_getCParams_internal(
     let mut cp = *(*ZSTD_defaultCParameters.as_ptr().offset(tableID as isize))
         .as_ptr()
         .offset(row as isize);
-    if compressionLevel < 0 as std::ffi::c_int {
+    if compressionLevel < 0 {
         let clampedCompressionLevel = if ZSTD_minCLevel() > compressionLevel {
             ZSTD_minCLevel()
         } else {
@@ -13936,7 +13244,7 @@ unsafe extern "C" fn ZSTD_getParams_internal(
             searchLog: 0,
             minMatch: 0,
             targetLength: 0,
-            strategy: 0 as ZSTD_strategy,
+            strategy: 0,
         },
         fParams: ZSTD_frameParameters {
             contentSizeFlag: 0,
@@ -13947,11 +13255,11 @@ unsafe extern "C" fn ZSTD_getParams_internal(
     let cParams = ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, mode);
     libc::memset(
         &mut params as *mut ZSTD_parameters as *mut std::ffi::c_void,
-        0 as std::ffi::c_int,
+        0,
         ::core::mem::size_of::<ZSTD_parameters>() as std::ffi::c_ulong as libc::size_t,
     );
     params.cParams = cParams;
-    params.fParams.contentSizeFlag = 1 as std::ffi::c_int;
+    params.fParams.contentSizeFlag = 1;
     params
 }
 #[export_name = crate::prefix!(ZSTD_registerSequenceProducer)]
@@ -13984,12 +13292,9 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
 }
 unsafe extern "C" fn run_static_initializers() {
     srcSizeTiers = [
-        (16 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-            as std::ffi::c_ulonglong,
-        (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-            as std::ffi::c_ulonglong,
-        (256 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int))
-            as std::ffi::c_ulonglong,
+        (16 * ((1) << 10)) as std::ffi::c_ulonglong,
+        (128 * ((1) << 10)) as std::ffi::c_ulonglong,
+        (256 * ((1) << 10)) as std::ffi::c_ulonglong,
         ZSTD_CONTENTSIZE_UNKNOWN,
     ];
 }

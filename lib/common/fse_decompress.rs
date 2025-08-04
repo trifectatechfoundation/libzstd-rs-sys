@@ -182,15 +182,15 @@ fn FSE_buildDTable_internal(
 ) -> Result<(), Error> {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
-    let maxSV1 = maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
-    let tableSize = ((1 as std::ffi::c_int) << tableLog) as u32;
-    let mut highThreshold = tableSize.wrapping_sub(1 as std::ffi::c_int as u32);
+    let maxSV1 = maxSymbolValue.wrapping_add(1);
+    let tableSize = ((1) << tableLog) as u32;
+    let mut highThreshold = tableSize.wrapping_sub(1);
 
-    if ((::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong).wrapping_mul(
-        maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_ulong,
-    ) as std::ffi::c_ulonglong)
-        .wrapping_add((1 as std::ffi::c_ulonglong) << tableLog)
-        .wrapping_add(8 as std::ffi::c_int as std::ffi::c_ulonglong)
+    if ((::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong)
+        .wrapping_mul(maxSymbolValue.wrapping_add(1) as std::ffi::c_ulong)
+        as std::ffi::c_ulonglong)
+        .wrapping_add((1) << tableLog)
+        .wrapping_add(8)
         > wkspSize as std::ffi::c_ulonglong
     {
         return Err(Error::maxSymbolValue_tooLarge);
@@ -209,20 +209,18 @@ fn FSE_buildDTable_internal(
         fastMode: 1,
     };
 
-    let largeLimit = ((1 as std::ffi::c_int)
-        << tableLog.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint))
-        as i16;
+    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
-    s = 0 as std::ffi::c_int as u32;
+    s = 0;
     while s < maxSV1 {
-        if normalizedCounter[s as usize] as std::ffi::c_int == -(1 as std::ffi::c_int) {
+        if normalizedCounter[s as usize] as std::ffi::c_int == -(1) {
             let fresh0 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             elements[fresh0 as usize].symbol = s as u8;
             symbols[s as usize] = 1;
         } else {
             if normalizedCounter[s as usize] as std::ffi::c_int >= largeLimit as std::ffi::c_int {
-                DTableH.fastMode = 0 as std::ffi::c_int as u16;
+                DTableH.fastMode = 0;
             }
             symbols[s as usize] = normalizedCounter[s as usize] as u16;
         }
@@ -231,11 +229,11 @@ fn FSE_buildDTable_internal(
 
     *header = DTableH;
 
-    if highThreshold == tableSize.wrapping_sub(1 as std::ffi::c_int as u32) {
-        let tableMask = tableSize.wrapping_sub(1 as std::ffi::c_int as u32) as size_t;
-        let step = (tableSize >> 1 as std::ffi::c_int)
-            .wrapping_add(tableSize >> 3 as std::ffi::c_int)
-            .wrapping_add(3 as std::ffi::c_int as u32) as size_t;
+    if highThreshold == tableSize.wrapping_sub(1) {
+        let tableMask = tableSize.wrapping_sub(1) as size_t;
+        let step = (tableSize >> 1)
+            .wrapping_add(tableSize >> 3)
+            .wrapping_add(3) as size_t;
         let add = 0x101010101010101 as std::ffi::c_ulonglong as u64;
         let mut pos = 0 as std::ffi::c_int as size_t;
         let mut sv = 0 as std::ffi::c_int as u64;
@@ -244,10 +242,10 @@ fn FSE_buildDTable_internal(
             let mut i: std::ffi::c_int = 0;
             let n = normalizedCounter[s_0 as usize] as std::ffi::c_int;
             spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
-            i = 8 as std::ffi::c_int;
+            i = 8;
             while i < n {
                 spread[pos as usize..][i as usize..][..8].copy_from_slice(&sv.to_le_bytes());
-                i += 8 as std::ffi::c_int;
+                i += 8;
             }
             pos = pos.wrapping_add(n as size_t);
             sv = sv.wrapping_add(add);
@@ -255,11 +253,11 @@ fn FSE_buildDTable_internal(
 
         let mut position = 0 as std::ffi::c_int as size_t;
         let mut s_1: size_t = 0;
-        let unroll = 2 as std::ffi::c_int as size_t;
-        s_1 = 0 as std::ffi::c_int as size_t;
+        let unroll = 2;
+        s_1 = 0;
         while s_1 < tableSize as size_t {
             let mut u: size_t = 0;
-            u = 0 as std::ffi::c_int as size_t;
+            u = 0;
             while u < unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
                 elements[uPosition as usize].symbol = spread[(s_1 + u) as usize];
@@ -285,7 +283,7 @@ fn FSE_buildDTable_internal(
             }
         }
 
-        if position_0 != 0 as std::ffi::c_int as u32 {
+        if position_0 != 0 {
             return Err(Error::GENERIC);
         }
     }
@@ -336,9 +334,8 @@ fn FSE_decompress_usingDTable_generic(
             Mode::Slow => state1.decode_symbol(&mut bitD),
         };
 
-        if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
-            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+        if (FSE_MAX_TABLELOG * 2 + 7) as std::ffi::c_ulong
+            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong).wrapping_mul(8)
         {
             let _ = bitD.reload();
         }
@@ -361,9 +358,8 @@ fn FSE_decompress_usingDTable_generic(
             Mode::Slow => state1.decode_symbol(&mut bitD),
         };
 
-        if (FSE_MAX_TABLELOG * 2 as std::ffi::c_int + 7 as std::ffi::c_int) as std::ffi::c_ulong
-            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
+        if (FSE_MAX_TABLELOG * 2 + 7) as std::ffi::c_ulong
+            > (::core::mem::size_of::<usize>() as std::ffi::c_ulong).wrapping_mul(8)
         {
             let _ = bitD.reload();
         }
@@ -450,30 +446,25 @@ fn FSE_decompress_wksp_body(
         return Err(Error::tableLog_tooLarge);
     }
     let ip = &cSrc[NCountLength as usize..];
-    if ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog) + 1 as std::ffi::c_int)
-        as std::ffi::c_ulonglong)
+    if ((1 + ((1) << tableLog) + 1) as std::ffi::c_ulonglong)
         .wrapping_add(
-            ((::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong).wrapping_mul(
-                maxSymbolValue.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint)
-                    as std::ffi::c_ulong,
-            ) as std::ffi::c_ulonglong)
-                .wrapping_add((1 as std::ffi::c_ulonglong) << tableLog)
-                .wrapping_add(8 as std::ffi::c_int as std::ffi::c_ulonglong)
+            ((::core::mem::size_of::<std::ffi::c_short>() as std::ffi::c_ulong)
+                .wrapping_mul(maxSymbolValue.wrapping_add(1) as std::ffi::c_ulong)
+                as std::ffi::c_ulonglong)
+                .wrapping_add((1) << tableLog)
+                .wrapping_add(8)
                 .wrapping_add(
                     ::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong
                         as std::ffi::c_ulonglong,
                 )
-                .wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong)
+                .wrapping_sub(1)
                 .wrapping_div(
                     ::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong
                         as std::ffi::c_ulonglong,
                 ),
         )
-        .wrapping_add(
-            ((FSE_MAX_SYMBOL_VALUE + 1 as std::ffi::c_int) / 2 as std::ffi::c_int)
-                as std::ffi::c_ulonglong,
-        )
-        .wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulonglong)
+        .wrapping_add(((FSE_MAX_SYMBOL_VALUE + 1) / 2) as std::ffi::c_ulonglong)
+        .wrapping_add(1)
         .wrapping_mul(
             ::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong
                 as std::ffi::c_ulonglong,
@@ -484,7 +475,7 @@ fn FSE_decompress_wksp_body(
     }
     wkspSize = (wkspSize as std::ffi::c_ulong).wrapping_sub(
         (::core::mem::size_of::<FSE_DecompressWksp>() as std::ffi::c_ulong).wrapping_add(
-            ((1 as std::ffi::c_int + ((1 as std::ffi::c_int) << tableLog)) as std::ffi::c_ulong)
+            ((1 + ((1) << tableLog)) as std::ffi::c_ulong)
                 .wrapping_mul(::core::mem::size_of::<FSE_DTable>() as std::ffi::c_ulong),
         ),
     ) as size_t as size_t;
@@ -511,7 +502,7 @@ fn FSE_decompress_wksp_body_default(
     maxLog: std::ffi::c_uint,
     workSpace: &mut Workspace,
 ) -> Result<size_t, Error> {
-    FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0 as std::ffi::c_int)
+    FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0)
 }
 
 fn FSE_decompress_wksp_body_bmi2(
@@ -520,7 +511,7 @@ fn FSE_decompress_wksp_body_bmi2(
     maxLog: std::ffi::c_uint,
     workSpace: &mut Workspace,
 ) -> Result<size_t, Error> {
-    FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1 as std::ffi::c_int)
+    FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1)
 }
 
 pub fn FSE_decompress_wksp_bmi2(

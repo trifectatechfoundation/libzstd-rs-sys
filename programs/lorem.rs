@@ -18,7 +18,7 @@ extern "C" {
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
 }
 pub type size_t = std::ffi::c_ulong;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const NULL: std::ffi::c_int = 0;
 static mut kWords: [*const std::ffi::c_char; 255] = [
     b"lorem\0" as *const u8 as *const std::ffi::c_char,
     b"ipsum\0" as *const u8 as *const std::ffi::c_char,
@@ -277,17 +277,10 @@ static mut kWords: [*const std::ffi::c_char; 255] = [
     b"irure\0" as *const u8 as *const std::ffi::c_char,
 ];
 static mut kNbWords: std::ffi::c_uint = 0;
-static mut kWeights: [std::ffi::c_int; 6] = [
-    0 as std::ffi::c_int,
-    8 as std::ffi::c_int,
-    6 as std::ffi::c_int,
-    4 as std::ffi::c_int,
-    3 as std::ffi::c_int,
-    2 as std::ffi::c_int,
-];
+static mut kWeights: [std::ffi::c_int; 6] = [0, 8, 6, 4, 3, 2];
 static mut kNbWeights: size_t = 0;
-static mut g_distrib: [std::ffi::c_int; 650] = [0 as std::ffi::c_int; 650];
-static mut g_distribCount: std::ffi::c_uint = 0 as std::ffi::c_int as std::ffi::c_uint;
+static mut g_distrib: [std::ffi::c_int; 650] = [0; 650];
+static mut g_distribCount: std::ffi::c_uint = 0;
 unsafe extern "C" fn countFreqs(
     mut words: *mut *const std::ffi::c_char,
     mut nbWords: size_t,
@@ -296,12 +289,12 @@ unsafe extern "C" fn countFreqs(
 ) {
     let mut total = 0 as std::ffi::c_int as std::ffi::c_uint;
     let mut w: size_t = 0;
-    w = 0 as std::ffi::c_int as size_t;
+    w = 0;
     while w < nbWords {
         let mut len = strlen(*words.offset(w as isize));
         let mut lmax: std::ffi::c_int = 0;
         if len >= nbWeights {
-            len = nbWeights.wrapping_sub(1 as std::ffi::c_int as size_t);
+            len = nbWeights.wrapping_sub(1);
         }
         lmax = *weights.offset(len as isize);
         total = total.wrapping_add(lmax as std::ffi::c_uint);
@@ -309,12 +302,12 @@ unsafe extern "C" fn countFreqs(
         w;
     }
     g_distribCount = total;
-    if g_distribCount <= 650 as std::ffi::c_int as std::ffi::c_uint {
+    if g_distribCount <= 650 {
     } else {
         __assert_fail(
             b"g_distribCount <= DISTRIB_SIZE_MAX\0" as *const u8 as *const std::ffi::c_char,
             b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-            122 as std::ffi::c_int as std::ffi::c_uint,
+            122,
             (*::core::mem::transmute::<&[u8; 60], &[std::ffi::c_char; 60]>(
                 b"void countFreqs(const char **, size_t, const int *, size_t)\0",
             ))
@@ -331,16 +324,16 @@ unsafe extern "C" fn init_word_distrib(
     let mut w: size_t = 0;
     let mut d = 0 as std::ffi::c_int as size_t;
     countFreqs(words, nbWords, weights, nbWeights);
-    w = 0 as std::ffi::c_int as size_t;
+    w = 0;
     while w < nbWords {
         let mut len = strlen(*words.offset(w as isize));
         let mut l: std::ffi::c_int = 0;
         let mut lmax: std::ffi::c_int = 0;
         if len >= nbWeights {
-            len = nbWeights.wrapping_sub(1 as std::ffi::c_int as size_t);
+            len = nbWeights.wrapping_sub(1);
         }
         lmax = *weights.offset(len as isize);
-        l = 0 as std::ffi::c_int;
+        l = 0;
         while l < lmax {
             let fresh0 = d;
             d = d.wrapping_add(1);
@@ -353,20 +346,19 @@ unsafe extern "C" fn init_word_distrib(
     }
 }
 static mut g_ptr: *mut std::ffi::c_char = NULL as *mut std::ffi::c_char;
-static mut g_nbChars: size_t = 0 as std::ffi::c_int as size_t;
-static mut g_maxChars: size_t = 10000000 as std::ffi::c_int as size_t;
-static mut g_randRoot: std::ffi::c_uint = 0 as std::ffi::c_int as std::ffi::c_uint;
+static mut g_nbChars: size_t = 0;
+static mut g_maxChars: size_t = 10000000;
+static mut g_randRoot: std::ffi::c_uint = 0;
 unsafe extern "C" fn LOREM_rand(mut range: std::ffi::c_uint) -> std::ffi::c_uint {
-    static mut prime1: std::ffi::c_uint = 2654435761 as std::ffi::c_uint;
-    static mut prime2: std::ffi::c_uint = 2246822519 as std::ffi::c_uint;
+    static mut prime1: std::ffi::c_uint = 2654435761;
+    static mut prime2: std::ffi::c_uint = 2246822519;
     let mut rand32 = g_randRoot;
     rand32 = rand32.wrapping_mul(prime1);
     rand32 ^= prime2;
-    rand32 =
-        rand32 << 13 as std::ffi::c_int | rand32 >> (32 as std::ffi::c_int - 13 as std::ffi::c_int);
+    rand32 = rand32 << 13 | rand32 >> (32 - 13);
     g_randRoot = rand32;
-    ((rand32 as std::ffi::c_ulonglong).wrapping_mul(range as std::ffi::c_ulonglong)
-        >> 32 as std::ffi::c_int) as std::ffi::c_uint
+    ((rand32 as std::ffi::c_ulonglong).wrapping_mul(range as std::ffi::c_ulonglong) >> 32)
+        as std::ffi::c_uint
 }
 unsafe extern "C" fn writeLastCharacters() {
     let mut lastChars = g_maxChars.wrapping_sub(g_nbChars);
@@ -375,29 +367,28 @@ unsafe extern "C" fn writeLastCharacters() {
         __assert_fail(
             b"g_maxChars >= g_nbChars\0" as *const u8 as *const std::ffi::c_char,
             b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-            168 as std::ffi::c_int as std::ffi::c_uint,
+            168,
             (*::core::mem::transmute::<&[u8; 31], &[std::ffi::c_char; 31]>(
                 b"void writeLastCharacters(void)\0",
             ))
             .as_ptr(),
         );
     }
-    if lastChars == 0 as std::ffi::c_int as size_t {
+    if lastChars == 0 {
         return;
     }
     let fresh1 = g_nbChars;
     g_nbChars = g_nbChars.wrapping_add(1);
     *g_ptr.offset(fresh1 as isize) = '.' as i32 as std::ffi::c_char;
-    if lastChars > 2 as std::ffi::c_int as size_t {
+    if lastChars > 2 {
         memset(
             g_ptr.offset(g_nbChars as isize) as *mut std::ffi::c_void,
             ' ' as i32,
-            lastChars.wrapping_sub(2 as std::ffi::c_int as size_t),
+            lastChars.wrapping_sub(2),
         );
     }
-    if lastChars > 1 as std::ffi::c_int as size_t {
-        *g_ptr.offset(g_maxChars.wrapping_sub(1 as std::ffi::c_int as size_t) as isize) =
-            '\n' as i32 as std::ffi::c_char;
+    if lastChars > 1 {
+        *g_ptr.offset(g_maxChars.wrapping_sub(1) as isize) = '\n' as i32 as std::ffi::c_char;
     }
     g_nbChars = g_maxChars;
 }
@@ -434,20 +425,19 @@ unsafe extern "C" fn generateWord(
 unsafe extern "C" fn about(mut target: std::ffi::c_uint) -> std::ffi::c_int {
     (LOREM_rand(target))
         .wrapping_add(LOREM_rand(target))
-        .wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int
+        .wrapping_add(1) as std::ffi::c_int
 }
 unsafe extern "C" fn generateSentence(mut nbWords: std::ffi::c_int) {
-    let mut commaPos = about(9 as std::ffi::c_int as std::ffi::c_uint);
-    let mut comma2 = commaPos + about(7 as std::ffi::c_int as std::ffi::c_uint);
-    let mut qmark = (LOREM_rand(11 as std::ffi::c_int as std::ffi::c_uint)
-        == 7 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_int;
+    let mut commaPos = about(9);
+    let mut comma2 = commaPos + about(7);
+    let mut qmark = (LOREM_rand(11) == 7) as std::ffi::c_int;
     let mut endSep = if qmark != 0 {
         b"? \0" as *const u8 as *const std::ffi::c_char
     } else {
         b". \0" as *const u8 as *const std::ffi::c_char
     };
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
+    i = 0;
     while i < nbWords {
         let wordID = *g_distrib
             .as_mut_ptr()
@@ -460,19 +450,19 @@ unsafe extern "C" fn generateSentence(mut nbWords: std::ffi::c_int) {
         if i == comma2 {
             sep = b", \0" as *const u8 as *const std::ffi::c_char;
         }
-        if i == nbWords - 1 as std::ffi::c_int {
+        if i == nbWords - 1 {
             sep = endSep;
         }
-        generateWord(word, sep, (i == 0 as std::ffi::c_int) as std::ffi::c_int);
+        generateWord(word, sep, (i == 0) as std::ffi::c_int);
         i += 1;
         i;
     }
 }
 unsafe extern "C" fn generateParagraph(mut nbSentences: std::ffi::c_int) {
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
+    i = 0;
     while i < nbSentences {
-        let mut wordsPerSentence = about(11 as std::ffi::c_int as std::ffi::c_uint);
+        let mut wordsPerSentence = about(11);
         generateSentence(wordsPerSentence);
         i += 1;
         i;
@@ -490,28 +480,24 @@ unsafe extern "C" fn generateParagraph(mut nbSentences: std::ffi::c_int) {
 }
 unsafe extern "C" fn generateFirstSentence() {
     let mut i: std::ffi::c_int = 0;
-    i = 0 as std::ffi::c_int;
-    while i < 18 as std::ffi::c_int {
+    i = 0;
+    while i < 18 {
         let mut word = *kWords.as_mut_ptr().offset(i as isize);
         let mut separator = b" \0" as *const u8 as *const std::ffi::c_char;
-        if i == 4 as std::ffi::c_int {
+        if i == 4 {
             separator = b", \0" as *const u8 as *const std::ffi::c_char;
         }
-        if i == 7 as std::ffi::c_int {
+        if i == 7 {
             separator = b", \0" as *const u8 as *const std::ffi::c_char;
         }
-        generateWord(
-            word,
-            separator,
-            (i == 0 as std::ffi::c_int) as std::ffi::c_int,
-        );
+        generateWord(word, separator, (i == 0) as std::ffi::c_int);
         i += 1;
         i;
     }
     generateWord(
-        *kWords.as_mut_ptr().offset(18 as std::ffi::c_int as isize),
+        *kWords.as_mut_ptr().offset(18),
         b". \0" as *const u8 as *const std::ffi::c_char,
-        0 as std::ffi::c_int,
+        0,
     );
 }
 #[no_mangle]
@@ -523,12 +509,12 @@ pub unsafe extern "C" fn LOREM_genBlock(
     mut fill: std::ffi::c_int,
 ) -> size_t {
     g_ptr = buffer as *mut std::ffi::c_char;
-    if size < 2147483647 as std::ffi::c_int as size_t {
+    if size < 2147483647 {
     } else {
         __assert_fail(
             b"size < INT_MAX\0" as *const u8 as *const std::ffi::c_char,
             b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-            261 as std::ffi::c_int as std::ffi::c_uint,
+            261,
             (*::core::mem::transmute::<&[u8; 62], &[std::ffi::c_char; 62]>(
                 b"size_t LOREM_genBlock(void *, size_t, unsigned int, int, int)\0",
             ))
@@ -536,9 +522,9 @@ pub unsafe extern "C" fn LOREM_genBlock(
         );
     }
     g_maxChars = size;
-    g_nbChars = 0 as std::ffi::c_int as size_t;
+    g_nbChars = 0;
     g_randRoot = seed;
-    if g_distribCount == 0 as std::ffi::c_int as std::ffi::c_uint {
+    if g_distribCount == 0 {
         init_word_distrib(
             kWords.as_mut_ptr(),
             kNbWords as size_t,
@@ -550,7 +536,7 @@ pub unsafe extern "C" fn LOREM_genBlock(
         generateFirstSentence();
     }
     while g_nbChars < g_maxChars {
-        let mut sentencePerParagraph = about(7 as std::ffi::c_int as std::ffi::c_uint);
+        let mut sentencePerParagraph = about(7);
         generateParagraph(sentencePerParagraph);
         if fill == 0 {
             break;
@@ -565,13 +551,7 @@ pub unsafe extern "C" fn LOREM_genBuffer(
     mut size: size_t,
     mut seed: std::ffi::c_uint,
 ) {
-    LOREM_genBlock(
-        buffer,
-        size,
-        seed,
-        1 as std::ffi::c_int,
-        1 as std::ffi::c_int,
-    );
+    LOREM_genBlock(buffer, size, seed, 1, 1);
 }
 unsafe extern "C" fn run_static_initializers() {
     kNbWords = (::core::mem::size_of::<[*const std::ffi::c_char; 255]>() as std::ffi::c_ulong)
