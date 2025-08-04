@@ -1729,23 +1729,6 @@ unsafe extern "C" fn printDefaultCParams(
             .as_ptr(),
         );
     }
-    'c_17496: {
-        if (cParams.strategy as std::ffi::c_uint)
-            < (9 as std::ffi::c_int + 1 as std::ffi::c_int) as std::ffi::c_uint
-        {
-        } else {
-            __assert_fail(
-                b"cParams.strategy < ZSTD_NB_STRATEGIES + 1\0" as *const u8
-                    as *const std::ffi::c_char,
-                b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
-                731 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 58], &[std::ffi::c_char; 58]>(
-                    b"void printDefaultCParams(const char *, const char *, int)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     fprintf(
         stderr,
         b" - strategy      : %s (%u)\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1783,23 +1766,6 @@ unsafe extern "C" fn printActualCParams(
                 .as_ptr(),
         );
     }
-    'c_17859: {
-        if g_displayLevel >= 4 as std::ffi::c_int {
-        } else {
-            __assert_fail(
-                b"g_displayLevel >= 4\0" as *const u8 as *const std::ffi::c_char,
-                b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
-                739 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 93],
-                    &[std::ffi::c_char; 93],
-                >(
-                    b"void printActualCParams(const char *, const char *, int, const ZSTD_compressionParameters *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     actualCParams.windowLog = if (*cParams).windowLog == 0 as std::ffi::c_int as std::ffi::c_uint {
         actualCParams.windowLog
     } else {
@@ -2041,20 +2007,6 @@ unsafe fn main_0(
             .as_ptr(),
         );
     }
-    'c_27082: {
-        if argCount >= 1 as std::ffi::c_int {
-        } else {
-            __assert_fail(
-                b"argCount >= 1\0" as *const u8 as *const std::ffi::c_char,
-                b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
-                930 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 29], &[std::ffi::c_char; 29]>(
-                    b"int main(int, const char **)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if filenames.is_null() || file_of_names.is_null() {
         if g_displayLevel >= 1 as std::ffi::c_int {
             fprintf(
@@ -2681,25 +2633,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_25261: {
-                                                if !__nb.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1086 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -2771,25 +2704,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_25069: {
-                                                if !__nb_0.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1087 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_0.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -2858,25 +2772,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_24886: {
-                                                if !__nb_1.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1088 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_1.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -2946,25 +2841,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_24703: {
-                                                if !__nb_2.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1089 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_2.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3033,25 +2909,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_24520: {
-                                                if !__nb_3.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1090 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_3.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3120,25 +2977,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_24337: {
-                                                if !__nb_4.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1091 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_4.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3207,25 +3045,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_24154: {
-                                                if !__nb_5.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1092 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_5.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3294,25 +3113,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23971: {
-                                                if !__nb_6.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1093 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_6.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3381,25 +3181,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23788: {
-                                                if !__nb_7.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1094 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_7.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3483,25 +3264,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23563: {
-                                                if !__nb_8.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1096 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_8.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3571,25 +3333,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23380: {
-                                                if !__nb_9.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1097 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_9.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3658,25 +3401,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23197: {
-                                                if !__nb_10.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"__nb != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1098 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *__nb_10.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3744,25 +3468,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_23013: {
-                                                if !outDirName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"outDirName != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1100 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *outDirName.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3836,25 +3541,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_22821: {
-                                                if !threadDefault.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"threadDefault != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1109 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *threadDefault.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -3924,25 +3610,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_22644: {
-                                                if !outMirroredDirName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"outMirroredDirName != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1116 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *outMirroredDirName
                                                 .offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
@@ -4017,25 +3684,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_22452: {
-                                                if !traceFile.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"traceFile != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1125 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *traceFile.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -4098,26 +3746,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_22288: {
-                                                if !patchFromDictFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"patchFromDictFileName != NULL\0"
-                                                            as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1127 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *patchFromDictFileName
                                                 .offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
@@ -4182,26 +3810,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_22124: {
-                                                if !patchFromDictFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"patchFromDictFileName != NULL\0"
-                                                            as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1128 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *patchFromDictFileName
                                                 .offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
@@ -4326,25 +3934,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_21757: {
-                                                if !listName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"listName != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1177 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *listName.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 == '-' as i32
@@ -4469,25 +4058,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_21362: {
-                                                if !outFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"outFileName != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1219 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *outFileName.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 != '-' as i32
@@ -4552,25 +4122,6 @@ unsafe fn main_0(
                                                     .as_ptr(),
                                                 );
                                             }
-                                            'c_21206: {
-                                                if !dictFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"dictFileName != NULL\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const std::ffi::c_char,
-                                                        1225 as std::ffi::c_int as std::ffi::c_uint,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[std::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                            };
                                             if *dictFileName.offset(0 as std::ffi::c_int as isize)
                                                 as std::ffi::c_int
                                                 != '-' as i32
@@ -5377,24 +4928,6 @@ unsafe fn main_0(
                                                                     .as_ptr(),
                                                             );
                                                         }
-                                                        'c_18725: {
-                                                            if 9 as std::ffi::c_int
-                                                                == strategyBounds.upperBound
-                                                            {
-                                                            } else {
-                                                                __assert_fail(
-                                                                    b"ZSTD_NB_STRATEGIES == strategyBounds.upperBound\0"
-                                                                        as *const u8 as *const std::ffi::c_char,
-                                                                    b"zstdcli.c\0" as *const u8 as *const std::ffi::c_char,
-                                                                    1618 as std::ffi::c_int as std::ffi::c_uint,
-                                                                    (*::core::mem::transmute::<
-                                                                        &[u8; 29],
-                                                                        &[std::ffi::c_char; 29],
-                                                                    >(b"int main(int, const char **)\0"))
-                                                                        .as_ptr(),
-                                                                );
-                                                            }
-                                                        };
                                                         if showDefaultCParams != 0
                                                             || g_displayLevel
                                                                 >= 4 as std::ffi::c_int

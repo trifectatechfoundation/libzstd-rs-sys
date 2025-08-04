@@ -312,20 +312,6 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
                     __ASSERT_FUNCTION.as_ptr(),
                 );
             }
-            'c_2223: {
-                if (*cont).nbLoops
-                    < (-(1 as std::ffi::c_int) as std::ffi::c_uint).wrapping_div(multiplier)
-                {
-                } else {
-                    __assert_fail(
-                        b"cont->nbLoops < ((unsigned)-1) / multiplier\0" as *const u8
-                            as *const std::ffi::c_char,
-                        b"benchfn.c\0" as *const u8 as *const std::ffi::c_char,
-                        238 as std::ffi::c_int as std::ffi::c_uint,
-                        __ASSERT_FUNCTION.as_ptr(),
-                    );
-                }
-            };
             (*cont).nbLoops = ((*cont).nbLoops).wrapping_mul(multiplier);
         }
         if loopDuration_ns < runTimeMin_ns as std::ffi::c_double {
@@ -338,17 +324,6 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
                     __ASSERT_FUNCTION.as_ptr(),
                 );
             }
-            'c_2141: {
-                if completed == 0 as std::ffi::c_int {
-                } else {
-                    __assert_fail(
-                        b"completed == 0\0" as *const u8 as *const std::ffi::c_char,
-                        b"benchfn.c\0" as *const u8 as *const std::ffi::c_char,
-                        244 as std::ffi::c_int as std::ffi::c_uint,
-                        __ASSERT_FUNCTION.as_ptr(),
-                    );
-                }
-            };
         } else {
             if newRunTime.nanoSecPerRun < bestRunTime.nanoSecPerRun {
                 bestRunTime = newRunTime;

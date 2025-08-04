@@ -438,20 +438,6 @@ unsafe extern "C" fn writeUint_varLen(
             .as_ptr(),
         );
     }
-    'c_23293: {
-        if uintSize(value) >= 1 as std::ffi::c_int as size_t {
-        } else {
-            __assert_fail(
-                b"uintSize(value) >= 1\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                156 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
-                    b"void writeUint_varLen(char *, size_t, unsigned int)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if uintSize(value) < capacity {
     } else {
         __assert_fail(
@@ -464,20 +450,6 @@ unsafe extern "C" fn writeUint_varLen(
             .as_ptr(),
         );
     }
-    'c_23247: {
-        if uintSize(value) < capacity {
-        } else {
-            __assert_fail(
-                b"uintSize(value) < capacity\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                157 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
-                    b"void writeUint_varLen(char *, size_t, unsigned int)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     while endPos >= 0 as std::ffi::c_int {
         let mut c = ('0' as i32
             + value.wrapping_rem(10 as std::ffi::c_int as std::ffi::c_uint) as std::ffi::c_char
@@ -1096,20 +1068,6 @@ pub unsafe extern "C" fn BMK_extract_benchResult(
             .as_ptr(),
         );
     }
-    'c_16107: {
-        if outcome.tag == 0 as std::ffi::c_int {
-        } else {
-            __assert_fail(
-                b"outcome.tag == 0\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                378 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 62], &[std::ffi::c_char; 62]>(
-                    b"BMK_benchResult_t BMK_extract_benchResult(BMK_benchOutcome_t)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     outcome.internal_never_use_directly
 }
 unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
@@ -1206,23 +1164,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 .as_ptr(),
         );
     }
-    'c_22802: {
-        if !cctx.is_null() {
-        } else {
-            __assert_fail(
-                b"cctx != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                439 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 385],
-                    &[std::ffi::c_char; 385],
-                >(
-                    b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     if !dctx.is_null() {
     } else {
         __assert_fail(
@@ -1238,23 +1179,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 .as_ptr(),
         );
     }
-    'c_22759: {
-        if !dctx.is_null() {
-        } else {
-            __assert_fail(
-                b"dctx != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                440 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 385],
-                    &[std::ffi::c_char; 385],
-                >(
-                    b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     memset(
         &mut benchResult as *mut BMK_benchResult_t as *mut std::ffi::c_void,
         0 as std::ffi::c_int,
@@ -1373,24 +1297,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     .as_ptr(),
             );
         }
-        'c_22364: {
-            if decodedSize == totalDSize64 {
-            } else {
-                __assert_fail(
-                    b"(U64)decodedSize == totalDSize64\0" as *const u8
-                        as *const std::ffi::c_char,
-                    b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                    472 as std::ffi::c_int as std::ffi::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 385],
-                        &[std::ffi::c_char; 385],
-                    >(
-                        b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-        };
         free(*resultBufferPtr);
         if totalDSize64 > decodedSize {
             let mut r_1 = BMK_benchOutcome_t {
@@ -1692,27 +1598,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 .as_ptr(),
         );
     }
-    'c_18790: {
-        if srcSize
-            < (2147483647 as std::ffi::c_int as std::ffi::c_uint)
-                .wrapping_mul(2 as std::ffi::c_uint)
-                .wrapping_add(1 as std::ffi::c_uint) as size_t
-        {
-        } else {
-            __assert_fail(
-                b"srcSize < UINT_MAX\0" as *const u8 as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                594 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 385],
-                    &[std::ffi::c_char; 385],
-                >(
-                    b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     if displayLevel >= 2 as std::ffi::c_int {
         fprintf(
             stdout,
@@ -1801,27 +1686,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                         .as_ptr(),
                 );
             }
-            'c_18490: {
-                if cSize
-                    < (2147483647 as std::ffi::c_int as std::ffi::c_uint)
-                        .wrapping_mul(2 as std::ffi::c_uint)
-                        .wrapping_add(1 as std::ffi::c_uint) as size_t
-                {
-                } else {
-                    __assert_fail(
-                        b"cSize < UINT_MAX\0" as *const u8 as *const std::ffi::c_char,
-                        b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
-                        628 as std::ffi::c_int as std::ffi::c_uint,
-                        (*::core::mem::transmute::<
-                            &[u8; 385],
-                            &[std::ffi::c_char; 385],
-                        >(
-                            b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                        ))
-                            .as_ptr(),
-                    );
-                }
-            };
             if displayLevel >= 2 as std::ffi::c_int {
                 fprintf(
                     stdout,

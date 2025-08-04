@@ -747,20 +747,6 @@ pub unsafe extern "C" fn UTIL_isSameFile(
             .as_ptr(),
         );
     }
-    'c_12659: {
-        if !fName1.is_null() {
-        } else {
-            __assert_fail(
-                b"fName1 != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                387 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
-                    b"int UTIL_isSameFile(const char *, const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if !fName2.is_null() {
     } else {
         __assert_fail(
@@ -773,20 +759,6 @@ pub unsafe extern "C" fn UTIL_isSameFile(
             .as_ptr(),
         );
     }
-    'c_12616: {
-        if !fName2.is_null() {
-        } else {
-            __assert_fail(
-                b"fName2 != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                387 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
-                    b"int UTIL_isSameFile(const char *, const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if g_traceFileStat != 0 {
         fprintf(
             stderr,
@@ -896,23 +868,6 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
                 .as_ptr(),
         );
     }
-    'c_12520: {
-        if !fName1.is_null() {
-        } else {
-            __assert_fail(
-                b"fName1 != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                412 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 84],
-                    &[std::ffi::c_char; 84],
-                >(
-                    b"int UTIL_isSameFileStat(const char *, const char *, const stat_t *, const stat_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     if !fName2.is_null() {
     } else {
         __assert_fail(
@@ -928,23 +883,6 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
                 .as_ptr(),
         );
     }
-    'c_12469: {
-        if !fName2.is_null() {
-        } else {
-            __assert_fail(
-                b"fName2 != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                412 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 84],
-                    &[std::ffi::c_char; 84],
-                >(
-                    b"int UTIL_isSameFileStat(const char *, const char *, const stat_t *, const stat_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     if g_traceFileStat != 0 {
         fprintf(
             stderr,
@@ -1739,20 +1677,6 @@ pub unsafe extern "C" fn UTIL_refFilename(
             .as_ptr(),
         );
     }
-    'c_18238: {
-        if (*fnt).tableSize < (*fnt).tableCapacity {
-        } else {
-            __assert_fail(
-                b"fnt->tableSize < fnt->tableCapacity\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                847 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 54], &[std::ffi::c_char; 54]>(
-                    b"void UTIL_refFilename(FileNamesTable *, const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     let fresh2 = &mut (*((*fnt).fileNames).offset((*fnt).tableSize as isize));
     *fresh2 = filename;
     (*fnt).tableSize = ((*fnt).tableSize).wrapping_add(1);
@@ -1861,24 +1785,6 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
                     .as_ptr(),
             );
         }
-        'c_16587: {
-            if newTableIdx as size_t <= (*newTable).tableSize {
-            } else {
-                __assert_fail(
-                    b"newTableIdx <= newTable->tableSize\0" as *const u8
-                        as *const std::ffi::c_char,
-                    b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                    886 as std::ffi::c_int as std::ffi::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 77],
-                        &[std::ffi::c_char; 77],
-                    >(
-                        b"FileNamesTable *UTIL_mergeFileNamesTable(FileNamesTable *, FileNamesTable *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-        };
         let fresh3 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
         *fresh3 = buf.offset(pos as isize);
         pos = pos.wrapping_add(curLen.wrapping_add(1 as std::ffi::c_int as size_t));
@@ -1915,24 +1821,6 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
                     .as_ptr(),
             );
         }
-        'c_16445: {
-            if (newTableIdx as size_t) < (*newTable).tableSize {
-            } else {
-                __assert_fail(
-                    b"newTableIdx < newTable->tableSize\0" as *const u8
-                        as *const std::ffi::c_char,
-                    b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                    895 as std::ffi::c_int as std::ffi::c_uint,
-                    (*::core::mem::transmute::<
-                        &[u8; 77],
-                        &[std::ffi::c_char; 77],
-                    >(
-                        b"FileNamesTable *UTIL_mergeFileNamesTable(FileNamesTable *, FileNamesTable *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-        };
         let fresh4 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
         *fresh4 = buf.offset(pos as isize);
         pos = pos.wrapping_add(curLen_0.wrapping_add(1 as std::ffi::c_int as size_t));
@@ -1953,23 +1841,6 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
             .as_ptr(),
         );
     }
-    'c_16356: {
-        if pos <= newTotalTableSize {
-        } else {
-            __assert_fail(
-                b"pos <= newTotalTableSize\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                899 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<
-                    &[u8; 77],
-                    &[std::ffi::c_char; 77],
-                >(
-                    b"FileNamesTable *UTIL_mergeFileNamesTable(FileNamesTable *, FileNamesTable *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
-    };
     (*newTable).tableSize = newTableIdx as size_t;
     UTIL_freeFileNamesTable(table1);
     UTIL_freeFileNamesTable(table2);
@@ -2087,24 +1958,6 @@ unsafe extern "C" fn UTIL_prepareFileList(
                                 .as_ptr(),
                         );
                     }
-                    'c_17467: {
-                        if newListSize >= 0 as std::ffi::c_int as ptrdiff_t {
-                        } else {
-                            __assert_fail(
-                                b"newListSize >= 0\0" as *const u8
-                                    as *const std::ffi::c_char,
-                                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                                1018 as std::ffi::c_int as std::ffi::c_uint,
-                                (*::core::mem::transmute::<
-                                    &[u8; 72],
-                                    &[std::ffi::c_char; 72],
-                                >(
-                                    b"int UTIL_prepareFileList(const char *, char **, size_t *, char **, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
-                    };
                     *bufStart =
                         UTIL_realloc(*bufStart as *mut std::ffi::c_void, newListSize as size_t)
                             as *mut std::ffi::c_char;
@@ -2280,20 +2133,6 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_cha
             .as_ptr(),
         );
     }
-    'c_15204: {
-        if !pathname.is_null() {
-        } else {
-            __assert_fail(
-                b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1146 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 38], &[std::ffi::c_char; 38]>(
-                    b"void convertPathnameToDirName(char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     len = strlen(pathname);
     if len > 0 as std::ffi::c_int as size_t {
     } else {
@@ -2307,20 +2146,6 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_cha
             .as_ptr(),
         );
     }
-    'c_15157: {
-        if len > 0 as std::ffi::c_int as size_t {
-        } else {
-            __assert_fail(
-                b"len > 0\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1150 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 38], &[std::ffi::c_char; 38]>(
-                    b"void convertPathnameToDirName(char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     while *pathname.offset(len as isize) as std::ffi::c_int == PATH_SEP {
         *pathname.offset(len as isize) = '\0' as i32 as std::ffi::c_char;
         len = len.wrapping_sub(1);
@@ -2352,20 +2177,6 @@ unsafe extern "C" fn trimLeadingRootChar(
             .as_ptr(),
         );
     }
-    'c_14281: {
-        if !pathname.is_null() {
-        } else {
-            __assert_fail(
-                b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1174 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
-                    b"const char *trimLeadingRootChar(const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if *pathname.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == PATH_SEP {
         return pathname.offset(1 as std::ffi::c_int as isize);
     }
@@ -2386,20 +2197,6 @@ unsafe extern "C" fn trimLeadingCurrentDirConst(
             .as_ptr(),
         );
     }
-    'c_14215: {
-        if !pathname.is_null() {
-        } else {
-            __assert_fail(
-                b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1183 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 53], &[std::ffi::c_char; 53]>(
-                    b"const char *trimLeadingCurrentDirConst(const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if *pathname.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == '.' as i32
         && *pathname.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int == PATH_SEP
     {
@@ -2435,20 +2232,6 @@ unsafe extern "C" fn mallocAndJoin2Dir(
             .as_ptr(),
         );
     }
-    'c_14489: {
-        if !dir1.is_null() && !dir2.is_null() {
-        } else {
-            __assert_fail(
-                b"dir1 != NULL && dir2 != NULL\0" as *const u8 as *const std::ffi::c_char,
-                b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1210 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
-                    b"char *mallocAndJoin2Dir(const char *, const char *)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     let dir1Size = strlen(dir1);
     let dir2Size = strlen(dir2);
     let mut outDirBuffer = std::ptr::null_mut::<std::ffi::c_char>();
@@ -2750,24 +2533,6 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
                             .as_ptr(),
                     );
                 }
-                'c_17920: {
-                    if newListSize >= 0 as std::ffi::c_int as ptrdiff_t {
-                    } else {
-                        __assert_fail(
-                            b"newListSize >= 0\0" as *const u8
-                                as *const std::ffi::c_char,
-                            b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                            1395 as std::ffi::c_int as std::ffi::c_uint,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[std::ffi::c_char; 73],
-                            >(
-                                b"FileNamesTable *UTIL_createExpandedFNT(const char *const *, size_t, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                };
                 buf = UTIL_realloc(buf as *mut std::ffi::c_void, newListSize as size_t)
                     as *mut std::ffi::c_char;
                 if buf.is_null() {
