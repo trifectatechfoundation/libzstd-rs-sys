@@ -97,11 +97,29 @@ pub struct ZSTD_OffsetInfo {
     pub longOffsetShare: core::ffi::c_uint,
     pub maxNbAdditionalBits: core::ffi::c_uint,
 }
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
+
+#[repr(u32)]
+enum SymbolEncodingType_e {
+    set_basic = 0,
+    set_rle = 1,
+    set_compressed = 2,
+    set_repeat = 3,
+}
+
+impl TryFrom<u8> for SymbolEncodingType_e {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(SymbolEncodingType_e::set_basic),
+            1 => Ok(SymbolEncodingType_e::set_rle),
+            2 => Ok(SymbolEncodingType_e::set_compressed),
+            3 => Ok(SymbolEncodingType_e::set_repeat),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct blockProperties_t {
@@ -353,20 +371,25 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
     mut dstCapacity: size_t,
     streaming: streaming_operation,
 ) -> size_t {
-    if srcSize < (1 + 1) as size_t {
+    // for a non-null block
+    const MIN_CBLOCK_SIZE: size_t = 1 /*litCSize*/ + 1/* RLE or RAW */;
+    if srcSize < MIN_CBLOCK_SIZE {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
     let istart = src as *const u8;
-    let litEncType = (*istart.offset(0) as core::ffi::c_int & 3) as SymbolEncodingType_e;
+    let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
+
     let blockSizeMax = ZSTD_blockSizeMax(dctx);
-    match litEncType as core::ffi::c_uint {
-        3 => {
+
+    match litEncType {
+        SymbolEncodingType_e::set_repeat => {
             if (*dctx).litEntropy == 0 {
-                return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
+                return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
             }
         }
-        2 => {}
-        0 => {
+        SymbolEncodingType_e::set_compressed => {}
+        SymbolEncodingType_e::set_basic => {
             let mut litSize_0: size_t = 0;
             let mut lhSize_0: size_t = 0;
             let lhlCode_0 = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
@@ -375,6 +398,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             } else {
                 dstCapacity
             };
+
             match lhlCode_0 {
                 1 => {
                     lhSize_0 = 2;
@@ -403,6 +427,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             if expectedWriteSize_0 < litSize_0 {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
+
             ZSTD_allocateLiteralsBuffer(
                 dctx,
                 dst,
@@ -412,6 +437,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
                 expectedWriteSize_0,
                 1,
             );
+
             if lhSize_0
                 .wrapping_add(litSize_0)
                 .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
@@ -493,7 +519,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             (*dctx).litBufferLocation = ZSTD_not_in_dst;
             return lhSize_0.wrapping_add(litSize_0);
         }
-        1 => {
+        SymbolEncodingType_e::set_rle => {
             let lhlCode_1 = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
             let mut litSize_1: size_t = 0;
             let mut lhSize_1: size_t = 0;
@@ -592,11 +618,12 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             (*dctx).litSize = litSize_1;
             return lhSize_1.wrapping_add(1);
         }
-        _ => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
     }
+
     if srcSize < 5 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
     let mut lhSize: size_t = 0;
     let mut litSize: size_t = 0;
     let mut litCSize: size_t = 0;
@@ -670,7 +697,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
         }
     }
-    if litEncType as core::ffi::c_uint == set_repeat as core::ffi::c_int as core::ffi::c_uint {
+    if let SymbolEncodingType_e::set_repeat = litEncType {
         if singleStream != 0 {
             hufSuccess = HUF_decompress1X_usingDTable(
                 (*dctx).litBuffer as *mut core::ffi::c_void,
@@ -805,7 +832,7 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
     (*dctx).litPtr = (*dctx).litBuffer;
     (*dctx).litSize = litSize;
     (*dctx).litEntropy = 1;
-    if litEncType as core::ffi::c_uint == set_compressed as core::ffi::c_int as core::ffi::c_uint {
+    if let SymbolEncodingType_e::set_compressed = litEncType {
         (*dctx).HUFptr = ((*dctx).entropy.hufTable).as_mut_ptr();
     }
     litCSize.wrapping_add(lhSize)
@@ -2487,9 +2514,9 @@ pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
     if *ip as core::ffi::c_int & 3 != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let LLtype = (*ip as core::ffi::c_int >> 6) as SymbolEncodingType_e;
-    let OFtype = (*ip as core::ffi::c_int >> 4 & 3) as SymbolEncodingType_e;
-    let MLtype = (*ip as core::ffi::c_int >> 2 & 3) as SymbolEncodingType_e;
+    let LLtype = SymbolEncodingType_e::try_from(*ip as u8 >> 6).unwrap();
+    let OFtype = SymbolEncodingType_e::try_from(*ip as u8 >> 4 & 0b11).unwrap();
+    let MLtype = SymbolEncodingType_e::try_from(*ip as u8 >> 2 & 0b11).unwrap();
     ip = ip.offset(1);
     let llhSize = ZSTD_buildSeqTable(
         ((*dctx).entropy.LLTable).as_mut_ptr(),
