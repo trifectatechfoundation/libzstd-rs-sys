@@ -110,28 +110,27 @@ pub struct FileNamesTable {
     pub tableSize: size_t,
     pub tableCapacity: size_t,
 }
-pub const EOF: std::ffi::c_int = -(1 as std::ffi::c_int);
+pub const EOF: std::ffi::c_int = -(1);
 #[inline]
 unsafe extern "C" fn atoi(mut __nptr: *const std::ffi::c_char) -> std::ffi::c_int {
     strtol(
         __nptr,
         NULL as *mut std::ffi::c_void as *mut *mut std::ffi::c_char,
-        10 as std::ffi::c_int,
+        10,
     ) as std::ffi::c_int
 }
 pub const PATH_SEP: std::ffi::c_int = '/' as i32;
-pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1 as std::ffi::c_int);
-pub const AT_FDCWD: std::ffi::c_int = -(100 as std::ffi::c_int);
+pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1);
+pub const AT_FDCWD: std::ffi::c_int = -(100);
 pub const __S_IFMT: std::ffi::c_int = 0o170000 as std::ffi::c_int;
-pub const UTIME_NOW: std::ffi::c_long =
-    ((1 as std::ffi::c_long) << 30 as std::ffi::c_int) - 1 as std::ffi::c_long;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const NULL_0: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const ENOMEM: std::ffi::c_int = 12 as std::ffi::c_int;
-pub const EEXIST: std::ffi::c_int = 17 as std::ffi::c_int;
-static mut g_traceDepth: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const UTIME_NOW: std::ffi::c_long = ((1) << 30) - 1;
+pub const NULL: std::ffi::c_int = 0;
+pub const NULL_0: std::ffi::c_int = 0;
+pub const ENOMEM: std::ffi::c_int = 12;
+pub const EEXIST: std::ffi::c_int = 17;
+static mut g_traceDepth: std::ffi::c_int = 0;
 #[no_mangle]
-pub static mut g_traceFileStat: std::ffi::c_int = 0 as std::ffi::c_int;
+pub static mut g_traceFileStat: std::ffi::c_int = 0;
 unsafe extern "C" fn UTIL_realloc(
     mut ptr: *mut std::ffi::c_void,
     mut size: size_t,
@@ -159,7 +158,7 @@ pub unsafe extern "C" fn UTIL_requireUserConfirmation(
             stderr,
             b"stdin is an input - not proceeding.\n\0" as *const u8 as *const std::ffi::c_char,
         );
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     fprintf(
         stderr,
@@ -167,27 +166,25 @@ pub unsafe extern "C" fn UTIL_requireUserConfirmation(
         prompt,
     );
     ch = getchar();
-    result = 0 as std::ffi::c_int;
+    result = 0;
     if (strchr(acceptableLetters, ch)).is_null() {
         fprintf(
             stderr,
             b"%s \n\0" as *const u8 as *const std::ffi::c_char,
             abortMsg,
         );
-        result = 1 as std::ffi::c_int;
+        result = 1;
     }
     while ch != EOF && ch != '\n' as i32 {
         ch = getchar();
     }
     result
 }
-pub const LIST_SIZE_INCREASE: std::ffi::c_int =
-    8 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int);
-pub const MAX_FILE_OF_FILE_NAMES_SIZE: std::ffi::c_int =
-    ((1 as std::ffi::c_int) << 20 as std::ffi::c_int) * 50 as std::ffi::c_int;
+pub const LIST_SIZE_INCREASE: std::ffi::c_int = 8 * ((1) << 10);
+pub const MAX_FILE_OF_FILE_NAMES_SIZE: std::ffi::c_int = ((1) << 20) * 50;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_traceFileStat() {
-    g_traceFileStat = 1 as std::ffi::c_int;
+    g_traceFileStat = 1;
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_fstat(
@@ -213,7 +210,7 @@ pub unsafe extern "C" fn UTIL_fstat(
         g_traceDepth += 1;
         g_traceDepth;
     }
-    if fd >= 0 as std::ffi::c_int {
+    if fd >= 0 {
         ret = (fstat(fd, statbuf) == 0) as std::ffi::c_int;
     } else {
         ret = (stat(filename, statbuf) == 0) as std::ffi::c_int;
@@ -236,7 +233,7 @@ pub unsafe extern "C" fn UTIL_stat(
     mut filename: *const std::ffi::c_char,
     mut statbuf: *mut stat_t,
 ) -> std::ffi::c_int {
-    UTIL_fstat(-(1 as std::ffi::c_int), filename, statbuf)
+    UTIL_fstat(-(1), filename, statbuf)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: std::ffi::c_int) -> std::ffi::c_int {
@@ -258,7 +255,7 @@ pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: std::ffi::c_int) -> std::f
         g_traceDepth += 1;
         g_traceDepth;
     }
-    ret = (fd >= 0 as std::ffi::c_int
+    ret = (fd >= 0
         && UTIL_fstat(
             fd,
             b"\0" as *const u8 as *const std::ffi::c_char,
@@ -319,7 +316,7 @@ pub unsafe extern "C" fn UTIL_isRegularFile(
 pub unsafe extern "C" fn UTIL_isRegularFileStat(mut statbuf: *const stat_t) -> std::ffi::c_int {
     (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as std::ffi::c_int as __mode_t)
         as std::ffi::c_int
-        != 0 as std::ffi::c_int) as std::ffi::c_int
+        != 0) as std::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_chmod(
@@ -327,7 +324,7 @@ pub unsafe extern "C" fn UTIL_chmod(
     mut statbuf: *const stat_t,
     mut permissions: mode_t,
 ) -> std::ffi::c_int {
-    UTIL_fchmod(-(1 as std::ffi::c_int), filename, statbuf, permissions)
+    UTIL_fchmod(-(1), filename, statbuf, permissions)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_fchmod(
@@ -364,10 +361,10 @@ pub unsafe extern "C" fn UTIL_fchmod(
                     b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                     g_traceDepth,
                     b"\0" as *const u8 as *const std::ffi::c_char,
-                    0 as std::ffi::c_int,
+                    0,
                 );
             }
-            return 0 as std::ffi::c_int;
+            return 0;
         }
         statbuf = &mut localStatBuf;
     }
@@ -380,12 +377,12 @@ pub unsafe extern "C" fn UTIL_fchmod(
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                0 as std::ffi::c_int,
+                0,
             );
         }
-        return 0 as std::ffi::c_int;
+        return 0;
     }
-    if fd >= 0 as std::ffi::c_int {
+    if fd >= 0 {
         let mut ret: std::ffi::c_int = 0;
         if g_traceFileStat != 0 {
             fprintf(
@@ -487,18 +484,18 @@ pub unsafe extern "C" fn UTIL_utime(
     }
     let mut timebuf: [timespec; 2] = [{
         timespec {
-            tv_sec: 0 as std::ffi::c_int as __time_t,
+            tv_sec: 0,
             tv_nsec: UTIME_NOW,
         }
     }; 2];
-    *timebuf.as_mut_ptr().offset(1 as std::ffi::c_int as isize) = (*statbuf).st_mtim;
+    *timebuf.as_mut_ptr().offset(1) = (*statbuf).st_mtim;
     ret = utimensat(
         AT_FDCWD,
         filename,
         timebuf.as_mut_ptr() as *const timespec,
-        0 as std::ffi::c_int,
+        0,
     );
-    *__errno_location() = 0 as std::ffi::c_int;
+    *__errno_location() = 0;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         g_traceDepth;
@@ -517,7 +514,7 @@ pub unsafe extern "C" fn UTIL_setFileStat(
     mut filename: *const std::ffi::c_char,
     mut statbuf: *const stat_t,
 ) -> std::ffi::c_int {
-    UTIL_setFDStat(-(1 as std::ffi::c_int), filename, statbuf)
+    UTIL_setFDStat(-(1), filename, statbuf)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_setFDStat(
@@ -525,7 +522,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
     mut filename: *const std::ffi::c_char,
     mut statbuf: *const stat_t,
 ) -> std::ffi::c_int {
-    let mut res = 0 as std::ffi::c_int;
+    let mut res = 0;
     let mut curStatBuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -580,10 +577,10 @@ pub unsafe extern "C" fn UTIL_setFDStat(
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                -(1 as std::ffi::c_int),
+                -(1),
             );
         }
-        return -(1 as std::ffi::c_int);
+        return -(1);
     }
     if fd >= 0 as std::ffi::c_int {
         res += fchown(fd, -(1 as std::ffi::c_int) as __uid_t, (*statbuf).st_gid);
@@ -600,7 +597,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
         &mut curStatBuf,
         (*statbuf).st_mode & 0o777 as std::ffi::c_int as __mode_t,
     );
-    if fd >= 0 as std::ffi::c_int {
+    if fd >= 0 {
         res += fchown(fd, (*statbuf).st_uid, -(1 as std::ffi::c_int) as __gid_t);
     } else {
         res += chown(
@@ -609,7 +606,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
             -(1 as std::ffi::c_int) as __gid_t,
         );
     }
-    *__errno_location() = 0 as std::ffi::c_int;
+    *__errno_location() = 0;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         g_traceDepth;
@@ -705,7 +702,7 @@ pub unsafe extern "C" fn UTIL_isDirectoryStat(mut statbuf: *const stat_t) -> std
     }
     ret = (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as std::ffi::c_int as __mode_t)
         as std::ffi::c_int
-        != 0 as std::ffi::c_int) as std::ffi::c_int;
+        != 0) as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         g_traceDepth;
@@ -740,7 +737,7 @@ pub unsafe extern "C" fn UTIL_isSameFile(
         __assert_fail(
             b"fName1 != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            387 as std::ffi::c_int as std::ffi::c_uint,
+            387,
             (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
                 b"int UTIL_isSameFile(const char *, const char *)\0",
             ))
@@ -752,7 +749,7 @@ pub unsafe extern "C" fn UTIL_isSameFile(
         __assert_fail(
             b"fName2 != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            387 as std::ffi::c_int as std::ffi::c_uint,
+            387,
             (*::core::mem::transmute::<&[u8; 48], &[std::ffi::c_char; 48]>(
                 b"int UTIL_isSameFile(const char *, const char *)\0",
             ))
@@ -858,7 +855,7 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
         __assert_fail(
             b"fName1 != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            412 as std::ffi::c_int as std::ffi::c_uint,
+            412,
             (*::core::mem::transmute::<
                 &[u8; 84],
                 &[std::ffi::c_char; 84],
@@ -873,7 +870,7 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
         __assert_fail(
             b"fName2 != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            412 as std::ffi::c_int as std::ffi::c_uint,
+            412,
             (*::core::mem::transmute::<
                 &[u8; 84],
                 &[std::ffi::c_char; 84],
@@ -968,10 +965,10 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const std::ffi::c_char) ->
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                1 as std::ffi::c_int,
+                1,
             );
         }
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -981,17 +978,17 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const std::ffi::c_char) ->
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
             g_traceDepth,
             b"\0" as *const u8 as *const std::ffi::c_char,
-            0 as std::ffi::c_int,
+            0,
         );
     }
-    0 as std::ffi::c_int
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isFIFOStat(mut statbuf: *const stat_t) -> std::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o10000 as std::ffi::c_int as __mode_t {
-        return 1 as std::ffi::c_int;
+        return 1;
     }
-    0 as std::ffi::c_int
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
@@ -1013,12 +1010,12 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
         g_traceDepth += 1;
         g_traceDepth;
     }
-    if *filename.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == '/' as i32
+    if *filename.offset(0) as std::ffi::c_int == '/' as i32
         && strncmp(
             filename,
             b"/dev/fd/\0" as *const u8 as *const std::ffi::c_char,
-            8 as std::ffi::c_int as std::ffi::c_ulong,
-        ) == 0 as std::ffi::c_int
+            8,
+        ) == 0
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
@@ -1028,17 +1025,17 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                1 as std::ffi::c_int,
+                1,
             );
         }
-        return 1 as std::ffi::c_int;
+        return 1;
     }
-    if *filename.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == '/' as i32
+    if *filename.offset(0) as std::ffi::c_int == '/' as i32
         && strncmp(
             filename,
             b"/proc/self/fd/\0" as *const u8 as *const std::ffi::c_char,
-            14 as std::ffi::c_int as std::ffi::c_ulong,
-        ) == 0 as std::ffi::c_int
+            14,
+        ) == 0
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
@@ -1048,10 +1045,10 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                1 as std::ffi::c_int,
+                1,
             );
         }
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -1061,17 +1058,17 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
             g_traceDepth,
             b"\0" as *const u8 as *const std::ffi::c_char,
-            0 as std::ffi::c_int,
+            0,
         );
     }
-    0 as std::ffi::c_int
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isBlockDevStat(mut statbuf: *const stat_t) -> std::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o60000 as std::ffi::c_int as __mode_t {
-        return 1 as std::ffi::c_int;
+        return 1;
     }
-    0 as std::ffi::c_int
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) -> std::ffi::c_int {
@@ -1127,10 +1124,10 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) ->
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                1 as std::ffi::c_int,
+                1,
             );
         }
-        return 1 as std::ffi::c_int;
+        return 1;
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -1140,14 +1137,14 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) ->
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
             g_traceDepth,
             b"\0" as *const u8 as *const std::ffi::c_char,
-            0 as std::ffi::c_int,
+            0,
         );
     }
-    0 as std::ffi::c_int
+    0
 }
-static mut g_fakeStdinIsConsole: std::ffi::c_int = 0 as std::ffi::c_int;
-static mut g_fakeStderrIsConsole: std::ffi::c_int = 0 as std::ffi::c_int;
-static mut g_fakeStdoutIsConsole: std::ffi::c_int = 0 as std::ffi::c_int;
+static mut g_fakeStdinIsConsole: std::ffi::c_int = 0;
+static mut g_fakeStderrIsConsole: std::ffi::c_int = 0;
+static mut g_fakeStdoutIsConsole: std::ffi::c_int = 0;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> std::ffi::c_int {
     let mut ret: std::ffi::c_int = 0;
@@ -1168,11 +1165,11 @@ pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> std::ffi::c_int 
         g_traceDepth;
     }
     if file == stdin && g_fakeStdinIsConsole != 0 {
-        ret = 1 as std::ffi::c_int;
+        ret = 1;
     } else if file == stderr && g_fakeStderrIsConsole != 0 {
-        ret = 1 as std::ffi::c_int;
+        ret = 1;
     } else if file == stdout && g_fakeStdoutIsConsole != 0 {
-        ret = 1 as std::ffi::c_int;
+        ret = 1;
     } else {
         ret = isatty(fileno(file));
     }
@@ -1191,15 +1188,15 @@ pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> std::ffi::c_int 
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_fakeStdinIsConsole() {
-    g_fakeStdinIsConsole = 1 as std::ffi::c_int;
+    g_fakeStdinIsConsole = 1;
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_fakeStdoutIsConsole() {
-    g_fakeStdoutIsConsole = 1 as std::ffi::c_int;
+    g_fakeStdoutIsConsole = 1;
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_fakeStderrIsConsole() {
-    g_fakeStderrIsConsole = 1 as std::ffi::c_int;
+    g_fakeStderrIsConsole = 1;
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_char) -> u64 {
@@ -1254,7 +1251,7 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_cha
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                 g_traceDepth,
                 b"\0" as *const u8 as *const std::ffi::c_char,
-                -(1 as std::ffi::c_int),
+                -(1),
             );
         }
         return UTIL_FILESIZE_UNKNOWN as u64;
@@ -1375,7 +1372,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
         g_traceDepth += 1;
         g_traceDepth;
     }
-    n = 0 as std::ffi::c_int as std::ffi::c_uint;
+    n = 0;
     while n < nbFiles {
         let size = UTIL_getFileSize(*fileNamesTable.offset(n as isize));
         if size == UTIL_FILESIZE_UNKNOWN as u64 {
@@ -1387,7 +1384,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
                     b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
                     g_traceDepth,
                     b"\0" as *const u8 as *const std::ffi::c_char,
-                    -(1 as std::ffi::c_int),
+                    -(1),
                 );
             }
             return UTIL_FILESIZE_UNKNOWN as u64;
@@ -1413,10 +1410,9 @@ unsafe extern "C" fn UTIL_readFileContent(
     mut inFile: *mut FILE,
     mut totalReadPtr: *mut size_t,
 ) -> *mut std::ffi::c_char {
-    let mut bufSize =
-        (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t;
-    let mut totalRead = 0 as std::ffi::c_int as size_t;
-    let mut bytesRead = 0 as std::ffi::c_int as size_t;
+    let mut bufSize = (64 * ((1) << 10)) as size_t;
+    let mut totalRead = 0;
+    let mut bytesRead = 0;
     let mut buf = malloc(bufSize) as *mut std::ffi::c_char;
     if buf.is_null() {
         return NULL_0 as *mut std::ffi::c_char;
@@ -1424,24 +1420,20 @@ unsafe extern "C" fn UTIL_readFileContent(
     loop {
         bytesRead = fread(
             buf.offset(totalRead as isize) as *mut std::ffi::c_void,
-            1 as std::ffi::c_int as std::ffi::c_ulong,
-            bufSize
-                .wrapping_sub(totalRead)
-                .wrapping_sub(1 as std::ffi::c_int as size_t),
+            1,
+            bufSize.wrapping_sub(totalRead).wrapping_sub(1),
             inFile,
         );
-        if bytesRead <= 0 as std::ffi::c_int as size_t {
+        if bytesRead <= 0 {
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
-        if bufSize.wrapping_sub(totalRead)
-            < (1 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t
-        {
+        if bufSize.wrapping_sub(totalRead) < (1 * ((1) << 10)) as size_t {
             if bufSize >= MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
                 free(buf as *mut std::ffi::c_void);
                 return NULL_0 as *mut std::ffi::c_char;
             }
-            let mut newBufSize = bufSize * 2 as std::ffi::c_int as size_t;
+            let mut newBufSize = bufSize * 2;
             if newBufSize > MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
                 newBufSize = MAX_FILE_OF_FILE_NAMES_SIZE as size_t;
             }
@@ -1464,7 +1456,7 @@ unsafe extern "C" fn UTIL_processLines(
     mut bufferSize: size_t,
 ) -> size_t {
     let mut lineCount = 0 as std::ffi::c_int as size_t;
-    let mut i = 0 as std::ffi::c_int as size_t;
+    let mut i = 0;
     while i < bufferSize {
         if *buffer.offset(i as isize) as std::ffi::c_int == '\n' as i32 {
             *buffer.offset(i as isize) = '\0' as i32 as std::ffi::c_char;
@@ -1474,11 +1466,8 @@ unsafe extern "C" fn UTIL_processLines(
         i = i.wrapping_add(1);
         i;
     }
-    if bufferSize > 0 as std::ffi::c_int as size_t
-        && (i == 0 as std::ffi::c_int as size_t
-            || *buffer.offset(i.wrapping_sub(1 as std::ffi::c_int as size_t) as isize)
-                as std::ffi::c_int
-                != '\0' as i32)
+    if bufferSize > 0
+        && (i == 0 || *buffer.offset(i.wrapping_sub(1) as isize) as std::ffi::c_int != '\0' as i32)
     {
         lineCount = lineCount.wrapping_add(1);
         lineCount;
@@ -1490,8 +1479,8 @@ unsafe extern "C" fn UTIL_createLinePointers(
     mut numLines: size_t,
     mut bufferSize: size_t,
 ) -> *mut *const std::ffi::c_char {
-    let mut lineIndex = 0 as std::ffi::c_int as size_t;
-    let mut pos = 0 as std::ffi::c_int as size_t;
+    let mut lineIndex = 0;
+    let mut pos = 0;
     let bufferPtrs =
         malloc(numLines.wrapping_mul(
             ::core::mem::size_of::<*mut *const std::ffi::c_char>() as std::ffi::c_ulong
@@ -1501,7 +1490,7 @@ unsafe extern "C" fn UTIL_createLinePointers(
         return NULL_0 as *mut *const std::ffi::c_char;
     }
     while lineIndex < numLines && pos < bufferSize {
-        let mut len = 0 as std::ffi::c_int as size_t;
+        let mut len = 0;
         let fresh0 = lineIndex;
         lineIndex = lineIndex.wrapping_add(1);
         let fresh1 = &mut (*linePointers.offset(fresh0 as isize));
@@ -1555,8 +1544,8 @@ pub unsafe extern "C" fn UTIL_createFileNamesTable_fromFileList(
         __glibc_reserved: [0; 3],
     };
     let mut buffer = NULL_0 as *mut std::ffi::c_char;
-    let mut numLines = 0 as std::ffi::c_int as size_t;
-    let mut bufferSize = 0 as std::ffi::c_int as size_t;
+    let mut numLines = 0;
+    let mut bufferSize = 0;
     if UTIL_stat(fileList, &mut statbuf) == 0 {
         return NULL_0 as *mut FileNamesTable;
     }
@@ -1576,7 +1565,7 @@ pub unsafe extern "C" fn UTIL_createFileNamesTable_fromFileList(
         return NULL_0 as *mut FileNamesTable;
     }
     numLines = UTIL_processLines(buffer, bufferSize);
-    if numLines == 0 as std::ffi::c_int as size_t {
+    if numLines == 0 {
         free(buffer as *mut std::ffi::c_void);
         return NULL_0 as *mut FileNamesTable;
     }
@@ -1596,16 +1585,16 @@ unsafe extern "C" fn UTIL_assembleFileNamesTable2(
     let table = malloc(::core::mem::size_of::<FileNamesTable>() as std::ffi::c_ulong)
         as *mut FileNamesTable;
     if table.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                803 as std::ffi::c_int,
+                803,
                 b"table != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     (*table).fileNames = filenames;
     (*table).buf = buf;
@@ -1641,7 +1630,7 @@ pub unsafe extern "C" fn UTIL_allocateFileNamesTable(mut tableSize: size_t) -> *
         return NULL_0 as *mut FileNamesTable;
     }
     fnt = UTIL_assembleFileNamesTable(fnTable, tableSize, NULL_0 as *mut std::ffi::c_char);
-    (*fnt).tableSize = 0 as std::ffi::c_int as size_t;
+    (*fnt).tableSize = 0;
     fnt
 }
 #[no_mangle]
@@ -1650,7 +1639,7 @@ pub unsafe extern "C" fn UTIL_searchFileNamesTable(
     mut name: *const std::ffi::c_char,
 ) -> std::ffi::c_int {
     let mut i: size_t = 0;
-    i = 0 as std::ffi::c_int as size_t;
+    i = 0;
     while i < (*table).tableSize {
         if strcmp(*((*table).fileNames).offset(i as isize), name) == 0 {
             return i as std::ffi::c_int;
@@ -1658,7 +1647,7 @@ pub unsafe extern "C" fn UTIL_searchFileNamesTable(
         i = i.wrapping_add(1);
         i;
     }
-    -(1 as std::ffi::c_int)
+    -(1)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_refFilename(
@@ -1670,7 +1659,7 @@ pub unsafe extern "C" fn UTIL_refFilename(
         __assert_fail(
             b"fnt->tableSize < fnt->tableCapacity\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            847 as std::ffi::c_int as std::ffi::c_uint,
+            847,
             (*::core::mem::transmute::<&[u8; 54], &[std::ffi::c_char; 54]>(
                 b"void UTIL_refFilename(FileNamesTable *, const char *)\0",
             ))
@@ -1684,13 +1673,12 @@ pub unsafe extern "C" fn UTIL_refFilename(
 }
 unsafe extern "C" fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t {
     let mut fnb: size_t = 0;
-    let mut totalSize = 0 as std::ffi::c_int as size_t;
-    fnb = 0 as std::ffi::c_int as size_t;
+    let mut totalSize = 0;
+    fnb = 0;
     while fnb < (*table).tableSize && !(*((*table).fileNames).offset(fnb as isize)).is_null() {
-        totalSize = (totalSize as std::ffi::c_ulong).wrapping_add(
-            (strlen(*((*table).fileNames).offset(fnb as isize)))
-                .wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulong),
-        ) as size_t as size_t;
+        totalSize = (totalSize as std::ffi::c_ulong)
+            .wrapping_add((strlen(*((*table).fileNames).offset(fnb as isize))).wrapping_add(1))
+            as size_t as size_t;
         fnb = fnb.wrapping_add(1);
         fnb;
     }
@@ -1702,25 +1690,25 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
     mut table2: *mut FileNamesTable,
 ) -> *mut FileNamesTable {
     let mut newTableIdx = 0 as std::ffi::c_int as std::ffi::c_uint;
-    let mut pos = 0 as std::ffi::c_int as size_t;
+    let mut pos = 0;
     let mut newTotalTableSize: size_t = 0;
     let mut buf = std::ptr::null_mut::<std::ffi::c_char>();
     let newTable = UTIL_assembleFileNamesTable(
         NULL_0 as *mut *const std::ffi::c_char,
-        0 as std::ffi::c_int as size_t,
+        0,
         NULL_0 as *mut std::ffi::c_char,
     );
     if newTable.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                870 as std::ffi::c_int,
+                870,
                 b"newTable != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     newTotalTableSize = (getTotalTableSize(table1)).wrapping_add(getTotalTableSize(table2));
     buf = calloc(
@@ -1728,16 +1716,16 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         ::core::mem::size_of::<std::ffi::c_char>() as std::ffi::c_ulong,
     ) as *mut std::ffi::c_char;
     if buf.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                875 as std::ffi::c_int,
+                875,
                 b"buf != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     (*newTable).buf = buf;
     (*newTable).tableSize = ((*table1).tableSize).wrapping_add((*table2).tableSize);
@@ -1746,19 +1734,19 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         ::core::mem::size_of::<*const std::ffi::c_char>() as std::ffi::c_ulong,
     ) as *mut *const std::ffi::c_char;
     if ((*newTable).fileNames).is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                880 as std::ffi::c_int,
+                880,
                 b"newTable->fileNames != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     let mut idx1: std::ffi::c_uint = 0;
-    idx1 = 0 as std::ffi::c_int as std::ffi::c_uint;
+    idx1 = 0;
     while (idx1 as size_t) < (*table1).tableSize
         && !(*((*table1).fileNames).offset(idx1 as isize)).is_null()
         && pos < newTotalTableSize
@@ -1775,7 +1763,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
                 b"newTableIdx <= newTable->tableSize\0" as *const u8
                     as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                886 as std::ffi::c_int as std::ffi::c_uint,
+                886,
                 (*::core::mem::transmute::<
                     &[u8; 77],
                     &[std::ffi::c_char; 77],
@@ -1787,14 +1775,14 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         }
         let fresh3 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
         *fresh3 = buf.offset(pos as isize);
-        pos = pos.wrapping_add(curLen.wrapping_add(1 as std::ffi::c_int as size_t));
+        pos = pos.wrapping_add(curLen.wrapping_add(1));
         idx1 = idx1.wrapping_add(1);
         idx1;
         newTableIdx = newTableIdx.wrapping_add(1);
         newTableIdx;
     }
     let mut idx2: std::ffi::c_uint = 0;
-    idx2 = 0 as std::ffi::c_int as std::ffi::c_uint;
+    idx2 = 0;
     while (idx2 as size_t) < (*table2).tableSize
         && !(*((*table2).fileNames).offset(idx2 as isize)).is_null()
         && pos < newTotalTableSize
@@ -1811,7 +1799,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
                 b"newTableIdx < newTable->tableSize\0" as *const u8
                     as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                895 as std::ffi::c_int as std::ffi::c_uint,
+                895,
                 (*::core::mem::transmute::<
                     &[u8; 77],
                     &[std::ffi::c_char; 77],
@@ -1823,7 +1811,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         }
         let fresh4 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
         *fresh4 = buf.offset(pos as isize);
-        pos = pos.wrapping_add(curLen_0.wrapping_add(1 as std::ffi::c_int as size_t));
+        pos = pos.wrapping_add(curLen_0.wrapping_add(1));
         idx2 = idx2.wrapping_add(1);
         idx2;
         newTableIdx = newTableIdx.wrapping_add(1);
@@ -1834,7 +1822,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         __assert_fail(
             b"pos <= newTotalTableSize\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            899 as std::ffi::c_int as std::ffi::c_uint,
+            899,
             (*::core::mem::transmute::<&[u8; 77], &[std::ffi::c_char; 77]>(
                 b"FileNamesTable *UTIL_mergeFileNamesTable(FileNamesTable *, FileNamesTable *)\0",
             ))
@@ -1856,10 +1844,10 @@ unsafe extern "C" fn UTIL_prepareFileList(
     let mut dir = std::ptr::null_mut::<DIR>();
     let mut entry = std::ptr::null_mut::<dirent>();
     let mut dirLength: size_t = 0;
-    let mut nbFiles = 0 as std::ffi::c_int;
+    let mut nbFiles = 0;
     dir = opendir(dirName);
     if dir.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Cannot open directory '%s': %s\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1867,10 +1855,10 @@ unsafe extern "C" fn UTIL_prepareFileList(
                 strerror(*__errno_location()),
             );
         }
-        return 0 as std::ffi::c_int;
+        return 0;
     }
     dirLength = strlen(dirName);
-    *__errno_location() = 0 as std::ffi::c_int;
+    *__errno_location() = 0;
     loop {
         entry = readdir(dir);
         if entry.is_null() {
@@ -1882,23 +1870,19 @@ unsafe extern "C" fn UTIL_prepareFileList(
         if strcmp(
             ((*entry).d_name).as_mut_ptr(),
             b"..\0" as *const u8 as *const std::ffi::c_char,
-        ) == 0 as std::ffi::c_int
+        ) == 0
             || strcmp(
                 ((*entry).d_name).as_mut_ptr(),
                 b".\0" as *const u8 as *const std::ffi::c_char,
-            ) == 0 as std::ffi::c_int
+            ) == 0
         {
             continue;
         }
         fnameLength = strlen(((*entry).d_name).as_mut_ptr());
-        path = malloc(
-            dirLength
-                .wrapping_add(fnameLength)
-                .wrapping_add(2 as std::ffi::c_int as size_t),
-        ) as *mut std::ffi::c_char;
+        path = malloc(dirLength.wrapping_add(fnameLength).wrapping_add(2)) as *mut std::ffi::c_char;
         if path.is_null() {
             closedir(dir);
-            return 0 as std::ffi::c_int;
+            return 0;
         }
         memcpy(
             path as *mut std::ffi::c_void,
@@ -1907,17 +1891,14 @@ unsafe extern "C" fn UTIL_prepareFileList(
         );
         *path.offset(dirLength as isize) = '/' as i32 as std::ffi::c_char;
         memcpy(
-            path.offset(dirLength as isize)
-                .offset(1 as std::ffi::c_int as isize) as *mut std::ffi::c_void,
+            path.offset(dirLength as isize).offset(1) as *mut std::ffi::c_void,
             ((*entry).d_name).as_mut_ptr() as *const std::ffi::c_void,
             fnameLength,
         );
-        pathLength = dirLength
-            .wrapping_add(1 as std::ffi::c_int as size_t)
-            .wrapping_add(fnameLength);
-        *path.offset(pathLength as isize) = 0 as std::ffi::c_int as std::ffi::c_char;
+        pathLength = dirLength.wrapping_add(1).wrapping_add(fnameLength);
+        *path.offset(pathLength as isize) = 0;
         if followLinks == 0 && UTIL_isLink(path) != 0 {
-            if g_utilDisplayLevel >= 2 as std::ffi::c_int {
+            if g_utilDisplayLevel >= 2 {
                 fprintf(
                     stderr,
                     b"Warning : %s is a symbolic link, ignoring\n\0" as *const u8
@@ -1932,7 +1913,7 @@ unsafe extern "C" fn UTIL_prepareFileList(
                 if (*bufStart).is_null() {
                     free(path as *mut std::ffi::c_void);
                     closedir(dir);
-                    return 0 as std::ffi::c_int;
+                    return 0;
                 }
             } else {
                 if (*bufStart)
@@ -1942,13 +1923,13 @@ unsafe extern "C" fn UTIL_prepareFileList(
                 {
                     let mut newListSize = (*bufEnd).offset_from(*bufStart) as std::ffi::c_long
                         + LIST_SIZE_INCREASE as std::ffi::c_long;
-                    if newListSize >= 0 as std::ffi::c_int as ptrdiff_t {
+                    if newListSize >= 0 {
                     } else {
                         __assert_fail(
                             b"newListSize >= 0\0" as *const u8
                                 as *const std::ffi::c_char,
                             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                            1018 as std::ffi::c_int as std::ffi::c_uint,
+                            1018,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
                                 &[std::ffi::c_char; 72],
@@ -1966,7 +1947,7 @@ unsafe extern "C" fn UTIL_prepareFileList(
                     } else {
                         free(path as *mut std::ffi::c_void);
                         closedir(dir);
-                        return 0 as std::ffi::c_int;
+                        return 0;
                     }
                 }
                 if (*bufStart)
@@ -1977,20 +1958,19 @@ unsafe extern "C" fn UTIL_prepareFileList(
                     memcpy(
                         (*bufStart).offset(*pos as isize) as *mut std::ffi::c_void,
                         path as *const std::ffi::c_void,
-                        pathLength.wrapping_add(1 as std::ffi::c_int as size_t),
+                        pathLength.wrapping_add(1),
                     );
-                    *pos = (*pos)
-                        .wrapping_add(pathLength.wrapping_add(1 as std::ffi::c_int as size_t));
+                    *pos = (*pos).wrapping_add(pathLength.wrapping_add(1));
                     nbFiles += 1;
                     nbFiles;
                 }
             }
             free(path as *mut std::ffi::c_void);
-            *__errno_location() = 0 as std::ffi::c_int;
+            *__errno_location() = 0;
         }
     }
-    if *__errno_location() != 0 as std::ffi::c_int {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+    if *__errno_location() != 0 {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"readdir(%s) error: %s \n\0" as *const u8 as *const std::ffi::c_char,
@@ -2012,13 +1992,13 @@ pub unsafe extern "C" fn UTIL_isCompressedFile(
     let mut ext = UTIL_getFileExtension(inputName);
     while !(*extensionList).is_null() {
         let isCompressedExtension = strcmp(ext, *extensionList);
-        if isCompressedExtension == 0 as std::ffi::c_int {
-            return 1 as std::ffi::c_int;
+        if isCompressedExtension == 0 {
+            return 1;
         }
         extensionList = extensionList.offset(1);
         extensionList;
     }
-    0 as std::ffi::c_int
+    0
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_getFileExtension(
@@ -2035,14 +2015,13 @@ unsafe extern "C" fn pathnameHas2Dots(mut pathname: *const std::ffi::c_char) -> 
     loop {
         needle = strstr(needle, b"..\0" as *const u8 as *const std::ffi::c_char);
         if needle.is_null() {
-            return 0 as std::ffi::c_int;
+            return 0;
         }
-        if (needle == pathname
-            || *needle.offset(-(1 as std::ffi::c_int) as isize) as std::ffi::c_int == PATH_SEP)
-            && (*needle.offset(2 as std::ffi::c_int as isize) as std::ffi::c_int == '\0' as i32
-                || *needle.offset(2 as std::ffi::c_int as isize) as std::ffi::c_int == PATH_SEP)
+        if (needle == pathname || *needle.offset(-(1) as isize) as std::ffi::c_int == PATH_SEP)
+            && (*needle.offset(2) as std::ffi::c_int == '\0' as i32
+                || *needle.offset(2) as std::ffi::c_int == PATH_SEP)
         {
-            return 1 as std::ffi::c_int;
+            return 1;
         }
         needle = needle.offset(1);
         needle;
@@ -2105,9 +2084,9 @@ unsafe extern "C" fn makeDir(
     mut mode: mode_t,
 ) -> std::ffi::c_int {
     let mut ret = mkdir(dir, mode);
-    if ret != 0 as std::ffi::c_int {
+    if ret != 0 {
         if *__errno_location() == EEXIST {
-            return 0 as std::ffi::c_int;
+            return 0;
         }
         fprintf(
             stderr,
@@ -2119,14 +2098,14 @@ unsafe extern "C" fn makeDir(
     ret
 }
 unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_char) {
-    let mut len = 0 as std::ffi::c_int as size_t;
+    let mut len = 0;
     let mut pos = NULL_0 as *mut std::ffi::c_char;
     if !pathname.is_null() {
     } else {
         __assert_fail(
             b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            1146 as std::ffi::c_int as std::ffi::c_uint,
+            1146,
             (*::core::mem::transmute::<&[u8; 38], &[std::ffi::c_char; 38]>(
                 b"void convertPathnameToDirName(char *)\0",
             ))
@@ -2134,12 +2113,12 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_cha
         );
     }
     len = strlen(pathname);
-    if len > 0 as std::ffi::c_int as size_t {
+    if len > 0 {
     } else {
         __assert_fail(
             b"len > 0\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            1150 as std::ffi::c_int as std::ffi::c_uint,
+            1150,
             (*::core::mem::transmute::<&[u8; 38], &[std::ffi::c_char; 38]>(
                 b"void convertPathnameToDirName(char *)\0",
             ))
@@ -2151,13 +2130,13 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_cha
         len = len.wrapping_sub(1);
         len;
     }
-    if len == 0 as std::ffi::c_int as size_t {
+    if len == 0 {
         return;
     }
     pos = strrchr(pathname, PATH_SEP);
     if pos.is_null() {
-        *pathname.offset(0 as std::ffi::c_int as isize) = '.' as i32 as std::ffi::c_char;
-        *pathname.offset(1 as std::ffi::c_int as isize) = '\0' as i32 as std::ffi::c_char;
+        *pathname.offset(0) = '.' as i32 as std::ffi::c_char;
+        *pathname.offset(1) = '\0' as i32 as std::ffi::c_char;
     } else {
         *pos = '\0' as i32 as std::ffi::c_char;
     };
@@ -2170,15 +2149,15 @@ unsafe extern "C" fn trimLeadingRootChar(
         __assert_fail(
             b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            1174 as std::ffi::c_int as std::ffi::c_uint,
+            1174,
             (*::core::mem::transmute::<&[u8; 46], &[std::ffi::c_char; 46]>(
                 b"const char *trimLeadingRootChar(const char *)\0",
             ))
             .as_ptr(),
         );
     }
-    if *pathname.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == PATH_SEP {
-        return pathname.offset(1 as std::ffi::c_int as isize);
+    if *pathname.offset(0) as std::ffi::c_int == PATH_SEP {
+        return pathname.offset(1);
     }
     pathname
 }
@@ -2190,17 +2169,17 @@ unsafe extern "C" fn trimLeadingCurrentDirConst(
         __assert_fail(
             b"pathname != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            1183 as std::ffi::c_int as std::ffi::c_uint,
+            1183,
             (*::core::mem::transmute::<&[u8; 53], &[std::ffi::c_char; 53]>(
                 b"const char *trimLeadingCurrentDirConst(const char *)\0",
             ))
             .as_ptr(),
         );
     }
-    if *pathname.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int == '.' as i32
-        && *pathname.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int == PATH_SEP
+    if *pathname.offset(0) as std::ffi::c_int == '.' as i32
+        && *pathname.offset(1) as std::ffi::c_int == PATH_SEP
     {
-        return pathname.offset(2 as std::ffi::c_int as isize);
+        return pathname.offset(2);
     }
     pathname
 }
@@ -2225,7 +2204,7 @@ unsafe extern "C" fn mallocAndJoin2Dir(
         __assert_fail(
             b"dir1 != NULL && dir2 != NULL\0" as *const u8 as *const std::ffi::c_char,
             b"util.c\0" as *const u8 as *const std::ffi::c_char,
-            1210 as std::ffi::c_int as std::ffi::c_uint,
+            1210,
             (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
                 b"char *mallocAndJoin2Dir(const char *, const char *)\0",
             ))
@@ -2236,22 +2215,18 @@ unsafe extern "C" fn mallocAndJoin2Dir(
     let dir2Size = strlen(dir2);
     let mut outDirBuffer = std::ptr::null_mut::<std::ffi::c_char>();
     let mut buffer = std::ptr::null_mut::<std::ffi::c_char>();
-    outDirBuffer = malloc(
-        dir1Size
-            .wrapping_add(dir2Size)
-            .wrapping_add(2 as std::ffi::c_int as size_t),
-    ) as *mut std::ffi::c_char;
+    outDirBuffer = malloc(dir1Size.wrapping_add(dir2Size).wrapping_add(2)) as *mut std::ffi::c_char;
     if outDirBuffer.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1216 as std::ffi::c_int,
+                1216,
                 b"outDirBuffer != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     memcpy(
         outDirBuffer as *mut std::ffi::c_void,
@@ -2260,9 +2235,7 @@ unsafe extern "C" fn mallocAndJoin2Dir(
     );
     *outDirBuffer.offset(dir1Size as isize) = '\0' as i32 as std::ffi::c_char;
     buffer = outDirBuffer.offset(dir1Size as isize);
-    if dir1Size > 0 as std::ffi::c_int as size_t
-        && *buffer.offset(-(1 as std::ffi::c_int as isize)) as std::ffi::c_int != PATH_SEP
-    {
+    if dir1Size > 0 && *buffer.offset(-(1)) as std::ffi::c_int != PATH_SEP {
         *buffer = PATH_SEP as std::ffi::c_char;
         buffer = buffer.offset(1);
         buffer;
@@ -2293,7 +2266,7 @@ unsafe extern "C" fn mirrorSrcDir(
     mut outDirName: *const std::ffi::c_char,
 ) -> std::ffi::c_int {
     let mut srcMode: mode_t = 0;
-    let mut status = 0 as std::ffi::c_int;
+    let mut status = 0;
     let mut newDir = mallocAndJoin2Dir(outDirName, trimPath(srcDirName));
     if newDir.is_null() {
         return -ENOMEM;
@@ -2307,7 +2280,7 @@ unsafe extern "C" fn mirrorSrcDirRecursive(
     mut srcDirName: *mut std::ffi::c_char,
     mut outDirName: *const std::ffi::c_char,
 ) -> std::ffi::c_int {
-    let mut status = 0 as std::ffi::c_int;
+    let mut status = 0;
     let mut pp = trimLeadingCurrentDir(srcDirName);
     let mut sp = NULL_0 as *mut std::ffi::c_char;
     loop {
@@ -2318,12 +2291,12 @@ unsafe extern "C" fn mirrorSrcDirRecursive(
         if sp != pp {
             *sp = '\0' as i32 as std::ffi::c_char;
             status = mirrorSrcDir(srcDirName, outDirName);
-            if status != 0 as std::ffi::c_int {
+            if status != 0 {
                 return status;
             }
             *sp = PATH_SEP as std::ffi::c_char;
         }
-        pp = sp.offset(1 as std::ffi::c_int as isize);
+        pp = sp.offset(1);
     }
     status = mirrorSrcDir(srcDirName, outDirName);
     status
@@ -2333,8 +2306,8 @@ unsafe extern "C" fn makeMirroredDestDirsWithSameSrcDirMode(
     mut nbFile: std::ffi::c_uint,
     mut outDirName: *const std::ffi::c_char,
 ) {
-    let mut i = 0 as std::ffi::c_int as std::ffi::c_uint;
-    i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    let mut i = 0;
+    i = 0;
     while i < nbFile {
         mirrorSrcDirRecursive(*srcDirNames.offset(i as isize), outDirName);
         i = i.wrapping_add(1);
@@ -2350,7 +2323,7 @@ unsafe extern "C" fn firstIsParentOrSameDirOfSecond(
     (firstDirLen <= secondDirLen
         && (*secondDir.offset(firstDirLen as isize) as std::ffi::c_int == PATH_SEP
             || *secondDir.offset(firstDirLen as isize) as std::ffi::c_int == '\0' as i32)
-        && 0 as std::ffi::c_int == strncmp(firstDir, secondDir, firstDirLen)) as std::ffi::c_int
+        && 0 == strncmp(firstDir, secondDir, firstDirLen)) as std::ffi::c_int
 }
 unsafe extern "C" fn compareDir(
     mut pathname1: *const std::ffi::c_void,
@@ -2365,10 +2338,10 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
     mut nbFile: std::ffi::c_uint,
     mut outDirName: *const std::ffi::c_char,
 ) {
-    let mut i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    let mut i = 0;
     let mut uniqueDirNr = 0 as std::ffi::c_int as std::ffi::c_uint;
     let mut uniqueDirNames = NULL_0 as *mut *mut std::ffi::c_char;
-    if nbFile == 0 as std::ffi::c_int as std::ffi::c_uint {
+    if nbFile == 0 {
         return;
     }
     uniqueDirNames = malloc(
@@ -2376,16 +2349,16 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
             .wrapping_mul(::core::mem::size_of::<*mut std::ffi::c_char>() as std::ffi::c_ulong),
     ) as *mut *mut std::ffi::c_char;
     if uniqueDirNames.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1317 as std::ffi::c_int,
+                1317,
                 b"uniqueDirNames != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     qsort(
         srcDirNames as *mut std::ffi::c_void,
@@ -2399,21 +2372,18 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
                 ) -> std::ffi::c_int,
         ),
     );
-    uniqueDirNr = 1 as std::ffi::c_int as std::ffi::c_uint;
-    let fresh5 = &mut (*uniqueDirNames
-        .offset(uniqueDirNr.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint) as isize));
-    *fresh5 = *srcDirNames.offset(0 as std::ffi::c_int as isize);
-    i = 1 as std::ffi::c_int as std::ffi::c_uint;
+    uniqueDirNr = 1;
+    let fresh5 = &mut (*uniqueDirNames.offset(uniqueDirNr.wrapping_sub(1) as isize));
+    *fresh5 = *srcDirNames.offset(0);
+    i = 1;
     while i < nbFile {
-        let mut prevDirName =
-            *srcDirNames.offset(i.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint) as isize);
+        let mut prevDirName = *srcDirNames.offset(i.wrapping_sub(1) as isize);
         let mut currDirName = *srcDirNames.offset(i as isize);
         if firstIsParentOrSameDirOfSecond(trimPath(prevDirName), trimPath(currDirName)) == 0 {
             uniqueDirNr = uniqueDirNr.wrapping_add(1);
             uniqueDirNr;
         }
-        let fresh6 = &mut (*uniqueDirNames
-            .offset(uniqueDirNr.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint) as isize));
+        let fresh6 = &mut (*uniqueDirNames.offset(uniqueDirNr.wrapping_sub(1) as isize));
         *fresh6 = currDirName;
         i = i.wrapping_add(1);
         i;
@@ -2426,8 +2396,8 @@ unsafe extern "C" fn makeMirroredDestDirs(
     mut nbFile: std::ffi::c_uint,
     mut outDirName: *const std::ffi::c_char,
 ) {
-    let mut i = 0 as std::ffi::c_int as std::ffi::c_uint;
-    i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    let mut i = 0;
+    i = 0;
     while i < nbFile {
         convertPathnameToDirName(*srcFileNames.offset(i as isize));
         i = i.wrapping_add(1);
@@ -2441,39 +2411,39 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
     mut nbFile: std::ffi::c_uint,
     mut outDirName: *const std::ffi::c_char,
 ) {
-    let mut i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    let mut i = 0;
     let mut validFilenamesNr = 0 as std::ffi::c_int as std::ffi::c_uint;
     let mut srcFileNames = malloc(
         (nbFile as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut std::ffi::c_char>() as std::ffi::c_ulong),
     ) as *mut *mut std::ffi::c_char;
     if srcFileNames.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1359 as std::ffi::c_int,
+                1359,
                 b"srcFileNames != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
-    i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    i = 0;
     while i < nbFile {
         if isFileNameValidForMirroredOutput(*inFileNames.offset(i as isize)) != 0 {
             let mut fname = strdup(*inFileNames.offset(i as isize));
             if fname.is_null() {
-                if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+                if g_utilDisplayLevel >= 1 {
                     fprintf(
                         stderr,
                         b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                         b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                        1365 as std::ffi::c_int,
+                        1365,
                         b"fname != NULL\0" as *const u8 as *const std::ffi::c_char,
                     );
                 }
-                exit(1 as std::ffi::c_int);
+                exit(1);
             }
             let fresh7 = validFilenamesNr;
             validFilenamesNr = validFilenamesNr.wrapping_add(1);
@@ -2483,11 +2453,11 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
         i = i.wrapping_add(1);
         i;
     }
-    if validFilenamesNr > 0 as std::ffi::c_int as std::ffi::c_uint {
+    if validFilenamesNr > 0 {
         makeDir(outDirName, DIR_DEFAULT_MODE as mode_t);
         makeMirroredDestDirs(srcFileNames, validFilenamesNr, outDirName);
     }
-    i = 0 as std::ffi::c_int as std::ffi::c_uint;
+    i = 0;
     while i < validFilenamesNr {
         free(*srcFileNames.offset(i as isize) as *mut std::ffi::c_void);
         i = i.wrapping_add(1);
@@ -2509,21 +2479,21 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
     }
     let mut ifnNb: size_t = 0;
     let mut pos: size_t = 0;
-    ifnNb = 0 as std::ffi::c_int as size_t;
-    pos = 0 as std::ffi::c_int as size_t;
-    nbFiles = 0 as std::ffi::c_int as std::ffi::c_uint;
+    ifnNb = 0;
+    pos = 0;
+    nbFiles = 0;
     while ifnNb < nbIfns {
         if UTIL_isDirectory(*inputNames.offset(ifnNb as isize)) == 0 {
             let len = strlen(*inputNames.offset(ifnNb as isize));
             if buf.offset(pos as isize).offset(len as isize) >= bufend {
                 let mut newListSize = bufend.offset_from(buf) as std::ffi::c_long
                     + LIST_SIZE_INCREASE as std::ffi::c_long;
-                if newListSize >= 0 as std::ffi::c_int as ptrdiff_t {
+                if newListSize >= 0 {
                 } else {
                     __assert_fail(
                         b"newListSize >= 0\0" as *const u8 as *const std::ffi::c_char,
                         b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                        1395 as std::ffi::c_int as std::ffi::c_uint,
+                        1395,
                         (*::core::mem::transmute::<
                             &[u8; 73],
                             &[std::ffi::c_char; 73],
@@ -2544,9 +2514,9 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
                 memcpy(
                     buf.offset(pos as isize) as *mut std::ffi::c_void,
                     *inputNames.offset(ifnNb as isize) as *const std::ffi::c_void,
-                    len.wrapping_add(1 as std::ffi::c_int as size_t),
+                    len.wrapping_add(1),
                 );
-                pos = pos.wrapping_add(len.wrapping_add(1 as std::ffi::c_int as size_t));
+                pos = pos.wrapping_add(len.wrapping_add(1));
                 nbFiles = nbFiles.wrapping_add(1);
                 nbFiles;
             }
@@ -2567,7 +2537,7 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
     }
     let mut ifnNb_0: size_t = 0;
     let mut pos_0: size_t = 0;
-    let fntCapacity = nbFiles.wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint) as size_t;
+    let fntCapacity = nbFiles.wrapping_add(1) as size_t;
     let fileNamesTable = malloc(
         fntCapacity
             .wrapping_mul(::core::mem::size_of::<*const std::ffi::c_char>() as std::ffi::c_ulong),
@@ -2576,8 +2546,8 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
         free(buf as *mut std::ffi::c_void);
         return NULL_0 as *mut FileNamesTable;
     }
-    ifnNb_0 = 0 as std::ffi::c_int as size_t;
-    pos_0 = 0 as std::ffi::c_int as size_t;
+    ifnNb_0 = 0;
+    pos_0 = 0;
     while ifnNb_0 < nbFiles as size_t {
         let fresh9 = &mut (*fileNamesTable.offset(ifnNb_0 as isize));
         *fresh9 = buf.offset(pos_0 as isize);
@@ -2586,10 +2556,9 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
             free(fileNamesTable as *mut std::ffi::c_void);
             return NULL_0 as *mut FileNamesTable;
         }
-        pos_0 = (pos_0 as std::ffi::c_ulong).wrapping_add(
-            (strlen(*fileNamesTable.offset(ifnNb_0 as isize)))
-                .wrapping_add(1 as std::ffi::c_int as std::ffi::c_ulong),
-        ) as size_t as size_t;
+        pos_0 = (pos_0 as std::ffi::c_ulong)
+            .wrapping_add((strlen(*fileNamesTable.offset(ifnNb_0 as isize))).wrapping_add(1))
+            as size_t as size_t;
         ifnNb_0 = ifnNb_0.wrapping_add(1);
         ifnNb_0;
     }
@@ -2602,16 +2571,16 @@ pub unsafe extern "C" fn UTIL_expandFNT(
 ) {
     let newFNT = UTIL_createExpandedFNT((**fnt).fileNames, (**fnt).tableSize, followLinks);
     if newFNT.is_null() {
-        if g_utilDisplayLevel >= 1 as std::ffi::c_int {
+        if g_utilDisplayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Error : %s, %i : %s\0" as *const u8 as *const std::ffi::c_char,
                 b"util.c\0" as *const u8 as *const std::ffi::c_char,
-                1430 as std::ffi::c_int,
+                1430,
                 b"newFNT != NULL\0" as *const u8 as *const std::ffi::c_char,
             );
         }
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     UTIL_freeFileNamesTable(*fnt);
     *fnt = newFNT;
@@ -2637,13 +2606,13 @@ pub unsafe extern "C" fn UTIL_createFNT_fromROTable(
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::ffi::c_int {
     let mut current_block: u64;
-    static mut numCores: std::ffi::c_int = 0 as std::ffi::c_int;
-    if numCores != 0 as std::ffi::c_int {
+    static mut numCores: std::ffi::c_int = 0;
+    if numCores != 0 {
         return numCores;
     }
     numCores = sysconf(_SC_NPROCESSORS_ONLN) as std::ffi::c_int;
-    if numCores == -(1 as std::ffi::c_int) {
-        numCores = 1 as std::ffi::c_int;
+    if numCores == -(1) {
+        numCores = 1;
         return numCores;
     }
     let cpuinfo = fopen(
@@ -2651,9 +2620,9 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
         b"r\0" as *const u8 as *const std::ffi::c_char,
     );
     let mut buff: [std::ffi::c_char; 80] = [0; 80];
-    let mut siblings = 0 as std::ffi::c_int;
-    let mut cpu_cores = 0 as std::ffi::c_int;
-    let mut ratio = 1 as std::ffi::c_int;
+    let mut siblings = 0;
+    let mut cpu_cores = 0;
+    let mut ratio = 1;
     if cpuinfo.is_null() {
         return numCores;
     }
@@ -2666,22 +2635,22 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
             if strncmp(
                 buff.as_mut_ptr(),
                 b"siblings\0" as *const u8 as *const std::ffi::c_char,
-                8 as std::ffi::c_int as std::ffi::c_ulong,
-            ) == 0 as std::ffi::c_int
+                8,
+            ) == 0
             {
                 let sep: *const std::ffi::c_char = strchr(buff.as_mut_ptr(), ':' as i32);
                 if sep.is_null() || *sep as std::ffi::c_int == '\0' as i32 {
                     current_block = 14973054249330249614;
                     break;
                 } else {
-                    siblings = atoi(sep.offset(1 as std::ffi::c_int as isize));
+                    siblings = atoi(sep.offset(1));
                 }
             }
             if strncmp(
                 buff.as_mut_ptr(),
                 b"cpu cores\0" as *const u8 as *const std::ffi::c_char,
-                9 as std::ffi::c_int as std::ffi::c_ulong,
-            ) != 0 as std::ffi::c_int
+                9,
+            ) != 0
             {
                 continue;
             }
@@ -2690,7 +2659,7 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
                 current_block = 14973054249330249614;
                 break;
             } else {
-                cpu_cores = atoi(sep_0.offset(1 as std::ffi::c_int as isize));
+                cpu_cores = atoi(sep_0.offset(1));
             }
         } else if ferror(cpuinfo) != 0 {
             current_block = 14973054249330249614;
@@ -2708,12 +2677,12 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: std::ffi::c_int) -> std::f
     fclose(cpuinfo);
     numCores
 }
-pub const BUF_SIZE: std::ffi::c_int = 80 as std::ffi::c_int;
+pub const BUF_SIZE: std::ffi::c_int = 80;
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_countPhysicalCores() -> std::ffi::c_int {
-    UTIL_countCores(0 as std::ffi::c_int)
+    UTIL_countCores(0)
 }
 #[no_mangle]
 pub unsafe extern "C" fn UTIL_countLogicalCores() -> std::ffi::c_int {
-    UTIL_countCores(1 as std::ffi::c_int)
+    UTIL_countCores(1)
 }

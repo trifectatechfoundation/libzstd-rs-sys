@@ -134,17 +134,12 @@ pub(crate) unsafe fn MEM_readLE16(mut memPtr: *const std::ffi::c_void) -> u16 {
         MEM_read16(memPtr)
     } else {
         let mut p = memPtr as *const u8;
-        (*p.offset(0 as std::ffi::c_int as isize) as std::ffi::c_int
-            + ((*p.offset(1 as std::ffi::c_int as isize) as std::ffi::c_int)
-                << 8 as std::ffi::c_int)) as u16
+        (*p.offset(0) as std::ffi::c_int + ((*p.offset(1) as std::ffi::c_int) << 8)) as u16
     }
 }
 #[inline]
 pub unsafe fn MEM_readLE24(mut memPtr: *const std::ffi::c_void) -> u32 {
-    (MEM_readLE16(memPtr) as u32).wrapping_add(
-        (*(memPtr as *const u8).offset(2 as std::ffi::c_int as isize) as u32)
-            << 16 as std::ffi::c_int,
-    )
+    (MEM_readLE16(memPtr) as u32).wrapping_add((*(memPtr as *const u8).offset(2) as u32) << 16)
 }
 #[inline]
 pub unsafe fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
@@ -165,8 +160,7 @@ pub unsafe fn MEM_writeLE16(mut memPtr: *mut std::ffi::c_void, mut val32: u16) {
 #[inline]
 pub unsafe fn MEM_writeLE24(mut memPtr: *mut std::ffi::c_void, mut val: u32) {
     MEM_writeLE16(memPtr, val as u16);
-    *(memPtr as *mut u8).offset(2 as std::ffi::c_int as isize) =
-        (val >> 16 as std::ffi::c_int) as u8;
+    *(memPtr as *mut u8).offset(2) = (val >> 16) as u8;
 }
 #[inline]
 pub unsafe fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32: u32) {

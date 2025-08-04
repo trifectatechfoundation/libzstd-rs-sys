@@ -12,15 +12,13 @@ pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::lib::common::fse_decompress::{
     Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };
-pub const FSE_VERSION_MAJOR: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const FSE_VERSION_MINOR: std::ffi::c_int = 9 as std::ffi::c_int;
-pub const FSE_VERSION_RELEASE: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const FSE_VERSION_MAJOR: std::ffi::c_int = 0;
+pub const FSE_VERSION_MINOR: std::ffi::c_int = 9;
+pub const FSE_VERSION_RELEASE: std::ffi::c_int = 0;
 pub const FSE_VERSION_NUMBER: std::ffi::c_int =
-    FSE_VERSION_MAJOR * 100 as std::ffi::c_int * 100 as std::ffi::c_int
-        + FSE_VERSION_MINOR * 100 as std::ffi::c_int
-        + FSE_VERSION_RELEASE;
-pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5 as std::ffi::c_int;
-pub const FSE_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15 as std::ffi::c_int;
+    FSE_VERSION_MAJOR * 100 * 100 + FSE_VERSION_MINOR * 100 + FSE_VERSION_RELEASE;
+pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5;
+pub const FSE_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15;
 
 #[inline(always)]
 fn FSE_readNCount_body(
@@ -39,7 +37,7 @@ fn FSE_readNCount_body(
     let mut bitStream: u32 = 0;
     let mut bitCount: std::ffi::c_int = 0;
     let mut charnum = 0 as std::ffi::c_int as std::ffi::c_uint;
-    let maxSV1 = (*maxSVPtr).wrapping_add(1 as std::ffi::c_int as std::ffi::c_uint);
+    let maxSV1 = (*maxSVPtr).wrapping_add(1);
     let mut previous_was_0 = false;
     if hbSize < 8 {
         let mut buffer = [0u8; 8];
@@ -121,13 +119,13 @@ fn FSE_readNCount_body(
             bitStream = read_u32_le(ip) >> bitCount;
         }
 
-        let max = 2 as std::ffi::c_int * threshold - 1 as std::ffi::c_int - remaining;
+        let max = 2 * threshold - 1 - remaining;
         let mut count: std::ffi::c_int = 0;
         if (bitStream & (threshold - 1) as u32) < max as u32 {
             count = (bitStream & (threshold - 1) as u32) as std::ffi::c_int;
             bitCount += nbBits - 1;
         } else {
-            count = (bitStream & (2 * threshold - 1 as std::ffi::c_int) as u32) as std::ffi::c_int;
+            count = (bitStream & (2 * threshold - 1) as u32) as std::ffi::c_int;
             if count >= threshold {
                 count -= max;
             }
@@ -145,18 +143,18 @@ fn FSE_readNCount_body(
         charnum += 1;
         previous_was_0 = count == 0;
         if remaining < threshold {
-            if remaining <= 1 as std::ffi::c_int {
+            if remaining <= 1 {
                 break;
             }
             nbBits = remaining.ilog2() as i32 + 1;
-            threshold = (1 as std::ffi::c_int) << (nbBits - 1 as std::ffi::c_int);
+            threshold = (1) << (nbBits - 1);
         }
         if charnum >= maxSV1 {
             break;
         }
         if (ip <= iend - 7) || (ip + (bitCount as usize >> 3)) <= iend - 4 {
             ip += bitCount as usize >> 3;
-            bitCount &= 7 as std::ffi::c_int;
+            bitCount &= 7;
         } else {
             bitCount -= 8 * ((iend - 4) - ip) as i32;
             bitCount &= 31;
@@ -165,18 +163,18 @@ fn FSE_readNCount_body(
         bitStream = read_u32_le(ip) >> bitCount;
     }
 
-    if remaining != 1 as std::ffi::c_int {
+    if remaining != 1 {
         return Err(Error::corruption_detected);
     }
     if charnum > maxSV1 {
         return Err(Error::maxSymbolValue_tooSmall);
     }
-    if bitCount > 32 as std::ffi::c_int {
+    if bitCount > 32 {
         return Err(Error::corruption_detected);
     }
 
-    *maxSVPtr = charnum.wrapping_sub(1 as std::ffi::c_int as std::ffi::c_uint);
-    ip += ((bitCount + 7 as std::ffi::c_int) >> 3) as usize;
+    *maxSVPtr = charnum.wrapping_sub(1);
+    ip += ((bitCount + 7) >> 3) as usize;
 
     Ok(ip as size_t)
 }
@@ -238,13 +236,7 @@ pub fn FSE_readNCount_slice(
     mut tableLogPtr: &mut std::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
-    FSE_readNCount_bmi2(
-        normalizedCounter,
-        maxSVPtr,
-        tableLogPtr,
-        headerBuffer,
-        0 as std::ffi::c_int,
-    )
+    FSE_readNCount_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer, 0)
 }
 
 /// Max runtime value of tableLog (due to static allocation); can be modified up to HUF_TABLELOG_ABSOLUTEMAX.
@@ -296,7 +288,7 @@ pub unsafe fn HUF_readStats(
         src,
         srcSize,
         &mut wksp,
-        0 as std::ffi::c_int,
+        0,
     )
 }
 #[inline(always)]
@@ -361,7 +353,7 @@ fn HUF_readStats_body(
         *rank_stat += 1;
         weightTotal += (1 << huffWeight[n] >> 1) as u32;
     }
-    if weightTotal == 0 as std::ffi::c_int as u32 {
+    if weightTotal == 0 {
         return Err(Error::corruption_detected);
     }
 
