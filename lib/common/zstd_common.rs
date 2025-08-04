@@ -16,13 +16,11 @@ unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
 unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const std::ffi::c_char {
     ERR_getErrorString(ERR_getErrorCode(code))
 }
-pub const ZSTD_VERSION_MAJOR: std::ffi::c_int = 1 as std::ffi::c_int;
-pub const ZSTD_VERSION_MINOR: std::ffi::c_int = 5 as std::ffi::c_int;
-pub const ZSTD_VERSION_RELEASE: std::ffi::c_int = 8 as std::ffi::c_int;
+pub const ZSTD_VERSION_MAJOR: std::ffi::c_int = 1;
+pub const ZSTD_VERSION_MINOR: std::ffi::c_int = 5;
+pub const ZSTD_VERSION_RELEASE: std::ffi::c_int = 8;
 pub const ZSTD_VERSION_NUMBER: std::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 as std::ffi::c_int * 100 as std::ffi::c_int
-        + ZSTD_VERSION_MINOR * 100 as std::ffi::c_int
-        + ZSTD_VERSION_RELEASE;
+    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
 #[export_name = crate::prefix!(ZSTD_versionNumber)]
 pub unsafe extern "C" fn ZSTD_versionNumber() -> std::ffi::c_uint {
     ZSTD_VERSION_NUMBER as std::ffi::c_uint
@@ -49,5 +47,5 @@ pub unsafe extern "C" fn ZSTD_getErrorString(mut code: ZSTD_ErrorCode) -> *const
 }
 #[export_name = crate::prefix!(ZSTD_isDeterministicBuild)]
 pub unsafe extern "C" fn ZSTD_isDeterministicBuild() -> std::ffi::c_int {
-    1 as std::ffi::c_int
+    1
 }

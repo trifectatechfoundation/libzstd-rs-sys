@@ -229,7 +229,7 @@ impl BIT_DStream_t {
     #[inline(always)]
     pub fn reload(&mut self) -> StreamStatus {
         if self.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
-            static zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
+            static zeroFilled: BitContainerType = 0;
             self.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
 
             return StreamStatus::Overflow;

@@ -23,51 +23,48 @@ extern "C" {
 }
 pub type size_t = std::ffi::c_ulong;
 pub type fixedPoint_24_8 = u32;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
-pub const LTLOG: std::ffi::c_int = 13 as std::ffi::c_int;
-pub const LTSIZE: std::ffi::c_int = (1 as std::ffi::c_int) << LTLOG;
-pub const LTMASK: std::ffi::c_int = LTSIZE - 1 as std::ffi::c_int;
+pub const NULL: std::ffi::c_int = 0;
+pub const LTLOG: std::ffi::c_int = 13;
+pub const LTSIZE: std::ffi::c_int = (1) << LTLOG;
+pub const LTMASK: std::ffi::c_int = LTSIZE - 1;
 unsafe extern "C" fn RDG_rand(mut src: *mut u32) -> u32 {
-    static mut prime1: u32 = 2654435761 as std::ffi::c_uint;
-    static mut prime2: u32 = 2246822519 as std::ffi::c_uint;
+    static mut prime1: u32 = 2654435761;
+    static mut prime2: u32 = 2246822519;
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;
-    rand32 =
-        rand32 << 13 as std::ffi::c_int | rand32 >> (32 as std::ffi::c_int - 13 as std::ffi::c_int);
+    rand32 = rand32 << 13 | rand32 >> (32 - 13);
     *src = rand32;
-    rand32 >> 5 as std::ffi::c_int
+    rand32 >> 5
 }
 unsafe extern "C" fn RDG_fillLiteralDistrib(mut ldt: *mut u8, mut ld: fixedPoint_24_8) {
     let firstChar = (if ld as std::ffi::c_double <= 0.0f64 {
-        0 as std::ffi::c_int
+        0
     } else {
         '(' as i32
     }) as u8;
     let lastChar = (if ld as std::ffi::c_double <= 0.0f64 {
-        255 as std::ffi::c_int
+        255
     } else {
         '}' as i32
     }) as u8;
     let mut character = (if ld as std::ffi::c_double <= 0.0f64 {
-        0 as std::ffi::c_int
+        0
     } else {
         '0' as i32
     }) as u8;
     let mut u: u32 = 0;
-    if ld <= 0 as std::ffi::c_int as fixedPoint_24_8 {
-        ld = 0 as std::ffi::c_int as fixedPoint_24_8;
+    if ld <= 0 {
+        ld = 0;
     }
-    u = 0 as std::ffi::c_int as u32;
+    u = 0;
     while u < LTSIZE as u32 {
-        let weight = (((LTSIZE as u32).wrapping_sub(u) * ld) >> 8 as std::ffi::c_int)
-            .wrapping_add(1 as std::ffi::c_int as u32);
-        let end =
-            if u.wrapping_add(weight) < ((1 as std::ffi::c_int) << 13 as std::ffi::c_int) as u32 {
-                u.wrapping_add(weight)
-            } else {
-                ((1 as std::ffi::c_int) << 13 as std::ffi::c_int) as u32
-            };
+        let weight = (((LTSIZE as u32).wrapping_sub(u) * ld) >> 8).wrapping_add(1);
+        let end = if u.wrapping_add(weight) < ((1) << 13) as u32 {
+            u.wrapping_add(weight)
+        } else {
+            ((1) << 13) as u32
+        };
         while u < end {
             let fresh0 = u;
             u = u.wrapping_add(1);
@@ -88,7 +85,7 @@ unsafe extern "C" fn RDG_rand15Bits(mut seedPtr: *mut u32) -> u32 {
     RDG_rand(seedPtr) & 0x7fff as std::ffi::c_int as u32
 }
 unsafe extern "C" fn RDG_randLength(mut seedPtr: *mut u32) -> u32 {
-    if RDG_rand(seedPtr) & 7 as std::ffi::c_int as u32 != 0 {
+    if RDG_rand(seedPtr) & 7 != 0 {
         return RDG_rand(seedPtr) & 0xf as std::ffi::c_int as u32;
     }
     (RDG_rand(seedPtr) & 0x1ff as std::ffi::c_int as u32)
@@ -105,48 +102,43 @@ unsafe extern "C" fn RDG_genBlock(
     let buffPtr = buffer as *mut u8;
     let matchProba32 = (32768 as std::ffi::c_int as std::ffi::c_double * matchProba) as u32;
     let mut pos = prefixSize;
-    let mut prevOffset = 1 as std::ffi::c_int as u32;
+    let mut prevOffset = 1;
     while matchProba >= 1.0f64 {
         let mut size0 = (RDG_rand(seedPtr) & 3 as std::ffi::c_int as u32) as size_t;
         size0 = (1 as std::ffi::c_int as size_t)
             << (16 as std::ffi::c_int as size_t)
                 .wrapping_add(size0 * 2 as std::ffi::c_int as size_t);
-        size0 = size0.wrapping_add(
-            RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1 as std::ffi::c_int as size_t),
-        );
+        size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
         if buffSize < pos.wrapping_add(size0) {
             memset(
                 buffPtr.offset(pos as isize) as *mut std::ffi::c_void,
-                0 as std::ffi::c_int,
+                0,
                 buffSize.wrapping_sub(pos),
             );
             return;
         }
         memset(
             buffPtr.offset(pos as isize) as *mut std::ffi::c_void,
-            0 as std::ffi::c_int,
+            0,
             size0,
         );
         pos = pos.wrapping_add(size0);
-        *buffPtr.offset(pos.wrapping_sub(1 as std::ffi::c_int as size_t) as isize) =
-            RDG_genChar(seedPtr, ldt);
+        *buffPtr.offset(pos.wrapping_sub(1) as isize) = RDG_genChar(seedPtr, ldt);
     }
-    if pos == 0 as std::ffi::c_int as size_t {
-        *buffPtr.offset(0 as std::ffi::c_int as isize) = RDG_genChar(seedPtr, ldt);
-        pos = 1 as std::ffi::c_int as size_t;
+    if pos == 0 {
+        *buffPtr.offset(0) = RDG_genChar(seedPtr, ldt);
+        pos = 1;
     }
     while pos < buffSize {
         if RDG_rand15Bits(seedPtr) < matchProba32 {
-            let length = (RDG_randLength(seedPtr)).wrapping_add(4 as std::ffi::c_int as u32);
+            let length = (RDG_randLength(seedPtr)).wrapping_add(4);
             let d = (if pos.wrapping_add(length as size_t) < buffSize {
                 pos.wrapping_add(length as size_t)
             } else {
                 buffSize
             }) as u32;
-            let repeatOffset = (RDG_rand(seedPtr) & 15 as std::ffi::c_int as u32
-                == 2 as std::ffi::c_int as u32) as std::ffi::c_int
-                as u32;
-            let randOffset = (RDG_rand15Bits(seedPtr)).wrapping_add(1 as std::ffi::c_int as u32);
+            let repeatOffset = (RDG_rand(seedPtr) & 15 == 2) as std::ffi::c_int as u32;
+            let randOffset = (RDG_rand15Bits(seedPtr)).wrapping_add(1);
             let offset = if repeatOffset != 0 {
                 prevOffset
             } else {
@@ -202,14 +194,7 @@ pub unsafe extern "C" fn RDG_genBuffer(
         ldt.as_mut_ptr(),
         (litProba * 256 as std::ffi::c_int as std::ffi::c_double + 0.001f64) as fixedPoint_24_8,
     );
-    RDG_genBlock(
-        buffer,
-        size,
-        0 as std::ffi::c_int as size_t,
-        matchProba,
-        ldt.as_mut_ptr(),
-        &mut seed32,
-    );
+    RDG_genBlock(buffer, size, 0, matchProba, ldt.as_mut_ptr(), &mut seed32);
 }
 #[no_mangle]
 pub unsafe extern "C" fn RDG_genStdout(
@@ -219,16 +204,14 @@ pub unsafe extern "C" fn RDG_genStdout(
     mut seed: std::ffi::c_uint,
 ) {
     let mut seed32 = seed;
-    let stdBlockSize =
-        (128 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t;
-    let stdDictSize =
-        (32 as std::ffi::c_int * ((1 as std::ffi::c_int) << 10 as std::ffi::c_int)) as size_t;
+    let stdBlockSize = (128 * ((1) << 10)) as size_t;
+    let stdDictSize = (32 * ((1) << 10)) as size_t;
     let buff = malloc(stdDictSize.wrapping_add(stdBlockSize)) as *mut u8;
-    let mut total = 0 as std::ffi::c_int as u64;
+    let mut total = 0;
     let mut ldt: [u8; 8192] = [0; 8192];
     if buff.is_null() {
         perror(b"datagen\0" as *const u8 as *const std::ffi::c_char);
-        exit(1 as std::ffi::c_int);
+        exit(1);
     }
     if litProba <= 0.0f64 {
         litProba = matchProba / 4.5f64;
@@ -245,7 +228,7 @@ pub unsafe extern "C" fn RDG_genStdout(
     RDG_genBlock(
         buff as *mut std::ffi::c_void,
         stdDictSize,
-        0 as std::ffi::c_int as size_t,
+        0,
         matchProba,
         ldt.as_mut_ptr(),
         &mut seed32,
@@ -267,12 +250,7 @@ pub unsafe extern "C" fn RDG_genStdout(
             &mut seed32,
         );
         total = (total as std::ffi::c_ulong).wrapping_add(genBlockSize) as u64 as u64;
-        let unused = fwrite(
-            buff as *const std::ffi::c_void,
-            1 as std::ffi::c_int as std::ffi::c_ulong,
-            genBlockSize,
-            stdout,
-        );
+        let unused = fwrite(buff as *const std::ffi::c_void, 1, genBlockSize, stdout);
         memcpy(
             buff as *mut std::ffi::c_void,
             buff.offset(stdBlockSize as isize) as *const std::ffi::c_void,

@@ -53,9 +53,9 @@ pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-pub const NULL: std::ffi::c_int = 0 as std::ffi::c_int;
+pub const NULL: std::ffi::c_int = 0;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
-static mut g_mutexInit: std::ffi::c_int = 0 as std::ffi::c_int;
+static mut g_mutexInit: std::ffi::c_int = 0;
 static mut g_mutex: pthread_mutex_t = PTHREAD_MUTEX_INITIALIZER;
 static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 #[no_mangle]
@@ -75,7 +75,7 @@ pub unsafe extern "C" fn TRACE_enable(mut filename: *const std::ffi::c_char) {
     g_enableTime = UTIL_getTime();
     if g_mutexInit == 0 {
         if pthread_mutex_init(&mut g_mutex, std::ptr::null::<pthread_mutexattr_t>()) == 0 {
-            g_mutexInit = 1 as std::ffi::c_int;
+            g_mutexInit = 1;
         } else {
             TRACE_finish();
         }
@@ -89,7 +89,7 @@ pub unsafe extern "C" fn TRACE_finish() {
     g_traceFile = NULL as *mut FILE;
     if g_mutexInit != 0 {
         pthread_mutex_destroy(&mut g_mutex);
-        g_mutexInit = 0 as std::ffi::c_int;
+        g_mutexInit = 0;
     }
 }
 unsafe extern "C" fn TRACE_log(
@@ -97,8 +97,8 @@ unsafe extern "C" fn TRACE_log(
     mut duration: PTime,
     mut trace: *const ZSTD_Trace,
 ) {
-    let mut level = 0 as std::ffi::c_int;
-    let mut workers = 0 as std::ffi::c_int;
+    let mut level = 0;
+    let mut workers = 0;
     let ratio = (*trace).uncompressedSize as std::ffi::c_double
         / (*trace).compressedSize as std::ffi::c_double;
     let speed = (*trace).uncompressedSize as std::ffi::c_double
@@ -134,7 +134,7 @@ unsafe extern "C" fn TRACE_log(
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_compress_begin(mut cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
     if g_traceFile.is_null() {
-        return 0 as std::ffi::c_int as ZSTD_TraceCtx;
+        return 0;
     }
     UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
@@ -148,7 +148,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_end(
     let durationNanos = if endNanos > beginNanos {
         endNanos.wrapping_sub(beginNanos)
     } else {
-        0 as std::ffi::c_int as PTime
+        0
     };
     TRACE_log(
         b"compress\0" as *const u8 as *const std::ffi::c_char,
@@ -159,7 +159,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_end(
 #[no_mangle]
 pub unsafe extern "C" fn ZSTD_trace_decompress_begin(mut dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
     if g_traceFile.is_null() {
-        return 0 as std::ffi::c_int as ZSTD_TraceCtx;
+        return 0;
     }
     UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
@@ -173,7 +173,7 @@ pub unsafe extern "C" fn ZSTD_trace_decompress_end(
     let durationNanos = if endNanos > beginNanos {
         endNanos.wrapping_sub(beginNanos)
     } else {
-        0 as std::ffi::c_int as PTime
+        0
     };
     TRACE_log(
         b"decompress\0" as *const u8 as *const std::ffi::c_char,
