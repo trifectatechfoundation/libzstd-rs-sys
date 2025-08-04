@@ -3,7 +3,7 @@ use core::arch::asm;
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-use core::ptr;
+use core::{mem::MaybeUninit, ptr};
 
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount;
@@ -269,13 +269,25 @@ unsafe extern "C" fn ZSTD_copy4(
 ) {
     libc::memcpy(dst, src, 4 as libc::size_t);
 }
-unsafe extern "C" fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
+
+impl ZSTD_DCtx {
+    fn block_size_max(&self) -> usize {
+        if self.isFrameDecompression != 0 {
+            self.fParams.blockSizeMax as usize
+        } else {
+            ZSTD_BLOCKSIZE_MAX as usize
+        }
+    }
+}
+
+unsafe fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
     (if (*dctx).isFrameDecompression != 0 {
         (*dctx).fParams.blockSizeMax
     } else {
         ZSTD_BLOCKSIZE_MAX as core::ffi::c_uint
     }) as size_t
 }
+
 #[export_name = crate::prefix!(ZSTD_getcBlockSize)]
 pub unsafe extern "C" fn ZSTD_getcBlockSize(
     mut src: *const core::ffi::c_void,
@@ -4195,30 +4207,54 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
     mut srcSize: size_t,
     streaming: streaming_operation,
 ) -> size_t {
+    let Some(dctx) = (unsafe { dctx.as_mut() }) else {
+        todo!()
+    };
+
+    let dst = if dst.is_null() {
+        &mut []
+    } else {
+        core::slice::from_raw_parts_mut(dst.cast::<MaybeUninit<u8>>(), dstCapacity as usize)
+    };
+
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+    };
+
     let Ok(streaming) = StreamingOperation::try_from(streaming) else {
         todo!()
     };
-    ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, srcSize, streaming)
+
+    ZSTD_decompressBlock_internal_help(dctx, dst, src, streaming)
 }
 
 unsafe fn ZSTD_decompressBlock_internal_help(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut std::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const std::ffi::c_void,
-    mut srcSize: size_t,
+    mut dctx: &mut ZSTD_DCtx,
+    mut dst: &mut [MaybeUninit<u8>],
+    mut src: &[u8],
     streaming: StreamingOperation,
 ) -> size_t {
-    let mut ip = src as *const u8;
-    if srcSize > ZSTD_blockSizeMax(dctx) {
+    if src.len() > dctx.block_size_max() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
+
+    let srcSize = src.len() as size_t;
+    let src = src.as_ptr() as *const std::ffi::c_void;
+
+    let dstCapacity = dst.len() as size_t;
+    let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
+
     let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, srcSize, dst, dstCapacity, streaming);
     if ERR_isError(litCSize) != 0 {
         return litCSize;
     }
+
+    let mut ip = src as *const u8;
     ip = ip.offset(litCSize as isize);
-    srcSize = srcSize.wrapping_sub(litCSize);
+
+    let mut srcSize = srcSize.wrapping_sub(litCSize);
     let blockSizeMax = if dstCapacity < ZSTD_blockSizeMax(dctx) {
         dstCapacity
     } else {
@@ -4302,6 +4338,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         )
     }
 }
+
 #[export_name = crate::prefix!(ZSTD_checkContinuity)]
 pub unsafe extern "C" fn ZSTD_checkContinuity(
     mut dctx: *mut ZSTD_DCtx,
