@@ -4186,6 +4186,17 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
     mut srcSize: size_t,
     streaming: streaming_operation,
 ) -> size_t {
+    ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, srcSize, streaming)
+}
+
+unsafe fn ZSTD_decompressBlock_internal_help(
+    mut dctx: *mut ZSTD_DCtx,
+    mut dst: *mut std::ffi::c_void,
+    mut dstCapacity: size_t,
+    mut src: *const std::ffi::c_void,
+    mut srcSize: size_t,
+    streaming: streaming_operation,
+) -> size_t {
     let mut ip = src as *const u8;
     if srcSize > ZSTD_blockSizeMax(dctx) {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
