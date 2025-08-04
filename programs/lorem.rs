@@ -321,20 +321,6 @@ unsafe extern "C" fn countFreqs(
             .as_ptr(),
         );
     }
-    'c_1439: {
-        if g_distribCount <= 650 as std::ffi::c_int as std::ffi::c_uint {
-        } else {
-            __assert_fail(
-                b"g_distribCount <= DISTRIB_SIZE_MAX\0" as *const u8 as *const std::ffi::c_char,
-                b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-                122 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 60], &[std::ffi::c_char; 60]>(
-                    b"void countFreqs(const char **, size_t, const int *, size_t)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
 }
 unsafe extern "C" fn init_word_distrib(
     mut words: *mut *const std::ffi::c_char,
@@ -396,20 +382,6 @@ unsafe extern "C" fn writeLastCharacters() {
             .as_ptr(),
         );
     }
-    'c_1048: {
-        if g_maxChars >= g_nbChars {
-        } else {
-            __assert_fail(
-                b"g_maxChars >= g_nbChars\0" as *const u8 as *const std::ffi::c_char,
-                b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-                168 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 31], &[std::ffi::c_char; 31]>(
-                    b"void writeLastCharacters(void)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     if lastChars == 0 as std::ffi::c_int as size_t {
         return;
     }
@@ -563,20 +535,6 @@ pub unsafe extern "C" fn LOREM_genBlock(
             .as_ptr(),
         );
     }
-    'c_1558: {
-        if size < 2147483647 as std::ffi::c_int as size_t {
-        } else {
-            __assert_fail(
-                b"size < INT_MAX\0" as *const u8 as *const std::ffi::c_char,
-                b"lorem.c\0" as *const u8 as *const std::ffi::c_char,
-                261 as std::ffi::c_int as std::ffi::c_uint,
-                (*::core::mem::transmute::<&[u8; 62], &[std::ffi::c_char; 62]>(
-                    b"size_t LOREM_genBlock(void *, size_t, unsigned int, int, int)\0",
-                ))
-                .as_ptr(),
-            );
-        }
-    };
     g_maxChars = size;
     g_nbChars = 0 as std::ffi::c_int as size_t;
     g_randRoot = seed;
