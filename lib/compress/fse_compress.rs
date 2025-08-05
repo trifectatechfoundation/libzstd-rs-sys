@@ -1,10 +1,8 @@
+use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
 use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type BitContainerType = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -29,59 +27,6 @@ pub struct FSE_CState_t {
 pub struct FSE_symbolCompressionTransform {
     pub deltaFindState: core::ffi::c_int,
     pub deltaNbBits: u32,
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const core::ffi::c_void) -> u16 {
-    *(ptr as *const unalign16)
-}
-#[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut core::ffi::c_void, mut value: u32) {
-    *(memPtr as *mut unalign32) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_write64(mut memPtr: *mut core::ffi::c_void, mut value: u64) {
-    *(memPtr as *mut unalign64) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut core::ffi::c_void, mut val32: u32) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE64(mut memPtr: *mut core::ffi::c_void, mut val64: u64) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write64(memPtr, val64);
-    } else {
-        MEM_write64(memPtr, MEM_swap64(val64));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLEST(mut memPtr: *mut core::ffi::c_void, mut val: size_t) {
-    if MEM_32bits() != 0 {
-        MEM_writeLE32(memPtr, val as u32);
-    } else {
-        MEM_writeLE64(memPtr, val);
-    };
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

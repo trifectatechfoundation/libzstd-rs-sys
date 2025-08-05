@@ -1,6 +1,6 @@
+use crate::lib::common::mem::{MEM_readLEST, MEM_write64};
+
 type size_t = core::ffi::c_ulong;
-type unalign32 = u32;
-type unalign64 = u64;
 type C2RustUnnamed = core::ffi::c_uint;
 const ZSTD_error_maxCode: C2RustUnnamed = 120;
 const ZSTD_error_externalSequences_invalid: C2RustUnnamed = 107;
@@ -85,12 +85,7 @@ struct FSE_DState_t {
     state: size_t,
     table: *const core::ffi::c_void,
 }
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong
-        == 4 as core::ffi::c_int as core::ffi::c_ulong) as core::ffi::c_int as core::ffi::c_uint
-}
-use crate::{lib::common::entropy_common_old::FSE_readNCount_bmi2, MEM_readLEST, MEM_write64};
+use crate::lib::common::entropy_common_old::FSE_readNCount_bmi2;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint

@@ -4,6 +4,7 @@ use libc::{
     __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
     remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
 };
+use libzstd_rs::lib::common::mem::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary_byReference, ZSTD_CCtx_refPrefix,
@@ -19,7 +20,6 @@ use libzstd_rs::lib::decompress::zstd_decompress::{
 };
 use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 use libzstd_rs::lib::zstd::*;
-use libzstd_rs::{MEM_readLE24, MEM_readLE32};
 
 use crate::fileio_asyncio::{
     AIO_ReadPool_closeFile, AIO_ReadPool_consumeAndRefill, AIO_ReadPool_consumeBytes,

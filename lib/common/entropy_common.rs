@@ -1,7 +1,6 @@
 use core::hint::likely;
 
 pub type size_t = core::ffi::c_ulong;
-pub type unalign32 = u32;
 pub type C2RustUnnamed = core::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed = 32;
 pub const HUF_flags_disableAsm: C2RustUnnamed = 16;
