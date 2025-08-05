@@ -1,21 +1,10 @@
-use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::error_private::{
+    ERR_getErrorCode, ERR_getErrorName, ERR_getErrorString, ERR_isError,
+};
 use crate::lib::zstd::*;
 
 pub type ERR_enum = ZSTD_ErrorCode;
 pub type size_t = core::ffi::c_ulong;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
 pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
 pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;

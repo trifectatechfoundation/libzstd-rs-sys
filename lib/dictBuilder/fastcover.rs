@@ -2,6 +2,7 @@ use core::ptr;
 
 use libc::{fflush, fprintf, free, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
 use crate::lib::dictBuilder::cover::{
@@ -108,11 +109,7 @@ unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe extern "C" fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
 pub const NULL: core::ffi::c_int = 0;
 pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;

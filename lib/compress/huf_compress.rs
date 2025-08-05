@@ -1,6 +1,7 @@
 use core::ptr;
 
 use crate::lib::common::entropy_common::HUF_readStats;
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
@@ -92,10 +93,6 @@ pub union C2RustUnnamed_1 {
     pub writeCTable_wksp: HUF_WriteCTableWksp,
     pub hist_wksp: [u32; 1024],
 }
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 #[inline]
 const fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
@@ -110,7 +107,7 @@ pub const HUF_TABLELOG_DEFAULT: core::ffi::c_int = 11;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_CTABLEBOUND: core::ffi::c_int = 129;
 pub const NULL: core::ffi::c_int = 0;
-pub const HUF_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe extern "C" fn HUF_alignUpWorkspace(
     mut workspace: *mut core::ffi::c_void,
     mut workspaceSizePtr: *mut size_t,

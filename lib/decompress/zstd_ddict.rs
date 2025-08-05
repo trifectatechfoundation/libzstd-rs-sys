@@ -1,5 +1,6 @@
 use libc::free;
 
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_entropyDTables_t};
@@ -41,7 +42,7 @@ pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_FRAMEIDSIZE: core::ffi::c_int = 4;
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
@@ -65,10 +66,6 @@ unsafe extern "C" fn ZSTD_customFree(
             free(ptr);
         }
     }
-}
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {

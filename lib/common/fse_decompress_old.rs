@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_readLEST, MEM_write64};
 
 type size_t = core::ffi::c_ulong;
@@ -86,10 +87,6 @@ struct FSE_DState_t {
     table: *const core::ffi::c_void,
 }
 use crate::lib::common::entropy_common_old::FSE_readNCount_bmi2;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 #[inline]
 unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
@@ -373,7 +370,7 @@ unsafe extern "C" fn FSE_decodeSymbolFast(
 pub const FSE_MAX_MEMORY_USAGE: core::ffi::c_int = 14 as core::ffi::c_int;
 pub const FSE_MAX_SYMBOL_VALUE: core::ffi::c_int = 255 as core::ffi::c_int;
 pub const FSE_MAX_TABLELOG: core::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2 as core::ffi::c_int;
-pub const FSE_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe extern "C" fn FSE_buildDTable_internal(
     mut dt: *mut FSE_DTable,
     mut normalizedCounter: *const core::ffi::c_short,

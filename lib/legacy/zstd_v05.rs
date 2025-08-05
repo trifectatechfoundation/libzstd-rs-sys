@@ -1,6 +1,6 @@
 use core::ptr;
 
-use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16,
 };
@@ -204,19 +204,6 @@ pub const ZBUFFv05ds_readHeader: ZBUFFv05_dStage = 1;
 pub const ZBUFFv05ds_init: ZBUFFv05_dStage = 0;
 pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
 pub const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb525 as core::ffi::c_uint;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const ZSTDv05_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 11;
 pub const ZSTDv05_DICT_MAGIC: core::ffi::c_uint = 0xec30a435 as core::ffi::c_uint;
 pub const BLOCKSIZE: core::ffi::c_int = 128 * ((1) << 10);
