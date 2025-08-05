@@ -51,7 +51,7 @@ pub const FASTCOVER_MEMMULT: std::ffi::c_int = 1;
 static mut g_maxMemory: size_t = 0;
 pub const NOISELENGTH: std::ffi::c_int = 32;
 static mut g_refreshRate: u64 = 0;
-static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 } ;
+static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const DEBUG: std::ffi::c_int = 0;
 unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
@@ -220,8 +220,8 @@ unsafe extern "C" fn DiB_loadFiles(
     nbSamplesLoaded
 }
 unsafe extern "C" fn DiB_rand(mut src: *mut u32) -> u32 {
-    static mut prime1: u32 = 2654435761;
-    static mut prime2: u32 = 2246822519;
+    static prime1: u32 = 2654435761;
+    static prime2: u32 = 2246822519;
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;

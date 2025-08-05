@@ -556,7 +556,7 @@ unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> std::ffi::c_uint {
         ZSTD_countLeadingZeros32(val as u32) >> 3
     }
 }
-static mut ZSTD_ldm_gearTab: [u64; 256] = [
+static ZSTD_ldm_gearTab: [u64; 256] = [
     0xf5b8f72c5f77775c as std::ffi::c_ulong,
     0x84935f266b7ac412 as std::ffi::c_ulong,
     0xb647ada9ca730ccc as std::ffi::c_ulong,

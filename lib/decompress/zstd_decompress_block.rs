@@ -352,7 +352,7 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
         as std::ffi::c_int as std::ffi::c_long
         != 0
     {
-        static mut zeroFilled: BitContainerType = 0;
+        static zeroFilled: BitContainerType = 0;
         (*bitD).ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
         return BIT_DStream_overflow;
     }
@@ -395,7 +395,7 @@ unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> std::ff
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
 pub const MaxML: std::ffi::c_int = 52;
 pub const MaxLL: std::ffi::c_int = 35;
@@ -403,12 +403,12 @@ pub const MaxOff: std::ffi::c_int = 31;
 pub const MLFSELog: std::ffi::c_int = 9;
 pub const LLFSELog: std::ffi::c_int = 9;
 pub const OffFSELog: std::ffi::c_int = 8;
-static mut LL_bits: [u8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
 pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6;
-static mut ML_bits: [u8; 53] = [
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
@@ -1057,7 +1057,7 @@ pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
     (*dctx).isFrameDecompression = 0;
     ZSTD_decodeLiteralsBlock(dctx, src, srcSize, dst, dstCapacity, not_streaming)
 }
-static mut LL_defaultDTable: [ZSTD_seqSymbol; 65] = [
+static LL_defaultDTable: [ZSTD_seqSymbol; 65] = [
     {
         ZSTD_seqSymbol {
             nextState: 1,
@@ -1579,7 +1579,7 @@ static mut LL_defaultDTable: [ZSTD_seqSymbol; 65] = [
         }
     },
 ];
-static mut OF_defaultDTable: [ZSTD_seqSymbol; 33] = [
+static OF_defaultDTable: [ZSTD_seqSymbol; 33] = [
     {
         ZSTD_seqSymbol {
             nextState: 1,
@@ -1845,7 +1845,7 @@ static mut OF_defaultDTable: [ZSTD_seqSymbol; 33] = [
         }
     },
 ];
-static mut ML_defaultDTable: [ZSTD_seqSymbol; 65] = [
+static ML_defaultDTable: [ZSTD_seqSymbol; 65] = [
     {
         ZSTD_seqSymbol {
             nextState: 1,
@@ -2800,8 +2800,8 @@ unsafe extern "C" fn ZSTD_overlapCopy8(
     mut offset: size_t,
 ) {
     if offset < 8 {
-        static mut dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static mut dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+        static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
+        static dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
         let sub2 = *dec64table.as_ptr().offset(offset as isize);
         *(*op).offset(0) = *(*ip).offset(0);
         *(*op).offset(1) = *(*ip).offset(1);

@@ -491,7 +491,7 @@ pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_i
 pub const FSE_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const HUF_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
-static mut repStartValue: [u32; 3] = [1, 4, 8];
+static repStartValue: [u32; 3] = [1, 4, 8];
 pub const MaxML: std::ffi::c_int = 52;
 pub const MaxLL: std::ffi::c_int = 35;
 pub const MLFSELog: std::ffi::c_int = 9;
@@ -502,7 +502,7 @@ pub const ZDICT_CONTENTSIZE_MIN: std::ffi::c_int = 128;
 pub const NULL: std::ffi::c_int = 0;
 pub const CLOCKS_PER_SEC: std::ffi::c_int = 1000000;
 pub const NOISELENGTH: std::ffi::c_int = 32;
-static mut g_selectivity_default: u32 = 9;
+static g_selectivity_default: u32 = 9;
 unsafe extern "C" fn ZDICT_clockSpan(mut nPrevious: clock_t) -> clock_t {
     clock() - nPrevious
 }

@@ -95,7 +95,7 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint 
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
     (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-static mut BIT_mask: [std::ffi::c_uint; 32] = [
+static BIT_mask: [std::ffi::c_uint; 32] = [
     0 as std::ffi::c_int as std::ffi::c_uint,
     1 as std::ffi::c_int as std::ffi::c_uint,
     3 as std::ffi::c_int as std::ffi::c_uint,
@@ -763,7 +763,7 @@ pub unsafe extern "C" fn FSE_normalizeCount(
     if tableLog < FSE_minTableLog(total, maxSymbolValue) {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
     }
-    static mut rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
+    static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
     let lowProbCount = (if useLowProbCount != 0 { -(1) } else { 1 }) as std::ffi::c_short;
     let scale = (62 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(tableLog) as u64;
     let step = ((1) << 62) / total as u32 as u64;

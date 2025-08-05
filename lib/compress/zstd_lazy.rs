@@ -281,7 +281,7 @@ unsafe extern "C" fn ZSTD_count_2segments(
     }
     matchLength.wrapping_add(ZSTD_count(ip.offset(matchLength as isize), iStart, iEnd))
 }
-static mut prime4bytes: u32 = 2654435761;
+static prime4bytes: u32 = 2654435761;
 unsafe extern "C" fn ZSTD_hash4(mut u: u32, mut h: u32, mut s: u32) -> u32 {
     ((u * prime4bytes) ^ s) >> (32 as std::ffi::c_int as u32).wrapping_sub(h)
 }
@@ -295,7 +295,7 @@ unsafe extern "C" fn ZSTD_hash4PtrS(
 ) -> size_t {
     ZSTD_hash4(MEM_readLE32(ptr), h, s) as size_t
 }
-static mut prime5bytes: u64 = 889523592379;
+static prime5bytes: u64 = 889523592379;
 unsafe extern "C" fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 40 as std::ffi::c_int)) * prime5bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -310,7 +310,7 @@ unsafe extern "C" fn ZSTD_hash5PtrS(
 ) -> size_t {
     ZSTD_hash5(MEM_readLE64(p), h, s)
 }
-static mut prime6bytes: u64 = 227718039650203;
+static prime6bytes: u64 = 227718039650203;
 unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 48 as std::ffi::c_int)) * prime6bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -325,7 +325,7 @@ unsafe extern "C" fn ZSTD_hash6PtrS(
 ) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, s)
 }
-static mut prime7bytes: u64 = 58295818150454627;
+static prime7bytes: u64 = 58295818150454627;
 unsafe extern "C" fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 56 as std::ffi::c_int)) * prime7bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -340,7 +340,7 @@ unsafe extern "C" fn ZSTD_hash7PtrS(
 ) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, s)
 }
-static mut prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
 unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     ((u * prime8bytes) ^ s) >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
 }

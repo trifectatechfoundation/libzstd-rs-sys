@@ -310,7 +310,7 @@ unsafe extern "C" fn BIT_reloadDStream(mut bitD: *mut BIT_DStream_t) -> BIT_DStr
         as std::ffi::c_long
         != 0
     {
-        static mut zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
+        static zeroFilled: BitContainerType = 0 as std::ffi::c_int as BitContainerType;
         (*bitD).ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
         return BIT_DStream_overflow;
     }

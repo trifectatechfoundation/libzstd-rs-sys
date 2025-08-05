@@ -150,21 +150,21 @@ pub const ZSTD_d_refMultipleDDicts: std::ffi::c_int = 1003;
 pub const ZSTD_d_disableHuffmanAssembly: std::ffi::c_int = 1004;
 pub const ZSTD_d_maxBlockSize: std::ffi::c_int = 1005;
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-static mut repStartValue: [u32; 3] = [1, 4, 8];
+static repStartValue: [u32; 3] = [1, 4, 8];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10;
 static ZSTD_fcs_fieldSize: [size_t; 4] = [0, 2, 4, 8];
 static ZSTD_did_fieldSize: [size_t; 4] = [0, 1, 2, 4];
 pub const ZSTD_FRAMEIDSIZE: std::ffi::c_int = 4;
 pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MaxML: std::ffi::c_int = 52;
 pub const MaxLL: std::ffi::c_int = 35;
 pub const MaxOff: std::ffi::c_int = 31;
-static mut LL_bits: [U8; 36] = [
+static LL_bits: [U8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut ML_bits: [U8; 53] = [
+static ML_bits: [U8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];

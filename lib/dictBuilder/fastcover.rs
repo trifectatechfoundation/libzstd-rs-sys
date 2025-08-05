@@ -113,7 +113,7 @@ unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
         MEM_swap64(MEM_read64(memPtr))
     }
 }
-static mut prime6bytes: u64 = 227718039650203;
+static prime6bytes: u64 = 227718039650203;
 unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 48 as std::ffi::c_int)) * prime6bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -121,7 +121,7 @@ unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
-static mut prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
 unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     ((u * prime8bytes) ^ s) >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
 }
@@ -151,7 +151,7 @@ unsafe extern "C" fn FASTCOVER_hashPtrToIndex(
     }
     ZSTD_hash8Ptr(p, f)
 }
-static mut FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = [
+static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = [
     {
         FASTCOVER_accel_t {
             finalize: 100,

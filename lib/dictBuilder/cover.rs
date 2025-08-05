@@ -203,7 +203,7 @@ unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: u32) ->
     COVER_map_clear(map);
     1
 }
-static mut COVER_prime4bytes: u32 = 2654435761;
+static COVER_prime4bytes: u32 = 2654435761;
 unsafe extern "C" fn COVER_map_hash(mut map: *mut COVER_map_t, mut key: u32) -> u32 {
     (key * COVER_prime4bytes) >> (32 as std::ffi::c_int as u32).wrapping_sub((*map).sizeLog)
 }
