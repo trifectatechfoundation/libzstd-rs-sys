@@ -150,7 +150,6 @@ unsafe extern "C" fn FSE_readNCount_body(
     remaining = ((1 as std::ffi::c_int) << nbBits) + 1 as std::ffi::c_int;
     threshold = (1 as std::ffi::c_int) << nbBits;
     nbBits += 1;
-    nbBits;
     loop {
         if previous0 != 0 {
             let mut repeats =
@@ -219,7 +218,6 @@ unsafe extern "C" fn FSE_readNCount_body(
             bitCount += nbBits;
         }
         count -= 1;
-        count;
         if count >= 0 as std::ffi::c_int {
             remaining -= count;
         } else {
@@ -477,13 +475,11 @@ pub(crate) unsafe fn HUF_readStats_body(
         }
         let fresh1 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
-        *fresh1;
         weightTotal = weightTotal.wrapping_add(
             ((1 as std::ffi::c_int) << *huffWeight.offset(n_0 as isize) as std::ffi::c_int
                 >> 1 as std::ffi::c_int) as u32,
         );
         n_0 = n_0.wrapping_add(1);
-        n_0;
     }
     if weightTotal == 0 as std::ffi::c_int as u32 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -504,7 +500,6 @@ pub(crate) unsafe fn HUF_readStats_body(
     *huffWeight.offset(oSize as isize) = lastWeight as u8;
     let fresh2 = &mut (*rankStats.offset(lastWeight as isize));
     *fresh2 = (*fresh2).wrapping_add(1);
-    *fresh2;
     if *rankStats.offset(1 as std::ffi::c_int as isize) < 2 as std::ffi::c_int as u32
         || *rankStats.offset(1 as std::ffi::c_int as isize) & 1 as std::ffi::c_int as u32 != 0
     {

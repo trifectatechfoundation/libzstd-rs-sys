@@ -299,7 +299,6 @@ unsafe extern "C" fn countFreqs(
         lmax = *weights.offset(len as isize);
         total = total.wrapping_add(lmax as std::ffi::c_uint);
         w = w.wrapping_add(1);
-        w;
     }
     g_distribCount = total;
     if g_distribCount <= 650 {
@@ -339,10 +338,8 @@ unsafe extern "C" fn init_word_distrib(
             d = d.wrapping_add(1);
             *g_distrib.as_mut_ptr().offset(fresh0 as isize) = w as std::ffi::c_int;
             l += 1;
-            l;
         }
         w = w.wrapping_add(1);
-        w;
     }
 }
 static mut g_ptr: *mut std::ffi::c_char = NULL as *mut std::ffi::c_char;
@@ -455,7 +452,6 @@ unsafe extern "C" fn generateSentence(mut nbWords: std::ffi::c_int) {
         }
         generateWord(word, sep, (i == 0) as std::ffi::c_int);
         i += 1;
-        i;
     }
 }
 unsafe extern "C" fn generateParagraph(mut nbSentences: std::ffi::c_int) {
@@ -465,7 +461,6 @@ unsafe extern "C" fn generateParagraph(mut nbSentences: std::ffi::c_int) {
         let mut wordsPerSentence = about(11);
         generateSentence(wordsPerSentence);
         i += 1;
-        i;
     }
     if g_nbChars < g_maxChars {
         let fresh2 = g_nbChars;
@@ -492,7 +487,6 @@ unsafe extern "C" fn generateFirstSentence() {
         }
         generateWord(word, separator, (i == 0) as std::ffi::c_int);
         i += 1;
-        i;
     }
     generateWord(
         *kWords.as_mut_ptr().offset(18),

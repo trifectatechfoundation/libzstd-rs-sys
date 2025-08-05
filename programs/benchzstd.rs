@@ -302,7 +302,6 @@ unsafe extern "C" fn XXH64_finalize(
         hash = (::core::intrinsics::rotate_left(hash, 11 as u32) as std::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_1) as xxh_u64;
         len = len.wrapping_sub(1);
-        len;
     }
     XXH64_avalanche(hash)
 }
@@ -384,7 +383,6 @@ unsafe extern "C" fn uintSize(mut value: std::ffi::c_uint) -> size_t {
     let mut size = 1 as std::ffi::c_int as size_t;
     while value >= 10 {
         size = size.wrapping_add(1);
-        size;
         value = value.wrapping_div(10);
     }
     size
@@ -447,7 +445,6 @@ unsafe extern "C" fn formatString_u(
             *buffer.offset(fresh2 as isize) = *formatString.offset(i as isize);
         } else {
             i += 1;
-            i;
             if *formatString.offset(i as isize) as std::ffi::c_int == 'u' as i32 {
                 if written.wrapping_add(valueSize) >= buffer_size {
                     abort();
@@ -467,7 +464,6 @@ unsafe extern "C" fn formatString_u(
             }
         }
         i += 1;
-        i;
     }
     if written < buffer_size {
         *buffer.offset(written as isize) = '\0' as i32 as std::ffi::c_char;
@@ -1244,7 +1240,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             totalDSize64 = totalDSize64.wrapping_add(fSize64);
             srcPtr = srcPtr.offset(*fileSizes.offset(fileNb as isize) as isize);
             fileNb = fileNb.wrapping_add(1);
-            fileNb;
         }
         let decodedSize = totalDSize64;
         if decodedSize == totalDSize64 {
@@ -1400,10 +1395,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 benchResult.cSize = chunkSize;
             }
             chunkID = chunkID.wrapping_add(1);
-            chunkID;
         }
         fileNb_0 = fileNb_0.wrapping_add(1);
-        fileNb_0;
     }
     nbChunks = chunkID;
     if (*adv).mode as std::ffi::c_uint == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint {
@@ -1775,7 +1768,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     }
                     bacc = bacc.wrapping_add(*srcSizes.offset(segNb as isize));
                     segNb = segNb.wrapping_add(1);
-                    segNb;
                 }
                 pos = u.wrapping_sub(bacc) as u32;
                 bNb = pos.wrapping_div((128 * ((1) << 10)) as std::ffi::c_uint);
@@ -1804,7 +1796,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
-                    n;
                 }
                 fprintf(
                     stderr,
@@ -1822,7 +1813,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);
-                    n;
                 }
                 fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
                 fflush(NULL as *mut FILE);
@@ -1840,7 +1830,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
-                    n;
                 }
                 fprintf(
                     stderr,
@@ -1857,7 +1846,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);
-                    n;
                 }
                 fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
                 fflush(NULL as *mut FILE);
@@ -1871,7 +1859,6 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     fflush(NULL as *mut FILE);
                 }
                 u = u.wrapping_add(1);
-                u;
             }
         }
     }
@@ -2256,7 +2243,6 @@ unsafe extern "C" fn BMK_benchCLevels(
             return 1;
         }
         level += 1;
-        level;
     }
     0
 }
@@ -2444,7 +2430,6 @@ unsafe extern "C" fn BMK_loadFiles(
             fclose(f);
         }
         n = n.wrapping_add(1);
-        n;
     }
     if totalSize == 0 {
         if displayLevel >= 1 {

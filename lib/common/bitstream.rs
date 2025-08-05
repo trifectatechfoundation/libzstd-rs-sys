@@ -277,14 +277,14 @@ mod tests {
 
     #[test]
     fn test_new_empty_buffer() {
-        let result = unsafe { BIT_DStream_t::new(&[]) };
+        let result = BIT_DStream_t::new(&[]);
         assert!(result.is_err(), "Should fail on empty input");
     }
 
     #[test]
     fn test_new_ilog2_undefined() {
         let buffer = vec![0b00000000];
-        let result = unsafe { BIT_DStream_t::new(&buffer) };
+        let result = BIT_DStream_t::new(&buffer);
         assert!(result.is_err(), "Should fail when ilog2 is undefined");
     }
 
@@ -294,8 +294,7 @@ mod tests {
     #[test]
     fn test_new_success() {
         let buffer = [0b10101010, 0b11110000, END_MARK];
-        let stream =
-            unsafe { BIT_DStream_t::new(&buffer) }.expect("BIT_DStream_t::new should succeed");
+        let stream = BIT_DStream_t::new(&buffer).expect("BIT_DStream_t::new should succeed");
         assert!(stream.ptr >= stream.start);
         assert!(stream.bitContainer != 0);
     }
@@ -303,7 +302,7 @@ mod tests {
     #[test]
     fn test_look_and_read_bits() {
         let buffer = [0b10101010, 0b11001100, END_MARK];
-        let mut stream = unsafe { BIT_DStream_t::new(&buffer) }.unwrap();
+        let mut stream = BIT_DStream_t::new(&buffer).unwrap();
 
         let consumed = stream.bitsConsumed;
 
@@ -319,7 +318,7 @@ mod tests {
     #[test]
     fn test_look_and_read_bits_fast() {
         let buffer = [0xFF, 0xAA, END_MARK];
-        let mut stream = unsafe { BIT_DStream_t::new(&buffer) }.unwrap();
+        let mut stream = BIT_DStream_t::new(&buffer).unwrap();
 
         let consumed = stream.bitsConsumed;
 
@@ -338,7 +337,7 @@ mod tests {
         let end_mark_log = end_mark.ilog2();
 
         let buffer = [0b10101010, 0b11001100, end_mark];
-        let mut stream = unsafe { BIT_DStream_t::new(&buffer) }.unwrap();
+        let mut stream = BIT_DStream_t::new(&buffer).unwrap();
 
         let consumed = stream.bitsConsumed;
 
@@ -354,7 +353,7 @@ mod tests {
     #[test]
     fn test_reload_end_of_buffer() {
         let buffer = [0b00001111, END_MARK];
-        let mut stream = unsafe { BIT_DStream_t::new(&buffer) }.unwrap();
+        let mut stream = BIT_DStream_t::new(&buffer).unwrap();
 
         assert!(
             matches!(

@@ -208,7 +208,6 @@ pub unsafe extern "C" fn UTIL_fstat(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if fd >= 0 {
         ret = (fstat(fd, statbuf) == 0) as std::ffi::c_int;
@@ -217,7 +216,6 @@ pub unsafe extern "C" fn UTIL_fstat(
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -253,7 +251,6 @@ pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: std::ffi::c_int) -> std::f
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     ret = (fd >= 0
         && UTIL_fstat(
@@ -264,7 +261,6 @@ pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: std::ffi::c_int) -> std::f
         && UTIL_isRegularFileStat(&mut statbuf) != 0) as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -295,13 +291,11 @@ pub unsafe extern "C" fn UTIL_isRegularFile(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isRegularFileStat(&mut statbuf) != 0)
         as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -349,13 +343,11 @@ pub unsafe extern "C" fn UTIL_fchmod(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if statbuf.is_null() {
         if UTIL_fstat(fd, filename, &mut localStatBuf) == 0 {
             if g_traceFileStat != 0 {
                 g_traceDepth -= 1;
-                g_traceDepth;
                 fprintf(
                     stderr,
                     b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -371,7 +363,6 @@ pub unsafe extern "C" fn UTIL_fchmod(
     if UTIL_isRegularFileStat(statbuf) == 0 {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -394,12 +385,10 @@ pub unsafe extern "C" fn UTIL_fchmod(
             fprintf(stderr, b"fchmod\0" as *const u8 as *const std::ffi::c_char);
             fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
             g_traceDepth += 1;
-            g_traceDepth;
         }
         ret = fchmod(fd, permissions);
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -410,7 +399,6 @@ pub unsafe extern "C" fn UTIL_fchmod(
         }
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -432,12 +420,10 @@ pub unsafe extern "C" fn UTIL_fchmod(
             fprintf(stderr, b"chmod\0" as *const u8 as *const std::ffi::c_char);
             fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
             g_traceDepth += 1;
-            g_traceDepth;
         }
         ret_0 = chmod(filename, permissions);
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -448,7 +434,6 @@ pub unsafe extern "C" fn UTIL_fchmod(
         }
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -480,7 +465,6 @@ pub unsafe extern "C" fn UTIL_utime(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     let mut timebuf: [timespec; 2] = [{
         timespec {
@@ -498,7 +482,6 @@ pub unsafe extern "C" fn UTIL_utime(
     *__errno_location() = 0;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -564,14 +547,12 @@ pub unsafe extern "C" fn UTIL_setFDStat(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if UTIL_fstat(fd, filename, &mut curStatBuf) == 0
         || UTIL_isRegularFileStat(&mut curStatBuf) == 0
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -609,7 +590,6 @@ pub unsafe extern "C" fn UTIL_setFDStat(
     *__errno_location() = 0;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -665,13 +645,11 @@ pub unsafe extern "C" fn UTIL_isDirectory(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isDirectoryStat(&mut statbuf) != 0)
         as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -698,14 +676,12 @@ pub unsafe extern "C" fn UTIL_isDirectoryStat(mut statbuf: *const stat_t) -> std
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     ret = (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as std::ffi::c_int as __mode_t)
         as std::ffi::c_int
         != 0) as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -771,7 +747,6 @@ pub unsafe extern "C" fn UTIL_isSameFile(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     let mut file1Stat = stat {
         st_dev: 0,
@@ -831,7 +806,6 @@ pub unsafe extern "C" fn UTIL_isSameFile(
         as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -895,13 +869,11 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     ret = ((*file1Stat).st_dev == (*file2Stat).st_dev && (*file1Stat).st_ino == (*file2Stat).st_ino)
         as std::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -928,7 +900,6 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const std::ffi::c_char) ->
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     let mut statbuf = stat {
         st_dev: 0,
@@ -959,7 +930,6 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const std::ffi::c_char) ->
     if UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isFIFOStat(&mut statbuf) != 0 {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -972,7 +942,6 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const std::ffi::c_char) ->
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1008,7 +977,6 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if *filename.offset(0) as std::ffi::c_int == '/' as i32
         && strncmp(
@@ -1019,7 +987,6 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1039,7 +1006,6 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1052,7 +1018,6 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1086,7 +1051,6 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) ->
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     let mut statbuf = stat {
         st_dev: 0,
@@ -1118,7 +1082,6 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) ->
     if r == 0 && statbuf.st_mode & __S_IFMT as __mode_t == 0o120000 as std::ffi::c_int as __mode_t {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1131,7 +1094,6 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const std::ffi::c_char) ->
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1162,7 +1124,6 @@ pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> std::ffi::c_int 
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if file == stdin && g_fakeStdinIsConsole != 0 {
         ret = 1;
@@ -1175,7 +1136,6 @@ pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> std::ffi::c_int 
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1240,12 +1200,10 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_cha
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     if UTIL_stat(infilename, &mut statbuf) == 0 {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
-            g_traceDepth;
             fprintf(
                 stderr,
                 b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1259,7 +1217,6 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const std::ffi::c_cha
     let size = UTIL_getFileSizeStat(&mut statbuf);
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1370,7 +1327,6 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
         g_traceDepth += 1;
-        g_traceDepth;
     }
     n = 0;
     while n < nbFiles {
@@ -1378,7 +1334,6 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
         if size == UTIL_FILESIZE_UNKNOWN as u64 {
             if g_traceFileStat != 0 {
                 g_traceDepth -= 1;
-                g_traceDepth;
                 fprintf(
                     stderr,
                     b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1391,11 +1346,9 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
         }
         total = total.wrapping_add(size);
         n = n.wrapping_add(1);
-        n;
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
-        g_traceDepth;
         fprintf(
             stderr,
             b"Trace:FileStat: %*s< %d\n\0" as *const u8 as *const std::ffi::c_char,
@@ -1461,16 +1414,13 @@ unsafe extern "C" fn UTIL_processLines(
         if *buffer.offset(i as isize) as std::ffi::c_int == '\n' as i32 {
             *buffer.offset(i as isize) = '\0' as i32 as std::ffi::c_char;
             lineCount = lineCount.wrapping_add(1);
-            lineCount;
         }
         i = i.wrapping_add(1);
-        i;
     }
     if bufferSize > 0
         && (i == 0 || *buffer.offset(i.wrapping_sub(1) as isize) as std::ffi::c_int != '\0' as i32)
     {
         lineCount = lineCount.wrapping_add(1);
-        lineCount;
     }
     lineCount
 }
@@ -1499,12 +1449,10 @@ unsafe extern "C" fn UTIL_createLinePointers(
             && *buffer.offset(pos.wrapping_add(len) as isize) as std::ffi::c_int != '\0' as i32
         {
             len = len.wrapping_add(1);
-            len;
         }
         pos = pos.wrapping_add(len);
         if pos < bufferSize {
             pos = pos.wrapping_add(1);
-            pos;
         }
     }
     if lineIndex != numLines {
@@ -1645,7 +1593,6 @@ pub unsafe extern "C" fn UTIL_searchFileNamesTable(
             return i as std::ffi::c_int;
         }
         i = i.wrapping_add(1);
-        i;
     }
     -(1)
 }
@@ -1680,7 +1627,6 @@ unsafe extern "C" fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t
             .wrapping_add((strlen(*((*table).fileNames).offset(fnb as isize))).wrapping_add(1))
             as size_t as size_t;
         fnb = fnb.wrapping_add(1);
-        fnb;
     }
     totalSize
 }
@@ -1777,9 +1723,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         *fresh3 = buf.offset(pos as isize);
         pos = pos.wrapping_add(curLen.wrapping_add(1));
         idx1 = idx1.wrapping_add(1);
-        idx1;
         newTableIdx = newTableIdx.wrapping_add(1);
-        newTableIdx;
     }
     let mut idx2: std::ffi::c_uint = 0;
     idx2 = 0;
@@ -1813,9 +1757,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
         *fresh4 = buf.offset(pos as isize);
         pos = pos.wrapping_add(curLen_0.wrapping_add(1));
         idx2 = idx2.wrapping_add(1);
-        idx2;
         newTableIdx = newTableIdx.wrapping_add(1);
-        newTableIdx;
     }
     if pos <= newTotalTableSize {
     } else {
@@ -1962,7 +1904,6 @@ unsafe extern "C" fn UTIL_prepareFileList(
                     );
                     *pos = (*pos).wrapping_add(pathLength.wrapping_add(1));
                     nbFiles += 1;
-                    nbFiles;
                 }
             }
             free(path as *mut std::ffi::c_void);
@@ -1996,7 +1937,6 @@ pub unsafe extern "C" fn UTIL_isCompressedFile(
             return 1;
         }
         extensionList = extensionList.offset(1);
-        extensionList;
     }
     0
 }
@@ -2024,7 +1964,6 @@ unsafe extern "C" fn pathnameHas2Dots(mut pathname: *const std::ffi::c_char) -> 
             return 1;
         }
         needle = needle.offset(1);
-        needle;
     }
 }
 unsafe extern "C" fn isFileNameValidForMirroredOutput(
@@ -2128,7 +2067,6 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut std::ffi::c_cha
     while *pathname.offset(len as isize) as std::ffi::c_int == PATH_SEP {
         *pathname.offset(len as isize) = '\0' as i32 as std::ffi::c_char;
         len = len.wrapping_sub(1);
-        len;
     }
     if len == 0 {
         return;
@@ -2238,7 +2176,6 @@ unsafe extern "C" fn mallocAndJoin2Dir(
     if dir1Size > 0 && *buffer.offset(-(1)) as std::ffi::c_int != PATH_SEP {
         *buffer = PATH_SEP as std::ffi::c_char;
         buffer = buffer.offset(1);
-        buffer;
     }
     memcpy(
         buffer as *mut std::ffi::c_void,
@@ -2311,7 +2248,6 @@ unsafe extern "C" fn makeMirroredDestDirsWithSameSrcDirMode(
     while i < nbFile {
         mirrorSrcDirRecursive(*srcDirNames.offset(i as isize), outDirName);
         i = i.wrapping_add(1);
-        i;
     }
 }
 unsafe extern "C" fn firstIsParentOrSameDirOfSecond(
@@ -2381,12 +2317,10 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
         let mut currDirName = *srcDirNames.offset(i as isize);
         if firstIsParentOrSameDirOfSecond(trimPath(prevDirName), trimPath(currDirName)) == 0 {
             uniqueDirNr = uniqueDirNr.wrapping_add(1);
-            uniqueDirNr;
         }
         let fresh6 = &mut (*uniqueDirNames.offset(uniqueDirNr.wrapping_sub(1) as isize));
         *fresh6 = currDirName;
         i = i.wrapping_add(1);
-        i;
     }
     makeMirroredDestDirsWithSameSrcDirMode(uniqueDirNames, uniqueDirNr, outDirName);
     free(uniqueDirNames as *mut std::ffi::c_void);
@@ -2401,7 +2335,6 @@ unsafe extern "C" fn makeMirroredDestDirs(
     while i < nbFile {
         convertPathnameToDirName(*srcFileNames.offset(i as isize));
         i = i.wrapping_add(1);
-        i;
     }
     makeUniqueMirroredDestDirs(srcFileNames, nbFile, outDirName);
 }
@@ -2451,7 +2384,6 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
             *fresh8 = fname;
         }
         i = i.wrapping_add(1);
-        i;
     }
     if validFilenamesNr > 0 {
         makeDir(outDirName, DIR_DEFAULT_MODE as mode_t);
@@ -2461,7 +2393,6 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
     while i < validFilenamesNr {
         free(*srcFileNames.offset(i as isize) as *mut std::ffi::c_void);
         i = i.wrapping_add(1);
-        i;
     }
     free(srcFileNames as *mut std::ffi::c_void);
 }
@@ -2518,7 +2449,6 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
                 );
                 pos = pos.wrapping_add(len.wrapping_add(1));
                 nbFiles = nbFiles.wrapping_add(1);
-                nbFiles;
             }
         } else {
             nbFiles = nbFiles.wrapping_add(UTIL_prepareFileList(
@@ -2533,7 +2463,6 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
             }
         }
         ifnNb = ifnNb.wrapping_add(1);
-        ifnNb;
     }
     let mut ifnNb_0: size_t = 0;
     let mut pos_0: size_t = 0;
@@ -2560,7 +2489,6 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
             .wrapping_add((strlen(*fileNamesTable.offset(ifnNb_0 as isize))).wrapping_add(1))
             as size_t as size_t;
         ifnNb_0 = ifnNb_0.wrapping_add(1);
-        ifnNb_0;
     }
     UTIL_assembleFileNamesTable2(fileNamesTable, nbFiles as size_t, fntCapacity, buf)
 }

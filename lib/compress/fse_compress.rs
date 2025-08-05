@@ -326,7 +326,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
                 as u16;
         }
         u = u.wrapping_add(1);
-        u;
     }
     *cumul.offset(maxSV1 as isize) = tableSize.wrapping_add(1) as u16;
     if highThreshold == tableSize.wrapping_sub(1) {
@@ -350,7 +349,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
             }
             pos = pos.wrapping_add(n as size_t);
             s = s.wrapping_add(1);
-            s;
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as std::ffi::c_int as size_t;
@@ -365,7 +363,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
                 *tableSymbol.offset(uPosition as isize) =
                     *spread.offset(s_0.wrapping_add(u_0) as isize);
                 u_0 = u_0.wrapping_add(1);
-                u_0;
             }
             position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
             s_0 = s_0.wrapping_add(unroll);
@@ -385,10 +382,8 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
                     position_0 = position_0.wrapping_add(step) & tableMask;
                 }
                 nbOccurrences += 1;
-                nbOccurrences;
             }
             symbol = symbol.wrapping_add(1);
-            symbol;
         }
     }
     let mut u_1: u32 = 0;
@@ -400,7 +395,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
         *fresh1 = (*fresh1).wrapping_add(1);
         *tableU16.offset(fresh2 as isize) = tableSize.wrapping_add(u_1) as u16;
         u_1 = u_1.wrapping_add(1);
-        u_1;
     }
     let mut total = 0 as std::ffi::c_int as std::ffi::c_uint;
     let mut s_2: std::ffi::c_uint = 0;
@@ -417,7 +411,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
                 (*symbolTT.offset(s_2 as isize)).deltaFindState =
                     total.wrapping_sub(1) as std::ffi::c_int;
                 total = total.wrapping_add(1);
-                total;
             }
             _ => {
                 let maxBitsOut = tableLog.wrapping_sub(ZSTD_highbit32(
@@ -434,7 +427,6 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
             }
         }
         s_2 = s_2.wrapping_add(1);
-        s_2;
     }
     0
 }
@@ -489,7 +481,6 @@ unsafe extern "C" fn FSE_writeNCount_generic(
             let mut start = symbol;
             while symbol < alphabetSize && *normalizedCounter.offset(symbol as isize) == 0 {
                 symbol = symbol.wrapping_add(1);
-                symbol;
             }
             if symbol == alphabetSize {
                 break;
@@ -534,7 +525,6 @@ unsafe extern "C" fn FSE_writeNCount_generic(
         let max = 2 * threshold - 1 - remaining;
         remaining -= if count < 0 { -count } else { count };
         count += 1;
-        count;
         if count >= threshold {
             count += max;
         }
@@ -547,7 +537,6 @@ unsafe extern "C" fn FSE_writeNCount_generic(
         }
         while remaining < threshold {
             nbBits -= 1;
-            nbBits;
             threshold >>= 1;
         }
         if bitCount > 16 {
@@ -673,18 +662,15 @@ unsafe extern "C" fn FSE_normalizeM2(
         } else if *count.offset(s as isize) <= lowThreshold {
             *norm.offset(s as isize) = lowProbCount;
             distributed = distributed.wrapping_add(1);
-            distributed;
             total = total.wrapping_sub(*count.offset(s as isize) as size_t);
         } else if *count.offset(s as isize) <= lowOne {
             *norm.offset(s as isize) = 1;
             distributed = distributed.wrapping_add(1);
-            distributed;
             total = total.wrapping_sub(*count.offset(s as isize) as size_t);
         } else {
             *norm.offset(s as isize) = NOT_YET_ASSIGNED;
         }
         s = s.wrapping_add(1);
-        s;
     }
     ToDistribute = (((1) << tableLog) as u32).wrapping_sub(distributed);
     if ToDistribute == 0 {
@@ -699,11 +685,9 @@ unsafe extern "C" fn FSE_normalizeM2(
             {
                 *norm.offset(s as isize) = 1;
                 distributed = distributed.wrapping_add(1);
-                distributed;
                 total = total.wrapping_sub(*count.offset(s as isize) as size_t);
             }
             s = s.wrapping_add(1);
-            s;
         }
         ToDistribute = (((1) << tableLog) as u32).wrapping_sub(distributed);
     }
@@ -717,7 +701,6 @@ unsafe extern "C" fn FSE_normalizeM2(
                 maxC = *count.offset(s as isize);
             }
             s = s.wrapping_add(1);
-            s;
         }
         let fresh4 = &mut (*norm.offset(maxV as isize));
         *fresh4 = (*fresh4 as std::ffi::c_int
@@ -730,10 +713,8 @@ unsafe extern "C" fn FSE_normalizeM2(
         while ToDistribute > 0 {
             if *norm.offset(s as isize) as std::ffi::c_int > 0 {
                 ToDistribute = ToDistribute.wrapping_sub(1);
-                ToDistribute;
                 let fresh5 = &mut (*norm.offset(s as isize));
                 *fresh5 += 1;
-                *fresh5;
             }
             s = s.wrapping_add(1) % maxSymbolValue.wrapping_add(1);
         }
@@ -758,7 +739,6 @@ unsafe extern "C" fn FSE_normalizeM2(
             tmpTotal = end;
         }
         s = s.wrapping_add(1);
-        s;
     }
     0
 }
@@ -803,7 +783,6 @@ pub unsafe extern "C" fn FSE_normalizeCount(
         } else if *count.offset(s as isize) <= lowThreshold {
             *normalizedCounter.offset(s as isize) = lowProbCount;
             stillToDistribute -= 1;
-            stillToDistribute;
         } else {
             let mut proba =
                 ((*count.offset(s as isize) as u64 * step) >> scale) as std::ffi::c_short;
@@ -823,7 +802,6 @@ pub unsafe extern "C" fn FSE_normalizeCount(
             stillToDistribute -= proba as std::ffi::c_int;
         }
         s = s.wrapping_add(1);
-        s;
     }
     if -stillToDistribute >= *normalizedCounter.offset(largest as isize) as std::ffi::c_int >> 1 {
         let errorCode = FSE_normalizeM2(

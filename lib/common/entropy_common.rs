@@ -583,7 +583,7 @@ mod tests {
                         bmi2,
                     } = input.clone();
 
-                    let mut workspace = unsafe { core::mem::transmute(workspace) } ;
+                    let mut workspace =  core::mem::transmute(workspace) ;
 
                     let v =crate::lib::common::entropy_common_old::HUF_readStats_body(
                         &mut huffWeight,

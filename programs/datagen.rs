@@ -73,7 +73,6 @@ unsafe extern "C" fn RDG_fillLiteralDistrib(mut ldt: *mut u8, mut ld: fixedPoint
             *ldt.offset(fresh0 as isize) = character;
         }
         character = character.wrapping_add(1);
-        character;
         if character as std::ffi::c_int > lastChar as std::ffi::c_int {
             character = firstChar;
         }

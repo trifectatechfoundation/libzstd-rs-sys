@@ -261,7 +261,6 @@ unsafe extern "C" fn ZSTD_count(
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
-        pIn;
     }
     pIn.offset_from(pStart) as std::ffi::c_long as size_t
 }
@@ -517,7 +516,6 @@ unsafe extern "C" fn ZSTD_fillHashTableForCDict(
                     ZSTD_writeTaggedIndex(hashTable, hashAndTag_0, curr.wrapping_add(p));
                 }
                 p = p.wrapping_add(1);
-                p;
             }
         }
         ip = ip.offset(fastHashFillStep as isize);
@@ -550,7 +548,6 @@ unsafe extern "C" fn ZSTD_fillHashTableForCCtx(
                     *hashTable.offset(hash as isize) = curr.wrapping_add(p);
                 }
                 p = p.wrapping_add(1);
-                p;
             }
         }
         ip = ip.offset(fastHashFillStep as isize);
@@ -747,7 +744,6 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_noDict_generic(
                     ip3 = ip1.offset(step as isize);
                     if ip2 >= nextStep {
                         step = step.wrapping_add(1);
-                        step;
                         nextStep = nextStep.offset(kStepIncr as isize);
                     }
                     if ip3 >= ilimit {
@@ -767,11 +763,8 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_noDict_generic(
                     == *match0.offset(-(1) as isize) as std::ffi::c_int
             {
                 ip0 = ip0.offset(-1);
-                ip0;
                 match0 = match0.offset(-1);
-                match0;
                 mLength = mLength.wrapping_add(1);
-                mLength;
             }
         }
         mLength = mLength.wrapping_add(ZSTD_count(
@@ -1039,7 +1032,6 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState_generic(
                 ))
                 .wrapping_add(4);
                 ip0 = ip0.offset(1);
-                ip0;
                 ZSTD_storeSeq(
                     seqStore,
                     ip0.offset_from(anchor) as std::ffi::c_long as size_t,
@@ -1076,11 +1068,8 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState_generic(
                                 == *dictMatch.offset(-(1) as isize) as std::ffi::c_int
                         {
                             ip0 = ip0.offset(-1);
-                            ip0;
                             dictMatch = dictMatch.offset(-1);
-                            dictMatch;
                             mLength = mLength.wrapping_add(1);
-                            mLength;
                         }
                         offset_2 = offset_1;
                         offset_1 = offset;
@@ -1105,11 +1094,8 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState_generic(
                             == *match_0.offset(-(1) as isize) as std::ffi::c_int
                     {
                         ip0 = ip0.offset(-1);
-                        ip0;
                         match_0 = match_0.offset(-1);
-                        match_0;
                         mLength = mLength.wrapping_add(1);
-                        mLength;
                     }
                     offset_2 = offset_1;
                     offset_1 = offset_0;
@@ -1130,7 +1116,6 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_dictMatchState_generic(
                     matchIndex = *hashTable.offset(hash1 as isize);
                     if ip1 >= nextStep {
                         step = step.wrapping_add(1);
-                        step;
                         nextStep = nextStep.offset(kStepIncr as isize);
                     }
                     ip0 = ip1;
@@ -1424,7 +1409,6 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_extDict_generic(
                     ip3 = ip1.offset(step as isize);
                     if ip2 >= nextStep {
                         step = step.wrapping_add(1);
-                        step;
                         nextStep = nextStep.offset(kStepIncr as isize);
                     }
                     if ip3 >= ilimit {
@@ -1455,11 +1439,8 @@ unsafe extern "C" fn ZSTD_compressBlock_fast_extDict_generic(
                     == *match0.offset(-(1) as isize) as std::ffi::c_int
             {
                 ip0 = ip0.offset(-1);
-                ip0;
                 match0 = match0.offset(-1);
-                match0;
                 mLength = mLength.wrapping_add(1);
-                mLength;
             }
         }
         mLength = mLength.wrapping_add(ZSTD_count_2segments(
