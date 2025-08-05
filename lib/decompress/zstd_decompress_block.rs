@@ -404,7 +404,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     streaming: StreamingOperation,
 ) -> size_t {
     let srcSize = src.len() as size_t;
-    let src = src.as_ptr() as *const std::ffi::c_void;
 
     let dstCapacity = dst.len() as size_t;
     let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
@@ -415,8 +414,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let istart = src as *const u8;
-    let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
+    let istart = src.as_ptr();
+    let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
 
     let blockSizeMax = dctx.block_size_max() as size_t;
 
@@ -428,34 +427,23 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         }
         SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
-            let mut litSize_0: size_t = 0;
-            let mut lhSize_0: size_t = 0;
-            let lhlCode_0 = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
-            let mut expectedWriteSize_0 = if blockSizeMax < dstCapacity {
-                blockSizeMax
-            } else {
-                dstCapacity
-            };
+            let mut expectedWriteSize_0 = Ord::min(dstCapacity, blockSizeMax);
 
-            match lhlCode_0 {
-                1 => {
-                    lhSize_0 = 2;
-                    litSize_0 = (MEM_readLE16(istart as *const core::ffi::c_void)
-                        as core::ffi::c_int
-                        >> 4) as size_t;
-                }
+            let (lhSize_0, litSize_0) = match src[0] >> 2 & 0b11 {
+                1 => (
+                    2 as size_t,
+                    (u16::from_le_bytes([src[0], src[1]]) >> 4) as size_t,
+                ),
                 3 => {
-                    lhSize_0 = 3;
-                    if srcSize < 3 {
+                    if let [a, b, c, ..] = *src {
+                        (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as size_t)
+                    } else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
-                    litSize_0 = (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as size_t;
                 }
-                0 | 2 | _ => {
-                    lhSize_0 = 1;
-                    litSize_0 = (*istart.offset(0) as core::ffi::c_int >> 3) as size_t;
-                }
-            }
+                _ => (1, (src[0] >> 3) as size_t),
+            };
+
             if litSize_0 > 0 && dst.is_null() {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
