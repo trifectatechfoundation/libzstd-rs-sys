@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use core::ffi::c_void;
 
 fn main() {
     let mut it = std::env::args();
@@ -57,7 +57,9 @@ fn rs(compressed: &[u8]) -> i32 {
     if unsafe { ZSTD_isError(result) } != 0 {
         let err_msg = unsafe {
             let ptr = ZSTD_getErrorName(result);
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            core::ffi::CStr::from_ptr(ptr)
+                .to_string_lossy()
+                .into_owned()
         };
         panic!("Decompression failed: {}", err_msg);
     }
@@ -94,7 +96,9 @@ fn c(compressed: &[u8]) -> i32 {
     if unsafe { ZSTD_isError(result) } != 0 {
         let err_msg = unsafe {
             let ptr = ZSTD_getErrorName(result);
-            std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned()
+            core::ffi::CStr::from_ptr(ptr)
+                .to_string_lossy()
+                .into_owned()
         };
         panic!("Decompression failed: {}", err_msg);
     }

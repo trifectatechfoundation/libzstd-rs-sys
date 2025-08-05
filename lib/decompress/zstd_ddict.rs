@@ -5,10 +5,10 @@ use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
 
 extern "C" {
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
 }
-pub type size_t = std::ffi::c_ulong;
-pub type ZSTD_refMultipleDDicts_e = std::ffi::c_uint;
+pub type size_t = core::ffi::c_ulong;
+pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
 #[derive(Copy, Clone)]
@@ -21,8 +21,8 @@ pub struct ZSTD_DDictHashSet {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_DDict {
-    dictBuffer: *mut std::ffi::c_void,
-    dictContent: *const std::ffi::c_void,
+    dictBuffer: *mut core::ffi::c_void,
+    dictContent: *const core::ffi::c_void,
     dictSize: size_t,
     entropy: ZSTD_entropyDTables_t,
     dictID: u32,
@@ -32,21 +32,21 @@ pub struct ZSTD_DDict {
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 pub type U64 = u64;
-pub type ZSTD_dictContentType_e = std::ffi::c_uint;
+pub type ZSTD_dictContentType_e = core::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-pub type ZSTD_dictLoadMethod_e = std::ffi::c_uint;
+pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 pub type unalign32 = u32;
-pub const ZSTD_MAGIC_DICTIONARY: std::ffi::c_uint = 0xec30a437 as std::ffi::c_uint;
+pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 #[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
+unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
     1
 }
 #[inline]
-unsafe extern "C" fn MEM_read32(mut ptr: *const std::ffi::c_void) -> u32 {
+unsafe extern "C" fn MEM_read32(mut ptr: *const core::ffi::c_void) -> u32 {
     *(ptr as *const unalign32)
 }
 #[inline]
@@ -54,20 +54,20 @@ unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
     in_0.swap_bytes()
 }
 #[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const std::ffi::c_void) -> u32 {
+unsafe extern "C" fn MEM_readLE32(mut memPtr: *const core::ffi::c_void) -> u32 {
     if MEM_isLittleEndian() != 0 {
         MEM_read32(memPtr)
     } else {
         MEM_swap32(MEM_read32(memPtr))
     }
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-pub const ZSTD_FRAMEIDSIZE: std::ffi::c_int = 4;
+pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_FRAMEIDSIZE: core::ffi::c_int = 4;
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
     mut size: size_t,
     mut customMem: ZSTD_customMem,
-) -> *mut std::ffi::c_void {
+) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
     }
@@ -75,7 +75,7 @@ unsafe extern "C" fn ZSTD_customMalloc(
 }
 #[inline]
 unsafe extern "C" fn ZSTD_customFree(
-    mut ptr: *mut std::ffi::c_void,
+    mut ptr: *mut core::ffi::c_void,
     mut customMem: ZSTD_customMem,
 ) {
     if !ptr.is_null() {
@@ -86,17 +86,18 @@ unsafe extern "C" fn ZSTD_customFree(
         }
     }
 }
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint
+unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
+    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
+        as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_char, mut args: ...) {}
-pub const NULL: std::ffi::c_int = 0;
+unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
+}
+pub const NULL: core::ffi::c_int = 0;
 #[export_name = crate::prefix!(ZSTD_DDict_dictContent)]
 pub unsafe extern "C" fn ZSTD_DDict_dictContent(
     mut ddict: *const ZSTD_DDict,
-) -> *const std::ffi::c_void {
+) -> *const core::ffi::c_void {
     (*ddict).dictContent
 }
 #[export_name = crate::prefix!(ZSTD_DDict_dictSize)]
@@ -112,7 +113,7 @@ pub unsafe extern "C" fn ZSTD_copyDDictParameters(
     (*dctx).prefixStart = (*ddict).dictContent;
     (*dctx).virtualStart = (*ddict).dictContent;
     (*dctx).dictEnd = ((*ddict).dictContent as *const u8).offset((*ddict).dictSize as isize)
-        as *const std::ffi::c_void;
+        as *const core::ffi::c_void;
     (*dctx).previousDstEnd = (*dctx).dictEnd;
     if (*ddict).entropyPresent != 0 {
         (*dctx).litEntropy = 1;
@@ -135,31 +136,31 @@ unsafe extern "C" fn ZSTD_loadEntropy_intoDDict(
 ) -> size_t {
     (*ddict).dictID = 0;
     (*ddict).entropyPresent = 0;
-    if dictContentType as std::ffi::c_uint
-        == ZSTD_dct_rawContent as std::ffi::c_int as std::ffi::c_uint
+    if dictContentType as core::ffi::c_uint
+        == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
     {
         return 0;
     }
     if (*ddict).dictSize < 8 {
-        if dictContentType as std::ffi::c_uint
-            == ZSTD_dct_fullDict as std::ffi::c_int as std::ffi::c_uint
+        if dictContentType as core::ffi::c_uint
+            == ZSTD_dct_fullDict as core::ffi::c_int as core::ffi::c_uint
         {
-            return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
         }
         return 0;
     }
     let magic = MEM_readLE32((*ddict).dictContent);
     if magic != ZSTD_MAGIC_DICTIONARY {
-        if dictContentType as std::ffi::c_uint
-            == ZSTD_dct_fullDict as std::ffi::c_int as std::ffi::c_uint
+        if dictContentType as core::ffi::c_uint
+            == ZSTD_dct_fullDict as core::ffi::c_int as core::ffi::c_uint
         {
-            return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
         }
         return 0;
     }
     (*ddict).dictID = MEM_readLE32(
-        ((*ddict).dictContent as *const std::ffi::c_char).offset(ZSTD_FRAMEIDSIZE as isize)
-            as *const std::ffi::c_void,
+        ((*ddict).dictContent as *const core::ffi::c_char).offset(ZSTD_FRAMEIDSIZE as isize)
+            as *const core::ffi::c_void,
     );
     if ERR_isError(ZSTD_loadDEntropy(
         &mut (*ddict).entropy,
@@ -167,23 +168,24 @@ unsafe extern "C" fn ZSTD_loadEntropy_intoDDict(
         (*ddict).dictSize,
     )) != 0
     {
-        return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     (*ddict).entropyPresent = 1;
     0
 }
 unsafe extern "C" fn ZSTD_initDDict_internal(
     mut ddict: *mut ZSTD_DDict,
-    mut dict: *const std::ffi::c_void,
+    mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
     mut dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
-    if dictLoadMethod as std::ffi::c_uint == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
+    if dictLoadMethod as core::ffi::c_uint
+        == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
         || dict.is_null()
         || dictSize == 0
     {
-        (*ddict).dictBuffer = NULL as *mut std::ffi::c_void;
+        (*ddict).dictBuffer = NULL as *mut core::ffi::c_void;
         (*ddict).dictContent = dict;
         if dict.is_null() {
             dictSize = 0;
@@ -193,13 +195,13 @@ unsafe extern "C" fn ZSTD_initDDict_internal(
         (*ddict).dictBuffer = internalBuffer;
         (*ddict).dictContent = internalBuffer;
         if internalBuffer.is_null() {
-            return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
         }
         libc::memcpy(internalBuffer, dict, dictSize as libc::size_t);
     }
     (*ddict).dictSize = dictSize;
     *((*ddict).entropy.hufTable).as_mut_ptr().offset(0) =
-        (12 * 0x1000001 as std::ffi::c_int) as HUF_DTable;
+        (12 * 0x1000001 as core::ffi::c_int) as HUF_DTable;
     let err_code = ZSTD_loadEntropy_intoDDict(ddict, dictContentType);
     if ERR_isError(err_code) != 0 {
         return err_code;
@@ -208,20 +210,20 @@ unsafe extern "C" fn ZSTD_initDDict_internal(
 }
 #[export_name = crate::prefix!(ZSTD_createDDict_advanced)]
 pub unsafe extern "C" fn ZSTD_createDDict_advanced(
-    mut dict: *const std::ffi::c_void,
+    mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
     mut dictContentType: ZSTD_dictContentType_e,
     mut customMem: ZSTD_customMem,
 ) -> *mut ZSTD_DDict {
-    if (customMem.customAlloc).is_none() as std::ffi::c_int
-        ^ (customMem.customFree).is_none() as std::ffi::c_int
+    if (customMem.customAlloc).is_none() as core::ffi::c_int
+        ^ (customMem.customFree).is_none() as core::ffi::c_int
         != 0
     {
         return NULL as *mut ZSTD_DDict;
     }
     let ddict = ZSTD_customMalloc(
-        ::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong,
         customMem,
     ) as *mut ZSTD_DDict;
     if ddict.is_null() {
@@ -238,7 +240,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
 }
 #[export_name = crate::prefix!(ZSTD_createDDict)]
 pub unsafe extern "C" fn ZSTD_createDDict(
-    mut dict: *const std::ffi::c_void,
+    mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
@@ -249,14 +251,14 @@ pub unsafe extern "C" fn ZSTD_createDDict(
             customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
                 NULL as libc::intptr_t,
             ),
-            opaque: NULL as *mut std::ffi::c_void,
+            opaque: NULL as *mut core::ffi::c_void,
         }
     };
     ZSTD_createDDict_advanced(dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto, allocator)
 }
 #[export_name = crate::prefix!(ZSTD_createDDict_byReference)]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
@@ -267,7 +269,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
             customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
                 NULL as libc::intptr_t,
             ),
-            opaque: NULL as *mut std::ffi::c_void,
+            opaque: NULL as *mut core::ffi::c_void,
         }
     };
     ZSTD_createDDict_advanced(
@@ -280,16 +282,16 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
 }
 #[export_name = crate::prefix!(ZSTD_initStaticDDict)]
 pub unsafe extern "C" fn ZSTD_initStaticDDict(
-    mut sBuffer: *mut std::ffi::c_void,
+    mut sBuffer: *mut core::ffi::c_void,
     mut sBufferSize: size_t,
-    mut dict: *const std::ffi::c_void,
+    mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
     mut dictContentType: ZSTD_dictContentType_e,
 ) -> *const ZSTD_DDict {
-    let neededSpace = (::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong).wrapping_add(
-        if dictLoadMethod as std::ffi::c_uint
-            == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
+    let neededSpace = (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
+        if dictLoadMethod as core::ffi::c_uint
+            == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
         {
             0
         } else {
@@ -303,14 +305,15 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     if sBufferSize < neededSpace {
         return NULL as *const ZSTD_DDict;
     }
-    if dictLoadMethod as std::ffi::c_uint == ZSTD_dlm_byCopy as std::ffi::c_int as std::ffi::c_uint
+    if dictLoadMethod as core::ffi::c_uint
+        == ZSTD_dlm_byCopy as core::ffi::c_int as core::ffi::c_uint
     {
         libc::memcpy(
-            ddict.offset(1) as *mut std::ffi::c_void,
+            ddict.offset(1) as *mut core::ffi::c_void,
             dict,
             dictSize as libc::size_t,
         );
-        dict = ddict.offset(1) as *const std::ffi::c_void;
+        dict = ddict.offset(1) as *const core::ffi::c_void;
     }
     if ERR_isError(ZSTD_initDDict_internal(
         ddict,
@@ -331,7 +334,7 @@ pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
     }
     let cMem = (*ddict).cMem;
     ZSTD_customFree((*ddict).dictBuffer, cMem);
-    ZSTD_customFree(ddict as *mut std::ffi::c_void, cMem);
+    ZSTD_customFree(ddict as *mut core::ffi::c_void, cMem);
     0
 }
 #[export_name = crate::prefix!(ZSTD_estimateDDictSize)]
@@ -339,9 +342,9 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
-    (::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong).wrapping_add(
-        if dictLoadMethod as std::ffi::c_uint
-            == ZSTD_dlm_byRef as std::ffi::c_int as std::ffi::c_uint
+    (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
+        if dictLoadMethod as core::ffi::c_uint
+            == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
         {
             0
         } else {
@@ -354,7 +357,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
     if ddict.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DDict>() as std::ffi::c_ulong).wrapping_add(
+    (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
         if !((*ddict).dictBuffer).is_null() {
             (*ddict).dictSize
         } else {
@@ -365,7 +368,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
 #[export_name = crate::prefix!(ZSTD_getDictID_fromDDict)]
 pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(
     mut ddict: *const ZSTD_DDict,
-) -> std::ffi::c_uint {
+) -> core::ffi::c_uint {
     if ddict.is_null() {
         return 0;
     }
