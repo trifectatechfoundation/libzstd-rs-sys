@@ -51,7 +51,6 @@ pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
-pub type U64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -69,7 +68,6 @@ pub const XXH_OK: XXH_errorcode = 0;
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
-pub type U8 = u8;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameSizeInfo {
@@ -157,11 +155,11 @@ static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MaxML: core::ffi::c_int = 52;
 pub const MaxLL: core::ffi::c_int = 35;
 pub const MaxOff: core::ffi::c_int = 31;
-static LL_bits: [U8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static ML_bits: [U8; 53] = [
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
@@ -1308,7 +1306,7 @@ unsafe extern "C" fn ZSTD_decodeFrameHeader(
         ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
     }
     (*dctx).processedCSize =
-        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(headerSize) as U64 as U64;
+        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(headerSize) as u64 as u64;
     0
 }
 unsafe extern "C" fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeInfo {
@@ -1550,8 +1548,8 @@ unsafe extern "C" fn ZSTD_setRleBlock(
 }
 unsafe extern "C" fn ZSTD_DCtx_trace_end(
     mut dctx: *const ZSTD_DCtx,
-    mut uncompressedSize: U64,
-    mut compressedSize: U64,
+    mut uncompressedSize: u64,
+    mut compressedSize: u64,
     mut streaming: core::ffi::c_int,
 ) {
     if (*dctx).traceCtx != 0 && ZSTD_trace_decompress_end.is_some() {
@@ -1717,7 +1715,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
         }
     }
     if (*dctx).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
-        && op.offset_from(ostart) as core::ffi::c_long as U64 as core::ffi::c_ulonglong
+        && op.offset_from(ostart) as core::ffi::c_long as u64 as core::ffi::c_ulonglong
             != (*dctx).fParams.frameContentSize
     {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -1739,8 +1737,8 @@ unsafe extern "C" fn ZSTD_decompressFrame(
     }
     ZSTD_DCtx_trace_end(
         dctx,
-        op.offset_from(ostart) as core::ffi::c_long as U64,
-        ip.offset_from(istart) as core::ffi::c_long as U64,
+        op.offset_from(ostart) as core::ffi::c_long as u64,
+        ip.offset_from(istart) as core::ffi::c_long as u64,
         0,
     );
     *srcPtr = ip as *const core::ffi::c_void;
@@ -1962,7 +1960,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     }
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
     (*dctx).processedCSize =
-        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(srcSize) as U64 as U64;
+        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(srcSize) as u64 as u64;
     match (*dctx).stage as core::ffi::c_uint {
         0 => {
             if (*dctx).format == Format::ZSTD_f_zstd1
@@ -2089,7 +2087,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
             (*dctx).decodedSize =
-                ((*dctx).decodedSize as core::ffi::c_ulong).wrapping_add(rSize) as U64 as U64;
+                ((*dctx).decodedSize as core::ffi::c_ulong).wrapping_add(rSize) as u64 as u64;
             if (*dctx).validateChecksum != 0 {
                 ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
             }
