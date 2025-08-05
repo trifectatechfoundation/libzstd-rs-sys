@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
 use libzstd_rs::lib::dictBuilder::cover::{
@@ -19,41 +19,41 @@ use crate::util::UTIL_getFileSize;
 extern "C" {
     static mut stderr: *mut FILE;
     fn fread(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_ulong,
-        _: std::ffi::c_ulong,
+        _: *mut core::ffi::c_void,
+        _: core::ffi::c_ulong,
+        _: core::ffi::c_ulong,
         _: *mut FILE,
-    ) -> std::ffi::c_ulong;
+    ) -> core::ffi::c_ulong;
     fn fwrite(
-        _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-        _: std::ffi::c_ulong,
+        _: *const core::ffi::c_void,
+        _: core::ffi::c_ulong,
+        _: core::ffi::c_ulong,
         _: *mut FILE,
-    ) -> std::ffi::c_ulong;
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
+    ) -> core::ffi::c_ulong;
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn free(_: *mut core::ffi::c_void);
 }
-pub type size_t = std::ffi::c_ulong;
+pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fileStats {
     pub totalSizeToLoad: i64,
-    pub nbSamples: std::ffi::c_int,
-    pub oneSampleTooLarge: std::ffi::c_int,
+    pub nbSamples: core::ffi::c_int,
+    pub oneSampleTooLarge: core::ffi::c_int,
 }
-pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1);
-pub const SEC_TO_MICRO: std::ffi::c_int = 1000000;
-pub const NULL: std::ffi::c_int = 0;
-pub const SAMPLESIZE_MAX: std::ffi::c_int = 128 * ((1) << 10);
-pub const MEMMULT: std::ffi::c_int = 11;
-pub const COVER_MEMMULT: std::ffi::c_int = 9;
-pub const FASTCOVER_MEMMULT: std::ffi::c_int = 1;
+pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
+pub const SEC_TO_MICRO: core::ffi::c_int = 1000000;
+pub const NULL: core::ffi::c_int = 0;
+pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * ((1) << 10);
+pub const MEMMULT: core::ffi::c_int = 11;
+pub const COVER_MEMMULT: core::ffi::c_int = 9;
+pub const FASTCOVER_MEMMULT: core::ffi::c_int = 1;
 static mut g_maxMemory: size_t = 0;
-pub const NOISELENGTH: std::ffi::c_int = 32;
+pub const NOISELENGTH: core::ffi::c_int = 32;
 static mut g_refreshRate: u64 = 0;
 static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
-pub const DEBUG: std::ffi::c_int = 0;
-unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> i64 {
+pub const DEBUG: core::ffi::c_int = 0;
+unsafe extern "C" fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
     if fileSize == UTIL_FILESIZE_UNKNOWN as u64 {
         -(1) as i64
@@ -62,19 +62,19 @@ unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> i
     }
 }
 unsafe extern "C" fn DiB_loadFiles(
-    mut buffer: *mut std::ffi::c_void,
+    mut buffer: *mut core::ffi::c_void,
     mut bufferSizePtr: *mut size_t,
     mut sampleSizes: *mut size_t,
-    mut sstSize: std::ffi::c_int,
-    mut fileNamesTable: *mut *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_int,
+    mut sstSize: core::ffi::c_int,
+    mut fileNamesTable: *mut *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_int,
     mut targetChunkSize: size_t,
-    mut displayLevel: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let buff = buffer as *mut std::ffi::c_char;
-    let mut totalDataLoaded = 0 as std::ffi::c_int as size_t;
-    let mut nbSamplesLoaded = 0 as std::ffi::c_int;
-    let mut fileIndex = 0 as std::ffi::c_int;
+    mut displayLevel: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let buff = buffer as *mut core::ffi::c_char;
+    let mut totalDataLoaded = 0 as core::ffi::c_int as size_t;
+    let mut nbSamplesLoaded = 0 as core::ffi::c_int;
+    let mut fileIndex = 0 as core::ffi::c_int;
     let mut f = NULL as *mut FILE;
     while nbSamplesLoaded < sstSize && fileIndex < nbFiles {
         let mut fileDataLoaded: size_t = 0;
@@ -84,21 +84,21 @@ unsafe extern "C" fn DiB_loadFiles(
         } else {
             f = fopen(
                 *fileNamesTable.offset(fileIndex as isize),
-                b"rb\0" as *const u8 as *const std::ffi::c_char,
+                b"rb\0" as *const u8 as *const core::ffi::c_char,
             );
             if f.is_null() {
                 fprintf(
                     stderr,
-                    b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                     10,
                 );
                 fprintf(
                     stderr,
-                    b"zstd: dictBuilder: %s %s \0" as *const u8 as *const std::ffi::c_char,
+                    b"zstd: dictBuilder: %s %s \0" as *const u8 as *const core::ffi::c_char,
                     *fileNamesTable.offset(fileIndex as isize),
                     strerror(*__errno_location()),
                 );
-                fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
                 exit(10);
             }
             if displayLevel >= 2
@@ -107,7 +107,7 @@ unsafe extern "C" fn DiB_loadFiles(
                 g_displayClock = UTIL_getTime();
                 fprintf(
                     stderr,
-                    b"Loading %s...       \r\0" as *const u8 as *const std::ffi::c_char,
+                    b"Loading %s...       \r\0" as *const u8 as *const core::ffi::c_char,
                     *fileNamesTable.offset(fileIndex as isize),
                 );
                 if displayLevel >= 4 {
@@ -131,7 +131,7 @@ unsafe extern "C" fn DiB_loadFiles(
                 break;
             }
             if fread(
-                buff.offset(totalDataLoaded as isize) as *mut std::ffi::c_void,
+                buff.offset(totalDataLoaded as isize) as *mut core::ffi::c_void,
                 1,
                 fileDataLoaded,
                 f,
@@ -139,15 +139,15 @@ unsafe extern "C" fn DiB_loadFiles(
             {
                 fprintf(
                     stderr,
-                    b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                     11,
                 );
                 fprintf(
                     stderr,
-                    b"Pb reading %s\0" as *const u8 as *const std::ffi::c_char,
+                    b"Pb reading %s\0" as *const u8 as *const core::ffi::c_char,
                     *fileNamesTable.offset(fileIndex as isize),
                 );
-                fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
                 exit(11);
             }
             let fresh0 = nbSamplesLoaded;
@@ -166,7 +166,7 @@ unsafe extern "C" fn DiB_loadFiles(
                         break;
                     }
                     if fread(
-                        buff.offset(totalDataLoaded as isize) as *mut std::ffi::c_void,
+                        buff.offset(totalDataLoaded as isize) as *mut core::ffi::c_void,
                         1,
                         chunkSize,
                         f,
@@ -174,15 +174,15 @@ unsafe extern "C" fn DiB_loadFiles(
                     {
                         fprintf(
                             stderr,
-                            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                             11,
                         );
                         fprintf(
                             stderr,
-                            b"Pb reading %s\0" as *const u8 as *const std::ffi::c_char,
+                            b"Pb reading %s\0" as *const u8 as *const core::ffi::c_char,
                             *fileNamesTable.offset(fileIndex as isize),
                         );
-                        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+                        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
                         exit(11);
                     }
                     let fresh1 = nbSamplesLoaded;
@@ -203,16 +203,16 @@ unsafe extern "C" fn DiB_loadFiles(
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
-            b"\0" as *const u8 as *const std::ffi::c_char,
+            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
+            b"\0" as *const u8 as *const core::ffi::c_char,
         );
     }
     if displayLevel >= 4 {
         fprintf(
             stderr,
             b"Loaded %d KB total training data, %d nb samples \n\0" as *const u8
-                as *const std::ffi::c_char,
-            (totalDataLoaded / (1 * ((1) << 10)) as size_t) as std::ffi::c_int,
+                as *const core::ffi::c_char,
+            (totalDataLoaded / (1 * ((1) << 10)) as size_t) as core::ffi::c_int,
             nbSamplesLoaded,
         );
     }
@@ -230,11 +230,11 @@ unsafe extern "C" fn DiB_rand(mut src: *mut u32) -> u32 {
     rand32 >> 5
 }
 unsafe extern "C" fn DiB_shuffle(
-    mut fileNamesTable: *mut *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_uint,
+    mut fileNamesTable: *mut *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_uint,
 ) {
-    let mut seed = 0xfd2fb528 as std::ffi::c_uint;
-    let mut i: std::ffi::c_uint = 0;
+    let mut seed = 0xfd2fb528 as core::ffi::c_uint;
+    let mut i: core::ffi::c_uint = 0;
     if nbFiles == 0 {
         return;
     }
@@ -249,99 +249,99 @@ unsafe extern "C" fn DiB_shuffle(
         i = i.wrapping_sub(1);
     }
 }
-unsafe extern "C" fn DiB_findMaxMem(mut requiredMem: std::ffi::c_ulonglong) -> size_t {
+unsafe extern "C" fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
     let step = (8 * ((1) << 20)) as size_t;
-    let mut testmem = NULL as *mut std::ffi::c_void;
+    let mut testmem = NULL as *mut core::ffi::c_void;
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
-    requiredMem = requiredMem.wrapping_add(step as std::ffi::c_ulonglong);
-    if requiredMem > g_maxMemory as std::ffi::c_ulonglong {
-        requiredMem = g_maxMemory as std::ffi::c_ulonglong;
+    requiredMem = requiredMem.wrapping_add(step as core::ffi::c_ulonglong);
+    if requiredMem > g_maxMemory as core::ffi::c_ulonglong {
+        requiredMem = g_maxMemory as core::ffi::c_ulonglong;
     }
     while testmem.is_null() {
         testmem = malloc(requiredMem as size_t);
-        requiredMem = requiredMem.wrapping_sub(step as std::ffi::c_ulonglong);
+        requiredMem = requiredMem.wrapping_sub(step as core::ffi::c_ulonglong);
     }
     free(testmem);
     requiredMem as size_t
 }
-unsafe extern "C" fn DiB_fillNoise(mut buffer: *mut std::ffi::c_void, mut length: size_t) {
-    let prime1 = 2654435761 as std::ffi::c_uint;
-    let prime2 = 2246822519 as std::ffi::c_uint;
+unsafe extern "C" fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
+    let prime1 = 2654435761 as core::ffi::c_uint;
+    let prime2 = 2246822519 as core::ffi::c_uint;
     let mut acc = prime1;
     let mut p = 0;
     p = 0;
     while p < length {
         acc = acc.wrapping_mul(prime2);
-        *(buffer as *mut std::ffi::c_uchar).offset(p as isize) = (acc >> 21) as std::ffi::c_uchar;
+        *(buffer as *mut core::ffi::c_uchar).offset(p as isize) = (acc >> 21) as core::ffi::c_uchar;
         p = p.wrapping_add(1);
     }
 }
 unsafe extern "C" fn DiB_saveDict(
-    mut dictFileName: *const std::ffi::c_char,
-    mut buff: *const std::ffi::c_void,
+    mut dictFileName: *const core::ffi::c_char,
+    mut buff: *const core::ffi::c_void,
     mut buffSize: size_t,
 ) {
     let f = fopen(
         dictFileName,
-        b"wb\0" as *const u8 as *const std::ffi::c_char,
+        b"wb\0" as *const u8 as *const core::ffi::c_char,
     );
     if f.is_null() {
         fprintf(
             stderr,
-            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
             3,
         );
         fprintf(
             stderr,
-            b"cannot open %s \0" as *const u8 as *const std::ffi::c_char,
+            b"cannot open %s \0" as *const u8 as *const core::ffi::c_char,
             dictFileName,
         );
-        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         exit(3);
     }
     let n = fwrite(buff, 1, buffSize, f);
     if n != buffSize {
         fprintf(
             stderr,
-            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
             4,
         );
         fprintf(
             stderr,
-            b"%s : write error\0" as *const u8 as *const std::ffi::c_char,
+            b"%s : write error\0" as *const u8 as *const core::ffi::c_char,
             dictFileName,
         );
-        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         exit(4);
     }
     let n_0 = fclose(f) as size_t;
     if n_0 != 0 {
         fprintf(
             stderr,
-            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
             5,
         );
         fprintf(
             stderr,
-            b"%s : flush error\0" as *const u8 as *const std::ffi::c_char,
+            b"%s : flush error\0" as *const u8 as *const core::ffi::c_char,
             dictFileName,
         );
-        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         exit(5);
     }
 }
 unsafe extern "C" fn DiB_fileStats(
-    mut fileNamesTable: *mut *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_int,
+    mut fileNamesTable: *mut *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_int,
     mut chunkSize: size_t,
-    mut displayLevel: std::ffi::c_int,
+    mut displayLevel: core::ffi::c_int,
 ) -> fileStats {
     let mut fs = fileStats {
         totalSizeToLoad: 0,
         nbSamples: 0,
         oneSampleTooLarge: 0,
     };
-    let mut n: std::ffi::c_int = 0;
+    let mut n: core::ffi::c_int = 0;
     ptr::write_bytes(
         &mut fs as *mut fileStats as *mut u8,
         0,
@@ -355,22 +355,23 @@ unsafe extern "C" fn DiB_fileStats(
                 fprintf(
                     stderr,
                     b"Sample file '%s' has zero size, skipping...\n\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     *fileNamesTable.offset(n as isize),
                 );
             }
         } else if chunkSize > 0 {
             fs.nbSamples += ((fileSize as size_t).wrapping_add(chunkSize).wrapping_sub(1)
-                / chunkSize) as std::ffi::c_int;
+                / chunkSize) as core::ffi::c_int;
             fs.totalSizeToLoad += fileSize;
         } else {
             if fileSize > SAMPLESIZE_MAX as i64 {
-                fs.oneSampleTooLarge |= (fileSize > (2 * SAMPLESIZE_MAX) as i64) as std::ffi::c_int;
+                fs.oneSampleTooLarge |=
+                    (fileSize > (2 * SAMPLESIZE_MAX) as i64) as core::ffi::c_int;
                 if displayLevel >= 3 {
                     fprintf(
                         stderr,
                         b"Sample file '%s' is too large, limiting to %d KB\n\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                         *fileNamesTable.offset(n as isize),
                         128 * ((1) << 10) / (1 * ((1) << 10)),
                     );
@@ -389,9 +390,9 @@ unsafe extern "C" fn DiB_fileStats(
         fprintf(
             stderr,
             b"Found training data %d files, %d KB, %d samples\n\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             nbFiles,
-            (fs.totalSizeToLoad / (1 * ((1) << 10)) as i64) as std::ffi::c_int,
+            (fs.totalSizeToLoad / (1 * ((1) << 10)) as i64) as core::ffi::c_int,
             fs.nbSamples,
         );
     }
@@ -399,26 +400,26 @@ unsafe extern "C" fn DiB_fileStats(
 }
 #[no_mangle]
 pub unsafe extern "C" fn DiB_trainFromFiles(
-    mut dictFileName: *const std::ffi::c_char,
+    mut dictFileName: *const core::ffi::c_char,
     mut maxDictSize: size_t,
-    mut fileNamesTable: *mut *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_int,
+    mut fileNamesTable: *mut *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_int,
     mut chunkSize: size_t,
     mut params: *mut ZDICT_legacy_params_t,
     mut coverParams: *mut ZDICT_cover_params_t,
     mut fastCoverParams: *mut ZDICT_fastCover_params_t,
-    mut optimize: std::ffi::c_int,
-    mut memLimit: std::ffi::c_uint,
-) -> std::ffi::c_int {
+    mut optimize: core::ffi::c_int,
+    mut memLimit: core::ffi::c_uint,
+) -> core::ffi::c_int {
     let mut fs = fileStats {
         totalSizeToLoad: 0,
         nbSamples: 0,
         oneSampleTooLarge: 0,
     };
-    let mut sampleSizes = std::ptr::null_mut::<size_t>();
-    let mut nbSamplesLoaded: std::ffi::c_int = 0;
+    let mut sampleSizes = core::ptr::null_mut::<size_t>();
+    let mut nbSamplesLoaded: core::ffi::c_int = 0;
     let mut loadedSize: size_t = 0;
-    let mut srcBuffer = std::ptr::null_mut::<std::ffi::c_void>();
+    let mut srcBuffer = core::ptr::null_mut::<core::ffi::c_void>();
     let dictBuffer = malloc(maxDictSize);
     let mut result = 0;
     let displayLevel = (if !params.is_null() {
@@ -429,14 +430,14 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         (*fastCoverParams).zParams.notificationLevel
     } else {
         0
-    }) as std::ffi::c_int;
+    }) as core::ffi::c_int;
     if displayLevel >= 3 {
         fprintf(
             stderr,
-            b"Shuffling input files\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Shuffling input files\n\0" as *const u8 as *const core::ffi::c_char,
         );
     }
-    DiB_shuffle(fileNamesTable, nbFiles as std::ffi::c_uint);
+    DiB_shuffle(fileNamesTable, nbFiles as core::ffi::c_uint);
     fs = DiB_fileStats(fileNamesTable, nbFiles, chunkSize, displayLevel);
     let memMult = if !params.is_null() {
         MEMMULT
@@ -445,14 +446,14 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
     } else {
         FASTCOVER_MEMMULT
     };
-    let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as i64) as std::ffi::c_ulonglong)
+    let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as i64) as core::ffi::c_ulonglong)
         / memMult as size_t;
     loadedSize = (if (if (maxMem as i64) < fs.totalSizeToLoad {
         maxMem as i64
     } else {
         fs.totalSizeToLoad
-    }) < (2 as std::ffi::c_int as std::ffi::c_uint)
-        .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+    }) < (2 as core::ffi::c_int as core::ffi::c_uint)
+        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
         as i64
     {
         if (maxMem as i64) < fs.totalSizeToLoad {
@@ -461,20 +462,20 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fs.totalSizeToLoad
         }
     } else {
-        (2 as std::ffi::c_int as std::ffi::c_uint)
-            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int) as i64
+        (2 as core::ffi::c_int as core::ffi::c_uint)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int) as i64
     }) as size_t;
     if memLimit != 0 {
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  Warning : setting manual memory limit for dictionary training data at %u MB \n\0"
-                    as *const u8 as *const std::ffi::c_char,
+                    as *const u8 as *const core::ffi::c_char,
                 memLimit
                     .wrapping_div(
                         (1
                             * ((1) << 20))
-                            as std::ffi::c_uint,
+                            as core::ffi::c_uint,
                     ),
             );
         }
@@ -486,20 +487,20 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
     }
     srcBuffer = malloc(loadedSize.wrapping_add(NOISELENGTH as size_t));
     sampleSizes = malloc(
-        (fs.nbSamples as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (fs.nbSamples as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     if fs.nbSamples != 0 && sampleSizes.is_null() || srcBuffer.is_null() || dictBuffer.is_null() {
         fprintf(
             stderr,
-            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
             12,
         );
         fprintf(
             stderr,
-            b"not enough memory for DiB_trainFiles\0" as *const u8 as *const std::ffi::c_char,
+            b"not enough memory for DiB_trainFiles\0" as *const u8 as *const core::ffi::c_char,
         );
-        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         exit(12);
     }
     if fs.oneSampleTooLarge != 0 {
@@ -507,21 +508,21 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fprintf(
                 stderr,
                 b"!  Warning : some sample(s) are very large \n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
         }
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  Note that dictionary is only useful for small samples. \n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
         }
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  As a consequence, only the first %u bytes of each sample are loaded \n\0"
-                    as *const u8 as *const std::ffi::c_char,
+                    as *const u8 as *const core::ffi::c_char,
                 128 * ((1) << 10),
             );
         }
@@ -531,33 +532,33 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fprintf(
                 stderr,
                 b"!  Warning : nb of samples too low for proper processing !\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
         }
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  Please provide _one file per sample_.\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
         }
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  Alternatively, split file(s) into fixed-size samples, with --split=#\n\0"
-                    as *const u8 as *const std::ffi::c_char,
+                    as *const u8 as *const core::ffi::c_char,
             );
         }
         fprintf(
             stderr,
-            b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
             14,
         );
         fprintf(
             stderr,
-            b"nb of samples too low\0" as *const u8 as *const std::ffi::c_char,
+            b"nb of samples too low\0" as *const u8 as *const core::ffi::c_char,
         );
-        fprintf(stderr, b"\n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         exit(14);
     }
     if fs.totalSizeToLoad < maxDictSize as i64 * 8 {
@@ -565,14 +566,14 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fprintf(
                 stderr,
                 b"!  Warning : data size of samples too small for target dictionary size \n\0"
-                    as *const u8 as *const std::ffi::c_char,
+                    as *const u8 as *const core::ffi::c_char,
             );
         }
         if displayLevel >= 2 {
             fprintf(
                 stderr,
                 b"!  Samples should be about 100x larger than target dictionary size \n\0"
-                    as *const u8 as *const std::ffi::c_char,
+                    as *const u8 as *const core::ffi::c_char,
             );
         }
     }
@@ -580,9 +581,9 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         fprintf(
             stderr,
             b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
-                as *const std::ffi::c_char,
-            (fs.totalSizeToLoad / (1 * ((1) << 20)) as i64) as std::ffi::c_uint,
-            (loadedSize / (1 * ((1) << 20)) as size_t) as std::ffi::c_uint,
+                as *const core::ffi::c_char,
+            (fs.totalSizeToLoad / (1 * ((1) << 20)) as i64) as core::ffi::c_uint,
+            (loadedSize / (1 * ((1) << 20)) as size_t) as core::ffi::c_uint,
         );
     }
     nbSamplesLoaded = DiB_loadFiles(
@@ -595,11 +596,11 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         chunkSize,
         displayLevel,
     );
-    let mut dictSize = ZSTD_error_GENERIC as std::ffi::c_int as size_t;
+    let mut dictSize = ZSTD_error_GENERIC as core::ffi::c_int as size_t;
     if !params.is_null() {
         DiB_fillNoise(
-            (srcBuffer as *mut std::ffi::c_char).offset(loadedSize as isize)
-                as *mut std::ffi::c_void,
+            (srcBuffer as *mut core::ffi::c_char).offset(loadedSize as isize)
+                as *mut core::ffi::c_void,
             NOISELENGTH as size_t,
         );
         dictSize = ZDICT_trainFromBuffer_legacy(
@@ -607,7 +608,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             maxDictSize,
             srcBuffer,
             sampleSizes,
-            nbSamplesLoaded as std::ffi::c_uint,
+            nbSamplesLoaded as core::ffi::c_uint,
             *params,
         );
     } else if !coverParams.is_null() {
@@ -617,18 +618,18 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 maxDictSize,
                 srcBuffer,
                 sampleSizes,
-                nbSamplesLoaded as std::ffi::c_uint,
+                nbSamplesLoaded as core::ffi::c_uint,
                 coverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
                 let mut splitPercentage = ((*coverParams).splitPoint
-                    * 100 as std::ffi::c_int as std::ffi::c_double)
-                    as std::ffi::c_uint;
+                    * 100 as core::ffi::c_int as core::ffi::c_double)
+                    as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(
                         stderr,
                         b"k=%u\nd=%u\nsteps=%u\nsplit=%u\n\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                         (*coverParams).k,
                         (*coverParams).d,
                         (*coverParams).steps,
@@ -642,7 +643,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 maxDictSize,
                 srcBuffer,
                 sampleSizes,
-                nbSamplesLoaded as std::ffi::c_uint,
+                nbSamplesLoaded as core::ffi::c_uint,
                 *coverParams,
             );
         }
@@ -653,18 +654,18 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 maxDictSize,
                 srcBuffer,
                 sampleSizes,
-                nbSamplesLoaded as std::ffi::c_uint,
+                nbSamplesLoaded as core::ffi::c_uint,
                 fastCoverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
                 let mut splitPercentage_0 = ((*fastCoverParams).splitPoint
-                    * 100 as std::ffi::c_int as std::ffi::c_double)
-                    as std::ffi::c_uint;
+                    * 100 as core::ffi::c_int as core::ffi::c_double)
+                    as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(
                         stderr,
                         b"k=%u\nd=%u\nf=%u\nsteps=%u\nsplit=%u\naccel=%u\n\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                         (*fastCoverParams).k,
                         (*fastCoverParams).d,
                         (*fastCoverParams).f,
@@ -680,7 +681,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 maxDictSize,
                 srcBuffer,
                 sampleSizes,
-                nbSamplesLoaded as std::ffi::c_uint,
+                nbSamplesLoaded as core::ffi::c_uint,
                 *fastCoverParams,
             );
         }
@@ -689,7 +690,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"dictionary training failed : %s \n\0" as *const u8 as *const std::ffi::c_char,
+                b"dictionary training failed : %s \n\0" as *const u8 as *const core::ffi::c_char,
                 ZDICT_getErrorName(dictSize),
             );
         }
@@ -699,29 +700,29 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fprintf(
                 stderr,
                 b"Save dictionary of size %u into file %s \n\0" as *const u8
-                    as *const std::ffi::c_char,
-                dictSize as std::ffi::c_uint,
+                    as *const core::ffi::c_char,
+                dictSize as core::ffi::c_uint,
                 dictFileName,
             );
         }
         DiB_saveDict(dictFileName, dictBuffer, dictSize);
     }
     free(srcBuffer);
-    free(sampleSizes as *mut std::ffi::c_void);
+    free(sampleSizes as *mut core::ffi::c_void);
     free(dictBuffer);
     result
 }
 unsafe extern "C" fn run_static_initializers() {
-    g_maxMemory = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
-        (2 as std::ffi::c_int as std::ffi::c_uint)
-            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+    g_maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+        (2 as core::ffi::c_int as core::ffi::c_uint)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
             .wrapping_sub(
-                (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))
-                    as std::ffi::c_uint,
+                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int))
+                    as core::ffi::c_uint,
             ) as size_t
     } else {
-        ((512 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int)) as size_t)
-            << ::core::mem::size_of::<size_t>() as std::ffi::c_ulong
+        ((512 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int)) as size_t)
+            << ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     };
     g_refreshRate = SEC_TO_MICRO as PTime / 6;
 }

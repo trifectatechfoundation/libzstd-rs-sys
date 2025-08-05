@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use libc::{
     fflush, fprintf, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
@@ -18,53 +18,53 @@ use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn free(_: *mut core::ffi::c_void);
     fn qsort_r(
-        __base: *mut std::ffi::c_void,
+        __base: *mut core::ffi::c_void,
         __nmemb: size_t,
         __size: size_t,
         __compar: __compar_d_fn_t,
-        __arg: *mut std::ffi::c_void,
+        __arg: *mut core::ffi::c_void,
     );
     fn memcpy(
-        _: *mut std::ffi::c_void,
-        _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
+        _: *mut core::ffi::c_void,
+        _: *const core::ffi::c_void,
+        _: core::ffi::c_ulong,
+    ) -> *mut core::ffi::c_void;
     fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
+        _: *mut core::ffi::c_void,
+        _: core::ffi::c_int,
+        _: core::ffi::c_ulong,
+    ) -> *mut core::ffi::c_void;
     fn memcmp(
-        _: *const std::ffi::c_void,
-        _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> std::ffi::c_int;
+        _: *const core::ffi::c_void,
+        _: *const core::ffi::c_void,
+        _: core::ffi::c_ulong,
+    ) -> core::ffi::c_int;
     fn clock() -> clock_t;
 }
-pub type size_t = std::ffi::c_ulong;
-pub type __clock_t = std::ffi::c_long;
+pub type size_t = core::ffi::c_ulong;
+pub type __clock_t = core::ffi::c_long;
 pub type clock_t = __clock_t;
 pub type __compar_d_fn_t = Option<
     unsafe extern "C" fn(
-        *const std::ffi::c_void,
-        *const std::ffi::c_void,
-        *mut std::ffi::c_void,
-    ) -> std::ffi::c_int,
+        *const core::ffi::c_void,
+        *const core::ffi::c_void,
+        *mut core::ffi::c_void,
+    ) -> core::ffi::c_int,
 >;
 pub type unalign64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_cover_params_t {
-    pub k: std::ffi::c_uint,
-    pub d: std::ffi::c_uint,
-    pub steps: std::ffi::c_uint,
-    pub nbThreads: std::ffi::c_uint,
-    pub splitPoint: std::ffi::c_double,
-    pub shrinkDict: std::ffi::c_uint,
-    pub shrinkDictMaxRegression: std::ffi::c_uint,
+    pub k: core::ffi::c_uint,
+    pub d: core::ffi::c_uint,
+    pub steps: core::ffi::c_uint,
+    pub nbThreads: core::ffi::c_uint,
+    pub splitPoint: core::ffi::c_double,
+    pub shrinkDict: core::ffi::c_uint,
+    pub shrinkDictMaxRegression: core::ffi::c_uint,
     pub zParams: ZDICT_params_t,
 }
 pub type COVER_map_t = COVER_map_s;
@@ -96,8 +96,8 @@ pub struct COVER_ctx_t {
     pub suffixSize: size_t,
     pub freqs: *mut u32,
     pub dmerAt: *mut u32,
-    pub d: std::ffi::c_uint,
-    pub displayLevel: std::ffi::c_int,
+    pub d: core::ffi::c_uint,
+    pub displayLevel: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -119,7 +119,7 @@ pub struct COVER_best_s {
     pub mutex: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub liveJobs: size_t,
-    pub dict: *mut std::ffi::c_void,
+    pub dict: *mut core::ffi::c_void,
     pub dictSize: size_t,
     pub parameters: ZDICT_cover_params_t,
     pub compressedSize: size_t,
@@ -141,13 +141,13 @@ pub struct COVER_dictSelection {
     pub dictSize: size_t,
     pub totalCompressedSize: size_t,
 }
-pub const CLOCKS_PER_SEC: std::ffi::c_int = 1000000;
+pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 #[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> std::ffi::c_uint {
+unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
     1
 }
 #[inline]
-unsafe extern "C" fn MEM_read64(mut ptr: *const std::ffi::c_void) -> u64 {
+unsafe extern "C" fn MEM_read64(mut ptr: *const core::ffi::c_void) -> u64 {
     *(ptr as *const unalign64)
 }
 #[inline]
@@ -155,45 +155,45 @@ unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
     in_0.swap_bytes()
 }
 #[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const std::ffi::c_void) -> u64 {
+unsafe extern "C" fn MEM_readLE64(mut memPtr: *const core::ffi::c_void) -> u64 {
     if MEM_isLittleEndian() != 0 {
         MEM_read64(memPtr)
     } else {
         MEM_swap64(MEM_read64(memPtr))
     }
 }
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-        as std::ffi::c_uint
+unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
+    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
+        as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> std::ffi::c_uint {
-    val.leading_zeros() as i32 as std::ffi::c_uint
+unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+    val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> std::ffi::c_uint {
-    (31 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
+    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
-pub const ZDICT_DICTSIZE_MIN: std::ffi::c_int = 256;
-pub const NULL: std::ffi::c_int = 0;
-pub const COVER_DEFAULT_SPLITPOINT: std::ffi::c_double = 1.0f64;
-pub const MAP_EMPTY_VALUE: std::ffi::c_int = -(1);
+pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
+pub const NULL: core::ffi::c_int = 0;
+pub const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
+pub const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe extern "C" fn COVER_map_clear(mut map: *mut COVER_map_t) {
     memset(
-        (*map).data as *mut std::ffi::c_void,
+        (*map).data as *mut core::ffi::c_void,
         MAP_EMPTY_VALUE,
-        ((*map).size as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as std::ffi::c_ulong),
+        ((*map).size as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as core::ffi::c_ulong),
     );
 }
-unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: u32) -> std::ffi::c_int {
+unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: u32) -> core::ffi::c_int {
     (*map).sizeLog = (ZSTD_highbit32(size)).wrapping_add(2);
     (*map).size = (1) << (*map).sizeLog;
     (*map).sizeMask = ((*map).size).wrapping_sub(1);
     (*map).data = malloc(
-        ((*map).size as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as std::ffi::c_ulong),
+        ((*map).size as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as core::ffi::c_ulong),
     ) as *mut COVER_map_pair_t;
     if ((*map).data).is_null() {
         (*map).sizeLog = 0;
@@ -205,7 +205,7 @@ unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: u32) ->
 }
 static COVER_prime4bytes: u32 = 2654435761;
 unsafe extern "C" fn COVER_map_hash(mut map: *mut COVER_map_t, mut key: u32) -> u32 {
-    (key * COVER_prime4bytes) >> (32 as std::ffi::c_int as u32).wrapping_sub((*map).sizeLog)
+    (key * COVER_prime4bytes) >> (32 as core::ffi::c_int as u32).wrapping_sub((*map).sizeLog)
 }
 unsafe extern "C" fn COVER_map_index(mut map: *mut COVER_map_t, mut key: u32) -> u32 {
     let hash = COVER_map_hash(map, key);
@@ -263,7 +263,7 @@ unsafe extern "C" fn COVER_map_remove(mut map: *mut COVER_map_t, mut key: u32) {
 }
 unsafe extern "C" fn COVER_map_destroy(mut map: *mut COVER_map_t) {
     if !((*map).data).is_null() {
-        free((*map).data as *mut std::ffi::c_void);
+        free((*map).data as *mut core::ffi::c_void);
     }
     (*map).data = NULL as *mut COVER_map_pair_t;
     (*map).size = 0;
@@ -271,10 +271,10 @@ unsafe extern "C" fn COVER_map_destroy(mut map: *mut COVER_map_t) {
 #[export_name = crate::prefix!(COVER_sum)]
 pub unsafe extern "C" fn COVER_sum(
     mut samplesSizes: *const size_t,
-    mut nbSamples: std::ffi::c_uint,
+    mut nbSamples: core::ffi::c_uint,
 ) -> size_t {
-    let mut sum = 0 as std::ffi::c_int as size_t;
-    let mut i: std::ffi::c_uint = 0;
+    let mut sum = 0 as core::ffi::c_int as size_t;
+    let mut i: core::ffi::c_uint = 0;
     i = 0;
     while i < nbSamples {
         sum = sum.wrapping_add(*samplesSizes.offset(i as isize));
@@ -284,45 +284,45 @@ pub unsafe extern "C" fn COVER_sum(
 }
 unsafe extern "C" fn COVER_cmp(
     mut ctx: *mut COVER_ctx_t,
-    mut lp: *const std::ffi::c_void,
-    mut rp: *const std::ffi::c_void,
-) -> std::ffi::c_int {
+    mut lp: *const core::ffi::c_void,
+    mut rp: *const core::ffi::c_void,
+) -> core::ffi::c_int {
     let lhs = *(lp as *const u32);
     let rhs = *(rp as *const u32);
     memcmp(
-        ((*ctx).samples).offset(lhs as isize) as *const std::ffi::c_void,
-        ((*ctx).samples).offset(rhs as isize) as *const std::ffi::c_void,
-        (*ctx).d as std::ffi::c_ulong,
+        ((*ctx).samples).offset(lhs as isize) as *const core::ffi::c_void,
+        ((*ctx).samples).offset(rhs as isize) as *const core::ffi::c_void,
+        (*ctx).d as core::ffi::c_ulong,
     )
 }
 unsafe extern "C" fn COVER_cmp8(
     mut ctx: *mut COVER_ctx_t,
-    mut lp: *const std::ffi::c_void,
-    mut rp: *const std::ffi::c_void,
-) -> std::ffi::c_int {
-    let mask = if (*ctx).d == 8 as std::ffi::c_int as std::ffi::c_uint {
-        -(1 as std::ffi::c_int) as u64
+    mut lp: *const core::ffi::c_void,
+    mut rp: *const core::ffi::c_void,
+) -> core::ffi::c_int {
+    let mask = if (*ctx).d == 8 as core::ffi::c_int as core::ffi::c_uint {
+        -(1 as core::ffi::c_int) as u64
     } else {
-        ((1 as std::ffi::c_int as u64)
-            << (8 as std::ffi::c_int as std::ffi::c_uint).wrapping_mul((*ctx).d))
-        .wrapping_sub(1 as std::ffi::c_int as u64)
+        ((1 as core::ffi::c_int as u64)
+            << (8 as core::ffi::c_int as core::ffi::c_uint).wrapping_mul((*ctx).d))
+        .wrapping_sub(1 as core::ffi::c_int as u64)
     };
     let lhs = MEM_readLE64(
-        ((*ctx).samples).offset(*(lp as *const u32) as isize) as *const std::ffi::c_void
+        ((*ctx).samples).offset(*(lp as *const u32) as isize) as *const core::ffi::c_void
     ) & mask;
     let rhs = MEM_readLE64(
-        ((*ctx).samples).offset(*(rp as *const u32) as isize) as *const std::ffi::c_void
+        ((*ctx).samples).offset(*(rp as *const u32) as isize) as *const core::ffi::c_void
     ) & mask;
     if lhs < rhs {
         return -(1);
     }
-    (lhs > rhs) as std::ffi::c_int
+    (lhs > rhs) as core::ffi::c_int
 }
 unsafe extern "C" fn COVER_strict_cmp(
-    mut lp: *const std::ffi::c_void,
-    mut rp: *const std::ffi::c_void,
-    mut g_coverCtx: *mut std::ffi::c_void,
-) -> std::ffi::c_int {
+    mut lp: *const core::ffi::c_void,
+    mut rp: *const core::ffi::c_void,
+    mut g_coverCtx: *mut core::ffi::c_void,
+) -> core::ffi::c_int {
     let mut result = COVER_cmp(g_coverCtx as *mut COVER_ctx_t, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
@@ -330,10 +330,10 @@ unsafe extern "C" fn COVER_strict_cmp(
     result
 }
 unsafe extern "C" fn COVER_strict_cmp8(
-    mut lp: *const std::ffi::c_void,
-    mut rp: *const std::ffi::c_void,
-    mut g_coverCtx: *mut std::ffi::c_void,
-) -> std::ffi::c_int {
+    mut lp: *const core::ffi::c_void,
+    mut rp: *const core::ffi::c_void,
+    mut g_coverCtx: *mut core::ffi::c_void,
+) -> core::ffi::c_int {
     let mut result = COVER_cmp8(g_coverCtx as *mut COVER_ctx_t, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
@@ -342,29 +342,29 @@ unsafe extern "C" fn COVER_strict_cmp8(
 }
 unsafe extern "C" fn stableSort(mut ctx: *mut COVER_ctx_t) {
     qsort_r(
-        (*ctx).suffix as *mut std::ffi::c_void,
+        (*ctx).suffix as *mut core::ffi::c_void,
         (*ctx).suffixSize,
-        ::core::mem::size_of::<u32>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<u32>() as core::ffi::c_ulong,
         if (*ctx).d <= 8 {
             Some(
                 COVER_strict_cmp8
                     as unsafe extern "C" fn(
-                        *const std::ffi::c_void,
-                        *const std::ffi::c_void,
-                        *mut std::ffi::c_void,
-                    ) -> std::ffi::c_int,
+                        *const core::ffi::c_void,
+                        *const core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                    ) -> core::ffi::c_int,
             )
         } else {
             Some(
                 COVER_strict_cmp
                     as unsafe extern "C" fn(
-                        *const std::ffi::c_void,
-                        *const std::ffi::c_void,
-                        *mut std::ffi::c_void,
-                    ) -> std::ffi::c_int,
+                        *const core::ffi::c_void,
+                        *const core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                    ) -> core::ffi::c_int,
             )
         },
-        ctx as *mut std::ffi::c_void,
+        ctx as *mut core::ffi::c_void,
     );
 }
 unsafe extern "C" fn COVER_lower_bound(
@@ -372,7 +372,7 @@ unsafe extern "C" fn COVER_lower_bound(
     mut last: *const size_t,
     mut value: size_t,
 ) -> *const size_t {
-    let mut count = last.offset_from(first) as std::ffi::c_long as size_t;
+    let mut count = last.offset_from(first) as core::ffi::c_long as size_t;
     while count != 0 {
         let mut step = count / 2;
         let mut ptr = first;
@@ -388,22 +388,22 @@ unsafe extern "C" fn COVER_lower_bound(
     first
 }
 unsafe extern "C" fn COVER_groupBy(
-    mut data: *const std::ffi::c_void,
+    mut data: *const core::ffi::c_void,
     mut count: size_t,
     mut size: size_t,
     mut ctx: *mut COVER_ctx_t,
     mut cmp: Option<
         unsafe extern "C" fn(
             *mut COVER_ctx_t,
-            *const std::ffi::c_void,
-            *const std::ffi::c_void,
-        ) -> std::ffi::c_int,
+            *const core::ffi::c_void,
+            *const core::ffi::c_void,
+        ) -> core::ffi::c_int,
     >,
     mut grp: Option<
         unsafe extern "C" fn(
             *mut COVER_ctx_t,
-            *const std::ffi::c_void,
-            *const std::ffi::c_void,
+            *const core::ffi::c_void,
+            *const core::ffi::c_void,
         ) -> (),
     >,
 ) {
@@ -415,8 +415,8 @@ unsafe extern "C" fn COVER_groupBy(
         while num < count
             && cmp.unwrap_unchecked()(
                 ctx,
-                ptr as *const std::ffi::c_void,
-                grpEnd as *const std::ffi::c_void,
+                ptr as *const core::ffi::c_void,
+                grpEnd as *const core::ffi::c_void,
             ) == 0
         {
             grpEnd = grpEnd.offset(size as isize);
@@ -424,21 +424,21 @@ unsafe extern "C" fn COVER_groupBy(
         }
         grp.unwrap_unchecked()(
             ctx,
-            ptr as *const std::ffi::c_void,
-            grpEnd as *const std::ffi::c_void,
+            ptr as *const core::ffi::c_void,
+            grpEnd as *const core::ffi::c_void,
         );
         ptr = grpEnd;
     }
 }
 unsafe extern "C" fn COVER_group(
     mut ctx: *mut COVER_ctx_t,
-    mut group: *const std::ffi::c_void,
-    mut groupEnd: *const std::ffi::c_void,
+    mut group: *const core::ffi::c_void,
+    mut groupEnd: *const core::ffi::c_void,
 ) {
     let mut grpPtr = group as *const u32;
     let mut grpEnd = groupEnd as *const u32;
-    let dmerId = grpPtr.offset_from((*ctx).suffix) as std::ffi::c_long as u32;
-    let mut freq = 0 as std::ffi::c_int as u32;
+    let dmerId = grpPtr.offset_from((*ctx).suffix) as core::ffi::c_long as u32;
+    let mut freq = 0 as core::ffi::c_int as u32;
     let mut curOffsetPtr: *const size_t = (*ctx).offsets;
     let mut offsetsEnd: *const size_t = ((*ctx).offsets).offset((*ctx).nbSamples as isize);
     let mut curSampleEnd = *((*ctx).offsets).offset(0);
@@ -533,7 +533,7 @@ unsafe extern "C" fn COVER_selectSegment(
 unsafe extern "C" fn COVER_checkParameters(
     mut parameters: ZDICT_cover_params_t,
     mut maxDictSize: size_t,
-) -> std::ffi::c_int {
+) -> core::ffi::c_int {
     if parameters.d == 0 || parameters.k == 0 {
         return 0;
     }
@@ -543,8 +543,8 @@ unsafe extern "C" fn COVER_checkParameters(
     if parameters.d > parameters.k {
         return 0;
     }
-    if parameters.splitPoint <= 0 as std::ffi::c_int as std::ffi::c_double
-        || parameters.splitPoint > 1 as std::ffi::c_int as std::ffi::c_double
+    if parameters.splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
+        || parameters.splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
     {
         return 0;
     }
@@ -555,35 +555,35 @@ unsafe extern "C" fn COVER_ctx_destroy(mut ctx: *mut COVER_ctx_t) {
         return;
     }
     if !((*ctx).suffix).is_null() {
-        free((*ctx).suffix as *mut std::ffi::c_void);
+        free((*ctx).suffix as *mut core::ffi::c_void);
         (*ctx).suffix = NULL as *mut u32;
     }
     if !((*ctx).freqs).is_null() {
-        free((*ctx).freqs as *mut std::ffi::c_void);
+        free((*ctx).freqs as *mut core::ffi::c_void);
         (*ctx).freqs = NULL as *mut u32;
     }
     if !((*ctx).dmerAt).is_null() {
-        free((*ctx).dmerAt as *mut std::ffi::c_void);
+        free((*ctx).dmerAt as *mut core::ffi::c_void);
         (*ctx).dmerAt = NULL as *mut u32;
     }
     if !((*ctx).offsets).is_null() {
-        free((*ctx).offsets as *mut std::ffi::c_void);
+        free((*ctx).offsets as *mut core::ffi::c_void);
         (*ctx).offsets = NULL as *mut size_t;
     }
 }
 unsafe extern "C" fn COVER_ctx_init(
     mut ctx: *mut COVER_ctx_t,
-    mut samplesBuffer: *const std::ffi::c_void,
+    mut samplesBuffer: *const core::ffi::c_void,
     mut samplesSizes: *const size_t,
-    mut nbSamples: std::ffi::c_uint,
-    mut d: std::ffi::c_uint,
-    mut splitPoint: std::ffi::c_double,
-    mut displayLevel: std::ffi::c_int,
+    mut nbSamples: core::ffi::c_uint,
+    mut d: core::ffi::c_uint,
+    mut splitPoint: core::ffi::c_double,
+    mut displayLevel: core::ffi::c_int,
 ) -> size_t {
     let samples = samplesBuffer as *const u8;
     let totalSamplesSize = COVER_sum(samplesSizes, nbSamples);
     let nbTrainSamples = if splitPoint < 1.0f64 {
-        (nbSamples as std::ffi::c_double * splitPoint) as std::ffi::c_uint
+        (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
     } else {
         nbSamples
     };
@@ -604,76 +604,76 @@ unsafe extern "C" fn COVER_ctx_init(
     };
     (*ctx).displayLevel = displayLevel;
     if totalSamplesSize
-        < (if d as std::ffi::c_ulong > ::core::mem::size_of::<u64>() as std::ffi::c_ulong {
-            d as std::ffi::c_ulong
+        < (if d as core::ffi::c_ulong > ::core::mem::size_of::<u64>() as core::ffi::c_ulong {
+            d as core::ffi::c_ulong
         } else {
-            ::core::mem::size_of::<u64>() as std::ffi::c_ulong
+            ::core::mem::size_of::<u64>() as core::ffi::c_ulong
         })
         || totalSamplesSize
-            >= (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 8 {
-                -(1 as std::ffi::c_int) as std::ffi::c_uint
+            >= (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
+                -(1 as core::ffi::c_int) as core::ffi::c_uint
             } else {
-                (1 as std::ffi::c_int as std::ffi::c_uint)
-                    .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+                (1 as core::ffi::c_int as core::ffi::c_uint)
+                    .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
             }) as size_t
     {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Total samples size is too large (%u MB), maximum size is %u MB\n\0" as *const u8
-                    as *const std::ffi::c_char,
-                (totalSamplesSize >> 20) as std::ffi::c_uint,
-                (if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 8 {
-                    -(1 as std::ffi::c_int) as std::ffi::c_uint
+                    as *const core::ffi::c_char,
+                (totalSamplesSize >> 20) as core::ffi::c_uint,
+                (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
+                    -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
-                    (1 as std::ffi::c_int as std::ffi::c_uint)
-                        .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
-                }) >> 20 as std::ffi::c_int,
+                    (1 as core::ffi::c_int as core::ffi::c_uint)
+                        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+                }) >> 20 as core::ffi::c_int,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Total number of training samples is %u and is invalid.\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 nbTrainSamples,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Total number of testing samples is %u and is invalid.\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 nbTestSamples,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<COVER_ctx_t>());
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Training on %u samples of total size %u\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Training on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
             nbTrainSamples,
-            trainingSamplesSize as std::ffi::c_uint,
+            trainingSamplesSize as core::ffi::c_uint,
         );
         fflush(stderr);
     }
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Testing on %u samples of total size %u\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Testing on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
             nbTestSamples,
-            testSamplesSize as std::ffi::c_uint,
+            testSamplesSize as core::ffi::c_uint,
         );
         fflush(stderr);
     }
@@ -684,33 +684,33 @@ unsafe extern "C" fn COVER_ctx_init(
     (*ctx).nbTestSamples = nbTestSamples as size_t;
     (*ctx).suffixSize = trainingSamplesSize
         .wrapping_sub(
-            if d as std::ffi::c_ulong > ::core::mem::size_of::<u64>() as std::ffi::c_ulong {
-                d as std::ffi::c_ulong
+            if d as core::ffi::c_ulong > ::core::mem::size_of::<u64>() as core::ffi::c_ulong {
+                d as core::ffi::c_ulong
             } else {
-                ::core::mem::size_of::<u64>() as std::ffi::c_ulong
+                ::core::mem::size_of::<u64>() as core::ffi::c_ulong
             },
         )
         .wrapping_add(1);
     (*ctx).suffix = malloc(
-        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
+        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
     ) as *mut u32;
     (*ctx).dmerAt = malloc(
-        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
+        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
     ) as *mut u32;
     (*ctx).offsets = malloc(
-        (nbSamples.wrapping_add(1) as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (nbSamples.wrapping_add(1) as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     if ((*ctx).suffix).is_null() || ((*ctx).dmerAt).is_null() || ((*ctx).offsets).is_null() {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Failed to allocate scratch buffers\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Failed to allocate scratch buffers\n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
         COVER_ctx_destroy(ctx);
-        return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     }
     (*ctx).freqs = NULL as *mut u32;
     (*ctx).d = d;
@@ -726,7 +726,7 @@ unsafe extern "C" fn COVER_ctx_init(
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Constructing partial suffix array\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Constructing partial suffix array\n\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(stderr);
     }
@@ -740,40 +740,40 @@ unsafe extern "C" fn COVER_ctx_init(
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Computing frequencies\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Computing frequencies\n\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(stderr);
     }
     COVER_groupBy(
-        (*ctx).suffix as *const std::ffi::c_void,
+        (*ctx).suffix as *const core::ffi::c_void,
         (*ctx).suffixSize,
-        ::core::mem::size_of::<u32>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<u32>() as core::ffi::c_ulong,
         ctx,
         if (*ctx).d <= 8 {
             Some(
                 COVER_cmp8
                     as unsafe extern "C" fn(
                         *mut COVER_ctx_t,
-                        *const std::ffi::c_void,
-                        *const std::ffi::c_void,
-                    ) -> std::ffi::c_int,
+                        *const core::ffi::c_void,
+                        *const core::ffi::c_void,
+                    ) -> core::ffi::c_int,
             )
         } else {
             Some(
                 COVER_cmp
                     as unsafe extern "C" fn(
                         *mut COVER_ctx_t,
-                        *const std::ffi::c_void,
-                        *const std::ffi::c_void,
-                    ) -> std::ffi::c_int,
+                        *const core::ffi::c_void,
+                        *const core::ffi::c_void,
+                    ) -> core::ffi::c_int,
             )
         },
         Some(
             COVER_group
                 as unsafe extern "C" fn(
                     *mut COVER_ctx_t,
-                    *const std::ffi::c_void,
-                    *const std::ffi::c_void,
+                    *const core::ffi::c_void,
+                    *const core::ffi::c_void,
                 ) -> (),
         ),
     );
@@ -785,17 +785,17 @@ unsafe extern "C" fn COVER_ctx_init(
 pub unsafe extern "C" fn COVER_warnOnSmallCorpus(
     mut maxDictSize: size_t,
     mut nbDmers: size_t,
-    mut displayLevel: std::ffi::c_int,
+    mut displayLevel: core::ffi::c_int,
 ) {
-    let ratio = nbDmers as std::ffi::c_double / maxDictSize as std::ffi::c_double;
-    if ratio >= 10 as std::ffi::c_int as std::ffi::c_double {
+    let ratio = nbDmers as core::ffi::c_double / maxDictSize as core::ffi::c_double;
+    if ratio >= 10 as core::ffi::c_int as core::ffi::c_double {
         return;
     }
     if displayLevel >= 1 {
         fprintf(
             stderr,
             b"WARNING: The maximum dictionary size %u is too large compared to the source size %u! size(source)/size(dictionary) = %f, but it should be >= 10! This may lead to a subpar dictionary! We recommend training on sources at least 10x, and preferably 100x the size of the dictionary! \n\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             maxDictSize as u32,
             nbDmers as u32,
             ratio,
@@ -833,7 +833,7 @@ unsafe extern "C" fn COVER_buildDictionary(
     mut ctx: *const COVER_ctx_t,
     mut freqs: *mut u32,
     mut activeDmers: *mut COVER_map_t,
-    mut dictBuffer: *mut std::ffi::c_void,
+    mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
     mut parameters: ZDICT_cover_params_t,
 ) -> size_t {
@@ -857,7 +857,7 @@ unsafe extern "C" fn COVER_buildDictionary(
     } else {
         epochs.num >> 3
     }) as size_t;
-    let mut zeroScoreRun = 0 as std::ffi::c_int as size_t;
+    let mut zeroScoreRun = 0 as core::ffi::c_int as size_t;
     let mut epoch: size_t = 0;
     let mut lastUpdateTime = 0;
     let displayLevel = (*ctx).displayLevel;
@@ -865,7 +865,7 @@ unsafe extern "C" fn COVER_buildDictionary(
         fprintf(
             stderr,
             b"Breaking content into %u epochs of size %u\n\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             epochs.num,
             epochs.size,
         );
@@ -903,8 +903,8 @@ unsafe extern "C" fn COVER_buildDictionary(
             }
             tail = tail.wrapping_sub(segmentSize);
             memcpy(
-                dict.offset(tail as isize) as *mut std::ffi::c_void,
-                ((*ctx).samples).offset(segment.begin as isize) as *const std::ffi::c_void,
+                dict.offset(tail as isize) as *mut core::ffi::c_void,
+                ((*ctx).samples).offset(segment.begin as isize) as *const core::ffi::c_void,
                 segmentSize,
             );
             if displayLevel >= 2 {
@@ -913,9 +913,9 @@ unsafe extern "C" fn COVER_buildDictionary(
                     lastUpdateTime = clock();
                     fprintf(
                         stderr,
-                        b"\r%u%%       \0" as *const u8 as *const std::ffi::c_char,
+                        b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
                         (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
-                            as std::ffi::c_uint,
+                            as core::ffi::c_uint,
                     );
                     fflush(stderr);
                 }
@@ -926,8 +926,8 @@ unsafe extern "C" fn COVER_buildDictionary(
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
-            b"\0" as *const u8 as *const std::ffi::c_char,
+            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
+            b"\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(stderr);
     }
@@ -935,68 +935,68 @@ unsafe extern "C" fn COVER_buildDictionary(
 }
 #[export_name = crate::prefix!(ZDICT_trainFromBuffer_cover)]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
-    mut dictBuffer: *mut std::ffi::c_void,
+    mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
-    mut samplesBuffer: *const std::ffi::c_void,
+    mut samplesBuffer: *const core::ffi::c_void,
     mut samplesSizes: *const size_t,
-    mut nbSamples: std::ffi::c_uint,
+    mut nbSamples: core::ffi::c_uint,
     mut parameters: ZDICT_cover_params_t,
 ) -> size_t {
     let dict = dictBuffer as *mut u8;
     let mut ctx = COVER_ctx_t {
-        samples: std::ptr::null::<u8>(),
-        offsets: std::ptr::null_mut::<size_t>(),
-        samplesSizes: std::ptr::null::<size_t>(),
+        samples: core::ptr::null::<u8>(),
+        offsets: core::ptr::null_mut::<size_t>(),
+        samplesSizes: core::ptr::null::<size_t>(),
         nbSamples: 0,
         nbTrainSamples: 0,
         nbTestSamples: 0,
-        suffix: std::ptr::null_mut::<u32>(),
+        suffix: core::ptr::null_mut::<u32>(),
         suffixSize: 0,
-        freqs: std::ptr::null_mut::<u32>(),
-        dmerAt: std::ptr::null_mut::<u32>(),
+        freqs: core::ptr::null_mut::<u32>(),
+        dmerAt: core::ptr::null_mut::<u32>(),
         d: 0,
         displayLevel: 0,
     };
     let mut activeDmers = COVER_map_s {
-        data: std::ptr::null_mut::<COVER_map_pair_t>(),
+        data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
         size: 0,
         sizeMask: 0,
     };
-    let displayLevel = parameters.zParams.notificationLevel as std::ffi::c_int;
+    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     if COVER_checkParameters(parameters, dictBufferCapacity) == 0 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Cover parameters incorrect\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Cover parameters incorrect\n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Cover must have at least one input file\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 256,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     let initVal = COVER_ctx_init(
         &mut ctx,
@@ -1020,17 +1020,17 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
             fprintf(
                 stderr,
                 b"Failed to allocate dmer map: out of memory\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
         COVER_ctx_destroy(&mut ctx);
-        return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     }
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Building dictionary\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Building dictionary\n\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(stderr);
     }
@@ -1043,9 +1043,9 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         parameters,
     );
     let dictionarySize = ZDICT_finalizeDictionary(
-        dict as *mut std::ffi::c_void,
+        dict as *mut core::ffi::c_void,
         dictBufferCapacity,
-        dict.offset(tail as isize) as *const std::ffi::c_void,
+        dict.offset(tail as isize) as *const core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(tail),
         samplesBuffer,
         samplesSizes,
@@ -1055,8 +1055,8 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Constructed dictionary of size %u\n\0" as *const u8 as *const std::ffi::c_char,
-            dictionarySize as std::ffi::c_uint,
+            b"Constructed dictionary of size %u\n\0" as *const u8 as *const core::ffi::c_char,
+            dictionarySize as core::ffi::c_uint,
         );
         fflush(stderr);
     }
@@ -1075,10 +1075,10 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
     dict: *mut u8,
     mut dictBufferCapacity: size_t,
 ) -> size_t {
-    let mut totalCompressedSize = -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
-    let mut cctx = std::ptr::null_mut::<ZSTD_CCtx>();
-    let mut cdict = std::ptr::null_mut::<ZSTD_CDict>();
-    let mut dst = std::ptr::null_mut::<std::ffi::c_void>();
+    let mut totalCompressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+    let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
+    let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
+    let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
     let mut dstCapacity: size_t = 0;
     let mut i: size_t = 0;
     let mut maxSampleSize = 0;
@@ -1099,7 +1099,7 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
     dst = malloc(dstCapacity);
     cctx = ZSTD_createCCtx();
     cdict = ZSTD_createCDict(
-        dict as *const std::ffi::c_void,
+        dict as *const core::ffi::c_void,
         dictBufferCapacity,
         parameters.zParams.compressionLevel,
     );
@@ -1115,7 +1115,7 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
                 cctx,
                 dst,
                 dstCapacity,
-                samples.offset(*offsets.offset(i as isize) as isize) as *const std::ffi::c_void,
+                samples.offset(*offsets.offset(i as isize) as isize) as *const core::ffi::c_void,
                 *samplesSizes.offset(i as isize),
                 cdict,
             );
@@ -1140,12 +1140,12 @@ pub unsafe extern "C" fn COVER_best_init(mut best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
-    pthread_mutex_init(&mut (*best).mutex, std::ptr::null::<pthread_mutexattr_t>());
-    pthread_cond_init(&mut (*best).cond, std::ptr::null::<pthread_condattr_t>());
+    pthread_mutex_init(&mut (*best).mutex, core::ptr::null::<pthread_mutexattr_t>());
+    pthread_cond_init(&mut (*best).cond, core::ptr::null::<pthread_condattr_t>());
     (*best).liveJobs = 0;
-    (*best).dict = NULL as *mut std::ffi::c_void;
+    (*best).dict = NULL as *mut core::ffi::c_void;
     (*best).dictSize = 0;
-    (*best).compressedSize = -(1 as std::ffi::c_int) as size_t;
+    (*best).compressedSize = -(1 as core::ffi::c_int) as size_t;
     ptr::write_bytes(
         &mut (*best).parameters as *mut ZDICT_cover_params_t as *mut u8,
         0,
@@ -1191,7 +1191,7 @@ pub unsafe extern "C" fn COVER_best_finish(
     mut parameters: ZDICT_cover_params_t,
     mut selection: COVER_dictSelection_t,
 ) {
-    let mut dict = selection.dictContent as *mut std::ffi::c_void;
+    let mut dict = selection.dictContent as *mut core::ffi::c_void;
     let mut compressedSize = selection.totalCompressedSize;
     let mut dictSize = selection.dictSize;
     if best.is_null() {
@@ -1209,7 +1209,7 @@ pub unsafe extern "C" fn COVER_best_finish(
             }
             (*best).dict = malloc(dictSize);
             if ((*best).dict).is_null() {
-                (*best).compressedSize = -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+                (*best).compressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
                 (*best).dictSize = 0;
                 pthread_cond_signal(&mut (*best).cond);
                 pthread_mutex_unlock(&mut (*best).mutex);
@@ -1234,7 +1234,7 @@ unsafe extern "C" fn setDictSelection(
     mut csz: size_t,
 ) -> COVER_dictSelection_t {
     let mut ds = COVER_dictSelection {
-        dictContent: std::ptr::null_mut::<u8>(),
+        dictContent: core::ptr::null_mut::<u8>(),
         dictSize: 0,
         totalCompressedSize: 0,
     };
@@ -1250,13 +1250,13 @@ pub unsafe extern "C" fn COVER_dictSelectionError(mut error: size_t) -> COVER_di
 #[export_name = crate::prefix!(COVER_dictSelectionIsError)]
 pub unsafe extern "C" fn COVER_dictSelectionIsError(
     mut selection: COVER_dictSelection_t,
-) -> std::ffi::c_uint {
+) -> core::ffi::c_uint {
     (ERR_isError(selection.totalCompressedSize) != 0 || (selection.dictContent).is_null())
-        as std::ffi::c_int as std::ffi::c_uint
+        as core::ffi::c_int as core::ffi::c_uint
 }
 #[export_name = crate::prefix!(COVER_dictSelectionFree)]
 pub unsafe extern "C" fn COVER_dictSelectionFree(mut selection: COVER_dictSelection_t) {
-    free(selection.dictContent as *mut std::ffi::c_void);
+    free(selection.dictContent as *mut core::ffi::c_void);
 }
 #[export_name = crate::prefix!(COVER_selectDict)]
 pub unsafe extern "C" fn COVER_selectDict(
@@ -1265,7 +1265,7 @@ pub unsafe extern "C" fn COVER_selectDict(
     mut dictContentSize: size_t,
     mut samplesBuffer: *const u8,
     mut samplesSizes: *const size_t,
-    mut nbFinalizeSamples: std::ffi::c_uint,
+    mut nbFinalizeSamples: core::ffi::c_uint,
     mut nbCheckSamples: size_t,
     mut nbSamples: size_t,
     mut params: ZDICT_cover_params_t,
@@ -1278,30 +1278,30 @@ pub unsafe extern "C" fn COVER_selectDict(
     let mut largestDictbuffer = malloc(dictBufferCapacity) as *mut u8;
     let mut candidateDictBuffer = malloc(dictBufferCapacity) as *mut u8;
     let mut regressionTolerance =
-        params.shrinkDictMaxRegression as std::ffi::c_double / 100.0f64 + 1.00f64;
+        params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
     if largestDictbuffer.is_null() || candidateDictBuffer.is_null() {
-        free(largestDictbuffer as *mut std::ffi::c_void);
-        free(candidateDictBuffer as *mut std::ffi::c_void);
+        free(largestDictbuffer as *mut core::ffi::c_void);
+        free(candidateDictBuffer as *mut core::ffi::c_void);
         return COVER_dictSelectionError(dictContentSize);
     }
     memcpy(
-        largestDictbuffer as *mut std::ffi::c_void,
-        customDictContent as *const std::ffi::c_void,
+        largestDictbuffer as *mut core::ffi::c_void,
+        customDictContent as *const core::ffi::c_void,
         dictContentSize,
     );
     dictContentSize = ZDICT_finalizeDictionary(
-        largestDictbuffer as *mut std::ffi::c_void,
+        largestDictbuffer as *mut core::ffi::c_void,
         dictBufferCapacity,
-        customDictContent as *const std::ffi::c_void,
+        customDictContent as *const core::ffi::c_void,
         dictContentSize,
-        samplesBuffer as *const std::ffi::c_void,
+        samplesBuffer as *const core::ffi::c_void,
         samplesSizes,
         nbFinalizeSamples,
         params.zParams,
     );
     if ZDICT_isError(dictContentSize) != 0 {
-        free(largestDictbuffer as *mut std::ffi::c_void);
-        free(candidateDictBuffer as *mut std::ffi::c_void);
+        free(largestDictbuffer as *mut core::ffi::c_void);
+        free(candidateDictBuffer as *mut core::ffi::c_void);
         return COVER_dictSelectionError(dictContentSize);
     }
     totalCompressedSize = COVER_checkTotalCompressedSize(
@@ -1315,12 +1315,12 @@ pub unsafe extern "C" fn COVER_selectDict(
         dictContentSize,
     );
     if ERR_isError(totalCompressedSize) != 0 {
-        free(largestDictbuffer as *mut std::ffi::c_void);
-        free(candidateDictBuffer as *mut std::ffi::c_void);
+        free(largestDictbuffer as *mut core::ffi::c_void);
+        free(candidateDictBuffer as *mut core::ffi::c_void);
         return COVER_dictSelectionError(totalCompressedSize);
     }
     if params.shrinkDict == 0 {
-        free(candidateDictBuffer as *mut std::ffi::c_void);
+        free(candidateDictBuffer as *mut core::ffi::c_void);
         return setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize);
     }
     largestDict = dictContentSize;
@@ -1328,23 +1328,23 @@ pub unsafe extern "C" fn COVER_selectDict(
     dictContentSize = ZDICT_DICTSIZE_MIN as size_t;
     while dictContentSize < largestDict {
         memcpy(
-            candidateDictBuffer as *mut std::ffi::c_void,
-            largestDictbuffer as *const std::ffi::c_void,
+            candidateDictBuffer as *mut core::ffi::c_void,
+            largestDictbuffer as *const core::ffi::c_void,
             largestDict,
         );
         dictContentSize = ZDICT_finalizeDictionary(
-            candidateDictBuffer as *mut std::ffi::c_void,
+            candidateDictBuffer as *mut core::ffi::c_void,
             dictBufferCapacity,
-            customDictContentEnd.offset(-(dictContentSize as isize)) as *const std::ffi::c_void,
+            customDictContentEnd.offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
             dictContentSize,
-            samplesBuffer as *const std::ffi::c_void,
+            samplesBuffer as *const core::ffi::c_void,
             samplesSizes,
             nbFinalizeSamples,
             params.zParams,
         );
         if ZDICT_isError(dictContentSize) != 0 {
-            free(largestDictbuffer as *mut std::ffi::c_void);
-            free(candidateDictBuffer as *mut std::ffi::c_void);
+            free(largestDictbuffer as *mut core::ffi::c_void);
+            free(candidateDictBuffer as *mut core::ffi::c_void);
             return COVER_dictSelectionError(dictContentSize);
         }
         totalCompressedSize = COVER_checkTotalCompressedSize(
@@ -1358,40 +1358,40 @@ pub unsafe extern "C" fn COVER_selectDict(
             dictContentSize,
         );
         if ERR_isError(totalCompressedSize) != 0 {
-            free(largestDictbuffer as *mut std::ffi::c_void);
-            free(candidateDictBuffer as *mut std::ffi::c_void);
+            free(largestDictbuffer as *mut core::ffi::c_void);
+            free(candidateDictBuffer as *mut core::ffi::c_void);
             return COVER_dictSelectionError(totalCompressedSize);
         }
-        if totalCompressedSize as std::ffi::c_double
-            <= largestCompressed as std::ffi::c_double * regressionTolerance
+        if totalCompressedSize as core::ffi::c_double
+            <= largestCompressed as core::ffi::c_double * regressionTolerance
         {
-            free(largestDictbuffer as *mut std::ffi::c_void);
+            free(largestDictbuffer as *mut core::ffi::c_void);
             return setDictSelection(candidateDictBuffer, dictContentSize, totalCompressedSize);
         }
         dictContentSize *= 2;
     }
     dictContentSize = largestDict;
     totalCompressedSize = largestCompressed;
-    free(candidateDictBuffer as *mut std::ffi::c_void);
+    free(candidateDictBuffer as *mut core::ffi::c_void);
     setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
 }
-unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
+unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut COVER_tryParameters_data_t;
     let ctx = (*data).ctx;
     let parameters = (*data).parameters;
     let mut dictBufferCapacity = (*data).dictBufferCapacity;
-    let mut totalCompressedSize = -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
+    let mut totalCompressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
     let mut activeDmers = COVER_map_s {
-        data: std::ptr::null_mut::<COVER_map_pair_t>(),
+        data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
         size: 0,
         sizeMask: 0,
     };
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection =
-        COVER_dictSelectionError(-(ZSTD_error_GENERIC as std::ffi::c_int) as size_t);
+        COVER_dictSelectionError(-(ZSTD_error_GENERIC as core::ffi::c_int) as size_t);
     let freqs = malloc(
-        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
+        ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
     ) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
     if COVER_map_init(
@@ -1403,7 +1403,7 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
             fprintf(
                 stderr,
                 b"Failed to allocate dmer map: out of memory\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
@@ -1412,21 +1412,21 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
             fprintf(
                 stderr,
                 b"Failed to allocate buffers: out of memory\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
     } else {
         memcpy(
-            freqs as *mut std::ffi::c_void,
-            (*ctx).freqs as *const std::ffi::c_void,
-            ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as std::ffi::c_ulong),
+            freqs as *mut core::ffi::c_void,
+            (*ctx).freqs as *const core::ffi::c_void,
+            ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
         );
         let tail = COVER_buildDictionary(
             ctx,
             freqs,
             &mut activeDmers,
-            dict as *mut std::ffi::c_void,
+            dict as *mut core::ffi::c_void,
             dictBufferCapacity,
             parameters,
         );
@@ -1436,7 +1436,7 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
             dictBufferCapacity.wrapping_sub(tail),
             (*ctx).samples,
             (*ctx).samplesSizes,
-            (*ctx).nbTrainSamples as std::ffi::c_uint,
+            (*ctx).nbTrainSamples as core::ffi::c_uint,
             (*ctx).nbTrainSamples,
             (*ctx).nbSamples,
             parameters,
@@ -1446,25 +1446,25 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut std::ffi::c_void) {
         if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Failed to select dictionary\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Failed to select dictionary\n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
     }
-    free(dict as *mut std::ffi::c_void);
+    free(dict as *mut core::ffi::c_void);
     COVER_best_finish((*data).best, parameters, selection);
-    free(data as *mut std::ffi::c_void);
+    free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
-    free(freqs as *mut std::ffi::c_void);
+    free(freqs as *mut core::ffi::c_void);
 }
 #[export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover)]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
-    mut dictBuffer: *mut std::ffi::c_void,
+    mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
-    mut samplesBuffer: *const std::ffi::c_void,
+    mut samplesBuffer: *const core::ffi::c_void,
     mut samplesSizes: *const size_t,
-    mut nbSamples: std::ffi::c_uint,
+    mut nbSamples: core::ffi::c_uint,
     mut parameters: *mut ZDICT_cover_params_t,
 ) -> size_t {
     let nbThreads = (*parameters).nbThreads;
@@ -1503,26 +1503,26 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     } else {
         1
     };
-    let kIterations = (1 as std::ffi::c_int as std::ffi::c_uint)
+    let kIterations = (1 as core::ffi::c_int as core::ffi::c_uint)
         .wrapping_add(
             kMaxD
                 .wrapping_sub(kMinD)
-                .wrapping_div(2 as std::ffi::c_int as std::ffi::c_uint),
+                .wrapping_div(2 as core::ffi::c_int as core::ffi::c_uint),
         )
         .wrapping_mul(
-            (1 as std::ffi::c_int as std::ffi::c_uint)
+            (1 as core::ffi::c_int as core::ffi::c_uint)
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
-    let shrinkDict = 0 as std::ffi::c_int as std::ffi::c_uint;
-    let mut displayLevel = (*parameters).zParams.notificationLevel as std::ffi::c_int;
-    let mut iteration = 1 as std::ffi::c_int as std::ffi::c_uint;
-    let mut d: std::ffi::c_uint = 0;
-    let mut k: std::ffi::c_uint = 0;
+    let shrinkDict = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
+    let mut iteration = 1 as core::ffi::c_int as core::ffi::c_uint;
+    let mut d: core::ffi::c_uint = 0;
+    let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_s {
         mutex: PTHREAD_MUTEX_INITIALIZER,
         cond: PTHREAD_COND_INITIALIZER,
         liveJobs: 0,
-        dict: std::ptr::null_mut::<std::ffi::c_void>(),
+        dict: core::ptr::null_mut::<core::ffi::c_void>(),
         dictSize: 0,
         parameters: ZDICT_cover_params_t {
             k: 0,
@@ -1543,62 +1543,62 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut pool = NULL as *mut POOL_ctx;
     let mut warned = 0;
     let mut lastUpdateTime = 0;
-    if splitPoint <= 0 as std::ffi::c_int as std::ffi::c_double
-        || splitPoint > 1 as std::ffi::c_int as std::ffi::c_double
+    if splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
+        || splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
     {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Incorrect parameters\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Incorrect parameters\n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
     }
     if kMinK < kMaxD || kMaxK < kMinK {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Incorrect parameters\n\0" as *const u8 as *const std::ffi::c_char,
+                b"Incorrect parameters\n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"Cover must have at least one input file\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
                 b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 256,
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
+        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     if nbThreads > 1 {
         pool = POOL_create(nbThreads as size_t, 1);
         if pool.is_null() {
-            return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
         }
     }
     COVER_best_init(&mut best);
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"Trying %u different sets of parameters\n\0" as *const u8 as *const std::ffi::c_char,
+            b"Trying %u different sets of parameters\n\0" as *const u8 as *const core::ffi::c_char,
             kIterations,
         );
         fflush(stderr);
@@ -1606,23 +1606,23 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     d = kMinD;
     while d <= kMaxD {
         let mut ctx = COVER_ctx_t {
-            samples: std::ptr::null::<u8>(),
-            offsets: std::ptr::null_mut::<size_t>(),
-            samplesSizes: std::ptr::null::<size_t>(),
+            samples: core::ptr::null::<u8>(),
+            offsets: core::ptr::null_mut::<size_t>(),
+            samplesSizes: core::ptr::null::<size_t>(),
             nbSamples: 0,
             nbTrainSamples: 0,
             nbTestSamples: 0,
-            suffix: std::ptr::null_mut::<u32>(),
+            suffix: core::ptr::null_mut::<u32>(),
             suffixSize: 0,
-            freqs: std::ptr::null_mut::<u32>(),
-            dmerAt: std::ptr::null_mut::<u32>(),
+            freqs: core::ptr::null_mut::<u32>(),
+            dmerAt: core::ptr::null_mut::<u32>(),
             d: 0,
             displayLevel: 0,
         };
         if displayLevel >= 3 {
             fprintf(
                 stderr,
-                b"d=%u\n\0" as *const u8 as *const std::ffi::c_char,
+                b"d=%u\n\0" as *const u8 as *const core::ffi::c_char,
                 d,
             );
             fflush(stderr);
@@ -1645,7 +1645,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"Failed to initialize context\n\0" as *const u8 as *const std::ffi::c_char,
+                    b"Failed to initialize context\n\0" as *const u8 as *const core::ffi::c_char,
                 );
                 fflush(stderr);
             }
@@ -1660,12 +1660,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         k = kMinK;
         while k <= kMaxK {
             let mut data =
-                malloc(::core::mem::size_of::<COVER_tryParameters_data_t>() as std::ffi::c_ulong)
+                malloc(::core::mem::size_of::<COVER_tryParameters_data_t>() as core::ffi::c_ulong)
                     as *mut COVER_tryParameters_data_t;
             if displayLevel >= 3 {
                 fprintf(
                     stderr,
-                    b"k=%u\n\0" as *const u8 as *const std::ffi::c_char,
+                    b"k=%u\n\0" as *const u8 as *const core::ffi::c_char,
                     k,
                 );
                 fflush(stderr);
@@ -1675,14 +1675,14 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                     fprintf(
                         stderr,
                         b"Failed to allocate parameters\n\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                     );
                     fflush(stderr);
                 }
                 COVER_best_destroy(&mut best);
                 COVER_ctx_destroy(&mut ctx);
                 POOL_free(pool);
-                return -(ZSTD_error_memory_allocation as std::ffi::c_int) as size_t;
+                return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
             }
             (*data).ctx = &mut ctx;
             (*data).best = &mut best;
@@ -1693,16 +1693,16 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             (*data).parameters.splitPoint = splitPoint;
             (*data).parameters.steps = kSteps;
             (*data).parameters.shrinkDict = shrinkDict;
-            (*data).parameters.zParams.notificationLevel = ctx.displayLevel as std::ffi::c_uint;
+            (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
             if COVER_checkParameters((*data).parameters, dictBufferCapacity) == 0 {
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Cover parameters incorrect\n\0" as *const u8 as *const std::ffi::c_char,
+                        b"Cover parameters incorrect\n\0" as *const u8 as *const core::ffi::c_char,
                     );
                     fflush(stderr);
                 }
-                free(data as *mut std::ffi::c_void);
+                free(data as *mut core::ffi::c_void);
             } else {
                 COVER_best_start(&mut best);
                 if !pool.is_null() {
@@ -1710,12 +1710,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                         pool,
                         Some(
                             COVER_tryParameters
-                                as unsafe extern "C" fn(*mut std::ffi::c_void) -> (),
+                                as unsafe extern "C" fn(*mut core::ffi::c_void) -> (),
                         ),
-                        data as *mut std::ffi::c_void,
+                        data as *mut core::ffi::c_void,
                     );
                 } else {
-                    COVER_tryParameters(data as *mut std::ffi::c_void);
+                    COVER_tryParameters(data as *mut core::ffi::c_void);
                 }
                 if displayLevel >= 2 {
                     let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
@@ -1723,7 +1723,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                         lastUpdateTime = clock();
                         fprintf(
                             stderr,
-                            b"\r%u%%       \0" as *const u8 as *const std::ffi::c_char,
+                            b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
                             iteration.wrapping_mul(100).wrapping_div(kIterations),
                         );
                         fflush(stderr);
@@ -1740,8 +1740,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     if displayLevel >= 2 {
         fprintf(
             stderr,
-            b"\r%79s\r\0" as *const u8 as *const std::ffi::c_char,
-            b"\0" as *const u8 as *const std::ffi::c_char,
+            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
+            b"\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(stderr);
     }

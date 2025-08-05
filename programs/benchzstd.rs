@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use libc::{
     __errno_location, abort, exit, fclose, fflush, fopen, fprintf, setpriority, strerror, strrchr,
@@ -29,29 +29,29 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
     fn fread(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_ulong,
-        _: std::ffi::c_ulong,
+        _: *mut core::ffi::c_void,
+        _: core::ffi::c_ulong,
+        _: core::ffi::c_ulong,
         _: *mut FILE,
-    ) -> std::ffi::c_ulong;
+    ) -> core::ffi::c_ulong;
     fn __assert_fail(
-        __assertion: *const std::ffi::c_char,
-        __file: *const std::ffi::c_char,
-        __line: std::ffi::c_uint,
-        __function: *const std::ffi::c_char,
+        __assertion: *const core::ffi::c_char,
+        __file: *const core::ffi::c_char,
+        __line: core::ffi::c_uint,
+        __function: *const core::ffi::c_char,
     ) -> !;
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn calloc(_: std::ffi::c_ulong, _: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn free(_: *mut core::ffi::c_void);
     fn memcpy(
-        _: *mut std::ffi::c_void,
-        _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
+        _: *mut core::ffi::c_void,
+        _: *const core::ffi::c_void,
+        _: core::ffi::c_ulong,
+    ) -> *mut core::ffi::c_void;
+    fn strlen(_: *const core::ffi::c_char) -> core::ffi::c_ulong;
 }
-pub type size_t = std::ffi::c_ulong;
-pub type ZSTD_cParameter = std::ffi::c_uint;
+pub type size_t = core::ffi::c_ulong;
+pub type ZSTD_cParameter = core::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
 pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
@@ -91,17 +91,17 @@ pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
 pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
-pub type ZSTD_ResetDirective = std::ffi::c_uint;
+pub type ZSTD_ResetDirective = core::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
 pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
-pub type ZSTD_ParamSwitch_e = std::ffi::c_uint;
+pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 pub type XXH32_hash_t = u32;
 pub type xxh_u32 = XXH32_hash_t;
-pub type XXH_alignment = std::ffi::c_uint;
+pub type XXH_alignment = core::ffi::c_uint;
 pub const XXH_unaligned: XXH_alignment = 1;
 pub const XXH_aligned: XXH_alignment = 0;
 pub type xxh_u8 = u8;
@@ -113,35 +113,35 @@ pub type xxh_unalign64 = xxh_u64;
 #[repr(C)]
 pub struct BMK_benchResult_t {
     pub cSize: size_t,
-    pub cSpeed: std::ffi::c_ulonglong,
-    pub dSpeed: std::ffi::c_ulonglong,
+    pub cSpeed: core::ffi::c_ulonglong,
+    pub dSpeed: core::ffi::c_ulonglong,
     pub cMem: size_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchOutcome_t {
     pub internal_never_use_directly: BMK_benchResult_t,
-    pub tag: std::ffi::c_int,
+    pub tag: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_advancedParams_t {
     pub mode: BMK_mode_t,
-    pub nbSeconds: std::ffi::c_uint,
+    pub nbSeconds: core::ffi::c_uint,
     pub chunkSizeMax: size_t,
     pub targetCBlockSize: size_t,
-    pub nbWorkers: std::ffi::c_int,
-    pub realTime: std::ffi::c_uint,
-    pub additionalParam: std::ffi::c_int,
-    pub ldmFlag: std::ffi::c_int,
-    pub ldmMinMatch: std::ffi::c_int,
-    pub ldmHashLog: std::ffi::c_int,
-    pub ldmBucketSizeLog: std::ffi::c_int,
-    pub ldmHashRateLog: std::ffi::c_int,
+    pub nbWorkers: core::ffi::c_int,
+    pub realTime: core::ffi::c_uint,
+    pub additionalParam: core::ffi::c_int,
+    pub ldmFlag: core::ffi::c_int,
+    pub ldmMinMatch: core::ffi::c_int,
+    pub ldmHashLog: core::ffi::c_int,
+    pub ldmBucketSizeLog: core::ffi::c_int,
+    pub ldmHashRateLog: core::ffi::c_int,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
-    pub useRowMatchFinder: std::ffi::c_int,
+    pub useRowMatchFinder: core::ffi::c_int,
 }
-pub type BMK_mode_t = std::ffi::c_uint;
+pub type BMK_mode_t = core::ffi::c_uint;
 pub const BMK_compressOnly: BMK_mode_t = 2;
 pub const BMK_decodeOnly: BMK_mode_t = 1;
 pub const BMK_both: BMK_mode_t = 0;
@@ -149,38 +149,38 @@ pub const BMK_both: BMK_mode_t = 0;
 #[repr(C)]
 pub struct BMK_initDCtxArgs {
     pub dctx: *mut ZSTD_DCtx,
-    pub dictBuffer: *const std::ffi::c_void,
+    pub dictBuffer: *const core::ffi::c_void,
     pub dictBufferSize: size_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_initCCtxArgs {
     pub cctx: *mut ZSTD_CCtx,
-    pub dictBuffer: *const std::ffi::c_void,
+    pub dictBuffer: *const core::ffi::c_void,
     pub dictBufferSize: size_t,
-    pub cLevel: std::ffi::c_int,
+    pub cLevel: core::ffi::c_int,
     pub comprParams: *const ZSTD_compressionParameters,
     pub adv: *const BMK_advancedParams_t,
 }
-pub const BMK_TIMETEST_DEFAULT_S: std::ffi::c_int = 3;
-pub const UTIL_FILESIZE_UNKNOWN: std::ffi::c_int = -(1);
-pub const ZSTD_CONTENTSIZE_UNKNOWN: std::ffi::c_ulonglong =
-    (0 as std::ffi::c_ulonglong).wrapping_sub(1 as std::ffi::c_int as std::ffi::c_ulonglong);
-pub const ZSTD_CONTENTSIZE_ERROR: std::ffi::c_ulonglong =
-    (0 as std::ffi::c_ulonglong).wrapping_sub(2 as std::ffi::c_int as std::ffi::c_ulonglong);
-pub const XXH_FORCE_ALIGN_CHECK: std::ffi::c_int = 0 as std::ffi::c_int;
-unsafe extern "C" fn XXH_read32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
+pub const BMK_TIMETEST_DEFAULT_S: core::ffi::c_int = 3;
+pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
+pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
+    (0 as core::ffi::c_ulonglong).wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong);
+pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
+pub const XXH_FORCE_ALIGN_CHECK: core::ffi::c_int = 0 as core::ffi::c_int;
+unsafe extern "C" fn XXH_read32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
     *(ptr as *const xxh_unalign32)
 }
-pub const XXH_CPU_LITTLE_ENDIAN: std::ffi::c_int = 1;
+pub const XXH_CPU_LITTLE_ENDIAN: core::ffi::c_int = 1;
 unsafe extern "C" fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
-    x << 24 & 0xff000000 as std::ffi::c_uint
-        | x << 8 & 0xff0000 as std::ffi::c_int as xxh_u32
-        | x >> 8 & 0xff00 as std::ffi::c_int as xxh_u32
-        | x >> 24 & 0xff as std::ffi::c_int as xxh_u32
+    x << 24 & 0xff000000 as core::ffi::c_uint
+        | x << 8 & 0xff0000 as core::ffi::c_int as xxh_u32
+        | x >> 8 & 0xff00 as core::ffi::c_int as xxh_u32
+        | x >> 24 & 0xff as core::ffi::c_int as xxh_u32
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
+unsafe extern "C" fn XXH_readLE32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read32(ptr)
     } else {
@@ -189,10 +189,10 @@ unsafe extern "C" fn XXH_readLE32(mut ptr: *const std::ffi::c_void) -> xxh_u32 {
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE32_align(
-    mut ptr: *const std::ffi::c_void,
+    mut ptr: *const core::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u32 {
-    if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
+    if align as core::ffi::c_uint == XXH_unaligned as core::ffi::c_int as core::ffi::c_uint {
         XXH_readLE32(ptr)
     } else if XXH_CPU_LITTLE_ENDIAN != 0 {
         *(ptr as *const xxh_u32)
@@ -200,21 +200,21 @@ unsafe extern "C" fn XXH_readLE32_align(
         XXH_swap32(*(ptr as *const xxh_u32))
     }
 }
-unsafe extern "C" fn XXH_read64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
+unsafe extern "C" fn XXH_read64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
     *(ptr as *const xxh_unalign64)
 }
 unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
-    ((x << 56) as std::ffi::c_ulonglong & 0xff00000000000000 as std::ffi::c_ulonglong
-        | (x << 40) as std::ffi::c_ulonglong & 0xff000000000000 as std::ffi::c_ulonglong
-        | (x << 24) as std::ffi::c_ulonglong & 0xff0000000000 as std::ffi::c_ulonglong
-        | (x << 8) as std::ffi::c_ulonglong & 0xff00000000 as std::ffi::c_ulonglong
-        | (x >> 8) as std::ffi::c_ulonglong & 0xff000000 as std::ffi::c_ulonglong
-        | (x >> 24) as std::ffi::c_ulonglong & 0xff0000 as std::ffi::c_ulonglong
-        | (x >> 40) as std::ffi::c_ulonglong & 0xff00 as std::ffi::c_ulonglong
-        | (x >> 56) as std::ffi::c_ulonglong & 0xff as std::ffi::c_ulonglong) as xxh_u64
+    ((x << 56) as core::ffi::c_ulonglong & 0xff00000000000000 as core::ffi::c_ulonglong
+        | (x << 40) as core::ffi::c_ulonglong & 0xff000000000000 as core::ffi::c_ulonglong
+        | (x << 24) as core::ffi::c_ulonglong & 0xff0000000000 as core::ffi::c_ulonglong
+        | (x << 8) as core::ffi::c_ulonglong & 0xff00000000 as core::ffi::c_ulonglong
+        | (x >> 8) as core::ffi::c_ulonglong & 0xff000000 as core::ffi::c_ulonglong
+        | (x >> 24) as core::ffi::c_ulonglong & 0xff0000 as core::ffi::c_ulonglong
+        | (x >> 40) as core::ffi::c_ulonglong & 0xff00 as core::ffi::c_ulonglong
+        | (x >> 56) as core::ffi::c_ulonglong & 0xff as core::ffi::c_ulonglong) as xxh_u64
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
+unsafe extern "C" fn XXH_readLE64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read64(ptr)
     } else {
@@ -223,10 +223,10 @@ unsafe extern "C" fn XXH_readLE64(mut ptr: *const std::ffi::c_void) -> xxh_u64 {
 }
 #[inline(always)]
 unsafe extern "C" fn XXH_readLE64_align(
-    mut ptr: *const std::ffi::c_void,
+    mut ptr: *const core::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u64 {
-    if align as std::ffi::c_uint == XXH_unaligned as std::ffi::c_int as std::ffi::c_uint {
+    if align as core::ffi::c_uint == XXH_unaligned as core::ffi::c_int as core::ffi::c_uint {
         XXH_readLE64(ptr)
     } else if XXH_CPU_LITTLE_ENDIAN != 0 {
         *(ptr as *const xxh_u64)
@@ -234,32 +234,32 @@ unsafe extern "C" fn XXH_readLE64_align(
         XXH_swap64(*(ptr as *const xxh_u64))
     }
 }
-pub const XXH_PRIME64_1: std::ffi::c_ulonglong = 0x9e3779b185ebca87 as std::ffi::c_ulonglong;
-pub const XXH_PRIME64_2: std::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as std::ffi::c_ulonglong;
-pub const XXH_PRIME64_3: std::ffi::c_ulonglong = 0x165667b19e3779f9 as std::ffi::c_ulonglong;
-pub const XXH_PRIME64_4: std::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as std::ffi::c_ulonglong;
-pub const XXH_PRIME64_5: std::ffi::c_ulonglong = 0x27d4eb2f165667c5 as std::ffi::c_ulonglong;
+pub const XXH_PRIME64_1: core::ffi::c_ulonglong = 0x9e3779b185ebca87 as core::ffi::c_ulonglong;
+pub const XXH_PRIME64_2: core::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as core::ffi::c_ulonglong;
+pub const XXH_PRIME64_3: core::ffi::c_ulonglong = 0x165667b19e3779f9 as core::ffi::c_ulonglong;
+pub const XXH_PRIME64_4: core::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as core::ffi::c_ulonglong;
+pub const XXH_PRIME64_5: core::ffi::c_ulonglong = 0x27d4eb2f165667c5 as core::ffi::c_ulonglong;
 unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
-    acc = (acc as std::ffi::c_ulonglong)
-        .wrapping_add((input as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
+    acc = (acc as core::ffi::c_ulonglong)
+        .wrapping_add((input as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
         as xxh_u64 as xxh_u64;
     acc = ::core::intrinsics::rotate_left(acc, 31 as u32);
-    acc = (acc as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
+    acc = (acc as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
     acc
 }
 unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
     val = XXH64_round(0, val);
     acc ^= val;
-    acc = (acc as std::ffi::c_ulonglong)
+    acc = (acc as core::ffi::c_ulonglong)
         .wrapping_mul(XXH_PRIME64_1)
         .wrapping_add(XXH_PRIME64_4) as xxh_u64;
     acc
 }
 unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 33;
-    hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
+    hash = (hash as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
     hash ^= hash >> 29;
-    hash = (hash as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_3) as xxh_u64 as xxh_u64;
+    hash = (hash as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_3) as xxh_u64 as xxh_u64;
     hash ^= hash >> 32;
     hash
 }
@@ -274,21 +274,24 @@ unsafe extern "C" fn XXH64_finalize(
     }
     len &= 31;
     while len >= 8 {
-        let k1 = XXH64_round(0, XXH_readLE64_align(ptr as *const std::ffi::c_void, align));
+        let k1 = XXH64_round(
+            0,
+            XXH_readLE64_align(ptr as *const core::ffi::c_void, align),
+        );
         ptr = ptr.offset(8);
         hash ^= k1;
-        hash = (::core::intrinsics::rotate_left(hash, 27 as u32) as std::ffi::c_ulonglong)
+        hash = (::core::intrinsics::rotate_left(hash, 27 as u32) as core::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_1)
             .wrapping_add(XXH_PRIME64_4) as xxh_u64;
         len = len.wrapping_sub(8);
     }
     if len >= 4 {
-        hash = (hash as std::ffi::c_ulonglong
-            ^ (XXH_readLE32_align(ptr as *const std::ffi::c_void, align) as xxh_u64
-                as std::ffi::c_ulonglong)
+        hash = (hash as core::ffi::c_ulonglong
+            ^ (XXH_readLE32_align(ptr as *const core::ffi::c_void, align) as xxh_u64
+                as core::ffi::c_ulonglong)
                 .wrapping_mul(XXH_PRIME64_1)) as xxh_u64;
         ptr = ptr.offset(4);
-        hash = (::core::intrinsics::rotate_left(hash, 23 as u32) as std::ffi::c_ulonglong)
+        hash = (::core::intrinsics::rotate_left(hash, 23 as u32) as core::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_2)
             .wrapping_add(XXH_PRIME64_3) as xxh_u64;
         len = len.wrapping_sub(4);
@@ -296,10 +299,10 @@ unsafe extern "C" fn XXH64_finalize(
     while len > 0 {
         let fresh0 = ptr;
         ptr = ptr.offset(1);
-        hash = (hash as std::ffi::c_ulonglong
-            ^ (*fresh0 as std::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_5))
+        hash = (hash as core::ffi::c_ulonglong
+            ^ (*fresh0 as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_5))
             as xxh_u64;
-        hash = (::core::intrinsics::rotate_left(hash, 11 as u32) as std::ffi::c_ulonglong)
+        hash = (::core::intrinsics::rotate_left(hash, 11 as u32) as core::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_1) as xxh_u64;
         len = len.wrapping_sub(1);
     }
@@ -319,31 +322,31 @@ unsafe extern "C" fn XXH64_endian_align(
     if len >= 32 {
         let bEnd = input.offset(len as isize);
         let limit = bEnd.offset(-(31));
-        let mut v1 = (seed as std::ffi::c_ulonglong)
+        let mut v1 = (seed as core::ffi::c_ulonglong)
             .wrapping_add(XXH_PRIME64_1)
             .wrapping_add(XXH_PRIME64_2) as xxh_u64;
-        let mut v2 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_2) as xxh_u64;
+        let mut v2 = (seed as core::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_2) as xxh_u64;
         let mut v3 = seed.wrapping_add(0);
-        let mut v4 = (seed as std::ffi::c_ulonglong).wrapping_sub(XXH_PRIME64_1) as xxh_u64;
+        let mut v4 = (seed as core::ffi::c_ulonglong).wrapping_sub(XXH_PRIME64_1) as xxh_u64;
         loop {
             v1 = XXH64_round(
                 v1,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
+                XXH_readLE64_align(input as *const core::ffi::c_void, align),
             );
             input = input.offset(8);
             v2 = XXH64_round(
                 v2,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
+                XXH_readLE64_align(input as *const core::ffi::c_void, align),
             );
             input = input.offset(8);
             v3 = XXH64_round(
                 v3,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
+                XXH_readLE64_align(input as *const core::ffi::c_void, align),
             );
             input = input.offset(8);
             v4 = XXH64_round(
                 v4,
-                XXH_readLE64_align(input as *const std::ffi::c_void, align),
+                XXH_readLE64_align(input as *const core::ffi::c_void, align),
             );
             input = input.offset(8);
             if input >= limit {
@@ -359,28 +362,29 @@ unsafe extern "C" fn XXH64_endian_align(
         h64 = XXH64_mergeRound(h64, v3);
         h64 = XXH64_mergeRound(h64, v4);
     } else {
-        h64 = (seed as std::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
+        h64 = (seed as core::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
     }
     h64 = h64.wrapping_add(len);
     XXH64_finalize(h64, input, len, align)
 }
 #[inline]
 unsafe extern "C" fn XXH_INLINE_XXH64(
-    mut input: *const std::ffi::c_void,
+    mut input: *const core::ffi::c_void,
     mut len: size_t,
     mut seed: XXH64_hash_t,
 ) -> XXH64_hash_t {
     XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
 }
-pub const MB_UNIT: std::ffi::c_int = 1000000;
-pub const NULL: std::ffi::c_int = 0;
-pub const TIMELOOP_NANOSEC: std::ffi::c_ulonglong = (1 as std::ffi::c_int as std::ffi::c_ulonglong)
-    .wrapping_mul(1000000000 as std::ffi::c_ulonglong);
-pub const BMK_RUNTEST_DEFAULT_MS: std::ffi::c_int = 1000;
+pub const MB_UNIT: core::ffi::c_int = 1000000;
+pub const NULL: core::ffi::c_int = 0;
+pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong = (1 as core::ffi::c_int
+    as core::ffi::c_ulonglong)
+    .wrapping_mul(1000000000 as core::ffi::c_ulonglong);
+pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
 static mut maxMemory: size_t = 0;
-pub const DEBUG: std::ffi::c_int = 0;
-unsafe extern "C" fn uintSize(mut value: std::ffi::c_uint) -> size_t {
-    let mut size = 1 as std::ffi::c_int as size_t;
+pub const DEBUG: core::ffi::c_int = 0;
+unsafe extern "C" fn uintSize(mut value: core::ffi::c_uint) -> size_t {
+    let mut size = 1 as core::ffi::c_int as size_t;
     while value >= 10 {
         size = size.wrapping_add(1);
         value = value.wrapping_div(10);
@@ -388,18 +392,18 @@ unsafe extern "C" fn uintSize(mut value: std::ffi::c_uint) -> size_t {
     size
 }
 unsafe extern "C" fn writeUint_varLen(
-    mut buffer: *mut std::ffi::c_char,
+    mut buffer: *mut core::ffi::c_char,
     mut capacity: size_t,
-    mut value: std::ffi::c_uint,
+    mut value: core::ffi::c_uint,
 ) {
-    let mut endPos = uintSize(value) as std::ffi::c_int - 1;
+    let mut endPos = uintSize(value) as core::ffi::c_int - 1;
     if uintSize(value) >= 1 {
     } else {
         __assert_fail(
-            b"uintSize(value) >= 1\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"uintSize(value) >= 1\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             156,
-            (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
+            (*::core::mem::transmute::<&[u8; 52], &[core::ffi::c_char; 52]>(
                 b"void writeUint_varLen(char *, size_t, unsigned int)\0",
             ))
             .as_ptr(),
@@ -408,18 +412,18 @@ unsafe extern "C" fn writeUint_varLen(
     if uintSize(value) < capacity {
     } else {
         __assert_fail(
-            b"uintSize(value) < capacity\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"uintSize(value) < capacity\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             157,
-            (*::core::mem::transmute::<&[u8; 52], &[std::ffi::c_char; 52]>(
+            (*::core::mem::transmute::<&[u8; 52], &[core::ffi::c_char; 52]>(
                 b"void writeUint_varLen(char *, size_t, unsigned int)\0",
             ))
             .as_ptr(),
         );
     }
     while endPos >= 0 {
-        let mut c = ('0' as i32 + value.wrapping_rem(10) as std::ffi::c_char as std::ffi::c_int)
-            as std::ffi::c_char;
+        let mut c = ('0' as i32 + value.wrapping_rem(10) as core::ffi::c_char as core::ffi::c_int)
+            as core::ffi::c_char;
         let fresh1 = endPos;
         endPos -= 1;
         *buffer.offset(fresh1 as isize) = c;
@@ -427,25 +431,25 @@ unsafe extern "C" fn writeUint_varLen(
     }
 }
 unsafe extern "C" fn formatString_u(
-    mut buffer: *mut std::ffi::c_char,
+    mut buffer: *mut core::ffi::c_char,
     mut buffer_size: size_t,
-    mut formatString: *const std::ffi::c_char,
-    mut value: std::ffi::c_uint,
-) -> std::ffi::c_int {
+    mut formatString: *const core::ffi::c_char,
+    mut value: core::ffi::c_uint,
+) -> core::ffi::c_int {
     let valueSize = uintSize(value);
     let mut written = 0;
-    let mut i: std::ffi::c_int = 0;
+    let mut i: core::ffi::c_int = 0;
     i = 0;
-    while *formatString.offset(i as isize) as std::ffi::c_int != '\0' as i32
+    while *formatString.offset(i as isize) as core::ffi::c_int != '\0' as i32
         && written < buffer_size.wrapping_sub(1)
     {
-        if *formatString.offset(i as isize) as std::ffi::c_int != '%' as i32 {
+        if *formatString.offset(i as isize) as core::ffi::c_int != '%' as i32 {
             let fresh2 = written;
             written = written.wrapping_add(1);
             *buffer.offset(fresh2 as isize) = *formatString.offset(i as isize);
         } else {
             i += 1;
-            if *formatString.offset(i as isize) as std::ffi::c_int == 'u' as i32 {
+            if *formatString.offset(i as isize) as core::ffi::c_int == 'u' as i32 {
                 if written.wrapping_add(valueSize) >= buffer_size {
                     abort();
                 }
@@ -455,10 +459,10 @@ unsafe extern "C" fn formatString_u(
                     value,
                 );
                 written = written.wrapping_add(valueSize);
-            } else if *formatString.offset(i as isize) as std::ffi::c_int == '%' as i32 {
+            } else if *formatString.offset(i as isize) as core::ffi::c_int == '%' as i32 {
                 let fresh3 = written;
                 written = written.wrapping_add(1);
-                *buffer.offset(fresh3 as isize) = '%' as i32 as std::ffi::c_char;
+                *buffer.offset(fresh3 as isize) = '%' as i32 as core::ffi::c_char;
             } else {
                 abort();
             }
@@ -466,18 +470,18 @@ unsafe extern "C" fn formatString_u(
         i += 1;
     }
     if written < buffer_size {
-        *buffer.offset(written as isize) = '\0' as i32 as std::ffi::c_char;
+        *buffer.offset(written as isize) = '\0' as i32 as core::ffi::c_char;
     } else {
         abort();
     }
-    written as std::ffi::c_int
+    written as core::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
     {
         BMK_advancedParams_t {
             mode: BMK_both,
-            nbSeconds: BMK_TIMETEST_DEFAULT_S as std::ffi::c_uint,
+            nbSeconds: BMK_TIMETEST_DEFAULT_S as core::ffi::c_uint,
             chunkSizeMax: 0,
             targetCBlockSize: 0,
             nbWorkers: 0,
@@ -495,9 +499,9 @@ pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
 }
 unsafe extern "C" fn BMK_initCCtx(
     mut ctx: *mut ZSTD_CCtx,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
-    mut cLevel: std::ffi::c_int,
+    mut cLevel: core::ffi::c_int,
     mut comprParams: *const ZSTD_compressionParameters,
     mut adv: *const BMK_advancedParams_t,
 ) {
@@ -507,18 +511,18 @@ unsafe extern "C" fn BMK_initCCtx(
         if ZSTD_isError(zerr) != 0 {
             fprintf(
                 stderr,
-                b"Error : \0" as *const u8 as *const std::ffi::c_char,
+                b"Error : \0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
             fprintf(
                 stderr,
-                b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+                b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
                 b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, 0)\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 ZSTD_getErrorName(zerr),
             );
             fflush(NULL as *mut FILE);
-            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             fflush(NULL as *mut FILE);
             exit(1);
         }
@@ -527,18 +531,18 @@ unsafe extern "C" fn BMK_initCCtx(
         if ZSTD_isError(zerr_0) != 0 {
             fprintf(
                 stderr,
-                b"Error : \0" as *const u8 as *const std::ffi::c_char,
+                b"Error : \0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
             fprintf(
                 stderr,
-                b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+                b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
                 b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, adv->nbWorkers)\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 ZSTD_getErrorName(zerr_0),
             );
             fflush(NULL as *mut FILE);
-            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             fflush(NULL as *mut FILE);
             exit(1);
         }
@@ -547,18 +551,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_1) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_compressionLevel, cLevel)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_1),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -566,18 +570,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_2) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_useRowMatchFinder, adv->useRowMatchFinder)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_2),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -585,18 +589,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_3) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_enableLongDistanceMatching, adv->ldmFlag)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_3),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -604,18 +608,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_4) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmMinMatch, adv->ldmMinMatch)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_4),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -623,18 +627,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_5) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmHashLog, adv->ldmHashLog)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_5),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -642,18 +646,18 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_6) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_ldmBucketSizeLog, adv->ldmBucketSizeLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_6),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -661,225 +665,225 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_7) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_ldmHashRateLog, adv->ldmHashRateLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_7),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_8 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_windowLog,
-        (*comprParams).windowLog as std::ffi::c_int,
+        (*comprParams).windowLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_8) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_windowLog, (int)comprParams->windowLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_8),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_9 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_hashLog,
-        (*comprParams).hashLog as std::ffi::c_int,
+        (*comprParams).hashLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_9) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_hashLog, (int)comprParams->hashLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_9),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_10 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_chainLog,
-        (*comprParams).chainLog as std::ffi::c_int,
+        (*comprParams).chainLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_10) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_chainLog, (int)comprParams->chainLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_10),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_11 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_searchLog,
-        (*comprParams).searchLog as std::ffi::c_int,
+        (*comprParams).searchLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_11) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_searchLog, (int)comprParams->searchLog)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_11),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_12 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_minMatch,
-        (*comprParams).minMatch as std::ffi::c_int,
+        (*comprParams).minMatch as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_12) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_minMatch, (int)comprParams->minMatch)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_12),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_13 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_targetLength,
-        (*comprParams).targetLength as std::ffi::c_int,
+        (*comprParams).targetLength as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_13) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_targetLength, (int)comprParams->targetLength)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_13),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_14 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_experimentalParam5,
-        (*adv).literalCompressionMode as std::ffi::c_int,
+        (*adv).literalCompressionMode as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_14) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_literalCompressionMode, (int)adv->literalCompressionMode)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_14),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_15 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_strategy,
-        (*comprParams).strategy as std::ffi::c_int,
+        (*comprParams).strategy as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_15) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_strategy, (int)comprParams->strategy)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_15),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
     let zerr_16 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_c_targetCBlockSize,
-        (*adv).targetCBlockSize as std::ffi::c_int,
+        (*adv).targetCBlockSize as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_16) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_targetCBlockSize, (int)adv->targetCBlockSize)\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_16),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -887,43 +891,43 @@ unsafe extern "C" fn BMK_initCCtx(
     if ZSTD_isError(zerr_17) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_CCtx_loadDictionary(ctx, dictBuffer, dictBufferSize)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_17),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
 }
 unsafe extern "C" fn BMK_initDCtx(
     mut dctx: *mut ZSTD_DCtx,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
 ) {
     let zerr = ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters);
     if ZSTD_isError(zerr) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
@@ -931,23 +935,23 @@ unsafe extern "C" fn BMK_initDCtx(
     if ZSTD_isError(zerr_0) != 0 {
         fprintf(
             stderr,
-            b"Error : \0" as *const u8 as *const std::ffi::c_char,
+            b"Error : \0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const std::ffi::c_char,
+            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
             b"ZSTD_DCtx_loadDictionary(dctx, dictBuffer, dictBufferSize)\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_0),
         );
         fflush(NULL as *mut FILE);
-        fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         fflush(NULL as *mut FILE);
         exit(1);
     }
 }
-unsafe extern "C" fn local_initCCtx(mut payload: *mut std::ffi::c_void) -> size_t {
+unsafe extern "C" fn local_initCCtx(mut payload: *mut core::ffi::c_void) -> size_t {
     let mut ag = payload as *mut BMK_initCCtxArgs;
     BMK_initCCtx(
         (*ag).cctx,
@@ -959,37 +963,37 @@ unsafe extern "C" fn local_initCCtx(mut payload: *mut std::ffi::c_void) -> size_
     );
     0
 }
-unsafe extern "C" fn local_initDCtx(mut payload: *mut std::ffi::c_void) -> size_t {
+unsafe extern "C" fn local_initDCtx(mut payload: *mut core::ffi::c_void) -> size_t {
     let mut ag = payload as *mut BMK_initDCtxArgs;
     BMK_initDCtx((*ag).dctx, (*ag).dictBuffer, (*ag).dictBufferSize);
     0
 }
 unsafe extern "C" fn local_defaultCompress(
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
-    mut dstBuffer: *mut std::ffi::c_void,
+    mut dstBuffer: *mut core::ffi::c_void,
     mut dstSize: size_t,
-    mut addArgs: *mut std::ffi::c_void,
+    mut addArgs: *mut core::ffi::c_void,
 ) -> size_t {
     let cctx = addArgs as *mut ZSTD_CCtx;
     ZSTD_compress2(cctx, dstBuffer, dstSize, srcBuffer, srcSize)
 }
 unsafe extern "C" fn local_defaultDecompress(
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
-    mut dstBuffer: *mut std::ffi::c_void,
+    mut dstBuffer: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut addArgs: *mut std::ffi::c_void,
+    mut addArgs: *mut core::ffi::c_void,
 ) -> size_t {
     let mut moreToFlush = 1;
     let dctx = addArgs as *mut ZSTD_DCtx;
     let mut in_0 = ZSTD_inBuffer_s {
-        src: std::ptr::null::<std::ffi::c_void>(),
+        src: core::ptr::null::<core::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
     let mut out = ZSTD_outBuffer_s {
-        dst: std::ptr::null_mut::<std::ffi::c_void>(),
+        dst: core::ptr::null_mut::<core::ffi::c_void>(),
         size: 0,
         pos: 0,
     };
@@ -1001,7 +1005,7 @@ unsafe extern "C" fn local_defaultDecompress(
     out.pos = 0;
     while moreToFlush != 0 {
         if out.pos == out.size {
-            return -(ZSTD_error_dstSize_tooSmall as std::ffi::c_int) as size_t;
+            return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         moreToFlush = ZSTD_decompressStream(dctx, &mut out, &mut in_0);
         if ZSTD_isError(moreToFlush) != 0 {
@@ -1013,8 +1017,8 @@ unsafe extern "C" fn local_defaultDecompress(
 #[no_mangle]
 pub unsafe extern "C" fn BMK_isSuccessful_benchOutcome(
     mut outcome: BMK_benchOutcome_t,
-) -> std::ffi::c_int {
-    (outcome.tag == 0) as std::ffi::c_int
+) -> core::ffi::c_int {
+    (outcome.tag == 0) as core::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_benchResult(
@@ -1023,10 +1027,10 @@ pub unsafe extern "C" fn BMK_extract_benchResult(
     if outcome.tag == 0 {
     } else {
         __assert_fail(
-            b"outcome.tag == 0\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"outcome.tag == 0\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             378,
-            (*::core::mem::transmute::<&[u8; 62], &[std::ffi::c_char; 62]>(
+            (*::core::mem::transmute::<&[u8; 62], &[core::ffi::c_char; 62]>(
                 b"BMK_benchResult_t BMK_extract_benchResult(BMK_benchOutcome_t)\0",
             ))
             .as_ptr(),
@@ -1069,40 +1073,41 @@ unsafe extern "C" fn BMK_benchOutcome_setValidResult(
     b
 }
 unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
-    mut srcPtrs: *mut *const std::ffi::c_void,
+    mut srcPtrs: *mut *const core::ffi::c_void,
     mut srcSizes: *mut size_t,
-    mut cPtrs: *mut *mut std::ffi::c_void,
+    mut cPtrs: *mut *mut core::ffi::c_void,
     mut cCapacities: *mut size_t,
     mut cSizes: *mut size_t,
-    mut resPtrs: *mut *mut std::ffi::c_void,
+    mut resPtrs: *mut *mut core::ffi::c_void,
     mut resSizes: *mut size_t,
-    mut resultBufferPtr: *mut *mut std::ffi::c_void,
-    mut compressedBuffer: *mut std::ffi::c_void,
+    mut resultBufferPtr: *mut *mut core::ffi::c_void,
+    mut compressedBuffer: *mut core::ffi::c_void,
     mut maxCompressedSize: size_t,
     mut timeStateCompress: *mut BMK_timedFnState_t,
     mut timeStateDecompress: *mut BMK_timedFnState_t,
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut fileSizes: *const size_t,
-    mut nbFiles: std::ffi::c_uint,
-    cLevel: std::ffi::c_int,
+    mut nbFiles: core::ffi::c_uint,
+    cLevel: core::ffi::c_int,
     mut comprParams: *const ZSTD_compressionParameters,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
     mut cctx: *mut ZSTD_CCtx,
     mut dctx: *mut ZSTD_DCtx,
-    mut displayLevel: std::ffi::c_int,
-    mut displayName: *const std::ffi::c_char,
+    mut displayLevel: core::ffi::c_int,
+    mut displayName: *const core::ffi::c_char,
     mut adv: *const BMK_advancedParams_t,
 ) -> BMK_benchOutcome_t {
     let chunkSizeMax = (if (*adv).chunkSizeMax >= 32
-        && (*adv).mode as std::ffi::c_uint != BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+        && (*adv).mode as core::ffi::c_uint
+            != BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
     {
         (*adv).chunkSizeMax
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as std::ffi::c_int as size_t);
+    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
     let mut benchResult = BMK_benchResult_t {
         cSize: 0,
         cSpeed: 0,
@@ -1116,12 +1121,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if !cctx.is_null() {
     } else {
         __assert_fail(
-            b"cctx != NULL\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"cctx != NULL\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             439,
             (*::core::mem::transmute::<
                 &[u8; 385],
-                &[std::ffi::c_char; 385],
+                &[core::ffi::c_char; 385],
             >(
                 b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
             ))
@@ -1131,12 +1136,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if !dctx.is_null() {
     } else {
         __assert_fail(
-            b"dctx != NULL\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"dctx != NULL\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             440,
             (*::core::mem::transmute::<
                 &[u8; 385],
-                &[std::ffi::c_char; 385],
+                &[core::ffi::c_char; 385],
             >(
                 b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
             ))
@@ -1151,17 +1156,17 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if strlen(displayName) > 17 {
         displayName = displayName.offset((strlen(displayName)).wrapping_sub(17) as isize);
     }
-    if (*adv).mode as std::ffi::c_uint == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint {
-        let mut srcPtr = srcBuffer as *const std::ffi::c_char;
-        let mut totalDSize64 = 0 as std::ffi::c_int as u64;
+    if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
+        let mut srcPtr = srcBuffer as *const core::ffi::c_char;
+        let mut totalDSize64 = 0 as core::ffi::c_int as u64;
         let mut fileNb: u32 = 0;
         fileNb = 0;
         while fileNb < nbFiles {
             let fSize64 = ZSTD_findDecompressedSize(
-                srcPtr as *const std::ffi::c_void,
+                srcPtr as *const core::ffi::c_void,
                 *fileSizes.offset(fileNb as isize),
             ) as u64;
-            if fSize64 as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN {
+            if fSize64 as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN {
                 let mut r = BMK_benchOutcome_t {
                     internal_never_use_directly: BMK_benchResult_t {
                         cSize: 0,
@@ -1179,7 +1184,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         32,
                     );
                     fflush(NULL as *mut FILE);
@@ -1188,18 +1193,18 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"Decompressed size cannot be determined: cannot benchmark\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 r.tag = 32;
                 return r;
             }
-            if fSize64 as std::ffi::c_ulonglong == ZSTD_CONTENTSIZE_ERROR {
+            if fSize64 as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_ERROR {
                 let mut r_0 = BMK_benchOutcome_t {
                     internal_never_use_directly: BMK_benchResult_t {
                         cSize: 0,
@@ -1217,7 +1222,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         32,
                     );
                     fflush(NULL as *mut FILE);
@@ -1226,12 +1231,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"Error while trying to assess decompressed size: data may be invalid\0"
-                            as *const u8 as *const std::ffi::c_char,
+                            as *const u8 as *const core::ffi::c_char,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 r_0.tag = 32;
@@ -1246,12 +1251,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         } else {
             __assert_fail(
                 b"(U64)decodedSize == totalDSize64\0" as *const u8
-                    as *const std::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
+                b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
                 472,
                 (*::core::mem::transmute::<
                     &[u8; 385],
-                    &[std::ffi::c_char; 385],
+                    &[core::ffi::c_char; 385],
                 >(
                     b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
                 ))
@@ -1277,7 +1282,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                     32,
                 );
                 fflush(NULL as *mut FILE);
@@ -1286,12 +1291,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b"decompressed size is too large for local system\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
             }
             if displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 fflush(NULL as *mut FILE);
             }
             r_1.tag = 32;
@@ -1316,7 +1321,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                     33,
                 );
                 fflush(NULL as *mut FILE);
@@ -1325,12 +1330,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b"allocation error: not enough memory\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
             }
             if displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 fflush(NULL as *mut FILE);
             }
             r_2.tag = 33;
@@ -1338,19 +1343,19 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         }
         cSize = srcSize;
         srcSize = decodedSize;
-        ratio = srcSize as std::ffi::c_double / cSize as std::ffi::c_double;
+        ratio = srcSize as core::ffi::c_double / cSize as core::ffi::c_double;
     }
-    let mut srcPtr_0 = srcBuffer as *const std::ffi::c_char;
-    let mut cPtr = compressedBuffer as *mut std::ffi::c_char;
-    let mut resPtr = *resultBufferPtr as *mut std::ffi::c_char;
+    let mut srcPtr_0 = srcBuffer as *const core::ffi::c_char;
+    let mut cPtr = compressedBuffer as *mut core::ffi::c_char;
+    let mut resPtr = *resultBufferPtr as *mut core::ffi::c_char;
     let mut fileNb_0: u32 = 0;
     let mut chunkID: u32 = 0;
     chunkID = 0;
     fileNb_0 = 0;
     while fileNb_0 < nbFiles {
         let mut remaining = *fileSizes.offset(fileNb_0 as isize);
-        let nbChunksforThisFile = if (*adv).mode as std::ffi::c_uint
-            == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+        let nbChunksforThisFile = if (*adv).mode as core::ffi::c_uint
+            == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
         {
             1
         } else {
@@ -1364,23 +1369,23 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 chunkSizeMax
             };
             let fresh4 = &mut (*srcPtrs.offset(chunkID as isize));
-            *fresh4 = srcPtr_0 as *const std::ffi::c_void;
+            *fresh4 = srcPtr_0 as *const core::ffi::c_void;
             *srcSizes.offset(chunkID as isize) = chunkSize;
             let fresh5 = &mut (*cPtrs.offset(chunkID as isize));
-            *fresh5 = cPtr as *mut std::ffi::c_void;
-            *cCapacities.offset(chunkID as isize) = if (*adv).mode as std::ffi::c_uint
-                == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+            *fresh5 = cPtr as *mut core::ffi::c_void;
+            *cCapacities.offset(chunkID as isize) = if (*adv).mode as core::ffi::c_uint
+                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
             {
                 chunkSize
             } else {
                 ZSTD_compressBound(chunkSize)
             };
             let fresh6 = &mut (*resPtrs.offset(chunkID as isize));
-            *fresh6 = resPtr as *mut std::ffi::c_void;
-            *resSizes.offset(chunkID as isize) = if (*adv).mode as std::ffi::c_uint
-                == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+            *fresh6 = resPtr as *mut core::ffi::c_void;
+            *resSizes.offset(chunkID as isize) = if (*adv).mode as core::ffi::c_uint
+                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
             {
-                ZSTD_findDecompressedSize(srcPtr_0 as *const std::ffi::c_void, chunkSize) as size_t
+                ZSTD_findDecompressedSize(srcPtr_0 as *const core::ffi::c_void, chunkSize) as size_t
             } else {
                 chunkSize
             };
@@ -1388,8 +1393,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             cPtr = cPtr.offset(*cCapacities.offset(chunkID as isize) as isize);
             resPtr = resPtr.offset(chunkSize as isize);
             remaining = remaining.wrapping_sub(chunkSize);
-            if (*adv).mode as std::ffi::c_uint
-                == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+            if (*adv).mode as core::ffi::c_uint
+                == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
             {
                 *cSizes.offset(chunkID as isize) = chunkSize;
                 benchResult.cSize = chunkSize;
@@ -1399,7 +1404,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         fileNb_0 = fileNb_0.wrapping_add(1);
     }
     nbChunks = chunkID;
-    if (*adv).mode as std::ffi::c_uint == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint {
+    if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
         memcpy(compressedBuffer, srcBuffer, loadedCompressedSize);
     } else {
         RDG_genBuffer(compressedBuffer, maxCompressedSize, 0.10f64, 0.50f64, 1);
@@ -1408,83 +1413,83 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         fprintf(
             stdout,
             b"Warning : time measurements may be incorrect in multithreading mode... \n\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
     }
-    let crcOrig = if (*adv).mode as std::ffi::c_uint
-        == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+    let crcOrig = if (*adv).mode as core::ffi::c_uint
+        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
     {
         0
     } else {
         XXH_INLINE_XXH64(srcBuffer, srcSize, 0)
     };
-    let mut marks: [*const std::ffi::c_char; 4] = [
-        b" |\0" as *const u8 as *const std::ffi::c_char,
-        b" /\0" as *const u8 as *const std::ffi::c_char,
-        b" =\0" as *const u8 as *const std::ffi::c_char,
-        b" \\\0" as *const u8 as *const std::ffi::c_char,
+    let mut marks: [*const core::ffi::c_char; 4] = [
+        b" |\0" as *const u8 as *const core::ffi::c_char,
+        b" /\0" as *const u8 as *const core::ffi::c_char,
+        b" =\0" as *const u8 as *const core::ffi::c_char,
+        b" \\\0" as *const u8 as *const core::ffi::c_char,
     ];
-    let mut markNb = 0 as std::ffi::c_int as u32;
-    let mut compressionCompleted = ((*adv).mode as std::ffi::c_uint
-        == BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint)
-        as std::ffi::c_int;
-    let mut decompressionCompleted = ((*adv).mode as std::ffi::c_uint
-        == BMK_compressOnly as std::ffi::c_int as std::ffi::c_uint)
-        as std::ffi::c_int;
+    let mut markNb = 0 as core::ffi::c_int as u32;
+    let mut compressionCompleted = ((*adv).mode as core::ffi::c_uint
+        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint)
+        as core::ffi::c_int;
+    let mut decompressionCompleted = ((*adv).mode as core::ffi::c_uint
+        == BMK_compressOnly as core::ffi::c_int as core::ffi::c_uint)
+        as core::ffi::c_int;
     let mut cbp = BMK_benchParams_t {
         benchFn: None,
-        benchPayload: std::ptr::null_mut::<std::ffi::c_void>(),
+        benchPayload: core::ptr::null_mut::<core::ffi::c_void>(),
         initFn: None,
-        initPayload: std::ptr::null_mut::<std::ffi::c_void>(),
+        initPayload: core::ptr::null_mut::<core::ffi::c_void>(),
         errorFn: None,
         blockCount: 0,
-        srcBuffers: std::ptr::null::<*const std::ffi::c_void>(),
-        srcSizes: std::ptr::null::<size_t>(),
-        dstBuffers: std::ptr::null::<*mut std::ffi::c_void>(),
-        dstCapacities: std::ptr::null::<size_t>(),
-        blockResults: std::ptr::null_mut::<size_t>(),
+        srcBuffers: core::ptr::null::<*const core::ffi::c_void>(),
+        srcSizes: core::ptr::null::<size_t>(),
+        dstBuffers: core::ptr::null::<*mut core::ffi::c_void>(),
+        dstCapacities: core::ptr::null::<size_t>(),
+        blockResults: core::ptr::null_mut::<size_t>(),
     };
     let mut dbp = BMK_benchParams_t {
         benchFn: None,
-        benchPayload: std::ptr::null_mut::<std::ffi::c_void>(),
+        benchPayload: core::ptr::null_mut::<core::ffi::c_void>(),
         initFn: None,
-        initPayload: std::ptr::null_mut::<std::ffi::c_void>(),
+        initPayload: core::ptr::null_mut::<core::ffi::c_void>(),
         errorFn: None,
         blockCount: 0,
-        srcBuffers: std::ptr::null::<*const std::ffi::c_void>(),
-        srcSizes: std::ptr::null::<size_t>(),
-        dstBuffers: std::ptr::null::<*mut std::ffi::c_void>(),
-        dstCapacities: std::ptr::null::<size_t>(),
-        blockResults: std::ptr::null_mut::<size_t>(),
+        srcBuffers: core::ptr::null::<*const core::ffi::c_void>(),
+        srcSizes: core::ptr::null::<size_t>(),
+        dstBuffers: core::ptr::null::<*mut core::ffi::c_void>(),
+        dstCapacities: core::ptr::null::<size_t>(),
+        blockResults: core::ptr::null_mut::<size_t>(),
     };
     let mut cctxprep = BMK_initCCtxArgs {
-        cctx: std::ptr::null_mut::<ZSTD_CCtx>(),
-        dictBuffer: std::ptr::null::<std::ffi::c_void>(),
+        cctx: core::ptr::null_mut::<ZSTD_CCtx>(),
+        dictBuffer: core::ptr::null::<core::ffi::c_void>(),
         dictBufferSize: 0,
         cLevel: 0,
-        comprParams: std::ptr::null::<ZSTD_compressionParameters>(),
-        adv: std::ptr::null::<BMK_advancedParams_t>(),
+        comprParams: core::ptr::null::<ZSTD_compressionParameters>(),
+        adv: core::ptr::null::<BMK_advancedParams_t>(),
     };
     let mut dctxprep = BMK_initDCtxArgs {
-        dctx: std::ptr::null_mut::<ZSTD_DCtx>(),
-        dictBuffer: std::ptr::null::<std::ffi::c_void>(),
+        dctx: core::ptr::null_mut::<ZSTD_DCtx>(),
+        dictBuffer: core::ptr::null::<core::ffi::c_void>(),
         dictBufferSize: 0,
     };
     cbp.benchFn = Some(
         local_defaultCompress
             as unsafe extern "C" fn(
-                *const std::ffi::c_void,
+                *const core::ffi::c_void,
                 size_t,
-                *mut std::ffi::c_void,
+                *mut core::ffi::c_void,
                 size_t,
-                *mut std::ffi::c_void,
+                *mut core::ffi::c_void,
             ) -> size_t,
     );
-    cbp.benchPayload = cctx as *mut std::ffi::c_void;
-    cbp.initFn = Some(local_initCCtx as unsafe extern "C" fn(*mut std::ffi::c_void) -> size_t);
-    cbp.initPayload = &mut cctxprep as *mut BMK_initCCtxArgs as *mut std::ffi::c_void;
-    cbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> std::ffi::c_uint);
+    cbp.benchPayload = cctx as *mut core::ffi::c_void;
+    cbp.initFn = Some(local_initCCtx as unsafe extern "C" fn(*mut core::ffi::c_void) -> size_t);
+    cbp.initPayload = &mut cctxprep as *mut BMK_initCCtxArgs as *mut core::ffi::c_void;
+    cbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> core::ffi::c_uint);
     cbp.blockCount = nbChunks as size_t;
     cbp.srcBuffers = srcPtrs;
     cbp.srcSizes = srcSizes;
@@ -1500,19 +1505,19 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     dbp.benchFn = Some(
         local_defaultDecompress
             as unsafe extern "C" fn(
-                *const std::ffi::c_void,
+                *const core::ffi::c_void,
                 size_t,
-                *mut std::ffi::c_void,
+                *mut core::ffi::c_void,
                 size_t,
-                *mut std::ffi::c_void,
+                *mut core::ffi::c_void,
             ) -> size_t,
     );
-    dbp.benchPayload = dctx as *mut std::ffi::c_void;
-    dbp.initFn = Some(local_initDCtx as unsafe extern "C" fn(*mut std::ffi::c_void) -> size_t);
-    dbp.initPayload = &mut dctxprep as *mut BMK_initDCtxArgs as *mut std::ffi::c_void;
-    dbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> std::ffi::c_uint);
+    dbp.benchPayload = dctx as *mut core::ffi::c_void;
+    dbp.initFn = Some(local_initDCtx as unsafe extern "C" fn(*mut core::ffi::c_void) -> size_t);
+    dbp.initPayload = &mut dctxprep as *mut BMK_initDCtxArgs as *mut core::ffi::c_void;
+    dbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> core::ffi::c_uint);
     dbp.blockCount = nbChunks as size_t;
-    dbp.srcBuffers = cPtrs as *const *const std::ffi::c_void;
+    dbp.srcBuffers = cPtrs as *const *const core::ffi::c_void;
     dbp.srcSizes = cSizes;
     dbp.dstBuffers = resPtrs;
     dbp.dstCapacities = resSizes;
@@ -1523,24 +1528,24 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if displayLevel >= 2 {
         fprintf(
             stdout,
-            b"\r%70s\r\0" as *const u8 as *const std::ffi::c_char,
-            b"\0" as *const u8 as *const std::ffi::c_char,
+            b"\r%70s\r\0" as *const u8 as *const core::ffi::c_char,
+            b"\0" as *const u8 as *const core::ffi::c_char,
         );
         fflush(NULL as *mut FILE);
     }
     if srcSize
-        < (2147483647 as std::ffi::c_int as std::ffi::c_uint)
+        < (2147483647 as core::ffi::c_int as core::ffi::c_uint)
             .wrapping_mul(2)
             .wrapping_add(1) as size_t
     {
     } else {
         __assert_fail(
-            b"srcSize < UINT_MAX\0" as *const u8 as *const std::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+            b"srcSize < UINT_MAX\0" as *const u8 as *const core::ffi::c_char,
+            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
             594,
             (*::core::mem::transmute::<
                 &[u8; 385],
-                &[std::ffi::c_char; 385],
+                &[core::ffi::c_char; 385],
             >(
                 b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
             ))
@@ -1550,10 +1555,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if displayLevel >= 2 {
         fprintf(
             stdout,
-            b"%2s-%-17.17s :%10u -> \r\0" as *const u8 as *const std::ffi::c_char,
+            b"%2s-%-17.17s :%10u -> \r\0" as *const u8 as *const core::ffi::c_char,
             *marks.as_mut_ptr().offset(markNb as isize),
             displayName,
-            srcSize as std::ffi::c_uint,
+            srcSize as core::ffi::c_uint,
         );
         fflush(NULL as *mut FILE);
     }
@@ -1578,7 +1583,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         30,
                     );
                     fflush(NULL as *mut FILE);
@@ -1586,12 +1591,12 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"compression error\0" as *const u8 as *const std::ffi::c_char,
+                        b"compression error\0" as *const u8 as *const core::ffi::c_char,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 r_3.tag = 30;
@@ -1599,7 +1604,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             }
             let cResult = BMK_extract_runTime(cOutcome);
             cSize = cResult.sumOfReturn;
-            ratio = srcSize as std::ffi::c_double / cSize as std::ffi::c_double;
+            ratio = srcSize as core::ffi::c_double / cSize as core::ffi::c_double;
             let mut newResult = BMK_benchResult_t {
                 cSize: 0,
                 cSpeed: 0,
@@ -1607,27 +1612,27 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 cMem: 0,
             };
             newResult.cSpeed =
-                (srcSize as std::ffi::c_double * TIMELOOP_NANOSEC as std::ffi::c_double
-                    / cResult.nanoSecPerRun) as u64 as std::ffi::c_ulonglong;
+                (srcSize as core::ffi::c_double * TIMELOOP_NANOSEC as core::ffi::c_double
+                    / cResult.nanoSecPerRun) as u64 as core::ffi::c_ulonglong;
             benchResult.cSize = cSize;
             if newResult.cSpeed > benchResult.cSpeed {
                 benchResult.cSpeed = newResult.cSpeed;
             }
             let ratioDigits =
-                1 + (ratio < 100.0f64) as std::ffi::c_int + (ratio < 10.0f64) as std::ffi::c_int;
+                1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
             if cSize
-                < (2147483647 as std::ffi::c_int as std::ffi::c_uint)
+                < (2147483647 as core::ffi::c_int as core::ffi::c_uint)
                     .wrapping_mul(2)
                     .wrapping_add(1) as size_t
             {
             } else {
                 __assert_fail(
-                    b"cSize < UINT_MAX\0" as *const u8 as *const std::ffi::c_char,
-                    b"benchzstd.c\0" as *const u8 as *const std::ffi::c_char,
+                    b"cSize < UINT_MAX\0" as *const u8 as *const core::ffi::c_char,
+                    b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
                     628,
                     (*::core::mem::transmute::<
                         &[u8; 385],
-                        &[std::ffi::c_char; 385],
+                        &[core::ffi::c_char; 385],
                     >(
                         b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
                     ))
@@ -1638,20 +1643,20 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stdout,
                     b"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s \r\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     *marks.as_mut_ptr().offset(markNb as isize),
                     displayName,
-                    srcSize as std::ffi::c_uint,
-                    cSize as std::ffi::c_uint,
+                    srcSize as core::ffi::c_uint,
+                    cSize as core::ffi::c_uint,
                     ratioDigits,
                     ratio,
-                    if benchResult.cSpeed < (10 * 1000000) as std::ffi::c_ulonglong {
+                    if benchResult.cSpeed < (10 * 1000000) as core::ffi::c_ulonglong {
                         2
                     } else {
                         1
                     },
-                    benchResult.cSpeed as std::ffi::c_double
-                        / 1000000 as std::ffi::c_int as std::ffi::c_double,
+                    benchResult.cSpeed as core::ffi::c_double
+                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -1677,7 +1682,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         30,
                     );
                     fflush(NULL as *mut FILE);
@@ -1685,45 +1690,46 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"decompression error\0" as *const u8 as *const std::ffi::c_char,
+                        b"decompression error\0" as *const u8 as *const core::ffi::c_char,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 r_4.tag = 30;
                 return r_4;
             }
             let dResult = BMK_extract_runTime(dOutcome);
-            let newDSpeed = (srcSize as std::ffi::c_double * TIMELOOP_NANOSEC as std::ffi::c_double
+            let newDSpeed = (srcSize as core::ffi::c_double
+                * TIMELOOP_NANOSEC as core::ffi::c_double
                 / dResult.nanoSecPerRun) as u64;
-            if newDSpeed as std::ffi::c_ulonglong > benchResult.dSpeed {
-                benchResult.dSpeed = newDSpeed as std::ffi::c_ulonglong;
+            if newDSpeed as core::ffi::c_ulonglong > benchResult.dSpeed {
+                benchResult.dSpeed = newDSpeed as core::ffi::c_ulonglong;
             }
             let ratioDigits_0 =
-                1 + (ratio < 100.0f64) as std::ffi::c_int + (ratio < 10.0f64) as std::ffi::c_int;
+                1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
                     b"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s, %6.1f MB/s\r\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     *marks.as_mut_ptr().offset(markNb as isize),
                     displayName,
-                    srcSize as std::ffi::c_uint,
-                    cSize as std::ffi::c_uint,
+                    srcSize as core::ffi::c_uint,
+                    cSize as core::ffi::c_uint,
                     ratioDigits_0,
                     ratio,
-                    if benchResult.cSpeed < (10 * 1000000) as std::ffi::c_ulonglong {
+                    if benchResult.cSpeed < (10 * 1000000) as core::ffi::c_ulonglong {
                         2
                     } else {
                         1
                     },
-                    benchResult.cSpeed as std::ffi::c_double
-                        / 1000000 as std::ffi::c_int as std::ffi::c_double,
-                    benchResult.dSpeed as std::ffi::c_double
-                        / 1000000 as std::ffi::c_int as std::ffi::c_double,
+                    benchResult.cSpeed as core::ffi::c_double
+                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
+                    benchResult.dSpeed as core::ffi::c_double
+                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -1732,33 +1738,33 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         markNb = markNb.wrapping_add(1) % NB_MARKS as u32;
     }
     let mut resultBuffer = *resultBufferPtr as *const u8;
-    let crcCheck = XXH_INLINE_XXH64(resultBuffer as *const std::ffi::c_void, srcSize, 0);
-    if (*adv).mode as std::ffi::c_uint == BMK_both as std::ffi::c_int as std::ffi::c_uint
+    let crcCheck = XXH_INLINE_XXH64(resultBuffer as *const core::ffi::c_void, srcSize, 0);
+    if (*adv).mode as core::ffi::c_uint == BMK_both as core::ffi::c_int as core::ffi::c_uint
         && crcOrig != crcCheck
     {
         let mut u: size_t = 0;
         fprintf(
             stderr,
             b"!!! WARNING !!! %14s : Invalid Checksum : %x != %x   \n\0" as *const u8
-                as *const std::ffi::c_char,
+                as *const core::ffi::c_char,
             displayName,
-            crcOrig as std::ffi::c_uint,
-            crcCheck as std::ffi::c_uint,
+            crcOrig as core::ffi::c_uint,
+            crcCheck as core::ffi::c_uint,
         );
         fflush(NULL as *mut FILE);
         u = 0;
         while u < srcSize {
-            if *(srcBuffer as *const u8).offset(u as isize) as std::ffi::c_int
-                != *resultBuffer.offset(u as isize) as std::ffi::c_int
+            if *(srcBuffer as *const u8).offset(u as isize) as core::ffi::c_int
+                != *resultBuffer.offset(u as isize) as core::ffi::c_int
             {
-                let mut segNb: std::ffi::c_uint = 0;
-                let mut bNb: std::ffi::c_uint = 0;
-                let mut pos: std::ffi::c_uint = 0;
-                let mut bacc = 0 as std::ffi::c_int as size_t;
+                let mut segNb: core::ffi::c_uint = 0;
+                let mut bNb: core::ffi::c_uint = 0;
+                let mut pos: core::ffi::c_uint = 0;
+                let mut bacc = 0 as core::ffi::c_int as size_t;
                 fprintf(
                     stderr,
-                    b"Decoding error at pos %u \0" as *const u8 as *const std::ffi::c_char,
-                    u as std::ffi::c_uint,
+                    b"Decoding error at pos %u \0" as *const u8 as *const core::ffi::c_char,
+                    u as core::ffi::c_uint,
                 );
                 fflush(NULL as *mut FILE);
                 segNb = 0;
@@ -1770,10 +1776,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     segNb = segNb.wrapping_add(1);
                 }
                 pos = u.wrapping_sub(bacc) as u32;
-                bNb = pos.wrapping_div((128 * ((1) << 10)) as std::ffi::c_uint);
+                bNb = pos.wrapping_div((128 * ((1) << 10)) as core::ffi::c_uint);
                 fprintf(
                     stderr,
-                    b"(sample %u, chunk %u, pos %u) \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"(sample %u, chunk %u, pos %u) \n\0" as *const u8 as *const core::ffi::c_char,
                     segNb,
                     bNb,
                     pos,
@@ -1783,78 +1789,78 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 let mut n: size_t = 0;
                 fprintf(
                     stderr,
-                    b"origin: \0" as *const u8 as *const std::ffi::c_char,
+                    b"origin: \0" as *const u8 as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
                 n = lowest;
                 while n > 0 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const std::ffi::c_char,
+                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
                         *(srcBuffer as *const u8).offset(u.wrapping_sub(n) as isize)
-                            as std::ffi::c_int,
+                            as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
                 }
                 fprintf(
                     stderr,
-                    b" :%02X:  \0" as *const u8 as *const std::ffi::c_char,
-                    *(srcBuffer as *const u8).offset(u as isize) as std::ffi::c_int,
+                    b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
+                    *(srcBuffer as *const u8).offset(u as isize) as core::ffi::c_int,
                 );
                 fflush(NULL as *mut FILE);
                 n = 1;
                 while n < 3 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const std::ffi::c_char,
+                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
                         *(srcBuffer as *const u8).offset(u.wrapping_add(n) as isize)
-                            as std::ffi::c_int,
+                            as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);
                 }
-                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 fflush(NULL as *mut FILE);
                 fprintf(
                     stderr,
-                    b"decode: \0" as *const u8 as *const std::ffi::c_char,
+                    b"decode: \0" as *const u8 as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
                 n = lowest;
                 while n > 0 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const std::ffi::c_char,
-                        *resultBuffer.offset(u.wrapping_sub(n) as isize) as std::ffi::c_int,
+                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        *resultBuffer.offset(u.wrapping_sub(n) as isize) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
                 }
                 fprintf(
                     stderr,
-                    b" :%02X:  \0" as *const u8 as *const std::ffi::c_char,
-                    *resultBuffer.offset(u as isize) as std::ffi::c_int,
+                    b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
+                    *resultBuffer.offset(u as isize) as core::ffi::c_int,
                 );
                 fflush(NULL as *mut FILE);
                 n = 1;
                 while n < 3 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const std::ffi::c_char,
-                        *resultBuffer.offset(u.wrapping_add(n) as isize) as std::ffi::c_int,
+                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        *resultBuffer.offset(u.wrapping_add(n) as isize) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);
                 }
-                fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 fflush(NULL as *mut FILE);
                 break;
             } else {
                 if u == srcSize.wrapping_sub(1) {
                     fprintf(
                         stderr,
-                        b"no difference detected\n\0" as *const u8 as *const std::ffi::c_char,
+                        b"no difference detected\n\0" as *const u8 as *const core::ffi::c_char,
                     );
                     fflush(NULL as *mut FILE);
                 }
@@ -1863,15 +1869,15 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         }
     }
     if displayLevel == 1 {
-        let cSpeed = benchResult.cSpeed as std::ffi::c_double / MB_UNIT as std::ffi::c_double;
-        let dSpeed = benchResult.dSpeed as std::ffi::c_double / MB_UNIT as std::ffi::c_double;
+        let cSpeed = benchResult.cSpeed as core::ffi::c_double / MB_UNIT as core::ffi::c_double;
+        let dSpeed = benchResult.dSpeed as core::ffi::c_double / MB_UNIT as core::ffi::c_double;
         if (*adv).additionalParam != 0 {
             fprintf(
                 stdout,
                 b"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s (param=%d)\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 cLevel,
-                cSize as std::ffi::c_int,
+                cSize as core::ffi::c_int,
                 ratio,
                 cSpeed,
                 dSpeed,
@@ -1883,9 +1889,9 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             fprintf(
                 stdout,
                 b"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s\n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
                 cLevel,
-                cSize as std::ffi::c_int,
+                cSize as core::ffi::c_int,
                 ratio,
                 cSpeed,
                 dSpeed,
@@ -1897,80 +1903,81 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     if displayLevel >= 2 {
         fprintf(
             stdout,
-            b"%2i#\n\0" as *const u8 as *const std::ffi::c_char,
+            b"%2i#\n\0" as *const u8 as *const core::ffi::c_char,
             cLevel,
         );
         fflush(NULL as *mut FILE);
     }
-    benchResult.cMem = ((1 as std::ffi::c_ulonglong) << (*comprParams).windowLog)
-        .wrapping_add(ZSTD_sizeof_CCtx(cctx) as std::ffi::c_ulonglong)
+    benchResult.cMem = ((1 as core::ffi::c_ulonglong) << (*comprParams).windowLog)
+        .wrapping_add(ZSTD_sizeof_CCtx(cctx) as core::ffi::c_ulonglong)
         as size_t;
     BMK_benchOutcome_setValidResult(benchResult)
 }
-pub const NB_MARKS: std::ffi::c_int = 4;
+pub const NB_MARKS: core::ffi::c_int = 4;
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchMemAdvanced(
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
-    mut dstBuffer: *mut std::ffi::c_void,
+    mut dstBuffer: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut fileSizes: *const size_t,
-    mut nbFiles: std::ffi::c_uint,
-    mut cLevel: std::ffi::c_int,
+    mut nbFiles: core::ffi::c_uint,
+    mut cLevel: core::ffi::c_int,
     mut comprParams: *const ZSTD_compressionParameters,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
-    mut displayLevel: std::ffi::c_int,
-    mut displayName: *const std::ffi::c_char,
+    mut displayLevel: core::ffi::c_int,
+    mut displayName: *const core::ffi::c_char,
     mut adv: *const BMK_advancedParams_t,
 ) -> BMK_benchOutcome_t {
     let dstParamsError =
-        dstBuffer.is_null() as std::ffi::c_int ^ (dstCapacity == 0) as std::ffi::c_int;
+        dstBuffer.is_null() as core::ffi::c_int ^ (dstCapacity == 0) as core::ffi::c_int;
     let chunkSize = (if (*adv).chunkSizeMax >= 32
-        && (*adv).mode as std::ffi::c_uint != BMK_decodeOnly as std::ffi::c_int as std::ffi::c_uint
+        && (*adv).mode as core::ffi::c_uint
+            != BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
     {
         (*adv).chunkSizeMax
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as std::ffi::c_int as size_t);
+    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
     let nbChunksMax = ((srcSize.wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize) as u32)
         .wrapping_add(nbFiles);
     let srcPtrs = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut std::ffi::c_void>() as std::ffi::c_ulong),
-    ) as *mut *const std::ffi::c_void;
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+    ) as *mut *const core::ffi::c_void;
     let srcSizes = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     let cPtrs = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut std::ffi::c_void>() as std::ffi::c_ulong),
-    ) as *mut *mut std::ffi::c_void;
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+    ) as *mut *mut core::ffi::c_void;
     let cSizes = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     let cCapacities = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     let resPtrs = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut std::ffi::c_void>() as std::ffi::c_ulong),
-    ) as *mut *mut std::ffi::c_void;
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+    ) as *mut *mut core::ffi::c_void;
     let resSizes = malloc(
-        (nbChunksMax as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong),
+        (nbChunksMax as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
     ) as *mut size_t;
     let mut timeStateCompress = BMK_createTimedFnState(
         ((*adv).nbSeconds).wrapping_mul(1000),
-        BMK_RUNTEST_DEFAULT_MS as std::ffi::c_uint,
+        BMK_RUNTEST_DEFAULT_MS as core::ffi::c_uint,
     );
     let mut timeStateDecompress = BMK_createTimedFnState(
         ((*adv).nbSeconds).wrapping_mul(1000),
-        BMK_RUNTEST_DEFAULT_MS as std::ffi::c_uint,
+        BMK_RUNTEST_DEFAULT_MS as core::ffi::c_uint,
     );
     let cctx = ZSTD_createCCtx();
     let dctx = ZSTD_createDCtx();
@@ -1980,7 +1987,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         (ZSTD_compressBound(srcSize)).wrapping_add((nbChunksMax * 1024) as size_t)
     };
     let internalDstBuffer = if !dstBuffer.is_null() {
-        NULL as *mut std::ffi::c_void
+        NULL as *mut core::ffi::c_void
     } else {
         malloc(maxCompressedSize)
     };
@@ -1993,7 +2000,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
     let mut resultBuffer = if srcSize != 0 {
         malloc(srcSize)
     } else {
-        NULL as *mut std::ffi::c_void
+        NULL as *mut core::ffi::c_void
     };
     let allocationincomplete = (srcPtrs.is_null()
         || srcSizes.is_null()
@@ -2007,7 +2014,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         || cctx.is_null()
         || dctx.is_null()
         || compressedBuffer.is_null()
-        || resultBuffer.is_null()) as std::ffi::c_int;
+        || resultBuffer.is_null()) as core::ffi::c_int;
     if allocationincomplete == 0 && dstParamsError == 0 {
         outcome = BMK_benchMemAdvancedNoAlloc(
             srcPtrs,
@@ -2043,13 +2050,13 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
     ZSTD_freeDCtx(dctx);
     free(internalDstBuffer);
     free(resultBuffer);
-    free(srcPtrs as *mut std::ffi::c_void);
-    free(srcSizes as *mut std::ffi::c_void);
-    free(cPtrs as *mut std::ffi::c_void);
-    free(cSizes as *mut std::ffi::c_void);
-    free(cCapacities as *mut std::ffi::c_void);
-    free(resPtrs as *mut std::ffi::c_void);
-    free(resSizes as *mut std::ffi::c_void);
+    free(srcPtrs as *mut core::ffi::c_void);
+    free(srcSizes as *mut core::ffi::c_void);
+    free(cPtrs as *mut core::ffi::c_void);
+    free(cSizes as *mut core::ffi::c_void);
+    free(cCapacities as *mut core::ffi::c_void);
+    free(resPtrs as *mut core::ffi::c_void);
+    free(resSizes as *mut core::ffi::c_void);
     if allocationincomplete != 0 {
         let mut r = BMK_benchOutcome_t {
             internal_never_use_directly: BMK_benchResult_t {
@@ -2068,7 +2075,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                 31,
             );
             fflush(NULL as *mut FILE);
@@ -2076,12 +2083,12 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"allocation error : not enough memory\0" as *const u8 as *const std::ffi::c_char,
+                b"allocation error : not enough memory\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             fflush(NULL as *mut FILE);
         }
         r.tag = 31;
@@ -2105,7 +2112,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                 32,
             );
             fflush(NULL as *mut FILE);
@@ -2113,12 +2120,12 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Dst parameters not coherent\0" as *const u8 as *const std::ffi::c_char,
+                b"Dst parameters not coherent\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             fflush(NULL as *mut FILE);
         }
         r_0.tag = 32;
@@ -2128,22 +2135,22 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchMem(
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut fileSizes: *const size_t,
-    mut nbFiles: std::ffi::c_uint,
-    mut cLevel: std::ffi::c_int,
+    mut nbFiles: core::ffi::c_uint,
+    mut cLevel: core::ffi::c_int,
     mut comprParams: *const ZSTD_compressionParameters,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
-    mut displayLevel: std::ffi::c_int,
-    mut displayName: *const std::ffi::c_char,
+    mut displayLevel: core::ffi::c_int,
+    mut displayName: *const core::ffi::c_char,
 ) -> BMK_benchOutcome_t {
     let adv = BMK_initAdvancedParams();
     BMK_benchMemAdvanced(
         srcBuffer,
         srcSize,
-        NULL as *mut std::ffi::c_void,
+        NULL as *mut core::ffi::c_void,
         0,
         fileSizes,
         nbFiles,
@@ -2157,21 +2164,21 @@ pub unsafe extern "C" fn BMK_benchMem(
     )
 }
 unsafe extern "C" fn BMK_benchCLevels(
-    mut srcBuffer: *const std::ffi::c_void,
+    mut srcBuffer: *const core::ffi::c_void,
     mut benchedSize: size_t,
     mut fileSizes: *const size_t,
-    mut nbFiles: std::ffi::c_uint,
-    mut startCLevel: std::ffi::c_int,
-    mut endCLevel: std::ffi::c_int,
+    mut nbFiles: core::ffi::c_uint,
+    mut startCLevel: core::ffi::c_int,
+    mut endCLevel: core::ffi::c_int,
     mut comprParams: *const ZSTD_compressionParameters,
-    mut dictBuffer: *const std::ffi::c_void,
+    mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
-    mut displayLevel: std::ffi::c_int,
-    mut displayName: *const std::ffi::c_char,
+    mut displayLevel: core::ffi::c_int,
+    mut displayName: *const core::ffi::c_char,
     adv: *const BMK_advancedParams_t,
-) -> std::ffi::c_int {
-    let mut level: std::ffi::c_int = 0;
-    let mut pch: *const std::ffi::c_char = strrchr(displayName, '\\' as i32);
+) -> core::ffi::c_int {
+    let mut level: core::ffi::c_int = 0;
+    let mut pch: *const core::ffi::c_char = strrchr(displayName, '\\' as i32);
     if pch.is_null() {
         pch = strrchr(displayName, '/' as i32);
     }
@@ -2182,7 +2189,7 @@ unsafe extern "C" fn BMK_benchCLevels(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Invalid Compression Level \n\0" as *const u8 as *const std::ffi::c_char,
+                b"Invalid Compression Level \n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2192,7 +2199,7 @@ unsafe extern "C" fn BMK_benchCLevels(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Invalid Compression Level Range \n\0" as *const u8 as *const std::ffi::c_char,
+                b"Invalid Compression Level Range \n\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2203,7 +2210,7 @@ unsafe extern "C" fn BMK_benchCLevels(
             fprintf(
                 stderr,
                 b"Note : switching to real-time priority \n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2213,12 +2220,12 @@ unsafe extern "C" fn BMK_benchCLevels(
         fprintf(
             stdout,
             b"bench %s %s: input %u bytes, %u seconds, %u KB chunks\n\0" as *const u8
-                as *const std::ffi::c_char,
-            b"1.5.8\0" as *const u8 as *const std::ffi::c_char,
-            b"\0" as *const u8 as *const std::ffi::c_char,
-            benchedSize as std::ffi::c_uint,
+                as *const core::ffi::c_char,
+            b"1.5.8\0" as *const u8 as *const core::ffi::c_char,
+            b"\0" as *const u8 as *const core::ffi::c_char,
+            benchedSize as core::ffi::c_uint,
             (*adv).nbSeconds,
-            ((*adv).chunkSizeMax >> 10) as std::ffi::c_uint,
+            ((*adv).chunkSizeMax >> 10) as core::ffi::c_uint,
         );
         fflush(NULL as *mut FILE);
     }
@@ -2227,7 +2234,7 @@ unsafe extern "C" fn BMK_benchCLevels(
         let mut res = BMK_benchMemAdvanced(
             srcBuffer,
             benchedSize,
-            NULL as *mut std::ffi::c_void,
+            NULL as *mut core::ffi::c_void,
             0,
             fileSizes,
             nbFiles,
@@ -2248,15 +2255,15 @@ unsafe extern "C" fn BMK_benchCLevels(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_syntheticTest(
-    mut compressibility: std::ffi::c_double,
-    mut startingCLevel: std::ffi::c_int,
-    mut endCLevel: std::ffi::c_int,
+    mut compressibility: core::ffi::c_double,
+    mut startingCLevel: core::ffi::c_int,
+    mut endCLevel: core::ffi::c_int,
     mut compressionParams: *const ZSTD_compressionParameters,
-    mut displayLevel: std::ffi::c_int,
+    mut displayLevel: core::ffi::c_int,
     mut adv: *const BMK_advancedParams_t,
-) -> std::ffi::c_int {
-    let mut nameBuff: [std::ffi::c_char; 20] = [0; 20];
-    let mut name: *const std::ffi::c_char = nameBuff.as_mut_ptr();
+) -> core::ffi::c_int {
+    let mut nameBuff: [core::ffi::c_char; 20] = [0; 20];
+    let mut name: *const core::ffi::c_char = nameBuff.as_mut_ptr();
     let benchedSize = if (*adv).chunkSizeMax != 0 {
         (*adv).chunkSizeMax
     } else {
@@ -2268,7 +2275,7 @@ pub unsafe extern "C" fn BMK_syntheticTest(
             fprintf(
                 stderr,
                 b"allocation error : not enough memory \n\0" as *const u8
-                    as *const std::ffi::c_char,
+                    as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2276,14 +2283,14 @@ pub unsafe extern "C" fn BMK_syntheticTest(
     }
     if compressibility < 0.0f64 {
         LOREM_genBuffer(srcBuffer, benchedSize, 0);
-        name = b"Lorem ipsum\0" as *const u8 as *const std::ffi::c_char;
+        name = b"Lorem ipsum\0" as *const u8 as *const core::ffi::c_char;
     } else {
         RDG_genBuffer(srcBuffer, benchedSize, compressibility, 0.0f64, 0);
         formatString_u(
             nameBuff.as_mut_ptr(),
-            ::core::mem::size_of::<[std::ffi::c_char; 20]>() as std::ffi::c_ulong,
-            b"Synthetic %u%%\0" as *const u8 as *const std::ffi::c_char,
-            (compressibility * 100 as std::ffi::c_int as std::ffi::c_double) as std::ffi::c_uint,
+            ::core::mem::size_of::<[core::ffi::c_char; 20]>() as core::ffi::c_ulong,
+            b"Synthetic %u%%\0" as *const u8 as *const core::ffi::c_char,
+            (compressibility * 100 as core::ffi::c_int as core::ffi::c_double) as core::ffi::c_uint,
         );
     }
     let mut res = BMK_benchCLevels(
@@ -2294,7 +2301,7 @@ pub unsafe extern "C" fn BMK_syntheticTest(
         startingCLevel,
         endCLevel,
         compressionParams,
-        NULL as *const std::ffi::c_void,
+        NULL as *const core::ffi::c_void,
         0,
         displayLevel,
         name,
@@ -2307,31 +2314,31 @@ unsafe extern "C" fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
     let step = (64 * ((1) << 20)) as size_t;
     let mut testmem = NULL as *mut u8;
     requiredMem = (requiredMem >> 26).wrapping_add(1) << 26;
-    requiredMem = (requiredMem as std::ffi::c_ulong).wrapping_add(step) as u64 as u64;
+    requiredMem = (requiredMem as core::ffi::c_ulong).wrapping_add(step) as u64 as u64;
     if requiredMem > maxMemory {
         requiredMem = maxMemory;
     }
     loop {
         testmem = malloc(requiredMem) as *mut u8;
-        requiredMem = (requiredMem as std::ffi::c_ulong).wrapping_sub(step) as u64 as u64;
+        requiredMem = (requiredMem as core::ffi::c_ulong).wrapping_sub(step) as u64 as u64;
         if !(testmem.is_null() && requiredMem > 0) {
             break;
         }
     }
-    free(testmem as *mut std::ffi::c_void);
+    free(testmem as *mut core::ffi::c_void);
     requiredMem
 }
 unsafe extern "C" fn BMK_loadFiles(
-    mut buffer: *mut std::ffi::c_void,
+    mut buffer: *mut core::ffi::c_void,
     mut bufferSize: size_t,
     mut fileSizes: *mut size_t,
-    mut fileNamesTable: *const *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_uint,
-    mut displayLevel: std::ffi::c_int,
-) -> std::ffi::c_int {
+    mut fileNamesTable: *const *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_uint,
+    mut displayLevel: core::ffi::c_int,
+) -> core::ffi::c_int {
     let mut pos = 0;
-    let mut totalSize = 0 as std::ffi::c_int as size_t;
-    let mut n: std::ffi::c_uint = 0;
+    let mut totalSize = 0 as core::ffi::c_int as size_t;
+    let mut n: core::ffi::c_uint = 0;
     n = 0;
     while n < nbFiles {
         let filename = *fileNamesTable.offset(n as isize);
@@ -2340,7 +2347,7 @@ unsafe extern "C" fn BMK_loadFiles(
             if displayLevel >= 2 {
                 fprintf(
                     stderr,
-                    b"Ignoring %s directory...       \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"Ignoring %s directory...       \n\0" as *const u8 as *const core::ffi::c_char,
                     filename,
                 );
                 fflush(NULL as *mut FILE);
@@ -2351,7 +2358,7 @@ unsafe extern "C" fn BMK_loadFiles(
                 fprintf(
                     stderr,
                     b"Cannot evaluate size of %s, ignoring ... \n\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     filename,
                 );
                 fflush(NULL as *mut FILE);
@@ -2362,12 +2369,12 @@ unsafe extern "C" fn BMK_loadFiles(
                 fileSize = bufferSize.wrapping_sub(pos);
                 nbFiles = n;
             }
-            let f = fopen(filename, b"rb\0" as *const u8 as *const std::ffi::c_char);
+            let f = fopen(filename, b"rb\0" as *const u8 as *const core::ffi::c_char);
             if f.is_null() {
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         10,
                     );
                     fflush(NULL as *mut FILE);
@@ -2375,13 +2382,13 @@ unsafe extern "C" fn BMK_loadFiles(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"cannot open file %s\0" as *const u8 as *const std::ffi::c_char,
+                        b"cannot open file %s\0" as *const u8 as *const core::ffi::c_char,
                         filename,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 return 10;
@@ -2389,13 +2396,13 @@ unsafe extern "C" fn BMK_loadFiles(
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
-                    b"Loading %s...       \r\0" as *const u8 as *const std::ffi::c_char,
+                    b"Loading %s...       \r\0" as *const u8 as *const core::ffi::c_char,
                     filename,
                 );
                 fflush(NULL as *mut FILE);
             }
             let readSize = fread(
-                (buffer as *mut std::ffi::c_char).offset(pos as isize) as *mut std::ffi::c_void,
+                (buffer as *mut core::ffi::c_char).offset(pos as isize) as *mut core::ffi::c_void,
                 1,
                 fileSize,
                 f,
@@ -2405,7 +2412,7 @@ unsafe extern "C" fn BMK_loadFiles(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                         11,
                     );
                     fflush(NULL as *mut FILE);
@@ -2413,13 +2420,13 @@ unsafe extern "C" fn BMK_loadFiles(
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"invalid read %s\0" as *const u8 as *const std::ffi::c_char,
+                        b"invalid read %s\0" as *const u8 as *const core::ffi::c_char,
                         filename,
                     );
                     fflush(NULL as *mut FILE);
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                     fflush(NULL as *mut FILE);
                 }
                 return 11;
@@ -2435,7 +2442,7 @@ unsafe extern "C" fn BMK_loadFiles(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Error %i : \0" as *const u8 as *const std::ffi::c_char,
+                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                 12,
             );
             fflush(NULL as *mut FILE);
@@ -2443,12 +2450,12 @@ unsafe extern "C" fn BMK_loadFiles(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"no data to bench\0" as *const u8 as *const std::ffi::c_char,
+                b"no data to bench\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const std::ffi::c_char);
+            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             fflush(NULL as *mut FILE);
         }
         return 12;
@@ -2457,19 +2464,19 @@ unsafe extern "C" fn BMK_loadFiles(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFilesAdvanced(
-    mut fileNamesTable: *const *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_uint,
-    mut dictFileName: *const std::ffi::c_char,
-    mut startCLevel: std::ffi::c_int,
-    mut endCLevel: std::ffi::c_int,
+    mut fileNamesTable: *const *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_uint,
+    mut dictFileName: *const core::ffi::c_char,
+    mut startCLevel: core::ffi::c_int,
+    mut endCLevel: core::ffi::c_int,
     mut compressionParams: *const ZSTD_compressionParameters,
-    mut displayLevel: std::ffi::c_int,
+    mut displayLevel: core::ffi::c_int,
     mut adv: *const BMK_advancedParams_t,
-) -> std::ffi::c_int {
+) -> core::ffi::c_int {
     let mut current_block: u64;
-    let mut srcBuffer = NULL as *mut std::ffi::c_void;
+    let mut srcBuffer = NULL as *mut core::ffi::c_void;
     let mut benchedSize: size_t = 0;
-    let mut dictBuffer = NULL as *mut std::ffi::c_void;
+    let mut dictBuffer = NULL as *mut core::ffi::c_void;
     let mut dictBufferSize = 0;
     let mut fileSizes = NULL as *mut size_t;
     let mut res = 1;
@@ -2478,7 +2485,7 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"No Files to Benchmark\0" as *const u8 as *const std::ffi::c_char,
+                b"No Files to Benchmark\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2488,7 +2495,7 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Invalid Compression Level\0" as *const u8 as *const std::ffi::c_char,
+                b"Invalid Compression Level\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2498,21 +2505,21 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"Error loading files\0" as *const u8 as *const std::ffi::c_char,
+                b"Error loading files\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
         return 15;
     }
     fileSizes = calloc(
-        nbFiles as std::ffi::c_ulong,
-        ::core::mem::size_of::<size_t>() as std::ffi::c_ulong,
+        nbFiles as core::ffi::c_ulong,
+        ::core::mem::size_of::<size_t>() as core::ffi::c_ulong,
     ) as *mut size_t;
     if fileSizes.is_null() {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
-                b"not enough memory for fileSizes\0" as *const u8 as *const std::ffi::c_char,
+                b"not enough memory for fileSizes\0" as *const u8 as *const core::ffi::c_char,
             );
             fflush(NULL as *mut FILE);
         }
@@ -2524,28 +2531,28 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"error loading %s : %s \n\0" as *const u8 as *const std::ffi::c_char,
+                    b"error loading %s : %s \n\0" as *const u8 as *const core::ffi::c_char,
                     dictFileName,
                     strerror(*__errno_location()),
                 );
                 fflush(NULL as *mut FILE);
             }
-            free(fileSizes as *mut std::ffi::c_void);
+            free(fileSizes as *mut core::ffi::c_void);
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"benchmark aborted\0" as *const u8 as *const std::ffi::c_char,
+                    b"benchmark aborted\0" as *const u8 as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
             }
             return 17;
         }
         if dictFileSize > (64 * ((1) << 20)) as u64 {
-            free(fileSizes as *mut std::ffi::c_void);
+            free(fileSizes as *mut core::ffi::c_void);
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"dictionary file %s too large\0" as *const u8 as *const std::ffi::c_char,
+                    b"dictionary file %s too large\0" as *const u8 as *const core::ffi::c_char,
                     dictFileName,
                 );
                 fflush(NULL as *mut FILE);
@@ -2555,13 +2562,13 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
         dictBufferSize = dictFileSize;
         dictBuffer = malloc(dictBufferSize);
         if dictBuffer.is_null() {
-            free(fileSizes as *mut std::ffi::c_void);
+            free(fileSizes as *mut core::ffi::c_void);
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
                     b"not enough memory for dictionary (%u bytes)\0" as *const u8
-                        as *const std::ffi::c_char,
-                    dictBufferSize as std::ffi::c_uint,
+                        as *const core::ffi::c_char,
+                    dictBufferSize as core::ffi::c_uint,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -2592,23 +2599,23 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
             fprintf(
                 stderr,
                 b"Not enough memory; testing %u MB only...\n\0" as *const u8
-                    as *const std::ffi::c_char,
-                (benchedSize >> 20) as std::ffi::c_uint,
+                    as *const core::ffi::c_char,
+                (benchedSize >> 20) as core::ffi::c_uint,
             );
             fflush(NULL as *mut FILE);
         }
         srcBuffer = if benchedSize != 0 {
             malloc(benchedSize)
         } else {
-            NULL as *mut std::ffi::c_void
+            NULL as *mut core::ffi::c_void
         };
         if srcBuffer.is_null() {
             free(dictBuffer);
-            free(fileSizes as *mut std::ffi::c_void);
+            free(fileSizes as *mut core::ffi::c_void);
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"not enough memory for srcBuffer\0" as *const u8 as *const std::ffi::c_char,
+                    b"not enough memory for srcBuffer\0" as *const u8 as *const core::ffi::c_char,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -2623,15 +2630,15 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
             displayLevel,
         );
         if errorCode_0 == 0 {
-            let mut mfName: [std::ffi::c_char; 20] = [0; 20];
+            let mut mfName: [core::ffi::c_char; 20] = [0; 20];
             formatString_u(
                 mfName.as_mut_ptr(),
-                ::core::mem::size_of::<[std::ffi::c_char; 20]>() as std::ffi::c_ulong,
-                b" %u files\0" as *const u8 as *const std::ffi::c_char,
+                ::core::mem::size_of::<[core::ffi::c_char; 20]>() as core::ffi::c_ulong,
+                b" %u files\0" as *const u8 as *const core::ffi::c_char,
                 nbFiles,
             );
             let displayName = if nbFiles > 1 {
-                mfName.as_mut_ptr() as *const std::ffi::c_char
+                mfName.as_mut_ptr() as *const core::ffi::c_char
             } else {
                 *fileNamesTable.offset(0)
             };
@@ -2653,18 +2660,18 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
     }
     free(srcBuffer);
     free(dictBuffer);
-    free(fileSizes as *mut std::ffi::c_void);
+    free(fileSizes as *mut core::ffi::c_void);
     res
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFiles(
-    mut fileNamesTable: *const *const std::ffi::c_char,
-    mut nbFiles: std::ffi::c_uint,
-    mut dictFileName: *const std::ffi::c_char,
-    mut cLevel: std::ffi::c_int,
+    mut fileNamesTable: *const *const core::ffi::c_char,
+    mut nbFiles: core::ffi::c_uint,
+    mut dictFileName: *const core::ffi::c_char,
+    mut cLevel: core::ffi::c_int,
     mut compressionParams: *const ZSTD_compressionParameters,
-    mut displayLevel: std::ffi::c_int,
-) -> std::ffi::c_int {
+    mut displayLevel: core::ffi::c_int,
+) -> core::ffi::c_int {
     let adv = BMK_initAdvancedParams();
     BMK_benchFilesAdvanced(
         fileNamesTable,
@@ -2678,18 +2685,18 @@ pub unsafe extern "C" fn BMK_benchFiles(
     )
 }
 unsafe extern "C" fn run_static_initializers() {
-    maxMemory = if ::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 4 {
-        (2 as std::ffi::c_int as std::ffi::c_uint)
-            .wrapping_mul((1 as std::ffi::c_uint) << 30 as std::ffi::c_int)
+    maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+        (2 as core::ffi::c_int as core::ffi::c_uint)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
             .wrapping_sub(
-                (64 as std::ffi::c_int * ((1 as std::ffi::c_int) << 20 as std::ffi::c_int))
-                    as std::ffi::c_uint,
+                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int))
+                    as core::ffi::c_uint,
             ) as size_t
     } else {
-        ((1 as std::ffi::c_ulonglong)
-            << (::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
-                .wrapping_mul(8 as std::ffi::c_int as std::ffi::c_ulong)
-                .wrapping_sub(31 as std::ffi::c_int as std::ffi::c_ulong)) as size_t
+        ((1 as core::ffi::c_ulonglong)
+            << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+                .wrapping_mul(8 as core::ffi::c_int as core::ffi::c_ulong)
+                .wrapping_sub(31 as core::ffi::c_int as core::ffi::c_ulong)) as size_t
     };
 }
 #[used]

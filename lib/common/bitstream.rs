@@ -16,10 +16,10 @@ pub type BitContainerType = usize;
 #[repr(C)]
 pub struct BIT_DStream_t {
     pub bitContainer: usize,
-    pub bitsConsumed: std::ffi::c_uint,
-    pub ptr: *const std::ffi::c_char,
-    pub start: *const std::ffi::c_char,
-    pub limitPtr: *const std::ffi::c_char,
+    pub bitsConsumed: core::ffi::c_uint,
+    pub ptr: *const core::ffi::c_char,
+    pub start: *const core::ffi::c_char,
+    pub limitPtr: *const core::ffi::c_char,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,9 +71,9 @@ impl BIT_DStream_t {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
-            ptr: std::ptr::null::<std::ffi::c_char>(),
-            start: std::ptr::null::<std::ffi::c_char>(),
-            limitPtr: std::ptr::null::<std::ffi::c_char>(),
+            ptr: core::ptr::null::<core::ffi::c_char>(),
+            start: core::ptr::null::<core::ffi::c_char>(),
+            limitPtr: core::ptr::null::<core::ffi::c_char>(),
         };
 
         if srcBuffer.is_empty() {
@@ -83,10 +83,10 @@ impl BIT_DStream_t {
         const USIZE_BYTES: usize = size_of::<BitContainerType>();
 
         if let Some(chunk) = srcBuffer.last_chunk() {
-            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
+            bitD.start = srcBuffer.as_ptr() as *const core::ffi::c_char;
             bitD.limitPtr = bitD.start.wrapping_add(USIZE_BYTES);
 
-            bitD.ptr = (srcBuffer.as_ptr() as *const std::ffi::c_char)
+            bitD.ptr = (srcBuffer.as_ptr() as *const core::ffi::c_char)
                 .wrapping_add(srcBuffer.len())
                 .wrapping_sub(USIZE_BYTES);
             bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
@@ -101,7 +101,7 @@ impl BIT_DStream_t {
                 }
             }
         } else {
-            bitD.start = srcBuffer.as_ptr() as *const std::ffi::c_char;
+            bitD.start = srcBuffer.as_ptr() as *const core::ffi::c_char;
             bitD.limitPtr = bitD.start.wrapping_add(USIZE_BYTES);
             bitD.ptr = bitD.start;
 
@@ -153,8 +153,8 @@ impl BIT_DStream_t {
             self.bitContainer,
             (size_of::<BitContainerType>() as u64)
                 .wrapping_mul(8)
-                .wrapping_sub(self.bitsConsumed as std::ffi::c_ulong)
-                .wrapping_sub(nbBits as std::ffi::c_ulong) as u32,
+                .wrapping_sub(self.bitsConsumed as core::ffi::c_ulong)
+                .wrapping_sub(nbBits as core::ffi::c_ulong) as u32,
             nbBits,
         )
     }
@@ -179,7 +179,7 @@ impl BIT_DStream_t {
     ///
     /// Pay attention to not read more than nbBits contained into local register.
     #[inline(always)]
-    pub const fn read_bits(&mut self, nbBits: std::ffi::c_uint) -> BitContainerType {
+    pub const fn read_bits(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         let value = self.look_bits(nbBits);
         self.skip_bits(nbBits);
         value
@@ -187,7 +187,7 @@ impl BIT_DStream_t {
 
     /// Like [`read_bits`], but only works when `nbBits >= 1`
     #[inline]
-    pub const fn read_bits_fast(&mut self, nbBits: std::ffi::c_uint) -> BitContainerType {
+    pub const fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
 
@@ -230,7 +230,7 @@ impl BIT_DStream_t {
     pub fn reload(&mut self) -> StreamStatus {
         if self.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
             static zeroFilled: BitContainerType = 0;
-            self.ptr = &zeroFilled as *const BitContainerType as *const std::ffi::c_char;
+            self.ptr = &zeroFilled as *const BitContainerType as *const core::ffi::c_char;
 
             return StreamStatus::Overflow;
         }
@@ -369,9 +369,9 @@ mod tests {
         let mut stream = BIT_DStream_t {
             bitContainer: 0,
             bitsConsumed: (size_of::<usize>() * 8 + 1) as u32,
-            ptr: std::ptr::null(),
-            start: std::ptr::null(),
-            limitPtr: std::ptr::null(),
+            ptr: core::ptr::null(),
+            start: core::ptr::null(),
+            limitPtr: core::ptr::null(),
         };
 
         assert_eq!(stream.reload(), StreamStatus::Overflow);
