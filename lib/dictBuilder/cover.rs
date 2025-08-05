@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{
     fflush, fprintf, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
     pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
@@ -663,11 +665,7 @@ unsafe extern "C" fn COVER_ctx_init(
         }
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    memset(
-        ctx as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<COVER_ctx_t>() as std::ffi::c_ulong,
-    );
+    ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<COVER_ctx_t>());
     if displayLevel >= 2 {
         fprintf(
             stderr,
@@ -1159,10 +1157,10 @@ pub unsafe extern "C" fn COVER_best_init(mut best: *mut COVER_best_t) {
     (*best).dict = NULL as *mut std::ffi::c_void;
     (*best).dictSize = 0;
     (*best).compressedSize = -(1 as std::ffi::c_int) as size_t;
-    memset(
-        &mut (*best).parameters as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut (*best).parameters as *mut ZDICT_cover_params_t as *mut u8,
         0,
-        ::core::mem::size_of::<ZDICT_cover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
 }
 #[export_name = crate::prefix!(COVER_best_wait)]

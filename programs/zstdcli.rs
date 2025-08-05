@@ -1,4 +1,6 @@
-use libc::{exit, fprintf, getchar, getenv, memset, strcmp, strlen, strncmp, strrchr, FILE};
+use std::ptr;
+
+use libc::{exit, fprintf, getchar, getenv, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
@@ -970,8 +972,8 @@ unsafe extern "C" fn parseCoverParameters(
     mut stringPtr: *const std::ffi::c_char,
     mut params: *mut ZDICT_cover_params_t,
 ) -> std::ffi::c_uint {
-    memset(
-        params as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        params as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
@@ -1064,8 +1066,8 @@ unsafe extern "C" fn parseFastCoverParameters(
     mut stringPtr: *const std::ffi::c_char,
     mut params: *mut ZDICT_fastCover_params_t,
 ) -> std::ffi::c_uint {
-    memset(
-        params as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        params as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
     );
@@ -1221,8 +1223,8 @@ unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
             dictID: 0,
         },
     };
-    memset(
-        &mut params as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut params as *mut ZDICT_cover_params_t as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
@@ -1250,8 +1252,8 @@ unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
             dictID: 0,
         },
     };
-    memset(
-        &mut params as *mut ZDICT_fastCover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut params as *mut ZDICT_fastCover_params_t as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
     );
@@ -2084,8 +2086,8 @@ unsafe fn main_0(
         operation = zom_decompress;
         cType = FIO_lz4Compression;
     }
-    memset(
-        &mut compressionParams as *mut ZSTD_compressionParameters as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut compressionParams as *mut ZSTD_compressionParameters as *mut u8,
         0,
         ::core::mem::size_of::<ZSTD_compressionParameters>(),
     );
@@ -2494,9 +2496,9 @@ unsafe fn main_0(
                                     }
                                     dict = cover;
                                     if *argument as std::ffi::c_int == 0 {
-                                        memset(
+                                        ptr::write_bytes(
                                             &mut coverParams as *mut ZDICT_cover_params_t
-                                                as *mut std::ffi::c_void,
+                                                as *mut u8,
                                             0,
                                             ::core::mem::size_of::<ZDICT_cover_params_t>(),
                                         );
@@ -2528,9 +2530,9 @@ unsafe fn main_0(
                                     }
                                     dict = fastCover;
                                     if *argument as std::ffi::c_int == 0 {
-                                        memset(
+                                        ptr::write_bytes(
                                             &mut fastCoverParams as *mut ZDICT_fastCover_params_t
-                                                as *mut std::ffi::c_void,
+                                                as *mut u8,
                                             0,
                                             ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
                                         );
@@ -4531,9 +4533,8 @@ unsafe fn main_0(
                                         dictID: 0,
                                     },
                                 };
-                                memset(
-                                    &mut dictParams as *mut ZDICT_legacy_params_t
-                                        as *mut std::ffi::c_void,
+                                ptr::write_bytes(
+                                    &mut dictParams as *mut ZDICT_legacy_params_t as *mut u8,
                                     0,
                                     ::core::mem::size_of::<ZDICT_legacy_params_t>(),
                                 );

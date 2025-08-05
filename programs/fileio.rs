@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{
     __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
     pthread_cond_t, remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
@@ -76,11 +78,6 @@ extern "C" {
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
@@ -2480,10 +2477,10 @@ unsafe extern "C" fn FIO_createCResources(
         writeCtx: std::ptr::null_mut::<WritePoolCtx_t>(),
         readCtx: std::ptr::null_mut::<ReadPoolCtx_t>(),
     };
-    memset(
-        &mut ress as *mut cRess_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut ress as *mut cRess_t as *mut u8,
         0,
-        ::core::mem::size_of::<cRess_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<cRess_t>(),
     );
     if g_display_prefs.displayLevel >= 6 {
         fprintf(
@@ -6186,15 +6183,15 @@ unsafe extern "C" fn FIO_createDResources(
         writeCtx: std::ptr::null_mut::<WritePoolCtx_t>(),
         readCtx: std::ptr::null_mut::<ReadPoolCtx_t>(),
     };
-    memset(
-        &mut statbuf as *mut stat_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut statbuf as *mut stat_t as *mut u8,
         0,
-        ::core::mem::size_of::<stat_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<stat_t>(),
     );
-    memset(
-        &mut ress as *mut dRess_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut ress as *mut dRess_t as *mut u8,
         0,
-        ::core::mem::size_of::<dRess_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<dRess_t>(),
     );
     FIO_getDictFileStat(dictFileName, &mut statbuf);
     if (*prefs).patchFromMode != 0 {
@@ -8197,10 +8194,10 @@ unsafe extern "C" fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> f
         nbFiles: 0,
         dictID: 0,
     };
-    memset(
-        &mut total as *mut fileInfo_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut total as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<fileInfo_t>(),
     );
     total.numActualFrames = fi1.numActualFrames + fi2.numActualFrames;
     total.numSkippableFrames = fi1.numSkippableFrames + fi2.numSkippableFrames;
@@ -8228,10 +8225,10 @@ unsafe extern "C" fn FIO_listFile(
         nbFiles: 0,
         dictID: 0,
     };
-    memset(
-        &mut info as *mut fileInfo_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut info as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<fileInfo_t>(),
     );
     let error = getFileInfo(&mut info, inFileName);
     match error as std::ffi::c_uint {
@@ -8358,10 +8355,10 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
         nbFiles: 0,
         dictID: 0,
     };
-    memset(
-        &mut total as *mut fileInfo_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut total as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<fileInfo_t>(),
     );
     total.usesCheck = 1;
     let mut u_0: std::ffi::c_uint = 0;

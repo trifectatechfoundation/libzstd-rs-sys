@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::abort;
 
 use crate::timefn::{UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
@@ -113,10 +115,10 @@ unsafe extern "C" fn BMK_runOutcome_error(mut errorResult: size_t) -> BMK_runOut
         error_result_never_ever_use_directly: 0,
         error_tag_never_ever_use_directly: 0,
     };
-    memset(
-        &mut b as *mut BMK_runOutcome_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut b as *mut BMK_runOutcome_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_runOutcome_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<BMK_runOutcome_t>(),
     );
     b.error_tag_never_ever_use_directly = 1;
     b.error_result_never_ever_use_directly = errorResult;

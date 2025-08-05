@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
@@ -213,7 +215,7 @@ unsafe extern "C" fn ZSTD_customCalloc(
 ) -> *mut std::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        libc::memset(ptr, 0, size as libc::size_t);
+        ptr::write_bytes(ptr, 0, size as usize);
         return ptr;
     }
     calloc(1, size)
@@ -1333,10 +1335,10 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
         compressedSize: 0,
         decompressedBound: 0,
     };
-    libc::memset(
-        &mut frameSizeInfo as *mut ZSTD_frameSizeInfo as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut frameSizeInfo as *mut ZSTD_frameSizeInfo as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTD_frameSizeInfo>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<ZSTD_frameSizeInfo>(),
     );
     if format == Format::ZSTD_f_zstd1 && ZSTD_isLegacy(src, srcSize) != 0 {
         return ZSTD_findFrameSizeInfoLegacy(src, srcSize);
@@ -1547,7 +1549,7 @@ unsafe extern "C" fn ZSTD_setRleBlock(
         }
         return -(ZSTD_error_dstBuffer_null as std::ffi::c_int) as size_t;
     }
-    libc::memset(dst, b as std::ffi::c_int, regenSize as libc::size_t);
+    ptr::write_bytes(dst, b, regenSize as usize);
     regenSize
 }
 unsafe extern "C" fn ZSTD_DCtx_trace_end(
@@ -1569,10 +1571,10 @@ unsafe extern "C" fn ZSTD_DCtx_trace_end(
             cctx: std::ptr::null::<ZSTD_CCtx_s>(),
             dctx: std::ptr::null::<ZSTD_DCtx_s>(),
         };
-        libc::memset(
-            &mut trace as *mut ZSTD_Trace as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut trace as *mut ZSTD_Trace as *mut u8,
             0,
-            ::core::mem::size_of::<ZSTD_Trace>() as std::ffi::c_ulong as libc::size_t,
+            ::core::mem::size_of::<ZSTD_Trace>(),
         );
         trace.version = ZSTD_VERSION_NUMBER as std::ffi::c_uint;
         trace.streaming = streaming;

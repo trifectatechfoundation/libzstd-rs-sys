@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{
     __errno_location, abort, exit, fclose, fflush, fopen, fprintf, setpriority, strerror, strrchr,
     FILE, PRIO_PROCESS,
@@ -44,11 +46,6 @@ extern "C" {
     fn memcpy(
         _: *mut std::ffi::c_void,
         _: *const std::ffi::c_void,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
         _: std::ffi::c_ulong,
     ) -> *mut std::ffi::c_void;
     fn strlen(_: *const std::ffi::c_char) -> std::ffi::c_ulong;
@@ -1051,10 +1048,10 @@ unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
         },
         tag: 0,
     };
-    memset(
-        &mut b as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut b as *mut BMK_benchOutcome_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<BMK_benchOutcome_t>(),
     );
     b.tag = 1;
     b
@@ -1150,10 +1147,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 .as_ptr(),
         );
     }
-    memset(
-        &mut benchResult as *mut BMK_benchResult_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut benchResult as *mut BMK_benchResult_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_benchResult_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<BMK_benchResult_t>(),
     );
     if strlen(displayName) > 17 {
         displayName = displayName.offset((strlen(displayName)).wrapping_sub(17) as isize);
@@ -1178,10 +1175,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     },
                     tag: 0,
                 };
-                memset(
-                    &mut r as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+                ptr::write_bytes(
+                    &mut r as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -1216,10 +1213,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     },
                     tag: 0,
                 };
-                memset(
-                    &mut r_0 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+                ptr::write_bytes(
+                    &mut r_0 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -1277,10 +1274,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 },
                 tag: 0,
             };
-            memset(
-                &mut r_1 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+            ptr::write_bytes(
+                &mut r_1 as *mut BMK_benchOutcome_t as *mut u8,
                 0,
-                ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                ::core::mem::size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
                 fprintf(
@@ -1316,10 +1313,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 },
                 tag: 0,
             };
-            memset(
-                &mut r_2 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+            ptr::write_bytes(
+                &mut r_2 as *mut BMK_benchOutcome_t as *mut u8,
                 0,
-                ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                ::core::mem::size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
                 fprintf(
@@ -1580,10 +1577,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     },
                     tag: 0,
                 };
-                memset(
-                    &mut r_3 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+                ptr::write_bytes(
+                    &mut r_3 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -1679,10 +1676,10 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     },
                     tag: 0,
                 };
-                memset(
-                    &mut r_4 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+                ptr::write_bytes(
+                    &mut r_4 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -2076,10 +2073,10 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
             },
             tag: 0,
         };
-        memset(
-            &mut r as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut r as *mut BMK_benchOutcome_t as *mut u8,
             0,
-            ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
             fprintf(
@@ -2113,10 +2110,10 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
             },
             tag: 0,
         };
-        memset(
-            &mut r_0 as *mut BMK_benchOutcome_t as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut r_0 as *mut BMK_benchOutcome_t as *mut u8,
             0,
-            ::core::mem::size_of::<BMK_benchOutcome_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
             fprintf(
