@@ -32,7 +32,6 @@ pub unsafe extern "C" fn HIST_add(
         ip = ip.offset(1);
         let fresh1 = &mut (*count.offset(*fresh0 as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
-        *fresh1;
     }
 }
 #[export_name = crate::prefix!(HIST_count_simple)]
@@ -62,7 +61,6 @@ pub unsafe extern "C" fn HIST_count_simple(
         ip = ip.offset(1);
         let fresh3 = &mut (*count.offset(*fresh2 as isize));
         *fresh3 = (*fresh3).wrapping_add(1);
-        *fresh3;
     }
     while *count.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
@@ -76,7 +74,6 @@ pub unsafe extern "C" fn HIST_count_simple(
             largestCount = *count.offset(s as isize);
         }
         s = s.wrapping_add(1);
-        s;
     }
     largestCount
 }
@@ -117,61 +114,45 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
         ip = ip.offset(4);
         let fresh4 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh4 = (*fresh4).wrapping_add(1);
-        *fresh4;
         let fresh5 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
         *fresh5 = (*fresh5).wrapping_add(1);
-        *fresh5;
         let fresh6 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
         *fresh6 = (*fresh6).wrapping_add(1);
-        *fresh6;
         let fresh7 = &mut (*Counting4.offset((c >> 24) as isize));
         *fresh7 = (*fresh7).wrapping_add(1);
-        *fresh7;
         c = cached;
         cached = MEM_read32(ip as *const std::ffi::c_void);
         ip = ip.offset(4);
         let fresh8 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh8 = (*fresh8).wrapping_add(1);
-        *fresh8;
         let fresh9 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
         *fresh9 = (*fresh9).wrapping_add(1);
-        *fresh9;
         let fresh10 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
         *fresh10 = (*fresh10).wrapping_add(1);
-        *fresh10;
         let fresh11 = &mut (*Counting4.offset((c >> 24) as isize));
         *fresh11 = (*fresh11).wrapping_add(1);
-        *fresh11;
         c = cached;
         cached = MEM_read32(ip as *const std::ffi::c_void);
         ip = ip.offset(4);
         let fresh12 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh12 = (*fresh12).wrapping_add(1);
-        *fresh12;
         let fresh13 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
         *fresh13 = (*fresh13).wrapping_add(1);
-        *fresh13;
         let fresh14 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
         *fresh14 = (*fresh14).wrapping_add(1);
-        *fresh14;
         let fresh15 = &mut (*Counting4.offset((c >> 24) as isize));
         *fresh15 = (*fresh15).wrapping_add(1);
-        *fresh15;
         c = cached;
         cached = MEM_read32(ip as *const std::ffi::c_void);
         ip = ip.offset(4);
         let fresh16 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh16 = (*fresh16).wrapping_add(1);
-        *fresh16;
         let fresh17 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
         *fresh17 = (*fresh17).wrapping_add(1);
-        *fresh17;
         let fresh18 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
         *fresh18 = (*fresh18).wrapping_add(1);
-        *fresh18;
         let fresh19 = &mut (*Counting4.offset((c >> 24) as isize));
         *fresh19 = (*fresh19).wrapping_add(1);
-        *fresh19;
     }
     ip = ip.offset(-(4));
     while ip < iend {
@@ -179,7 +160,6 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
         ip = ip.offset(1);
         let fresh21 = &mut (*Counting1.offset(*fresh20 as isize));
         *fresh21 = (*fresh21).wrapping_add(1);
-        *fresh21;
     }
     let mut s: u32 = 0;
     s = 0;
@@ -194,12 +174,10 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
             max = *Counting1.offset(s as isize);
         }
         s = s.wrapping_add(1);
-        s;
     }
     let mut maxSymbolValue = 255 as std::ffi::c_int as std::ffi::c_uint;
     while *Counting1.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
-        maxSymbolValue;
     }
     if check as std::ffi::c_uint != 0 && maxSymbolValue > *maxSymbolValuePtr {
         return -(ZSTD_error_maxSymbolValue_tooSmall as std::ffi::c_int) as size_t;

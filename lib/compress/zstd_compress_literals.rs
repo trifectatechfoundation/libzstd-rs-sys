@@ -148,7 +148,6 @@ unsafe extern "C" fn allBytesIdentical(
             return 0;
         }
         p = p.wrapping_add(1);
-        p;
     }
     1
 }

@@ -703,7 +703,6 @@ pub unsafe extern "C" fn FSEv06_readNCount(
     remaining = ((1) << nbBits) + 1;
     threshold = (1) << nbBits;
     nbBits += 1;
-    nbBits;
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 != 0 {
             let mut n0 = charnum;
@@ -753,7 +752,6 @@ pub unsafe extern "C" fn FSEv06_readNCount(
             bitCount += nbBits;
         }
         count -= 1;
-        count;
         remaining -= FSEv06_abs(count) as std::ffi::c_int;
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
@@ -761,7 +759,6 @@ pub unsafe extern "C" fn FSEv06_readNCount(
         previous0 = (count == 0) as std::ffi::c_int;
         while remaining < threshold {
             nbBits -= 1;
-            nbBits;
             threshold >>= 1;
         }
         if ip <= iend.offset(-(7)) || ip.offset((bitCount >> 3) as isize) <= iend.offset(-(4)) {
@@ -843,7 +840,6 @@ pub unsafe extern "C" fn FSEv06_buildDTable(
                 *normalizedCounter.offset(s as isize) as u16;
         }
         s = s.wrapping_add(1);
-        s;
     }
     memcpy(
         dt as *mut std::ffi::c_void,
@@ -867,10 +863,8 @@ pub unsafe extern "C" fn FSEv06_buildDTable(
                 position = position.wrapping_add(step) & tableMask;
             }
             i += 1;
-            i;
         }
         s_0 = s_0.wrapping_add(1);
-        s_0;
     }
     if position != 0 {
         return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
@@ -890,7 +884,6 @@ pub unsafe extern "C" fn FSEv06_buildDTable(
             as u32)
             .wrapping_sub(tableSize) as u16;
         u = u.wrapping_add(1);
-        u;
     }
     0
 }
@@ -934,7 +927,6 @@ pub unsafe extern "C" fn FSEv06_buildDTable_raw(
         (*dinfo.offset(s as isize)).symbol = s as u8;
         (*dinfo.offset(s as isize)).nbBits = nbBits as u8;
         s = s.wrapping_add(1);
-        s;
     }
     0
 }
@@ -1205,11 +1197,9 @@ unsafe extern "C" fn HUFv06_readStats(
         }
         let fresh9 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
         *fresh9 = (*fresh9).wrapping_add(1);
-        *fresh9;
         weightTotal = weightTotal
             .wrapping_add(((1) << *huffWeight.offset(n_0 as isize) as std::ffi::c_int >> 1) as u32);
         n_0 = n_0.wrapping_add(1);
-        n_0;
     }
     if weightTotal == 0 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -1229,7 +1219,6 @@ unsafe extern "C" fn HUFv06_readStats(
     *huffWeight.offset(oSize as isize) = lastWeight as u8;
     let fresh10 = &mut (*rankStats.offset(lastWeight as isize));
     *fresh10 = (*fresh10).wrapping_add(1);
-    *fresh10;
     if *rankStats.offset(1) < 2 || *rankStats.offset(1) & 1 != 0 {
         return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
     }
@@ -1275,7 +1264,6 @@ pub unsafe extern "C" fn HUFv06_readDTableX2(
             .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
         *rankVal.as_mut_ptr().offset(n as isize) = current;
         n = n.wrapping_add(1);
-        n;
     }
     n = 0;
     while n < nbSymbols {
@@ -1289,12 +1277,10 @@ pub unsafe extern "C" fn HUFv06_readDTableX2(
         while i < (*rankVal.as_mut_ptr().offset(w as isize)).wrapping_add(length) {
             *dt.offset(i as isize) = D;
             i = i.wrapping_add(1);
-            i;
         }
         let fresh11 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
         *fresh11 = (*fresh11).wrapping_add(length);
         n = n.wrapping_add(1);
-        n;
     }
     iSize
 }
@@ -1661,7 +1647,6 @@ unsafe extern "C" fn HUFv06_fillDTableX4Level2(
         while i < skipSize {
             *DTable.offset(i as isize) = DElt;
             i = i.wrapping_add(1);
-            i;
         }
     }
     let mut s: u32 = 0;
@@ -1691,7 +1676,6 @@ unsafe extern "C" fn HUFv06_fillDTableX4Level2(
         let fresh35 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
         *fresh35 = (*fresh35).wrapping_add(length);
         s = s.wrapping_add(1);
-        s;
     }
 }
 unsafe extern "C" fn HUFv06_fillDTableX4(
@@ -1756,13 +1740,11 @@ unsafe extern "C" fn HUFv06_fillDTableX4(
             while u < end {
                 *DTable.offset(u as isize) = DElt;
                 u = u.wrapping_add(1);
-                u;
             }
         }
         let fresh36 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
         *fresh36 = (*fresh36).wrapping_add(length);
         s = s.wrapping_add(1);
-        s;
     }
 }
 #[export_name = crate::prefix!(HUFv06_readDTableX4)]
@@ -1809,7 +1791,6 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
     maxW = tableLog;
     while *rankStats.as_mut_ptr().offset(maxW as isize) == 0 {
         maxW = maxW.wrapping_sub(1);
-        maxW;
     }
     let mut w: u32 = 0;
     let mut nextRankStart = 0 as std::ffi::c_int as u32;
@@ -1819,7 +1800,6 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
         nextRankStart = nextRankStart.wrapping_add(*rankStats.as_mut_ptr().offset(w as isize));
         *rankStart.offset(w as isize) = current;
         w = w.wrapping_add(1);
-        w;
     }
     *rankStart.offset(0) = nextRankStart;
     sizeOfSort = nextRankStart;
@@ -1834,7 +1814,6 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).symbol = s as u8;
         (*sortedSymbol.as_mut_ptr().offset(r as isize)).weight = w_0 as u8;
         s = s.wrapping_add(1);
-        s;
     }
     *rankStart.offset(0) = 0;
     let rankVal0 = (*rankVal.as_mut_ptr().offset(0)).as_mut_ptr();
@@ -1849,7 +1828,6 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
         );
         *rankVal0.offset(w_1 as isize) = current_0;
         w_1 = w_1.wrapping_add(1);
-        w_1;
     }
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut consumed: u32 = 0;
@@ -1861,10 +1839,8 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
         while w_2 < maxW.wrapping_add(1) {
             *rankValPtr.offset(w_2 as isize) = *rankVal0.offset(w_2 as isize) >> consumed;
             w_2 = w_2.wrapping_add(1);
-            w_2;
         }
         consumed = consumed.wrapping_add(1);
-        consumed;
     }
     HUFv06_fillDTableX4(
         dt,
@@ -3162,7 +3138,6 @@ unsafe extern "C" fn ZSTDv06_decodeSeqHeaders(
     let Offtype = (*ip as std::ffi::c_int >> 4 & 3) as u32;
     let MLtype = (*ip as std::ffi::c_int >> 2 & 3) as u32;
     ip = ip.offset(1);
-    ip;
     let bhSize = ZSTDv06_buildSeqTable(
         DTableLL,
         LLtype,
@@ -3599,7 +3574,6 @@ unsafe extern "C" fn ZSTDv06_decompressSequences(
         while i < ZSTDv06_REP_INIT as u32 {
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) = REPCODE_STARTVALUE as size_t;
             i = i.wrapping_add(1);
-            i;
         }
         let errorCode = BITv06_initDStream(
             &mut seqState.DStream,
@@ -3617,7 +3591,6 @@ unsafe extern "C" fn ZSTDv06_decompressSequences(
             && nbSeq != 0
         {
             nbSeq -= 1;
-            nbSeq;
             ZSTDv06_decodeSequence(&mut sequence, &mut seqState);
             let oneSeqSize = ZSTDv06_execSequence(
                 op,
@@ -3927,7 +3900,6 @@ pub unsafe extern "C" fn ZSTDv06_findFrameSizeInfoLegacy(
         ip = ip.offset(cBlockSize as isize);
         remainingSize = remainingSize.wrapping_sub(cBlockSize);
         nbBlocks = nbBlocks.wrapping_add(1);
-        nbBlocks;
     }
     *cSize = ip.offset_from(src as *const u8) as std::ffi::c_long as size_t;
     *dBound = (nbBlocks * ZSTDv06_BLOCKSIZE_MAX as size_t) as std::ffi::c_ulonglong;

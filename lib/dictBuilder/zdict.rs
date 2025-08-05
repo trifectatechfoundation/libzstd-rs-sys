@@ -522,7 +522,6 @@ unsafe extern "C" fn ZDICT_printHex(mut ptr: *const std::ffi::c_void, mut length
         );
         fflush(stderr);
         u = u.wrapping_add(1);
-        u;
     }
 }
 #[export_name = crate::prefix!(ZDICT_isError)]
@@ -650,20 +649,17 @@ unsafe extern "C" fn ZDICT_analyzePos(
                 as std::ffi::c_int
         {
             patternEnd = patternEnd.wrapping_add(1);
-            patternEnd;
         }
         u = 1;
         while u < patternEnd {
             *doneMarks.offset(pos.wrapping_add(u as size_t) as isize) = 1;
             u = u.wrapping_add(1);
-            u;
         }
         return solution;
     }
     let mut length: size_t = 0;
     loop {
         end = end.wrapping_add(1);
-        end;
         length = ZDICT_count(
             b.offset(pos as isize) as *const std::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const std::ffi::c_void,
@@ -681,7 +677,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
         );
         if length_0 >= MINMATCHLENGTH as size_t {
             start = start.wrapping_sub(1);
-            start;
         }
         if length_0 < MINMATCHLENGTH as size_t {
             break;
@@ -693,7 +688,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
         while idx < end {
             *doneMarks.offset(*suffix.offset(idx as isize) as isize) = 1;
             idx = idx.wrapping_add(1);
-            idx;
         }
         return solution;
     }
@@ -743,9 +737,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
                 currentCount = 0;
             }
             currentCount = currentCount.wrapping_add(1);
-            currentCount;
             id = id.wrapping_add(1);
-            id;
         }
         if currentCount > selectedCount {
             selectedCount = currentCount;
@@ -757,7 +749,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
         refinedStart = selectedID;
         refinedEnd = refinedStart.wrapping_add(selectedCount);
         mml = mml.wrapping_add(1);
-        mml;
     }
     start = refinedStart;
     pos = *suffix.offset(refinedStart as isize) as size_t;
@@ -770,7 +761,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
     let mut length_1: size_t = 0;
     loop {
         end = end.wrapping_add(1);
-        end;
         length_1 = ZDICT_count(
             b.offset(pos as isize) as *const std::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const std::ffi::c_void,
@@ -780,7 +770,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
         }
         let fresh0 = &mut (*lengthList.as_mut_ptr().offset(length_1 as isize));
         *fresh0 = (*fresh0).wrapping_add(1);
-        *fresh0;
         if length_1 < MINMATCHLENGTH as size_t {
             break;
         }
@@ -799,10 +788,8 @@ unsafe extern "C" fn ZDICT_analyzePos(
         }
         let fresh1 = &mut (*lengthList.as_mut_ptr().offset(length_2 as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
-        *fresh1;
         if length_2 >= MINMATCHLENGTH as size_t {
             start = start.wrapping_sub(1);
-            start;
         }
     }
     ptr::write_bytes(
@@ -821,7 +808,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
             (*cumulLength.as_mut_ptr().offset((i + 1) as isize))
                 .wrapping_add(*lengthList.as_mut_ptr().offset(i as isize));
         i -= 1;
-        i;
     }
     let mut u_0: std::ffi::c_uint = 0;
     u_0 = (LLIMIT - 1) as std::ffi::c_uint;
@@ -830,7 +816,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
             break;
         }
         u_0 = u_0.wrapping_sub(1);
-        u_0;
     }
     maxLength = u_0 as size_t;
     let mut l = maxLength as u32;
@@ -839,7 +824,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
         == c as std::ffi::c_int
     {
         l = l.wrapping_sub(1);
-        l;
     }
     maxLength = l as size_t;
     if maxLength < MINMATCHLENGTH as size_t {
@@ -854,7 +838,6 @@ unsafe extern "C" fn ZDICT_analyzePos(
                 (*lengthList.as_mut_ptr().offset(u_1 as isize)).wrapping_mul(u_1.wrapping_sub(3)),
             );
         u_1 = u_1.wrapping_add(1);
-        u_1;
     }
     if notificationLevel >= 4 {
         fprintf(
@@ -895,10 +878,8 @@ unsafe extern "C" fn ZDICT_analyzePos(
         while p < pEnd {
             *doneMarks.offset(p as isize) = 1;
             p = p.wrapping_add(1);
-            p;
         }
         id_0 = id_0.wrapping_add(1);
-        id_0;
     }
     solution
 }
@@ -917,7 +898,6 @@ unsafe extern "C" fn isIncluded(
             break;
         }
         u = u.wrapping_add(1);
-        u;
     }
     (u == length) as std::ffi::c_int
 }
@@ -949,13 +929,11 @@ unsafe extern "C" fn ZDICT_tryMerge(
             while u > 1 && (*table.offset(u.wrapping_sub(1) as isize)).savings < elt.savings {
                 *table.offset(u as isize) = *table.offset(u.wrapping_sub(1) as isize);
                 u = u.wrapping_sub(1);
-                u;
             }
             *table.offset(u as isize) = elt;
             return u;
         }
         u = u.wrapping_add(1);
-        u;
     }
     u = 1;
     while u < tableSize {
@@ -986,7 +964,6 @@ unsafe extern "C" fn ZDICT_tryMerge(
                 while u > 1 && (*table.offset(u.wrapping_sub(1) as isize)).savings < elt.savings {
                     *table.offset(u as isize) = *table.offset(u.wrapping_sub(1) as isize);
                     u = u.wrapping_sub(1);
-                    u;
                 }
                 *table.offset(u as isize) = elt;
                 return u;
@@ -1021,7 +998,6 @@ unsafe extern "C" fn ZDICT_tryMerge(
             }
         }
         u = u.wrapping_add(1);
-        u;
     }
     0
 }
@@ -1035,7 +1011,6 @@ unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: u32)
     while u < max.wrapping_sub(1) {
         *table.offset(u as isize) = *table.offset(u.wrapping_add(1) as isize);
         u = u.wrapping_add(1);
-        u;
     }
     (*table).pos = ((*table).pos).wrapping_sub(1);
     (*table).pos;
@@ -1067,7 +1042,6 @@ unsafe extern "C" fn ZDICT_insertDictItem(
     while (*table.offset(current as isize)).savings < elt.savings {
         *table.offset(current.wrapping_add(1) as isize) = *table.offset(current as isize);
         current = current.wrapping_sub(1);
-        current;
     }
     *table.offset(current.wrapping_add(1) as isize) = elt;
     (*table).pos = nextElt.wrapping_add(1);
@@ -1079,7 +1053,6 @@ unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
     while u < (*dictList.offset(0)).pos {
         dictSize = dictSize.wrapping_add((*dictList.offset(u as isize)).length);
         u = u.wrapping_add(1);
-        u;
     }
     dictSize
 }
@@ -1172,7 +1145,6 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
             while pos < bufferSize {
                 *reverseSuffix.offset(*suffix.offset(pos as isize) as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
-                pos;
             }
             *filePos.offset(0) = 0;
             pos = 1;
@@ -1182,7 +1154,6 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                     .wrapping_add(*fileSizes.offset(pos.wrapping_sub(1) as isize))
                     as u32;
                 pos = pos.wrapping_add(1);
-                pos;
             }
             if notificationLevel >= 2 {
                 fprintf(
@@ -1209,7 +1180,6 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                 };
                 if *doneMarks.offset(cursor as isize) != 0 {
                     cursor = cursor.wrapping_add(1);
-                    cursor;
                 } else {
                     solution = ZDICT_analyzePos(
                         doneMarks,
@@ -1221,7 +1191,6 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
                     );
                     if solution.length == 0 {
                         cursor = cursor.wrapping_add(1);
-                        cursor;
                     } else {
                         ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
                         cursor = cursor.wrapping_add(solution.length);
@@ -1261,7 +1230,6 @@ unsafe extern "C" fn ZDICT_fillNoise(mut buffer: *mut std::ffi::c_void, mut leng
         acc = acc.wrapping_mul(prime2);
         *(buffer as *mut std::ffi::c_uchar).offset(p as isize) = (acc >> 21) as std::ffi::c_uchar;
         p = p.wrapping_add(1);
-        p;
     }
 }
 pub const MAXREPOFFSET: std::ffi::c_int = 1024;
@@ -1324,9 +1292,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         while bytePtr < (*seqStorePtr).lit as *const u8 {
             let fresh9 = &mut (*countLit.offset(*bytePtr as isize));
             *fresh9 = (*fresh9).wrapping_add(1);
-            *fresh9;
             bytePtr = bytePtr.offset(1);
-            bytePtr;
         }
         let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
             as std::ffi::c_long as u32;
@@ -1337,9 +1303,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         while u < nbSeq {
             let fresh10 = &mut (*offsetcodeCount.offset(*codePtr.offset(u as isize) as isize));
             *fresh10 = (*fresh10).wrapping_add(1);
-            *fresh10;
             u = u.wrapping_add(1);
-            u;
         }
         let mut codePtr_0: *const u8 = (*seqStorePtr).mlCode;
         let mut u_0: u32 = 0;
@@ -1347,9 +1311,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         while u_0 < nbSeq {
             let fresh11 = &mut (*matchlengthCount.offset(*codePtr_0.offset(u_0 as isize) as isize));
             *fresh11 = (*fresh11).wrapping_add(1);
-            *fresh11;
             u_0 = u_0.wrapping_add(1);
-            u_0;
         }
         let mut codePtr_1: *const u8 = (*seqStorePtr).llCode;
         let mut u_1: u32 = 0;
@@ -1357,9 +1319,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         while u_1 < nbSeq {
             let fresh12 = &mut (*litlengthCount.offset(*codePtr_1.offset(u_1 as isize) as isize));
             *fresh12 = (*fresh12).wrapping_add(1);
-            *fresh12;
             u_1 = u_1.wrapping_add(1);
-            u_1;
         }
         if nbSeq >= 2 {
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
@@ -1388,7 +1348,6 @@ unsafe extern "C" fn ZDICT_totalSampleSize(
     while u < nbFiles {
         total = total.wrapping_add(*fileSizes.offset(u as isize));
         u = u.wrapping_add(1);
-        u;
     }
     total
 }
@@ -1413,7 +1372,6 @@ unsafe extern "C" fn ZDICT_insertSortCount(
         *table.offset(u.wrapping_sub(1) as isize) = *table.offset(u as isize);
         *table.offset(u as isize) = tmp;
         u = u.wrapping_sub(1);
-        u;
     }
 }
 unsafe extern "C" fn ZDICT_flatLit(mut countLit: *mut std::ffi::c_uint) {
@@ -1422,7 +1380,6 @@ unsafe extern "C" fn ZDICT_flatLit(mut countLit: *mut std::ffi::c_uint) {
     while u < 256 {
         *countLit.offset(u as isize) = 2;
         u += 1;
-        u;
     }
     *countLit.offset(0) = 4;
     *countLit.offset(253) = 1;
@@ -1499,25 +1456,21 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
         while u < 256 {
             *countLit.as_mut_ptr().offset(u as isize) = 1;
             u = u.wrapping_add(1);
-            u;
         }
         u = 0;
         while u <= offcodeMax {
             *offcodeCount.as_mut_ptr().offset(u as isize) = 1;
             u = u.wrapping_add(1);
-            u;
         }
         u = 0;
         while u <= MaxML as u32 {
             *matchLengthCount.as_mut_ptr().offset(u as isize) = 1;
             u = u.wrapping_add(1);
-            u;
         }
         u = 0;
         while u <= MaxLL as u32 {
             *litLengthCount.as_mut_ptr().offset(u as isize) = 1;
             u = u.wrapping_add(1);
-            u;
         }
         ptr::write_bytes(
             repOffset.as_mut_ptr() as *mut u8,
@@ -1579,7 +1532,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                 );
                 pos = pos.wrapping_add(*fileSizes.offset(u as isize));
                 u = u.wrapping_add(1);
-                u;
             }
             if notificationLevel >= 4 {
                 if notificationLevel >= 4 {
@@ -1601,7 +1553,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                         fflush(stderr);
                     }
                     u = u.wrapping_add(1);
-                    u;
                 }
             }
             let mut maxNbBits = HUF_buildCTable_wksp(
@@ -1651,7 +1602,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                         *repOffset.as_mut_ptr().offset(offset as isize),
                     );
                     offset = offset.wrapping_add(1);
-                    offset;
                 }
                 total = 0;
                 u = 0;
@@ -1660,7 +1610,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                         .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize))
                         as u32 as u32;
                     u = u.wrapping_add(1);
-                    u;
                 }
                 errorCode = FSE_normalizeCount(
                     offcodeNCount.as_mut_ptr(),
@@ -1689,7 +1638,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                             .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize))
                             as u32 as u32;
                         u = u.wrapping_add(1);
-                        u;
                     }
                     errorCode = FSE_normalizeCount(
                         matchLengthNCount.as_mut_ptr(),
@@ -1718,7 +1666,6 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
                                 .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize))
                                 as u32 as u32;
                             u = u.wrapping_add(1);
-                            u;
                         }
                         errorCode = FSE_normalizeCount(
                             litLengthNCount.as_mut_ptr(),
@@ -1883,7 +1830,6 @@ unsafe extern "C" fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
             *reps.offset(r as isize)
         };
         r += 1;
-        r;
     }
     maxRep
 }
@@ -2195,7 +2141,6 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
                 fflush(stderr);
             }
             u = u.wrapping_add(1);
-            u;
         }
     }
     let mut dictContentSize_0 = ZDICT_dictSize(dictList);
@@ -2250,7 +2195,6 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         let mut proposedSelectivity = selectivity.wrapping_sub(1);
         while nbSamples >> proposedSelectivity <= MINRATIO as std::ffi::c_uint {
             proposedSelectivity = proposedSelectivity.wrapping_sub(1);
-            proposedSelectivity;
         }
         if notificationLevel >= 2 {
             fprintf(
@@ -2291,7 +2235,6 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             break;
         } else {
             n = n.wrapping_add(1);
-            n;
         }
     }
     (*dictList).pos = n;
@@ -2314,7 +2257,6 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
             l as std::ffi::c_ulong,
         );
         u_0 = u_0.wrapping_add(1);
-        u_0;
     }
     dictSize = ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,

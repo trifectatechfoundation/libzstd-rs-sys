@@ -2425,7 +2425,6 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             *symbolNext.offset(s as isize) = *normalizedCounter.offset(s as isize) as u16;
         }
         s = s.wrapping_add(1);
-        s;
     }
     libc::memcpy(
         dt as *mut std::ffi::c_void,
@@ -2456,7 +2455,6 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             }
             pos = pos.wrapping_add(n as size_t);
             s_0 = s_0.wrapping_add(1);
-            s_0;
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as std::ffi::c_int as size_t;
@@ -2471,7 +2469,6 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
                 (*tableDecode.offset(uPosition as isize)).baseValue =
                     *spread.offset(s_1.wrapping_add(u) as isize) as u32;
                 u = u.wrapping_add(1);
-                u;
             }
             position = position.wrapping_add(unroll * step) & tableMask;
             s_1 = s_1.wrapping_add(unroll);
@@ -2495,10 +2492,8 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 }
                 i_0 += 1;
-                i_0;
             }
             s_2 = s_2.wrapping_add(1);
-            s_2;
         }
     }
     let mut u_0: u32 = 0;
@@ -2518,7 +2513,6 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             *nbAdditionalBits.offset(symbol as isize);
         (*tableDecode.offset(u_0 as isize)).baseValue = *baseValue.offset(symbol as isize);
         u_0 = u_0.wrapping_add(1);
-        u_0;
     }
 }
 unsafe extern "C" fn ZSTD_buildFSETable_body_default(
@@ -2731,7 +2725,6 @@ pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
     let OFtype = (*ip as std::ffi::c_int >> 4 & 3) as SymbolEncodingType_e;
     let MLtype = (*ip as std::ffi::c_int >> 2 & 3) as SymbolEncodingType_e;
     ip = ip.offset(1);
-    ip;
     let llhSize = ZSTD_buildSeqTable(
         ((*dctx).entropy.LLTable).as_mut_ptr(),
         &mut (*dctx).LLTptr,
@@ -3443,7 +3436,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
-            i;
         }
         if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -3487,7 +3479,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
             }
             op = op.offset(oneSeqSize as isize);
             nbSeq -= 1;
-            nbSeq;
         }
         if nbSeq > 0 {
             let leftoverLit =
@@ -3532,7 +3523,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
             }
             op = op.offset(oneSeqSize_0 as isize);
             nbSeq -= 1;
-            nbSeq;
         }
         if nbSeq > 0 {
             asm!(".p2align 6", options(preserves_flags, att_syntax));
@@ -3561,7 +3551,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 }
                 op = op.offset(oneSeqSize_1 as isize);
                 nbSeq -= 1;
-                nbSeq;
             }
         }
         if nbSeq != 0 {
@@ -3576,7 +3565,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
             *((*dctx).entropy.rep).as_mut_ptr().offset(i_0 as isize) =
                 *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
             i_0 = i_0.wrapping_add(1);
-            i_0;
         }
     }
     if (*dctx).litBufferLocation as std::ffi::c_uint
@@ -3680,7 +3668,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_body(
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
-            i;
         }
         if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -3717,7 +3704,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_body(
             }
             op = op.offset(oneSeqSize as isize);
             nbSeq -= 1;
-            nbSeq;
         }
         if BIT_endOfDStream(&mut seqState.DStream) == 0 {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -3728,7 +3714,6 @@ unsafe extern "C" fn ZSTD_decompressSequences_body(
             *((*dctx).entropy.rep).as_mut_ptr().offset(i_0 as isize) =
                 *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
             i_0 = i_0.wrapping_add(1);
-            i_0;
         }
     }
     let lastLLSize = litEnd.offset_from(litPtr) as std::ffi::c_long as size_t;
@@ -3868,7 +3853,6 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
                 *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i += 1;
-            i;
         }
         if ERR_isError(BIT_initDStream(&mut seqState.DStream, seqStart, seqSize)) != 0 {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -3890,7 +3874,6 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
             prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence, prefixStart, dictEnd);
             *sequences.as_mut_ptr().offset(seqNb as isize) = sequence;
             seqNb += 1;
-            seqNb;
         }
         while seqNb < nbSeq {
             let mut sequence_0 = ZSTD_decodeSequence(
@@ -4006,7 +3989,6 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
                 op = op.offset(oneSeqSize_0 as isize);
             }
             seqNb += 1;
-            seqNb;
         }
         if BIT_endOfDStream(&mut seqState.DStream) == 0 {
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
@@ -4097,7 +4079,6 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
                 op = op.offset(oneSeqSize_2 as isize);
             }
             seqNb += 1;
-            seqNb;
         }
         let mut i_0: u32 = 0;
         i_0 = 0;
@@ -4105,7 +4086,6 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_body(
             *((*dctx).entropy.rep).as_mut_ptr().offset(i_0 as isize) =
                 *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
             i_0 = i_0.wrapping_add(1);
-            i_0;
         }
     }
     if (*dctx).litBufferLocation as std::ffi::c_uint
@@ -4359,7 +4339,6 @@ unsafe extern "C" fn ZSTD_getOffsetInfo(
                 info.longOffsetShare = (info.longOffsetShare).wrapping_add(1);
             }
             u = u.wrapping_add(1);
-            u;
         }
         info.longOffsetShare <<= (OffFSELog as u32).wrapping_sub(tableLog);
     }

@@ -342,7 +342,6 @@ unsafe extern "C" fn ZSTD_count(
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
-        pIn;
     }
     pIn.offset_from(pStart) as std::ffi::c_long as size_t
 }
@@ -640,7 +639,6 @@ unsafe extern "C" fn sum_u32(mut table: *const std::ffi::c_uint, mut nbElts: siz
     while n < nbElts {
         total = (total as std::ffi::c_uint).wrapping_add(*table.offset(n as isize)) as u32 as u32;
         n = n.wrapping_add(1);
-        n;
     }
     total
 }
@@ -663,7 +661,6 @@ unsafe extern "C" fn ZSTD_downscaleStats(
         sum = (sum as std::ffi::c_uint).wrapping_add(newStat) as u32 as u32;
         *table.offset(s as isize) = newStat;
         s = s.wrapping_add(1);
-        s;
     }
     sum
 }
@@ -723,7 +720,6 @@ unsafe extern "C" fn ZSTD_rescaleFreqs(
                         .wrapping_add(*((*optPtr).litFreq).offset(lit as isize))
                         as u32 as u32;
                     lit = lit.wrapping_add(1);
-                    lit;
                 }
             }
             let mut ll: std::ffi::c_uint = 0;
@@ -752,7 +748,6 @@ unsafe extern "C" fn ZSTD_rescaleFreqs(
                     .wrapping_add(*((*optPtr).litLengthFreq).offset(ll as isize))
                     as u32 as u32;
                 ll = ll.wrapping_add(1);
-                ll;
             }
             let mut ml: std::ffi::c_uint = 0;
             let mut mlstate = FSE_CState_t {
@@ -780,7 +775,6 @@ unsafe extern "C" fn ZSTD_rescaleFreqs(
                     .wrapping_add(*((*optPtr).matchLengthFreq).offset(ml as isize))
                     as u32 as u32;
                 ml = ml.wrapping_add(1);
-                ml;
             }
             let mut of: std::ffi::c_uint = 0;
             let mut ofstate = FSE_CState_t {
@@ -808,7 +802,6 @@ unsafe extern "C" fn ZSTD_rescaleFreqs(
                     .wrapping_add(*((*optPtr).offCodeFreq).offset(of as isize))
                     as u32 as u32;
                 of = of.wrapping_add(1);
-                of;
             }
         } else {
             if compressedLiterals != 0 {
@@ -838,7 +831,6 @@ unsafe extern "C" fn ZSTD_rescaleFreqs(
             while ml_0 <= MaxML as std::ffi::c_uint {
                 *((*optPtr).matchLengthFreq).offset(ml_0 as isize) = 1;
                 ml_0 = ml_0.wrapping_add(1);
-                ml_0;
             }
             (*optPtr).matchLengthSum = (MaxML + 1) as u32;
             let baseOFCfreqs: [std::ffi::c_uint; 32] = [
@@ -894,7 +886,6 @@ unsafe extern "C" fn ZSTD_rawLiteralsCost(
         }
         price = price.wrapping_sub(litPrice);
         u = u.wrapping_add(1);
-        u;
     }
     price
 }
@@ -987,27 +978,23 @@ unsafe extern "C" fn ZSTD_updateStats(
             let fresh2 = &mut (*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize));
             *fresh2 = (*fresh2).wrapping_add(ZSTD_LITFREQ_ADD as std::ffi::c_uint);
             u = u.wrapping_add(1);
-            u;
         }
         (*optPtr).litSum = ((*optPtr).litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
     }
     let llCode = ZSTD_LLcode(litLength);
     let fresh3 = &mut (*((*optPtr).litLengthFreq).offset(llCode as isize));
     *fresh3 = (*fresh3).wrapping_add(1);
-    *fresh3;
     (*optPtr).litLengthSum = ((*optPtr).litLengthSum).wrapping_add(1);
     (*optPtr).litLengthSum;
     let offCode = ZSTD_highbit32(offBase);
     let fresh4 = &mut (*((*optPtr).offCodeFreq).offset(offCode as isize));
     *fresh4 = (*fresh4).wrapping_add(1);
-    *fresh4;
     (*optPtr).offCodeSum = ((*optPtr).offCodeSum).wrapping_add(1);
     (*optPtr).offCodeSum;
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
     let mlCode = ZSTD_MLcode(mlBase);
     let fresh5 = &mut (*((*optPtr).matchLengthFreq).offset(mlCode as isize));
     *fresh5 = (*fresh5).wrapping_add(1);
-    *fresh5;
     (*optPtr).matchLengthSum = ((*optPtr).matchLengthSum).wrapping_add(1);
     (*optPtr).matchLengthSum;
 }
@@ -1044,7 +1031,6 @@ unsafe extern "C" fn ZSTD_insertAndFindFirstIndexHash3(
             hashLog3,
         ) as isize) = idx;
         idx = idx.wrapping_add(1);
-        idx;
     }
     *nextToUpdate3 = target;
     *hashTable3.offset(hash3 as isize)
@@ -1147,7 +1133,6 @@ unsafe extern "C" fn ZSTD_insertBt1(
                 }
             }
             nbCompares = nbCompares.wrapping_sub(1);
-            nbCompares;
         }
     }
     *largerPtr = 0;
@@ -1405,7 +1390,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
             (*matches.offset(mnum as isize)).off = repCode.wrapping_sub(ll0).wrapping_add(1);
             (*matches.offset(mnum as isize)).len = repLen;
             mnum = mnum.wrapping_add(1);
-            mnum;
             if (repLen > sufficient_len) as std::ffi::c_int
                 | (ip.offset(repLen as isize) == iLimit) as std::ffi::c_int
                 != 0
@@ -1414,7 +1398,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
             }
         }
         repCode = repCode.wrapping_add(1);
-        repCode;
     }
     if mls == 3 && bestLength < mls as size_t {
         let matchIndex3 = ZSTD_insertAndFindFirstIndexHash3(ms, nextToUpdate3, ip);
@@ -1532,7 +1515,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
             }
         }
         nbCompares = nbCompares.wrapping_sub(1);
-        nbCompares;
     }
     *largerPtr = 0;
     *smallerPtr = *largerPtr;
@@ -1575,7 +1557,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
                     .wrapping_add(ZSTD_REP_NUM as u32);
                 (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
-                mnum;
                 if (matchLength_0 > ZSTD_OPT_NUM as size_t) as std::ffi::c_int
                     | (ip.offset(matchLength_0 as isize) == iLimit) as std::ffi::c_int
                     != 0
@@ -1596,7 +1577,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
                 dictMatchIndex = *nextPtr_0.offset(0);
             }
             nbCompares = nbCompares.wrapping_sub(1);
-            nbCompares;
         }
     }
     (*ms).nextToUpdate = matchEndIdx.wrapping_sub(8);
@@ -2192,7 +2172,6 @@ unsafe extern "C" fn ZSTD_optLdm_maybeAddMatch(
         (*matches.offset(*nbMatches as isize)).len = candidateMatchLength;
         (*matches.offset(*nbMatches as isize)).off = candidateOffBase;
         *nbMatches = (*nbMatches).wrapping_add(1);
-        *nbMatches;
     }
 }
 unsafe extern "C" fn ZSTD_optLdm_processMatchCandidate(
@@ -2309,7 +2288,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
         );
         if nbMatches == 0 {
             ip = ip.offset(1);
-            ip;
         } else {
             (*opt.offset(0)).mlen = 0;
             (*opt.offset(0)).litlen = litlen;
@@ -2337,7 +2315,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                     (*opt.offset(pos as isize)).mlen = 0;
                     (*opt.offset(pos as isize)).litlen = litlen.wrapping_add(pos);
                     pos = pos.wrapping_add(1);
-                    pos;
                 }
                 matchNb = 0;
                 while matchNb < nbMatches {
@@ -2353,10 +2330,8 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                         (*opt.offset(pos as isize)).price = sequencePrice
                             + ZSTD_litLengthPrice(0, optStatePtr, optLevel) as std::ffi::c_int;
                         pos = pos.wrapping_add(1);
-                        pos;
                     }
                     matchNb = matchNb.wrapping_add(1);
-                    matchNb;
                 }
                 last_pos = pos.wrapping_sub(1);
                 (*opt.offset(pos as isize)).price = ZSTD_MAX_PRICE;
@@ -2538,7 +2513,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                                             {
                                                 while last_pos < pos_0 {
                                                     last_pos = last_pos.wrapping_add(1);
-                                                    last_pos;
                                                     (*opt.offset(last_pos as isize)).price =
                                                         ZSTD_MAX_PRICE;
                                                     (*opt.offset(last_pos as isize)).litlen =
@@ -2552,10 +2526,8 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                                                 break;
                                             }
                                             mlen = mlen.wrapping_sub(1);
-                                            mlen;
                                         }
                                         matchNb_0 = matchNb_0.wrapping_add(1);
-                                        matchNb_0;
                                     }
                                     (*opt.offset(last_pos.wrapping_add(1) as isize)).price =
                                         ZSTD_MAX_PRICE;
@@ -2564,7 +2536,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                         }
                     }
                     cur = cur.wrapping_add(1);
-                    cur;
                 }
                 match current_block {
                     12608488225262500095 => {}
@@ -2614,7 +2585,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                         break;
                     }
                     storeStart = storeStart.wrapping_sub(1);
-                    storeStart;
                     *opt.offset(storeStart as isize) = nextStretch;
                     stretchPos = stretchPos
                         .wrapping_sub((nextStretch.litlen).wrapping_add(nextStretch.mlen));
@@ -2642,7 +2612,6 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
                         ip = anchor;
                     }
                     storePos = storePos.wrapping_add(1);
-                    storePos;
                 }
                 ZSTD_setBasePrices(optStatePtr, optLevel);
             }

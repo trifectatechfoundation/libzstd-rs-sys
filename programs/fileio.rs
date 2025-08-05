@@ -2,7 +2,7 @@ use std::ptr;
 
 use libc::{
     __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
-    pthread_cond_t, remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
+    remove, strcmp, strcpy, strerror, strrchr, timespec, FILE,
 };
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
@@ -38,7 +38,7 @@ use crate::util::{
     UTIL_isFdRegularFile, UTIL_isFileDescriptorPipe, UTIL_isRegularFile, UTIL_isRegularFileStat,
     UTIL_isSameFile, UTIL_isSameFileStat, UTIL_makeHumanReadableSize,
     UTIL_mirrorSourceFilesDirectories, UTIL_requireUserConfirmation, UTIL_setFDStat, UTIL_stat,
-    UTIL_utime, __off_t,
+    UTIL_utime,
 };
 
 extern "C" {
@@ -1006,7 +1006,6 @@ pub unsafe extern "C" fn FIO_determineHasStdinInput(
             return;
         }
         i = i.wrapping_add(1);
-        i;
     }
 }
 unsafe extern "C" fn FIO_removeFile(mut path: *const std::ffi::c_char) -> std::ffi::c_int {
@@ -1842,7 +1841,6 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
             *fresh1 = filename.offset(1);
         }
         u = u.wrapping_add(1);
-        u;
     }
     qsort(
         filenameTableSorted as *mut std::ffi::c_void,
@@ -1871,7 +1869,6 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
         }
         prevElem = *filenameTableSorted.offset(u as isize);
         u = u.wrapping_add(1);
-        u;
     }
     free(filenameTableSorted as *mut std::ffi::c_void);
     0
@@ -1981,7 +1978,6 @@ unsafe extern "C" fn FIO_highbit64(mut v: std::ffi::c_ulonglong) -> std::ffi::c_
     while v != 0 {
         v >>= 1;
         count = count.wrapping_add(1);
-        count;
     }
     count
 }
@@ -4617,10 +4613,8 @@ unsafe extern "C" fn FIO_compressZstdFrame(
             }
             AIO_ReadPool_consumeBytes(ress.readCtx, (inBuff.pos).wrapping_sub(oldIPos));
             inputPresented = inputPresented.wrapping_add(1);
-            inputPresented;
             if oldIPos == inBuff.pos {
                 inputBlocked = inputBlocked.wrapping_add(1);
-                inputBlocked;
             }
             if toFlushNow == 0 {
                 flushWaiting = 1;
@@ -4805,7 +4799,6 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                             );
                         }
                         compressionLevel += 1;
-                        compressionLevel;
                         if compressionLevel > ZSTD_maxCLevel() {
                             compressionLevel = ZSTD_maxCLevel();
                         }
@@ -4830,7 +4823,6 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                             );
                         }
                         compressionLevel -= 1;
-                        compressionLevel;
                         if compressionLevel < (*prefs).minAdaptLevel {
                             compressionLevel = (*prefs).minAdaptLevel;
                         }
@@ -5907,7 +5899,6 @@ unsafe extern "C" fn FIO_getLargestFileSize(
             maxFileSize
         };
         i = i.wrapping_add(1);
-        i;
     }
     maxFileSize
 }
@@ -7422,7 +7413,6 @@ unsafe extern "C" fn FIO_determineDstName(
             break;
         }
         matchedSuffixPtr = matchedSuffixPtr.offset(1);
-        matchedSuffixPtr;
     }
     if sfnSize <= srcSuffixLen || (*matchedSuffixPtr).is_null() {
         if g_display_prefs.displayLevel >= 1 {
@@ -8317,7 +8307,6 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
             return 1;
         }
         u = u.wrapping_add(1);
-        u;
     }
     if numFiles == 0 {
         if UTIL_isConsole(stdin) == 0 && g_display_prefs.displayLevel >= 1 {
@@ -8370,7 +8359,6 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
             displayLevel,
         );
         u_0 = u_0.wrapping_add(1);
-        u_0;
     }
     if numFiles > 1 && displayLevel <= 2 {
         let compressed_hrs = UTIL_makeHumanReadableSize(total.compressedSize);

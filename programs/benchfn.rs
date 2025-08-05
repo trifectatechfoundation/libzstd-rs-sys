@@ -152,7 +152,6 @@ pub unsafe extern "C" fn BMK_benchFunction(
             *(p.dstCapacities).offset(i as isize),
         );
         i = i.wrapping_add(1);
-        i;
     }
     let mut dstSize = 0 as std::ffi::c_int as size_t;
     let clockStart = UTIL_getTime();
@@ -182,10 +181,8 @@ pub unsafe extern "C" fn BMK_benchFunction(
                 dstSize = dstSize.wrapping_add(res);
             }
             blockNb = blockNb.wrapping_add(1);
-            blockNb;
         }
         loopNb = loopNb.wrapping_add(1);
-        loopNb;
     }
     let totalTime = UTIL_clockSpanNano(clockStart);
     let mut rt = BMK_runTime_t {

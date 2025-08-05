@@ -123,7 +123,7 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
     (::core::mem::size_of::<size_t>() as std::ffi::c_ulong == 8) as std::ffi::c_int
         as std::ffi::c_uint
 }
-use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
+use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::zstd::*;
 use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const kSearchStrength: std::ffi::c_int = 8;
@@ -259,7 +259,6 @@ unsafe extern "C" fn ZSTD_count(
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
-        pIn;
     }
     pIn.offset_from(pStart) as std::ffi::c_long as size_t
 }
@@ -577,7 +576,6 @@ unsafe extern "C" fn ZSTD_updateDUBT(
         *nextCandidatePtr = matchIndex;
         *sortMarkPtr = ZSTD_DUBT_UNSORTED_MARK as u32;
         idx = idx.wrapping_add(1);
-        idx;
     }
     (*ms).nextToUpdate = target;
 }
@@ -687,7 +685,6 @@ unsafe extern "C" fn ZSTD_insertDUBT1(
                 }
             }
             nbCompares = nbCompares.wrapping_sub(1);
-            nbCompares;
         }
     }
     *largerPtr = 0;
@@ -780,7 +777,6 @@ unsafe extern "C" fn ZSTD_DUBT_findBetterDictMatch(
             dictMatchIndex = *nextPtr.offset(0);
         }
         nbCompares = nbCompares.wrapping_sub(1);
-        nbCompares;
     }
     if bestLength >= MINMATCH as size_t {
         let mIndex = curr.wrapping_sub((*offsetPtr).wrapping_sub(ZSTD_REP_NUM as size_t) as u32);
@@ -827,7 +823,6 @@ unsafe extern "C" fn ZSTD_DUBT_findBestMatch(
         nextCandidate = bt.offset((2 * (matchIndex & btMask)) as isize);
         unsortedMark = bt.offset((2 * (matchIndex & btMask)) as isize).offset(1);
         nbCandidates = nbCandidates.wrapping_sub(1);
-        nbCandidates;
     }
     if matchIndex > unsortLimit && *unsortedMark == ZSTD_DUBT_UNSORTED_MARK as u32 {
         *unsortedMark = 0;
@@ -840,7 +835,6 @@ unsafe extern "C" fn ZSTD_DUBT_findBestMatch(
         ZSTD_insertDUBT1(ms, matchIndex, iend, nbCandidates, unsortLimit, dictMode);
         matchIndex = nextCandidateIdx;
         nbCandidates = nbCandidates.wrapping_add(1);
-        nbCandidates;
     }
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
@@ -932,7 +926,6 @@ unsafe extern "C" fn ZSTD_DUBT_findBestMatch(
             }
         }
         nbCompares = nbCompares.wrapping_sub(1);
-        nbCompares;
     }
     *largerPtr = 0;
     *smallerPtr = *largerPtr;
@@ -1011,7 +1004,6 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         }
         *tmpHashTable.offset(h as isize) = idx;
         idx = idx.wrapping_add(1);
-        idx;
     }
     let mut chainPos = 0 as std::ffi::c_int as u32;
     hashIdx = 0;
@@ -1023,11 +1015,9 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         while i >= tmpMinChain && count < cacheSize {
             if i < minChain {
                 countBeyondMinChain = countBeyondMinChain.wrapping_add(1);
-                countBeyondMinChain;
             }
             i = *tmpChainTable.offset(i.wrapping_sub(tmpMinChain) as isize);
             count = count.wrapping_add(1);
-            count;
         }
         if count == cacheSize {
             count = 0;
@@ -1044,7 +1034,6 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
                 chainPos = chainPos.wrapping_add(1);
                 *chainTable.offset(fresh2 as isize) = i;
                 count = count.wrapping_add(1);
-                count;
                 if i < tmpMinChain {
                     break;
                 }
@@ -1060,7 +1049,6 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
             *tmpHashTable.offset(hashIdx as isize) = 0;
         }
         hashIdx = hashIdx.wrapping_add(1);
-        hashIdx;
     }
     hashIdx = ((1) << hashLog) as u32;
     while hashIdx != 0 {
@@ -1072,7 +1060,6 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         while i_0 < cacheSize {
             *hashTable.offset(bucketIdx.wrapping_add(i_0) as isize) = 0;
             i_0 = i_0.wrapping_add(1);
-            i_0;
         }
         *hashTable.offset(bucketIdx.wrapping_add(bucketSize).wrapping_sub(1) as isize) =
             chainPackedPointer;
@@ -1091,11 +1078,9 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
             *hashTable.offset(h_0.wrapping_add(i_1) as isize) =
                 *hashTable.offset(h_0.wrapping_add(i_1).wrapping_sub(1) as isize);
             i_1 = i_1.wrapping_sub(1);
-            i_1;
         }
         *hashTable.offset(h_0 as isize) = idx;
         idx = idx.wrapping_add(1);
-        idx;
     }
     (*ms).nextToUpdate = target;
 }
@@ -1128,7 +1113,6 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
     ddsAttempt = 0;
     while ddsAttempt < bucketSize.wrapping_sub(1) {
         ddsAttempt = ddsAttempt.wrapping_add(1);
-        ddsAttempt;
     }
     let chainPackedPointer = *((*dms).hashTable)
         .offset(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1) as isize);
@@ -1165,7 +1149,6 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
             }
         }
         ddsAttempt = ddsAttempt.wrapping_add(1);
-        ddsAttempt;
     }
     let chainPackedPointer_0 = *((*dms).hashTable)
         .offset(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1) as isize);
@@ -1181,7 +1164,6 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
     chainAttempt = 0;
     while chainAttempt < chainLimit {
         chainAttempt = chainAttempt.wrapping_add(1);
-        chainAttempt;
     }
     chainAttempt = 0;
     while chainAttempt < chainLimit {
@@ -1211,9 +1193,7 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
             }
         }
         chainAttempt = chainAttempt.wrapping_add(1);
-        chainAttempt;
         chainIndex_0 = chainIndex_0.wrapping_add(1);
-        chainIndex_0;
     }
     ml
 }
@@ -1241,7 +1221,6 @@ unsafe extern "C" fn ZSTD_insertAndFindFirstIndex_internal(
         *chainTable.offset((idx & chainMask) as isize) = *hashTable.offset(h as isize);
         *hashTable.offset(h as isize) = idx;
         idx = idx.wrapping_add(1);
-        idx;
         if lazySkipping != 0 {
             break;
         }
@@ -1359,7 +1338,6 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch(
         }
         matchIndex = *chainTable.offset((matchIndex & chainMask) as isize);
         nbAttempts = nbAttempts.wrapping_sub(1);
-        nbAttempts;
     }
     if dictMode as std::ffi::c_uint
         == ZSTD_dedicatedDictSearch as std::ffi::c_int as std::ffi::c_uint
@@ -1429,7 +1407,6 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch(
             }
             matchIndex = *dmsChainTable.offset((matchIndex & dmsChainMask) as isize);
             nbAttempts = nbAttempts.wrapping_sub(1);
-            nbAttempts;
         }
     }
     ml
@@ -1493,7 +1470,6 @@ unsafe extern "C" fn ZSTD_row_fillHashCache(
             .as_mut_ptr()
             .offset((idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as isize) = hash;
         idx = idx.wrapping_add(1);
-        idx;
     }
 }
 #[inline(always)]
@@ -1563,7 +1539,6 @@ unsafe extern "C" fn ZSTD_row_update_internalImpl(
         *tagRow.offset(pos as isize) = (hash & ZSTD_ROW_HASH_TAG_MASK) as u8;
         *row.offset(pos as isize) = updateStartIdx;
         updateStartIdx = updateStartIdx.wrapping_add(1);
-        updateStartIdx;
     }
 }
 #[inline(always)]
@@ -1637,7 +1612,6 @@ unsafe extern "C" fn ZSTD_row_getSSEMask(
         let equalMask = _mm_cmpeq_epi8(chunk, comparisonMask);
         *matches.as_mut_ptr().offset(i as isize) = _mm_movemask_epi8(equalMask);
         i += 1;
-        i;
     }
     if nbChunks == 1 {
         return ZSTD_rotateRight_U16(*matches.as_mut_ptr().offset(0) as u16, head) as ZSTD_VecMask;
@@ -1785,7 +1759,6 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
             numMatches = numMatches.wrapping_add(1);
             *matchBuffer.as_mut_ptr().offset(fresh3 as isize) = matchIndex;
             nbAttempts = nbAttempts.wrapping_sub(1);
-            nbAttempts;
         }
         matches &= matches.wrapping_sub(1);
     }
@@ -1831,7 +1804,6 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
             }
         }
         currMatch = currMatch.wrapping_add(1);
-        currMatch;
     }
     if dictMode as std::ffi::c_uint
         == ZSTD_dedicatedDictSearch as std::ffi::c_int as std::ffi::c_uint
@@ -1874,7 +1846,6 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
                 numMatches_0 = numMatches_0.wrapping_add(1);
                 *matchBuffer_0.as_mut_ptr().offset(fresh5 as isize) = matchIndex_1;
                 nbAttempts = nbAttempts.wrapping_sub(1);
-                nbAttempts;
             }
             matches_0 &= matches_0.wrapping_sub(1);
         }
@@ -1904,7 +1875,6 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
                 }
             }
             currMatch_0 = currMatch_0.wrapping_add(1);
-            currMatch_0;
         }
     }
     ml
@@ -2998,7 +2968,6 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                         if depth >= 1 {
                             while ip < ilimit {
                                 ip = ip.offset(1);
-                                ip;
                                 if dictMode as std::ffi::c_uint
                                     == ZSTD_noDict as std::ffi::c_int as std::ffi::c_uint
                                     && offBase != 0
@@ -3093,7 +3062,6 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         break;
                                     }
                                     ip = ip.offset(1);
-                                    ip;
                                     if dictMode as std::ffi::c_uint
                                         == ZSTD_noDict as std::ffi::c_int as std::ffi::c_uint
                                         && offBase != 0
@@ -3214,9 +3182,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                             as std::ffi::c_int
                                 {
                                     start = start.offset(-1);
-                                    start;
                                     matchLength = matchLength.wrapping_add(1);
-                                    matchLength;
                                 }
                             }
                             if isDxS != 0 {
@@ -3242,11 +3208,8 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
                                         == *match_0.offset(-(1) as isize) as std::ffi::c_int
                                 {
                                     start = start.offset(-1);
-                                    start;
                                     match_0 = match_0.offset(-1);
-                                    match_0;
                                     matchLength = matchLength.wrapping_add(1);
-                                    matchLength;
                                 }
                             }
                             offset_2 = offset_1;
@@ -3938,9 +3901,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
                                 break;
                             }
                             ip = ip.offset(1);
-                            ip;
                             curr = curr.wrapping_add(1);
-                            curr;
                             if offBase != 0 {
                                 let windowLow_1 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
                                 let repIndex_1 = curr.wrapping_sub(offset_1);
@@ -4029,11 +3990,8 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
                             == *match_0.offset(-(1) as isize) as std::ffi::c_int
                     {
                         start = start.offset(-1);
-                        start;
                         match_0 = match_0.offset(-1);
-                        match_0;
                         matchLength = matchLength.wrapping_add(1);
-                        matchLength;
                     }
                     offset_2 = offset_1;
                     offset_1 = offBase.wrapping_sub(ZSTD_REP_NUM as size_t) as u32;

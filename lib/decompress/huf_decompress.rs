@@ -300,19 +300,16 @@ unsafe extern "C" fn HUF_rescaleStats(
                     scale
                 }) as u8 as std::ffi::c_int) as u8;
             s = s.wrapping_add(1);
-            s;
         }
         s = targetTableLog;
         while s > scale {
             *rankVal.offset(s as isize) = *rankVal.offset(s.wrapping_sub(scale) as isize);
             s = s.wrapping_sub(1);
-            s;
         }
         s = scale;
         while s > 0 {
             *rankVal.offset(s as isize) = 0;
             s = s.wrapping_sub(1);
-            s;
         }
     }
     targetTableLog
@@ -380,7 +377,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
             nextRankStart.wrapping_add(*((*wksp).rankVal).as_mut_ptr().offset(n as isize));
         *((*wksp).rankStart).as_mut_ptr().offset(n as isize) = curr;
         n += 1;
-        n;
     }
     n = 0;
     while n < nLimit {
@@ -393,7 +389,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
             *fresh13 = (*fresh13).wrapping_add(1);
             *((*wksp).symbols).as_mut_ptr().offset(fresh14 as isize) = (n + u) as u8;
             u += 1;
-            u;
         }
         n += unroll;
     }
@@ -404,7 +399,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
         *fresh15 = (*fresh15).wrapping_add(1);
         *((*wksp).symbols).as_mut_ptr().offset(fresh16 as isize) = n as u8;
         n += 1;
-        n;
     }
     let mut w_1: u32 = 0;
     let mut symbol = *((*wksp).rankVal).as_mut_ptr().offset(0) as std::ffi::c_int;
@@ -427,7 +421,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
                     *dt.offset(uStart as isize) = D;
                     uStart += 1;
                     s += 1;
-                    s;
                 }
             }
             2 => {
@@ -440,7 +433,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
                     *dt.offset((uStart + 1) as isize) = D_0;
                     uStart += 2;
                     s += 1;
-                    s;
                 }
             }
             4 => {
@@ -453,7 +445,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
                     MEM_write64(dt.offset(uStart as isize) as *mut std::ffi::c_void, D4);
                     uStart += 4;
                     s += 1;
-                    s;
                 }
             }
             8 => {
@@ -470,7 +461,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
                     );
                     uStart += 8;
                     s += 1;
-                    s;
                 }
             }
             _ => {
@@ -506,14 +496,12 @@ pub unsafe fn HUF_readDTableX1_wksp(
                     }
                     uStart += length;
                     s += 1;
-                    s;
                 }
             }
         }
         symbol += symbolCount;
         rankStart += symbolCount * length;
         w_1 = w_1.wrapping_add(1);
-        w_1;
     }
     iSize
 }
@@ -834,7 +822,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
         stream = 0;
         while stream < 4 {
             stream += 1;
-            stream;
         }
         let oiters = oend.offset_from(*op.as_mut_ptr().offset(3)) as std::ffi::c_long as size_t / 5;
         let iiters =
@@ -853,12 +840,10 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                 break 's_33;
             }
             stream += 1;
-            stream;
         }
         stream = 1;
         while stream < 4 {
             stream += 1;
-            stream;
         }
         loop {
             let index = (*bits.as_mut_ptr().offset(0) >> 53) as std::ffi::c_int;
@@ -1090,7 +1075,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast(
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
         i += 1;
-        i;
     }
     dstSize
 }
@@ -1280,7 +1264,6 @@ unsafe extern "C" fn HUF_fillDTableX2ForWeight(
                 DTableRank = DTableRank.offset(1);
                 *fresh48 = DElt;
                 ptr = ptr.offset(1);
-                ptr;
             }
         }
         2 => {
@@ -1291,7 +1274,6 @@ unsafe extern "C" fn HUF_fillDTableX2ForWeight(
                 *DTableRank.offset(1) = DElt_0;
                 DTableRank = DTableRank.offset(2);
                 ptr = ptr.offset(1);
-                ptr;
             }
         }
         4 => {
@@ -1310,7 +1292,6 @@ unsafe extern "C" fn HUF_fillDTableX2ForWeight(
                 );
                 DTableRank = DTableRank.offset(4);
                 ptr = ptr.offset(1);
-                ptr;
             }
         }
         8 => {
@@ -1339,7 +1320,6 @@ unsafe extern "C" fn HUF_fillDTableX2ForWeight(
                 );
                 DTableRank = DTableRank.offset(8);
                 ptr = ptr.offset(1);
-                ptr;
             }
         }
         _ => {
@@ -1371,7 +1351,6 @@ unsafe extern "C" fn HUF_fillDTableX2ForWeight(
                     DTableRank = DTableRank.offset(8);
                 }
                 ptr = ptr.offset(1);
-                ptr;
             }
         }
     };
@@ -1458,7 +1437,6 @@ unsafe extern "C" fn HUF_fillDTableX2Level2(
             2,
         );
         w += 1;
-        w;
     }
 }
 unsafe extern "C" fn HUF_fillDTableX2(
@@ -1504,7 +1482,6 @@ unsafe extern "C" fn HUF_fillDTableX2(
                 );
                 start = (start as u32).wrapping_add(length) as std::ffi::c_int as std::ffi::c_int;
                 s += 1;
-                s;
             }
         } else {
             HUF_fillDTableX2ForWeight(
@@ -1518,7 +1495,6 @@ unsafe extern "C" fn HUF_fillDTableX2(
             );
         }
         w += 1;
-        w;
     }
 }
 #[export_name = crate::prefix!(HUF_readDTableX2_wksp)]
@@ -1584,7 +1560,6 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     maxW = tableLog;
     while *((*wksp).rankStats).as_mut_ptr().offset(maxW as isize) == 0 {
         maxW = maxW.wrapping_sub(1);
-        maxW;
     }
     let mut w: u32 = 0;
     let mut nextRankStart = 0 as std::ffi::c_int as u32;
@@ -1595,7 +1570,6 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
             nextRankStart.wrapping_add(*((*wksp).rankStats).as_mut_ptr().offset(w as isize));
         *rankStart.offset(w as isize) = curr;
         w = w.wrapping_add(1);
-        w;
     }
     *rankStart.offset(0) = nextRankStart;
     *rankStart.offset(maxW.wrapping_add(1) as isize) = nextRankStart;
@@ -1609,7 +1583,6 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
         let r = fresh50;
         (*((*wksp).sortedSymbol).as_mut_ptr().offset(r as isize)).symbol = s as u8;
         s = s.wrapping_add(1);
-        s;
     }
     *rankStart.offset(0) = 0;
     let rankVal0 = (*((*wksp).rankVal).as_mut_ptr().offset(0)).as_mut_ptr();
@@ -1625,7 +1598,6 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
         );
         *rankVal0.offset(w_1 as isize) = curr_0;
         w_1 = w_1.wrapping_add(1);
-        w_1;
     }
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut consumed: u32 = 0;
@@ -1637,10 +1609,8 @@ pub unsafe extern "C" fn HUF_readDTableX2_wksp(
         while w_2 < maxW.wrapping_add(1) {
             *rankValPtr.offset(w_2 as isize) = *rankVal0.offset(w_2 as isize) >> consumed;
             w_2 = w_2.wrapping_add(1);
-            w_2;
         }
         consumed = consumed.wrapping_add(1);
-        consumed;
     }
     HUF_fillDTableX2(
         dt,
@@ -2087,7 +2057,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
         stream = 0;
         while stream < 4 {
             stream += 1;
-            stream;
         }
         let mut iters =
             (*ip.as_mut_ptr().offset(0)).offset_from(ilowest) as std::ffi::c_long as size_t / 7;
@@ -2099,7 +2068,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 / 10;
             iters = if iters < oiters { iters } else { oiters };
             stream += 1;
-            stream;
         }
         olimit = (*op.as_mut_ptr().offset(3)).offset((iters * 5) as isize);
         if *op.as_mut_ptr().offset(3) == olimit {
@@ -2113,12 +2081,10 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
                 break 's_45;
             }
             stream += 1;
-            stream;
         }
         stream = 1;
         while stream < 4 {
             stream += 1;
-            stream;
         }
         loop {
             if 0 != 0 || 0 != 3 {
@@ -2543,7 +2509,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast(
             return -(ZSTD_error_corruption_detected as std::ffi::c_int) as size_t;
         }
         i += 1;
-        i;
     }
     dstSize
 }

@@ -960,7 +960,6 @@ unsafe extern "C" fn ZSTD_count(
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
-        pIn;
     }
     pIn.offset_from(pStart) as std::ffi::c_long as size_t
 }
@@ -4294,7 +4293,6 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: std::ffi::c
             memBudget = newMB;
         }
         level += 1;
-        level;
     }
     memBudget
 }
@@ -4391,7 +4389,6 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize(mut compressionLevel: std::ffi
             memBudget = newMB;
         }
         level += 1;
-        level;
     }
     memBudget
 }
@@ -4443,7 +4440,6 @@ pub unsafe extern "C" fn ZSTD_reset_compressedBlockState(mut bs: *mut ZSTD_compr
     while i < ZSTD_REP_NUM {
         *((*bs).rep).as_mut_ptr().offset(i as isize) = *repStartValue.as_ptr().offset(i as isize);
         i += 1;
-        i;
     }
     (*bs).entropy.huf.repeatMode = HUF_repeat_none;
     (*bs).entropy.fse.offcode_repeatMode = FSE_repeat_none;
@@ -4876,7 +4872,6 @@ pub unsafe extern "C" fn ZSTD_invalidateRepCodes(mut cctx: *mut ZSTD_CCtx) {
             .as_mut_ptr()
             .offset(i as isize) = 0;
         i += 1;
-        i;
     }
 }
 static mut attachDictSizeCutoffs: [size_t; 10] = [
@@ -4977,7 +4972,6 @@ unsafe extern "C" fn ZSTD_copyCDictTableIntoCCtx(
             let index = taggedIndex >> ZSTD_SHORT_CACHE_TAG_BITS;
             *dst.offset(i as isize) = index;
             i = i.wrapping_add(1);
-            i;
         }
     } else {
         libc::memcpy(
@@ -5212,12 +5206,9 @@ unsafe extern "C" fn ZSTD_reduceTable_internal(
             }
             *table.offset(cellNb as isize) = newVal;
             cellNb += 1;
-            cellNb;
             column += 1;
-            column;
         }
         rowNb += 1;
-        rowNb;
     }
 }
 unsafe extern "C" fn ZSTD_reduceTable(table: *mut u32, size: u32, reducerValue: u32) {
@@ -5282,7 +5273,6 @@ pub unsafe extern "C" fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> 
             longOffsets = 1;
         }
         u = u.wrapping_add(1);
-        u;
     }
     if (*seqStorePtr).longLengthType as std::ffi::c_uint
         == ZSTD_llt_literalLength as std::ffi::c_int as std::ffi::c_uint
@@ -5831,30 +5821,28 @@ pub unsafe extern "C" fn ZSTD_selectBlockCompressor(
     };
     let mut selectedCompressor: ZSTD_BlockCompressor_f = None;
     if ZSTD_rowMatchFinderUsed(strat, useRowMatchFinder) != 0 {
-        static mut rowBasedBlockCompressors: [[ZSTD_BlockCompressor_f; 3]; 4] = unsafe {
+        static mut rowBasedBlockCompressors: [[ZSTD_BlockCompressor_f; 3]; 4] = [
             [
-                [
-                    Some(ZSTD_COMPRESSBLOCK_GREEDY_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY2_ROW),
-                ],
-                [
-                    Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT_ROW),
-                ],
-                [
-                    Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE_ROW),
-                ],
-                [
-                    Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH_ROW),
-                    Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW),
-                ],
-            ]
-        };
+                Some(ZSTD_COMPRESSBLOCK_GREEDY_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY2_ROW),
+            ],
+            [
+                Some(ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY_EXTDICT_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT_ROW),
+            ],
+            [
+                Some(ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE_ROW),
+            ],
+            [
+                Some(ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH_ROW),
+                Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW),
+            ],
+        ];
         selectedCompressor = *(*rowBasedBlockCompressors
             .as_ptr()
             .offset(dictMode as std::ffi::c_int as isize))
@@ -5998,7 +5986,6 @@ unsafe extern "C" fn ZSTD_buildSeqStore(
             .as_mut_ptr()
             .offset(i as isize);
         i += 1;
-        i;
     }
     if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
         if ZSTD_hasExtSeqProd(&mut (*zc).appliedParams) != 0 {
@@ -6199,7 +6186,6 @@ unsafe extern "C" fn ZSTD_copyBlockSequences(
         nbOutLiterals =
             nbOutLiterals.wrapping_add((*outSeqs.offset(i as isize)).litLength as size_t);
         i = i.wrapping_add(1);
-        i;
     }
     let lastLLSize = nbInLiterals.wrapping_sub(nbOutLiterals);
     (*outSeqs.offset(nbInSequences as isize)).litLength = lastLLSize as u32;
@@ -6281,10 +6267,8 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
         } else {
             *sequences.offset(out as isize) = *sequences.offset(in_0 as isize);
             out = out.wrapping_add(1);
-            out;
         }
         in_0 = in_0.wrapping_add(1);
-        in_0;
     }
     out
 }
@@ -6708,7 +6692,6 @@ unsafe extern "C" fn ZSTD_estimateBlockSize_symbolType(
                 cSymbolTypeSizeEstimateInBits.wrapping_add(*ctp as size_t);
         }
         ctp = ctp.offset(1);
-        ctp;
     }
     cSymbolTypeSizeEstimateInBits >> 3
 }
@@ -6861,7 +6844,6 @@ unsafe extern "C" fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t
             literalsBytes = literalsBytes.wrapping_add(0x10000 as std::ffi::c_int as size_t);
         }
         i = i.wrapping_add(1);
-        i;
     }
     literalsBytes
 }
@@ -6881,7 +6863,6 @@ unsafe extern "C" fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -
             matchBytes = matchBytes.wrapping_add(0x10000 as std::ffi::c_int as size_t);
         }
         i = i.wrapping_add(1);
-        i;
     }
     matchBytes
 }
@@ -6972,7 +6953,6 @@ unsafe extern "C" fn ZSTD_seqStore_resolveOffCodes(
         ZSTD_updateRep(((*dRepcodes).rep).as_mut_ptr(), (*seq).offBase, ll0);
         ZSTD_updateRep(((*cRepcodes).rep).as_mut_ptr(), offBase, ll0);
         idx = idx.wrapping_add(1);
-        idx;
     }
 }
 unsafe extern "C" fn ZSTD_compressSeqStore_singleBlock(
@@ -7245,7 +7225,6 @@ unsafe extern "C" fn ZSTD_compressBlock_splitBlock_internal(
         cSize = cSize.wrapping_add(cSizeChunk);
         *currSeqStore = *nextSeqStore;
         i = i.wrapping_add(1);
-        i;
     }
     libc::memcpy(
         ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *mut std::ffi::c_void,
@@ -7718,7 +7697,6 @@ unsafe extern "C" fn ZSTD_writeFrameHeader(
         1 => {
             *op.offset(pos as isize) = dictID as u8;
             pos = pos.wrapping_add(1);
-            pos;
         }
         2 => {
             MEM_writeLE16(
@@ -8099,7 +8077,6 @@ unsafe extern "C" fn ZSTD_dictNCountRepeat(
             return FSE_repeat_check;
         }
         s = s.wrapping_add(1);
-        s;
     }
     FSE_repeat_valid
 }
@@ -8259,7 +8236,6 @@ pub unsafe extern "C" fn ZSTD_loadCEntropy(
             return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
         }
         u = u.wrapping_add(1);
-        u;
     }
     dictPtr.offset_from(dict as *const u8) as std::ffi::c_long as size_t
 }
@@ -11095,7 +11071,6 @@ unsafe extern "C" fn ZSTD_transferSequences_wBlockDelim(
         );
         ip = ip.offset(matchLength.wrapping_add(litLength) as isize);
         idx = idx.wrapping_add(1);
-        idx;
     }
     if idx as size_t == inSeqsSize {
         return -(ZSTD_error_externalSequences_invalid as std::ffi::c_int) as size_t;
@@ -11263,7 +11238,6 @@ unsafe extern "C" fn ZSTD_transferSequences_noDelim(
         ip = ip.offset(matchLength.wrapping_add(litLength) as isize);
         if finalMatchSplit == 0 {
             idx = idx.wrapping_add(1);
-            idx;
         }
     }
     (*seqPos).idx = idx;
@@ -11334,7 +11308,6 @@ unsafe extern "C" fn blockSize_explicitDelimiter(
             break;
         } else {
             spos = spos.wrapping_add(1);
-            spos;
         }
     }
     if end == 0 {
@@ -11623,7 +11596,6 @@ pub unsafe extern "C" fn convertSequences_noRepcodes(
             longLen = n.wrapping_add(nbSequences).wrapping_add(1);
         }
         n = n.wrapping_add(1);
-        n;
     }
     longLen
 }
@@ -11683,7 +11655,6 @@ pub unsafe extern "C" fn ZSTD_convertBlockSequences(
             );
             ZSTD_updateRep((updatedRepcodes.rep).as_mut_ptr(), offBase, ll0);
             seqNb = seqNb.wrapping_add(1);
-            seqNb;
         }
     }
     if repcodeResolution == 0 && nbSequences > 1 {
@@ -11819,7 +11790,6 @@ pub unsafe extern "C" fn ZSTD_get1BlockSummary(
                         continue;
                     }
                     n = n.wrapping_add(1);
-                    n;
                     current_block = 2668756484064249700;
                 } else {
                     let mut bs = BlockSummary {

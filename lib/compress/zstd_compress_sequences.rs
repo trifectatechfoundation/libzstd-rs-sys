@@ -370,7 +370,6 @@ unsafe extern "C" fn ZSTD_entropyCost(
                 .wrapping_mul(*kInverseProbabilityLog256.as_ptr().offset(norm as isize)),
         );
         s = s.wrapping_add(1);
-        s;
     }
     (cost >> 8) as size_t
 }
@@ -405,7 +404,6 @@ pub unsafe extern "C" fn ZSTD_fseBitCost(
             cost = cost.wrapping_add(*count.offset(s as isize) as size_t * bitCost as size_t);
         }
         s = s.wrapping_add(1);
-        s;
     }
     cost >> kAccuracyLog
 }
@@ -433,7 +431,6 @@ pub unsafe extern "C" fn ZSTD_crossEntropyCost(
                 as size_t,
         );
         s = s.wrapping_add(1);
-        s;
     }
     cost >> 8
 }
@@ -568,9 +565,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
                 let fresh0 = &mut (*count
                     .offset(*codeTable.offset(nbSeq.wrapping_sub(1) as isize) as isize));
                 *fresh0 = (*fresh0).wrapping_sub(1);
-                *fresh0;
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
-                nbSeq_1;
             }
             let err_code_1 = FSE_normalizeCount(
                 ((*wksp).norm).as_mut_ptr(),
@@ -799,7 +794,6 @@ unsafe extern "C" fn ZSTD_encodeSequences_body(
         }
         BIT_flushBits(&mut blockStream);
         n = n.wrapping_sub(1);
-        n;
     }
     FSE_flushCState(&mut blockStream, &mut stateMatchLength);
     FSE_flushCState(&mut blockStream, &mut stateOffsetBits);
