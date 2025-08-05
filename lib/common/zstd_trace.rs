@@ -55,17 +55,14 @@ mod statics {
         unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx,
     > = None;
 
-    #[cfg(miri)]
     pub static ZSTD_trace_compress_end: Option<
         unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
     > = None;
 
-    #[cfg(miri)]
     pub static ZSTD_trace_decompress_begin: Option<
         unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx,
     > = None;
 
-    #[cfg(miri)]
     pub static ZSTD_trace_decompress_end: Option<
         unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
     > = None;
