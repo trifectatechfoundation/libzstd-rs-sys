@@ -1,3 +1,5 @@
+use std::ptr;
+
 use ::c2rust_bitfields;
 use libc::{
     free, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
@@ -597,10 +599,10 @@ unsafe extern "C" fn ZSTD_window_clear(mut window: *mut ZSTD_window_t) {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_window_init(mut window: *mut ZSTD_window_t) {
-    libc::memset(
-        window as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        window as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTD_window_t>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<ZSTD_window_t>(),
     );
     (*window).base = b" \0" as *const u8 as *const std::ffi::c_char as *const u8;
     (*window).dictBase = b" \0" as *const u8 as *const std::ffi::c_char as *const u8;
@@ -694,7 +696,7 @@ unsafe extern "C" fn ZSTD_customCalloc(
 ) -> *mut std::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        libc::memset(ptr, 0, size as libc::size_t);
+        ptr::write_bytes(ptr, 0, size as usize);
         return ptr;
     }
     calloc(1, size)
@@ -1060,10 +1062,10 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
     {
         ZSTD_ldm_adjustParameters(&mut params.ldmParams, &mut params.cParams);
     } else {
-        libc::memset(
-            &mut params.ldmParams as *mut ldmParams_t as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut params.ldmParams as *mut ldmParams_t as *mut u8,
             0,
-            ::core::mem::size_of::<ldmParams_t>() as std::ffi::c_ulong as libc::size_t,
+            ::core::mem::size_of::<ldmParams_t>(),
         );
     }
     (*serialState).nextJobID = 0;
@@ -1105,15 +1107,15 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
         {
             return 1;
         }
-        libc::memset(
-            (*serialState).ldmState.hashTable as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            (*serialState).ldmState.hashTable as *mut u8,
             0,
-            hashSize as libc::size_t,
+            hashSize as usize,
         );
-        libc::memset(
-            (*serialState).ldmState.bucketOffsets as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            (*serialState).ldmState.bucketOffsets as *mut u8,
             0,
-            numBuckets as libc::size_t,
+            numBuckets as usize,
         );
         (*serialState).ldmState.loadedDictEnd = 0;
         if dictSize > 0
@@ -1142,10 +1144,10 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
 }
 unsafe extern "C" fn ZSTDMT_serialState_init(mut serialState: *mut SerialState) -> std::ffi::c_int {
     let mut initError = 0;
-    libc::memset(
-        serialState as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        serialState as *mut u8,
         0,
-        ::core::mem::size_of::<SerialState>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<SerialState>(),
     );
     initError |= pthread_mutex_init(
         &mut (*serialState).mutex,
@@ -1711,11 +1713,10 @@ unsafe extern "C" fn ZSTDMT_releaseAllJobResources(mut mtctx: *mut ZSTDMT_CCtx) 
             (*mtctx).bufPool,
             (*((*mtctx).jobs).offset(jobID as isize)).dstBuff,
         );
-        libc::memset(
-            &mut *((*mtctx).jobs).offset(jobID as isize) as *mut ZSTDMT_jobDescription
-                as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut *((*mtctx).jobs).offset(jobID as isize) as *mut ZSTDMT_jobDescription as *mut u8,
             0,
-            ::core::mem::size_of::<ZSTDMT_jobDescription>() as std::ffi::c_ulong as libc::size_t,
+            ::core::mem::size_of::<ZSTDMT_jobDescription>(),
         );
         (*((*mtctx).jobs).offset(jobID as isize)).job_mutex = mutex;
         (*((*mtctx).jobs).offset(jobID as isize)).job_cond = cond;

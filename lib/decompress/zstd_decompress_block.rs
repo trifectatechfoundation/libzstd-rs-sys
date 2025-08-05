@@ -3,6 +3,7 @@ use core::arch::asm;
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
+use std::ptr;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp;
@@ -173,11 +174,7 @@ unsafe extern "C" fn BIT_initDStream(
     mut srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 {
-        libc::memset(
-            bitD as *mut std::ffi::c_void,
-            0,
-            ::core::mem::size_of::<BIT_DStream_t>() as std::ffi::c_ulong as libc::size_t,
-        );
+        ptr::write_bytes(bitD as *mut u8, 0, ::core::mem::size_of::<BIT_DStream_t>());
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
     (*bitD).start = srcBuffer as *const std::ffi::c_char;
@@ -784,9 +781,9 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
             if (*dctx).litBufferLocation as std::ffi::c_uint
                 == ZSTD_split as std::ffi::c_int as std::ffi::c_uint
             {
-                libc::memset(
-                    (*dctx).litBuffer as *mut std::ffi::c_void,
-                    *istart.offset(lhSize_1 as isize) as std::ffi::c_int,
+                ptr::write_bytes(
+                    (*dctx).litBuffer as *mut u8,
+                    *istart.offset(lhSize_1 as isize),
                     litSize_1.wrapping_sub(
                         (if 64
                             > (if ((1) << 16) < (128) << 10 {
@@ -803,9 +800,9 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
                         }) as size_t,
                     ) as libc::size_t,
                 );
-                libc::memset(
-                    ((*dctx).litExtraBuffer).as_mut_ptr() as *mut std::ffi::c_void,
-                    *istart.offset(lhSize_1 as isize) as std::ffi::c_int,
+                ptr::write_bytes(
+                    ((*dctx).litExtraBuffer).as_mut_ptr() as *mut u8,
+                    *istart.offset(lhSize_1 as isize),
                     (if 64
                         > (if ((1) << 16) < (128) << 10 {
                             (1) << 16
@@ -821,9 +818,9 @@ unsafe extern "C" fn ZSTD_decodeLiteralsBlock(
                     }) as std::ffi::c_ulong as libc::size_t,
                 );
             } else {
-                libc::memset(
-                    (*dctx).litBuffer as *mut std::ffi::c_void,
-                    *istart.offset(lhSize_1 as isize) as std::ffi::c_int,
+                ptr::write_bytes(
+                    (*dctx).litBuffer as *mut u8,
+                    *istart.offset(lhSize_1 as isize),
                     litSize_1 as libc::size_t,
                 );
             }

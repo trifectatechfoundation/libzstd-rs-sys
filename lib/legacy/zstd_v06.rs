@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::common::error_private::ERR_getErrorString;
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16};
@@ -414,10 +416,10 @@ unsafe extern "C" fn BITv06_initDStream(
     mut srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 {
-        memset(
-            bitD as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            bitD as *mut u8,
             0,
-            ::core::mem::size_of::<BITv06_DStream_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<BITv06_DStream_t>(),
         );
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
@@ -2760,10 +2762,10 @@ pub unsafe extern "C" fn ZSTDv06_getFrameParams(
     if srcSize < fhsize {
         return fhsize;
     }
-    memset(
-        fparamsPtr as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        fparamsPtr as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTDv06_frameParams>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTDv06_frameParams>(),
     );
     let frameDesc = *ip.offset(4);
     (*fparamsPtr).windowLog = ((frameDesc as std::ffi::c_int & 0xf as std::ffi::c_int)
@@ -2932,12 +2934,12 @@ unsafe extern "C" fn ZSTDv06_decodeLiteralsBlock(
             }
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize.wrapping_add(lhSize as size_t)
         }
@@ -2971,12 +2973,12 @@ unsafe extern "C" fn ZSTDv06_decodeLiteralsBlock(
             }
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize_0.wrapping_add(lhSize_0 as size_t)
         }
@@ -3015,13 +3017,12 @@ unsafe extern "C" fn ZSTDv06_decodeLiteralsBlock(
                 );
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
-                memset(
+                ptr::write_bytes(
                     ((*dctx).litBuffer)
                         .as_mut_ptr()
-                        .offset((*dctx).litSize as isize)
-                        as *mut std::ffi::c_void,
+                        .offset((*dctx).litSize as isize) as *mut u8,
                     0,
-                    WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                    WILDCOPY_OVERLENGTH as usize,
                 );
                 return (lhSize_1 as size_t).wrapping_add(litSize_1);
             }
@@ -3587,10 +3588,10 @@ unsafe extern "C" fn ZSTDv06_decompressSequences(
             },
             prevOffset: [0; 3],
         };
-        memset(
-            &mut sequence as *mut seq_t as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut sequence as *mut seq_t as *mut u8,
             0,
-            ::core::mem::size_of::<seq_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<seq_t>(),
         );
         sequence.offset = REPCODE_STARTVALUE as size_t;
         let mut i: u32 = 0;
@@ -4200,11 +4201,7 @@ pub unsafe extern "C" fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
     if zbd.is_null() {
         return NULL as *mut ZBUFFv06_DCtx;
     }
-    memset(
-        zbd as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<ZBUFFv06_DCtx>() as std::ffi::c_ulong,
-    );
+    ptr::write_bytes(zbd as *mut u8, 0, ::core::mem::size_of::<ZBUFFv06_DCtx>());
     (*zbd).zd = ZSTDv06_createDCtx();
     if ((*zbd).zd).is_null() {
         ZBUFFv06_freeDCtx(zbd);

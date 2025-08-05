@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::common::error_private::ERR_getErrorString;
 use crate::lib::zstd::*;
 use crate::{MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16};
@@ -285,10 +287,10 @@ unsafe extern "C" fn BITv05_initDStream(
     mut srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 {
-        memset(
-            bitD as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            bitD as *mut u8,
             0,
-            ::core::mem::size_of::<BITv05_DStream_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<BITv05_DStream_t>(),
         );
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
@@ -2628,10 +2630,10 @@ pub unsafe extern "C" fn ZSTDv05_getFrameParams(
     if magicNumber != ZSTDv05_MAGICNUMBER {
         return -(ZSTD_error_prefix_unknown as std::ffi::c_int) as size_t;
     }
-    memset(
-        params as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        params as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTDv05_parameters>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTDv05_parameters>(),
     );
     (*params).windowLog = ((*(src as *const u8).offset(4) as std::ffi::c_int & 15)
         + ZSTDv05_WINDOWLOG_ABSOLUTEMIN) as u32;
@@ -2778,12 +2780,12 @@ unsafe extern "C" fn ZSTDv05_decodeLiteralsBlock(
             }
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize.wrapping_add(lhSize as size_t)
         }
@@ -2818,12 +2820,12 @@ unsafe extern "C" fn ZSTDv05_decodeLiteralsBlock(
             }
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize_0.wrapping_add(lhSize_0 as size_t)
         }
@@ -2862,13 +2864,12 @@ unsafe extern "C" fn ZSTDv05_decodeLiteralsBlock(
                 );
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
-                memset(
+                ptr::write_bytes(
                     ((*dctx).litBuffer)
                         .as_mut_ptr()
-                        .offset((*dctx).litSize as isize)
-                        as *mut std::ffi::c_void,
+                        .offset((*dctx).litSize as isize) as *mut u8,
                     0,
-                    WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                    WILDCOPY_OVERLENGTH as usize,
                 );
                 return (lhSize_1 as size_t).wrapping_add(litSize_1);
             }
@@ -3375,10 +3376,10 @@ unsafe extern "C" fn ZSTDv05_decompressSequences(
             dumps: std::ptr::null::<u8>(),
             dumpsEnd: std::ptr::null::<u8>(),
         };
-        memset(
-            &mut sequence as *mut seq_t as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            &mut sequence as *mut seq_t as *mut u8,
             0,
-            ::core::mem::size_of::<seq_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<seq_t>(),
         );
         sequence.offset = REPCODE_STARTVALUE as size_t;
         seqState.dumps = dumps;
@@ -3508,10 +3509,10 @@ unsafe extern "C" fn ZSTDv05_decompress_continueDCtx(
         blockType: bt_compressed,
         origSize: 0,
     };
-    memset(
-        &mut blockProperties as *mut blockProperties_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut blockProperties as *mut blockProperties_t as *mut u8,
         0,
-        ::core::mem::size_of::<blockProperties_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<blockProperties_t>(),
     );
     let mut frameHeaderSize: size_t = 0;
     if srcSize < ZSTDv05_frameHeaderSize_min.wrapping_add(ZSTDv05_blockHeaderSize) {
@@ -3993,11 +3994,7 @@ pub unsafe extern "C" fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
     if zbc.is_null() {
         return NULL as *mut ZBUFFv05_DCtx;
     }
-    memset(
-        zbc as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<ZBUFFv05_DCtx>() as std::ffi::c_ulong,
-    );
+    ptr::write_bytes(zbc as *mut u8, 0, ::core::mem::size_of::<ZBUFFv05_DCtx>());
     (*zbc).zc = ZSTDv05_createDCtx();
     (*zbc).stage = ZBUFFv05ds_init;
     zbc

@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
@@ -279,10 +281,10 @@ unsafe extern "C" fn BITv07_initDStream(
     mut srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 {
-        memset(
-            bitD as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            bitD as *mut u8,
             0,
-            ::core::mem::size_of::<BITv07_DStream_t>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<BITv07_DStream_t>(),
         );
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
@@ -3110,10 +3112,10 @@ pub unsafe extern "C" fn ZSTDv07_getFrameParams(
     if srcSize < ZSTDv07_frameHeaderSize_min {
         return ZSTDv07_frameHeaderSize_min;
     }
-    memset(
-        fparamsPtr as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        fparamsPtr as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTDv07_frameParams>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTDv07_frameParams>(),
     );
     if MEM_readLE32(src) != ZSTDv07_MAGICNUMBER {
         if MEM_readLE32(src) & 0xfffffff0 as std::ffi::c_uint == ZSTDv07_MAGIC_SKIPPABLE_START {
@@ -3369,12 +3371,12 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize;
             (*dctx).litEntropy = 1;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize.wrapping_add(lhSize as size_t)
         }
@@ -3408,12 +3410,12 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
             }
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
-            memset(
+            ptr::write_bytes(
                 ((*dctx).litBuffer)
                     .as_mut_ptr()
-                    .offset((*dctx).litSize as isize) as *mut std::ffi::c_void,
+                    .offset((*dctx).litSize as isize) as *mut u8,
                 0,
-                WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                WILDCOPY_OVERLENGTH as usize,
             );
             litCSize_0.wrapping_add(lhSize_0 as size_t)
         }
@@ -3452,13 +3454,12 @@ unsafe extern "C" fn ZSTDv07_decodeLiteralsBlock(
                 );
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
-                memset(
+                ptr::write_bytes(
                     ((*dctx).litBuffer)
                         .as_mut_ptr()
-                        .offset((*dctx).litSize as isize)
-                        as *mut std::ffi::c_void,
+                        .offset((*dctx).litSize as isize) as *mut u8,
                     0,
-                    WILDCOPY_OVERLENGTH as std::ffi::c_ulong,
+                    WILDCOPY_OVERLENGTH as usize,
                 );
                 return (lhSize_1 as size_t).wrapping_add(litSize_1);
             }
@@ -4842,11 +4843,7 @@ pub unsafe extern "C" fn ZBUFFv07_createDCtx_advanced(
     if zbd.is_null() {
         return NULL as *mut ZBUFFv07_DCtx;
     }
-    memset(
-        zbd as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<ZBUFFv07_DCtx>() as std::ffi::c_ulong,
-    );
+    ptr::write_bytes(zbd as *mut u8, 0, ::core::mem::size_of::<ZBUFFv07_DCtx>());
     memcpy(
         &mut (*zbd).customMem as *mut ZSTDv07_customMem as *mut std::ffi::c_void,
         &mut customMem as *mut ZSTDv07_customMem as *const std::ffi::c_void,

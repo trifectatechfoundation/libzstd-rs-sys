@@ -3,6 +3,8 @@ pub type unalign32 = u32;
 pub type HIST_checkInput_e = std::ffi::c_uint;
 pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
 pub const trustInput: HIST_checkInput_e = 0;
+use std::ptr;
+
 use crate::lib::zstd::*;
 use crate::MEM_read32;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
@@ -44,8 +46,8 @@ pub unsafe extern "C" fn HIST_count_simple(
     let end = ip.offset(srcSize as isize);
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
-    libc::memset(
-        count as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        count as *mut u8,
         0,
         (maxSymbolValue.wrapping_add(1) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
@@ -96,12 +98,12 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
     let Counting3 = Counting2.offset(256);
     let Counting4 = Counting3.offset(256);
     if sourceSize == 0 {
-        libc::memset(count as *mut std::ffi::c_void, 0, countSize as libc::size_t);
+        ptr::write_bytes(count as *mut u8, 0, countSize as libc::size_t);
         *maxSymbolValuePtr = 0;
         return 0;
     }
-    libc::memset(
-        workSpace as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        workSpace as *mut u8,
         0,
         ((4 * 256) as std::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)

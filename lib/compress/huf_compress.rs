@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
@@ -326,10 +328,10 @@ unsafe extern "C" fn HUF_writeCTableHeader(
         maxSymbolValue: 0,
         unused: [0; 6],
     };
-    libc::memset(
-        &mut header as *mut HUF_CTableHeader as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut header as *mut HUF_CTableHeader as *mut u8,
         0,
-        ::core::mem::size_of::<HUF_CTableHeader>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<HUF_CTableHeader>(),
     );
     header.tableLog = tableLog as u8;
     header.maxSymbolValue = maxSymbolValue as u8;
@@ -567,10 +569,10 @@ unsafe extern "C" fn HUF_setMaxHeight(
     totalCost >>= largestBits.wrapping_sub(targetNbBits);
     let noSymbol = 0xf0f0f0f0 as std::ffi::c_uint;
     let mut rankLast: [u32; 14] = [0; 14];
-    libc::memset(
-        rankLast.as_mut_ptr() as *mut std::ffi::c_void,
-        0xf0 as std::ffi::c_int,
-        ::core::mem::size_of::<[u32; 14]>() as std::ffi::c_ulong as libc::size_t,
+    ptr::write_bytes(
+        rankLast.as_mut_ptr() as *mut u8,
+        0xf0,
+        ::core::mem::size_of::<[u32; 14]>(),
     );
     let mut currentNbBits = targetNbBits;
     let mut pos: std::ffi::c_int = 0;
@@ -760,10 +762,10 @@ unsafe extern "C" fn HUF_sort(
 ) {
     let mut n: u32 = 0;
     let maxSymbolValue1 = maxSymbolValue.wrapping_add(1);
-    libc::memset(
-        rankPosition as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        rankPosition as *mut u8,
         0,
-        (::core::mem::size_of::<rankPos>() as std::ffi::c_ulong).wrapping_mul(192) as libc::size_t,
+        ::core::mem::size_of::<rankPos>() * 192,
     );
     n = 0;
     while n < maxSymbolValue1 {
@@ -974,10 +976,10 @@ pub unsafe extern "C" fn HUF_buildCTable_wksp(
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX as u32 {
         return -(ZSTD_error_maxSymbolValue_tooLarge as std::ffi::c_int) as size_t;
     }
-    libc::memset(
-        huffNode0 as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        huffNode0 as *mut u8,
         0,
-        ::core::mem::size_of::<huffNodeTable>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<huffNodeTable>(),
     );
     HUF_sort(
         huffNode,
@@ -1045,11 +1047,7 @@ unsafe extern "C" fn HUF_initCStream(
     mut startPtr: *mut std::ffi::c_void,
     mut dstCapacity: size_t,
 ) -> size_t {
-    libc::memset(
-        bitC as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<HUF_CStream_t>() as std::ffi::c_ulong as libc::size_t,
-    );
+    ptr::write_bytes(bitC as *mut u8, 0, ::core::mem::size_of::<HUF_CStream_t>());
     (*bitC).startPtr = startPtr as *mut u8;
     (*bitC).ptr = (*bitC).startPtr;
     (*bitC).endPtr = ((*bitC).startPtr)

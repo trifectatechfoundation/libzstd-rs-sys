@@ -1,6 +1,6 @@
-use libc::{
-    fflush, fprintf, free, memset, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
-};
+use std::ptr;
+
+use libc::{fflush, fprintf, free, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
 use crate::lib::dictBuilder::cover::{
@@ -457,11 +457,7 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
         }
         return -(ZSTD_error_srcSize_wrong as std::ffi::c_int) as size_t;
     }
-    memset(
-        ctx as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<FASTCOVER_ctx_t>(),
-    );
+    ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<FASTCOVER_ctx_t>());
     if displayLevel >= 2 {
         fprintf(
             stderr,
@@ -794,8 +790,8 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     } else {
         parameters.accel
     };
-    memset(
-        &mut coverParams as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
@@ -1078,8 +1074,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         }
     }
     COVER_best_init(&mut best);
-    memset(
-        &mut coverParams as *mut ZDICT_cover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
