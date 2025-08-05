@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{exit, perror, FILE};
 
 extern "C" {
@@ -182,10 +184,10 @@ pub unsafe extern "C" fn RDG_genBuffer(
 ) {
     let mut seed32 = seed;
     let mut ldt: [u8; 8192] = [0; 8192];
-    memset(
-        ldt.as_mut_ptr() as *mut std::ffi::c_void,
-        '0' as i32,
-        ::core::mem::size_of::<[u8; 8192]>() as std::ffi::c_ulong,
+    ptr::write_bytes(
+        ldt.as_mut_ptr() as *mut u8,
+        b'0',
+        ::core::mem::size_of::<[u8; 8192]>(),
     );
     if litProba <= 0.0f64 {
         litProba = matchProba / 4.5f64;
@@ -216,10 +218,10 @@ pub unsafe extern "C" fn RDG_genStdout(
     if litProba <= 0.0f64 {
         litProba = matchProba / 4.5f64;
     }
-    memset(
-        ldt.as_mut_ptr() as *mut std::ffi::c_void,
-        '0' as i32,
-        ::core::mem::size_of::<[u8; 8192]>() as std::ffi::c_ulong,
+    ptr::write_bytes(
+        ldt.as_mut_ptr() as *mut u8,
+        b'0',
+        ::core::mem::size_of::<[u8; 8192]>(),
     );
     RDG_fillLiteralDistrib(
         ldt.as_mut_ptr(),

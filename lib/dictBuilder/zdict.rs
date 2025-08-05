@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{fflush, fprintf, FILE};
 
 use crate::lib::common::error_private::ERR_getErrorString;
@@ -615,10 +617,10 @@ unsafe extern "C" fn ZDICT_analyzePos(
         length: 0,
         savings: 0,
     };
-    memset(
-        &mut solution as *mut dictItem as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut solution as *mut dictItem as *mut u8,
         0,
-        ::core::mem::size_of::<dictItem>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<dictItem>(),
     );
     *doneMarks.offset(pos as isize) = 1;
     if MEM_read16(b.offset(pos as isize).offset(0) as *const std::ffi::c_void) as std::ffi::c_int
@@ -760,10 +762,10 @@ unsafe extern "C" fn ZDICT_analyzePos(
     start = refinedStart;
     pos = *suffix.offset(refinedStart as isize) as size_t;
     end = start;
-    memset(
-        lengthList.as_mut_ptr() as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        lengthList.as_mut_ptr() as *mut u8,
         0,
-        ::core::mem::size_of::<[u32; 64]>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 64]>(),
     );
     let mut length_1: size_t = 0;
     loop {
@@ -803,10 +805,10 @@ unsafe extern "C" fn ZDICT_analyzePos(
             start;
         }
     }
-    memset(
-        cumulLength.as_mut_ptr() as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        cumulLength.as_mut_ptr() as *mut u8,
         0,
-        ::core::mem::size_of::<[u32; 64]>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 64]>(),
     );
     *cumulLength
         .as_mut_ptr()
@@ -1517,20 +1519,20 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
             u = u.wrapping_add(1);
             u;
         }
-        memset(
-            repOffset.as_mut_ptr() as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            repOffset.as_mut_ptr() as *mut u8,
             0,
-            ::core::mem::size_of::<[u32; 1024]>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<[u32; 1024]>(),
         );
         let fresh15 = &mut (*repOffset.as_mut_ptr().offset(8));
         *fresh15 = 1;
         let fresh16 = &mut (*repOffset.as_mut_ptr().offset(4));
         *fresh16 = *fresh15;
         *repOffset.as_mut_ptr().offset(1) = *fresh16;
-        memset(
-            bestRepOffset.as_mut_ptr() as *mut std::ffi::c_void,
+        ptr::write_bytes(
+            bestRepOffset.as_mut_ptr() as *mut u8,
             0,
-            ::core::mem::size_of::<[offsetCount_t; 4]>() as std::ffi::c_ulong,
+            ::core::mem::size_of::<[offsetCount_t; 4]>(),
         );
         if compressionLevel == 0 {
             compressionLevel = ZSTD_CLEVEL_DEFAULT;
@@ -2385,10 +2387,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
             dictID: 0,
         },
     };
-    memset(
-        &mut params as *mut ZDICT_fastCover_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut params as *mut ZDICT_fastCover_params_t as *mut u8,
         0,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
     );
     params.d = 8;
     params.steps = 4;
@@ -2416,10 +2418,10 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
         notificationLevel: 0,
         dictID: 0,
     };
-    memset(
-        &mut params as *mut ZDICT_params_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut params as *mut ZDICT_params_t as *mut u8,
         0,
-        ::core::mem::size_of::<ZDICT_params_t>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<ZDICT_params_t>(),
     );
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,

@@ -2,6 +2,7 @@
 pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
+use std::ptr;
 pub type ptrdiff_t = std::ffi::c_long;
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -2263,10 +2264,10 @@ unsafe extern "C" fn ZSTD_compressBlock_opt_generic(
         endPosInBlock: 0,
         offset: 0,
     };
-    libc::memset(
-        &mut lastStretch as *mut ZSTD_optimal_t as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut lastStretch as *mut ZSTD_optimal_t as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTD_optimal_t>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<ZSTD_optimal_t>(),
     );
     optLdm.seqStore = if !((*ms).ldmSeqStore).is_null() {
         *(*ms).ldmSeqStore

@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::zstd::*;
 use crate::{
@@ -2954,11 +2956,7 @@ pub unsafe extern "C" fn HUF_decompress1X_DCtx_wksp(
         return dstSize;
     }
     if cSrcSize == 1 {
-        libc::memset(
-            dst,
-            *(cSrc as *const u8) as std::ffi::c_int,
-            dstSize as libc::size_t,
-        );
+        ptr::write_bytes(dst, *(cSrc as *const u8), dstSize as usize);
         return dstSize;
     }
     let algoNb = HUF_selectDecoder(dstSize, cSrcSize);

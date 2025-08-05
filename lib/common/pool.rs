@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{
     free, pthread_attr_t, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
     pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_create,
@@ -57,7 +59,7 @@ unsafe extern "C" fn ZSTD_customCalloc(
 ) -> *mut std::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        libc::memset(ptr, 0, size as libc::size_t);
+        ptr::write_bytes(ptr, 0, size as libc::size_t);
         return ptr;
     }
     calloc(1, size)

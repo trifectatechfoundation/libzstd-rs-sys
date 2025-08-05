@@ -1,3 +1,5 @@
+use std::ptr;
+
 use libc::{__errno_location, exit, fclose, fflush, fopen, fprintf, strerror, FILE};
 use libzstd_rs::lib::dictBuilder::cover::{
     ZDICT_cover_params_t, ZDICT_optimizeTrainFromBuffer_cover, ZDICT_trainFromBuffer_cover,
@@ -30,11 +32,6 @@ extern "C" {
     ) -> std::ffi::c_ulong;
     fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
     fn free(_: *mut std::ffi::c_void);
-    fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
 }
 pub type size_t = std::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -348,10 +345,10 @@ unsafe extern "C" fn DiB_fileStats(
         oneSampleTooLarge: 0,
     };
     let mut n: std::ffi::c_int = 0;
-    memset(
-        &mut fs as *mut fileStats as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut fs as *mut fileStats as *mut u8,
         0,
-        ::core::mem::size_of::<fileStats>() as std::ffi::c_ulong,
+        ::core::mem::size_of::<fileStats>(),
     );
     n = 0;
     while n < nbFiles {

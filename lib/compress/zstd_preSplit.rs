@@ -1,3 +1,5 @@
+use std::ptr;
+
 use crate::lib::compress::hist::HIST_add;
 
 pub type size_t = std::ffi::c_ulong;
@@ -39,11 +41,7 @@ unsafe extern "C" fn hash2(
         >> (32 as std::ffi::c_int as std::ffi::c_uint).wrapping_sub(hashLog)
 }
 unsafe extern "C" fn initStats(mut fpstats: *mut FPStats) {
-    libc::memset(
-        fpstats as *mut std::ffi::c_void,
-        0,
-        ::core::mem::size_of::<FPStats>() as std::ffi::c_ulong as libc::size_t,
-    );
+    ptr::write_bytes(fpstats as *mut u8, 0, ::core::mem::size_of::<FPStats>());
 }
 #[inline(always)]
 unsafe extern "C" fn addEvents_generic(
@@ -75,11 +73,10 @@ unsafe extern "C" fn recordFingerprint_generic(
     mut samplingRate: size_t,
     mut hashLog: std::ffi::c_uint,
 ) {
-    libc::memset(
-        fp as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        fp as *mut u8,
         0,
-        (::core::mem::size_of::<std::ffi::c_uint>() as std::ffi::c_ulong)
-            .wrapping_mul((1) << hashLog) as libc::size_t,
+        ::core::mem::size_of::<std::ffi::c_uint>() * 1 << hashLog,
     );
     (*fp).nbEvents = 0;
     addEvents_generic(fp, src, srcSize, samplingRate, hashLog);
@@ -168,10 +165,10 @@ unsafe extern "C" fn flushEvents(mut fpstats: *mut FPStats) {
         n;
     }
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
-    libc::memset(
-        &mut (*fpstats).newEvents as *mut Fingerprint as *mut std::ffi::c_void,
+    ptr::write_bytes(
+        &mut (*fpstats).newEvents as *mut Fingerprint as *mut u8,
         0,
-        ::core::mem::size_of::<Fingerprint>() as std::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<Fingerprint>(),
     );
 }
 unsafe extern "C" fn removeEvents(mut acc: *mut Fingerprint, mut slice: *const Fingerprint) {
