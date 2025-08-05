@@ -1194,6 +1194,7 @@ unsafe extern "C" fn ZSTD_hasExtSeqProd(mut params: *const ZSTD_CCtx_params) -> 
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32,
     MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
@@ -1260,7 +1261,7 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::*;
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_OPT_NUM: core::ffi::c_int = (1) << 12;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 static repStartValue: [u32; 3] = [1, 4, 8];
@@ -1881,10 +1882,6 @@ unsafe extern "C" fn ZSTD_customFree(
             free(ptr);
         }
     }
-}
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {

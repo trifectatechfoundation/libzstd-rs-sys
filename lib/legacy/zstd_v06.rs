@@ -1,6 +1,6 @@
 use core::ptr;
 
-use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
@@ -194,19 +194,6 @@ pub const ZBUFFds_loadHeader: ZBUFFv06_dStage = 1;
 pub const ZBUFFds_init: ZBUFFv06_dStage = 0;
 pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 pub const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb526 as core::ffi::c_uint;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const NULL: core::ffi::c_int = 0;
 pub const ZSTDv06_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 13;
 static ZSTDv06_frameHeaderSize_min: size_t = 5;
@@ -781,7 +768,7 @@ pub unsafe extern "C" fn FSEv06_readNCount(
     }
     ip.offset_from(istart) as core::ffi::c_long as size_t
 }
-pub const FSEv06_isError_0: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSEv06_isError_0: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 #[export_name = crate::prefix!(FSEv06_createDTable)]
 pub unsafe extern "C" fn FSEv06_createDTable(
     mut tableLog: core::ffi::c_uint,
@@ -2663,9 +2650,9 @@ pub unsafe extern "C" fn ZBUFFv06_isError(mut errorCode: size_t) -> core::ffi::c
 pub unsafe extern "C" fn ZBUFFv06_getErrorName(mut errorCode: size_t) -> *const core::ffi::c_char {
     ERR_getErrorName(errorCode)
 }
-pub const ZSTDv06_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const FSEv06_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const HUFv06_isError_0: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTDv06_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSEv06_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const HUFv06_isError_0: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe extern "C" fn ZSTDv06_copy4(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,

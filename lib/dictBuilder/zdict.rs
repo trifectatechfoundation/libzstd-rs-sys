@@ -2,7 +2,7 @@ use core::ptr;
 
 use libc::{fflush, fprintf, FILE};
 
-use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32,
 };
@@ -417,19 +417,6 @@ pub const MINRATIO: core::ffi::c_int = 4;
 pub const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 pub const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
 }
@@ -485,9 +472,9 @@ static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
         }
     }
 };
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const FSE_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const HUF_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 static repStartValue: [u32; 3] = [1, 4, 8];
 pub const MaxML: core::ffi::c_int = 52;

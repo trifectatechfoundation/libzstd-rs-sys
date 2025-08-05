@@ -44,23 +44,9 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
+use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::fse_decompress_old::FSE_decompress_wksp_bmi2;
 use crate::lib::common::mem::MEM_readLE32;
-use crate::lib::common::{
-    error_private::ERR_getErrorString, fse_decompress_old::FSE_decompress_wksp_bmi2,
-};
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const FSE_VERSION_MAJOR: core::ffi::c_int = 0 as core::ffi::c_int;
 pub const FSE_VERSION_MINOR: core::ffi::c_int = 9 as core::ffi::c_int;
 pub const FSE_VERSION_RELEASE: core::ffi::c_int = 0 as core::ffi::c_int;

@@ -149,6 +149,7 @@ pub struct ldmRollingHashState_t {
     pub rolling: u64,
     pub stopMask: u64,
 }
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::compress::zstd_compress::{
@@ -158,10 +159,6 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::*;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
@@ -462,7 +459,7 @@ unsafe extern "C" fn ZSTD_window_enforceMaxDist(
         }
     }
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const MINMATCH: core::ffi::c_int = 3;
 unsafe extern "C" fn ZSTD_copy8(

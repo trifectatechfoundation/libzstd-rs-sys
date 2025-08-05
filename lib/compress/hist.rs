@@ -4,12 +4,9 @@ pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
 pub const trustInput: HIST_checkInput_e = 0;
 use core::ptr;
 
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::zstd::*;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
 pub const HIST_WKSP_SIZE: core::ffi::c_ulong = (HIST_WKSP_SIZE_U32 as core::ffi::c_ulong)
     .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
@@ -63,7 +60,6 @@ pub unsafe extern "C" fn HIST_count_simple(
     }
     while *count.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
-        maxSymbolValue;
     }
     *maxSymbolValuePtr = maxSymbolValue;
     let mut s: u32 = 0;
