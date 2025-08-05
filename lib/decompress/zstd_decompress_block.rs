@@ -398,13 +398,17 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
 }
 
 unsafe fn ZSTD_decodeLiteralsBlock(
-    mut dctx: *mut ZSTD_DCtx,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
+    mut dctx: &mut ZSTD_DCtx,
+    mut src: &[u8],
+    mut dst: &mut [MaybeUninit<u8>],
     streaming: StreamingOperation,
 ) -> size_t {
+    let srcSize = src.len() as size_t;
+    let src = src.as_ptr() as *const std::ffi::c_void;
+
+    let dstCapacity = dst.len() as size_t;
+    let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
+
     // for a non-null block
     const MIN_CBLOCK_SIZE: size_t = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if srcSize < MIN_CBLOCK_SIZE {
@@ -414,7 +418,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let istart = src as *const u8;
     let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
 
-    let blockSizeMax = ZSTD_blockSizeMax(dctx);
+    let blockSizeMax = dctx.block_size_max() as size_t;
 
     match litEncType {
         SymbolEncodingType_e::set_repeat => {
@@ -873,15 +877,24 @@ pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
 ) -> size_t {
-    (*dctx).isFrameDecompression = 0;
-    ZSTD_decodeLiteralsBlock(
-        dctx,
-        src,
-        srcSize,
-        dst,
-        dstCapacity,
-        StreamingOperation::NotStreaming,
-    )
+    let Some(dctx) = (unsafe { dctx.as_mut() }) else {
+        todo!()
+    };
+
+    let dst = if dst.is_null() {
+        &mut []
+    } else {
+        core::slice::from_raw_parts_mut(dst.cast::<MaybeUninit<u8>>(), dstCapacity as usize)
+    };
+
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+    };
+
+    dctx.isFrameDecompression = 0;
+    ZSTD_decodeLiteralsBlock(dctx, src, dst, StreamingOperation::NotStreaming)
 }
 static LL_defaultDTable: [ZSTD_seqSymbol; 65] = [
     {
@@ -4240,16 +4253,16 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
+    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst, streaming);
+    if ERR_isError(litCSize) != 0 {
+        return litCSize;
+    }
+
     let srcSize = src.len() as size_t;
     let src = src.as_ptr() as *const std::ffi::c_void;
 
     let dstCapacity = dst.len() as size_t;
     let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
-
-    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, srcSize, dst, dstCapacity, streaming);
-    if ERR_isError(litCSize) != 0 {
-        return litCSize;
-    }
 
     let mut ip = src as *const u8;
     ip = ip.offset(litCSize as isize);
