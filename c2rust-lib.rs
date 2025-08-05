@@ -7,7 +7,6 @@
 #![feature(test)]
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
-#![feature(extern_types)]
 #![feature(likely_unlikely)]
 #![feature(linkage)]
 #[macro_use]
