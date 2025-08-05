@@ -2,6 +2,7 @@ use core::ptr;
 
 use libc::{fflush, fprintf, free, FILE, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
 
+use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
 use crate::lib::dictBuilder::cover::{
     COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_s, COVER_best_start,
@@ -26,7 +27,6 @@ extern "C" {
 pub type size_t = core::ffi::c_ulong;
 pub type __clock_t = core::ffi::c_long;
 pub type clock_t = __clock_t;
-pub type unalign64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_fastCover_params_t {
@@ -92,26 +92,6 @@ pub struct COVER_dictSelection {
     pub dictContent: *mut u8,
     pub dictSize: size_t,
     pub totalCompressedSize: size_t,
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_read64(mut ptr: *const core::ffi::c_void) -> u64 {
-    *(ptr as *const unalign64)
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const core::ffi::c_void) -> u64 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read64(memPtr)
-    } else {
-        MEM_swap64(MEM_read64(memPtr))
-    }
 }
 static prime6bytes: u64 = 227718039650203;
 unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {

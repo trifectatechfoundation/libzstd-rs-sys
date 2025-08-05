@@ -1,5 +1,4 @@
 pub type size_t = core::ffi::c_ulong;
-pub type unalign32 = u32;
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
 pub const ZSTD_error_externalSequences_invalid: ZSTD_ErrorCode = 107;
@@ -45,11 +44,9 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
-use crate::{
-    lib::common::{
-        error_private::ERR_getErrorString, fse_decompress_old::FSE_decompress_wksp_bmi2,
-    },
-    MEM_readLE32,
+use crate::lib::common::mem::MEM_readLE32;
+use crate::lib::common::{
+    error_private::ERR_getErrorString, fse_decompress_old::FSE_decompress_wksp_bmi2,
 };
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

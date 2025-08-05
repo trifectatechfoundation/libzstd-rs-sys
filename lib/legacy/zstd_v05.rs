@@ -1,8 +1,10 @@
 use core::ptr;
 
 use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::mem::{
+    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16,
+};
 use crate::lib::zstd::*;
-use crate::{MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16};
 
 extern "C" {
     fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
@@ -22,17 +24,6 @@ extern "C" {
         _: core::ffi::c_int,
         _: core::ffi::c_ulong,
     ) -> *mut core::ffi::c_void;
-}
-
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 
 pub type ptrdiff_t = core::ffi::c_long;

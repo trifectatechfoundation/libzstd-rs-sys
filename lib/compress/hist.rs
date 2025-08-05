@@ -1,12 +1,11 @@
 pub type size_t = core::ffi::c_ulong;
-pub type unalign32 = u32;
 pub type HIST_checkInput_e = core::ffi::c_uint;
 pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
 pub const trustInput: HIST_checkInput_e = 0;
 use core::ptr;
 
+use crate::lib::common::mem::MEM_read32;
 use crate::lib::zstd::*;
-use crate::MEM_read32;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint

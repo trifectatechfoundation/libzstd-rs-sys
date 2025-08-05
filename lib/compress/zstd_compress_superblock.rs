@@ -1,3 +1,4 @@
+use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -262,9 +263,7 @@ pub struct ZSTD_SequenceLength {
     pub matchLength: u32,
 }
 pub const bt_raw: C2RustUnnamed_1 = 0;
-pub type unalign16 = u16;
 pub const bt_compressed: C2RustUnnamed_1 = 2;
-pub type unalign32 = u32;
 pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -354,50 +353,6 @@ unsafe extern "C" fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
             *rep.offset(1) = *rep.offset(0);
             *rep.offset(0) = currentOffset;
         }
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_write16(mut memPtr: *mut core::ffi::c_void, mut value: u16) {
-    *(memPtr as *mut unalign16) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut core::ffi::c_void, mut value: u32) {
-    *(memPtr as *mut unalign32) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut core::ffi::c_void, mut val: u16) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write16(memPtr, val);
-    } else {
-        let mut p = memPtr as *mut u8;
-        *p.offset(0) = val as u8;
-        *p.offset(1) = (val as core::ffi::c_int >> 8) as u8;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE24(mut memPtr: *mut core::ffi::c_void, mut val: u32) {
-    MEM_writeLE16(memPtr, val as u16);
-    *(memPtr as *mut u8).offset(2) = (val >> 16) as u8;
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut core::ffi::c_void, mut val32: u32) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
     };
 }
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;

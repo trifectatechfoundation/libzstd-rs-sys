@@ -1,10 +1,9 @@
+use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress::ZSTD_hufCTables_t;
 use crate::lib::zstd::*;
 
 pub type size_t = core::ffi::c_ulong;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
@@ -37,45 +36,6 @@ pub type huf_compress_f = Option<
         core::ffi::c_int,
     ) -> size_t,
 >;
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_write16(mut memPtr: *mut core::ffi::c_void, mut value: u16) {
-    *(memPtr as *mut unalign16) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut core::ffi::c_void, mut value: u32) {
-    *(memPtr as *mut unalign32) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE16(mut memPtr: *mut core::ffi::c_void, mut val: u16) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write16(memPtr, val);
-    } else {
-        let mut p = memPtr as *mut u8;
-        *p.offset(0) = val as u8;
-        *p.offset(1) = (val as core::ffi::c_int >> 8) as u8;
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE24(mut memPtr: *mut core::ffi::c_void, mut val: u32) {
-    MEM_writeLE16(memPtr, val as u16);
-    *(memPtr as *mut u8).offset(2) = (val >> 16) as u8;
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut core::ffi::c_void, mut val32: u32) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
-    };
-}
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint

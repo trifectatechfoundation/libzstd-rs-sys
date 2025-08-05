@@ -15,9 +15,6 @@ pub struct __loadu_si128 {
 pub struct __storeu_si128 {
     pub __v: __m128i,
 }
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type unalignArch = size_t;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -123,11 +120,9 @@ pub struct ZSTD_optLdm_t {
 pub type base_directive_e = core::ffi::c_uint;
 pub const base_1guaranteed: base_directive_e = 1;
 pub const base_0possible: base_directive_e = 0;
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
+use crate::lib::common::mem::{
+    MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
+};
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
@@ -135,7 +130,6 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_resetSeqStore,
 };
 use crate::lib::zstd::*;
-use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 static mut kNullRawSeqStore: RawSeqStore_t = {

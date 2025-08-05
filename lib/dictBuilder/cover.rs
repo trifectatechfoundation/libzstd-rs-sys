@@ -8,6 +8,7 @@ use libc::{
     PTHREAD_MUTEX_INITIALIZER,
 };
 
+use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
 use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
@@ -54,7 +55,6 @@ pub type __compar_d_fn_t = Option<
         *mut core::ffi::c_void,
     ) -> core::ffi::c_int,
 >;
-pub type unalign64 = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZDICT_cover_params_t {
@@ -142,26 +142,6 @@ pub struct COVER_dictSelection {
     pub totalCompressedSize: size_t,
 }
 pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_read64(mut ptr: *const core::ffi::c_void) -> u64 {
-    *(ptr as *const unalign64)
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE64(mut memPtr: *const core::ffi::c_void) -> u64 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read64(memPtr)
-    } else {
-        MEM_swap64(MEM_read64(memPtr))
-    }
-}
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint

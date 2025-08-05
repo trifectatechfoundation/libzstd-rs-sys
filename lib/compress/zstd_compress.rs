@@ -428,8 +428,6 @@ pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
 pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
 pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
 pub type unalignArch = size_t;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_symbolEncodingTypeStats_t {
@@ -488,7 +486,6 @@ pub struct seqStoreSplits {
 }
 
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub type unalign64 = u64;
 pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -1194,19 +1191,13 @@ pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 unsafe extern "C" fn ZSTD_hasExtSeqProd(mut params: *const ZSTD_CCtx_params) -> core::ffi::c_int {
     ((*params).extSeqProdFunc).is_some() as core::ffi::c_int
 }
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::mem::{
+    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32,
+    MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
+};
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
@@ -1269,10 +1260,6 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::*;
-use crate::{
-    MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readST,
-    MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
-};
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_OPT_NUM: core::ffi::c_int = (1) << 12;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;

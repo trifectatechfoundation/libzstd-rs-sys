@@ -1,9 +1,9 @@
 use core::ptr;
 
+use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
 pub type size_t = core::ffi::c_ulong;
-pub type unalign16 = u16;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Fingerprint {
@@ -18,10 +18,6 @@ pub struct FPStats {
 }
 pub type RecordEvents_f =
     Option<unsafe extern "C" fn(*mut Fingerprint, *const core::ffi::c_void, size_t) -> ()>;
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const core::ffi::c_void) -> u16 {
-    *(ptr as *const unalign16)
-}
 pub const THRESHOLD_PENALTY_RATE: core::ffi::c_int = 16;
 pub const THRESHOLD_BASE: core::ffi::c_int = THRESHOLD_PENALTY_RATE - 2;
 pub const THRESHOLD_PENALTY: core::ffi::c_int = 3;

@@ -21,9 +21,6 @@ pub struct __loadu_si128 {
 pub struct __storeu_si128 {
     pub __v: __m128i,
 }
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type unalignArch = size_t;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -118,14 +115,11 @@ pub const search_rowHash: searchMethod_e = 2;
 pub const search_binaryTree: searchMethod_e = 1;
 pub const search_hashChain: searchMethod_e = 0;
 pub type ZSTD_VecMask = u64;
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
+use crate::lib::common::mem::{
+    MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
+};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::zstd::*;
-use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST};
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;

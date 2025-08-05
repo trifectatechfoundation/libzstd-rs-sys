@@ -1,8 +1,10 @@
 use core::ptr;
 
 use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::mem::{
+    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
+};
 use crate::lib::zstd::*;
-use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16};
 
 extern "C" {
     fn memcpy(
@@ -206,16 +208,6 @@ unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_c
     ERR_getErrorString(ERR_getErrorCode(code))
 }
 pub const NULL: core::ffi::c_int = 0;
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 pub const ZSTDv06_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 13;
 static ZSTDv06_frameHeaderSize_min: size_t = 5;
 static ZSTDv06_frameHeaderSize_max: size_t = ZSTDv06_FRAMEHEADERSIZE_MAX as size_t;
