@@ -19,9 +19,7 @@ pub const fn ERR_getErrorCode(mut code: size_t) -> ZSTD_ErrorCode {
 }
 
 #[export_name = crate::prefix!(ERR_getErrorString)]
-pub unsafe extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const c_char {
-    static mut notErrorCode: *const c_char =
-        b"Unspecified error code\0" as *const u8 as *const c_char;
+pub extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const c_char {
     match code as core::ffi::c_uint {
         0 => b"No error detected\0" as *const u8 as *const c_char,
         1 => b"Error (generic)\0" as *const u8 as *const c_char,
@@ -74,10 +72,10 @@ pub unsafe extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const c_char
                 as *const c_char
         }
         107 => b"External sequences are not valid\0" as *const u8 as *const c_char,
-        120 | _ => notErrorCode,
+        120 | _ => b"Unspecified error code\0" as *const u8 as *const c_char,
     }
 }
 
-pub unsafe fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
+pub fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
     ERR_getErrorString(ERR_getErrorCode(code))
 }
