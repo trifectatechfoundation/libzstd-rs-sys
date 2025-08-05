@@ -1,30 +1,30 @@
-use std::ptr;
+use core::ptr;
 
 use libc::abort;
 
 use crate::timefn::{UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 
 extern "C" {
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
-    fn free(_: *mut std::ffi::c_void);
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
+    fn free(_: *mut core::ffi::c_void);
     fn memset(
-        _: *mut std::ffi::c_void,
-        _: std::ffi::c_int,
-        _: std::ffi::c_ulong,
-    ) -> *mut std::ffi::c_void;
+        _: *mut core::ffi::c_void,
+        _: core::ffi::c_int,
+        _: core::ffi::c_ulong,
+    ) -> *mut core::ffi::c_void;
     fn __assert_fail(
-        __assertion: *const std::ffi::c_char,
-        __file: *const std::ffi::c_char,
-        __line: std::ffi::c_uint,
-        __function: *const std::ffi::c_char,
+        __assertion: *const core::ffi::c_char,
+        __file: *const core::ffi::c_char,
+        __line: core::ffi::c_uint,
+        __function: *const core::ffi::c_char,
     ) -> !;
 }
-pub type size_t = std::ffi::c_ulong;
+pub type size_t = core::ffi::c_ulong;
 pub type PTime = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_runTime_t {
-    pub nanoSecPerRun: std::ffi::c_double,
+    pub nanoSecPerRun: core::ffi::c_double,
     pub sumOfReturn: size_t,
 }
 #[derive(Copy, Clone)]
@@ -32,31 +32,31 @@ pub struct BMK_runTime_t {
 pub struct BMK_runOutcome_t {
     pub internal_never_ever_use_directly: BMK_runTime_t,
     pub error_result_never_ever_use_directly: size_t,
-    pub error_tag_never_ever_use_directly: std::ffi::c_int,
+    pub error_tag_never_ever_use_directly: core::ffi::c_int,
 }
 pub type BMK_benchFn_t = Option<
     unsafe extern "C" fn(
-        *const std::ffi::c_void,
+        *const core::ffi::c_void,
         size_t,
-        *mut std::ffi::c_void,
+        *mut core::ffi::c_void,
         size_t,
-        *mut std::ffi::c_void,
+        *mut core::ffi::c_void,
     ) -> size_t,
 >;
-pub type BMK_initFn_t = Option<unsafe extern "C" fn(*mut std::ffi::c_void) -> size_t>;
-pub type BMK_errorFn_t = Option<unsafe extern "C" fn(size_t) -> std::ffi::c_uint>;
+pub type BMK_initFn_t = Option<unsafe extern "C" fn(*mut core::ffi::c_void) -> size_t>;
+pub type BMK_errorFn_t = Option<unsafe extern "C" fn(size_t) -> core::ffi::c_uint>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchParams_t {
     pub benchFn: BMK_benchFn_t,
-    pub benchPayload: *mut std::ffi::c_void,
+    pub benchPayload: *mut core::ffi::c_void,
     pub initFn: BMK_initFn_t,
-    pub initPayload: *mut std::ffi::c_void,
+    pub initPayload: *mut core::ffi::c_void,
     pub errorFn: BMK_errorFn_t,
     pub blockCount: size_t,
-    pub srcBuffers: *const *const std::ffi::c_void,
+    pub srcBuffers: *const *const core::ffi::c_void,
     pub srcSizes: *const size_t,
-    pub dstBuffers: *const *mut std::ffi::c_void,
+    pub dstBuffers: *const *mut core::ffi::c_void,
     pub dstCapacities: *const size_t,
     pub blockResults: *mut size_t,
 }
@@ -67,7 +67,7 @@ pub struct BMK_timedFnState_s {
     pub timeBudget_ns: PTime,
     pub runBudget_ns: PTime,
     pub fastestRun: BMK_runTime_t,
-    pub nbLoops: std::ffi::c_uint,
+    pub nbLoops: core::ffi::c_uint,
     pub coolTime: UTIL_time_t,
 }
 pub type BMK_timedFnState_t = BMK_timedFnState_s;
@@ -77,20 +77,21 @@ pub struct tfs_align {
     pub c: check_size,
     pub tfs: BMK_timedFnState_t,
 }
-pub type check_size = [std::ffi::c_char; 1];
-pub const __ASSERT_FUNCTION: [std::ffi::c_char; 75] = unsafe {
-    *::core::mem::transmute::<&[u8; 75], &[std::ffi::c_char; 75]>(
+pub type check_size = [core::ffi::c_char; 1];
+pub const __ASSERT_FUNCTION: [core::ffi::c_char; 75] = unsafe {
+    *::core::mem::transmute::<&[u8; 75], &[core::ffi::c_char; 75]>(
         b"BMK_runOutcome_t BMK_benchTimedFn(BMK_timedFnState_t *, BMK_benchParams_t)\0",
     )
 };
-pub const NULL: std::ffi::c_int = 0;
-pub const TIMELOOP_NANOSEC: std::ffi::c_ulonglong = (1 as std::ffi::c_int as std::ffi::c_ulonglong)
-    .wrapping_mul(1000000000 as std::ffi::c_ulonglong);
+pub const NULL: core::ffi::c_int = 0;
+pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong = (1 as core::ffi::c_int
+    as core::ffi::c_ulonglong)
+    .wrapping_mul(1000000000 as core::ffi::c_ulonglong);
 #[no_mangle]
 pub unsafe extern "C" fn BMK_isSuccessful_runOutcome(
     mut outcome: BMK_runOutcome_t,
-) -> std::ffi::c_int {
-    (outcome.error_tag_never_ever_use_directly == 0) as std::ffi::c_int
+) -> core::ffi::c_int {
+    (outcome.error_tag_never_ever_use_directly == 0) as core::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_extract_runTime(mut outcome: BMK_runOutcome_t) -> BMK_runTime_t {
@@ -140,23 +141,23 @@ unsafe extern "C" fn BMK_setValid_runTime(mut runTime: BMK_runTime_t) -> BMK_run
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchFunction(
     mut p: BMK_benchParams_t,
-    mut nbLoops: std::ffi::c_uint,
+    mut nbLoops: core::ffi::c_uint,
 ) -> BMK_runOutcome_t {
-    nbLoops = nbLoops.wrapping_add((nbLoops == 0) as std::ffi::c_int as std::ffi::c_uint);
+    nbLoops = nbLoops.wrapping_add((nbLoops == 0) as core::ffi::c_int as core::ffi::c_uint);
     let mut i: size_t = 0;
     i = 0;
     while i < p.blockCount {
         memset(
             *(p.dstBuffers).offset(i as isize),
-            0xe5 as std::ffi::c_int,
+            0xe5 as core::ffi::c_int,
             *(p.dstCapacities).offset(i as isize),
         );
         i = i.wrapping_add(1);
     }
-    let mut dstSize = 0 as std::ffi::c_int as size_t;
+    let mut dstSize = 0 as core::ffi::c_int as size_t;
     let clockStart = UTIL_getTime();
-    let mut loopNb: std::ffi::c_uint = 0;
-    let mut blockNb: std::ffi::c_uint = 0;
+    let mut loopNb: core::ffi::c_uint = 0;
+    let mut blockNb: core::ffi::c_uint = 0;
     if (p.initFn).is_some() {
         (p.initFn).unwrap_unchecked()(p.initPayload);
     }
@@ -189,16 +190,16 @@ pub unsafe extern "C" fn BMK_benchFunction(
         nanoSecPerRun: 0.,
         sumOfReturn: 0,
     };
-    rt.nanoSecPerRun = totalTime as std::ffi::c_double / nbLoops as std::ffi::c_double;
+    rt.nanoSecPerRun = totalTime as core::ffi::c_double / nbLoops as core::ffi::c_double;
     rt.sumOfReturn = dstSize;
     BMK_setValid_runTime(rt)
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_createTimedFnState(
-    mut total_ms: std::ffi::c_uint,
-    mut run_ms: std::ffi::c_uint,
+    mut total_ms: core::ffi::c_uint,
+    mut run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
-    let r = malloc(::core::mem::size_of::<BMK_timedFnState_t>() as std::ffi::c_ulong)
+    let r = malloc(::core::mem::size_of::<BMK_timedFnState_t>() as core::ffi::c_ulong)
         as *mut BMK_timedFnState_t;
     if r.is_null() {
         return NULL as *mut BMK_timedFnState_t;
@@ -208,21 +209,21 @@ pub unsafe extern "C" fn BMK_createTimedFnState(
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_freeTimedFnState(mut state: *mut BMK_timedFnState_t) {
-    free(state as *mut std::ffi::c_void);
+    free(state as *mut core::ffi::c_void);
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_initStatic_timedFnState(
-    mut buffer: *mut std::ffi::c_void,
+    mut buffer: *mut core::ffi::c_void,
     mut size: size_t,
-    mut total_ms: std::ffi::c_uint,
-    mut run_ms: std::ffi::c_uint,
+    mut total_ms: core::ffi::c_uint,
+    mut run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
     let tfs_alignment = 8;
     let r = buffer as *mut BMK_timedFnState_t;
     if buffer.is_null() {
         return NULL as *mut BMK_timedFnState_t;
     }
-    if size < ::core::mem::size_of::<BMK_timedFnState_s>() as std::ffi::c_ulong {
+    if size < ::core::mem::size_of::<BMK_timedFnState_s>() as core::ffi::c_ulong {
         return NULL as *mut BMK_timedFnState_t;
     }
     if !(buffer as size_t).is_multiple_of(tfs_alignment) {
@@ -234,8 +235,8 @@ pub unsafe extern "C" fn BMK_initStatic_timedFnState(
 #[no_mangle]
 pub unsafe extern "C" fn BMK_resetTimedFnState(
     mut timedFnState: *mut BMK_timedFnState_t,
-    mut total_ms: std::ffi::c_uint,
-    mut run_ms: std::ffi::c_uint,
+    mut total_ms: core::ffi::c_uint,
+    mut run_ms: core::ffi::c_uint,
 ) {
     if total_ms == 0 {
         total_ms = 1;
@@ -247,23 +248,23 @@ pub unsafe extern "C" fn BMK_resetTimedFnState(
         run_ms = total_ms;
     }
     (*timedFnState).timeSpent_ns = 0;
-    (*timedFnState).timeBudget_ns = (total_ms as PTime as std::ffi::c_ulonglong)
+    (*timedFnState).timeBudget_ns = (total_ms as PTime as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
         .wrapping_div(1000) as PTime;
-    (*timedFnState).runBudget_ns = (run_ms as PTime as std::ffi::c_ulonglong)
+    (*timedFnState).runBudget_ns = (run_ms as PTime as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
         .wrapping_div(1000) as PTime;
-    (*timedFnState).fastestRun.nanoSecPerRun = TIMELOOP_NANOSEC as std::ffi::c_double
-        * 2000000000 as std::ffi::c_int as std::ffi::c_double;
-    (*timedFnState).fastestRun.sumOfReturn = -(1 as std::ffi::c_longlong) as size_t;
+    (*timedFnState).fastestRun.nanoSecPerRun = TIMELOOP_NANOSEC as core::ffi::c_double
+        * 2000000000 as core::ffi::c_int as core::ffi::c_double;
+    (*timedFnState).fastestRun.sumOfReturn = -(1 as core::ffi::c_longlong) as size_t;
     (*timedFnState).nbLoops = 1;
     (*timedFnState).coolTime = UTIL_getTime();
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_isCompleted_TimedFn(
     mut timedFnState: *const BMK_timedFnState_t,
-) -> std::ffi::c_int {
-    ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as std::ffi::c_int
+) -> core::ffi::c_int {
+    ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as core::ffi::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn BMK_benchTimedFn(
@@ -280,43 +281,43 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
             return runResult;
         }
         let newRunTime = BMK_extract_runTime(runResult);
-        let loopDuration_ns = newRunTime.nanoSecPerRun * (*cont).nbLoops as std::ffi::c_double;
-        (*cont).timeSpent_ns = ((*cont).timeSpent_ns as std::ffi::c_ulonglong)
-            .wrapping_add(loopDuration_ns as std::ffi::c_ulonglong)
+        let loopDuration_ns = newRunTime.nanoSecPerRun * (*cont).nbLoops as core::ffi::c_double;
+        (*cont).timeSpent_ns = ((*cont).timeSpent_ns as core::ffi::c_ulonglong)
+            .wrapping_add(loopDuration_ns as core::ffi::c_ulonglong)
             as PTime as PTime;
         if loopDuration_ns
-            > runBudget_ns as std::ffi::c_double / 50 as std::ffi::c_int as std::ffi::c_double
+            > runBudget_ns as core::ffi::c_double / 50 as core::ffi::c_int as core::ffi::c_double
         {
             let fastestRun_ns = if bestRunTime.nanoSecPerRun < newRunTime.nanoSecPerRun {
                 bestRunTime.nanoSecPerRun
             } else {
                 newRunTime.nanoSecPerRun
             };
-            (*cont).nbLoops = ((runBudget_ns as std::ffi::c_double / fastestRun_ns)
-                as std::ffi::c_uint)
+            (*cont).nbLoops = ((runBudget_ns as core::ffi::c_double / fastestRun_ns)
+                as core::ffi::c_uint)
                 .wrapping_add(1);
         } else {
             let multiplier = 10;
             if (*cont).nbLoops
-                < (-(1 as std::ffi::c_int) as std::ffi::c_uint).wrapping_div(multiplier)
+                < (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(multiplier)
             {
             } else {
                 __assert_fail(
                     b"cont->nbLoops < ((unsigned)-1) / multiplier\0" as *const u8
-                        as *const std::ffi::c_char,
-                    b"benchfn.c\0" as *const u8 as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
+                    b"benchfn.c\0" as *const u8 as *const core::ffi::c_char,
                     238,
                     __ASSERT_FUNCTION.as_ptr(),
                 );
             }
             (*cont).nbLoops = ((*cont).nbLoops).wrapping_mul(multiplier);
         }
-        if loopDuration_ns < runTimeMin_ns as std::ffi::c_double {
+        if loopDuration_ns < runTimeMin_ns as core::ffi::c_double {
             if completed == 0 {
             } else {
                 __assert_fail(
-                    b"completed == 0\0" as *const u8 as *const std::ffi::c_char,
-                    b"benchfn.c\0" as *const u8 as *const std::ffi::c_char,
+                    b"completed == 0\0" as *const u8 as *const core::ffi::c_char,
+                    b"benchfn.c\0" as *const u8 as *const core::ffi::c_char,
                     244,
                     __ASSERT_FUNCTION.as_ptr(),
                 );

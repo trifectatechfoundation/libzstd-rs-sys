@@ -1,8 +1,8 @@
-use std::hint::likely;
+use core::hint::likely;
 
-pub type size_t = std::ffi::c_ulong;
+pub type size_t = core::ffi::c_ulong;
 pub type unalign32 = u32;
-pub type C2RustUnnamed = std::ffi::c_uint;
+pub type C2RustUnnamed = core::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed = 32;
 pub const HUF_flags_disableAsm: C2RustUnnamed = 16;
 pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
@@ -12,31 +12,31 @@ pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use crate::lib::common::fse_decompress::{
     Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };
-pub const FSE_VERSION_MAJOR: std::ffi::c_int = 0;
-pub const FSE_VERSION_MINOR: std::ffi::c_int = 9;
-pub const FSE_VERSION_RELEASE: std::ffi::c_int = 0;
-pub const FSE_VERSION_NUMBER: std::ffi::c_int =
+pub const FSE_VERSION_MAJOR: core::ffi::c_int = 0;
+pub const FSE_VERSION_MINOR: core::ffi::c_int = 9;
+pub const FSE_VERSION_RELEASE: core::ffi::c_int = 0;
+pub const FSE_VERSION_NUMBER: core::ffi::c_int =
     FSE_VERSION_MAJOR * 100 * 100 + FSE_VERSION_MINOR * 100 + FSE_VERSION_RELEASE;
-pub const FSE_MIN_TABLELOG: std::ffi::c_int = 5;
-pub const FSE_TABLELOG_ABSOLUTE_MAX: std::ffi::c_int = 15;
+pub const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
+pub const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 
 #[inline(always)]
 fn FSE_readNCount_body(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     let hbSize = headerBuffer.len();
 
     let iend = hbSize;
     let mut ip = 0usize;
-    let mut nbBits: std::ffi::c_int = 0;
-    let mut remaining: std::ffi::c_int = 0;
-    let mut threshold: std::ffi::c_int = 0;
+    let mut nbBits: core::ffi::c_int = 0;
+    let mut remaining: core::ffi::c_int = 0;
+    let mut threshold: core::ffi::c_int = 0;
     let mut bitStream: u32 = 0;
-    let mut bitCount: std::ffi::c_int = 0;
-    let mut charnum = 0 as std::ffi::c_int as std::ffi::c_uint;
+    let mut bitCount: core::ffi::c_int = 0;
+    let mut charnum = 0 as core::ffi::c_int as core::ffi::c_uint;
     let maxSV1 = (*maxSVPtr).wrapping_add(1);
     let mut previous_was_0 = false;
     if hbSize < 8 {
@@ -57,14 +57,14 @@ fn FSE_readNCount_body(
     let read_u32_le = |offset| u32::from_le_bytes(headerBuffer[offset..][..4].try_into().unwrap());
 
     bitStream = read_u32_le(ip);
-    nbBits = (bitStream & 0xf as std::ffi::c_int as u32).wrapping_add(FSE_MIN_TABLELOG as u32)
-        as std::ffi::c_int;
+    nbBits = (bitStream & 0xf as core::ffi::c_int as u32).wrapping_add(FSE_MIN_TABLELOG as u32)
+        as core::ffi::c_int;
     if nbBits > FSE_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
     }
     bitStream >>= 4;
     bitCount = 4;
-    *tableLogPtr = nbBits as std::ffi::c_uint;
+    *tableLogPtr = nbBits as core::ffi::c_uint;
     remaining = (1 << nbBits) + 1;
     threshold = 1 << nbBits;
     nbBits += 1;
@@ -120,12 +120,12 @@ fn FSE_readNCount_body(
         }
 
         let max = 2 * threshold - 1 - remaining;
-        let mut count: std::ffi::c_int = 0;
+        let mut count: core::ffi::c_int = 0;
         if (bitStream & (threshold - 1) as u32) < max as u32 {
-            count = (bitStream & (threshold - 1) as u32) as std::ffi::c_int;
+            count = (bitStream & (threshold - 1) as u32) as core::ffi::c_int;
             bitCount += nbBits - 1;
         } else {
-            count = (bitStream & (2 * threshold - 1) as u32) as std::ffi::c_int;
+            count = (bitStream & (2 * threshold - 1) as u32) as core::ffi::c_int;
             if count >= threshold {
                 count -= max;
             }
@@ -139,7 +139,7 @@ fn FSE_readNCount_body(
             remaining += count;
         }
 
-        normalizedCounter[charnum as usize] = count as std::ffi::c_short;
+        normalizedCounter[charnum as usize] = count as core::ffi::c_short;
         charnum += 1;
         previous_was_0 = count == 0;
         if remaining < threshold {
@@ -181,16 +181,16 @@ fn FSE_readNCount_body(
 
 fn FSE_readNCount_body_default(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 fn FSE_readNCount_body_bmi2(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
@@ -198,10 +198,10 @@ fn FSE_readNCount_body_bmi2(
 
 pub fn FSE_readNCount_bmi2(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-    mut bmi2: std::ffi::c_int,
+    mut bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     if bmi2 != 0 {
         FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
@@ -212,9 +212,9 @@ pub fn FSE_readNCount_bmi2(
 
 pub unsafe fn FSE_readNCount(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
-    mut headerBuffer: *const std::ffi::c_void,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
+    mut headerBuffer: *const core::ffi::c_void,
     mut hbSize: size_t,
 ) -> size_t {
     let ret = FSE_readNCount_slice(
@@ -226,14 +226,14 @@ pub unsafe fn FSE_readNCount(
 
     match ret {
         Ok(v) => v,
-        Err(e) => return -(e as std::ffi::c_int) as size_t,
+        Err(e) => return -(e as core::ffi::c_int) as size_t,
     }
 }
 
 pub fn FSE_readNCount_slice(
     mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut std::ffi::c_uint,
-    mut tableLogPtr: &mut std::ffi::c_uint,
+    mut maxSVPtr: &mut core::ffi::c_uint,
+    mut tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer, 0)
@@ -269,7 +269,7 @@ pub unsafe fn HUF_readStats(
     mut rankStats: &mut [u32; 13],
     mut nbSymbolsPtr: &mut u32,
     mut tableLogPtr: &mut u32,
-    mut src: *const std::ffi::c_void,
+    mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
     // We can remove this at some point, it's just a check that the constants are correct.
@@ -500,12 +500,12 @@ pub unsafe fn HUF_readStats_wksp(
     mut rankStats: &mut [u32; 13],
     mut nbSymbolsPtr: &mut u32,
     mut tableLogPtr: &mut u32,
-    mut src: *const std::ffi::c_void,
+    mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
     workspace: &mut Workspace,
-    mut flags: std::ffi::c_int,
+    mut flags: core::ffi::c_int,
 ) -> size_t {
-    let use_bmi2 = flags & HUF_flags_bmi2 as std::ffi::c_int != 0;
+    let use_bmi2 = flags & HUF_flags_bmi2 as core::ffi::c_int != 0;
 
     let ret = HUF_readStats_body(
         huffWeight,
@@ -520,7 +520,7 @@ pub unsafe fn HUF_readStats_wksp(
 
     match ret {
         Ok(v) => v,
-        Err(e) => return -(e as std::ffi::c_int) as size_t,
+        Err(e) => return -(e as core::ffi::c_int) as size_t,
     }
 }
 
@@ -599,15 +599,15 @@ mod tests {
                     use crate::lib::zstd::*;
                     pub type ERR_enum = ZSTD_ErrorCode;
 
-                    const fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
-                        (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
-                            as std::ffi::c_uint
+                    const fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
+                        (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
+                            as core::ffi::c_uint
                     }
                     const fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
                         if ERR_isError(code) == 0 {
                             return ZSTD_error_no_error;
                         }
-                        (0 as std::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
+                        (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
                     }
 
                     let v = match ERR_getErrorCode(v) {
@@ -638,7 +638,7 @@ mod tests {
                         bmi2,
                     );
 
-                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, std::mem::transmute::<_, [u32; 219]>(workspace))
+                    (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, core::mem::transmute::<_, [u32; 219]>(workspace))
                 };
                 assert_eq!(expected, actual);
                 expected == actual

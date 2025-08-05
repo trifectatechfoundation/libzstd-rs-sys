@@ -1,3 +1,3 @@
 #[export_name = crate::prefix!(g_debuglevel)]
-pub static mut g_debuglevel: std::ffi::c_int = DEBUGLEVEL;
-pub const DEBUGLEVEL: std::ffi::c_int = 0;
+pub static mut g_debuglevel: core::ffi::c_int = DEBUGLEVEL;
+pub const DEBUGLEVEL: core::ffi::c_int = 0;

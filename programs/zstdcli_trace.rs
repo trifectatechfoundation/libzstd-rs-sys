@@ -12,7 +12,7 @@ use crate::timefn::{PTime, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 use crate::util::UTIL_isRegularFile;
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
-pub type ZSTD_cParameter = std::ffi::c_uint;
+pub type ZSTD_cParameter = core::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
 pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
@@ -53,28 +53,28 @@ pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-pub const NULL: std::ffi::c_int = 0;
+pub const NULL: core::ffi::c_int = 0;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
-static mut g_mutexInit: std::ffi::c_int = 0;
+static mut g_mutexInit: core::ffi::c_int = 0;
 static mut g_mutex: pthread_mutex_t = PTHREAD_MUTEX_INITIALIZER;
 static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 #[no_mangle]
-pub unsafe extern "C" fn TRACE_enable(mut filename: *const std::ffi::c_char) {
-    let writeHeader = (UTIL_isRegularFile(filename) == 0) as std::ffi::c_int;
+pub unsafe extern "C" fn TRACE_enable(mut filename: *const core::ffi::c_char) {
+    let writeHeader = (UTIL_isRegularFile(filename) == 0) as core::ffi::c_int;
     if !g_traceFile.is_null() {
         fclose(g_traceFile);
     }
-    g_traceFile = fopen(filename, b"a\0" as *const u8 as *const std::ffi::c_char);
+    g_traceFile = fopen(filename, b"a\0" as *const u8 as *const core::ffi::c_char);
     if !g_traceFile.is_null() && writeHeader != 0 {
         fprintf(
             g_traceFile,
             b"Algorithm, Version, Method, Mode, Level, Workers, Dictionary Size, Uncompressed Size, Compressed Size, Duration Nanos, Compression Ratio, Speed MB/s\n\0"
-                as *const u8 as *const std::ffi::c_char,
+                as *const u8 as *const core::ffi::c_char,
         );
     }
     g_enableTime = UTIL_getTime();
     if g_mutexInit == 0 {
-        if pthread_mutex_init(&mut g_mutex, std::ptr::null::<pthread_mutexattr_t>()) == 0 {
+        if pthread_mutex_init(&mut g_mutex, core::ptr::null::<pthread_mutexattr_t>()) == 0 {
             g_mutexInit = 1;
         } else {
             TRACE_finish();
@@ -93,17 +93,17 @@ pub unsafe extern "C" fn TRACE_finish() {
     }
 }
 unsafe extern "C" fn TRACE_log(
-    mut method: *const std::ffi::c_char,
+    mut method: *const core::ffi::c_char,
     mut duration: PTime,
     mut trace: *const ZSTD_Trace,
 ) {
     let mut level = 0;
     let mut workers = 0;
-    let ratio = (*trace).uncompressedSize as std::ffi::c_double
-        / (*trace).compressedSize as std::ffi::c_double;
-    let speed = (*trace).uncompressedSize as std::ffi::c_double
-        * 1000 as std::ffi::c_int as std::ffi::c_double
-        / duration as std::ffi::c_double;
+    let ratio = (*trace).uncompressedSize as core::ffi::c_double
+        / (*trace).compressedSize as core::ffi::c_double;
+    let speed = (*trace).uncompressedSize as core::ffi::c_double
+        * 1000 as core::ffi::c_int as core::ffi::c_double
+        / duration as core::ffi::c_double;
     if !((*trace).params).is_null() {
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_compressionLevel, &mut level);
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_nbWorkers, &mut workers);
@@ -112,20 +112,20 @@ unsafe extern "C" fn TRACE_log(
     fprintf(
         g_traceFile,
         b"zstd, %u, %s, %s, %d, %d, %llu, %llu, %llu, %llu, %.2f, %.2f\n\0" as *const u8
-            as *const std::ffi::c_char,
+            as *const core::ffi::c_char,
         (*trace).version,
         method,
         if (*trace).streaming != 0 {
-            b"streaming\0" as *const u8 as *const std::ffi::c_char
+            b"streaming\0" as *const u8 as *const core::ffi::c_char
         } else {
-            b"single-pass\0" as *const u8 as *const std::ffi::c_char
+            b"single-pass\0" as *const u8 as *const core::ffi::c_char
         },
         level,
         workers,
-        (*trace).dictionarySize as std::ffi::c_ulonglong,
-        (*trace).uncompressedSize as std::ffi::c_ulonglong,
-        (*trace).compressedSize as std::ffi::c_ulonglong,
-        duration as std::ffi::c_ulonglong,
+        (*trace).dictionarySize as core::ffi::c_ulonglong,
+        (*trace).uncompressedSize as core::ffi::c_ulonglong,
+        (*trace).compressedSize as core::ffi::c_ulonglong,
+        duration as core::ffi::c_ulonglong,
         ratio,
         speed,
     );
@@ -151,7 +151,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_end(
         0
     };
     TRACE_log(
-        b"compress\0" as *const u8 as *const std::ffi::c_char,
+        b"compress\0" as *const u8 as *const core::ffi::c_char,
         durationNanos,
         trace,
     );
@@ -176,7 +176,7 @@ pub unsafe extern "C" fn ZSTD_trace_decompress_end(
         0
     };
     TRACE_log(
-        b"decompress\0" as *const u8 as *const std::ffi::c_char,
+        b"decompress\0" as *const u8 as *const core::ffi::c_char,
         durationNanos,
         trace,
     );

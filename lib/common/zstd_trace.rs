@@ -1,15 +1,15 @@
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
 
-type size_t = std::ffi::c_ulong;
+type size_t = core::ffi::c_ulong;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_Trace {
-    pub version: std::ffi::c_uint,
-    pub streaming: std::ffi::c_int,
-    pub dictionaryID: std::ffi::c_uint,
-    pub dictionaryIsCold: std::ffi::c_int,
+    pub version: core::ffi::c_uint,
+    pub streaming: core::ffi::c_int,
+    pub dictionaryID: core::ffi::c_uint,
+    pub dictionaryIsCold: core::ffi::c_int,
     pub dictionarySize: size_t,
     pub uncompressedSize: size_t,
     pub compressedSize: size_t,
@@ -18,7 +18,7 @@ pub struct ZSTD_Trace {
     pub dctx: *const ZSTD_DCtx_s,
 }
 
-pub type ZSTD_TraceCtx = std::ffi::c_ulonglong;
+pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
 
 extern "C" {
     #[linkage = "extern_weak"]

@@ -1,6 +1,6 @@
 use crate::size_t;
 
-pub type ZSTD_ErrorCode = std::ffi::c_uint;
+pub type ZSTD_ErrorCode = core::ffi::c_uint;
 
 pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
 pub const ZSTD_error_externalSequences_invalid: ZSTD_ErrorCode = 107;
@@ -39,7 +39,7 @@ pub const ZSTD_error_prefix_unknown: ZSTD_ErrorCode = 10;
 pub const ZSTD_error_GENERIC: ZSTD_ErrorCode = 1;
 pub const ZSTD_error_no_error: ZSTD_ErrorCode = 0;
 
-pub type ZSTD_strategy = std::ffi::c_uint;
+pub type ZSTD_strategy = core::ffi::c_uint;
 pub const ZSTD_btultra2: ZSTD_strategy = 9;
 pub const ZSTD_btultra: ZSTD_strategy = 8;
 pub const ZSTD_btopt: ZSTD_strategy = 7;
@@ -53,21 +53,21 @@ pub const ZSTD_fast: ZSTD_strategy = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_compressionParameters {
-    pub windowLog: std::ffi::c_uint,
-    pub chainLog: std::ffi::c_uint,
-    pub hashLog: std::ffi::c_uint,
-    pub searchLog: std::ffi::c_uint,
-    pub minMatch: std::ffi::c_uint,
-    pub targetLength: std::ffi::c_uint,
+    pub windowLog: core::ffi::c_uint,
+    pub chainLog: core::ffi::c_uint,
+    pub hashLog: core::ffi::c_uint,
+    pub searchLog: core::ffi::c_uint,
+    pub minMatch: core::ffi::c_uint,
+    pub targetLength: core::ffi::c_uint,
     pub strategy: ZSTD_strategy,
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameParameters {
-    pub contentSizeFlag: std::ffi::c_int,
-    pub checksumFlag: std::ffi::c_int,
-    pub noDictIDFlag: std::ffi::c_int,
+    pub contentSizeFlag: core::ffi::c_int,
+    pub checksumFlag: core::ffi::c_int,
+    pub noDictIDFlag: core::ffi::c_int,
 }
 
 #[derive(Copy, Clone)]
@@ -82,14 +82,14 @@ pub struct ZSTD_parameters {
 pub struct ZSTD_customMem {
     pub customAlloc: ZSTD_allocFunction,
     pub customFree: ZSTD_freeFunction,
-    pub opaque: *mut std::ffi::c_void,
+    pub opaque: *mut core::ffi::c_void,
 }
 pub type ZSTD_freeFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> ()>;
+    Option<unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>;
 pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut std::ffi::c_void, size_t) -> *mut std::ffi::c_void>;
+    Option<unsafe extern "C" fn(*mut core::ffi::c_void, size_t) -> *mut core::ffi::c_void>;
 
-pub type ZSTD_format_e = std::ffi::c_uint;
+pub type ZSTD_format_e = core::ffi::c_uint;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -114,7 +114,7 @@ pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_inBuffer_s {
-    pub src: *const std::ffi::c_void,
+    pub src: *const core::ffi::c_void,
     pub size: size_t,
     pub pos: size_t,
 }
@@ -123,22 +123,22 @@ pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_outBuffer_s {
-    pub dst: *mut std::ffi::c_void,
+    pub dst: *mut core::ffi::c_void,
     pub size: size_t,
     pub pos: size_t,
 }
 
-pub type ZSTD_bufferMode_e = std::ffi::c_uint;
+pub type ZSTD_bufferMode_e = core::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameProgression {
-    pub ingested: std::ffi::c_ulonglong,
-    pub consumed: std::ffi::c_ulonglong,
-    pub produced: std::ffi::c_ulonglong,
-    pub flushed: std::ffi::c_ulonglong,
-    pub currentJobID: std::ffi::c_uint,
-    pub nbActiveWorkers: std::ffi::c_uint,
+    pub ingested: core::ffi::c_ulonglong,
+    pub consumed: core::ffi::c_ulonglong,
+    pub produced: core::ffi::c_ulonglong,
+    pub flushed: core::ffi::c_ulonglong,
+    pub currentJobID: core::ffi::c_uint,
+    pub nbActiveWorkers: core::ffi::c_uint,
 }

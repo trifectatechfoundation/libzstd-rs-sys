@@ -2,56 +2,56 @@ use libc::free;
 
 extern "C" {
     fn __assert_fail(
-        __assertion: *const std::ffi::c_char,
-        __file: *const std::ffi::c_char,
-        __line: std::ffi::c_uint,
-        __function: *const std::ffi::c_char,
+        __assertion: *const core::ffi::c_char,
+        __file: *const core::ffi::c_char,
+        __line: core::ffi::c_uint,
+        __function: *const core::ffi::c_char,
     ) -> !;
-    fn malloc(_: std::ffi::c_ulong) -> *mut std::ffi::c_void;
+    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
 }
-pub type size_t = std::ffi::c_ulong;
+pub type size_t = core::ffi::c_ulong;
 pub type trbudget_t = _trbudget_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct _trbudget_t {
-    pub chance: std::ffi::c_int,
-    pub remain: std::ffi::c_int,
-    pub incval: std::ffi::c_int,
-    pub count: std::ffi::c_int,
+    pub chance: core::ffi::c_int,
+    pub remain: core::ffi::c_int,
+    pub incval: core::ffi::c_int,
+    pub count: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed {
-    pub a: *const std::ffi::c_int,
-    pub b: *mut std::ffi::c_int,
-    pub c: *mut std::ffi::c_int,
-    pub d: std::ffi::c_int,
-    pub e: std::ffi::c_int,
+    pub a: *const core::ffi::c_int,
+    pub b: *mut core::ffi::c_int,
+    pub c: *mut core::ffi::c_int,
+    pub d: core::ffi::c_int,
+    pub e: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_0 {
-    pub a: *mut std::ffi::c_int,
-    pub b: *mut std::ffi::c_int,
-    pub c: std::ffi::c_int,
-    pub d: std::ffi::c_int,
+    pub a: *mut core::ffi::c_int,
+    pub b: *mut core::ffi::c_int,
+    pub c: core::ffi::c_int,
+    pub d: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct C2RustUnnamed_1 {
-    pub a: *mut std::ffi::c_int,
-    pub b: *mut std::ffi::c_int,
-    pub c: *mut std::ffi::c_int,
-    pub d: std::ffi::c_int,
+    pub a: *mut core::ffi::c_int,
+    pub b: *mut core::ffi::c_int,
+    pub c: *mut core::ffi::c_int,
+    pub d: core::ffi::c_int,
 }
-pub const NULL: std::ffi::c_int = 0;
-pub const ALPHABET_SIZE: std::ffi::c_int = 256;
-pub const BUCKET_A_SIZE: std::ffi::c_int = 256;
-pub const BUCKET_B_SIZE: std::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
-pub const SS_INSERTIONSORT_THRESHOLD: std::ffi::c_int = 8;
-pub const SS_BLOCKSIZE: std::ffi::c_int = 1024;
-pub const TR_INSERTIONSORT_THRESHOLD: std::ffi::c_int = 8;
-static lg_table: [std::ffi::c_int; 256] = [
+pub const NULL: core::ffi::c_int = 0;
+pub const ALPHABET_SIZE: core::ffi::c_int = 256;
+pub const BUCKET_A_SIZE: core::ffi::c_int = 256;
+pub const BUCKET_B_SIZE: core::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
+pub const SS_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
+pub const SS_BLOCKSIZE: core::ffi::c_int = 1024;
+pub const TR_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
+static lg_table: [core::ffi::c_int; 256] = [
     -(1),
     0,
     1,
@@ -310,18 +310,18 @@ static lg_table: [std::ffi::c_int; 256] = [
     7,
 ];
 #[inline]
-unsafe extern "C" fn ss_ilg(mut n: std::ffi::c_int) -> std::ffi::c_int {
-    if n & 0xff00 as std::ffi::c_int != 0 {
+unsafe extern "C" fn ss_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+    if n & 0xff00 as core::ffi::c_int != 0 {
         8 + *lg_table
             .as_ptr()
-            .offset((n >> 8 & 0xff as std::ffi::c_int) as isize)
+            .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
         0 + *lg_table
             .as_ptr()
-            .offset((n >> 0 & 0xff as std::ffi::c_int) as isize)
+            .offset((n >> 0 & 0xff as core::ffi::c_int) as isize)
     }
 }
-static sqq_table: [std::ffi::c_int; 256] = [
+static sqq_table: [core::ffi::c_int; 256] = [
     0, 16, 22, 27, 32, 35, 39, 42, 45, 48, 50, 53, 55, 57, 59, 61, 64, 65, 67, 69, 71, 73, 75, 76,
     78, 80, 81, 83, 84, 86, 87, 89, 90, 91, 93, 94, 96, 97, 98, 99, 101, 102, 103, 104, 106, 107,
     108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 128,
@@ -338,30 +338,30 @@ static sqq_table: [std::ffi::c_int; 256] = [
     255,
 ];
 #[inline]
-unsafe extern "C" fn ss_isqrt(mut x: std::ffi::c_int) -> std::ffi::c_int {
-    let mut y: std::ffi::c_int = 0;
-    let mut e: std::ffi::c_int = 0;
+unsafe extern "C" fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
+    let mut y: core::ffi::c_int = 0;
+    let mut e: core::ffi::c_int = 0;
     if x >= SS_BLOCKSIZE * SS_BLOCKSIZE {
         return SS_BLOCKSIZE;
     }
-    e = if x as std::ffi::c_uint & 0xffff0000 as std::ffi::c_uint != 0 {
-        if x as std::ffi::c_uint & 0xff000000 as std::ffi::c_uint != 0 {
+    e = if x as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
+        if x as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
             24 + *lg_table
                 .as_ptr()
-                .offset((x >> 24 & 0xff as std::ffi::c_int) as isize)
+                .offset((x >> 24 & 0xff as core::ffi::c_int) as isize)
         } else {
             16 + *lg_table
                 .as_ptr()
-                .offset((x >> 16 & 0xff as std::ffi::c_int) as isize)
+                .offset((x >> 16 & 0xff as core::ffi::c_int) as isize)
         }
-    } else if x & 0xff00 as std::ffi::c_int != 0 {
+    } else if x & 0xff00 as core::ffi::c_int != 0 {
         8 + *lg_table
             .as_ptr()
-            .offset((x >> 8 & 0xff as std::ffi::c_int) as isize)
+            .offset((x >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
         0 + *lg_table
             .as_ptr()
-            .offset((x >> 0 & 0xff as std::ffi::c_int) as isize)
+            .offset((x >> 0 & 0xff as core::ffi::c_int) as isize)
     };
     if e >= 16 {
         y = *sqq_table.as_ptr().offset((x >> (e - 6 - (e & 1))) as isize) << ((e >> 1) - 7);
@@ -382,26 +382,26 @@ unsafe extern "C" fn ss_isqrt(mut x: std::ffi::c_int) -> std::ffi::c_int {
 }
 #[inline]
 unsafe extern "C" fn ss_compare(
-    mut T: *const std::ffi::c_uchar,
-    mut p1: *const std::ffi::c_int,
-    mut p2: *const std::ffi::c_int,
-    mut depth: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut U1 = std::ptr::null::<std::ffi::c_uchar>();
-    let mut U2 = std::ptr::null::<std::ffi::c_uchar>();
-    let mut U1n = std::ptr::null::<std::ffi::c_uchar>();
-    let mut U2n = std::ptr::null::<std::ffi::c_uchar>();
+    mut T: *const core::ffi::c_uchar,
+    mut p1: *const core::ffi::c_int,
+    mut p2: *const core::ffi::c_int,
+    mut depth: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut U1 = core::ptr::null::<core::ffi::c_uchar>();
+    let mut U2 = core::ptr::null::<core::ffi::c_uchar>();
+    let mut U1n = core::ptr::null::<core::ffi::c_uchar>();
+    let mut U2n = core::ptr::null::<core::ffi::c_uchar>();
     U1 = T.offset(depth as isize).offset(*p1 as isize);
     U2 = T.offset(depth as isize).offset(*p2 as isize);
     U1n = T.offset(*p1.offset(1) as isize).offset(2);
     U2n = T.offset(*p2.offset(1) as isize).offset(2);
-    while U1 < U1n && U2 < U2n && *U1 as std::ffi::c_int == *U2 as std::ffi::c_int {
+    while U1 < U1n && U2 < U2n && *U1 as core::ffi::c_int == *U2 as core::ffi::c_int {
         U1 = U1.offset(1);
         U2 = U2.offset(1);
     }
     if U1 < U1n {
         if U2 < U2n {
-            *U1 as std::ffi::c_int - *U2 as std::ffi::c_int
+            *U1 as core::ffi::c_int - *U2 as core::ffi::c_int
         } else {
             1
         }
@@ -412,16 +412,16 @@ unsafe extern "C" fn ss_compare(
     }
 }
 unsafe extern "C" fn ss_insertionsort(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut i = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut j = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
+    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
     i = last.offset(-(2));
     while first <= i {
         t = *i;
@@ -451,20 +451,20 @@ unsafe extern "C" fn ss_insertionsort(
 }
 #[inline]
 unsafe extern "C" fn ss_fixdown(
-    mut Td: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut i: std::ffi::c_int,
-    mut size: std::ffi::c_int,
+    mut Td: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut i: core::ffi::c_int,
+    mut size: core::ffi::c_int,
 ) {
-    let mut j: std::ffi::c_int = 0;
-    let mut k: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
-    let mut c: std::ffi::c_int = 0;
-    let mut d: std::ffi::c_int = 0;
-    let mut e: std::ffi::c_int = 0;
+    let mut j: core::ffi::c_int = 0;
+    let mut k: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
+    let mut c: core::ffi::c_int = 0;
+    let mut d: core::ffi::c_int = 0;
+    let mut e: core::ffi::c_int = 0;
     v = *SA.offset(i as isize);
-    c = *Td.offset(*PA.offset(v as isize) as isize) as std::ffi::c_int;
+    c = *Td.offset(*PA.offset(v as isize) as isize) as core::ffi::c_int;
     loop {
         j = 2 * i + 1;
         if j >= size {
@@ -473,8 +473,8 @@ unsafe extern "C" fn ss_fixdown(
         let fresh0 = j;
         j += 1;
         k = fresh0;
-        d = *Td.offset(*PA.offset(*SA.offset(k as isize) as isize) as isize) as std::ffi::c_int;
-        e = *Td.offset(*PA.offset(*SA.offset(j as isize) as isize) as isize) as std::ffi::c_int;
+        d = *Td.offset(*PA.offset(*SA.offset(k as isize) as isize) as isize) as core::ffi::c_int;
+        e = *Td.offset(*PA.offset(*SA.offset(j as isize) as isize) as isize) as core::ffi::c_int;
         if d < e {
             k = j;
             d = e;
@@ -488,20 +488,20 @@ unsafe extern "C" fn ss_fixdown(
     *SA.offset(i as isize) = v;
 }
 unsafe extern "C" fn ss_heapsort(
-    mut Td: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut size: std::ffi::c_int,
+    mut Td: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut size: core::ffi::c_int,
 ) {
-    let mut i: std::ffi::c_int = 0;
-    let mut m: std::ffi::c_int = 0;
-    let mut t: std::ffi::c_int = 0;
+    let mut i: core::ffi::c_int = 0;
+    let mut m: core::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
     m = size;
     if size % 2 == 0 {
         m -= 1;
         if (*Td.offset(*PA.offset(*SA.offset((m / 2) as isize) as isize) as isize)
-            as std::ffi::c_int)
-            < *Td.offset(*PA.offset(*SA.offset(m as isize) as isize) as isize) as std::ffi::c_int
+            as core::ffi::c_int)
+            < *Td.offset(*PA.offset(*SA.offset(m as isize) as isize) as isize) as core::ffi::c_int
         {
             t = *SA.offset(m as isize);
             *SA.offset(m as isize) = *SA.offset((m / 2) as isize);
@@ -531,25 +531,25 @@ unsafe extern "C" fn ss_heapsort(
 }
 #[inline]
 unsafe extern "C" fn ss_median3(
-    mut Td: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut v1: *mut std::ffi::c_int,
-    mut v2: *mut std::ffi::c_int,
-    mut v3: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut t = std::ptr::null_mut::<std::ffi::c_int>();
-    if *Td.offset(*PA.offset(*v1 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v2 as isize) as isize) as std::ffi::c_int
+    mut Td: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut v1: *mut core::ffi::c_int,
+    mut v2: *mut core::ffi::c_int,
+    mut v3: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut t = core::ptr::null_mut::<core::ffi::c_int>();
+    if *Td.offset(*PA.offset(*v1 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v2 as isize) as isize) as core::ffi::c_int
     {
         t = v1;
         v1 = v2;
         v2 = t;
     }
-    if *Td.offset(*PA.offset(*v2 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v3 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v2 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v3 as isize) as isize) as core::ffi::c_int
     {
-        if *Td.offset(*PA.offset(*v1 as isize) as isize) as std::ffi::c_int
-            > *Td.offset(*PA.offset(*v3 as isize) as isize) as std::ffi::c_int
+        if *Td.offset(*PA.offset(*v1 as isize) as isize) as core::ffi::c_int
+            > *Td.offset(*PA.offset(*v3 as isize) as isize) as core::ffi::c_int
         {
             return v1;
         } else {
@@ -560,31 +560,31 @@ unsafe extern "C" fn ss_median3(
 }
 #[inline]
 unsafe extern "C" fn ss_median5(
-    mut Td: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut v1: *mut std::ffi::c_int,
-    mut v2: *mut std::ffi::c_int,
-    mut v3: *mut std::ffi::c_int,
-    mut v4: *mut std::ffi::c_int,
-    mut v5: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut t = std::ptr::null_mut::<std::ffi::c_int>();
-    if *Td.offset(*PA.offset(*v2 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v3 as isize) as isize) as std::ffi::c_int
+    mut Td: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut v1: *mut core::ffi::c_int,
+    mut v2: *mut core::ffi::c_int,
+    mut v3: *mut core::ffi::c_int,
+    mut v4: *mut core::ffi::c_int,
+    mut v5: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut t = core::ptr::null_mut::<core::ffi::c_int>();
+    if *Td.offset(*PA.offset(*v2 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v3 as isize) as isize) as core::ffi::c_int
     {
         t = v2;
         v2 = v3;
         v3 = t;
     }
-    if *Td.offset(*PA.offset(*v4 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v5 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v4 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v5 as isize) as isize) as core::ffi::c_int
     {
         t = v4;
         v4 = v5;
         v5 = t;
     }
-    if *Td.offset(*PA.offset(*v2 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v4 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v2 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v4 as isize) as isize) as core::ffi::c_int
     {
         t = v2;
         v2 = v4;
@@ -593,15 +593,15 @@ unsafe extern "C" fn ss_median5(
         v3 = v5;
         v5 = t;
     }
-    if *Td.offset(*PA.offset(*v1 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v3 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v1 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v3 as isize) as isize) as core::ffi::c_int
     {
         t = v1;
         v1 = v3;
         v3 = t;
     }
-    if *Td.offset(*PA.offset(*v1 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v4 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v1 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v4 as isize) as isize) as core::ffi::c_int
     {
         t = v1;
         v1 = v4;
@@ -610,8 +610,8 @@ unsafe extern "C" fn ss_median5(
         v3 = v5;
         v5 = t;
     }
-    if *Td.offset(*PA.offset(*v3 as isize) as isize) as std::ffi::c_int
-        > *Td.offset(*PA.offset(*v4 as isize) as isize) as std::ffi::c_int
+    if *Td.offset(*PA.offset(*v3 as isize) as isize) as core::ffi::c_int
+        > *Td.offset(*PA.offset(*v4 as isize) as isize) as core::ffi::c_int
     {
         return v4;
     }
@@ -619,14 +619,14 @@ unsafe extern "C" fn ss_median5(
 }
 #[inline]
 unsafe extern "C" fn ss_pivot(
-    mut Td: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut middle = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    t = last.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
+    mut Td: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut middle = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    t = last.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
     middle = first.offset((t / 2) as isize);
     if t <= 512 {
         if t <= 32 {
@@ -670,14 +670,14 @@ unsafe extern "C" fn ss_pivot(
 }
 #[inline]
 unsafe extern "C" fn ss_partition(
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
     a = first.offset(-(1));
     b = last;
     loop {
@@ -707,50 +707,50 @@ unsafe extern "C" fn ss_partition(
     a
 }
 unsafe extern "C" fn ss_mintrosort(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
     let mut stack: [C2RustUnnamed_0; 16] = [C2RustUnnamed_0 {
-        a: std::ptr::null_mut::<std::ffi::c_int>(),
-        b: std::ptr::null_mut::<std::ffi::c_int>(),
+        a: core::ptr::null_mut::<core::ffi::c_int>(),
+        b: core::ptr::null_mut::<core::ffi::c_int>(),
         c: 0,
         d: 0,
     }; 16];
-    let mut Td = std::ptr::null::<std::ffi::c_uchar>();
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut d = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut e = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut f = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut t: std::ffi::c_int = 0;
-    let mut ssize: std::ffi::c_int = 0;
-    let mut limit: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
+    let mut Td = core::ptr::null::<core::ffi::c_uchar>();
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut d = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut e = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut f = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
+    let mut ssize: core::ffi::c_int = 0;
+    let mut limit: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
     let mut x = 0;
     ssize = 0;
-    limit = ss_ilg(last.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+    limit = ss_ilg(last.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
     loop {
-        if last.offset_from(first) as std::ffi::c_long
-            <= SS_INSERTIONSORT_THRESHOLD as std::ffi::c_long
+        if last.offset_from(first) as core::ffi::c_long
+            <= SS_INSERTIONSORT_THRESHOLD as core::ffi::c_long
         {
-            if (1) < last.offset_from(first) as std::ffi::c_long {
+            if (1) < last.offset_from(first) as core::ffi::c_long {
                 ss_insertionsort(T, PA, first, last, depth);
             }
             if 0 <= ssize {
             } else {
                 __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     418,
                     (*::core::mem::transmute::<
                         &[u8; 74],
-                        &[std::ffi::c_char; 74],
+                        &[core::ffi::c_char; 74],
                     >(
                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                     ))
@@ -774,16 +774,16 @@ unsafe extern "C" fn ss_mintrosort(
                     Td,
                     PA,
                     first,
-                    last.offset_from(first) as std::ffi::c_long as std::ffi::c_int,
+                    last.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
                 );
             }
             if limit < 0 {
                 a = first.offset(1);
-                v = *Td.offset(*PA.offset(*first as isize) as isize) as std::ffi::c_int;
+                v = *Td.offset(*PA.offset(*first as isize) as isize) as core::ffi::c_int;
                 while a < last {
-                    x = *Td.offset(*PA.offset(*a as isize) as isize) as std::ffi::c_int;
+                    x = *Td.offset(*PA.offset(*a as isize) as isize) as core::ffi::c_int;
                     if x != v {
-                        if (1) < a.offset_from(first) as std::ffi::c_long {
+                        if (1) < a.offset_from(first) as core::ffi::c_long {
                             break;
                         }
                         v = x;
@@ -791,24 +791,25 @@ unsafe extern "C" fn ss_mintrosort(
                     }
                     a = a.offset(1);
                 }
-                if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as std::ffi::c_int) < v {
+                if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as core::ffi::c_int) < v
+                {
                     first = ss_partition(PA, first, a, depth);
                 }
-                if a.offset_from(first) as std::ffi::c_long
-                    <= last.offset_from(a) as std::ffi::c_long
+                if a.offset_from(first) as core::ffi::c_long
+                    <= last.offset_from(a) as core::ffi::c_long
                 {
-                    if (1) < a.offset_from(first) as std::ffi::c_long {
+                    if (1) < a.offset_from(first) as core::ffi::c_long {
                         if ssize < 16 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 437,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -825,23 +826,24 @@ unsafe extern "C" fn ss_mintrosort(
                         (*stack.as_mut_ptr().offset(fresh4 as isize)).d = -(1);
                         last = a;
                         depth += 1;
-                        limit = ss_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                        limit =
+                            ss_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                     } else {
                         first = a;
                         limit = -(1);
                     }
-                } else if (1) < last.offset_from(a) as std::ffi::c_long {
+                } else if (1) < last.offset_from(a) as core::ffi::c_long {
                     if ssize < 16 {
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             444,
                             (*::core::mem::transmute::<
                                 &[u8; 74],
-                                &[std::ffi::c_char; 74],
+                                &[core::ffi::c_char; 74],
                             >(
                                 b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                             ))
@@ -856,17 +858,17 @@ unsafe extern "C" fn ss_mintrosort(
                     let fresh7 = ssize;
                     ssize += 1;
                     (*stack.as_mut_ptr().offset(fresh7 as isize)).d =
-                        ss_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                        ss_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                     first = a;
                     limit = -(1);
                 } else {
                     last = a;
                     depth += 1;
-                    limit = ss_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                    limit = ss_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                 }
             } else {
                 a = ss_pivot(Td, PA, first, last);
-                v = *Td.offset(*PA.offset(*a as isize) as isize) as std::ffi::c_int;
+                v = *Td.offset(*PA.offset(*a as isize) as isize) as core::ffi::c_int;
                 t = *first;
                 *first = *a;
                 *a = t;
@@ -874,7 +876,7 @@ unsafe extern "C" fn ss_mintrosort(
                 loop {
                     b = b.offset(1);
                     if !(b < last && {
-                        x = *Td.offset(*PA.offset(*b as isize) as isize) as std::ffi::c_int;
+                        x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                         x == v
                     }) {
                         break;
@@ -885,7 +887,7 @@ unsafe extern "C" fn ss_mintrosort(
                     loop {
                         b = b.offset(1);
                         if !(b < last && {
-                            x = *Td.offset(*PA.offset(*b as isize) as isize) as std::ffi::c_int;
+                            x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                             x <= v
                         }) {
                             break;
@@ -902,7 +904,7 @@ unsafe extern "C" fn ss_mintrosort(
                 loop {
                     c = c.offset(-1);
                     if !(b < c && {
-                        x = *Td.offset(*PA.offset(*c as isize) as isize) as std::ffi::c_int;
+                        x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                         x == v
                     }) {
                         break;
@@ -913,7 +915,7 @@ unsafe extern "C" fn ss_mintrosort(
                     loop {
                         c = c.offset(-1);
                         if !(b < c && {
-                            x = *Td.offset(*PA.offset(*c as isize) as isize) as std::ffi::c_int;
+                            x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                             x >= v
                         }) {
                             break;
@@ -933,7 +935,7 @@ unsafe extern "C" fn ss_mintrosort(
                     loop {
                         b = b.offset(1);
                         if !(b < c && {
-                            x = *Td.offset(*PA.offset(*b as isize) as isize) as std::ffi::c_int;
+                            x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                             x <= v
                         }) {
                             break;
@@ -948,7 +950,7 @@ unsafe extern "C" fn ss_mintrosort(
                     loop {
                         c = c.offset(-1);
                         if !(b < c && {
-                            x = *Td.offset(*PA.offset(*c as isize) as isize) as std::ffi::c_int;
+                            x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                             x >= v
                         }) {
                             break;
@@ -963,8 +965,8 @@ unsafe extern "C" fn ss_mintrosort(
                 }
                 if a <= d {
                     c = b.offset(-(1));
-                    s = a.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
-                    t = b.offset_from(a) as std::ffi::c_long as std::ffi::c_int;
+                    s = a.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
+                    t = b.offset_from(a) as core::ffi::c_long as core::ffi::c_int;
                     if s > t {
                         s = t;
                     }
@@ -978,8 +980,8 @@ unsafe extern "C" fn ss_mintrosort(
                         e = e.offset(1);
                         f = f.offset(1);
                     }
-                    s = d.offset_from(c) as std::ffi::c_long as std::ffi::c_int;
-                    t = (last.offset_from(d) as std::ffi::c_long - 1) as std::ffi::c_int;
+                    s = d.offset_from(c) as core::ffi::c_long as core::ffi::c_int;
+                    t = (last.offset_from(d) as core::ffi::c_long - 1) as core::ffi::c_int;
                     if s > t {
                         s = t;
                     }
@@ -993,32 +995,32 @@ unsafe extern "C" fn ss_mintrosort(
                         e = e.offset(1);
                         f = f.offset(1);
                     }
-                    a = first.offset(b.offset_from(a) as std::ffi::c_long as isize);
-                    c = last.offset(-(d.offset_from(c) as std::ffi::c_long as isize));
+                    a = first.offset(b.offset_from(a) as core::ffi::c_long as isize);
+                    c = last.offset(-(d.offset_from(c) as core::ffi::c_long as isize));
                     b = if v
-                        <= *Td.offset((*PA.offset(*a as isize) - 1) as isize) as std::ffi::c_int
+                        <= *Td.offset((*PA.offset(*a as isize) - 1) as isize) as core::ffi::c_int
                     {
                         a
                     } else {
                         ss_partition(PA, a, c, depth)
                     };
-                    if a.offset_from(first) as std::ffi::c_long
-                        <= last.offset_from(c) as std::ffi::c_long
+                    if a.offset_from(first) as core::ffi::c_long
+                        <= last.offset_from(c) as core::ffi::c_long
                     {
-                        if last.offset_from(c) as std::ffi::c_long
-                            <= c.offset_from(b) as std::ffi::c_long
+                        if last.offset_from(c) as core::ffi::c_long
+                            <= c.offset_from(b) as core::ffi::c_long
                         {
                             if ssize < 16 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     494,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1033,18 +1035,18 @@ unsafe extern "C" fn ss_mintrosort(
                             let fresh10 = ssize;
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh10 as isize)).d =
-                                ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                                ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                             if ssize < 16 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     495,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1060,20 +1062,20 @@ unsafe extern "C" fn ss_mintrosort(
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh13 as isize)).d = limit;
                             last = a;
-                        } else if a.offset_from(first) as std::ffi::c_long
-                            <= c.offset_from(b) as std::ffi::c_long
+                        } else if a.offset_from(first) as core::ffi::c_long
+                            <= c.offset_from(b) as core::ffi::c_long
                         {
                             if ssize < 16 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     498,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1092,13 +1094,13 @@ unsafe extern "C" fn ss_mintrosort(
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     499,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1113,20 +1115,20 @@ unsafe extern "C" fn ss_mintrosort(
                             let fresh19 = ssize;
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh19 as isize)).d =
-                                ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                                ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                             last = a;
                         } else {
                             if ssize < 16 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     502,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1145,13 +1147,13 @@ unsafe extern "C" fn ss_mintrosort(
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     503,
                                     (*::core::mem::transmute::<
                                         &[u8; 74],
-                                        &[std::ffi::c_char; 74],
+                                        &[core::ffi::c_char; 74],
                                     >(
                                         b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                     ))
@@ -1169,22 +1171,23 @@ unsafe extern "C" fn ss_mintrosort(
                             first = b;
                             last = c;
                             depth += 1;
-                            limit = ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                            limit =
+                                ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                         }
-                    } else if a.offset_from(first) as std::ffi::c_long
-                        <= c.offset_from(b) as std::ffi::c_long
+                    } else if a.offset_from(first) as core::ffi::c_long
+                        <= c.offset_from(b) as core::ffi::c_long
                     {
                         if ssize < 16 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 508,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1199,18 +1202,18 @@ unsafe extern "C" fn ss_mintrosort(
                         let fresh28 = ssize;
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh28 as isize)).d =
-                            ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                            ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                         if ssize < 16 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 509,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1226,20 +1229,20 @@ unsafe extern "C" fn ss_mintrosort(
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh31 as isize)).d = limit;
                         first = c;
-                    } else if last.offset_from(c) as std::ffi::c_long
-                        <= c.offset_from(b) as std::ffi::c_long
+                    } else if last.offset_from(c) as core::ffi::c_long
+                        <= c.offset_from(b) as core::ffi::c_long
                     {
                         if ssize < 16 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 512,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1258,13 +1261,13 @@ unsafe extern "C" fn ss_mintrosort(
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 513,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1279,20 +1282,20 @@ unsafe extern "C" fn ss_mintrosort(
                         let fresh37 = ssize;
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh37 as isize)).d =
-                            ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                            ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                         first = c;
                     } else {
                         if ssize < 16 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 516,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1311,13 +1314,13 @@ unsafe extern "C" fn ss_mintrosort(
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 517,
                                 (*::core::mem::transmute::<
                                     &[u8; 74],
-                                    &[std::ffi::c_char; 74],
+                                    &[core::ffi::c_char; 74],
                                 >(
                                     b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
                                 ))
@@ -1335,16 +1338,17 @@ unsafe extern "C" fn ss_mintrosort(
                         first = b;
                         last = c;
                         depth += 1;
-                        limit = ss_ilg(c.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                        limit = ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                     }
                 } else {
                     limit += 1;
-                    if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as std::ffi::c_int)
+                    if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as core::ffi::c_int)
                         < v
                     {
                         first = ss_partition(PA, first, last, depth);
-                        limit =
-                            ss_ilg(last.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                        limit = ss_ilg(
+                            last.offset_from(first) as core::ffi::c_long as core::ffi::c_int
+                        );
                     }
                     depth += 1;
                 }
@@ -1354,11 +1358,11 @@ unsafe extern "C" fn ss_mintrosort(
 }
 #[inline]
 unsafe extern "C" fn ss_blockswap(
-    mut a: *mut std::ffi::c_int,
-    mut b: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
+    mut a: *mut core::ffi::c_int,
+    mut b: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
 ) {
-    let mut t: std::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
     while (0) < n {
         t = *a;
         *a = *b;
@@ -1370,17 +1374,17 @@ unsafe extern "C" fn ss_blockswap(
 }
 #[inline]
 unsafe extern "C" fn ss_rotate(
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
 ) {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut l: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
-    l = middle.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
-    r = last.offset_from(middle) as std::ffi::c_long as std::ffi::c_int;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut l: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
+    l = middle.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
+    r = last.offset_from(middle) as core::ffi::c_long as core::ffi::c_int;
     while (0) < l && (0) < r {
         if l == r {
             ss_blockswap(first, middle, l);
@@ -1437,21 +1441,21 @@ unsafe extern "C" fn ss_rotate(
     }
 }
 unsafe extern "C" fn ss_inplacemerge(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut p = std::ptr::null::<std::ffi::c_int>();
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut len: std::ffi::c_int = 0;
-    let mut half: std::ffi::c_int = 0;
-    let mut q: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
-    let mut x: std::ffi::c_int = 0;
+    let mut p = core::ptr::null::<core::ffi::c_int>();
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut len: core::ffi::c_int = 0;
+    let mut half: core::ffi::c_int = 0;
+    let mut q: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
+    let mut x: core::ffi::c_int = 0;
     loop {
         if *last.offset(-(1)) < 0 {
             x = 1;
@@ -1461,7 +1465,7 @@ unsafe extern "C" fn ss_inplacemerge(
             p = PA.offset(*last.offset(-(1)) as isize);
         }
         a = first;
-        len = middle.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
+        len = middle.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
         half = len >> 1;
         r = -(1);
         while (0) < len {
@@ -1486,7 +1490,7 @@ unsafe extern "C" fn ss_inplacemerge(
                 *a = !*a;
             }
             ss_rotate(a, middle, last);
-            last = last.offset(-(middle.offset_from(a) as std::ffi::c_long as isize));
+            last = last.offset(-(middle.offset_from(a) as core::ffi::c_long as isize));
             middle = a;
             if first == middle {
                 break;
@@ -1507,27 +1511,27 @@ unsafe extern "C" fn ss_inplacemerge(
     }
 }
 unsafe extern "C" fn ss_mergeforward(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut buf: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut buf: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut bufend = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut bufend = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
     bufend = buf
-        .offset(middle.offset_from(first) as std::ffi::c_long as isize)
+        .offset(middle.offset_from(first) as core::ffi::c_long as isize)
         .offset(-(1));
     ss_blockswap(
         buf,
         first,
-        middle.offset_from(first) as std::ffi::c_long as std::ffi::c_int,
+        middle.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
     );
     a = first;
     t = *a;
@@ -1621,30 +1625,30 @@ unsafe extern "C" fn ss_mergeforward(
     }
 }
 unsafe extern "C" fn ss_mergebackward(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut buf: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut buf: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut p1 = std::ptr::null::<std::ffi::c_int>();
-    let mut p2 = std::ptr::null::<std::ffi::c_int>();
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut bufend = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
-    let mut x: std::ffi::c_int = 0;
+    let mut p1 = core::ptr::null::<core::ffi::c_int>();
+    let mut p2 = core::ptr::null::<core::ffi::c_int>();
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut bufend = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
+    let mut x: core::ffi::c_int = 0;
     bufend = buf
-        .offset(last.offset_from(middle) as std::ffi::c_long as isize)
+        .offset(last.offset_from(middle) as core::ffi::c_long as isize)
         .offset(-(1));
     ss_blockswap(
         buf,
         middle,
-        last.offset_from(middle) as std::ffi::c_long as std::ffi::c_int,
+        last.offset_from(middle) as core::ffi::c_long as core::ffi::c_int,
     );
     x = 0;
     if *bufend < 0 {
@@ -1812,35 +1816,35 @@ unsafe extern "C" fn ss_mergebackward(
     }
 }
 unsafe extern "C" fn ss_swapmerge(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut buf: *mut std::ffi::c_int,
-    mut bufsize: std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut buf: *mut core::ffi::c_int,
+    mut bufsize: core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
     let mut stack: [C2RustUnnamed_1; 32] = [C2RustUnnamed_1 {
-        a: std::ptr::null_mut::<std::ffi::c_int>(),
-        b: std::ptr::null_mut::<std::ffi::c_int>(),
-        c: std::ptr::null_mut::<std::ffi::c_int>(),
+        a: core::ptr::null_mut::<core::ffi::c_int>(),
+        b: core::ptr::null_mut::<core::ffi::c_int>(),
+        c: core::ptr::null_mut::<core::ffi::c_int>(),
         d: 0,
     }; 32];
-    let mut l = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut r = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut lm = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut rm = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut m: std::ffi::c_int = 0;
-    let mut len: std::ffi::c_int = 0;
-    let mut half: std::ffi::c_int = 0;
-    let mut ssize: std::ffi::c_int = 0;
-    let mut check: std::ffi::c_int = 0;
-    let mut next: std::ffi::c_int = 0;
+    let mut l = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut r = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut lm = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut rm = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut m: core::ffi::c_int = 0;
+    let mut len: core::ffi::c_int = 0;
+    let mut half: core::ffi::c_int = 0;
+    let mut ssize: core::ffi::c_int = 0;
+    let mut check: core::ffi::c_int = 0;
+    let mut next: core::ffi::c_int = 0;
     check = 0;
     ssize = 0;
     loop {
-        if last.offset_from(middle) as std::ffi::c_long <= bufsize as std::ffi::c_long {
+        if last.offset_from(middle) as core::ffi::c_long <= bufsize as core::ffi::c_long {
             if first < middle && middle < last {
                 ss_mergebackward(T, PA, first, middle, last, buf, depth);
             }
@@ -1880,13 +1884,13 @@ unsafe extern "C" fn ss_swapmerge(
             if 0 <= ssize {
             } else {
                 __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     771,
                     (*::core::mem::transmute::<
                         &[u8; 92],
-                        &[std::ffi::c_char; 92],
+                        &[core::ffi::c_char; 92],
                     >(
                         b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
                     ))
@@ -1901,7 +1905,7 @@ unsafe extern "C" fn ss_swapmerge(
             middle = (*stack.as_mut_ptr().offset(ssize as isize)).b;
             last = (*stack.as_mut_ptr().offset(ssize as isize)).c;
             check = (*stack.as_mut_ptr().offset(ssize as isize)).d;
-        } else if middle.offset_from(first) as std::ffi::c_long <= bufsize as std::ffi::c_long {
+        } else if middle.offset_from(first) as core::ffi::c_long <= bufsize as core::ffi::c_long {
             if first < middle {
                 ss_mergeforward(T, PA, first, middle, last, buf, depth);
             }
@@ -1941,13 +1945,13 @@ unsafe extern "C" fn ss_swapmerge(
             if 0 <= ssize {
             } else {
                 __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     780,
                     (*::core::mem::transmute::<
                         &[u8; 92],
-                        &[std::ffi::c_char; 92],
+                        &[core::ffi::c_char; 92],
                     >(
                         b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
                     ))
@@ -1964,13 +1968,13 @@ unsafe extern "C" fn ss_swapmerge(
             check = (*stack.as_mut_ptr().offset(ssize as isize)).d;
         } else {
             m = 0;
-            len = (if (middle.offset_from(first) as std::ffi::c_long)
-                < last.offset_from(middle) as std::ffi::c_long
+            len = (if (middle.offset_from(first) as core::ffi::c_long)
+                < last.offset_from(middle) as core::ffi::c_long
             {
-                middle.offset_from(first) as std::ffi::c_long
+                middle.offset_from(first) as core::ffi::c_long
             } else {
-                last.offset_from(middle) as std::ffi::c_long
-            }) as std::ffi::c_int;
+                last.offset_from(middle) as core::ffi::c_long
+            }) as core::ffi::c_int;
             half = len >> 1;
             while (0) < len {
                 if ss_compare(
@@ -2036,20 +2040,20 @@ unsafe extern "C" fn ss_swapmerge(
                         next |= 2;
                     }
                 }
-                if l.offset_from(first) as std::ffi::c_long
-                    <= last.offset_from(r) as std::ffi::c_long
+                if l.offset_from(first) as core::ffi::c_long
+                    <= last.offset_from(r) as core::ffi::c_long
                 {
                     if ssize < 32 {
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             810,
                             (*::core::mem::transmute::<
                                 &[u8; 92],
-                                &[std::ffi::c_char; 92],
+                                &[core::ffi::c_char; 92],
                             >(
                                 b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
                             ))
@@ -2076,13 +2080,13 @@ unsafe extern "C" fn ss_swapmerge(
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             814,
                             (*::core::mem::transmute::<
                                 &[u8; 92],
-                                &[std::ffi::c_char; 92],
+                                &[core::ffi::c_char; 92],
                             >(
                                 b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
                             ))
@@ -2154,13 +2158,13 @@ unsafe extern "C" fn ss_swapmerge(
                 if 0 <= ssize {
                 } else {
                     __assert_fail(
-                        b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                         822,
                         (*::core::mem::transmute::<
                             &[u8; 92],
-                            &[std::ffi::c_char; 92],
+                            &[core::ffi::c_char; 92],
                         >(
                             b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
                         ))
@@ -2180,32 +2184,32 @@ unsafe extern "C" fn ss_swapmerge(
     }
 }
 unsafe extern "C" fn sssort(
-    mut T: *const std::ffi::c_uchar,
-    mut PA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut buf: *mut std::ffi::c_int,
-    mut bufsize: std::ffi::c_int,
-    mut depth: std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut lastsuffix: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut PA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut buf: *mut core::ffi::c_int,
+    mut bufsize: core::ffi::c_int,
+    mut depth: core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut lastsuffix: core::ffi::c_int,
 ) {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut middle = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut curbuf = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut j: std::ffi::c_int = 0;
-    let mut k: std::ffi::c_int = 0;
-    let mut curbufsize: std::ffi::c_int = 0;
-    let mut limit: std::ffi::c_int = 0;
-    let mut i: std::ffi::c_int = 0;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut middle = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut curbuf = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut j: core::ffi::c_int = 0;
+    let mut k: core::ffi::c_int = 0;
+    let mut curbufsize: core::ffi::c_int = 0;
+    let mut limit: core::ffi::c_int = 0;
+    let mut i: core::ffi::c_int = 0;
     if lastsuffix != 0 {
         first = first.offset(1);
     }
     if bufsize < SS_BLOCKSIZE
-        && (bufsize as std::ffi::c_long) < last.offset_from(first) as std::ffi::c_long
+        && (bufsize as core::ffi::c_long) < last.offset_from(first) as core::ffi::c_long
         && {
-            limit = ss_isqrt(last.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+            limit = ss_isqrt(last.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
             bufsize < limit
         }
     {
@@ -2221,10 +2225,10 @@ unsafe extern "C" fn sssort(
     }
     a = first;
     i = 0;
-    while (SS_BLOCKSIZE as std::ffi::c_long) < middle.offset_from(a) as std::ffi::c_long {
+    while (SS_BLOCKSIZE as core::ffi::c_long) < middle.offset_from(a) as core::ffi::c_long {
         ss_mintrosort(T, PA, a, a.offset(SS_BLOCKSIZE as isize), depth);
-        curbufsize = last.offset_from(a.offset(SS_BLOCKSIZE as isize)) as std::ffi::c_long
-            as std::ffi::c_int;
+        curbufsize = last.offset_from(a.offset(SS_BLOCKSIZE as isize)) as core::ffi::c_long
+            as core::ffi::c_int;
         curbuf = a.offset(SS_BLOCKSIZE as isize);
         if curbufsize <= bufsize {
             curbufsize = bufsize;
@@ -2275,7 +2279,7 @@ unsafe extern "C" fn sssort(
         ss_inplacemerge(T, PA, first, middle, last, depth);
     }
     if lastsuffix != 0 {
-        let mut PAi: [std::ffi::c_int; 2] = [0; 2];
+        let mut PAi: [core::ffi::c_int; 2] = [0; 2];
         *PAi.as_mut_ptr().offset(0) = *PA.offset(*first.offset(-(1)) as isize);
         *PAi.as_mut_ptr().offset(1) = n - 2;
         a = first;
@@ -2297,36 +2301,36 @@ unsafe extern "C" fn sssort(
     }
 }
 #[inline]
-unsafe extern "C" fn tr_ilg(mut n: std::ffi::c_int) -> std::ffi::c_int {
-    if n as std::ffi::c_uint & 0xffff0000 as std::ffi::c_uint != 0 {
-        if n as std::ffi::c_uint & 0xff000000 as std::ffi::c_uint != 0 {
+unsafe extern "C" fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+    if n as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
+        if n as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
             24 + *lg_table
                 .as_ptr()
-                .offset((n >> 24 & 0xff as std::ffi::c_int) as isize)
+                .offset((n >> 24 & 0xff as core::ffi::c_int) as isize)
         } else {
             16 + *lg_table
                 .as_ptr()
-                .offset((n >> 16 & 0xff as std::ffi::c_int) as isize)
+                .offset((n >> 16 & 0xff as core::ffi::c_int) as isize)
         }
-    } else if n & 0xff00 as std::ffi::c_int != 0 {
+    } else if n & 0xff00 as core::ffi::c_int != 0 {
         8 + *lg_table
             .as_ptr()
-            .offset((n >> 8 & 0xff as std::ffi::c_int) as isize)
+            .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
         0 + *lg_table
             .as_ptr()
-            .offset((n >> 0 & 0xff as std::ffi::c_int) as isize)
+            .offset((n >> 0 & 0xff as core::ffi::c_int) as isize)
     }
 }
 unsafe extern "C" fn tr_insertionsort(
-    mut ISAd: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
+    mut ISAd: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
 ) {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut r: std::ffi::c_int = 0;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut r: core::ffi::c_int = 0;
     a = first.offset(1);
     while a < last {
         t = *a;
@@ -2356,17 +2360,17 @@ unsafe extern "C" fn tr_insertionsort(
 }
 #[inline]
 unsafe extern "C" fn tr_fixdown(
-    mut ISAd: *const std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut i: std::ffi::c_int,
-    mut size: std::ffi::c_int,
+    mut ISAd: *const core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut i: core::ffi::c_int,
+    mut size: core::ffi::c_int,
 ) {
-    let mut j: std::ffi::c_int = 0;
-    let mut k: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
-    let mut c: std::ffi::c_int = 0;
-    let mut d: std::ffi::c_int = 0;
-    let mut e: std::ffi::c_int = 0;
+    let mut j: core::ffi::c_int = 0;
+    let mut k: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
+    let mut c: core::ffi::c_int = 0;
+    let mut d: core::ffi::c_int = 0;
+    let mut e: core::ffi::c_int = 0;
     v = *SA.offset(i as isize);
     c = *ISAd.offset(v as isize);
     loop {
@@ -2392,13 +2396,13 @@ unsafe extern "C" fn tr_fixdown(
     *SA.offset(i as isize) = v;
 }
 unsafe extern "C" fn tr_heapsort(
-    mut ISAd: *const std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut size: std::ffi::c_int,
+    mut ISAd: *const core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut size: core::ffi::c_int,
 ) {
-    let mut i: std::ffi::c_int = 0;
-    let mut m: std::ffi::c_int = 0;
-    let mut t: std::ffi::c_int = 0;
+    let mut i: core::ffi::c_int = 0;
+    let mut m: core::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
     m = size;
     if size % 2 == 0 {
         m -= 1;
@@ -2432,12 +2436,12 @@ unsafe extern "C" fn tr_heapsort(
 }
 #[inline]
 unsafe extern "C" fn tr_median3(
-    mut ISAd: *const std::ffi::c_int,
-    mut v1: *mut std::ffi::c_int,
-    mut v2: *mut std::ffi::c_int,
-    mut v3: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut t = std::ptr::null_mut::<std::ffi::c_int>();
+    mut ISAd: *const core::ffi::c_int,
+    mut v1: *mut core::ffi::c_int,
+    mut v2: *mut core::ffi::c_int,
+    mut v3: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut t = core::ptr::null_mut::<core::ffi::c_int>();
     if *ISAd.offset(*v1 as isize) > *ISAd.offset(*v2 as isize) {
         t = v1;
         v1 = v2;
@@ -2454,14 +2458,14 @@ unsafe extern "C" fn tr_median3(
 }
 #[inline]
 unsafe extern "C" fn tr_median5(
-    mut ISAd: *const std::ffi::c_int,
-    mut v1: *mut std::ffi::c_int,
-    mut v2: *mut std::ffi::c_int,
-    mut v3: *mut std::ffi::c_int,
-    mut v4: *mut std::ffi::c_int,
-    mut v5: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut t = std::ptr::null_mut::<std::ffi::c_int>();
+    mut ISAd: *const core::ffi::c_int,
+    mut v1: *mut core::ffi::c_int,
+    mut v2: *mut core::ffi::c_int,
+    mut v3: *mut core::ffi::c_int,
+    mut v4: *mut core::ffi::c_int,
+    mut v5: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut t = core::ptr::null_mut::<core::ffi::c_int>();
     if *ISAd.offset(*v2 as isize) > *ISAd.offset(*v3 as isize) {
         t = v2;
         v2 = v3;
@@ -2500,13 +2504,13 @@ unsafe extern "C" fn tr_median5(
 }
 #[inline]
 unsafe extern "C" fn tr_pivot(
-    mut ISAd: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-) -> *mut std::ffi::c_int {
-    let mut middle = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    t = last.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
+    mut ISAd: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+) -> *mut core::ffi::c_int {
+    let mut middle = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    t = last.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
     middle = first.offset((t / 2) as isize);
     if t <= 512 {
         if t <= 32 {
@@ -2547,8 +2551,8 @@ unsafe extern "C" fn tr_pivot(
 #[inline]
 unsafe extern "C" fn trbudget_init(
     mut budget: *mut trbudget_t,
-    mut chance: std::ffi::c_int,
-    mut incval: std::ffi::c_int,
+    mut chance: core::ffi::c_int,
+    mut incval: core::ffi::c_int,
 ) {
     (*budget).chance = chance;
     (*budget).incval = incval;
@@ -2557,8 +2561,8 @@ unsafe extern "C" fn trbudget_init(
 #[inline]
 unsafe extern "C" fn trbudget_check(
     mut budget: *mut trbudget_t,
-    mut size: std::ffi::c_int,
-) -> std::ffi::c_int {
+    mut size: core::ffi::c_int,
+) -> core::ffi::c_int {
     if size <= (*budget).remain {
         (*budget).remain -= size;
         return 1;
@@ -2573,22 +2577,22 @@ unsafe extern "C" fn trbudget_check(
 }
 #[inline]
 unsafe extern "C" fn tr_partition(
-    mut ISAd: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut middle: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut pa: *mut *mut std::ffi::c_int,
-    mut pb: *mut *mut std::ffi::c_int,
-    mut v: std::ffi::c_int,
+    mut ISAd: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut middle: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut pa: *mut *mut core::ffi::c_int,
+    mut pb: *mut *mut core::ffi::c_int,
+    mut v: core::ffi::c_int,
 ) {
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut d = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut e = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut f = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut s: std::ffi::c_int = 0;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut d = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut e = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut f = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut s: core::ffi::c_int = 0;
     let mut x = 0;
     b = middle.offset(-(1));
     loop {
@@ -2683,8 +2687,8 @@ unsafe extern "C" fn tr_partition(
     }
     if a <= d {
         c = b.offset(-(1));
-        s = a.offset_from(first) as std::ffi::c_long as std::ffi::c_int;
-        t = b.offset_from(a) as std::ffi::c_long as std::ffi::c_int;
+        s = a.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
+        t = b.offset_from(a) as core::ffi::c_long as core::ffi::c_int;
         if s > t {
             s = t;
         }
@@ -2698,8 +2702,8 @@ unsafe extern "C" fn tr_partition(
             e = e.offset(1);
             f = f.offset(1);
         }
-        s = d.offset_from(c) as std::ffi::c_long as std::ffi::c_int;
-        t = (last.offset_from(d) as std::ffi::c_long - 1) as std::ffi::c_int;
+        s = d.offset_from(c) as core::ffi::c_long as core::ffi::c_int;
+        t = (last.offset_from(d) as core::ffi::c_long - 1) as core::ffi::c_int;
         if s > t {
             s = t;
         }
@@ -2713,27 +2717,27 @@ unsafe extern "C" fn tr_partition(
             e = e.offset(1);
             f = f.offset(1);
         }
-        first = first.offset(b.offset_from(a) as std::ffi::c_long as isize);
-        last = last.offset(-(d.offset_from(c) as std::ffi::c_long as isize));
+        first = first.offset(b.offset_from(a) as core::ffi::c_long as isize);
+        last = last.offset(-(d.offset_from(c) as core::ffi::c_long as isize));
     }
     *pa = first;
     *pb = last;
 }
 unsafe extern "C" fn tr_copy(
-    mut ISA: *mut std::ffi::c_int,
-    mut SA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut a: *mut std::ffi::c_int,
-    mut b: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut ISA: *mut core::ffi::c_int,
+    mut SA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut a: *mut core::ffi::c_int,
+    mut b: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut d = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut e = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
-    v = (b.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut d = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut e = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
+    v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
     c = first;
     d = a.offset(-(1));
     while c <= d {
@@ -2741,7 +2745,7 @@ unsafe extern "C" fn tr_copy(
         if 0 <= s && *ISA.offset(s as isize) == v {
             d = d.offset(1);
             *d = s;
-            *ISA.offset(s as isize) = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+            *ISA.offset(s as isize) = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
         c = c.offset(1);
     }
@@ -2753,29 +2757,29 @@ unsafe extern "C" fn tr_copy(
         if 0 <= s && *ISA.offset(s as isize) == v {
             d = d.offset(-1);
             *d = s;
-            *ISA.offset(s as isize) = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+            *ISA.offset(s as isize) = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
         c = c.offset(-1);
     }
 }
 unsafe extern "C" fn tr_partialcopy(
-    mut ISA: *mut std::ffi::c_int,
-    mut SA: *const std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut a: *mut std::ffi::c_int,
-    mut b: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut ISA: *mut core::ffi::c_int,
+    mut SA: *const core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut a: *mut core::ffi::c_int,
+    mut b: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut d = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut e = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
-    let mut rank: std::ffi::c_int = 0;
-    let mut lastrank: std::ffi::c_int = 0;
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut d = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut e = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
+    let mut rank: core::ffi::c_int = 0;
+    let mut lastrank: core::ffi::c_int = 0;
     let mut newrank = -(1);
-    v = (b.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+    v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
     lastrank = -(1);
     c = first;
     d = a.offset(-(1));
@@ -2787,7 +2791,7 @@ unsafe extern "C" fn tr_partialcopy(
             rank = *ISA.offset((s + depth) as isize);
             if lastrank != rank {
                 lastrank = rank;
-                newrank = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                newrank = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
             }
             *ISA.offset(s as isize) = newrank;
         }
@@ -2799,7 +2803,7 @@ unsafe extern "C" fn tr_partialcopy(
         rank = *ISA.offset(*e as isize);
         if lastrank != rank {
             lastrank = rank;
-            newrank = e.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+            newrank = e.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
         if newrank != rank {
             *ISA.offset(*e as isize) = newrank;
@@ -2818,7 +2822,7 @@ unsafe extern "C" fn tr_partialcopy(
             rank = *ISA.offset((s + depth) as isize);
             if lastrank != rank {
                 lastrank = rank;
-                newrank = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                newrank = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
             }
             *ISA.offset(s as isize) = newrank;
         }
@@ -2826,33 +2830,33 @@ unsafe extern "C" fn tr_partialcopy(
     }
 }
 unsafe extern "C" fn tr_introsort(
-    mut ISA: *mut std::ffi::c_int,
-    mut ISAd: *const std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut first: *mut std::ffi::c_int,
-    mut last: *mut std::ffi::c_int,
+    mut ISA: *mut core::ffi::c_int,
+    mut ISAd: *const core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut first: *mut core::ffi::c_int,
+    mut last: *mut core::ffi::c_int,
     mut budget: *mut trbudget_t,
 ) {
     let mut stack: [C2RustUnnamed; 64] = [C2RustUnnamed {
-        a: std::ptr::null::<std::ffi::c_int>(),
-        b: std::ptr::null_mut::<std::ffi::c_int>(),
-        c: std::ptr::null_mut::<std::ffi::c_int>(),
+        a: core::ptr::null::<core::ffi::c_int>(),
+        b: core::ptr::null_mut::<core::ffi::c_int>(),
+        c: core::ptr::null_mut::<core::ffi::c_int>(),
         d: 0,
         e: 0,
     }; 64];
-    let mut a = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut b = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut c = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut t: std::ffi::c_int = 0;
-    let mut v: std::ffi::c_int = 0;
+    let mut a = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut b = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut c = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut t: core::ffi::c_int = 0;
+    let mut v: core::ffi::c_int = 0;
     let mut x = 0;
-    let mut incr = ISAd.offset_from(ISA) as std::ffi::c_long as std::ffi::c_int;
-    let mut limit: std::ffi::c_int = 0;
-    let mut next: std::ffi::c_int = 0;
-    let mut ssize: std::ffi::c_int = 0;
+    let mut incr = ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int;
+    let mut limit: core::ffi::c_int = 0;
+    let mut next: core::ffi::c_int = 0;
+    let mut ssize: core::ffi::c_int = 0;
     let mut trlink = -(1);
     ssize = 0;
-    limit = tr_ilg(last.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+    limit = tr_ilg(last.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
     loop {
         if limit < 0 {
             if limit == -(1) {
@@ -2863,11 +2867,11 @@ unsafe extern "C" fn tr_introsort(
                     last,
                     &mut a,
                     &mut b,
-                    (last.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int,
+                    (last.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int,
                 );
                 if a < last {
                     c = first;
-                    v = (a.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+                    v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < a {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
@@ -2875,24 +2879,24 @@ unsafe extern "C" fn tr_introsort(
                 }
                 if b < last {
                     c = a;
-                    v = (b.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+                    v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < b {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
                     }
                 }
-                if (1) < b.offset_from(a) as std::ffi::c_long {
+                if (1) < b.offset_from(a) as core::ffi::c_long {
                     if ssize < 64 {
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1204,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -2900,7 +2904,7 @@ unsafe extern "C" fn tr_introsort(
                         );
                     }
                     let fresh89 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
-                    *fresh89 = std::ptr::null::<std::ffi::c_int>();
+                    *fresh89 = core::ptr::null::<core::ffi::c_int>();
                     let fresh90 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
                     *fresh90 = a;
                     let fresh91 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
@@ -2913,13 +2917,13 @@ unsafe extern "C" fn tr_introsort(
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1205,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -2938,21 +2942,21 @@ unsafe extern "C" fn tr_introsort(
                     (*stack.as_mut_ptr().offset(fresh96 as isize)).e = trlink;
                     trlink = ssize - 2;
                 }
-                if a.offset_from(first) as std::ffi::c_long
-                    <= last.offset_from(b) as std::ffi::c_long
+                if a.offset_from(first) as core::ffi::c_long
+                    <= last.offset_from(b) as core::ffi::c_long
                 {
-                    if (1) < a.offset_from(first) as std::ffi::c_long {
+                    if (1) < a.offset_from(first) as core::ffi::c_long {
                         if ssize < 64 {
                         } else {
                             __assert_fail(
                                 b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const std::ffi::c_char,
+                                    as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 1210,
                                 (*::core::mem::transmute::<
                                     &[u8; 73],
-                                    &[std::ffi::c_char; 73],
+                                    &[core::ffi::c_char; 73],
                                 >(
                                     b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                 ))
@@ -2966,26 +2970,28 @@ unsafe extern "C" fn tr_introsort(
                         let fresh99 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                         *fresh99 = last;
                         (*stack.as_mut_ptr().offset(ssize as isize)).d =
-                            tr_ilg(last.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                            tr_ilg(last.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                         let fresh100 = ssize;
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh100 as isize)).e = trlink;
                         last = a;
-                        limit = tr_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
-                    } else if (1) < last.offset_from(b) as std::ffi::c_long {
+                        limit =
+                            tr_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
+                    } else if (1) < last.offset_from(b) as core::ffi::c_long {
                         first = b;
-                        limit = tr_ilg(last.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
+                        limit =
+                            tr_ilg(last.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                     } else {
                         if 0 <= ssize {
                         } else {
                             __assert_fail(
-                                b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                                b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                                 b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const std::ffi::c_char,
+                                    as *const u8 as *const core::ffi::c_char,
                                 1215,
                                 (*::core::mem::transmute::<
                                     &[u8; 73],
-                                    &[std::ffi::c_char; 73],
+                                    &[core::ffi::c_char; 73],
                                 >(
                                     b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                 ))
@@ -3002,18 +3008,18 @@ unsafe extern "C" fn tr_introsort(
                         limit = (*stack.as_mut_ptr().offset(ssize as isize)).d;
                         trlink = (*stack.as_mut_ptr().offset(ssize as isize)).e;
                     }
-                } else if (1) < last.offset_from(b) as std::ffi::c_long {
+                } else if (1) < last.offset_from(b) as core::ffi::c_long {
                     if ssize < 64 {
                     } else {
                         __assert_fail(
                             b"ssize < STACK_SIZE\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1219,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -3027,26 +3033,26 @@ unsafe extern "C" fn tr_introsort(
                     let fresh103 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).c;
                     *fresh103 = a;
                     (*stack.as_mut_ptr().offset(ssize as isize)).d =
-                        tr_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                        tr_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                     let fresh104 = ssize;
                     ssize += 1;
                     (*stack.as_mut_ptr().offset(fresh104 as isize)).e = trlink;
                     first = b;
-                    limit = tr_ilg(last.offset_from(b) as std::ffi::c_long as std::ffi::c_int);
-                } else if (1) < a.offset_from(first) as std::ffi::c_long {
+                    limit = tr_ilg(last.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
+                } else if (1) < a.offset_from(first) as core::ffi::c_long {
                     last = a;
-                    limit = tr_ilg(a.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                    limit = tr_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                 } else {
                     if 0 <= ssize {
                     } else {
                         __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1224,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -3075,7 +3081,7 @@ unsafe extern "C" fn tr_introsort(
                         a,
                         b,
                         last,
-                        ISAd.offset_from(ISA) as std::ffi::c_long as std::ffi::c_int,
+                        ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int,
                     );
                 } else {
                     if 0 <= trlink {
@@ -3088,19 +3094,19 @@ unsafe extern "C" fn tr_introsort(
                         a,
                         b,
                         last,
-                        ISAd.offset_from(ISA) as std::ffi::c_long as std::ffi::c_int,
+                        ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int,
                     );
                 }
                 if 0 <= ssize {
                 } else {
                     __assert_fail(
-                        b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                            as *const std::ffi::c_char,
+                            as *const core::ffi::c_char,
                         1236,
                         (*::core::mem::transmute::<
                             &[u8; 73],
-                            &[std::ffi::c_char; 73],
+                            &[core::ffi::c_char; 73],
                         >(
                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                         ))
@@ -3121,7 +3127,7 @@ unsafe extern "C" fn tr_introsort(
                     a = first;
                     loop {
                         *ISA.offset(*a as isize) =
-                            a.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                            a.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                         a = a.offset(1);
                         if !(a < last && 0 <= *a) {
                             break;
@@ -3139,14 +3145,14 @@ unsafe extern "C" fn tr_introsort(
                         }
                     }
                     next = if *ISA.offset(*a as isize) != *ISAd.offset(*a as isize) {
-                        tr_ilg((a.offset_from(first) as std::ffi::c_long + 1) as std::ffi::c_int)
+                        tr_ilg((a.offset_from(first) as core::ffi::c_long + 1) as core::ffi::c_int)
                     } else {
                         -(1)
                     };
                     a = a.offset(1);
                     if a < last {
                         b = first;
-                        v = (a.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+                        v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                         while b < a {
                             *ISA.offset(*b as isize) = v;
                             b = b.offset(1);
@@ -3154,23 +3160,23 @@ unsafe extern "C" fn tr_introsort(
                     }
                     if trbudget_check(
                         budget,
-                        a.offset_from(first) as std::ffi::c_long as std::ffi::c_int,
+                        a.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
                     ) != 0
                     {
-                        if a.offset_from(first) as std::ffi::c_long
-                            <= last.offset_from(a) as std::ffi::c_long
+                        if a.offset_from(first) as core::ffi::c_long
+                            <= last.offset_from(a) as core::ffi::c_long
                         {
                             if ssize < 64 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1252,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3190,18 +3196,18 @@ unsafe extern "C" fn tr_introsort(
                             ISAd = ISAd.offset(incr as isize);
                             last = a;
                             limit = next;
-                        } else if (1) < last.offset_from(a) as std::ffi::c_long {
+                        } else if (1) < last.offset_from(a) as core::ffi::c_long {
                             if ssize < 64 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1256,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3229,20 +3235,20 @@ unsafe extern "C" fn tr_introsort(
                         if 0 <= trlink {
                             (*stack.as_mut_ptr().offset(trlink as isize)).d = -(1);
                         }
-                        if (1) < last.offset_from(a) as std::ffi::c_long {
+                        if (1) < last.offset_from(a) as core::ffi::c_long {
                             first = a;
                             limit = -(3);
                         } else {
                             if 0 <= ssize {
                             } else {
                                 __assert_fail(
-                                    b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1267,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3264,13 +3270,13 @@ unsafe extern "C" fn tr_introsort(
                     if 0 <= ssize {
                     } else {
                         __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1271,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -3288,8 +3294,8 @@ unsafe extern "C" fn tr_introsort(
                     trlink = (*stack.as_mut_ptr().offset(ssize as isize)).e;
                 }
             }
-        } else if last.offset_from(first) as std::ffi::c_long
-            <= TR_INSERTIONSORT_THRESHOLD as std::ffi::c_long
+        } else if last.offset_from(first) as core::ffi::c_long
+            <= TR_INSERTIONSORT_THRESHOLD as core::ffi::c_long
         {
             tr_insertionsort(ISAd, first, last);
             limit = -(3);
@@ -3300,7 +3306,7 @@ unsafe extern "C" fn tr_introsort(
                 tr_heapsort(
                     ISAd,
                     first,
-                    last.offset_from(first) as std::ffi::c_long as std::ffi::c_int,
+                    last.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
                 );
                 a = last.offset(-(1));
                 while first < a {
@@ -3320,52 +3326,52 @@ unsafe extern "C" fn tr_introsort(
                 *a = t;
                 v = *ISAd.offset(*first as isize);
                 tr_partition(ISAd, first, first.offset(1), last, &mut a, &mut b, v);
-                if last.offset_from(first) as std::ffi::c_long
-                    != b.offset_from(a) as std::ffi::c_long
+                if last.offset_from(first) as core::ffi::c_long
+                    != b.offset_from(a) as core::ffi::c_long
                 {
                     next = if *ISA.offset(*a as isize) != v {
-                        tr_ilg(b.offset_from(a) as std::ffi::c_long as std::ffi::c_int)
+                        tr_ilg(b.offset_from(a) as core::ffi::c_long as core::ffi::c_int)
                     } else {
                         -(1)
                     };
                     c = first;
-                    v = (a.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+                    v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < a {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
                     }
                     if b < last {
                         c = a;
-                        v = (b.offset_from(SA) as std::ffi::c_long - 1) as std::ffi::c_int;
+                        v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                         while c < b {
                             *ISA.offset(*c as isize) = v;
                             c = c.offset(1);
                         }
                     }
-                    if (1) < b.offset_from(a) as std::ffi::c_long
+                    if (1) < b.offset_from(a) as core::ffi::c_long
                         && trbudget_check(
                             budget,
-                            b.offset_from(a) as std::ffi::c_long as std::ffi::c_int,
+                            b.offset_from(a) as core::ffi::c_long as core::ffi::c_int,
                         ) != 0
                     {
-                        if a.offset_from(first) as std::ffi::c_long
-                            <= last.offset_from(b) as std::ffi::c_long
+                        if a.offset_from(first) as core::ffi::c_long
+                            <= last.offset_from(b) as core::ffi::c_long
                         {
-                            if last.offset_from(b) as std::ffi::c_long
-                                <= b.offset_from(a) as std::ffi::c_long
+                            if last.offset_from(b) as core::ffi::c_long
+                                <= b.offset_from(a) as core::ffi::c_long
                             {
-                                if (1) < a.offset_from(first) as std::ffi::c_long {
+                                if (1) < a.offset_from(first) as core::ffi::c_long {
                                     if ssize < 64 {
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1311,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3389,13 +3395,13 @@ unsafe extern "C" fn tr_introsort(
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1312,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3416,18 +3422,18 @@ unsafe extern "C" fn tr_introsort(
                                     ssize += 1;
                                     (*stack.as_mut_ptr().offset(fresh121 as isize)).e = trlink;
                                     last = a;
-                                } else if (1) < last.offset_from(b) as std::ffi::c_long {
+                                } else if (1) < last.offset_from(b) as core::ffi::c_long {
                                     if ssize < 64 {
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1315,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3454,21 +3460,21 @@ unsafe extern "C" fn tr_introsort(
                                     last = b;
                                     limit = next;
                                 }
-                            } else if a.offset_from(first) as std::ffi::c_long
-                                <= b.offset_from(a) as std::ffi::c_long
+                            } else if a.offset_from(first) as core::ffi::c_long
+                                <= b.offset_from(a) as core::ffi::c_long
                             {
-                                if (1) < a.offset_from(first) as std::ffi::c_long {
+                                if (1) < a.offset_from(first) as core::ffi::c_long {
                                     if ssize < 64 {
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1322,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3492,13 +3498,13 @@ unsafe extern "C" fn tr_introsort(
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1323,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3524,13 +3530,13 @@ unsafe extern "C" fn tr_introsort(
                                     } else {
                                         __assert_fail(
                                             b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const std::ffi::c_char,
+                                                as *const core::ffi::c_char,
                                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const std::ffi::c_char,
+                                                as *const u8 as *const core::ffi::c_char,
                                             1326,
                                             (*::core::mem::transmute::<
                                                 &[u8; 73],
-                                                &[std::ffi::c_char; 73],
+                                                &[core::ffi::c_char; 73],
                                             >(
                                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                             ))
@@ -3560,13 +3566,13 @@ unsafe extern "C" fn tr_introsort(
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1330,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3587,13 +3593,13 @@ unsafe extern "C" fn tr_introsort(
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1331,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3615,21 +3621,21 @@ unsafe extern "C" fn tr_introsort(
                                 last = b;
                                 limit = next;
                             }
-                        } else if a.offset_from(first) as std::ffi::c_long
-                            <= b.offset_from(a) as std::ffi::c_long
+                        } else if a.offset_from(first) as core::ffi::c_long
+                            <= b.offset_from(a) as core::ffi::c_long
                         {
-                            if (1) < last.offset_from(b) as std::ffi::c_long {
+                            if (1) < last.offset_from(b) as core::ffi::c_long {
                                 if ssize < 64 {
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1337,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3650,13 +3656,13 @@ unsafe extern "C" fn tr_introsort(
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1338,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3674,18 +3680,18 @@ unsafe extern "C" fn tr_introsort(
                                 ssize += 1;
                                 (*stack.as_mut_ptr().offset(fresh153 as isize)).e = trlink;
                                 first = b;
-                            } else if (1) < a.offset_from(first) as std::ffi::c_long {
+                            } else if (1) < a.offset_from(first) as core::ffi::c_long {
                                 if ssize < 64 {
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1341,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3709,21 +3715,21 @@ unsafe extern "C" fn tr_introsort(
                                 last = b;
                                 limit = next;
                             }
-                        } else if last.offset_from(b) as std::ffi::c_long
-                            <= b.offset_from(a) as std::ffi::c_long
+                        } else if last.offset_from(b) as core::ffi::c_long
+                            <= b.offset_from(a) as core::ffi::c_long
                         {
-                            if (1) < last.offset_from(b) as std::ffi::c_long {
+                            if (1) < last.offset_from(b) as core::ffi::c_long {
                                 if ssize < 64 {
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1348,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3744,13 +3750,13 @@ unsafe extern "C" fn tr_introsort(
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1349,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3773,13 +3779,13 @@ unsafe extern "C" fn tr_introsort(
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1352,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3806,13 +3812,13 @@ unsafe extern "C" fn tr_introsort(
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1356,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3833,13 +3839,13 @@ unsafe extern "C" fn tr_introsort(
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1357,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3862,24 +3868,24 @@ unsafe extern "C" fn tr_introsort(
                             limit = next;
                         }
                     } else {
-                        if (1) < b.offset_from(a) as std::ffi::c_long && 0 <= trlink {
+                        if (1) < b.offset_from(a) as core::ffi::c_long && 0 <= trlink {
                             (*stack.as_mut_ptr().offset(trlink as isize)).d = -(1);
                         }
-                        if a.offset_from(first) as std::ffi::c_long
-                            <= last.offset_from(b) as std::ffi::c_long
+                        if a.offset_from(first) as core::ffi::c_long
+                            <= last.offset_from(b) as core::ffi::c_long
                         {
-                            if (1) < a.offset_from(first) as std::ffi::c_long {
+                            if (1) < a.offset_from(first) as core::ffi::c_long {
                                 if ssize < 64 {
                                 } else {
                                     __assert_fail(
                                         b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const std::ffi::c_char,
+                                            as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1365,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3897,19 +3903,19 @@ unsafe extern "C" fn tr_introsort(
                                 ssize += 1;
                                 (*stack.as_mut_ptr().offset(fresh181 as isize)).e = trlink;
                                 last = a;
-                            } else if (1) < last.offset_from(b) as std::ffi::c_long {
+                            } else if (1) < last.offset_from(b) as core::ffi::c_long {
                                 first = b;
                             } else {
                                 if 0 <= ssize {
                                 } else {
                                     __assert_fail(
-                                        b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                                         b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const std::ffi::c_char,
+                                            as *const u8 as *const core::ffi::c_char,
                                         1370,
                                         (*::core::mem::transmute::<
                                             &[u8; 73],
-                                            &[std::ffi::c_char; 73],
+                                            &[core::ffi::c_char; 73],
                                         >(
                                             b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                         ))
@@ -3926,18 +3932,18 @@ unsafe extern "C" fn tr_introsort(
                                 limit = (*stack.as_mut_ptr().offset(ssize as isize)).d;
                                 trlink = (*stack.as_mut_ptr().offset(ssize as isize)).e;
                             }
-                        } else if (1) < last.offset_from(b) as std::ffi::c_long {
+                        } else if (1) < last.offset_from(b) as core::ffi::c_long {
                             if ssize < 64 {
                             } else {
                                 __assert_fail(
                                     b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const std::ffi::c_char,
+                                        as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1374,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3955,19 +3961,19 @@ unsafe extern "C" fn tr_introsort(
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh185 as isize)).e = trlink;
                             first = b;
-                        } else if (1) < a.offset_from(first) as std::ffi::c_long {
+                        } else if (1) < a.offset_from(first) as core::ffi::c_long {
                             last = a;
                         } else {
                             if 0 <= ssize {
                             } else {
                                 __assert_fail(
-                                    b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const std::ffi::c_char,
+                                        as *const u8 as *const core::ffi::c_char,
                                     1379,
                                     (*::core::mem::transmute::<
                                         &[u8; 73],
-                                        &[std::ffi::c_char; 73],
+                                        &[core::ffi::c_char; 73],
                                     >(
                                         b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                                     ))
@@ -3987,10 +3993,11 @@ unsafe extern "C" fn tr_introsort(
                     }
                 } else if trbudget_check(
                     budget,
-                    last.offset_from(first) as std::ffi::c_long as std::ffi::c_int,
+                    last.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
                 ) != 0
                 {
-                    limit = tr_ilg(last.offset_from(first) as std::ffi::c_long as std::ffi::c_int);
+                    limit =
+                        tr_ilg(last.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                     ISAd = ISAd.offset(incr as isize);
                 } else {
                     if 0 <= trlink {
@@ -3999,13 +4006,13 @@ unsafe extern "C" fn tr_introsort(
                     if 0 <= ssize {
                     } else {
                         __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const std::ffi::c_char,
+                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1388,
                             (*::core::mem::transmute::<
                                 &[u8; 73],
-                                &[std::ffi::c_char; 73],
+                                &[core::ffi::c_char; 73],
                             >(
                                 b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
                             ))
@@ -4027,23 +4034,23 @@ unsafe extern "C" fn tr_introsort(
     }
 }
 unsafe extern "C" fn trsort(
-    mut ISA: *mut std::ffi::c_int,
-    mut SA: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut depth: std::ffi::c_int,
+    mut ISA: *mut core::ffi::c_int,
+    mut SA: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut depth: core::ffi::c_int,
 ) {
-    let mut ISAd = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut first = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut last = std::ptr::null_mut::<std::ffi::c_int>();
+    let mut ISAd = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut first = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut last = core::ptr::null_mut::<core::ffi::c_int>();
     let mut budget = _trbudget_t {
         chance: 0,
         remain: 0,
         incval: 0,
         count: 0,
     };
-    let mut t: std::ffi::c_int = 0;
-    let mut skip: std::ffi::c_int = 0;
-    let mut unsorted: std::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
+    let mut skip: core::ffi::c_int = 0;
+    let mut unsorted: core::ffi::c_int = 0;
     trbudget_init(&mut budget, tr_ilg(n) * 2 / 3, n);
     ISAd = ISA.offset(depth as isize);
     while -n < *SA {
@@ -4061,15 +4068,15 @@ unsafe extern "C" fn trsort(
                     skip = 0;
                 }
                 last = SA.offset(*ISA.offset(t as isize) as isize).offset(1);
-                if (1) < last.offset_from(first) as std::ffi::c_long {
+                if (1) < last.offset_from(first) as core::ffi::c_long {
                     budget.count = 0;
                     tr_introsort(ISA, ISAd, SA, first, last, &mut budget);
                     if budget.count != 0 {
                         unsorted += budget.count;
                     } else {
-                        skip = first.offset_from(last) as std::ffi::c_long as std::ffi::c_int;
+                        skip = first.offset_from(last) as core::ffi::c_long as core::ffi::c_int;
                     }
-                } else if last.offset_from(first) as std::ffi::c_long == 1 {
+                } else if last.offset_from(first) as core::ffi::c_long == 1 {
                     skip = -(1);
                 }
                 first = last;
@@ -4084,28 +4091,28 @@ unsafe extern "C" fn trsort(
         if unsorted == 0 {
             break;
         }
-        ISAd = ISAd.offset(ISAd.offset_from(ISA) as std::ffi::c_long as isize);
+        ISAd = ISAd.offset(ISAd.offset_from(ISA) as core::ffi::c_long as isize);
     }
 }
 unsafe extern "C" fn sort_typeBstar(
-    mut T: *const std::ffi::c_uchar,
-    mut SA: *mut std::ffi::c_int,
-    mut bucket_A: *mut std::ffi::c_int,
-    mut bucket_B: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut openMP: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut PAb = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut ISAb = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut buf = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut i: std::ffi::c_int = 0;
-    let mut j: std::ffi::c_int = 0;
-    let mut k: std::ffi::c_int = 0;
-    let mut t: std::ffi::c_int = 0;
-    let mut m: std::ffi::c_int = 0;
-    let mut bufsize: std::ffi::c_int = 0;
-    let mut c0: std::ffi::c_int = 0;
-    let mut c1: std::ffi::c_int = 0;
+    mut T: *const core::ffi::c_uchar,
+    mut SA: *mut core::ffi::c_int,
+    mut bucket_A: *mut core::ffi::c_int,
+    mut bucket_B: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut openMP: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut PAb = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut ISAb = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut buf = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut i: core::ffi::c_int = 0;
+    let mut j: core::ffi::c_int = 0;
+    let mut k: core::ffi::c_int = 0;
+    let mut t: core::ffi::c_int = 0;
+    let mut m: core::ffi::c_int = 0;
+    let mut bufsize: core::ffi::c_int = 0;
+    let mut c0: core::ffi::c_int = 0;
+    let mut c1: core::ffi::c_int = 0;
     i = 0;
     while i < BUCKET_A_SIZE {
         *bucket_A.offset(i as isize) = 0;
@@ -4118,7 +4125,7 @@ unsafe extern "C" fn sort_typeBstar(
     }
     i = n - 1;
     m = n;
-    c0 = *T.offset((n - 1) as isize) as std::ffi::c_int;
+    c0 = *T.offset((n - 1) as isize) as core::ffi::c_int;
     while 0 <= i {
         loop {
             c1 = c0;
@@ -4126,7 +4133,7 @@ unsafe extern "C" fn sort_typeBstar(
             *fresh186 += 1;
             i -= 1;
             if !(0 <= i && {
-                c0 = *T.offset(i as isize) as std::ffi::c_int;
+                c0 = *T.offset(i as isize) as core::ffi::c_int;
                 c0 >= c1
             }) {
                 break;
@@ -4140,7 +4147,7 @@ unsafe extern "C" fn sort_typeBstar(
             i -= 1;
             c1 = c0;
             while 0 <= i && {
-                c0 = *T.offset(i as isize) as std::ffi::c_int;
+                c0 = *T.offset(i as isize) as core::ffi::c_int;
                 c0 <= c1
             } {
                 let fresh188 = &mut (*bucket_B.offset((c1 << 8 | c0) as isize));
@@ -4173,16 +4180,16 @@ unsafe extern "C" fn sort_typeBstar(
         i = m - 2;
         while 0 <= i {
             t = *PAb.offset(i as isize);
-            c0 = *T.offset(t as isize) as std::ffi::c_int;
-            c1 = *T.offset((t + 1) as isize) as std::ffi::c_int;
+            c0 = *T.offset(t as isize) as core::ffi::c_int;
+            c1 = *T.offset((t + 1) as isize) as core::ffi::c_int;
             let fresh189 = &mut (*bucket_B.offset((c0 << 8 | c1) as isize));
             *fresh189 -= 1;
             *SA.offset(*fresh189 as isize) = i;
             i -= 1;
         }
         t = *PAb.offset((m - 1) as isize);
-        c0 = *T.offset(t as isize) as std::ffi::c_int;
-        c1 = *T.offset((t + 1) as isize) as std::ffi::c_int;
+        c0 = *T.offset(t as isize) as core::ffi::c_int;
+        c1 = *T.offset((t + 1) as isize) as core::ffi::c_int;
         let fresh190 = &mut (*bucket_B.offset((c0 << 8 | c1) as isize));
         *fresh190 -= 1;
         *SA.offset(*fresh190 as isize) = m - 1;
@@ -4204,7 +4211,7 @@ unsafe extern "C" fn sort_typeBstar(
                         bufsize,
                         2,
                         n,
-                        (*SA.offset(i as isize) == m - 1) as std::ffi::c_int,
+                        (*SA.offset(i as isize) == m - 1) as core::ffi::c_int,
                     );
                 }
                 j = i;
@@ -4244,12 +4251,12 @@ unsafe extern "C" fn sort_typeBstar(
         trsort(ISAb, SA, m, 1);
         i = n - 1;
         j = m;
-        c0 = *T.offset((n - 1) as isize) as std::ffi::c_int;
+        c0 = *T.offset((n - 1) as isize) as core::ffi::c_int;
         while 0 <= i {
             i -= 1;
             c1 = c0;
             while 0 <= i && {
-                c0 = *T.offset(i as isize) as std::ffi::c_int;
+                c0 = *T.offset(i as isize) as core::ffi::c_int;
                 c0 >= c1
             } {
                 i -= 1;
@@ -4260,7 +4267,7 @@ unsafe extern "C" fn sort_typeBstar(
                 i -= 1;
                 c1 = c0;
                 while 0 <= i && {
-                    c0 = *T.offset(i as isize) as std::ffi::c_int;
+                    c0 = *T.offset(i as isize) as core::ffi::c_int;
                     c0 <= c1
                 } {
                     i -= 1;
@@ -4298,20 +4305,20 @@ unsafe extern "C" fn sort_typeBstar(
     m
 }
 unsafe extern "C" fn construct_SA(
-    mut T: *const std::ffi::c_uchar,
-    mut SA: *mut std::ffi::c_int,
-    mut bucket_A: *mut std::ffi::c_int,
-    mut bucket_B: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut m: std::ffi::c_int,
+    mut T: *const core::ffi::c_uchar,
+    mut SA: *mut core::ffi::c_int,
+    mut bucket_A: *mut core::ffi::c_int,
+    mut bucket_B: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut m: core::ffi::c_int,
 ) {
-    let mut i = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut j = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut k = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut c0: std::ffi::c_int = 0;
-    let mut c1: std::ffi::c_int = 0;
-    let mut c2: std::ffi::c_int = 0;
+    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut k = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut c0: core::ffi::c_int = 0;
+    let mut c1: core::ffi::c_int = 0;
+    let mut c2: core::ffi::c_int = 0;
     if (0) < m {
         c1 = ALPHABET_SIZE - 2;
         while 0 <= c1 {
@@ -4319,21 +4326,21 @@ unsafe extern "C" fn construct_SA(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut std::ffi::c_int;
+            k = NULL as *mut core::ffi::c_int;
             c2 = -(1);
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as std::ffi::c_int == c1 {
+                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
                     } else {
                         __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const std::ffi::c_char,
+                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1630,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4341,38 +4348,38 @@ unsafe extern "C" fn construct_SA(
                         );
                     }
                     if (s + 1) < n
-                        && *T.offset(s as isize) as std::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as std::ffi::c_int
+                        && *T.offset(s as isize) as core::ffi::c_int
+                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1631,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
                                 .as_ptr(),
                         );
                     }
-                    if *T.offset((s - 1) as isize) as std::ffi::c_int
-                        <= *T.offset(s as isize) as std::ffi::c_int
+                    if *T.offset((s - 1) as isize) as core::ffi::c_int
+                        <= *T.offset(s as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1632,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4381,14 +4388,14 @@ unsafe extern "C" fn construct_SA(
                     }
                     *j = !s;
                     s -= 1;
-                    c0 = *T.offset(s as isize) as std::ffi::c_int;
-                    if (0) < s && *T.offset((s - 1) as isize) as std::ffi::c_int > c0 {
+                    c0 = *T.offset(s as isize) as core::ffi::c_int;
+                    if (0) < s && *T.offset((s - 1) as isize) as core::ffi::c_int > c0 {
                         s = !s;
                     }
                     if c0 != c2 {
                         if 0 <= c2 {
                             *bucket_B.offset((c1 << 8 | c2) as isize) =
-                                k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                         }
                         c2 = c0;
                         k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
@@ -4396,13 +4403,13 @@ unsafe extern "C" fn construct_SA(
                     if k < j {
                     } else {
                         __assert_fail(
-                            b"k < j\0" as *const u8 as *const std::ffi::c_char,
+                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1640,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4412,13 +4419,13 @@ unsafe extern "C" fn construct_SA(
                     if !k.is_null() {
                     } else {
                         __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const std::ffi::c_char,
+                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1640,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4429,17 +4436,17 @@ unsafe extern "C" fn construct_SA(
                     k = k.offset(-1);
                     *fresh192 = s;
                 } else {
-                    if s == 0 && *T.offset(s as isize) as std::ffi::c_int == c1 || s < 0 {
+                    if s == 0 && *T.offset(s as isize) as core::ffi::c_int == c1 || s < 0 {
                     } else {
                         __assert_fail(
                             b"((s == 0) && (T[s] == c1)) || (s < 0)\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1643,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4453,11 +4460,11 @@ unsafe extern "C" fn construct_SA(
             c1 -= 1;
         }
     }
-    c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
+    c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
     k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
     let fresh193 = k;
     k = k.offset(1);
-    *fresh193 = if (*T.offset((n - 2) as isize) as std::ffi::c_int) < c2 {
+    *fresh193 = if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
         !(n - 1)
     } else {
         n - 1
@@ -4467,18 +4474,18 @@ unsafe extern "C" fn construct_SA(
     while i < j {
         s = *i;
         if (0) < s {
-            if *T.offset((s - 1) as isize) as std::ffi::c_int
-                >= *T.offset(s as isize) as std::ffi::c_int
+            if *T.offset((s - 1) as isize) as core::ffi::c_int
+                >= *T.offset(s as isize) as core::ffi::c_int
             {
             } else {
                 __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const std::ffi::c_char,
+                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1657,
                     (*::core::mem::transmute::<
                         &[u8; 72],
-                        &[std::ffi::c_char; 72],
+                        &[core::ffi::c_char; 72],
                     >(
                         b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                     ))
@@ -4486,26 +4493,26 @@ unsafe extern "C" fn construct_SA(
                 );
             }
             s -= 1;
-            c0 = *T.offset(s as isize) as std::ffi::c_int;
-            if s == 0 || (*T.offset((s - 1) as isize) as std::ffi::c_int) < c0 {
+            c0 = *T.offset(s as isize) as core::ffi::c_int;
+            if s == 0 || (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
                 s = !s;
             }
             if c0 != c2 {
                 *bucket_A.offset(c2 as isize) =
-                    k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                    k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                 c2 = c0;
                 k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
             }
             if i < k {
             } else {
                 __assert_fail(
-                    b"i < k\0" as *const u8 as *const std::ffi::c_char,
+                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1664,
                     (*::core::mem::transmute::<
                         &[u8; 72],
-                        &[std::ffi::c_char; 72],
+                        &[core::ffi::c_char; 72],
                     >(
                         b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                     ))
@@ -4519,13 +4526,13 @@ unsafe extern "C" fn construct_SA(
             if s < 0 {
             } else {
                 __assert_fail(
-                    b"s < 0\0" as *const u8 as *const std::ffi::c_char,
+                    b"s < 0\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1667,
                     (*::core::mem::transmute::<
                         &[u8; 72],
-                        &[std::ffi::c_char; 72],
+                        &[core::ffi::c_char; 72],
                     >(
                         b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
                     ))
@@ -4538,21 +4545,21 @@ unsafe extern "C" fn construct_SA(
     }
 }
 unsafe extern "C" fn construct_BWT(
-    mut T: *const std::ffi::c_uchar,
-    mut SA: *mut std::ffi::c_int,
-    mut bucket_A: *mut std::ffi::c_int,
-    mut bucket_B: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut m: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut i = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut j = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut k = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut orig = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut c0: std::ffi::c_int = 0;
-    let mut c1: std::ffi::c_int = 0;
-    let mut c2: std::ffi::c_int = 0;
+    mut T: *const core::ffi::c_uchar,
+    mut SA: *mut core::ffi::c_int,
+    mut bucket_A: *mut core::ffi::c_int,
+    mut bucket_B: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut m: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut k = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut orig = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut c0: core::ffi::c_int = 0;
+    let mut c1: core::ffi::c_int = 0;
+    let mut c2: core::ffi::c_int = 0;
     if (0) < m {
         c1 = ALPHABET_SIZE - 2;
         while 0 <= c1 {
@@ -4560,21 +4567,21 @@ unsafe extern "C" fn construct_BWT(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut std::ffi::c_int;
+            k = NULL as *mut core::ffi::c_int;
             c2 = -(1);
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as std::ffi::c_int == c1 {
+                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
                     } else {
                         __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const std::ffi::c_char,
+                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1694,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4582,38 +4589,38 @@ unsafe extern "C" fn construct_BWT(
                         );
                     }
                     if (s + 1) < n
-                        && *T.offset(s as isize) as std::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as std::ffi::c_int
+                        && *T.offset(s as isize) as core::ffi::c_int
+                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1695,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
                                 .as_ptr(),
                         );
                     }
-                    if *T.offset((s - 1) as isize) as std::ffi::c_int
-                        <= *T.offset(s as isize) as std::ffi::c_int
+                    if *T.offset((s - 1) as isize) as core::ffi::c_int
+                        <= *T.offset(s as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1696,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4621,15 +4628,15 @@ unsafe extern "C" fn construct_BWT(
                         );
                     }
                     s -= 1;
-                    c0 = *T.offset(s as isize) as std::ffi::c_int;
+                    c0 = *T.offset(s as isize) as core::ffi::c_int;
                     *j = !c0;
-                    if (0) < s && *T.offset((s - 1) as isize) as std::ffi::c_int > c0 {
+                    if (0) < s && *T.offset((s - 1) as isize) as core::ffi::c_int > c0 {
                         s = !s;
                     }
                     if c0 != c2 {
                         if 0 <= c2 {
                             *bucket_B.offset((c1 << 8 | c2) as isize) =
-                                k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                         }
                         c2 = c0;
                         k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
@@ -4637,13 +4644,13 @@ unsafe extern "C" fn construct_BWT(
                     if k < j {
                     } else {
                         __assert_fail(
-                            b"k < j\0" as *const u8 as *const std::ffi::c_char,
+                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1704,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4653,13 +4660,13 @@ unsafe extern "C" fn construct_BWT(
                     if !k.is_null() {
                     } else {
                         __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const std::ffi::c_char,
+                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1704,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4672,16 +4679,16 @@ unsafe extern "C" fn construct_BWT(
                 } else if s != 0 {
                     *j = !s;
                 } else {
-                    if *T.offset(s as isize) as std::ffi::c_int == c1 {
+                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
                     } else {
                         __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const std::ffi::c_char,
+                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1710,
                             (*::core::mem::transmute::<
                                 &[u8; 72],
-                                &[std::ffi::c_char; 72],
+                                &[core::ffi::c_char; 72],
                             >(
                                 b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                             ))
@@ -4694,12 +4701,12 @@ unsafe extern "C" fn construct_BWT(
             c1 -= 1;
         }
     }
-    c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
+    c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
     k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
     let fresh196 = k;
     k = k.offset(1);
-    *fresh196 = if (*T.offset((n - 2) as isize) as std::ffi::c_int) < c2 {
-        !(*T.offset((n - 2) as isize) as std::ffi::c_int)
+    *fresh196 = if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
+        !(*T.offset((n - 2) as isize) as core::ffi::c_int)
     } else {
         n - 1
     };
@@ -4709,18 +4716,18 @@ unsafe extern "C" fn construct_BWT(
     while i < j {
         s = *i;
         if (0) < s {
-            if *T.offset((s - 1) as isize) as std::ffi::c_int
-                >= *T.offset(s as isize) as std::ffi::c_int
+            if *T.offset((s - 1) as isize) as core::ffi::c_int
+                >= *T.offset(s as isize) as core::ffi::c_int
             {
             } else {
                 __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const std::ffi::c_char,
+                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1724,
                     (*::core::mem::transmute::<
                         &[u8; 72],
-                        &[std::ffi::c_char; 72],
+                        &[core::ffi::c_char; 72],
                     >(
                         b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                     ))
@@ -4728,27 +4735,27 @@ unsafe extern "C" fn construct_BWT(
                 );
             }
             s -= 1;
-            c0 = *T.offset(s as isize) as std::ffi::c_int;
+            c0 = *T.offset(s as isize) as core::ffi::c_int;
             *i = c0;
-            if (0) < s && (*T.offset((s - 1) as isize) as std::ffi::c_int) < c0 {
-                s = !(*T.offset((s - 1) as isize) as std::ffi::c_int);
+            if (0) < s && (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
+                s = !(*T.offset((s - 1) as isize) as core::ffi::c_int);
             }
             if c0 != c2 {
                 *bucket_A.offset(c2 as isize) =
-                    k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                    k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                 c2 = c0;
                 k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
             }
             if i < k {
             } else {
                 __assert_fail(
-                    b"i < k\0" as *const u8 as *const std::ffi::c_char,
+                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1732,
                     (*::core::mem::transmute::<
                         &[u8; 72],
-                        &[std::ffi::c_char; 72],
+                        &[core::ffi::c_char; 72],
                     >(
                         b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
                     ))
@@ -4765,26 +4772,26 @@ unsafe extern "C" fn construct_BWT(
         }
         i = i.offset(1);
     }
-    orig.offset_from(SA) as std::ffi::c_long as std::ffi::c_int
+    orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
 unsafe extern "C" fn construct_BWT_indexes(
-    mut T: *const std::ffi::c_uchar,
-    mut SA: *mut std::ffi::c_int,
-    mut bucket_A: *mut std::ffi::c_int,
-    mut bucket_B: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut m: std::ffi::c_int,
-    mut num_indexes: *mut std::ffi::c_uchar,
-    mut indexes: *mut std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut i = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut j = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut k = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut orig = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut s: std::ffi::c_int = 0;
-    let mut c0: std::ffi::c_int = 0;
-    let mut c1: std::ffi::c_int = 0;
-    let mut c2: std::ffi::c_int = 0;
+    mut T: *const core::ffi::c_uchar,
+    mut SA: *mut core::ffi::c_int,
+    mut bucket_A: *mut core::ffi::c_int,
+    mut bucket_B: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut m: core::ffi::c_int,
+    mut num_indexes: *mut core::ffi::c_uchar,
+    mut indexes: *mut core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut k = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut orig = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut s: core::ffi::c_int = 0;
+    let mut c0: core::ffi::c_int = 0;
+    let mut c1: core::ffi::c_int = 0;
+    let mut c2: core::ffi::c_int = 0;
     let mut mod_0 = n / 8;
     mod_0 |= mod_0 >> 1;
     mod_0 |= mod_0 >> 2;
@@ -4792,7 +4799,7 @@ unsafe extern "C" fn construct_BWT_indexes(
     mod_0 |= mod_0 >> 8;
     mod_0 |= mod_0 >> 16;
     mod_0 >>= 1;
-    *num_indexes = ((n - 1) / (mod_0 + 1)) as std::ffi::c_uchar;
+    *num_indexes = ((n - 1) / (mod_0 + 1)) as core::ffi::c_uchar;
     if (0) < m {
         c1 = ALPHABET_SIZE - 2;
         while 0 <= c1 {
@@ -4800,21 +4807,21 @@ unsafe extern "C" fn construct_BWT_indexes(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut std::ffi::c_int;
+            k = NULL as *mut core::ffi::c_int;
             c2 = -(1);
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as std::ffi::c_int == c1 {
+                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
                     } else {
                         __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const std::ffi::c_char,
+                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1775,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
@@ -4822,38 +4829,38 @@ unsafe extern "C" fn construct_BWT_indexes(
                         );
                     }
                     if (s + 1) < n
-                        && *T.offset(s as isize) as std::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as std::ffi::c_int
+                        && *T.offset(s as isize) as core::ffi::c_int
+                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1776,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
                                 .as_ptr(),
                         );
                     }
-                    if *T.offset((s - 1) as isize) as std::ffi::c_int
-                        <= *T.offset(s as isize) as std::ffi::c_int
+                    if *T.offset((s - 1) as isize) as core::ffi::c_int
+                        <= *T.offset(s as isize) as core::ffi::c_int
                     {
                     } else {
                         __assert_fail(
                             b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const std::ffi::c_char,
+                                as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1777,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
@@ -4862,18 +4869,18 @@ unsafe extern "C" fn construct_BWT_indexes(
                     }
                     if s & mod_0 == 0 {
                         *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                            j.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                            j.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                     }
                     s -= 1;
-                    c0 = *T.offset(s as isize) as std::ffi::c_int;
+                    c0 = *T.offset(s as isize) as core::ffi::c_int;
                     *j = !c0;
-                    if (0) < s && *T.offset((s - 1) as isize) as std::ffi::c_int > c0 {
+                    if (0) < s && *T.offset((s - 1) as isize) as core::ffi::c_int > c0 {
                         s = !s;
                     }
                     if c0 != c2 {
                         if 0 <= c2 {
                             *bucket_B.offset((c1 << 8 | c2) as isize) =
-                                k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                         }
                         c2 = c0;
                         k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
@@ -4881,13 +4888,13 @@ unsafe extern "C" fn construct_BWT_indexes(
                     if k < j {
                     } else {
                         __assert_fail(
-                            b"k < j\0" as *const u8 as *const std::ffi::c_char,
+                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1788,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
@@ -4897,13 +4904,13 @@ unsafe extern "C" fn construct_BWT_indexes(
                     if !k.is_null() {
                     } else {
                         __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const std::ffi::c_char,
+                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1788,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
@@ -4916,16 +4923,16 @@ unsafe extern "C" fn construct_BWT_indexes(
                 } else if s != 0 {
                     *j = !s;
                 } else {
-                    if *T.offset(s as isize) as std::ffi::c_int == c1 {
+                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
                     } else {
                         __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const std::ffi::c_char,
+                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
                             b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const std::ffi::c_char,
+                                as *const u8 as *const core::ffi::c_char,
                             1794,
                             (*::core::mem::transmute::<
                                 &[u8; 104],
-                                &[std::ffi::c_char; 104],
+                                &[core::ffi::c_char; 104],
                             >(
                                 b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                             ))
@@ -4938,16 +4945,16 @@ unsafe extern "C" fn construct_BWT_indexes(
             c1 -= 1;
         }
     }
-    c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
+    c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
     k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
-    if (*T.offset((n - 2) as isize) as std::ffi::c_int) < c2 {
+    if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
         if (n - 1) & mod_0 == 0 {
             *indexes.offset(((n - 1) / (mod_0 + 1) - 1) as isize) =
-                k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
         let fresh199 = k;
         k = k.offset(1);
-        *fresh199 = !(*T.offset((n - 2) as isize) as std::ffi::c_int);
+        *fresh199 = !(*T.offset((n - 2) as isize) as core::ffi::c_int);
     } else {
         let fresh200 = k;
         k = k.offset(1);
@@ -4959,18 +4966,18 @@ unsafe extern "C" fn construct_BWT_indexes(
     while i < j {
         s = *i;
         if (0) < s {
-            if *T.offset((s - 1) as isize) as std::ffi::c_int
-                >= *T.offset(s as isize) as std::ffi::c_int
+            if *T.offset((s - 1) as isize) as core::ffi::c_int
+                >= *T.offset(s as isize) as core::ffi::c_int
             {
             } else {
                 __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const std::ffi::c_char,
+                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1815,
                     (*::core::mem::transmute::<
                         &[u8; 104],
-                        &[std::ffi::c_char; 104],
+                        &[core::ffi::c_char; 104],
                     >(
                         b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                     ))
@@ -4979,41 +4986,41 @@ unsafe extern "C" fn construct_BWT_indexes(
             }
             if s & mod_0 == 0 {
                 *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                    i.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                    i.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
             }
             s -= 1;
-            c0 = *T.offset(s as isize) as std::ffi::c_int;
+            c0 = *T.offset(s as isize) as core::ffi::c_int;
             *i = c0;
             if c0 != c2 {
                 *bucket_A.offset(c2 as isize) =
-                    k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                    k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                 c2 = c0;
                 k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
             }
             if i < k {
             } else {
                 __assert_fail(
-                    b"i < k\0" as *const u8 as *const std::ffi::c_char,
+                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
                     b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const std::ffi::c_char,
+                        as *const core::ffi::c_char,
                     1825,
                     (*::core::mem::transmute::<
                         &[u8; 104],
-                        &[std::ffi::c_char; 104],
+                        &[core::ffi::c_char; 104],
                     >(
                         b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
                     ))
                         .as_ptr(),
                 );
             }
-            if (0) < s && (*T.offset((s - 1) as isize) as std::ffi::c_int) < c0 {
+            if (0) < s && (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
                 if s & mod_0 == 0 {
                     *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                        k.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
+                        k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
                 }
                 let fresh201 = k;
                 k = k.offset(1);
-                *fresh201 = !(*T.offset((s - 1) as isize) as std::ffi::c_int);
+                *fresh201 = !(*T.offset((s - 1) as isize) as core::ffi::c_int);
             } else {
                 let fresh202 = k;
                 k = k.offset(1);
@@ -5026,18 +5033,18 @@ unsafe extern "C" fn construct_BWT_indexes(
         }
         i = i.offset(1);
     }
-    orig.offset_from(SA) as std::ffi::c_long as std::ffi::c_int
+    orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
 #[export_name = crate::prefix!(divsufsort)]
 pub unsafe extern "C" fn divsufsort(
-    mut T: *const std::ffi::c_uchar,
-    mut SA: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut openMP: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut bucket_A = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut bucket_B = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut m: std::ffi::c_int = 0;
+    mut T: *const core::ffi::c_uchar,
+    mut SA: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut openMP: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut bucket_A = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut bucket_B = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut m: core::ffi::c_int = 0;
     let mut err = 0;
     if T.is_null() || SA.is_null() || n < 0 {
         return -(1);
@@ -5047,46 +5054,46 @@ pub unsafe extern "C" fn divsufsort(
         *SA.offset(0) = 0;
         return 0;
     } else if n == 2 {
-        m = ((*T.offset(0) as std::ffi::c_int) < *T.offset(1) as std::ffi::c_int)
-            as std::ffi::c_int;
+        m = ((*T.offset(0) as core::ffi::c_int) < *T.offset(1) as core::ffi::c_int)
+            as core::ffi::c_int;
         *SA.offset((m ^ 1) as isize) = 0;
         *SA.offset(m as isize) = 1;
         return 0;
     }
     bucket_A = malloc(
-        (BUCKET_A_SIZE as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<std::ffi::c_int>() as std::ffi::c_ulong),
-    ) as *mut std::ffi::c_int;
+        (BUCKET_A_SIZE as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
+    ) as *mut core::ffi::c_int;
     bucket_B = malloc(
-        (BUCKET_B_SIZE as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<std::ffi::c_int>() as std::ffi::c_ulong),
-    ) as *mut std::ffi::c_int;
+        (BUCKET_B_SIZE as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
+    ) as *mut core::ffi::c_int;
     if !bucket_A.is_null() && !bucket_B.is_null() {
         m = sort_typeBstar(T, SA, bucket_A, bucket_B, n, openMP);
         construct_SA(T, SA, bucket_A, bucket_B, n, m);
     } else {
         err = -(2);
     }
-    free(bucket_B as *mut std::ffi::c_void);
-    free(bucket_A as *mut std::ffi::c_void);
+    free(bucket_B as *mut core::ffi::c_void);
+    free(bucket_A as *mut core::ffi::c_void);
     err
 }
 #[export_name = crate::prefix!(divbwt)]
 pub unsafe extern "C" fn divbwt(
-    mut T: *const std::ffi::c_uchar,
-    mut U: *mut std::ffi::c_uchar,
-    mut A: *mut std::ffi::c_int,
-    mut n: std::ffi::c_int,
-    mut num_indexes: *mut std::ffi::c_uchar,
-    mut indexes: *mut std::ffi::c_int,
-    mut openMP: std::ffi::c_int,
-) -> std::ffi::c_int {
-    let mut B = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut bucket_A = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut bucket_B = std::ptr::null_mut::<std::ffi::c_int>();
-    let mut m: std::ffi::c_int = 0;
-    let mut pidx: std::ffi::c_int = 0;
-    let mut i: std::ffi::c_int = 0;
+    mut T: *const core::ffi::c_uchar,
+    mut U: *mut core::ffi::c_uchar,
+    mut A: *mut core::ffi::c_int,
+    mut n: core::ffi::c_int,
+    mut num_indexes: *mut core::ffi::c_uchar,
+    mut indexes: *mut core::ffi::c_int,
+    mut openMP: core::ffi::c_int,
+) -> core::ffi::c_int {
+    let mut B = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut bucket_A = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut bucket_B = core::ptr::null_mut::<core::ffi::c_int>();
+    let mut m: core::ffi::c_int = 0;
+    let mut pidx: core::ffi::c_int = 0;
+    let mut i: core::ffi::c_int = 0;
     if T.is_null() || U.is_null() || n < 0 {
         return -(1);
     } else if n <= 1 {
@@ -5099,17 +5106,17 @@ pub unsafe extern "C" fn divbwt(
     if B.is_null() {
         B = malloc(
             ((n + 1) as size_t)
-                .wrapping_mul(::core::mem::size_of::<std::ffi::c_int>() as std::ffi::c_ulong),
-        ) as *mut std::ffi::c_int;
+                .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
+        ) as *mut core::ffi::c_int;
     }
     bucket_A = malloc(
-        (BUCKET_A_SIZE as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<std::ffi::c_int>() as std::ffi::c_ulong),
-    ) as *mut std::ffi::c_int;
+        (BUCKET_A_SIZE as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
+    ) as *mut core::ffi::c_int;
     bucket_B = malloc(
-        (BUCKET_B_SIZE as std::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<std::ffi::c_int>() as std::ffi::c_ulong),
-    ) as *mut std::ffi::c_int;
+        (BUCKET_B_SIZE as core::ffi::c_ulong)
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
+    ) as *mut core::ffi::c_int;
     if !B.is_null() && !bucket_A.is_null() && !bucket_B.is_null() {
         m = sort_typeBstar(T, B, bucket_A, bucket_B, n, openMP);
         if num_indexes.is_null() || indexes.is_null() {
@@ -5120,22 +5127,22 @@ pub unsafe extern "C" fn divbwt(
         *U.offset(0) = *T.offset((n - 1) as isize);
         i = 0;
         while i < pidx {
-            *U.offset((i + 1) as isize) = *B.offset(i as isize) as std::ffi::c_uchar;
+            *U.offset((i + 1) as isize) = *B.offset(i as isize) as core::ffi::c_uchar;
             i += 1;
         }
         i += 1;
         while i < n {
-            *U.offset(i as isize) = *B.offset(i as isize) as std::ffi::c_uchar;
+            *U.offset(i as isize) = *B.offset(i as isize) as core::ffi::c_uchar;
             i += 1;
         }
         pidx += 1;
     } else {
         pidx = -(2);
     }
-    free(bucket_B as *mut std::ffi::c_void);
-    free(bucket_A as *mut std::ffi::c_void);
+    free(bucket_B as *mut core::ffi::c_void);
+    free(bucket_A as *mut core::ffi::c_void);
     if A.is_null() {
-        free(B as *mut std::ffi::c_void);
+        free(B as *mut core::ffi::c_void);
     }
     pidx
 }

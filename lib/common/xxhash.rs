@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use core::ffi::c_void;
 
 #[repr(u32)]
 pub enum XXH_errorcode {
@@ -129,7 +129,7 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
 }
 #[export_name = crate::prefix!(ZSTD_XXH64)]
 pub unsafe extern "C" fn ZSTD_XXH64(
-    mut input: *const std::ffi::c_void,
+    mut input: *const core::ffi::c_void,
     mut len: usize,
     mut seed: u64,
 ) -> u64 {

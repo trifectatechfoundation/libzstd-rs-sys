@@ -57,7 +57,7 @@ pub struct ZSTD_entropyDTables_t {
 
 pub type HUF_DTable = u32;
 
-pub type ZSTD_dStage = std::ffi::c_uint;
+pub type ZSTD_dStage = core::ffi::c_uint;
 pub const ZSTDds_skipFrame: ZSTD_dStage = 7;
 pub const ZSTDds_decodeSkippableHeader: ZSTD_dStage = 6;
 pub const ZSTDds_checkChecksum: ZSTD_dStage = 5;
@@ -67,32 +67,32 @@ pub const ZSTDds_decodeBlockHeader: ZSTD_dStage = 2;
 pub const ZSTDds_decodeFrameHeader: ZSTD_dStage = 1;
 pub const ZSTDds_getFrameHeaderSize: ZSTD_dStage = 0;
 
-pub type ZSTD_dStreamStage = std::ffi::c_uint;
+pub type ZSTD_dStreamStage = core::ffi::c_uint;
 pub const zdss_flush: ZSTD_dStreamStage = 4;
 pub const zdss_load: ZSTD_dStreamStage = 3;
 pub const zdss_read: ZSTD_dStreamStage = 2;
 pub const zdss_loadHeader: ZSTD_dStreamStage = 1;
 pub const zdss_init: ZSTD_dStreamStage = 0;
 
-pub type ZSTD_dictUses_e = std::ffi::c_int;
+pub type ZSTD_dictUses_e = core::ffi::c_int;
 pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
 pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
 pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
 
-pub type ZSTD_litLocation_e = std::ffi::c_uint;
+pub type ZSTD_litLocation_e = core::ffi::c_uint;
 pub const ZSTD_split: ZSTD_litLocation_e = 2;
 pub const ZSTD_in_dst: ZSTD_litLocation_e = 1;
 pub const ZSTD_not_in_dst: ZSTD_litLocation_e = 0;
 
-pub type ZSTD_forceIgnoreChecksum_e = std::ffi::c_uint;
+pub type ZSTD_forceIgnoreChecksum_e = core::ffi::c_uint;
 pub const ZSTD_d_ignoreChecksum: ZSTD_forceIgnoreChecksum_e = 1;
 pub const ZSTD_d_validateChecksum: ZSTD_forceIgnoreChecksum_e = 0;
 
-pub type ZSTD_FrameType_e = std::ffi::c_uint;
+pub type ZSTD_FrameType_e = core::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 
-pub type blockType_e = std::ffi::c_uint;
+pub type blockType_e = core::ffi::c_uint;
 pub const bt_reserved: blockType_e = 3;
 pub const bt_compressed: blockType_e = 2;
 pub const bt_rle: blockType_e = 1;
@@ -101,15 +101,15 @@ pub const bt_raw: blockType_e = 0;
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
-    pub frameContentSize: std::ffi::c_ulonglong,
-    pub windowSize: std::ffi::c_ulonglong,
-    pub blockSizeMax: std::ffi::c_uint,
+    pub frameContentSize: core::ffi::c_ulonglong,
+    pub windowSize: core::ffi::c_ulonglong,
+    pub blockSizeMax: core::ffi::c_uint,
     pub frameType: ZSTD_FrameType_e,
-    pub headerSize: std::ffi::c_uint,
-    pub dictID: std::ffi::c_uint,
-    pub checksumFlag: std::ffi::c_uint,
-    pub _reserved1: std::ffi::c_uint,
-    pub _reserved2: std::ffi::c_uint,
+    pub headerSize: core::ffi::c_uint,
+    pub dictID: core::ffi::c_uint,
+    pub checksumFlag: core::ffi::c_uint,
+    pub _reserved1: core::ffi::c_uint,
+    pub _reserved2: core::ffi::c_uint,
 }
 
 // FIXME: make usize
@@ -125,10 +125,10 @@ pub struct ZSTD_DCtx_s {
     pub HUFptr: *const HUF_DTable,
     pub entropy: ZSTD_entropyDTables_t,
     pub workspace: [u32; 640],
-    pub previousDstEnd: *const std::ffi::c_void,
-    pub prefixStart: *const std::ffi::c_void,
-    pub virtualStart: *const std::ffi::c_void,
-    pub dictEnd: *const std::ffi::c_void,
+    pub previousDstEnd: *const core::ffi::c_void,
+    pub prefixStart: *const core::ffi::c_void,
+    pub virtualStart: *const core::ffi::c_void,
+    pub dictEnd: *const core::ffi::c_void,
     pub expected: size_t,
     pub fParams: ZSTD_FrameHeader,
     pub processedCSize: u64,
@@ -147,32 +147,32 @@ pub struct ZSTD_DCtx_s {
     pub litSize: size_t,
     pub rleSize: size_t,
     pub staticSize: size_t,
-    pub isFrameDecompression: std::ffi::c_int,
-    pub bmi2: std::ffi::c_int,
+    pub isFrameDecompression: core::ffi::c_int,
+    pub bmi2: core::ffi::c_int,
     pub ddictLocal: *mut ZSTD_DDict,
     pub ddict: *const ZSTD_DDict,
     pub dictID: u32,
-    pub ddictIsCold: std::ffi::c_int,
+    pub ddictIsCold: core::ffi::c_int,
     pub dictUses: ZSTD_dictUses_e,
     pub ddictSet: *mut ZSTD_DDictHashSet,
     pub refMultipleDDicts: ZSTD_refMultipleDDicts_e,
-    pub disableHufAsm: std::ffi::c_int,
-    pub maxBlockSizeParam: std::ffi::c_int,
+    pub disableHufAsm: core::ffi::c_int,
+    pub maxBlockSizeParam: core::ffi::c_int,
     pub streamStage: ZSTD_dStreamStage,
-    pub inBuff: *mut std::ffi::c_char,
+    pub inBuff: *mut core::ffi::c_char,
     pub inBuffSize: size_t,
     pub inPos: size_t,
     pub maxWindowSize: size_t,
-    pub outBuff: *mut std::ffi::c_char,
+    pub outBuff: *mut core::ffi::c_char,
     pub outBuffSize: size_t,
     pub outStart: size_t,
     pub outEnd: size_t,
     pub lhSize: size_t,
-    pub legacyContext: *mut std::ffi::c_void,
+    pub legacyContext: *mut core::ffi::c_void,
     pub previousLegacyVersion: u32,
     pub legacyVersion: u32,
     pub hostageByte: u32,
-    pub noForwardProgress: std::ffi::c_int,
+    pub noForwardProgress: core::ffi::c_int,
     pub outBufferMode: ZSTD_bufferMode_e,
     pub expectedOutBuffer: ZSTD_outBuffer,
     pub litBuffer: *mut u8,
