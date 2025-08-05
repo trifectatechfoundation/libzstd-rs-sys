@@ -436,7 +436,6 @@ unsafe extern "C" fn FSE_buildDTable_internal(
             *symbolNext.offset(s as isize) = *normalizedCounter.offset(s as isize) as u16;
         }
         s = s.wrapping_add(1);
-        s;
     }
     libc::memcpy(
         dt as *mut std::ffi::c_void,
@@ -467,7 +466,6 @@ unsafe extern "C" fn FSE_buildDTable_internal(
             }
             pos = pos.wrapping_add(n as size_t);
             s_0 = s_0.wrapping_add(1);
-            s_0;
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as std::ffi::c_int as size_t;
@@ -482,7 +480,6 @@ unsafe extern "C" fn FSE_buildDTable_internal(
                 (*tableDecode.offset(uPosition as isize)).symbol =
                     *spread.offset(s_1.wrapping_add(u) as isize);
                 u = u.wrapping_add(1);
-                u;
             }
             position = position.wrapping_add(unroll * step) & tableMask;
             s_1 = s_1.wrapping_add(unroll);
@@ -505,10 +502,8 @@ unsafe extern "C" fn FSE_buildDTable_internal(
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 }
                 i_0 += 1;
-                i_0;
             }
             s_2 = s_2.wrapping_add(1);
-            s_2;
         }
         if position_0 != 0 as std::ffi::c_int as u32 {
             return -(ZSTD_error_GENERIC as std::ffi::c_int) as size_t;
@@ -528,7 +523,6 @@ unsafe extern "C" fn FSE_buildDTable_internal(
             << (*tableDecode.offset(u_0 as isize)).nbBits as std::ffi::c_int)
             .wrapping_sub(tableSize) as u16;
         u_0 = u_0.wrapping_add(1);
-        u_0;
     }
     0 as std::ffi::c_int as size_t
 }

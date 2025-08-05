@@ -277,7 +277,6 @@ unsafe extern "C" fn AIO_fwriteSparse(
         nb0T = 0;
         while nb0T < seg0SizeT && *ptrT.offset(nb0T as isize) == 0 {
             nb0T = nb0T.wrapping_add(1);
-            nb0T;
         }
         storedSkips = storedSkips.wrapping_add(
             nb0T.wrapping_mul(::core::mem::size_of::<size_t>() as std::ffi::c_ulong)
@@ -385,7 +384,6 @@ unsafe extern "C" fn AIO_fwriteSparse(
         }
         while restPtr < restEnd && *restPtr as std::ffi::c_int == 0 {
             restPtr = restPtr.offset(1);
-            restPtr;
         }
         storedSkips = storedSkips
             .wrapping_add(restPtr.offset_from(restStart) as std::ffi::c_long as std::ffi::c_uint);
@@ -720,7 +718,6 @@ unsafe extern "C" fn AIO_IOPool_init(
         let fresh0 = &mut (*((*ctx).availableJobs).as_mut_ptr().offset(i as isize));
         *fresh0 = AIO_IOPool_createIoJob(ctx, bufferSize) as *mut std::ffi::c_void;
         i += 1;
-        i;
     }
     (*ctx).jobBufferSize = bufferSize;
     (*ctx).file = NULL as *mut FILE;
@@ -835,7 +832,6 @@ unsafe extern "C" fn AIO_IOPool_destroy(mut ctx: *mut IOPoolCtx_t) {
         free((*job).buffer);
         free(job as *mut std::ffi::c_void);
         i += 1;
-        i;
     }
 }
 unsafe extern "C" fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IOJob_t {
@@ -1082,7 +1078,6 @@ unsafe extern "C" fn AIO_ReadPool_releaseAllCompletedJobs(mut ctx: *mut ReadPool
         let mut job = *((*ctx).completedJobs).as_mut_ptr().offset(i as isize) as *mut IOJob_t;
         AIO_IOPool_releaseIoJob(job);
         i += 1;
-        i;
     }
     (*ctx).completedJobsCount = 0;
 }
@@ -1127,7 +1122,6 @@ unsafe extern "C" fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
             return job;
         }
         i += 1;
-        i;
     }
     NULL as *mut IOJob_t
 }

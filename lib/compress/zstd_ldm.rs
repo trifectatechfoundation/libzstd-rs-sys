@@ -301,7 +301,6 @@ unsafe extern "C" fn ZSTD_count(
     }
     if pIn < pInLimit && *pMatch as std::ffi::c_int == *pIn as std::ffi::c_int {
         pIn = pIn.offset(1);
-        pIn;
     }
     pIn.offset_from(pStart) as std::ffi::c_long as size_t
 }
@@ -1148,11 +1147,8 @@ unsafe extern "C" fn ZSTD_ldm_countBackwardsMatch(
             == *pMatch.offset(-(1) as isize) as std::ffi::c_int
     {
         pIn = pIn.offset(-1);
-        pIn;
         pMatch = pMatch.offset(-1);
-        pMatch;
         matchLength = matchLength.wrapping_add(1);
-        matchLength;
     }
     matchLength
 }
@@ -1255,7 +1251,6 @@ pub unsafe extern "C" fn ZSTD_ldm_fillHashTable(
                 ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, (*params).bucketSizeLog);
             }
             n = n.wrapping_add(1);
-            n;
         }
         ip = ip.offset(hashed as isize);
     }
@@ -1354,7 +1349,6 @@ unsafe extern "C" fn ZSTD_ldm_generateSequences_internal(
             let fresh3 = &mut (*candidates.offset(n as isize)).bucket;
             *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
             n = n.wrapping_add(1);
-            n;
         }
         n = 0;
         while n < numSplits {
@@ -1452,7 +1446,6 @@ unsafe extern "C" fn ZSTD_ldm_generateSequences_internal(
                         }
                     }
                     cur = cur.offset(1);
-                    cur;
                 }
                 if bestEntry.is_null() {
                     ZSTD_ldm_insertEntry(
@@ -1496,7 +1489,6 @@ unsafe extern "C" fn ZSTD_ldm_generateSequences_internal(
                 }
             }
             n = n.wrapping_add(1);
-            n;
         }
         ip = ip.offset(hashed as isize);
     }
@@ -1513,7 +1505,6 @@ unsafe extern "C" fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, red
             *fresh4 = (*fresh4).wrapping_sub(reducerValue);
         }
         u = u.wrapping_add(1);
-        u;
     }
 }
 #[export_name = crate::prefix!(ZSTD_ldm_generateSequences)]
@@ -1588,7 +1579,6 @@ pub unsafe extern "C" fn ZSTD_ldm_generateSequences(
             leftoverSize = leftoverSize.wrapping_add(chunkSize);
         }
         chunk = chunk.wrapping_add(1);
-        chunk;
     }
     0
 }
@@ -1719,7 +1709,6 @@ pub unsafe extern "C" fn ZSTD_ldm_blockCompress(
         while i > 0 {
             *rep.offset(i as isize) = *rep.offset((i - 1) as isize);
             i -= 1;
-            i;
         }
         *rep.offset(0) = sequence.offset;
         ZSTD_storeSeq(

@@ -24,7 +24,7 @@ use crate::lib::decompress::{
     ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
-use crate::{MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_writeLE32};
+use crate::MEM_readLE32;
 
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_trace_decompress_begin, ZSTD_trace_decompress_end,
@@ -138,14 +138,10 @@ pub const ZSTD_WINDOWLOG_MAX_32: std::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: std::ffi::c_int = 31;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: std::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: std::ffi::c_int = 27;
-static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
-    {
-        ZSTD_customMem {
-            customAlloc: None,
-            customFree: None,
-            opaque: core::ptr::null_mut(),
-        }
-    }
+static mut ZSTD_defaultCMem: ZSTD_customMem = ZSTD_customMem {
+    customAlloc: None,
+    customFree: None,
+    opaque: core::ptr::null_mut(),
 };
 pub const ZSTD_d_format: std::ffi::c_int = 1000;
 pub const ZSTD_d_stableOutBuffer: std::ffi::c_int = 1001;
@@ -634,7 +630,6 @@ unsafe extern "C" fn ZSTD_DDictHashSet_emplaceDDict(
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
-        idx;
     }
     let fresh1 = &mut (*((*hashSet).ddictPtrTable).offset(idx as isize));
     *fresh1 = ddict;
@@ -669,7 +664,6 @@ unsafe extern "C" fn ZSTD_DDictHashSet_expand(
             }
         }
         i = i.wrapping_add(1);
-        i;
     }
     ZSTD_customFree(oldTable as *mut std::ffi::c_void, customMem);
     0
@@ -688,7 +682,6 @@ unsafe extern "C" fn ZSTD_DDictHashSet_getDDict(
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
-        idx;
     }
     *((*hashSet).ddictPtrTable).offset(idx as isize)
 }
@@ -1400,7 +1393,6 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
             remainingSize =
                 remainingSize.wrapping_sub(ZSTD_blockHeaderSize.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
-            nbBlocks;
             if blockProperties.lastBlock != 0 {
                 break;
             }
@@ -2316,7 +2308,6 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
         }
         *((*entropy).rep).as_mut_ptr().offset(i as isize) = rep;
         i += 1;
-        i;
     }
     dictPtr.offset_from(dict as *const u8) as std::ffi::c_long as size_t
 }

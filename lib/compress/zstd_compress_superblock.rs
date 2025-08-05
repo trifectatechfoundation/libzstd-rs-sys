@@ -1,14 +1,13 @@
 use crate::lib::common::pool::POOL_ctx;
-use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
     HUF_compress1X_usingCTable, HUF_compress4X_usingCTable, HUF_estimateCompressedSize,
 };
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict,
-    ZSTD_MatchState_t, ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t,
-    ZSTD_entropyCTablesMetadata_t, ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t,
-    ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t, ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t,
+    SeqDef, SeqStore_t, ZSTD_CCtx, ZSTD_CCtx_params, ZSTD_CDict, ZSTD_MatchState_t,
+    ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
+    ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
+    ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -694,7 +693,6 @@ unsafe extern "C" fn ZSTD_seqDecompressedSize(
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
         n = n.wrapping_add(1);
-        n;
     }
     lastSubBlock == 0;
     matchLengthSum.wrapping_add(litSize)
@@ -969,7 +967,6 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
                 cSymbolTypeSizeEstimateInBits.wrapping_add(*ctp as size_t);
         }
         ctp = ctp.offset(1);
-        ctp;
     }
     cSymbolTypeSizeEstimateInBits / 8
 }
@@ -1114,7 +1111,6 @@ unsafe extern "C" fn countLiterals(
             (ZSTD_getSequenceLength(seqStore, sp.offset(n as isize))).litLength as size_t,
         );
         n = n.wrapping_add(1);
-        n;
     }
     total
 }
@@ -1153,7 +1149,6 @@ unsafe extern "C" fn sizeBlockSequences(
             break;
         }
         n = n.wrapping_add(1);
-        n;
     }
     n
 }
@@ -1291,7 +1286,6 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
                 blockBudgetSupp = 0;
             }
             n = n.wrapping_add(1);
-            n;
         }
     }
     let mut litEntropyWritten_0 = 0;
@@ -1380,7 +1374,6 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
                         as u32,
                 );
                 seq = seq.offset(1);
-                seq;
             }
             libc::memcpy(
                 ((*nextCBlock).rep).as_mut_ptr() as *mut std::ffi::c_void,

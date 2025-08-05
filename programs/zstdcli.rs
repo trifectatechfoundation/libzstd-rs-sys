@@ -833,7 +833,6 @@ unsafe extern "C" fn readU32FromCharChecked(
             return 1;
         }
         *stringPtr = (*stringPtr).offset(1);
-        *stringPtr;
     }
     if **stringPtr as std::ffi::c_int == 'K' as i32 || **stringPtr as std::ffi::c_int == 'M' as i32
     {
@@ -849,14 +848,11 @@ unsafe extern "C" fn readU32FromCharChecked(
             result <<= 10;
         }
         *stringPtr = (*stringPtr).offset(1);
-        *stringPtr;
         if **stringPtr as std::ffi::c_int == 'i' as i32 {
             *stringPtr = (*stringPtr).offset(1);
-            *stringPtr;
         }
         if **stringPtr as std::ffi::c_int == 'B' as i32 {
             *stringPtr = (*stringPtr).offset(1);
-            *stringPtr;
         }
     }
     *value = result;
@@ -888,7 +884,6 @@ unsafe extern "C" fn readIntFromChar(
     let mut result: std::ffi::c_uint = 0;
     if **stringPtr as std::ffi::c_int == '-' as i32 {
         *stringPtr = (*stringPtr).offset(1);
-        *stringPtr;
         sign = -(1);
     }
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
@@ -915,7 +910,6 @@ unsafe extern "C" fn readSizeTFromCharChecked(
             return 1;
         }
         *stringPtr = (*stringPtr).offset(1);
-        *stringPtr;
     }
     if **stringPtr as std::ffi::c_int == 'K' as i32 || **stringPtr as std::ffi::c_int == 'M' as i32
     {
@@ -931,14 +925,11 @@ unsafe extern "C" fn readSizeTFromCharChecked(
             result <<= 10;
         }
         *stringPtr = (*stringPtr).offset(1);
-        *stringPtr;
         if **stringPtr as std::ffi::c_int == 'i' as i32 {
             *stringPtr = (*stringPtr).offset(1);
-            *stringPtr;
         }
         if **stringPtr as std::ffi::c_int == 'B' as i32 {
             *stringPtr = (*stringPtr).offset(1);
-            *stringPtr;
         }
     }
     *value = result;
@@ -988,7 +979,6 @@ unsafe extern "C" fn parseCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"d=\0" as *const u8 as *const std::ffi::c_char,
@@ -999,7 +989,6 @@ unsafe extern "C" fn parseCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"steps=\0" as *const u8 as *const std::ffi::c_char,
@@ -1010,7 +999,6 @@ unsafe extern "C" fn parseCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"split=\0" as *const u8 as *const std::ffi::c_char,
@@ -1022,7 +1010,6 @@ unsafe extern "C" fn parseCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"shrink\0" as *const u8 as *const std::ffi::c_char,
@@ -1032,14 +1019,12 @@ unsafe extern "C" fn parseCoverParameters(
             (*params).shrinkDict = 1;
             if *stringPtr.offset(0) as std::ffi::c_int == '=' as i32 {
                 stringPtr = stringPtr.offset(1);
-                stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
             if *stringPtr.offset(0) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else {
             return 0;
         }
@@ -1082,7 +1067,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"d=\0" as *const u8 as *const std::ffi::c_char,
@@ -1093,7 +1077,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"f=\0" as *const u8 as *const std::ffi::c_char,
@@ -1104,7 +1087,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"steps=\0" as *const u8 as *const std::ffi::c_char,
@@ -1115,7 +1097,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"accel=\0" as *const u8 as *const std::ffi::c_char,
@@ -1126,7 +1107,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"split=\0" as *const u8 as *const std::ffi::c_char,
@@ -1138,7 +1118,6 @@ unsafe extern "C" fn parseFastCoverParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"shrink\0" as *const u8 as *const std::ffi::c_char,
@@ -1148,14 +1127,12 @@ unsafe extern "C" fn parseFastCoverParameters(
             (*params).shrinkDict = 1;
             if *stringPtr.offset(0) as std::ffi::c_int == '=' as i32 {
                 stringPtr = stringPtr.offset(1);
-                stringPtr;
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
             if *stringPtr.offset(0) as std::ffi::c_int != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else {
             return 0;
         }
@@ -1282,7 +1259,6 @@ unsafe extern "C" fn parseAdaptParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"max=\0" as *const u8 as *const std::ffi::c_char,
@@ -1293,7 +1269,6 @@ unsafe extern "C" fn parseAdaptParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else {
             if g_displayLevel >= 4 {
                 fprintf(
@@ -1337,7 +1312,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"chainLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1352,7 +1326,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"hashLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1367,7 +1340,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"searchLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1382,7 +1354,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"minMatch=\0" as *const u8 as *const std::ffi::c_char,
@@ -1397,7 +1368,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"targetLength=\0" as *const u8 as *const std::ffi::c_char,
@@ -1412,7 +1382,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"strategy=\0" as *const u8 as *const std::ffi::c_char,
@@ -1427,7 +1396,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"overlapLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1442,7 +1410,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"ldmHashLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1457,7 +1424,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"ldmMinMatch=\0" as *const u8 as *const std::ffi::c_char,
@@ -1472,7 +1438,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"ldmBucketSizeLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1487,7 +1452,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else if longCommandWArg(
             &mut stringPtr,
             b"ldmHashRateLog=\0" as *const u8 as *const std::ffi::c_char,
@@ -1502,7 +1466,6 @@ unsafe extern "C" fn parseCompressionParameters(
                 break;
             }
             stringPtr = stringPtr.offset(1);
-            stringPtr;
         } else {
             if g_displayLevel >= 4 {
                 fprintf(
@@ -1824,10 +1787,8 @@ unsafe extern "C" fn init_cLevel() -> std::ffi::c_int {
         if *ptr as std::ffi::c_int == '-' as i32 {
             sign = -(1);
             ptr = ptr.offset(1);
-            ptr;
         } else if *ptr as std::ffi::c_int == '+' as i32 {
             ptr = ptr.offset(1);
-            ptr;
         }
         if *ptr as std::ffi::c_int >= '0' as i32 && *ptr as std::ffi::c_int <= '9' as i32 {
             let mut absLevel: std::ffi::c_uint = 0;
@@ -2167,14 +2128,12 @@ unsafe fn main_0(
                     ) == 0
                     {
                         g_displayLevel += 1;
-                        g_displayLevel;
                     } else if strcmp(
                         argument,
                         b"--quiet\0" as *const u8 as *const std::ffi::c_char,
                     ) == 0
                     {
                         g_displayLevel -= 1;
-                        g_displayLevel;
                     } else if strcmp(
                         argument,
                         b"--stdout\0" as *const u8 as *const std::ffi::c_char,
@@ -2594,7 +2553,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2660,7 +2618,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_0) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2725,7 +2682,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_1) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2791,7 +2747,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_2) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2856,7 +2811,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_3) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2921,7 +2875,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_4) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -2986,7 +2939,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_5) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3051,7 +3003,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_6) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3116,7 +3067,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_7) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3196,7 +3146,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_8) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3262,7 +3211,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_9) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3327,7 +3275,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(__nb_10) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3391,7 +3338,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(outDirName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3463,7 +3409,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(threadDefault) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3531,7 +3476,6 @@ unsafe fn main_0(
                                             argument.offset(strlen(outMirroredDirName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3603,7 +3547,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(traceFile) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3663,7 +3606,6 @@ unsafe fn main_0(
                                             argument.offset(strlen(patchFromDictFileName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3725,7 +3667,6 @@ unsafe fn main_0(
                                             argument.offset(strlen(patchFromDictFileName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3789,7 +3730,6 @@ unsafe fn main_0(
                                     ultra = 1;
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
-                                        argument;
                                         ldmWindowLog = readU32FromChar(&mut argument);
                                     } else if *argument as std::ffi::c_int != 0 {
                                         badUsage(programName, originalArgument);
@@ -3811,7 +3751,6 @@ unsafe fn main_0(
                                         let maxFast = -ZSTD_minCLevel() as u32;
                                         let mut fastLevel: u32 = 0;
                                         argument = argument.offset(1);
-                                        argument;
                                         fastLevel = readU32FromChar(&mut argument);
                                         if fastLevel > maxFast {
                                             fastLevel = maxFast;
@@ -3845,7 +3784,6 @@ unsafe fn main_0(
                                         argument = argument.offset(strlen(listName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -3904,7 +3842,6 @@ unsafe fn main_0(
                     }
                 } else {
                     argument = argument.offset(1);
-                    argument;
                     while *argument.offset(0) as std::ffi::c_int != 0 {
                         if *argument as std::ffi::c_int >= '0' as i32
                             && *argument as std::ffi::c_int <= '9' as i32
@@ -3934,7 +3871,6 @@ unsafe fn main_0(
                                 122 => {
                                     operation = zom_compress;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 100 => {
                                     benchParams.mode = BMK_decodeOnly;
@@ -3942,29 +3878,24 @@ unsafe fn main_0(
                                         == zom_bench as std::ffi::c_int as std::ffi::c_uint
                                     {
                                         argument = argument.offset(1);
-                                        argument;
                                     } else {
                                         operation = zom_decompress;
                                         argument = argument.offset(1);
-                                        argument;
                                     }
                                 }
                                 99 => {
                                     forceStdout = 1;
                                     outFileName = stdoutmark.as_ptr();
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 111 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         outFileName = argument;
                                         argument = argument.offset(strlen(outFileName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -4016,18 +3947,15 @@ unsafe fn main_0(
                                 }
                                 110 => {
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 68 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     if *argument as std::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         dictFileName = argument;
                                         argument = argument.offset(strlen(dictFileName) as isize);
                                     } else {
                                         argNb += 1;
-                                        argNb;
                                         if argNb >= argCount {
                                             if g_displayLevel >= 1 {
                                                 fprintf(
@@ -4084,89 +4012,70 @@ unsafe fn main_0(
                                     followLinks = 1;
                                     allowBlockDevices = 1;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 118 => {
                                     g_displayLevel += 1;
-                                    g_displayLevel;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 113 => {
                                     g_displayLevel -= 1;
-                                    g_displayLevel;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 107 => {
                                     removeSrcFile = 0;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 67 => {
                                     FIO_setChecksumFlag(prefs, 2);
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 116 => {
                                     operation = zom_test;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 77 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     memLimit = readU32FromChar(&mut argument);
                                 }
                                 108 => {
                                     operation = zom_list;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 114 => {
                                     recursive = 1;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 98 => {
                                     operation = zom_bench;
                                     argument = argument.offset(1);
-                                    argument;
                                 }
                                 101 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     cLevelLast = readU32FromChar(&mut argument) as std::ffi::c_int;
                                 }
                                 105 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     bench_nbSeconds = readU32FromChar(&mut argument);
                                 }
                                 66 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     chunkSize = readU32FromChar(&mut argument) as size_t;
                                 }
                                 83 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     separateFiles = 1;
                                 }
                                 84 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     nbWorkers = readU32FromChar(&mut argument);
                                     setThreads_non1 = (nbWorkers != 1) as std::ffi::c_int;
                                 }
                                 115 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     dictSelect = readU32FromChar(&mut argument);
                                 }
                                 112 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     if *argument as std::ffi::c_int >= '0' as i32
                                         && *argument as std::ffi::c_int <= '9' as i32
                                     {
@@ -4178,7 +4087,6 @@ unsafe fn main_0(
                                 }
                                 80 => {
                                     argument = argument.offset(1);
-                                    argument;
                                     compressibility = readU32FromChar(&mut argument)
                                         as std::ffi::c_double
                                         / 100 as std::ffi::c_int as std::ffi::c_double;
@@ -4201,7 +4109,6 @@ unsafe fn main_0(
             }
         }
         argNb += 1;
-        argNb;
     }
     if current_block == 17866802397806708230 {
         if g_displayLevel >= 3 {

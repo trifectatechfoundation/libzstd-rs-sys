@@ -296,7 +296,6 @@ unsafe extern "C" fn FASTCOVER_selectSegment(
         );
         *freqs.offset(i as isize) = 0;
         pos = pos.wrapping_add(1);
-        pos;
     }
     bestSegment
 }
@@ -361,11 +360,9 @@ unsafe extern "C" fn FASTCOVER_computeFrequency(
             );
             let fresh3 = &mut (*freqs.offset(dmerIndex as isize));
             *fresh3 = (*fresh3).wrapping_add(1);
-            *fresh3;
             start = start.wrapping_add(skip as size_t).wrapping_add(1);
         }
         i = i.wrapping_add(1);
-        i;
     }
 }
 unsafe extern "C" fn FASTCOVER_ctx_init(
@@ -516,7 +513,6 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
             .offset(i.wrapping_sub(1) as isize))
         .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
-        i;
     }
     (*ctx).freqs = calloc((1) << f, ::core::mem::size_of::<u32>() as std::ffi::c_ulong) as *mut u32;
     if ((*ctx).freqs).is_null() {
@@ -1230,7 +1226,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                     }
                 }
                 iteration = iteration.wrapping_add(1);
-                iteration;
             }
             k = k.wrapping_add(kStepSize);
         }

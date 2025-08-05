@@ -397,9 +397,7 @@ unsafe extern "C" fn ss_compare(
     U2n = T.offset(*p2.offset(1) as isize).offset(2);
     while U1 < U1n && U2 < U2n && *U1 as std::ffi::c_int == *U2 as std::ffi::c_int {
         U1 = U1.offset(1);
-        U1;
         U2 = U2.offset(1);
-        U2;
     }
     if U1 < U1n {
         if U2 < U2n {
@@ -449,7 +447,6 @@ unsafe extern "C" fn ss_insertionsort(
         }
         *j.offset(-(1)) = t;
         i = i.offset(-1);
-        i;
     }
 }
 #[inline]
@@ -502,7 +499,6 @@ unsafe extern "C" fn ss_heapsort(
     m = size;
     if size % 2 == 0 {
         m -= 1;
-        m;
         if (*Td.offset(*PA.offset(*SA.offset((m / 2) as isize) as isize) as isize)
             as std::ffi::c_int)
             < *Td.offset(*PA.offset(*SA.offset(m as isize) as isize) as isize) as std::ffi::c_int
@@ -516,7 +512,6 @@ unsafe extern "C" fn ss_heapsort(
     while 0 <= i {
         ss_fixdown(Td, PA, SA, i, m);
         i -= 1;
-        i;
     }
     if size % 2 == 0 {
         t = *SA.offset(0);
@@ -795,7 +790,6 @@ unsafe extern "C" fn ss_mintrosort(
                         first = a;
                     }
                     a = a.offset(1);
-                    a;
                 }
                 if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as std::ffi::c_int) < v {
                     first = ss_partition(PA, first, a, depth);
@@ -901,7 +895,6 @@ unsafe extern "C" fn ss_mintrosort(
                             *b = *a;
                             *a = t;
                             a = a.offset(1);
-                            a;
                         }
                     }
                 }
@@ -930,7 +923,6 @@ unsafe extern "C" fn ss_mintrosort(
                             *c = *d;
                             *d = t;
                             d = d.offset(-1);
-                            d;
                         }
                     }
                 }
@@ -951,7 +943,6 @@ unsafe extern "C" fn ss_mintrosort(
                             *b = *a;
                             *a = t;
                             a = a.offset(1);
-                            a;
                         }
                     }
                     loop {
@@ -967,7 +958,6 @@ unsafe extern "C" fn ss_mintrosort(
                             *c = *d;
                             *d = t;
                             d = d.offset(-1);
-                            d;
                         }
                     }
                 }
@@ -985,11 +975,8 @@ unsafe extern "C" fn ss_mintrosort(
                         *e = *f;
                         *f = t;
                         s -= 1;
-                        s;
                         e = e.offset(1);
-                        e;
                         f = f.offset(1);
-                        f;
                     }
                     s = d.offset_from(c) as std::ffi::c_long as std::ffi::c_int;
                     t = (last.offset_from(d) as std::ffi::c_long - 1) as std::ffi::c_int;
@@ -1003,11 +990,8 @@ unsafe extern "C" fn ss_mintrosort(
                         *e = *f;
                         *f = t;
                         s -= 1;
-                        s;
                         e = e.offset(1);
-                        e;
                         f = f.offset(1);
-                        f;
                     }
                     a = first.offset(b.offset_from(a) as std::ffi::c_long as isize);
                     c = last.offset(-(d.offset_from(c) as std::ffi::c_long as isize));
@@ -1380,11 +1364,8 @@ unsafe extern "C" fn ss_blockswap(
         *a = *b;
         *b = t;
         n -= 1;
-        n;
         a = a.offset(1);
-        a;
         b = b.offset(1);
-        b;
     }
 }
 #[inline]
@@ -1512,7 +1493,6 @@ unsafe extern "C" fn ss_inplacemerge(
             }
         }
         last = last.offset(-1);
-        last;
         if x != 0 {
             loop {
                 last = last.offset(-1);
@@ -2052,7 +2032,6 @@ unsafe extern "C" fn ss_swapmerge(
                     } else if first < lm {
                         while *r < 0 {
                             r = r.offset(1);
-                            r;
                         }
                         next |= 2;
                     }
@@ -2222,7 +2201,6 @@ unsafe extern "C" fn sssort(
     let mut i: std::ffi::c_int = 0;
     if lastsuffix != 0 {
         first = first.offset(1);
-        first;
     }
     if bufsize < SS_BLOCKSIZE
         && (bufsize as std::ffi::c_long) < last.offset_from(first) as std::ffi::c_long
@@ -2272,7 +2250,6 @@ unsafe extern "C" fn sssort(
         }
         a = a.offset(SS_BLOCKSIZE as isize);
         i += 1;
-        i;
     }
     ss_mintrosort(T, PA, a, middle, depth);
     k = SS_BLOCKSIZE;
@@ -2315,7 +2292,6 @@ unsafe extern "C" fn sssort(
         {
             *a.offset(-(1)) = *a;
             a = a.offset(1);
-            a;
         }
         *a.offset(-(1)) = i;
     }
@@ -2376,7 +2352,6 @@ unsafe extern "C" fn tr_insertionsort(
         }
         *b.offset(1) = t;
         a = a.offset(1);
-        a;
     }
 }
 #[inline]
@@ -2427,7 +2402,6 @@ unsafe extern "C" fn tr_heapsort(
     m = size;
     if size % 2 == 0 {
         m -= 1;
-        m;
         if *ISAd.offset(*SA.offset((m / 2) as isize) as isize)
             < *ISAd.offset(*SA.offset(m as isize) as isize)
         {
@@ -2440,7 +2414,6 @@ unsafe extern "C" fn tr_heapsort(
     while 0 <= i {
         tr_fixdown(ISAd, SA, i, m);
         i -= 1;
-        i;
     }
     if size % 2 == 0 {
         t = *SA.offset(0);
@@ -2455,7 +2428,6 @@ unsafe extern "C" fn tr_heapsort(
         tr_fixdown(ISAd, SA, 0, i);
         *SA.offset(i as isize) = t;
         i -= 1;
-        i;
     }
 }
 #[inline]
@@ -2643,7 +2615,6 @@ unsafe extern "C" fn tr_partition(
                 *b = *a;
                 *a = t;
                 a = a.offset(1);
-                a;
             }
         }
     }
@@ -2672,7 +2643,6 @@ unsafe extern "C" fn tr_partition(
                 *c = *d;
                 *d = t;
                 d = d.offset(-1);
-                d;
             }
         }
     }
@@ -2693,7 +2663,6 @@ unsafe extern "C" fn tr_partition(
                 *b = *a;
                 *a = t;
                 a = a.offset(1);
-                a;
             }
         }
         loop {
@@ -2709,7 +2678,6 @@ unsafe extern "C" fn tr_partition(
                 *c = *d;
                 *d = t;
                 d = d.offset(-1);
-                d;
             }
         }
     }
@@ -2727,11 +2695,8 @@ unsafe extern "C" fn tr_partition(
             *e = *f;
             *f = t;
             s -= 1;
-            s;
             e = e.offset(1);
-            e;
             f = f.offset(1);
-            f;
         }
         s = d.offset_from(c) as std::ffi::c_long as std::ffi::c_int;
         t = (last.offset_from(d) as std::ffi::c_long - 1) as std::ffi::c_int;
@@ -2745,11 +2710,8 @@ unsafe extern "C" fn tr_partition(
             *e = *f;
             *f = t;
             s -= 1;
-            s;
             e = e.offset(1);
-            e;
             f = f.offset(1);
-            f;
         }
         first = first.offset(b.offset_from(a) as std::ffi::c_long as isize);
         last = last.offset(-(d.offset_from(c) as std::ffi::c_long as isize));
@@ -2782,7 +2744,6 @@ unsafe extern "C" fn tr_copy(
             *ISA.offset(s as isize) = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
         }
         c = c.offset(1);
-        c;
     }
     c = last.offset(-(1));
     e = d.offset(1);
@@ -2795,7 +2756,6 @@ unsafe extern "C" fn tr_copy(
             *ISA.offset(s as isize) = d.offset_from(SA) as std::ffi::c_long as std::ffi::c_int;
         }
         c = c.offset(-1);
-        c;
     }
 }
 unsafe extern "C" fn tr_partialcopy(
@@ -2832,7 +2792,6 @@ unsafe extern "C" fn tr_partialcopy(
             *ISA.offset(s as isize) = newrank;
         }
         c = c.offset(1);
-        c;
     }
     lastrank = -(1);
     e = d;
@@ -2846,7 +2805,6 @@ unsafe extern "C" fn tr_partialcopy(
             *ISA.offset(*e as isize) = newrank;
         }
         e = e.offset(-1);
-        e;
     }
     lastrank = -(1);
     c = last.offset(-(1));
@@ -2865,7 +2823,6 @@ unsafe extern "C" fn tr_partialcopy(
             *ISA.offset(s as isize) = newrank;
         }
         c = c.offset(-1);
-        c;
     }
 }
 unsafe extern "C" fn tr_introsort(
@@ -2914,7 +2871,6 @@ unsafe extern "C" fn tr_introsort(
                     while c < a {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
-                        c;
                     }
                 }
                 if b < last {
@@ -2923,7 +2879,6 @@ unsafe extern "C" fn tr_introsort(
                     while c < b {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
-                        c;
                     }
                 }
                 if (1) < b.offset_from(a) as std::ffi::c_long {
@@ -3195,7 +3150,6 @@ unsafe extern "C" fn tr_introsort(
                         while b < a {
                             *ISA.offset(*b as isize) = v;
                             b = b.offset(1);
-                            b;
                         }
                     }
                     if trbudget_check(
@@ -3355,7 +3309,6 @@ unsafe extern "C" fn tr_introsort(
                     while first <= b && *ISAd.offset(*b as isize) == x {
                         *b = !*b;
                         b = b.offset(-1);
-                        b;
                     }
                     a = b;
                 }
@@ -3380,7 +3333,6 @@ unsafe extern "C" fn tr_introsort(
                     while c < a {
                         *ISA.offset(*c as isize) = v;
                         c = c.offset(1);
-                        c;
                     }
                     if b < last {
                         c = a;
@@ -3388,7 +3340,6 @@ unsafe extern "C" fn tr_introsort(
                         while c < b {
                             *ISA.offset(*c as isize) = v;
                             c = c.offset(1);
-                            c;
                         }
                     }
                     if (1) < b.offset_from(a) as std::ffi::c_long
@@ -4159,13 +4110,11 @@ unsafe extern "C" fn sort_typeBstar(
     while i < BUCKET_A_SIZE {
         *bucket_A.offset(i as isize) = 0;
         i += 1;
-        i;
     }
     i = 0;
     while i < BUCKET_B_SIZE {
         *bucket_B.offset(i as isize) = 0;
         i += 1;
-        i;
     }
     i = n - 1;
     m = n;
@@ -4175,7 +4124,6 @@ unsafe extern "C" fn sort_typeBstar(
             c1 = c0;
             let fresh186 = &mut (*bucket_A.offset(c1 as isize));
             *fresh186 += 1;
-            *fresh186;
             i -= 1;
             if !(0 <= i && {
                 c0 = *T.offset(i as isize) as std::ffi::c_int;
@@ -4187,11 +4135,9 @@ unsafe extern "C" fn sort_typeBstar(
         if 0 <= i {
             let fresh187 = &mut (*bucket_B.offset((c0 << 8 | c1) as isize));
             *fresh187 += 1;
-            *fresh187;
             m -= 1;
             *SA.offset(m as isize) = i;
             i -= 1;
-            i;
             c1 = c0;
             while 0 <= i && {
                 c0 = *T.offset(i as isize) as std::ffi::c_int;
@@ -4199,9 +4145,7 @@ unsafe extern "C" fn sort_typeBstar(
             } {
                 let fresh188 = &mut (*bucket_B.offset((c1 << 8 | c0) as isize));
                 *fresh188 += 1;
-                *fresh188;
                 i -= 1;
-                i;
                 c1 = c0;
             }
         }
@@ -4220,10 +4164,8 @@ unsafe extern "C" fn sort_typeBstar(
             *bucket_B.offset((c0 << 8 | c1) as isize) = j;
             i += *bucket_B.offset((c1 << 8 | c0) as isize);
             c1 += 1;
-            c1;
         }
         c0 += 1;
-        c0;
     }
     if (0) < m {
         PAb = SA.offset(n as isize).offset(-(m as isize));
@@ -4237,7 +4179,6 @@ unsafe extern "C" fn sort_typeBstar(
             *fresh189 -= 1;
             *SA.offset(*fresh189 as isize) = i;
             i -= 1;
-            i;
         }
         t = *PAb.offset((m - 1) as isize);
         c0 = *T.offset(t as isize) as std::ffi::c_int;
@@ -4268,10 +4209,8 @@ unsafe extern "C" fn sort_typeBstar(
                 }
                 j = i;
                 c1 -= 1;
-                c1;
             }
             c0 -= 1;
-            c0;
         }
         i = m - 1;
         while 0 <= i {
@@ -4301,7 +4240,6 @@ unsafe extern "C" fn sort_typeBstar(
             }
             *ISAb.offset(*SA.offset(i as isize) as isize) = j;
             i -= 1;
-            i;
         }
         trsort(ISAb, SA, m, 1);
         i = n - 1;
@@ -4309,27 +4247,23 @@ unsafe extern "C" fn sort_typeBstar(
         c0 = *T.offset((n - 1) as isize) as std::ffi::c_int;
         while 0 <= i {
             i -= 1;
-            i;
             c1 = c0;
             while 0 <= i && {
                 c0 = *T.offset(i as isize) as std::ffi::c_int;
                 c0 >= c1
             } {
                 i -= 1;
-                i;
                 c1 = c0;
             }
             if 0 <= i {
                 t = i;
                 i -= 1;
-                i;
                 c1 = c0;
                 while 0 <= i && {
                     c0 = *T.offset(i as isize) as std::ffi::c_int;
                     c0 <= c1
                 } {
                     i -= 1;
-                    i;
                     c1 = c0;
                 }
                 j -= 1;
@@ -4351,18 +4285,14 @@ unsafe extern "C" fn sort_typeBstar(
                 while j <= k {
                     *SA.offset(i as isize) = *SA.offset(k as isize);
                     i -= 1;
-                    i;
                     k -= 1;
-                    k;
                 }
                 c1 -= 1;
-                c1;
             }
             *bucket_B.offset(((c0 << 8) | (c0 + 1)) as isize) =
                 i - *bucket_B.offset((c0 << 8 | c0) as isize) + 1;
             *bucket_B.offset((c0 << 8 | c0) as isize) = i;
             c0 -= 1;
-            c0;
         }
     }
     m
@@ -4519,10 +4449,8 @@ unsafe extern "C" fn construct_SA(
                     *j = !s;
                 }
                 j = j.offset(-1);
-                j;
             }
             c1 -= 1;
-            c1;
         }
     }
     c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
@@ -4607,7 +4535,6 @@ unsafe extern "C" fn construct_SA(
             *i = !s;
         }
         i = i.offset(1);
-        i;
     }
 }
 unsafe extern "C" fn construct_BWT(
@@ -4763,10 +4690,8 @@ unsafe extern "C" fn construct_BWT(
                     }
                 }
                 j = j.offset(-1);
-                j;
             }
             c1 -= 1;
-            c1;
         }
     }
     c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
@@ -4839,7 +4764,6 @@ unsafe extern "C" fn construct_BWT(
             orig = i;
         }
         i = i.offset(1);
-        i;
     }
     orig.offset_from(SA) as std::ffi::c_long as std::ffi::c_int
 }
@@ -5010,10 +4934,8 @@ unsafe extern "C" fn construct_BWT_indexes(
                     }
                 }
                 j = j.offset(-1);
-                j;
             }
             c1 -= 1;
-            c1;
         }
     }
     c2 = *T.offset((n - 1) as isize) as std::ffi::c_int;
@@ -5103,7 +5025,6 @@ unsafe extern "C" fn construct_BWT_indexes(
             orig = i;
         }
         i = i.offset(1);
-        i;
     }
     orig.offset_from(SA) as std::ffi::c_long as std::ffi::c_int
 }
@@ -5201,13 +5122,11 @@ pub unsafe extern "C" fn divbwt(
         while i < pidx {
             *U.offset((i + 1) as isize) = *B.offset(i as isize) as std::ffi::c_uchar;
             i += 1;
-            i;
         }
         i += 1;
         while i < n {
             *U.offset(i as isize) = *B.offset(i as isize) as std::ffi::c_uchar;
             i += 1;
-            i;
         }
         pidx += 1;
     } else {

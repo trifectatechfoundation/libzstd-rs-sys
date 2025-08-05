@@ -257,7 +257,6 @@ unsafe extern "C" fn COVER_map_remove(mut map: *mut COVER_map_t, mut key: u32) {
             shift = 1;
         } else {
             shift = shift.wrapping_add(1);
-            shift;
         }
         i = i.wrapping_add(1) & (*map).sizeMask;
     }
@@ -280,7 +279,6 @@ pub unsafe extern "C" fn COVER_sum(
     while i < nbSamples {
         sum = sum.wrapping_add(*samplesSizes.offset(i as isize));
         i = i.wrapping_add(1);
-        i;
     }
     sum
 }
@@ -414,7 +412,6 @@ unsafe extern "C" fn COVER_groupBy(
     while num < count {
         let mut grpEnd = ptr.offset(size as isize);
         num = num.wrapping_add(1);
-        num;
         while num < count
             && cmp.unwrap_unchecked()(
                 ctx,
@@ -424,7 +421,6 @@ unsafe extern "C" fn COVER_groupBy(
         {
             grpEnd = grpEnd.offset(size as isize);
             num = num.wrapping_add(1);
-            num;
         }
         grp.unwrap_unchecked()(
             ctx,
@@ -458,7 +454,6 @@ unsafe extern "C" fn COVER_group(
             }
         }
         grpPtr = grpPtr.offset(1);
-        grpPtr;
     }
     *((*ctx).suffix).offset(dmerId as isize) = freq;
 }
@@ -524,7 +519,6 @@ unsafe extern "C" fn COVER_selectSegment(
             newEnd = pos.wrapping_add(1);
         }
         pos = pos.wrapping_add(1);
-        pos;
     }
     bestSegment.begin = newBegin;
     bestSegment.end = newEnd;
@@ -533,7 +527,6 @@ unsafe extern "C" fn COVER_selectSegment(
     while pos_0 != bestSegment.end {
         *freqs.offset(*((*ctx).dmerAt).offset(pos_0 as isize) as isize) = 0;
         pos_0 = pos_0.wrapping_add(1);
-        pos_0;
     }
     bestSegment
 }
@@ -729,7 +722,6 @@ unsafe extern "C" fn COVER_ctx_init(
             .offset(i.wrapping_sub(1) as isize))
         .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
-        i;
     }
     if displayLevel >= 2 {
         fprintf(
@@ -743,7 +735,6 @@ unsafe extern "C" fn COVER_ctx_init(
     while (i_0 as size_t) < (*ctx).suffixSize {
         *((*ctx).suffix).offset(i_0 as isize) = i_0;
         i_0 = i_0.wrapping_add(1);
-        i_0;
     }
     stableSort(ctx);
     if displayLevel >= 2 {
@@ -1103,7 +1094,6 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
             maxSampleSize
         };
         i = i.wrapping_add(1);
-        i;
     }
     dstCapacity = ZSTD_compressBound(maxSampleSize);
     dst = malloc(dstCapacity);
@@ -1135,7 +1125,6 @@ pub unsafe extern "C" fn COVER_checkTotalCompressedSize(
             } else {
                 totalCompressedSize = totalCompressedSize.wrapping_add(size);
                 i = i.wrapping_add(1);
-                i;
             }
         }
     }
@@ -1741,7 +1730,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                     }
                 }
                 iteration = iteration.wrapping_add(1);
-                iteration;
             }
             k = k.wrapping_add(kStepSize);
         }

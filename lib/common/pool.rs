@@ -190,7 +190,6 @@ pub unsafe extern "C" fn POOL_create_advanced(
             return NULL_0 as *mut POOL_ctx;
         }
         i = i.wrapping_add(1);
-        i;
     }
     (*ctx).threadCapacity = numThreads;
     (*ctx).threadLimit = numThreads;
@@ -210,7 +209,6 @@ unsafe extern "C" fn POOL_join(mut ctx: *mut POOL_ctx) {
             NULL_0 as *mut *mut std::ffi::c_void,
         );
         i = i.wrapping_add(1);
-        i;
     }
 }
 #[export_name = crate::prefix!(POOL_free)]
@@ -296,7 +294,6 @@ unsafe extern "C" fn POOL_resize_internal(
             return 1;
         }
         threadId = threadId.wrapping_add(1);
-        threadId;
     }
     (*ctx).threadCapacity = numThreads;
     (*ctx).threadLimit = numThreads;

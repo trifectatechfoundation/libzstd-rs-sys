@@ -561,7 +561,6 @@ unsafe extern "C" fn ZSTD_rollingHash_append(
             (*istart.offset(pos as isize) as std::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64,
         );
         pos = pos.wrapping_add(1);
-        pos;
     }
     hash
 }
@@ -749,7 +748,6 @@ unsafe extern "C" fn ZSTDMT_freeBufferPool(mut bufPool: *mut ZSTDMT_bufferPool) 
                 (*bufPool).cMem,
             );
             u = u.wrapping_add(1);
-            u;
         }
         ZSTD_customFree((*bufPool).buffers as *mut std::ffi::c_void, (*bufPool).cMem);
     }
@@ -802,7 +800,6 @@ unsafe extern "C" fn ZSTDMT_sizeof_bufferPool(mut bufPool: *mut ZSTDMT_bufferPoo
         totalBufferSize =
             totalBufferSize.wrapping_add((*((*bufPool).buffers).offset(u as isize)).capacity);
         u = u.wrapping_add(1);
-        u;
     }
     pthread_mutex_unlock(&mut (*bufPool).poolMutex);
     poolSize
@@ -944,7 +941,6 @@ unsafe extern "C" fn ZSTDMT_freeCCtxPool(mut pool: *mut ZSTDMT_CCtxPool) {
         while cid < (*pool).totalCCtx {
             ZSTD_freeCCtx(*((*pool).cctxs).offset(cid as isize));
             cid += 1;
-            cid;
         }
         ZSTD_customFree((*pool).cctxs as *mut std::ffi::c_void, (*pool).cMem);
     }
@@ -1016,7 +1012,6 @@ unsafe extern "C" fn ZSTDMT_sizeof_CCtxPool(mut cctxPool: *mut ZSTDMT_CCtxPool) 
         totalCCtxSize =
             totalCCtxSize.wrapping_add(ZSTD_sizeof_CCtx(*((*cctxPool).cctxs).offset(u as isize)));
         u = u.wrapping_add(1);
-        u;
     }
     pthread_mutex_unlock(&mut (*cctxPool).poolMutex);
     poolSize.wrapping_add(arraySize).wrapping_add(totalCCtxSize)
@@ -1448,7 +1443,6 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut std::ffi::c_
                                             pthread_cond_signal(&mut (*job).job_cond);
                                             pthread_mutex_unlock(&mut (*job).job_mutex);
                                             chunkNb += 1;
-                                            chunkNb;
                                         }
                                     }
                                     match current_block {
@@ -1554,7 +1548,6 @@ unsafe extern "C" fn ZSTDMT_freeJobsTable(
         pthread_mutex_destroy(&mut (*jobTable.offset(jobNb as isize)).job_mutex);
         pthread_cond_destroy(&mut (*jobTable.offset(jobNb as isize)).job_cond);
         jobNb = jobNb.wrapping_add(1);
-        jobNb;
     }
     ZSTD_customFree(jobTable as *mut std::ffi::c_void, cMem);
 }
@@ -1586,7 +1579,6 @@ unsafe extern "C" fn ZSTDMT_createJobsTable(
             std::ptr::null::<pthread_condattr_t>(),
         );
         jobNb = jobNb.wrapping_add(1);
-        jobNb;
     }
     if initError != 0 {
         ZSTDMT_freeJobsTable(jobTable, nbJobs, cMem);
@@ -1721,7 +1713,6 @@ unsafe extern "C" fn ZSTDMT_releaseAllJobResources(mut mtctx: *mut ZSTDMT_CCtx) 
         (*((*mtctx).jobs).offset(jobID as isize)).job_mutex = mutex;
         (*((*mtctx).jobs).offset(jobID as isize)).job_cond = cond;
         jobID = jobID.wrapping_add(1);
-        jobID;
     }
     (*mtctx).inBuff.buffer = g_nullBuffer;
     (*mtctx).inBuff.filled = 0;
@@ -1884,7 +1875,6 @@ pub unsafe extern "C" fn ZSTDMT_getFrameProgression(
         );
         pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
         jobNb = jobNb.wrapping_add(1);
-        jobNb;
     }
     fps
 }
@@ -2371,7 +2361,6 @@ unsafe extern "C" fn ZSTDMT_getInputDataInUse(mut mtctx: *mut ZSTDMT_CCtx) -> Ra
             return range;
         }
         jobID = jobID.wrapping_add(1);
-        jobID;
     }
     kNullRange
 }
@@ -2530,11 +2519,9 @@ unsafe extern "C" fn findSynchronizationPoint(
             syncPoint.toLoad = pos.wrapping_add(1);
             syncPoint.flush = 1;
             pos = pos.wrapping_add(1);
-            pos;
             break;
         } else {
             pos = pos.wrapping_add(1);
-            pos;
         }
     }
     syncPoint

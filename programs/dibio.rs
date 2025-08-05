@@ -51,7 +51,7 @@ pub const FASTCOVER_MEMMULT: std::ffi::c_int = 1;
 static mut g_maxMemory: size_t = 0;
 pub const NOISELENGTH: std::ffi::c_int = 32;
 static mut g_refreshRate: u64 = 0;
-static mut g_displayClock: UTIL_time_t = { UTIL_time_t { t: 0 } };
+static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 } ;
 pub const DEBUG: std::ffi::c_int = 0;
 unsafe extern "C" fn DiB_getFileSize(mut fileName: *const std::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
@@ -81,7 +81,6 @@ unsafe extern "C" fn DiB_loadFiles(
         let fileSize = DiB_getFileSize(*fileNamesTable.offset(fileIndex as isize));
         if fileSize <= 0 {
             fileIndex += 1;
-            fileIndex;
         } else {
             f = fopen(
                 *fileNamesTable.offset(fileIndex as isize),
@@ -248,7 +247,6 @@ unsafe extern "C" fn DiB_shuffle(
         let fresh3 = &mut (*fileNamesTable.offset(i as isize));
         *fresh3 = tmp;
         i = i.wrapping_sub(1);
-        i;
     }
 }
 unsafe extern "C" fn DiB_findMaxMem(mut requiredMem: std::ffi::c_ulonglong) -> size_t {
@@ -276,7 +274,6 @@ unsafe extern "C" fn DiB_fillNoise(mut buffer: *mut std::ffi::c_void, mut length
         acc = acc.wrapping_mul(prime2);
         *(buffer as *mut std::ffi::c_uchar).offset(p as isize) = (acc >> 21) as std::ffi::c_uchar;
         p = p.wrapping_add(1);
-        p;
     }
 }
 unsafe extern "C" fn DiB_saveDict(
@@ -387,7 +384,6 @@ unsafe extern "C" fn DiB_fileStats(
             };
         }
         n += 1;
-        n;
     }
     if displayLevel >= 4 {
         fprintf(

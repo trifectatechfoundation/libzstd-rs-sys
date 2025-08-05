@@ -60,7 +60,6 @@ unsafe extern "C" fn addEvents_generic(
             .as_mut_ptr()
             .offset(hash2(p.offset(n as isize) as *const std::ffi::c_void, hashLog) as isize));
         *fresh0 = (*fresh0).wrapping_add(1);
-        *fresh0;
         n = n.wrapping_add(samplingRate);
     }
     (*fp).nbEvents = ((*fp).nbEvents).wrapping_add(limit / samplingRate);
@@ -126,7 +125,6 @@ unsafe extern "C" fn fpDistance(
                 - *((*fp2).events).as_ptr().offset(n as isize) as i64 * (*fp1).nbEvents as i64,
         ));
         n = n.wrapping_add(1);
-        n;
     }
     distance
 }
@@ -148,7 +146,6 @@ unsafe extern "C" fn mergeEvents(mut acc: *mut Fingerprint, mut newfp: *const Fi
         let fresh1 = &mut (*((*acc).events).as_mut_ptr().offset(n as isize));
         *fresh1 = (*fresh1).wrapping_add(*((*newfp).events).as_ptr().offset(n as isize));
         n = n.wrapping_add(1);
-        n;
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
 }
@@ -162,7 +159,6 @@ unsafe extern "C" fn flushEvents(mut fpstats: *mut FPStats) {
             .as_mut_ptr()
             .offset(n as isize);
         n = n.wrapping_add(1);
-        n;
     }
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
     ptr::write_bytes(
@@ -178,7 +174,6 @@ unsafe extern "C" fn removeEvents(mut acc: *mut Fingerprint, mut slice: *const F
         let fresh2 = &mut (*((*acc).events).as_mut_ptr().offset(n as isize));
         *fresh2 = (*fresh2).wrapping_sub(*((*slice).events).as_ptr().offset(n as isize));
         n = n.wrapping_add(1);
-        n;
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_sub((*slice).nbEvents);
 }
@@ -257,7 +252,6 @@ unsafe extern "C" fn ZSTD_splitBlock_byChunks(
             mergeEvents(&mut (*fpstats).pastEvents, &mut (*fpstats).newEvents);
             if penalty > 0 {
                 penalty -= 1;
-                penalty;
             }
         }
         pos = pos.wrapping_add(CHUNKSIZE as size_t);
