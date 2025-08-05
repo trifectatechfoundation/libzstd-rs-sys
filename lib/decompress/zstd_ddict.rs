@@ -1,5 +1,6 @@
 use libc::free;
 
+use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
@@ -39,28 +40,8 @@ pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-pub type unalign32 = u32;
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_read32(mut ptr: *const core::ffi::c_void) -> u32 {
-    *(ptr as *const unalign32)
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_readLE32(mut memPtr: *const core::ffi::c_void) -> u32 {
-    if MEM_isLittleEndian() != 0 {
-        MEM_read32(memPtr)
-    } else {
-        MEM_swap32(MEM_read32(memPtr))
-    }
-}
+
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_FRAMEIDSIZE: core::ffi::c_int = 4;
 #[inline]

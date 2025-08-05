@@ -3,6 +3,9 @@ use core::ptr;
 use libc::{fflush, fprintf, FILE};
 
 use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::mem::{
+    MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32,
+};
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
@@ -17,7 +20,6 @@ use crate::lib::dictBuilder::fastcover::{
     ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
 };
 use crate::lib::zstd::*;
-use crate::{MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 
 extern "C" {
     fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
@@ -414,11 +416,6 @@ pub struct dictItem {
 pub const MINRATIO: core::ffi::c_int = 4;
 pub const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 pub const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

@@ -7,6 +7,7 @@ use libc::{
     pthread_mutexattr_t,
 };
 
+use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
 use crate::lib::common::pool::{
     POOL_create_advanced, POOL_ctx, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd,
 };
@@ -497,7 +498,6 @@ pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-pub type unalign32 = u32;
 pub type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
@@ -649,31 +649,6 @@ unsafe extern "C" fn ZSTD_window_update(
         (*window).lowLimit = lowLimitMax;
     }
     contiguous
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut core::ffi::c_void, mut value: u32) {
-    *(memPtr as *mut unalign32) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut core::ffi::c_void, mut val32: u32) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
-    };
 }
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);

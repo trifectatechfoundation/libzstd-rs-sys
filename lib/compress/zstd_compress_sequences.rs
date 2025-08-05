@@ -1,3 +1,4 @@
+use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_writeNCount,
@@ -7,9 +8,6 @@ use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
-pub type unalign16 = u16;
-pub type unalign32 = u32;
-pub type unalign64 = u64;
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
@@ -52,59 +50,6 @@ pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
 pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_isLittleEndian() -> core::ffi::c_uint {
-    1
-}
-#[inline]
-unsafe extern "C" fn MEM_read16(mut ptr: *const core::ffi::c_void) -> u16 {
-    *(ptr as *const unalign16)
-}
-#[inline]
-unsafe extern "C" fn MEM_write32(mut memPtr: *mut core::ffi::c_void, mut value: u32) {
-    *(memPtr as *mut unalign32) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_write64(mut memPtr: *mut core::ffi::c_void, mut value: u64) {
-    *(memPtr as *mut unalign64) = value;
-}
-#[inline]
-unsafe extern "C" fn MEM_swap32(mut in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_swap64(mut in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut core::ffi::c_void, mut val32: u32) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLE64(mut memPtr: *mut core::ffi::c_void, mut val64: u64) {
-    if MEM_isLittleEndian() != 0 {
-        MEM_write64(memPtr, val64);
-    } else {
-        MEM_write64(memPtr, MEM_swap64(val64));
-    };
-}
-#[inline]
-unsafe extern "C" fn MEM_writeLEST(mut memPtr: *mut core::ffi::c_void, mut val: size_t) {
-    if MEM_32bits() != 0 {
-        MEM_writeLE32(memPtr, val as u32);
-    } else {
-        MEM_writeLE64(memPtr, val);
-    };
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

@@ -5,8 +5,11 @@ pub use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
-use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType};
+use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::mem::{
+    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_write64,
+};
 use crate::lib::decompress::huf_decompress::HUF_decompress4X_hufOnly_wksp;
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -16,7 +19,6 @@ use crate::lib::decompress::{
     ZSTD_DCtx_s, ZSTD_in_dst, ZSTD_not_in_dst, ZSTD_seqSymbol, ZSTD_seqSymbol_header, ZSTD_split,
 };
 use crate::lib::zstd::*;
-use crate::{MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_readLEST, MEM_write64};
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
@@ -131,16 +133,6 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
     } else {
         ptr
     }
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

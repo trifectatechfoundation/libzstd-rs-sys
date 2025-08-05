@@ -1,11 +1,12 @@
 use core::ptr;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
-use crate::lib::zstd::*;
-use crate::{
-    lib::common::entropy_common::{HUF_readStats_wksp, Workspace},
-    MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16, MEM_write64,
+use crate::lib::common::entropy_common::{HUF_readStats_wksp, Workspace};
+use crate::lib::common::mem::{
+    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST,
+    MEM_write16, MEM_write64,
 };
+use crate::lib::zstd::*;
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
@@ -103,16 +104,6 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
     } else {
         ptr
     }
-}
-#[inline]
-unsafe extern "C" fn MEM_32bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int

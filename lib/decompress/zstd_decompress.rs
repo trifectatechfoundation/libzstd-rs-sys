@@ -3,6 +3,7 @@ use core::ptr;
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
 };
@@ -24,7 +25,6 @@ use crate::lib::decompress::{
     ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
-use crate::MEM_readLE32;
 
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_trace_decompress_begin, ZSTD_trace_decompress_end,
@@ -63,15 +63,12 @@ pub struct ZSTD_cpuid_t {
 pub type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
-pub type unalign32 = u32;
 pub type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
-pub type unalign64 = U64;
-pub type unalign16 = u16;
 pub type U8 = u8;
 #[derive(Copy, Clone)]
 #[repr(C)]

@@ -14,8 +14,6 @@ pub struct __loadu_si128 {
 pub struct __storeu_si128 {
     pub __v: __m128i,
 }
-pub type unalign16 = u16;
-pub type unalign32 = u32;
 pub type unalignArch = size_t;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -151,11 +149,7 @@ pub struct ldmRollingHashState_t {
     pub rolling: u64,
     pub stopMask: u64,
 }
-#[inline]
-unsafe extern "C" fn MEM_64bits() -> core::ffi::c_uint {
-    (::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8) as core::ffi::c_int
-        as core::ffi::c_uint
-}
+use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t,
@@ -164,7 +158,6 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::*;
-use crate::{MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
         as core::ffi::c_uint
