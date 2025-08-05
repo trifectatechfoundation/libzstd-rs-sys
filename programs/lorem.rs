@@ -347,8 +347,8 @@ static mut g_nbChars: size_t = 0;
 static mut g_maxChars: size_t = 10000000;
 static mut g_randRoot: std::ffi::c_uint = 0;
 unsafe extern "C" fn LOREM_rand(mut range: std::ffi::c_uint) -> std::ffi::c_uint {
-    static mut prime1: std::ffi::c_uint = 2654435761;
-    static mut prime2: std::ffi::c_uint = 2246822519;
+    static prime1: std::ffi::c_uint = 2654435761;
+    static prime2: std::ffi::c_uint = 2246822519;
     let mut rand32 = g_randRoot;
     rand32 = rand32.wrapping_mul(prime1);
     rand32 ^= prime2;
@@ -405,7 +405,7 @@ unsafe extern "C" fn generateWord(
         strlen(word),
     );
     if upCase != 0 {
-        static mut toUp: std::ffi::c_char = ('A' as i32 - 'a' as i32) as std::ffi::c_char;
+        static toUp: std::ffi::c_char = ('A' as i32 - 'a' as i32) as std::ffi::c_char;
         *g_ptr.offset(g_nbChars as isize) = (*g_ptr.offset(g_nbChars as isize) as std::ffi::c_int
             + toUp as std::ffi::c_int)
             as std::ffi::c_char;

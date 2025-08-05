@@ -51,7 +51,7 @@ pub const BUCKET_B_SIZE: std::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
 pub const SS_INSERTIONSORT_THRESHOLD: std::ffi::c_int = 8;
 pub const SS_BLOCKSIZE: std::ffi::c_int = 1024;
 pub const TR_INSERTIONSORT_THRESHOLD: std::ffi::c_int = 8;
-static mut lg_table: [std::ffi::c_int; 256] = [
+static lg_table: [std::ffi::c_int; 256] = [
     -(1),
     0,
     1,
@@ -321,7 +321,7 @@ unsafe extern "C" fn ss_ilg(mut n: std::ffi::c_int) -> std::ffi::c_int {
             .offset((n >> 0 & 0xff as std::ffi::c_int) as isize)
     }
 }
-static mut sqq_table: [std::ffi::c_int; 256] = [
+static sqq_table: [std::ffi::c_int; 256] = [
     0, 16, 22, 27, 32, 35, 39, 42, 45, 48, 50, 53, 55, 57, 59, 61, 64, 65, 67, 69, 71, 73, 75, 76,
     78, 80, 81, 83, 84, 86, 87, 89, 90, 91, 93, 94, 96, 97, 98, 99, 101, 102, 103, 104, 106, 107,
     108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 128,

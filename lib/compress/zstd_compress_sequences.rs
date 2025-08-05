@@ -115,11 +115,11 @@ unsafe extern "C" fn _force_has_format_string(mut format: *const std::ffi::c_cha
 pub const MLFSELog: std::ffi::c_int = 9;
 pub const LLFSELog: std::ffi::c_int = 9;
 pub const OffFSELog: std::ffi::c_int = 8;
-static mut LL_bits: [u8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut ML_bits: [u8; 53] = [
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
@@ -200,7 +200,7 @@ unsafe extern "C" fn FSE_bitCost(
     let bitMultiplier = ((1) << accuracyLog) as u32;
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
 }
-static mut BIT_mask: [std::ffi::c_uint; 32] = [
+static BIT_mask: [std::ffi::c_uint; 32] = [
     0,
     1,
     3,
@@ -298,7 +298,7 @@ unsafe extern "C" fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
     (((*bitC).ptr).offset_from((*bitC).startPtr) as std::ffi::c_long as size_t)
         .wrapping_add(((*bitC).bitPos > 0) as std::ffi::c_int as size_t)
 }
-static mut kInverseProbabilityLog256: [std::ffi::c_uint; 256] = [
+static kInverseProbabilityLog256: [std::ffi::c_uint; 256] = [
     0, 2048, 1792, 1642, 1536, 1453, 1386, 1329, 1280, 1236, 1197, 1162, 1130, 1100, 1073, 1047,
     1024, 1001, 980, 960, 941, 923, 906, 889, 874, 859, 844, 830, 817, 804, 791, 779, 768, 756,
     745, 734, 724, 714, 704, 694, 685, 676, 667, 658, 650, 642, 633, 626, 618, 610, 603, 595, 588,

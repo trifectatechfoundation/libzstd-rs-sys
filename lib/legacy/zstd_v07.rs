@@ -256,9 +256,9 @@ pub const ZSTDv07_MAGIC_SKIPPABLE_START: std::ffi::c_uint = 0x184d2a50 as std::f
 pub const ZSTDv07_WINDOWLOG_MAX_32: std::ffi::c_int = 25;
 pub const ZSTDv07_WINDOWLOG_MAX_64: std::ffi::c_int = 27;
 pub const ZSTDv07_FRAMEHEADERSIZE_MAX: std::ffi::c_int = 18;
-static mut ZSTDv07_frameHeaderSize_min: size_t = 5;
-static mut ZSTDv07_frameHeaderSize_max: size_t = ZSTDv07_FRAMEHEADERSIZE_MAX as size_t;
-static mut ZSTDv07_skippableHeaderSize: size_t = 8;
+static ZSTDv07_frameHeaderSize_min: size_t = 5;
+static ZSTDv07_frameHeaderSize_max: size_t = ZSTDv07_FRAMEHEADERSIZE_MAX as size_t;
+static ZSTDv07_skippableHeaderSize: size_t = 8;
 pub const ZSTDv07_BLOCKSIZE_ABSOLUTEMAX: std::ffi::c_int = 128 * 1024;
 #[inline]
 unsafe extern "C" fn MEM_32bits() -> std::ffi::c_uint {
@@ -2274,7 +2274,7 @@ pub unsafe extern "C" fn HUFv07_decompress4X_usingDTable(
         HUFv07_decompress4X2_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable)
     }
 }
-static mut algoTime: [[algo_time_t; 3]; 16] = [
+static algoTime: [[algo_time_t; 3]; 16] = [
     [
         {
             algo_time_t {
@@ -2618,7 +2618,7 @@ pub unsafe extern "C" fn HUFv07_decompress(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
 ) -> size_t {
-    static mut decompress: [decompressionAlgo; 2] = [
+    static decompress: [decompressionAlgo; 2] = [
         Some(
             HUFv07_decompress4X2
                 as unsafe extern "C" fn(
@@ -2765,12 +2765,12 @@ unsafe extern "C" fn ZSTDv07_defaultFreeFunction(
 pub const ZSTDv07_DICT_MAGIC: std::ffi::c_uint = 0xec30a437 as std::ffi::c_uint;
 pub const ZSTDv07_REP_NUM: std::ffi::c_int = 3;
 pub const ZSTDv07_REP_INIT: std::ffi::c_int = 3;
-static mut repStartValue: [U32; 3] = [1, 4, 8];
+static repStartValue: [U32; 3] = [1, 4, 8];
 pub const ZSTDv07_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10;
-static mut ZSTDv07_fcs_fieldSize: [size_t; 4] = [0, 2, 4, 8];
-static mut ZSTDv07_did_fieldSize: [size_t; 4] = [0, 1, 2, 4];
+static ZSTDv07_fcs_fieldSize: [size_t; 4] = [0, 2, 4, 8];
+static ZSTDv07_did_fieldSize: [size_t; 4] = [0, 1, 2, 4];
 pub const ZSTDv07_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTDv07_blockHeaderSize: size_t = ZSTDv07_BLOCKHEADERSIZE as size_t;
+static ZSTDv07_blockHeaderSize: size_t = ZSTDv07_BLOCKHEADERSIZE as size_t;
 pub const MIN_SEQUENCES_SIZE: std::ffi::c_int = 1;
 pub const MIN_CBLOCK_SIZE: std::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
@@ -2787,11 +2787,11 @@ pub const FSEv07_ENCODING_STATIC: std::ffi::c_int = 2;
 pub const FSEv07_ENCODING_DYNAMIC: std::ffi::c_int = 3;
 pub const ZSTD_CONTENTSIZE_ERROR: std::ffi::c_ulonglong =
     (0 as std::ffi::c_ulonglong).wrapping_sub(2 as std::ffi::c_int as std::ffi::c_ulonglong);
-static mut LL_bits: [U32; 36] = [
+static LL_bits: [U32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut LL_defaultNorm: [S16; 36] = [
+static LL_defaultNorm: [S16; 36] = [
     4,
     3,
     2,
@@ -2829,12 +2829,12 @@ static mut LL_defaultNorm: [S16; 36] = [
     -(1) as S16,
     -(1) as S16,
 ];
-static mut LL_defaultNormLog: U32 = 6;
-static mut ML_bits: [U32; 53] = [
+static LL_defaultNormLog: U32 = 6;
+static ML_bits: [U32; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-static mut ML_defaultNorm: [S16; 53] = [
+static ML_defaultNorm: [S16; 53] = [
     1,
     4,
     3,
@@ -2889,8 +2889,8 @@ static mut ML_defaultNorm: [S16; 53] = [
     -(1) as S16,
     -(1) as S16,
 ];
-static mut ML_defaultNormLog: U32 = 6;
-static mut OF_defaultNorm: [S16; 29] = [
+static ML_defaultNormLog: U32 = 6;
+static OF_defaultNorm: [S16; 29] = [
     1,
     1,
     1,
@@ -2921,7 +2921,7 @@ static mut OF_defaultNorm: [S16; 29] = [
     -(1) as S16,
     -(1) as S16,
 ];
-static mut OF_defaultNormLog: U32 = 5;
+static OF_defaultNormLog: U32 = 5;
 unsafe extern "C" fn ZSTDv07_copy8(
     mut dst: *mut std::ffi::c_void,
     mut src: *const std::ffi::c_void,
@@ -3628,7 +3628,7 @@ unsafe extern "C" fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> se
     let mlBits = *ML_bits.as_ptr().offset(mlCode as isize);
     let ofBits = ofCode;
     let totalBits = llBits.wrapping_add(mlBits).wrapping_add(ofBits);
-    static mut LL_base: [U32; 36] = [
+    static LL_base: [U32; 36] = [
         0,
         1,
         2,
@@ -3666,7 +3666,7 @@ unsafe extern "C" fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> se
         0x8000 as std::ffi::c_int as U32,
         0x10000 as std::ffi::c_int as U32,
     ];
-    static mut ML_base: [U32; 53] = [
+    static ML_base: [U32; 53] = [
         3,
         4,
         5,
@@ -3721,7 +3721,7 @@ unsafe extern "C" fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> se
         0x8003 as std::ffi::c_int as U32,
         0x10003 as std::ffi::c_int as U32,
     ];
-    static mut OF_base: [U32; 29] = [
+    static OF_base: [U32; 29] = [
         0 as std::ffi::c_int as U32,
         1 as std::ffi::c_int as U32,
         1 as std::ffi::c_int as U32,
@@ -3883,8 +3883,8 @@ unsafe extern "C" fn ZSTDv07_execSequence(
         }
     }
     if sequence.offset < 8 {
-        static mut dec32table: [U32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static mut dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+        static dec32table: [U32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
+        static dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
         let sub2 = *dec64table.as_ptr().offset(sequence.offset as isize);
         *op.offset(0) = *match_0.offset(0);
         *op.offset(1) = *match_0.offset(1);

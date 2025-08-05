@@ -249,10 +249,10 @@ pub const ZSTD_UNLZ4: [std::ffi::c_char; 6] =
 pub const DISPLAY_LEVEL_DEFAULT: std::ffi::c_int = 2;
 static mut g_defaultDictName: *const std::ffi::c_char =
     b"dictionary\0" as *const u8 as *const std::ffi::c_char;
-static mut g_defaultMaxDictSize: std::ffi::c_uint = (110 * ((1) << 10)) as std::ffi::c_uint;
-static mut g_defaultDictCLevel: std::ffi::c_int = 3;
-static mut g_defaultSelectivityLevel: std::ffi::c_uint = 9;
-static mut g_defaultMaxWindowLog: std::ffi::c_uint = 27;
+static g_defaultMaxDictSize: std::ffi::c_uint = (110 * ((1) << 10)) as std::ffi::c_uint;
+static g_defaultDictCLevel: std::ffi::c_int = 3;
+static g_defaultSelectivityLevel: std::ffi::c_uint = 9;
+static g_defaultMaxWindowLog: std::ffi::c_uint = 27;
 pub const OVERLAP_LOG_DEFAULT: std::ffi::c_int = 9999;
 pub const LDM_PARAM_DEFAULT: std::ffi::c_int = 9999;
 static mut g_overlapLog: u32 = OVERLAP_LOG_DEFAULT as u32;

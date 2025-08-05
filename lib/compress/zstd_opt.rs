@@ -149,12 +149,12 @@ static mut kNullRawSeqStore: RawSeqStore_t = {
 };
 #[inline]
 unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
-    static mut LL_Code: [u8; 64] = [
+    static LL_Code: [u8; 64] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
         20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     ];
-    static mut LL_deltaCode: u32 = 19;
+    static LL_deltaCode: u32 = 19;
     if litLength > 63 {
         (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
     } else {
@@ -163,7 +163,7 @@ unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
-    static mut ML_Code: [u8; 128] = [
+    static ML_Code: [u8; 128] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
         38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
@@ -171,7 +171,7 @@ unsafe extern "C" fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
         41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
         42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
     ];
-    static mut ML_deltaCode: u32 = 36;
+    static ML_deltaCode: u32 = 36;
     if mlBase > 127 {
         (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
     } else {
@@ -364,7 +364,7 @@ unsafe extern "C" fn ZSTD_count_2segments(
     }
     matchLength.wrapping_add(ZSTD_count(ip.offset(matchLength as isize), iStart, iEnd))
 }
-static mut prime3bytes: u32 = 506832829;
+static prime3bytes: u32 = 506832829;
 unsafe extern "C" fn ZSTD_hash3(mut u: u32, mut h: u32, mut s: u32) -> u32 {
     (((u << (32 as std::ffi::c_int - 24 as std::ffi::c_int)) * prime3bytes) ^ s)
         >> (32 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -373,14 +373,14 @@ unsafe extern "C" fn ZSTD_hash3(mut u: u32, mut h: u32, mut s: u32) -> u32 {
 unsafe extern "C" fn ZSTD_hash3Ptr(mut ptr: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash3(MEM_readLE32(ptr), h, 0) as size_t
 }
-static mut prime4bytes: u32 = 2654435761;
+static prime4bytes: u32 = 2654435761;
 unsafe extern "C" fn ZSTD_hash4(mut u: u32, mut h: u32, mut s: u32) -> u32 {
     ((u * prime4bytes) ^ s) >> (32 as std::ffi::c_int as u32).wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash4Ptr(mut ptr: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash4(MEM_readLE32(ptr), h, 0) as size_t
 }
-static mut prime5bytes: u64 = 889523592379;
+static prime5bytes: u64 = 889523592379;
 unsafe extern "C" fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 40 as std::ffi::c_int)) * prime5bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -388,7 +388,7 @@ unsafe extern "C" fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe extern "C" fn ZSTD_hash5Ptr(mut p: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash5(MEM_readLE64(p), h, 0)
 }
-static mut prime6bytes: u64 = 227718039650203;
+static prime6bytes: u64 = 227718039650203;
 unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 48 as std::ffi::c_int)) * prime6bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -396,7 +396,7 @@ unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
-static mut prime7bytes: u64 = 58295818150454627;
+static prime7bytes: u64 = 58295818150454627;
 unsafe extern "C" fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as std::ffi::c_int - 56 as std::ffi::c_int)) * prime7bytes) ^ s)
         >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
@@ -404,7 +404,7 @@ unsafe extern "C" fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe extern "C" fn ZSTD_hash7Ptr(mut p: *const std::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
-static mut prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
 unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     ((u * prime8bytes) ^ s) >> (64 as std::ffi::c_int as u32).wrapping_sub(h)
 }
@@ -461,11 +461,11 @@ pub const MaxLit: std::ffi::c_int = ((1) << Litbits) - 1;
 pub const MaxML: std::ffi::c_int = 52;
 pub const MaxLL: std::ffi::c_int = 35;
 pub const MaxOff: std::ffi::c_int = 31;
-static mut LL_bits: [u8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut ML_bits: [u8; 53] = [
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];

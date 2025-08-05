@@ -30,8 +30,8 @@ pub const LTLOG: std::ffi::c_int = 13;
 pub const LTSIZE: std::ffi::c_int = (1) << LTLOG;
 pub const LTMASK: std::ffi::c_int = LTSIZE - 1;
 unsafe extern "C" fn RDG_rand(mut src: *mut u32) -> u32 {
-    static mut prime1: u32 = 2654435761;
-    static mut prime2: u32 = 2246822519;
+    static prime1: u32 = 2654435761;
+    static prime2: u32 = 2246822519;
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;

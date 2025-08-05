@@ -403,18 +403,18 @@ unsafe extern "C" fn MEM_writeLE32(mut memPtr: *mut std::ffi::c_void, mut val32:
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
 pub const MINMATCH: std::ffi::c_int = 3;
 pub const MaxML: std::ffi::c_int = 52;
 pub const MaxLL: std::ffi::c_int = 35;
 pub const DefaultMaxOff: std::ffi::c_int = 28;
 pub const MaxOff: std::ffi::c_int = 31;
-static mut LL_bits: [u8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut LL_defaultNorm: [i16; 36] = [
+static LL_defaultNorm: [i16; 36] = [
     4,
     3,
     2,
@@ -453,12 +453,12 @@ static mut LL_defaultNorm: [i16; 36] = [
     -(1) as i16,
 ];
 pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6;
-static mut LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
-static mut ML_bits: [u8; 53] = [
+static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-static mut ML_defaultNorm: [i16; 53] = [
+static ML_defaultNorm: [i16; 53] = [
     1,
     4,
     3,
@@ -514,8 +514,8 @@ static mut ML_defaultNorm: [i16; 53] = [
     -(1) as i16,
 ];
 pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6;
-static mut ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
-static mut OF_defaultNorm: [i16; 29] = [
+static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
+static OF_defaultNorm: [i16; 29] = [
     1,
     1,
     1,
@@ -547,7 +547,7 @@ static mut OF_defaultNorm: [i16; 29] = [
     -(1) as i16,
 ];
 pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5;
-static mut OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
+static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 unsafe extern "C" fn ERR_isError(mut code: size_t) -> std::ffi::c_uint {
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as std::ffi::c_int
         as std::ffi::c_uint

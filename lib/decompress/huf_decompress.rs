@@ -2654,7 +2654,7 @@ unsafe extern "C" fn HUF_decompress4X2_DCtx_wksp(
         flags,
     )
 }
-static mut algoTime: [[algo_time_t; 2]; 16] = [
+static algoTime: [[algo_time_t; 2]; 16] = [
     [
         {
             algo_time_t {
