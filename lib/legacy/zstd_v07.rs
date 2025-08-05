@@ -8,7 +8,7 @@ use crate::lib::common::xxhash::{
 };
 use libc::free;
 
-use crate::lib::common::error_private::ERR_getErrorString;
+use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::zstd::*;
 
 extern "C" {
@@ -241,19 +241,6 @@ pub type decompressionAlgo = Option<
     ) -> size_t,
 >;
 pub const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb527 as core::ffi::c_uint;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
-unsafe extern "C" fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-    if ERR_isError(code) == 0 {
-        return ZSTD_error_no_error;
-    }
-    (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-}
-unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorString(ERR_getErrorCode(code))
-}
 pub const NULL: core::ffi::c_int = 0;
 pub const ZSTDv07_MAGIC_SKIPPABLE_START: core::ffi::c_uint = 0x184d2a50 as core::ffi::c_uint;
 pub const ZSTDv07_WINDOWLOG_MAX_32: core::ffi::c_int = 25;
@@ -760,7 +747,7 @@ pub unsafe extern "C" fn HUFv07_readStats(
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
     iSize.wrapping_add(1)
 }
-pub const FSEv07_isError_1: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSEv07_isError_1: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 #[export_name = crate::prefix!(FSEv07_createDTable)]
 pub unsafe extern "C" fn FSEv07_createDTable(
     mut tableLog: core::ffi::c_uint,
@@ -2960,9 +2947,9 @@ static mut defaultCustomMem: ZSTDv07_customMem = ZSTDv07_customMem {
     ),
     opaque: NULL as *mut core::ffi::c_void,
 };
-pub const ZSTDv07_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const FSEv07_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const HUFv07_isError_0: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTDv07_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSEv07_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const HUFv07_isError_0: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe extern "C" fn ZSTDv07_copy4(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,

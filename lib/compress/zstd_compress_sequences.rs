@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
@@ -50,10 +51,6 @@ pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
 pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
-}
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {

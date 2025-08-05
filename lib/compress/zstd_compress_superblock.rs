@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
@@ -355,7 +356,7 @@ unsafe extern "C" fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
         }
     };
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
@@ -503,10 +504,6 @@ static OF_defaultNorm: [i16; 29] = [
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
 }

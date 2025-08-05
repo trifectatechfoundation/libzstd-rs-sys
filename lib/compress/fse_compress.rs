@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
 use crate::lib::zstd::*;
 
@@ -27,10 +28,6 @@ pub struct FSE_CState_t {
 pub struct FSE_symbolCompressionTransform {
     pub deltaFindState: core::ffi::c_int,
     pub deltaNbBits: u32,
-}
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
@@ -211,7 +208,7 @@ pub const FSE_DEFAULT_MEMORY_USAGE: core::ffi::c_int = 13;
 pub const FSE_MAX_TABLELOG: core::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2;
 pub const FSE_DEFAULT_TABLELOG: core::ffi::c_int = FSE_DEFAULT_MEMORY_USAGE - 2;
 pub const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
-pub const FSE_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 #[export_name = crate::prefix!(FSE_buildCTable_wksp)]
 pub unsafe extern "C" fn FSE_buildCTable_wksp(
     mut ct: *mut FSE_CTable,

@@ -7,6 +7,7 @@ use core::ptr;
 
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE24, MEM_readLE32, MEM_write64,
 };
@@ -134,10 +135,6 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
         ptr
     }
 }
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
@@ -147,7 +144,7 @@ pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
 }
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;

@@ -3,6 +3,7 @@ use core::ptr;
 use libc::free;
 
 use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
@@ -144,7 +145,7 @@ pub const ZSTD_d_forceIgnoreChecksum: core::ffi::c_int = 1002;
 pub const ZSTD_d_refMultipleDDicts: core::ffi::c_int = 1003;
 pub const ZSTD_d_disableHuffmanAssembly: core::ffi::c_int = 1004;
 pub const ZSTD_d_maxBlockSize: core::ffi::c_int = 1005;
-pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 static repStartValue: [u32; 3] = [1, 4, 8];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 static ZSTD_fcs_fieldSize: [size_t; 4] = [0, 2, 4, 8];
@@ -223,10 +224,6 @@ unsafe extern "C" fn ZSTD_customFree(
             free(ptr);
         }
     }
-}
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {

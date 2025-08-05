@@ -525,6 +525,8 @@ pub unsafe fn HUF_readStats_wksp(
 
 #[cfg(test)]
 mod tests {
+    use crate::lib::common::error_private::ERR_getErrorCode;
+
     use super::*;
 
     use quickcheck::quickcheck;
@@ -594,20 +596,6 @@ mod tests {
                         &mut workspace,
                         bmi2,
                     );
-
-                    use crate::lib::zstd::*;
-                    pub type ERR_enum = ZSTD_ErrorCode;
-
-                    const fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-                        (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-                            as core::ffi::c_uint
-                    }
-                    const fn ERR_getErrorCode(mut code: size_t) -> ERR_enum {
-                        if ERR_isError(code) == 0 {
-                            return ZSTD_error_no_error;
-                        }
-                        (0 as core::ffi::c_int as size_t).wrapping_sub(code) as ERR_enum
-                    }
 
                     let v = match ERR_getErrorCode(v) {
                         0 => Ok(v),

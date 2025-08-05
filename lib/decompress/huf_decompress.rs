@@ -2,6 +2,7 @@ use core::ptr;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::{HUF_readStats_wksp, Workspace};
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST,
     MEM_write16, MEM_write64,
@@ -105,16 +106,12 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
         ptr
     }
 }
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 
 pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
-pub const HUF_isError: unsafe extern "C" fn(size_t) -> core::ffi::c_uint = ERR_isError;
+pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
 unsafe extern "C" fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDesc {
     let mut dtd = DTableDesc {

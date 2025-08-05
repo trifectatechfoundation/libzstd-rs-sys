@@ -1,3 +1,4 @@
+use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress::ZSTD_hufCTables_t;
@@ -36,10 +37,6 @@ pub type huf_compress_f = Option<
         core::ffi::c_int,
     ) -> size_t,
 >;
-unsafe extern "C" fn ERR_isError(mut code: size_t) -> core::ffi::c_uint {
-    (code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t) as core::ffi::c_int
-        as core::ffi::c_uint
-}
 #[inline]
 unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
 }
