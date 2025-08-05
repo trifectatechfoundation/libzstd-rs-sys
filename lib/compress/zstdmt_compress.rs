@@ -534,7 +534,7 @@ static mut kNullRawSeqStore: RawSeqStore_t = {
     }
 };
 pub const ZSTD_WINDOW_START_INDEX: std::ffi::c_int = 2;
-static mut prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as std::ffi::c_ulonglong as u64;
 unsafe extern "C" fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     let mut power = 1;
     while exponent != 0 {

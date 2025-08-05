@@ -212,17 +212,17 @@ unsafe extern "C" fn MEM_64bits() -> std::ffi::c_uint {
         as std::ffi::c_uint
 }
 pub const ZSTDv06_FRAMEHEADERSIZE_MAX: std::ffi::c_int = 13;
-static mut ZSTDv06_frameHeaderSize_min: size_t = 5;
-static mut ZSTDv06_frameHeaderSize_max: size_t = ZSTDv06_FRAMEHEADERSIZE_MAX as size_t;
+static ZSTDv06_frameHeaderSize_min: size_t = 5;
+static ZSTDv06_frameHeaderSize_max: size_t = ZSTDv06_FRAMEHEADERSIZE_MAX as size_t;
 pub const ZSTDv06_BLOCKSIZE_MAX: std::ffi::c_int = 128 * 1024;
 pub const ZSTDv06_DICT_MAGIC: std::ffi::c_uint = 0xec30a436 as std::ffi::c_uint;
 pub const ZSTDv06_REP_NUM: std::ffi::c_int = 3;
 pub const ZSTDv06_REP_INIT: std::ffi::c_int = 3;
 pub const ZSTDv06_REP_MOVE: std::ffi::c_int = ZSTDv06_REP_NUM - 1;
 pub const ZSTDv06_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 12;
-static mut ZSTDv06_fcs_fieldSize: [size_t; 4] = [0, 1, 2, 8];
+static ZSTDv06_fcs_fieldSize: [size_t; 4] = [0, 1, 2, 8];
 pub const ZSTDv06_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTDv06_blockHeaderSize: size_t = ZSTDv06_BLOCKHEADERSIZE as size_t;
+static ZSTDv06_blockHeaderSize: size_t = ZSTDv06_BLOCKHEADERSIZE as size_t;
 pub const MIN_SEQUENCES_SIZE: std::ffi::c_int = 1;
 pub const MIN_CBLOCK_SIZE: std::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 pub const ZSTD_HUFFDTABLE_CAPACITY_LOG: std::ffi::c_int = 12;
@@ -245,11 +245,11 @@ pub const FSEv06_ENCODING_STATIC: std::ffi::c_int = 2;
 pub const FSEv06_ENCODING_DYNAMIC: std::ffi::c_int = 3;
 pub const ZSTD_CONTENTSIZE_ERROR: std::ffi::c_ulonglong =
     (0 as std::ffi::c_ulonglong).wrapping_sub(2 as std::ffi::c_int as std::ffi::c_ulonglong);
-static mut LL_bits: [u32; 36] = [
+static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut LL_defaultNorm: [i16; 36] = [
+static LL_defaultNorm: [i16; 36] = [
     4,
     3,
     2,
@@ -287,12 +287,12 @@ static mut LL_defaultNorm: [i16; 36] = [
     -(1) as i16,
     -(1) as i16,
 ];
-static mut LL_defaultNormLog: u32 = 6;
-static mut ML_bits: [u32; 53] = [
+static LL_defaultNormLog: u32 = 6;
+static ML_bits: [u32; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-static mut ML_defaultNorm: [i16; 53] = [
+static ML_defaultNorm: [i16; 53] = [
     1,
     4,
     3,
@@ -347,8 +347,8 @@ static mut ML_defaultNorm: [i16; 53] = [
     -(1) as i16,
     -(1) as i16,
 ];
-static mut ML_defaultNormLog: u32 = 6;
-static mut OF_defaultNorm: [i16; 29] = [
+static ML_defaultNormLog: u32 = 6;
+static OF_defaultNorm: [i16; 29] = [
     1,
     1,
     1,
@@ -379,7 +379,7 @@ static mut OF_defaultNorm: [i16; 29] = [
     -(1) as i16,
     -(1) as i16,
 ];
-static mut OF_defaultNormLog: u32 = 5;
+static OF_defaultNormLog: u32 = 5;
 unsafe extern "C" fn ZSTDv06_copy8(
     mut dst: *mut std::ffi::c_void,
     mut src: *const std::ffi::c_void,
@@ -2245,7 +2245,7 @@ pub unsafe extern "C" fn HUFv06_decompress4X4(
         DTable.as_mut_ptr(),
     )
 }
-static mut algoTime: [[algo_time_t; 3]; 16] = [
+static algoTime: [[algo_time_t; 3]; 16] = [
     [
         {
             algo_time_t {
@@ -2574,7 +2574,7 @@ pub unsafe extern "C" fn HUFv06_decompress(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
 ) -> size_t {
-    static mut decompress: [decompressionAlgo; 3] = unsafe {
+    static decompress: [decompressionAlgo; 3] = unsafe {
         [
             Some(
                 HUFv06_decompress4X2
@@ -3193,7 +3193,7 @@ unsafe extern "C" fn ZSTDv06_decodeSequence(mut seq: *mut seq_t, mut seqState: *
     let mlBits = *ML_bits.as_ptr().offset(mlCode as isize);
     let ofBits = ofCode;
     let totalBits = llBits.wrapping_add(mlBits).wrapping_add(ofBits);
-    static mut LL_base: [u32; 36] = [
+    static LL_base: [u32; 36] = [
         0,
         1,
         2,
@@ -3231,7 +3231,7 @@ unsafe extern "C" fn ZSTDv06_decodeSequence(mut seq: *mut seq_t, mut seqState: *
         0x8000 as std::ffi::c_int as u32,
         0x10000 as std::ffi::c_int as u32,
     ];
-    static mut ML_base: [u32; 53] = [
+    static ML_base: [u32; 53] = [
         0,
         1,
         2,
@@ -3286,7 +3286,7 @@ unsafe extern "C" fn ZSTDv06_decodeSequence(mut seq: *mut seq_t, mut seqState: *
         0x8000 as std::ffi::c_int as u32,
         0x10000 as std::ffi::c_int as u32,
     ];
-    static mut OF_base: [u32; 29] = [
+    static OF_base: [u32; 29] = [
         0,
         1,
         3,
@@ -3454,8 +3454,8 @@ unsafe extern "C" fn ZSTDv06_execSequence(
         }
     }
     if sequence.offset < 8 {
-        static mut dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static mut dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+        static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
+        static dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
         let sub2 = *dec64table.as_ptr().offset(sequence.offset as isize);
         *op.offset(0) = *match_0.offset(0);
         *op.offset(1) = *match_0.offset(1);

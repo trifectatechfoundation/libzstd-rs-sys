@@ -694,12 +694,12 @@ pub const ZSTD_WINDOW_START_INDEX: std::ffi::c_int = 2;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: std::ffi::c_int = 196;
 #[inline]
 unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
-    static mut LL_Code: [u8; 64] = [
+    static LL_Code: [u8; 64] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
         20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
         24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
     ];
-    static mut LL_deltaCode: u32 = 19;
+    static LL_deltaCode: u32 = 19;
     if litLength > 63 {
         (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
     } else {
@@ -708,7 +708,7 @@ unsafe extern "C" fn ZSTD_LLcode(mut litLength: u32) -> u32 {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
-    static mut ML_Code: [u8; 128] = [
+    static ML_Code: [u8; 128] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
         38, 38, 38, 38, 38, 38, 38, 38, 39, 39, 39, 39, 39, 39, 39, 39, 40, 40, 40, 40, 40, 40, 40,
@@ -716,7 +716,7 @@ unsafe extern "C" fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
         41, 41, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
         42, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42,
     ];
-    static mut ML_deltaCode: u32 = 36;
+    static ML_deltaCode: u32 = 36;
     if mlBase > 127 {
         (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
     } else {
@@ -1272,10 +1272,10 @@ use crate::{
 pub const ZSTD_isError: unsafe extern "C" fn(size_t) -> std::ffi::c_uint = ERR_isError;
 pub const ZSTD_OPT_NUM: std::ffi::c_int = (1) << 12;
 pub const ZSTD_REP_NUM: std::ffi::c_int = 3;
-static mut repStartValue: [u32; 3] = [1, 4, 8];
+static repStartValue: [u32; 3] = [1, 4, 8];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 10;
 pub const ZSTD_BLOCKHEADERSIZE: std::ffi::c_int = 3;
-static mut ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MIN_CBLOCK_SIZE: std::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: std::ffi::c_int = 0x7f00 as std::ffi::c_int;
 pub const MINMATCH: std::ffi::c_int = 3;
@@ -1288,11 +1288,11 @@ pub const MaxOff: std::ffi::c_int = 31;
 pub const MLFSELog: std::ffi::c_int = 9;
 pub const LLFSELog: std::ffi::c_int = 9;
 pub const OffFSELog: std::ffi::c_int = 8;
-static mut LL_bits: [u8; 36] = [
+static LL_bits: [u8; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static mut LL_defaultNorm: [S16; 36] = [
+static LL_defaultNorm: [S16; 36] = [
     4,
     3,
     2,
@@ -1331,12 +1331,12 @@ static mut LL_defaultNorm: [S16; 36] = [
     -(1) as S16,
 ];
 pub const LL_DEFAULTNORMLOG: std::ffi::c_int = 6;
-static mut LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
-static mut ML_bits: [u8; 53] = [
+static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
+static ML_bits: [u8; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-static mut ML_defaultNorm: [S16; 53] = [
+static ML_defaultNorm: [S16; 53] = [
     1,
     4,
     3,
@@ -1392,8 +1392,8 @@ static mut ML_defaultNorm: [S16; 53] = [
     -(1) as S16,
 ];
 pub const ML_DEFAULTNORMLOG: std::ffi::c_int = 6;
-static mut ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
-static mut OF_defaultNorm: [S16; 29] = [
+static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
+static OF_defaultNorm: [S16; 29] = [
     1,
     1,
     1,
@@ -1425,7 +1425,7 @@ static mut OF_defaultNorm: [S16; 29] = [
     -(1) as S16,
 ];
 pub const OF_DEFAULTNORMLOG: std::ffi::c_int = 5;
-static mut OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
+static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 unsafe extern "C" fn ZSTD_copy8(mut dst: *mut std::ffi::c_void, mut src: *const std::ffi::c_void) {
     libc::memcpy(dst, src, 8 as libc::size_t);
 }
@@ -3884,7 +3884,7 @@ unsafe extern "C" fn ZSTD_adjustCParams_internal(
     }
     if srcSize <= maxWindowResize as std::ffi::c_ulonglong && dictSize <= maxWindowResize {
         let tSize = srcSize.wrapping_add(dictSize as std::ffi::c_ulonglong) as u32;
-        static mut hashSizeMin: u32 = ((1) << ZSTD_HASHLOG_MIN) as u32;
+        static hashSizeMin: u32 = ((1) << ZSTD_HASHLOG_MIN) as u32;
         let srcLog = if tSize < hashSizeMin {
             ZSTD_HASHLOG_MIN as std::ffi::c_uint
         } else {
@@ -4874,7 +4874,7 @@ pub unsafe extern "C" fn ZSTD_invalidateRepCodes(mut cctx: *mut ZSTD_CCtx) {
         i += 1;
     }
 }
-static mut attachDictSizeCutoffs: [size_t; 10] = [
+static attachDictSizeCutoffs: [size_t; 10] = [
     (8 * ((1) << 10)) as size_t,
     (8 * ((1) << 10)) as size_t,
     (16 * ((1) << 10)) as size_t,
@@ -5699,7 +5699,7 @@ pub unsafe extern "C" fn ZSTD_selectBlockCompressor(
     mut useRowMatchFinder: ZSTD_ParamSwitch_e,
     mut dictMode: ZSTD_dictMode_e,
 ) -> ZSTD_BlockCompressor_f {
-    static mut blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = unsafe {
+    static blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = unsafe {
         [
             [
                 Some(
@@ -5821,7 +5821,7 @@ pub unsafe extern "C" fn ZSTD_selectBlockCompressor(
     };
     let mut selectedCompressor: ZSTD_BlockCompressor_f = None;
     if ZSTD_rowMatchFinderUsed(strat, useRowMatchFinder) != 0 {
-        static mut rowBasedBlockCompressors: [[ZSTD_BlockCompressor_f; 3]; 4] = [
+        static rowBasedBlockCompressors: [[ZSTD_BlockCompressor_f; 3]; 4] = [
             [
                 Some(ZSTD_COMPRESSBLOCK_GREEDY_ROW),
                 Some(ZSTD_COMPRESSBLOCK_LAZY_ROW),
@@ -7477,7 +7477,7 @@ unsafe extern "C" fn ZSTD_optimalBlockSize(
     mut strat: ZSTD_strategy,
     mut savings: S64,
 ) -> size_t {
-    static mut splitLevels: [std::ffi::c_int; 10] = [0, 0, 1, 2, 2, 3, 3, 4, 4, 4];
+    static splitLevels: [std::ffi::c_int; 10] = [0, 0, 1, 2, 2, 3, 3, 4, 4, 4];
     if srcSize < (128 * ((1) << 10)) as size_t || blockSizeMax < (128 * ((1) << 10)) as size_t {
         return if srcSize < blockSizeMax {
             srcSize
@@ -12105,7 +12105,7 @@ pub unsafe extern "C" fn ZSTD_getParams(
 }
 pub const __INT_MAX__: std::ffi::c_int = 2147483647;
 pub const ZSTD_MAX_CLEVEL: std::ffi::c_int = 22;
-static mut ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
+static ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     [
         {
             ZSTD_compressionParameters {

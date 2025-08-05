@@ -185,43 +185,25 @@ unsafe extern "C" fn ZSTD_splitBlock_byChunks(
     mut workspace: *mut std::ffi::c_void,
     mut wkspSize: size_t,
 ) -> size_t {
-    static mut records_fs: [RecordEvents_f; 4] = unsafe {
-        [
-            Some(
-                ZSTD_recordFingerprint_43
-                    as unsafe extern "C" fn(
-                        *mut Fingerprint,
-                        *const std::ffi::c_void,
-                        size_t,
-                    ) -> (),
-            ),
-            Some(
-                ZSTD_recordFingerprint_11
-                    as unsafe extern "C" fn(
-                        *mut Fingerprint,
-                        *const std::ffi::c_void,
-                        size_t,
-                    ) -> (),
-            ),
-            Some(
-                ZSTD_recordFingerprint_5
-                    as unsafe extern "C" fn(
-                        *mut Fingerprint,
-                        *const std::ffi::c_void,
-                        size_t,
-                    ) -> (),
-            ),
-            Some(
-                ZSTD_recordFingerprint_1
-                    as unsafe extern "C" fn(
-                        *mut Fingerprint,
-                        *const std::ffi::c_void,
-                        size_t,
-                    ) -> (),
-            ),
-        ]
-    };
-    static mut hashParams: [std::ffi::c_uint; 4] = [8, 9, 10, 10];
+    static records_fs: [RecordEvents_f; 4] = [
+        Some(
+            ZSTD_recordFingerprint_43
+                as unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> (),
+        ),
+        Some(
+            ZSTD_recordFingerprint_11
+                as unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> (),
+        ),
+        Some(
+            ZSTD_recordFingerprint_5
+                as unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> (),
+        ),
+        Some(
+            ZSTD_recordFingerprint_1
+                as unsafe extern "C" fn(*mut Fingerprint, *const std::ffi::c_void, size_t) -> (),
+        ),
+    ];
+    static hashParams: [std::ffi::c_uint; 4] = [8, 9, 10, 10];
     let record_f: RecordEvents_f = *records_fs.as_ptr().offset(level as isize);
     let fpstats = workspace as *mut FPStats;
     let mut p = blockStart as *const std::ffi::c_char;

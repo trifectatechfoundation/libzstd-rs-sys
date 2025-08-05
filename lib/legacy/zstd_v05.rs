@@ -224,8 +224,8 @@ unsafe extern "C" fn ERR_getErrorName(mut code: size_t) -> *const std::ffi::c_ch
 pub const ZSTDv05_WINDOWLOG_ABSOLUTEMIN: std::ffi::c_int = 11;
 pub const ZSTDv05_DICT_MAGIC: std::ffi::c_uint = 0xec30a435 as std::ffi::c_uint;
 pub const BLOCKSIZE: std::ffi::c_int = 128 * ((1) << 10);
-static mut ZSTDv05_blockHeaderSize: size_t = 3;
-static mut ZSTDv05_frameHeaderSize_min: size_t = 5;
+static ZSTDv05_blockHeaderSize: size_t = 3;
+static ZSTDv05_frameHeaderSize_min: size_t = 5;
 pub const ZSTDv05_frameHeaderSize_max: std::ffi::c_int = 5;
 pub const IS_HUFv05: std::ffi::c_int = 0;
 pub const IS_PCH: std::ffi::c_int = 1;
@@ -2125,7 +2125,7 @@ pub unsafe extern "C" fn HUFv05_decompress4X4(
         DTable.as_mut_ptr(),
     )
 }
-static mut algoTime: [[algo_time_t; 3]; 16] = [
+static algoTime: [[algo_time_t; 3]; 16] = [
     [
         {
             algo_time_t {
@@ -2454,7 +2454,7 @@ pub unsafe extern "C" fn HUFv05_decompress(
     mut cSrc: *const std::ffi::c_void,
     mut cSrcSize: size_t,
 ) -> size_t {
-    static mut decompress: [decompressionAlgo; 3] = unsafe {
+    static decompress: [decompressionAlgo; 3] = unsafe {
         [
             Some(
                 HUFv05_decompress4X2
@@ -3106,7 +3106,7 @@ unsafe extern "C" fn ZSTDv05_decodeSequence(mut seq: *mut seq_t, mut seqState: *
             dumps = de.offset(-(1));
         }
     }
-    static mut offsetPrefix: [u32; 32] = [
+    static offsetPrefix: [u32; 32] = [
         1, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
         131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 1, 1, 1, 1,
         1,
@@ -3173,8 +3173,8 @@ unsafe extern "C" fn ZSTDv05_execSequence(
     vBase: *const u8,
     dictEnd: *const u8,
 ) -> size_t {
-    static mut dec32table: [std::ffi::c_int; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-    static mut dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+    static dec32table: [std::ffi::c_int; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
+    static dec64table: [std::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
     let oLitEnd = op.offset(sequence.litLength as isize);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.offset(sequenceLength as isize);
@@ -3942,7 +3942,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressBegin_usingDict(
     }
     0
 }
-static mut ZBUFFv05_blockHeaderSize: size_t = 3;
+static ZBUFFv05_blockHeaderSize: size_t = 3;
 unsafe extern "C" fn ZBUFFv05_limitCopy(
     mut dst: *mut std::ffi::c_void,
     mut maxDstSize: size_t,
