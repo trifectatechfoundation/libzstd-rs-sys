@@ -9,8 +9,8 @@ use crate::lib::common::mem::{
 };
 use crate::lib::zstd::*;
 extern "C" {
-    fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
-    fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: *mut HUF_DecompressFastArgs);
+    fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
+    fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
 }
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
@@ -83,7 +83,6 @@ pub type HUF_DecompressUsingDTableFn = Option<
         *const HUF_DTable,
     ) -> size_t,
 >;
-pub type HUF_DecompressFastLoopFn = unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> ();
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_DecompressFastArgs {
@@ -781,7 +780,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_default(
     HUF_decompress4X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
-    mut args: *mut HUF_DecompressFastArgs,
+    mut args: &mut HUF_DecompressFastArgs,
 ) {
     let mut bits: [u64; 4] = [0; 4];
     let mut ip: [*const u8; 4] = [core::ptr::null::<u8>(); 4];
@@ -1007,6 +1006,8 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
         ::core::mem::size_of::<[*mut u8; 4]>() as core::ffi::c_ulong as libc::size_t,
     );
 }
+
+pub type HUF_DecompressFastLoopFn = unsafe extern "C" fn(&mut HUF_DecompressFastArgs) -> ();
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast(
     mut dst: *mut core::ffi::c_void,
     mut dstSize: size_t,
@@ -1998,7 +1999,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_default(
     HUF_decompress4X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
 unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
-    mut args: *mut HUF_DecompressFastArgs,
+    mut args: &mut HUF_DecompressFastArgs,
 ) {
     let mut bits: [u64; 4] = [0; 4];
     let mut ip: [*const u8; 4] = [core::ptr::null::<u8>(); 4];
