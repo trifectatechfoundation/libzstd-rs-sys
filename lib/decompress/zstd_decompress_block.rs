@@ -402,20 +402,20 @@ const ZSTD_LITBUFFEREXTRASIZE: usize = {
 };
 
 unsafe fn ZSTD_decodeLiteralsBlock(
-    mut dctx: &mut ZSTD_DCtx,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
+    dctx: &mut ZSTD_DCtx,
+    src: &[u8],
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
     streaming: StreamingOperation,
 ) -> size_t {
     // for a non-null block
-    const MIN_CBLOCK_SIZE: size_t = 1 /*litCSize*/ + 1/* RLE or RAW */;
-    if srcSize < MIN_CBLOCK_SIZE {
+    const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
+    if src.len() < MIN_CBLOCK_SIZE {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let istart = src as *const u8;
+    let srcSize = src.len() as size_t;
+    let istart = src.as_ptr();
     let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
 
     let blockSizeMax = ZSTD_blockSizeMax(dctx);
@@ -734,12 +734,17 @@ pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
     };
 
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+    };
+
     dctx.isFrameDecompression = 0;
 
     ZSTD_decodeLiteralsBlock(
         dctx,
         src,
-        srcSize,
         dst,
         dstCapacity,
         StreamingOperation::NotStreaming,
@@ -4077,25 +4082,33 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
     };
 
-    ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, srcSize, streaming)
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+    };
+
+    ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, streaming)
 }
 
 unsafe fn ZSTD_decompressBlock_internal_help(
-    mut dctx: &mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dctx: &mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: &[u8],
     streaming: StreamingOperation,
 ) -> size_t {
-    let mut ip = src as *const u8;
+    let mut srcSize = src.len() as size_t;
+
     if srcSize > ZSTD_blockSizeMax(dctx) {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, srcSize, dst, dstCapacity, streaming);
+    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst, dstCapacity, streaming);
     if ERR_isError(litCSize) != 0 {
         return litCSize;
     }
+
+    let mut ip = src.as_ptr();
     ip = ip.offset(litCSize as isize);
     srcSize = srcSize.wrapping_sub(litCSize);
     let blockSizeMax = if dstCapacity < ZSTD_blockSizeMax(dctx) {
