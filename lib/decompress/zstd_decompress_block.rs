@@ -397,6 +397,20 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
     };
 }
 
+const ZSTD_LBMIN: usize = 64;
+const ZSTD_LBMAX: usize = 128 << 10;
+
+const ZSTD_DECODER_INTERNAL_BUFFER: usize = 1 << 16;
+
+// just a const clamp
+const ZSTD_LITBUFFEREXTRASIZE: usize = if ZSTD_DECODER_INTERNAL_BUFFER < ZSTD_LBMIN {
+    ZSTD_LBMIN
+} else if ZSTD_DECODER_INTERNAL_BUFFER > ZSTD_LBMAX {
+    ZSTD_LBMAX
+} else {
+    ZSTD_DECODER_INTERNAL_BUFFER
+};
+
 unsafe fn ZSTD_decodeLiteralsBlock(
     mut dctx: &mut ZSTD_DCtx,
     mut src: &[u8],
@@ -405,8 +419,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 ) -> size_t {
     let srcSize = src.len() as size_t;
 
-    let dstCapacity = dst.len() as size_t;
-    let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
+    let dstCapacity = dst.len();
+    let dst = dst.as_mut_ptr() as *mut core::ffi::c_void;
 
     // for a non-null block
     const MIN_CBLOCK_SIZE: size_t = 1 /*litCSize*/ + 1/* RLE or RAW */;
@@ -417,7 +431,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let istart = src.as_ptr();
     let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
 
-    let blockSizeMax = dctx.block_size_max() as size_t;
+    let blockSizeMax = dctx.block_size_max();
 
     match litEncType {
         SymbolEncodingType_e::set_repeat => {
@@ -427,218 +441,144 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         }
         SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
-            let mut expectedWriteSize_0 = Ord::min(dstCapacity, blockSizeMax);
+            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
 
-            let (lhSize_0, litSize_0) = match src[0] >> 2 & 0b11 {
-                1 => (
-                    2 as size_t,
-                    (u16::from_le_bytes([src[0], src[1]]) >> 4) as size_t,
-                ),
+            let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
+                1 => (2usize, (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize),
                 3 => {
                     if let [a, b, c, ..] = *src {
-                        (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as size_t)
+                        (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
                     } else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
                 }
-                _ => (1, (src[0] >> 3) as size_t),
+                _ => (1, (src[0] >> 3) as usize),
             };
 
-            if litSize_0 > 0 && dst.is_null() {
+            if litSize > 0 && dst.is_null() {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
-            if litSize_0 > blockSizeMax {
+            if litSize > blockSizeMax {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
-            if expectedWriteSize_0 < litSize_0 {
+            if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
 
             ZSTD_allocateLiteralsBuffer(
                 dctx,
                 dst,
-                dstCapacity,
-                litSize_0,
+                dstCapacity as _,
+                litSize as _,
                 streaming,
-                expectedWriteSize_0,
+                expectedWriteSize as _,
                 1,
             );
 
-            if lhSize_0
-                .wrapping_add(litSize_0)
-                .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
-                > srcSize
+            if lhSize
+                .wrapping_add(litSize)
+                .wrapping_add(WILDCOPY_OVERLENGTH as usize)
+                > src.len()
             {
-                if litSize_0.wrapping_add(lhSize_0) > srcSize {
+                if litSize.wrapping_add(lhSize) > src.len() {
                     return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                 }
+
                 if (*dctx).litBufferLocation == LitLocation::ZSTD_split {
                     libc::memcpy(
                         (*dctx).litBuffer as *mut core::ffi::c_void,
-                        istart.offset(lhSize_0 as isize) as *const core::ffi::c_void,
-                        litSize_0.wrapping_sub(
-                            (if 64
-                                > (if ((1) << 16) < (128) << 10 {
-                                    (1) << 16
-                                } else {
-                                    (128) << 10
-                                })
-                            {
-                                64
-                            } else if ((1) << 16) < (128) << 10 {
-                                (1) << 16
-                            } else {
-                                (128) << 10
-                            }) as size_t,
-                        ) as libc::size_t,
+                        src[lhSize..].as_ptr() as *const core::ffi::c_void,
+                        litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE) as libc::size_t,
                     );
                     libc::memcpy(
                         ((*dctx).litExtraBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                        istart
-                            .offset(lhSize_0 as isize)
-                            .offset(litSize_0 as isize)
-                            .offset(
-                                -((if 64
-                                    > (if ((1) << 16) < (128) << 10 {
-                                        (1) << 16
-                                    } else {
-                                        (128) << 10
-                                    })
-                                {
-                                    64
-                                } else if ((1) << 16) < (128) << 10 {
-                                    (1) << 16
-                                } else {
-                                    (128) << 10
-                                }) as isize),
-                            ) as *const core::ffi::c_void,
-                        (if 64
-                            > (if ((1) << 16) < (128) << 10 {
-                                (1) << 16
-                            } else {
-                                (128) << 10
-                            })
-                        {
-                            64
-                        } else if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        }) as core::ffi::c_ulong as libc::size_t,
+                        src[(lhSize + litSize) - ZSTD_LITBUFFEREXTRASIZE..].as_ptr()
+                            as *const core::ffi::c_void,
+                        ZSTD_DECODER_INTERNAL_BUFFER,
                     );
                 } else {
                     libc::memcpy(
                         (*dctx).litBuffer as *mut core::ffi::c_void,
-                        istart.offset(lhSize_0 as isize) as *const core::ffi::c_void,
-                        litSize_0 as libc::size_t,
+                        src[lhSize..].as_ptr() as *const core::ffi::c_void,
+                        litSize,
                     );
                 }
-                (*dctx).litPtr = (*dctx).litBuffer;
-                (*dctx).litSize = litSize_0;
-                return lhSize_0.wrapping_add(litSize_0);
+
+                dctx.litPtr = dctx.litBuffer;
+                dctx.litSize = litSize as size_t;
+
+                return lhSize.wrapping_add(litSize) as size_t;
             }
-            (*dctx).litPtr = istart.offset(lhSize_0 as isize);
-            (*dctx).litSize = litSize_0;
-            (*dctx).litBufferEnd = ((*dctx).litPtr).offset(litSize_0 as isize);
-            (*dctx).litBufferLocation = LitLocation::ZSTD_not_in_dst;
-            return lhSize_0.wrapping_add(litSize_0);
+
+            // Direct reference into compressed stream.
+            dctx.litPtr = src[lhSize..].as_ptr();
+            dctx.litSize = litSize as size_t;
+            dctx.litBufferEnd = dctx.litPtr.add(litSize);
+            dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
+
+            return lhSize.wrapping_add(litSize) as size_t;
         }
         SymbolEncodingType_e::set_rle => {
-            let lhlCode_1 = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
-            let mut litSize_1: size_t = 0;
-            let mut lhSize_1: size_t = 0;
-            let mut expectedWriteSize_1 = if blockSizeMax < dstCapacity {
-                blockSizeMax
-            } else {
-                dstCapacity
-            };
-            match lhlCode_1 {
+            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+
+            let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
                 1 => {
-                    lhSize_1 = 2;
-                    if srcSize < 3 {
+                    if let [a, b, _, ..] = *src {
+                        (2, (u16::from_le_bytes([a, b]) >> 4) as usize)
+                    } else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
-                    litSize_1 = (MEM_readLE16(istart as *const core::ffi::c_void)
-                        as core::ffi::c_int
-                        >> 4) as size_t;
                 }
                 3 => {
-                    lhSize_1 = 3;
-                    if srcSize < 4 {
+                    if let [a, b, c, _, ..] = *src {
+                        (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
+                    } else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
-                    litSize_1 = (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as size_t;
                 }
-                0 | 2 | _ => {
-                    lhSize_1 = 1;
-                    litSize_1 = (*istart.offset(0) as core::ffi::c_int >> 3) as size_t;
-                }
-            }
-            if litSize_1 > 0 && dst.is_null() {
+                _ => (1, (src[0] >> 3) as usize),
+            };
+
+            if litSize > 0 && dst.is_null() {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
-            if litSize_1 > blockSizeMax {
+            if litSize > blockSizeMax {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
-            if expectedWriteSize_1 < litSize_1 {
+            if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
+
             ZSTD_allocateLiteralsBuffer(
                 dctx,
                 dst,
-                dstCapacity,
-                litSize_1,
+                dstCapacity as _,
+                litSize as _,
                 streaming,
-                expectedWriteSize_1,
+                expectedWriteSize as _,
                 1,
             );
             if (*dctx).litBufferLocation == LitLocation::ZSTD_split {
                 ptr::write_bytes(
                     (*dctx).litBuffer as *mut u8,
-                    *istart.offset(lhSize_1 as isize),
-                    litSize_1.wrapping_sub(
-                        (if 64
-                            > (if ((1) << 16) < (128) << 10 {
-                                (1) << 16
-                            } else {
-                                (128) << 10
-                            })
-                        {
-                            64
-                        } else if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        }) as size_t,
-                    ) as libc::size_t,
+                    src[lhSize],
+                    litSize.wrapping_sub(ZSTD_DECODER_INTERNAL_BUFFER),
                 );
                 ptr::write_bytes(
                     ((*dctx).litExtraBuffer).as_mut_ptr() as *mut u8,
-                    *istart.offset(lhSize_1 as isize),
-                    (if 64
-                        > (if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        })
-                    {
-                        64
-                    } else if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    }) as core::ffi::c_ulong as libc::size_t,
+                    src[lhSize],
+                    ZSTD_DECODER_INTERNAL_BUFFER,
                 );
             } else {
                 ptr::write_bytes(
                     (*dctx).litBuffer as *mut u8,
-                    *istart.offset(lhSize_1 as isize),
-                    litSize_1 as libc::size_t,
+                    src[lhSize],
+                    litSize as libc::size_t,
                 );
             }
             (*dctx).litPtr = (*dctx).litBuffer;
-            (*dctx).litSize = litSize_1;
-            return lhSize_1.wrapping_add(1);
+            (*dctx).litSize = litSize as size_t;
+            return lhSize.wrapping_add(1) as size_t;
         }
     }
 
@@ -653,11 +593,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let lhlCode = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
     let lhc = MEM_readLE32(istart as *const core::ffi::c_void);
     let mut hufSuccess: size_t = 0;
-    let mut expectedWriteSize = if blockSizeMax < dstCapacity {
-        blockSizeMax
-    } else {
-        dstCapacity
-    };
+
+    let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax) as size_t;
+
     let flags =
         0 | (if ZSTD_DCtx_get_bmi2(dctx) != 0 {
             HUF_flags_bmi2 as core::ffi::c_int
@@ -689,7 +627,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if litSize > 0 && dst.is_null() {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
-    if litSize > blockSizeMax {
+    if litSize > blockSizeMax as size_t {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     if singleStream == 0 && litSize < 6 {
@@ -704,7 +642,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     ZSTD_allocateLiteralsBuffer(
         dctx,
         dst,
-        dstCapacity,
+        dstCapacity as _,
         litSize,
         streaming,
         expectedWriteSize,
@@ -765,85 +703,19 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if (*dctx).litBufferLocation == LitLocation::ZSTD_split {
         libc::memcpy(
             ((*dctx).litExtraBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-            ((*dctx).litBufferEnd).offset(
-                -((if 64
-                    > (if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    })
-                {
-                    64
-                } else if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                }) as isize),
-            ) as *const core::ffi::c_void,
-            (if 64
-                > (if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                })
-            {
-                64
-            } else if ((1) << 16) < (128) << 10 {
-                (1) << 16
-            } else {
-                (128) << 10
-            }) as core::ffi::c_ulong as libc::size_t,
+            ((*dctx).litBufferEnd).offset(-((ZSTD_LITBUFFEREXTRASIZE) as isize))
+                as *const core::ffi::c_void,
+            (ZSTD_LITBUFFEREXTRASIZE) as core::ffi::c_ulong as libc::size_t,
         );
         libc::memmove(
             ((*dctx).litBuffer)
-                .offset(
-                    (if 64
-                        > (if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        })
-                    {
-                        64
-                    } else if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    }) as isize,
-                )
+                .add(ZSTD_LITBUFFEREXTRASIZE)
                 .offset(-(32)) as *mut core::ffi::c_void,
             (*dctx).litBuffer as *const core::ffi::c_void,
-            litSize.wrapping_sub(
-                (if 64
-                    > (if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    })
-                {
-                    64
-                } else if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                }) as size_t,
-            ) as libc::size_t,
+            litSize.wrapping_sub((ZSTD_LITBUFFEREXTRASIZE) as size_t) as libc::size_t,
         );
-        (*dctx).litBuffer = ((*dctx).litBuffer).offset(
-            ((if 64
-                > (if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                })
-            {
-                64
-            } else if ((1) << 16) < (128) << 10 {
-                (1) << 16
-            } else {
-                (128) << 10
-            }) - WILDCOPY_OVERLENGTH) as isize,
-        );
+        (*dctx).litBuffer = ((*dctx).litBuffer)
+            .offset(ZSTD_LITBUFFEREXTRASIZE as isize - WILDCOPY_OVERLENGTH as isize);
         (*dctx).litBufferEnd = ((*dctx).litBufferEnd).offset(-(WILDCOPY_OVERLENGTH as isize));
     }
     if ERR_isError(hufSuccess) != 0 {
