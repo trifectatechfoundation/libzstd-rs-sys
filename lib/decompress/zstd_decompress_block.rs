@@ -421,12 +421,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let blockSizeMax = ZSTD_blockSizeMax(dctx);
 
     match litEncType {
-        SymbolEncodingType_e::set_repeat => {
-            if dctx.litEntropy == 0 {
-                return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
-            }
+        SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
+            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
         }
-        SymbolEncodingType_e::set_compressed => {}
+        SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
             let mut litSize_0: size_t = 0;
             let mut lhSize_0: size_t = 0;
