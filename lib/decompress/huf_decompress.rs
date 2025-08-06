@@ -2830,23 +2830,35 @@ static algoTime: [[algo_time_t; 2]; 16] = [
         },
     ],
 ];
-pub unsafe fn HUF_selectDecoder(mut dstSize: size_t, mut cSrcSize: size_t) -> u32 {
+
+enum Decoder {
+    A1,
+    A2,
+}
+
+///  Tells which decoder is likely to decode faster,
+///  based on a set of pre-computed metrics.
+///
+/// @return : 0==HUF_decompress4X1, 1==HUF_decompress4X2 .
+///  Assumption : 0 < dstSize <= 128 KB */
+fn HUF_selectDecoder(dstSize: size_t, cSrcSize: size_t) -> Decoder {
+    let D256 = (dstSize >> 8) as u32;
+
     let Q = if cSrcSize >= dstSize {
         15
     } else {
-        (cSrcSize * 16 / dstSize) as u32
+        (cSrcSize * 16 / dstSize) as usize
     };
-    let D256 = (dstSize >> 8) as u32;
-    let DTime0 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().offset(0)).tableTime)
-        .wrapping_add(
-            (*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().offset(0)).decode256Time * D256,
-        );
-    let mut DTime1 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().offset(1)).tableTime)
-        .wrapping_add(
-            (*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().offset(1)).decode256Time * D256,
-        );
-    DTime1 = DTime1.wrapping_add(DTime1 >> 5);
-    (DTime1 < DTime0) as core::ffi::c_int as u32
+
+    let [time0, time1] = algoTime[Q];
+    let DTime0 = time0.tableTime + time0.decode256Time * D256;
+    let DTime1 = time1.tableTime + time1.decode256Time * D256;
+
+    if (DTime1 + (DTime1 >> 5)) < DTime0 {
+        Decoder::A2
+    } else {
+        Decoder::A1
+    }
 }
 pub unsafe fn HUF_decompress1X_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
@@ -2872,15 +2884,14 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
         ptr::write_bytes(dst, *(cSrc as *const u8), dstSize as usize);
         return dstSize;
     }
-    let algoNb = HUF_selectDecoder(dstSize, cSrcSize);
-    if algoNb != 0 {
-        HUF_decompress1X2_DCtx_wksp(
+
+    match HUF_selectDecoder(dstSize, cSrcSize) {
+        Decoder::A1 => HUF_decompress1X1_DCtx_wksp(
             dctx, dst, dstSize, cSrc, cSrcSize, workSpace, wkspSize, flags,
-        )
-    } else {
-        HUF_decompress1X1_DCtx_wksp(
+        ),
+        Decoder::A2 => HUF_decompress1X2_DCtx_wksp(
             dctx, dst, dstSize, cSrc, cSrcSize, workSpace, wkspSize, flags,
-        )
+        ),
     }
 }
 pub unsafe fn HUF_decompress1X_usingDTable(
@@ -2959,14 +2970,13 @@ pub unsafe fn HUF_decompress4X_hufOnly_wksp(
     if cSrcSize == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let algoNb = HUF_selectDecoder(dstSize, cSrcSize);
-    if algoNb != 0 {
-        HUF_decompress4X2_DCtx_wksp(
+
+    match HUF_selectDecoder(dstSize, cSrcSize) {
+        Decoder::A1 => HUF_decompress4X1_DCtx_wksp(
             dctx, dst, dstSize, cSrc, cSrcSize, workSpace, wkspSize, flags,
-        )
-    } else {
-        HUF_decompress4X1_DCtx_wksp(
+        ),
+        Decoder::A2 => HUF_decompress4X2_DCtx_wksp(
             dctx, dst, dstSize, cSrc, cSrcSize, workSpace, wkspSize, flags,
-        )
+        ),
     }
 }
