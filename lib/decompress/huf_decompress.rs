@@ -1324,7 +1324,7 @@ unsafe fn HUF_fillDTableX2Level2(
     DTable: *mut HUF_DEltX2,
     targetLog: u32,
     consumedBits: u32,
-    rankVal: *const u32,
+    rankVal: &[u32; 13],
     minWeight: core::ffi::c_int,
     maxWeight1: core::ffi::c_int,
     sortedSymbols: &[sortedSymbol_t],
@@ -1336,7 +1336,7 @@ unsafe fn HUF_fillDTableX2Level2(
         let length =
             (1) << (targetLog.wrapping_sub(consumedBits) & 0x1f as core::ffi::c_int as u32);
         let DEltX2 = HUF_buildDEltX2U64(baseSeq as u32, consumedBits, 0, 1);
-        let skipSize = *rankVal.offset(minWeight as isize) as core::ffi::c_int;
+        let skipSize = rankVal[minWeight as usize] as core::ffi::c_int;
         match length {
             2 => {
                 libc::memcpy(
@@ -1387,16 +1387,13 @@ unsafe fn HUF_fillDTableX2Level2(
         }
     }
 
-    for w in minWeight..maxWeight1 {
-        let begin = rankStart[w as usize] as core::ffi::c_int;
-        let end = rankStart[(w + 1) as usize] as core::ffi::c_int;
-
+    for w in minWeight as usize..maxWeight1 as usize {
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
         let totalBits = nbBits.wrapping_add(consumedBits);
 
         HUF_fillDTableX2ForWeight(
-            DTable.offset(*rankVal.offset(w as isize) as isize),
-            &sortedSymbols[begin as usize..end as usize],
+            DTable.add(rankVal[w] as usize),
+            &sortedSymbols[rankStart[w] as usize..rankStart[w + 1] as usize],
             totalBits,
             targetLog,
             baseSeq,
@@ -1433,7 +1430,7 @@ unsafe fn HUF_fillDTableX2(
                     DTable.offset(start as isize),
                     targetLog,
                     nbBits,
-                    rankValOrigin[nbBits as usize..].as_mut_ptr().cast(),
+                    &rankValOrigin[nbBits as usize],
                     minWeight,
                     wEnd,
                     sortedList,
