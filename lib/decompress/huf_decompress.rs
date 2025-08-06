@@ -1332,8 +1332,8 @@ unsafe fn HUF_fillDTableX2Level2(
     rankVal: *const u32,
     minWeight: core::ffi::c_int,
     maxWeight1: core::ffi::c_int,
-    sortedSymbols: *const sortedSymbol_t,
-    rankStart: *const u32,
+    sortedSymbols: &[sortedSymbol_t],
+    rankStart: &[u32; 15],
     nbBitsBaseline: u32,
     baseSeq: u16,
 ) {
@@ -1391,23 +1391,23 @@ unsafe fn HUF_fillDTableX2Level2(
             }
         }
     }
-    let mut w: core::ffi::c_int = 0;
-    w = minWeight;
-    while w < maxWeight1 {
-        let begin = *rankStart.offset(w as isize) as core::ffi::c_int;
-        let end = *rankStart.offset((w + 1) as isize) as core::ffi::c_int;
+
+    for w in minWeight..maxWeight1 {
+        let begin = rankStart[w as usize] as core::ffi::c_int;
+        let end = rankStart[(w + 1) as usize] as core::ffi::c_int;
+
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
         let totalBits = nbBits.wrapping_add(consumedBits);
+
         HUF_fillDTableX2ForWeight(
             DTable.offset(*rankVal.offset(w as isize) as isize),
-            sortedSymbols.offset(begin as isize),
-            sortedSymbols.offset(end as isize),
+            sortedSymbols[begin as usize..].as_ptr(),
+            sortedSymbols[end as usize..].as_ptr(),
             totalBits,
             targetLog,
             baseSeq,
             2,
         );
-        w += 1;
     }
 }
 
@@ -1447,8 +1447,8 @@ unsafe fn HUF_fillDTableX2(
                     rankValOrigin[nbBits as usize..].as_mut_ptr().cast(),
                     minWeight,
                     wEnd,
-                    sortedList.as_ptr(),
-                    rankStart.as_ptr(),
+                    sortedList,
+                    rankStart,
                     nbBitsBaseline,
                     u16::from(sortedList[s as usize].symbol),
                 );
