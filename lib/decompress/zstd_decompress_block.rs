@@ -596,8 +596,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let mut lhSize: size_t = 0;
     let mut litSize: size_t = 0;
     let mut litCSize: size_t = 0;
-    let mut singleStream = 0;
-    let lhlCode = (*istart.offset(0) as core::ffi::c_int >> 2 & 3) as u32;
     let lhc = MEM_readLE32(istart as *const core::ffi::c_void);
     let mut hufSuccess: size_t = 0;
     let mut expectedWriteSize = if blockSizeMax < dstCapacity {
@@ -615,6 +613,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         } else {
             0
         });
+
+    let lhlCode = (*istart.offset(0) >> 2 & 0b11) as u32;
+    let singleStream = lhlCode == 0;
+
     match lhlCode {
         2 => {
             lhSize = 4;
@@ -627,7 +629,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             litCSize = ((lhc >> 22) as size_t).wrapping_add((*istart.offset(4) as size_t) << 10);
         }
         0 | 1 | _ => {
-            singleStream = (lhlCode == 0) as core::ffi::c_int as u32;
             lhSize = 3;
             litSize = (lhc >> 4 & 0x3ff as core::ffi::c_int as u32) as size_t;
             litCSize = (lhc >> 14 & 0x3ff as core::ffi::c_int as u32) as size_t;
@@ -639,7 +640,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if litSize > blockSizeMax {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    if singleStream == 0 && litSize < 6 {
+    if !singleStream && litSize < 6 {
         return -(ZSTD_error_literals_headerWrong as core::ffi::c_int) as size_t;
     }
     if litCSize.wrapping_add(lhSize) > srcSize {
@@ -667,7 +668,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         }
     }
     if let SymbolEncodingType_e::set_repeat = litEncType {
-        if singleStream != 0 {
+        if singleStream {
             hufSuccess = HUF_decompress1X_usingDTable(
                 (*dctx).litBuffer as *mut core::ffi::c_void,
                 litSize,
@@ -686,7 +687,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 flags,
             );
         }
-    } else if singleStream != 0 {
+    } else if singleStream {
         hufSuccess = HUF_decompress1X1_DCtx_wksp(
             ((*dctx).entropy.hufTable).as_mut_ptr(),
             (*dctx).litBuffer as *mut core::ffi::c_void,
