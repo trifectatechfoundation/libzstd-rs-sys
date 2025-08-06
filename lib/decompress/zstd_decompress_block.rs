@@ -426,11 +426,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let srcSize = src.len() as size_t;
     let istart = src.as_ptr();
     let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
 
-    let blockSizeMax = dctx.block_size_max() as size_t;
+    let blockSizeMax = dctx.block_size_max();
 
     match litEncType {
         SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
@@ -440,21 +439,21 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         SymbolEncodingType_e::set_basic => {
             let (lhSize, litSize) = match *istart.offset(0) as core::ffi::c_int >> 2 & 0b11 {
                 1 => (
-                    2 as size_t,
+                    2 as usize,
                     (MEM_readLE16(istart as *const core::ffi::c_void) as core::ffi::c_int >> 4)
-                        as size_t,
+                        as usize,
                 ),
                 3 => {
-                    if srcSize < 3 {
+                    if src.len() < 3 {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
 
                     (
                         3,
-                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as size_t,
+                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as usize,
                     )
                 }
-                _ => (1, (*istart.offset(0) >> 3) as size_t),
+                _ => (1, (*istart.offset(0) >> 3) as usize),
             };
 
             if litSize > 0 && dst.is_null() {
@@ -464,7 +463,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+            let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
@@ -473,74 +472,71 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 dctx,
                 dst,
                 dstCapacity,
-                litSize,
+                litSize as _,
                 streaming,
-                expectedWriteSize,
+                expectedWriteSize as _,
                 1,
             );
 
-            if lhSize + litSize + WILDCOPY_OVERLENGTH as size_t > srcSize {
-                if litSize.wrapping_add(lhSize) > srcSize {
+            if lhSize + litSize + WILDCOPY_OVERLENGTH as usize > src.len() {
+                if litSize.wrapping_add(lhSize) > src.len() {
                     return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                 }
                 if dctx.litBufferLocation == LitLocation::ZSTD_split {
                     libc::memcpy(
                         dctx.litBuffer as *mut core::ffi::c_void,
                         istart.offset(lhSize as isize) as *const core::ffi::c_void,
-                        litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE as size_t) as libc::size_t,
+                        litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
                     );
                     libc::memcpy(
                         (dctx.litExtraBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                        istart
-                            .offset(lhSize as isize)
-                            .offset(litSize as isize)
-                            .offset(-(ZSTD_LITBUFFEREXTRASIZE as isize))
+                        istart.add(lhSize).add(litSize).sub(ZSTD_LITBUFFEREXTRASIZE)
                             as *const core::ffi::c_void,
                         ZSTD_LITBUFFEREXTRASIZE,
                     );
                 } else {
                     libc::memcpy(
                         dctx.litBuffer as *mut core::ffi::c_void,
-                        istart.offset(lhSize as isize) as *const core::ffi::c_void,
+                        istart.add(lhSize) as *const core::ffi::c_void,
                         litSize as libc::size_t,
                     );
                 }
                 dctx.litPtr = dctx.litBuffer;
-                dctx.litSize = litSize;
-                return lhSize.wrapping_add(litSize);
+                dctx.litSize = litSize as size_t;
+                return lhSize.wrapping_add(litSize) as size_t;
             }
 
             dctx.litPtr = istart.offset(lhSize as isize);
-            dctx.litSize = litSize;
+            dctx.litSize = litSize as size_t;
             dctx.litBufferEnd = (dctx.litPtr).offset(litSize as isize);
             dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
 
-            return lhSize.wrapping_add(litSize);
+            return lhSize.wrapping_add(litSize) as size_t;
         }
         SymbolEncodingType_e::set_rle => {
             let (lhSize, litSize) = match *istart.offset(0) >> 2 & 0b11 {
                 1 => {
-                    if srcSize < 3 {
+                    if src.len() < 3 {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
 
                     (
-                        2 as size_t,
+                        2 as usize,
                         (MEM_readLE16(istart as *const core::ffi::c_void) as core::ffi::c_int >> 4)
-                            as size_t,
+                            as usize,
                     )
                 }
                 3 => {
-                    if srcSize < 4 {
+                    if src.len() < 4 {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     }
 
                     (
                         3,
-                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as size_t,
+                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as usize,
                     )
                 }
-                _ => (1, (*istart.offset(0) >> 3) as size_t),
+                _ => (1, (*istart.offset(0) >> 3) as usize),
             };
 
             if litSize > 0 && dst.is_null() {
@@ -550,7 +546,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+            let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
@@ -559,9 +555,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 dctx,
                 dst,
                 dstCapacity,
-                litSize,
+                litSize as _,
                 streaming,
-                expectedWriteSize,
+                expectedWriteSize as _,
                 1,
             );
 
@@ -569,7 +565,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 ptr::write_bytes(
                     dctx.litBuffer as *mut u8,
                     *istart.offset(lhSize as isize),
-                    litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE as size_t) as libc::size_t,
+                    litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
                 );
                 ptr::write_bytes(
                     (dctx.litExtraBuffer).as_mut_ptr() as *mut u8,
@@ -584,15 +580,15 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 );
             }
             dctx.litPtr = dctx.litBuffer;
-            dctx.litSize = litSize;
-            return lhSize.wrapping_add(1);
+            dctx.litSize = litSize as size_t;
+            return lhSize.wrapping_add(1) as size_t;
         }
     }
 
-    if srcSize < 5 {
+    if src.len() < 5 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let lhc = MEM_readLE32(istart as *const core::ffi::c_void) as size_t;
+    let lhc = MEM_readLE32(istart as *const core::ffi::c_void) as usize;
 
     let flags = {
         let bmi_flag = match ZSTD_DCtx_get_bmi2(dctx) {
@@ -616,7 +612,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         3 => (
             5,
             lhc >> 4 & 0x3ffff,
-            (lhc >> 22) + ((*istart.offset(4) as size_t) << 10),
+            (lhc >> 22) + ((*istart.offset(4) as usize) << 10),
         ),
         _ => (3, lhc >> 4 & 0x3ff, lhc >> 14 & 0x3ff),
     };
@@ -630,11 +626,11 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if !singleStream && litSize < 6 {
         return -(ZSTD_error_literals_headerWrong as core::ffi::c_int) as size_t;
     }
-    if litCSize.wrapping_add(lhSize) > srcSize {
+    if litCSize.wrapping_add(lhSize) > src.len() {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax) as size_t;
+    let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
     if expectedWriteSize < litSize {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -643,9 +639,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         dctx,
         dst,
         dstCapacity,
-        litSize,
+        litSize as _,
         streaming,
-        expectedWriteSize,
+        expectedWriteSize as _,
         0,
     );
 
@@ -663,18 +659,18 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         if singleStream {
             HUF_decompress1X_usingDTable(
                 dctx.litBuffer as *mut core::ffi::c_void,
-                litSize,
+                litSize as _,
                 istart.offset(lhSize as isize) as *const core::ffi::c_void,
-                litCSize,
+                litCSize as _,
                 dctx.HUFptr,
                 flags,
             )
         } else {
             HUF_decompress4X_usingDTable(
                 dctx.litBuffer as *mut core::ffi::c_void,
-                litSize,
+                litSize as _,
                 istart.offset(lhSize as isize) as *const core::ffi::c_void,
-                litCSize,
+                litCSize as _,
                 dctx.HUFptr,
                 flags,
             )
@@ -683,9 +679,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         HUF_decompress1X1_DCtx_wksp(
             &mut dctx.entropy.hufTable,
             dctx.litBuffer as *mut core::ffi::c_void,
-            litSize,
+            litSize as _,
             istart.offset(lhSize as isize) as *const core::ffi::c_void,
-            litCSize,
+            litCSize as _,
             (dctx.workspace).as_mut_ptr() as *mut core::ffi::c_void,
             ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
@@ -694,9 +690,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         HUF_decompress4X_hufOnly_wksp(
             &mut dctx.entropy.hufTable,
             dctx.litBuffer as *mut core::ffi::c_void,
-            litSize,
+            litSize as _,
             istart.offset(lhSize as isize) as *const core::ffi::c_void,
-            litCSize,
+            litCSize as _,
             (dctx.workspace).as_mut_ptr() as *mut core::ffi::c_void,
             ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
@@ -712,7 +708,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         libc::memmove(
             (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE).sub(32) as *mut core::ffi::c_void,
             dctx.litBuffer as *const core::ffi::c_void,
-            litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE as size_t) as libc::size_t,
+            litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
         );
         dctx.litBuffer = (dctx.litBuffer)
             .offset((ZSTD_LITBUFFEREXTRASIZE as i32 - WILDCOPY_OVERLENGTH) as isize);
@@ -724,14 +720,14 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     }
 
     dctx.litPtr = dctx.litBuffer;
-    dctx.litSize = litSize;
+    dctx.litSize = litSize as size_t;
     dctx.litEntropy = 1;
 
     if let SymbolEncodingType_e::set_compressed = litEncType {
         dctx.HUFptr = (dctx.entropy.hufTable).as_mut_ptr();
     }
 
-    litCSize.wrapping_add(lhSize)
+    litCSize.wrapping_add(lhSize) as size_t
 }
 
 #[export_name = crate::prefix!(ZSTD_decodeLiteralsBlock_wrapper)]
