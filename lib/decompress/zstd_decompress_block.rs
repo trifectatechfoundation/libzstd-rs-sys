@@ -62,7 +62,7 @@ pub struct XXH64_state_s {
 pub type XXH64_hash_t = u64;
 pub type XXH32_hash_t = u32;
 
-pub type streaming_operation = std::ffi::c_uint;
+pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
 
@@ -436,7 +436,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     match litEncType {
         SymbolEncodingType_e::set_repeat => {
             if (*dctx).litEntropy == 0 {
-                return -(ZSTD_error_dictionary_corrupted as std::ffi::c_int) as size_t;
+                return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
             }
         }
         SymbolEncodingType_e::set_compressed => {}
@@ -4119,10 +4119,10 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
 
     let srcSize = src.len() as size_t;
-    let src = src.as_ptr() as *const std::ffi::c_void;
+    let src = src.as_ptr() as *const core::ffi::c_void;
 
     let dstCapacity = dst.len() as size_t;
-    let dst = dst.as_mut_ptr() as *mut std::ffi::c_void;
+    let dst = dst.as_mut_ptr() as *mut core::ffi::c_void;
 
     let mut ip = src as *const u8;
     ip = ip.offset(litCSize as isize);
