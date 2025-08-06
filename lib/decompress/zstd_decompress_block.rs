@@ -592,47 +592,47 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if srcSize < 5 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-
-    let mut lhSize: size_t = 0;
-    let mut litSize: size_t = 0;
-    let mut litCSize: size_t = 0;
     let lhc = MEM_readLE32(istart as *const core::ffi::c_void);
-    let mut expectedWriteSize = if blockSizeMax < dstCapacity {
-        blockSizeMax
-    } else {
-        dstCapacity
+
+    let flags = {
+        let bmi_flag = match ZSTD_DCtx_get_bmi2(dctx) {
+            0 => 0,
+            _ => HUF_flags_bmi2 as core::ffi::c_int,
+        };
+
+        let disable_asm_flag = match (*dctx).disableHufAsm {
+            0 => 0,
+            _ => HUF_flags_disableAsm as core::ffi::c_int,
+        };
+
+        bmi_flag | disable_asm_flag
     };
-    let flags =
-        0 | (if ZSTD_DCtx_get_bmi2(dctx) != 0 {
-            HUF_flags_bmi2 as core::ffi::c_int
-        } else {
-            0
-        }) | (if (*dctx).disableHufAsm != 0 {
-            HUF_flags_disableAsm as core::ffi::c_int
-        } else {
-            0
-        });
 
     let lhlCode = (*istart.offset(0) >> 2 & 0b11) as u32;
     let singleStream = lhlCode == 0;
 
+    let mut lhSize: size_t = 0;
+    let mut litSize: size_t = 0;
+    let mut litCSize: size_t = 0;
+
     match lhlCode {
         2 => {
             lhSize = 4;
-            litSize = (lhc >> 4 & 0x3fff as core::ffi::c_int as u32) as size_t;
+            litSize = (lhc >> 4 & 0x3fff) as size_t;
             litCSize = (lhc >> 18) as size_t;
         }
         3 => {
             lhSize = 5;
-            litSize = (lhc >> 4 & 0x3ffff as core::ffi::c_int as u32) as size_t;
+            litSize = (lhc >> 4 & 0x3ffff) as size_t;
             litCSize = ((lhc >> 22) as size_t).wrapping_add((*istart.offset(4) as size_t) << 10);
         }
-        0 | 1 | _ => {
+        _ => {
             lhSize = 3;
-            litSize = (lhc >> 4 & 0x3ff as core::ffi::c_int as u32) as size_t;
-            litCSize = (lhc >> 14 & 0x3ff as core::ffi::c_int as u32) as size_t;
+            litSize = (lhc >> 4 & 0x3ff) as size_t;
+            litCSize = (lhc >> 14 & 0x3ff) as size_t;
         }
     }
+
     if litSize > 0 && dst.is_null() {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -645,6 +645,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if litCSize.wrapping_add(lhSize) > srcSize {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
+    let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax) as size_t;
     if expectedWriteSize < litSize {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
