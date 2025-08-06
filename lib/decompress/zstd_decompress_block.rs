@@ -269,13 +269,25 @@ unsafe extern "C" fn ZSTD_copy4(
 ) {
     libc::memcpy(dst, src, 4 as libc::size_t);
 }
-unsafe extern "C" fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
+
+impl ZSTD_DCtx {
+    fn block_size_max(&self) -> usize {
+        if self.isFrameDecompression != 0 {
+            self.fParams.blockSizeMax as usize
+        } else {
+            ZSTD_BLOCKSIZE_MAX as usize
+        }
+    }
+}
+
+unsafe fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
     (if (*dctx).isFrameDecompression != 0 {
         (*dctx).fParams.blockSizeMax
     } else {
         ZSTD_BLOCKSIZE_MAX as core::ffi::c_uint
     }) as size_t
 }
+
 #[export_name = crate::prefix!(ZSTD_getcBlockSize)]
 pub unsafe extern "C" fn ZSTD_getcBlockSize(
     mut src: *const core::ffi::c_void,
@@ -418,7 +430,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let istart = src.as_ptr();
     let litEncType = SymbolEncodingType_e::try_from(*istart & 0b11).unwrap();
 
-    let blockSizeMax = ZSTD_blockSizeMax(dctx);
+    let blockSizeMax = dctx.block_size_max() as size_t;
 
     match litEncType {
         SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
