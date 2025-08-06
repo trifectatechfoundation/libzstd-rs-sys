@@ -1465,7 +1465,6 @@ unsafe extern "C" fn HUF_fillDTableX2(
         w += 1;
     }
 }
-#[export_name = crate::prefix!(HUF_readDTableX2_wksp)]
 pub unsafe extern "C" fn HUF_readDTableX2_wksp(
     mut DTable: *mut HUF_DTable,
     mut src: *const core::ffi::c_void,
@@ -2551,7 +2550,6 @@ unsafe extern "C" fn HUF_decompress1X2_usingDTable_internal(
     }
     HUF_decompress1X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
 }
-#[export_name = crate::prefix!(HUF_decompress1X2_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X2_DCtx_wksp(
     mut DCtx: *mut HUF_DTable,
     mut dst: *mut core::ffi::c_void,
@@ -2836,7 +2834,6 @@ static algoTime: [[algo_time_t; 2]; 16] = [
         },
     ],
 ];
-#[export_name = crate::prefix!(HUF_selectDecoder)]
 pub unsafe extern "C" fn HUF_selectDecoder(mut dstSize: size_t, mut cSrcSize: size_t) -> u32 {
     let Q = if cSrcSize >= dstSize {
         15
@@ -2855,7 +2852,6 @@ pub unsafe extern "C" fn HUF_selectDecoder(mut dstSize: size_t, mut cSrcSize: si
     DTime1 = DTime1.wrapping_add(DTime1 >> 5);
     (DTime1 < DTime0) as core::ffi::c_int as u32
 }
-#[export_name = crate::prefix!(HUF_decompress1X_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut core::ffi::c_void,
@@ -2891,7 +2887,6 @@ pub unsafe extern "C" fn HUF_decompress1X_DCtx_wksp(
         )
     }
 }
-#[export_name = crate::prefix!(HUF_decompress1X_usingDTable)]
 pub unsafe extern "C" fn HUF_decompress1X_usingDTable(
     mut dst: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
@@ -2907,7 +2902,6 @@ pub unsafe extern "C" fn HUF_decompress1X_usingDTable(
         HUF_decompress1X1_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
     }
 }
-#[export_name = crate::prefix!(HUF_decompress1X1_DCtx_wksp)]
 pub unsafe extern "C" fn HUF_decompress1X1_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut core::ffi::c_void,
@@ -2937,7 +2931,6 @@ pub unsafe extern "C" fn HUF_decompress1X1_DCtx_wksp(
         flags,
     )
 }
-#[export_name = crate::prefix!(HUF_decompress4X_usingDTable)]
 pub unsafe extern "C" fn HUF_decompress4X_usingDTable(
     mut dst: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
