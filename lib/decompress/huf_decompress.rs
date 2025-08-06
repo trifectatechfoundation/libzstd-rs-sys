@@ -83,7 +83,7 @@ pub type HUF_DecompressUsingDTableFn = Option<
         *const HUF_DTable,
     ) -> size_t,
 >;
-pub type HUF_DecompressFastLoopFn = Option<unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> ()>;
+pub type HUF_DecompressFastLoopFn = unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> ();
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_DecompressFastArgs {
@@ -1016,7 +1016,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast(
     mut loopFn: HUF_DecompressFastLoopFn,
 ) -> size_t {
     let mut dt = DTable.offset(1) as *const core::ffi::c_void;
-    let ilowest = cSrc as *const u8;
     let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
     let mut args = HUF_DecompressFastArgs {
         ip: [core::ptr::null::<u8>(); 4],
@@ -1035,7 +1034,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast(
     if ret == 0 {
         return 0;
     }
-    loopFn.unwrap_unchecked()(&mut args);
+    loopFn(&mut args);
     let segmentSize = dstSize.wrapping_add(3) / 4;
     let mut segmentEnd = dst as *mut u8;
     let mut i: core::ffi::c_int = 0;
@@ -1098,6 +1097,7 @@ unsafe extern "C" fn HUF_decompress1X1_usingDTable_internal(
     }
     HUF_decompress1X1_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
 }
+
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal(
     mut dst: *mut core::ffi::c_void,
     mut dstSize: size_t,
@@ -1106,50 +1106,27 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal(
     mut DTable: *const HUF_DTable,
     mut flags: core::ffi::c_int,
 ) -> size_t {
-    let mut fallbackFn: HUF_DecompressUsingDTableFn = Some(
-        HUF_decompress4X1_usingDTable_internal_default
-            as unsafe extern "C" fn(
-                *mut core::ffi::c_void,
-                size_t,
-                *const core::ffi::c_void,
-                size_t,
-                *const HUF_DTable,
-            ) -> size_t,
-    );
-    let mut loopFn: HUF_DecompressFastLoopFn = Some(
-        HUF_decompress4X1_usingDTable_internal_fast_c_loop
-            as unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> (),
-    );
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        fallbackFn = Some(
-            HUF_decompress4X1_usingDTable_internal_bmi2
-                as unsafe extern "C" fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                    *const HUF_DTable,
-                ) -> size_t,
-        );
-        if flags & HUF_flags_disableAsm as core::ffi::c_int == 0 {
-            loopFn = Some(
-                HUF_decompress4X1_usingDTable_internal_fast_asm_loop
-                    as unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> (),
+        let loopFn = match flags & HUF_flags_disableAsm as i32 {
+            0 => HUF_decompress4X1_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
+            _ => HUF_decompress4X1_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
+        };
+
+        if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
+            let ret = HUF_decompress4X1_usingDTable_internal_fast(
+                dst, dstSize, cSrc, cSrcSize, DTable, loopFn,
             );
+            if ret != 0 {
+                return ret;
+            }
         }
+
+        HUF_decompress4X1_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable)
     } else {
-        return fallbackFn.unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize, DTable);
+        HUF_decompress4X1_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
     }
-    if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
-        let ret = HUF_decompress4X1_usingDTable_internal_fast(
-            dst, dstSize, cSrc, cSrcSize, DTable, loopFn,
-        );
-        if ret != 0 {
-            return ret;
-        }
-    }
-    fallbackFn.unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize, DTable)
 }
+
 unsafe fn HUF_decompress4X1_DCtx_wksp(
     mut dctx: *mut HUF_DTable,
     mut dst: *mut core::ffi::c_void,
@@ -2462,7 +2439,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast(
     mut loopFn: HUF_DecompressFastLoopFn,
 ) -> size_t {
     let mut dt = DTable.offset(1) as *const core::ffi::c_void;
-    let ilowest = cSrc as *const u8;
     let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
     let mut args = HUF_DecompressFastArgs {
         ip: [core::ptr::null::<u8>(); 4],
@@ -2481,7 +2457,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast(
     if ret == 0 {
         return 0;
     }
-    loopFn.unwrap_unchecked()(&mut args);
+    loopFn(&mut args);
     let segmentSize = dstSize.wrapping_add(3) / 4;
     let mut segmentEnd = dst as *mut u8;
     let mut i: core::ffi::c_int = 0;
@@ -2513,6 +2489,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast(
     }
     dstSize
 }
+
 unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal(
     mut dst: *mut core::ffi::c_void,
     mut dstSize: size_t,
@@ -2521,51 +2498,28 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal(
     mut DTable: *const HUF_DTable,
     mut flags: core::ffi::c_int,
 ) -> size_t {
-    let mut fallbackFn: HUF_DecompressUsingDTableFn = Some(
-        HUF_decompress4X2_usingDTable_internal_default
-            as unsafe extern "C" fn(
-                *mut core::ffi::c_void,
-                size_t,
-                *const core::ffi::c_void,
-                size_t,
-                *const HUF_DTable,
-            ) -> size_t,
-    );
-    let mut loopFn: HUF_DecompressFastLoopFn = Some(
-        HUF_decompress4X2_usingDTable_internal_fast_c_loop
-            as unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> (),
-    );
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        fallbackFn = Some(
-            HUF_decompress4X2_usingDTable_internal_bmi2
-                as unsafe extern "C" fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                    *const HUF_DTable,
-                ) -> size_t,
-        );
-        if flags & HUF_flags_disableAsm as core::ffi::c_int == 0 {
-            loopFn = Some(
-                HUF_decompress4X2_usingDTable_internal_fast_asm_loop
-                    as unsafe extern "C" fn(*mut HUF_DecompressFastArgs) -> (),
+        let loopFn = match flags & HUF_flags_disableAsm as core::ffi::c_int {
+            0 => HUF_decompress4X2_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
+            _ => HUF_decompress4X2_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
+        };
+
+        if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
+            let ret = HUF_decompress4X2_usingDTable_internal_fast(
+                dst, dstSize, cSrc, cSrcSize, DTable, loopFn,
             );
+            if ret != 0 {
+                return ret;
+            }
         }
+
+        HUF_decompress4X2_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable)
     } else {
-        return fallbackFn.unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize, DTable);
+        HUF_decompress4X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
     }
-    if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
-        let ret = HUF_decompress4X2_usingDTable_internal_fast(
-            dst, dstSize, cSrc, cSrcSize, DTable, loopFn,
-        );
-        if ret != 0 {
-            return ret;
-        }
-    }
-    fallbackFn.unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize, DTable)
 }
-unsafe extern "C" fn HUF_decompress1X2_usingDTable_internal_bmi2(
+
+unsafe fn HUF_decompress1X2_usingDTable_internal_bmi2(
     mut dst: *mut core::ffi::c_void,
     mut dstSize: size_t,
     mut cSrc: *const core::ffi::c_void,
