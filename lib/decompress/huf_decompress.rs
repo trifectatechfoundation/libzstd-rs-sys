@@ -1417,10 +1417,9 @@ unsafe fn HUF_fillDTableX2(
     let rankVal = rankValOrigin[0];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
-    let mut w: core::ffi::c_int = 0;
+
     let wEnd = maxWeight as core::ffi::c_int + 1;
-    w = 1;
-    while w < wEnd {
+    for w in 1..wEnd as usize {
         let begin = rankStart[w as usize] as core::ffi::c_int;
         let end = rankStart[(w + 1) as usize] as core::ffi::c_int;
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
@@ -1428,12 +1427,10 @@ unsafe fn HUF_fillDTableX2(
             let mut start = rankVal[w as usize] as core::ffi::c_int;
             let length = (1) << (targetLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
             let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
-            let mut s: core::ffi::c_int = 0;
             if minWeight < 1 {
                 minWeight = 1;
             }
-            s = begin;
-            while s != end {
+            for s in begin..end {
                 HUF_fillDTableX2Level2(
                     DTable.offset(start as isize),
                     targetLog,
@@ -1447,7 +1444,6 @@ unsafe fn HUF_fillDTableX2(
                     u16::from(sortedList[s as usize].symbol),
                 );
                 start = (start as u32).wrapping_add(length) as core::ffi::c_int as core::ffi::c_int;
-                s += 1;
             }
         } else {
             HUF_fillDTableX2ForWeight(
@@ -1459,7 +1455,6 @@ unsafe fn HUF_fillDTableX2(
                 1,
             );
         }
-        w += 1;
     }
 }
 
