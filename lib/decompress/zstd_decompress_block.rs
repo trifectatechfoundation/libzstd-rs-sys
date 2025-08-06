@@ -312,6 +312,7 @@ pub unsafe extern "C" fn ZSTD_getcBlockSize(
     }
     cSize as size_t
 }
+
 unsafe fn ZSTD_allocateLiteralsBuffer(
     mut dctx: *mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
@@ -334,20 +335,7 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
             .offset(WILDCOPY_OVERLENGTH as isize);
         (*dctx).litBufferEnd = ((*dctx).litBuffer).offset(litSize as isize);
         (*dctx).litBufferLocation = LitLocation::ZSTD_in_dst;
-    } else if litSize
-        <= (if 64
-            > (if ((1) << 16) < (128) << 10 {
-                (1) << 16
-            } else {
-                (128) << 10
-            }) {
-            64
-        } else if ((1) << 16) < (128) << 10 {
-            (1) << 16
-        } else {
-            (128) << 10
-        }) as size_t
-    {
+    } else if litSize <= ZSTD_LITBUFFEREXTRASIZE as size_t {
         (*dctx).litBuffer = ((*dctx).litExtraBuffer).as_mut_ptr();
         (*dctx).litBufferEnd = ((*dctx).litBuffer).offset(litSize as isize);
         (*dctx).litBufferLocation = LitLocation::ZSTD_not_in_dst;
@@ -356,37 +344,11 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
             (*dctx).litBuffer = (dst as *mut u8)
                 .offset(expectedWriteSize as isize)
                 .offset(-(litSize as isize))
-                .offset(
-                    (if 64
-                        > (if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        })
-                    {
-                        64
-                    } else if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    }) as isize,
-                )
+                .add(ZSTD_LITBUFFEREXTRASIZE)
                 .offset(-(WILDCOPY_OVERLENGTH as isize));
-            (*dctx).litBufferEnd = ((*dctx).litBuffer).offset(litSize as isize).offset(
-                -((if 64
-                    > (if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    })
-                {
-                    64
-                } else if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                }) as isize),
-            );
+            (*dctx).litBufferEnd = ((*dctx).litBuffer)
+                .offset(litSize as isize)
+                .sub(ZSTD_LITBUFFEREXTRASIZE);
         } else {
             (*dctx).litBuffer = (dst as *mut u8)
                 .offset(expectedWriteSize as isize)
