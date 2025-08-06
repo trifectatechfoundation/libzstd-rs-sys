@@ -592,7 +592,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     if srcSize < 5 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let lhc = MEM_readLE32(istart as *const core::ffi::c_void);
+    let lhc = MEM_readLE32(istart as *const core::ffi::c_void) as size_t;
 
     let flags = {
         let bmi_flag = match ZSTD_DCtx_get_bmi2(dctx) {
@@ -611,27 +611,15 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let lhlCode = (*istart.offset(0) >> 2 & 0b11) as u32;
     let singleStream = lhlCode == 0;
 
-    let mut lhSize: size_t = 0;
-    let mut litSize: size_t = 0;
-    let mut litCSize: size_t = 0;
-
-    match lhlCode {
-        2 => {
-            lhSize = 4;
-            litSize = (lhc >> 4 & 0x3fff) as size_t;
-            litCSize = (lhc >> 18) as size_t;
-        }
-        3 => {
-            lhSize = 5;
-            litSize = (lhc >> 4 & 0x3ffff) as size_t;
-            litCSize = ((lhc >> 22) as size_t).wrapping_add((*istart.offset(4) as size_t) << 10);
-        }
-        _ => {
-            lhSize = 3;
-            litSize = (lhc >> 4 & 0x3ff) as size_t;
-            litCSize = (lhc >> 14 & 0x3ff) as size_t;
-        }
-    }
+    let (lhSize, litSize, litCSize) = match lhlCode {
+        2 => (4, lhc >> 4 & 0x3fff, lhc >> 18),
+        3 => (
+            5,
+            lhc >> 4 & 0x3ffff,
+            (lhc >> 22) + ((*istart.offset(4) as size_t) << 10),
+        ),
+        _ => (3, lhc >> 4 & 0x3ff, lhc >> 14 & 0x3ff),
+    };
 
     if litSize > 0 && dst.is_null() {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
