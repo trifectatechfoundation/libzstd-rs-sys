@@ -315,12 +315,12 @@ pub unsafe extern "C" fn ZSTD_getcBlockSize(
 
 unsafe fn ZSTD_allocateLiteralsBuffer(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
+    dst: *mut u8,
     dstCapacity: usize,
     litSize: usize,
     streaming: StreamingOperation,
     expectedWriteSize: usize,
-    splitImmediately: core::ffi::c_uint,
+    split_immediately: bool,
 ) {
     let blockSizeMax = dctx.block_size_max();
     if streaming == StreamingOperation::NotStreaming
@@ -330,30 +330,24 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
                 .wrapping_add(litSize)
                 .wrapping_add(WILDCOPY_OVERLENGTH)
     {
-        dctx.litBuffer = (dst as *mut u8)
-            .offset(blockSizeMax as isize)
-            .offset(WILDCOPY_OVERLENGTH as isize);
-        dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
+        dctx.litBuffer = dst.add(blockSizeMax).add(WILDCOPY_OVERLENGTH);
+        dctx.litBufferEnd = dctx.litBuffer.add(litSize);
         dctx.litBufferLocation = LitLocation::ZSTD_in_dst;
     } else if litSize <= ZSTD_LITBUFFEREXTRASIZE {
         dctx.litBuffer = (dctx.litExtraBuffer).as_mut_ptr();
-        dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
+        dctx.litBufferEnd = dctx.litBuffer.add(litSize);
         dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
     } else {
-        if splitImmediately != 0 {
-            dctx.litBuffer = (dst as *mut u8)
-                .offset(expectedWriteSize as isize)
-                .offset(-(litSize as isize))
+        if split_immediately {
+            dctx.litBuffer = dst
+                .add(expectedWriteSize)
+                .sub(litSize)
                 .add(ZSTD_LITBUFFEREXTRASIZE)
-                .offset(-(WILDCOPY_OVERLENGTH as isize));
-            dctx.litBufferEnd = (dctx.litBuffer)
-                .offset(litSize as isize)
-                .sub(ZSTD_LITBUFFEREXTRASIZE);
+                .sub(WILDCOPY_OVERLENGTH);
+            dctx.litBufferEnd = dctx.litBuffer.add(litSize).sub(ZSTD_LITBUFFEREXTRASIZE);
         } else {
-            dctx.litBuffer = (dst as *mut u8)
-                .offset(expectedWriteSize as isize)
-                .offset(-(litSize as isize));
-            dctx.litBufferEnd = (dst as *mut u8).offset(expectedWriteSize as isize);
+            dctx.litBuffer = dst.add(expectedWriteSize).sub(litSize);
+            dctx.litBufferEnd = dst.add(expectedWriteSize);
         }
         dctx.litBufferLocation = LitLocation::ZSTD_split;
     };
@@ -429,12 +423,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
             ZSTD_allocateLiteralsBuffer(
                 dctx,
-                dst,
+                dst as *mut u8,
                 dstCapacity,
                 litSize,
                 streaming,
                 expectedWriteSize,
-                1,
+                true,
             );
 
             if lhSize + litSize + WILDCOPY_OVERLENGTH as usize > src.len() {
@@ -504,12 +498,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
             ZSTD_allocateLiteralsBuffer(
                 dctx,
-                dst,
+                dst as *mut u8,
                 dstCapacity,
                 litSize,
                 streaming,
                 expectedWriteSize,
-                1,
+                true,
             );
 
             if dctx.litBufferLocation == LitLocation::ZSTD_split {
@@ -580,12 +574,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     ZSTD_allocateLiteralsBuffer(
         dctx,
-        dst,
+        dst as *mut u8,
         dstCapacity,
         litSize,
         streaming,
         expectedWriteSize,
-        0,
+        false,
     );
 
     if dctx.ddictIsCold != 0 && litSize > 768 {
