@@ -314,7 +314,7 @@ pub unsafe extern "C" fn ZSTD_getcBlockSize(
 }
 
 unsafe fn ZSTD_allocateLiteralsBuffer(
-    mut dctx: *mut ZSTD_DCtx,
+    dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     litSize: size_t,
@@ -330,32 +330,32 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
                 .wrapping_add(litSize)
                 .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
     {
-        (*dctx).litBuffer = (dst as *mut u8)
+        dctx.litBuffer = (dst as *mut u8)
             .offset(blockSizeMax as isize)
             .offset(WILDCOPY_OVERLENGTH as isize);
-        (*dctx).litBufferEnd = ((*dctx).litBuffer).offset(litSize as isize);
-        (*dctx).litBufferLocation = LitLocation::ZSTD_in_dst;
+        dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
+        dctx.litBufferLocation = LitLocation::ZSTD_in_dst;
     } else if litSize <= ZSTD_LITBUFFEREXTRASIZE as size_t {
-        (*dctx).litBuffer = ((*dctx).litExtraBuffer).as_mut_ptr();
-        (*dctx).litBufferEnd = ((*dctx).litBuffer).offset(litSize as isize);
-        (*dctx).litBufferLocation = LitLocation::ZSTD_not_in_dst;
+        dctx.litBuffer = (dctx.litExtraBuffer).as_mut_ptr();
+        dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
+        dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
     } else {
         if splitImmediately != 0 {
-            (*dctx).litBuffer = (dst as *mut u8)
+            dctx.litBuffer = (dst as *mut u8)
                 .offset(expectedWriteSize as isize)
                 .offset(-(litSize as isize))
                 .add(ZSTD_LITBUFFEREXTRASIZE)
                 .offset(-(WILDCOPY_OVERLENGTH as isize));
-            (*dctx).litBufferEnd = ((*dctx).litBuffer)
+            dctx.litBufferEnd = (dctx.litBuffer)
                 .offset(litSize as isize)
                 .sub(ZSTD_LITBUFFEREXTRASIZE);
         } else {
-            (*dctx).litBuffer = (dst as *mut u8)
+            dctx.litBuffer = (dst as *mut u8)
                 .offset(expectedWriteSize as isize)
                 .offset(-(litSize as isize));
-            (*dctx).litBufferEnd = (dst as *mut u8).offset(expectedWriteSize as isize);
+            dctx.litBufferEnd = (dst as *mut u8).offset(expectedWriteSize as isize);
         }
-        (*dctx).litBufferLocation = LitLocation::ZSTD_split;
+        dctx.litBufferLocation = LitLocation::ZSTD_split;
     };
 }
 
