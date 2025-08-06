@@ -1166,10 +1166,22 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
     )
 }
 
+impl HUF_DEltX2 {
+    #[inline]
+    fn from_u32(value: u32) -> Self {
+        let [a, b, c, d] = value.to_le_bytes();
+
+        Self {
+            sequence: u16::from_le_bytes([a, b]),
+            nbBits: c,
+            length: d,
+        }
+    }
+}
+
 fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::c_int) -> u32 {
-    let mut seq: u32 = 0;
-    if MEM_isLittleEndian() != 0 {
-        seq = if level == 1 {
+    if cfg!(target_endian = "little") {
+        let mut seq = if level == 1 {
             symbol
         } else {
             baseSeq.wrapping_add(symbol << 8)
@@ -1177,7 +1189,7 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
         seq.wrapping_add(nbBits << 16)
             .wrapping_add((level as u32) << 24)
     } else {
-        seq = if level == 1 {
+        let mut seq = if level == 1 {
             symbol << 8
         } else {
             (baseSeq << 8).wrapping_add(symbol)
@@ -1188,34 +1200,18 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
     }
 }
 
-unsafe fn HUF_buildDEltX2(
-    mut symbol: u32,
-    mut nbBits: u32,
-    mut baseSeq: u32,
-    mut level: core::ffi::c_int,
-) -> HUF_DEltX2 {
-    let mut DElt = HUF_DEltX2 {
-        sequence: 0,
-        nbBits: 0,
-        length: 0,
-    };
-    let val = HUF_buildDEltX2U32(symbol, nbBits, baseSeq, level);
-    libc::memcpy(
-        &mut DElt as *mut HUF_DEltX2 as *mut core::ffi::c_void,
-        &val as *const u32 as *const core::ffi::c_void,
-        ::core::mem::size_of::<u32>() as core::ffi::c_ulong as libc::size_t,
-    );
-    DElt
+fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
+    HUF_DEltX2::from_u32(HUF_buildDEltX2U32(
+        symbol as u32,
+        nbBits,
+        baseSeq as u32,
+        level,
+    ))
 }
 
-unsafe fn HUF_buildDEltX2U64(
-    symbol: u32,
-    nbBits: u32,
-    baseSeq: u16,
-    level: core::ffi::c_int,
-) -> u64 {
-    let mut DElt = HUF_buildDEltX2U32(symbol, nbBits, baseSeq as u32, level);
-    (DElt as u64).wrapping_add((DElt as u64) << 32)
+fn HUF_buildDEltX2U64(symbol: u32, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> u64 {
+    let DElt = HUF_buildDEltX2U32(symbol, nbBits, baseSeq as u32, level);
+    DElt as u64 | (DElt as u64) << 32
 }
 
 unsafe fn HUF_fillDTableX2ForWeight(
@@ -1233,7 +1229,7 @@ unsafe fn HUF_fillDTableX2ForWeight(
         1 => {
             ptr = begin;
             while ptr != end {
-                let DElt = HUF_buildDEltX2((*ptr).symbol as u32, nbBits, baseSeq as u32, level);
+                let DElt = HUF_buildDEltX2((*ptr).symbol, nbBits, baseSeq, level);
                 let fresh48 = DTableRank;
                 DTableRank = DTableRank.offset(1);
                 *fresh48 = DElt;
@@ -1243,7 +1239,7 @@ unsafe fn HUF_fillDTableX2ForWeight(
         2 => {
             ptr = begin;
             while ptr != end {
-                let DElt_0 = HUF_buildDEltX2((*ptr).symbol as u32, nbBits, baseSeq as u32, level);
+                let DElt_0 = HUF_buildDEltX2((*ptr).symbol, nbBits, baseSeq, level);
                 *DTableRank.offset(0) = DElt_0;
                 *DTableRank.offset(1) = DElt_0;
                 DTableRank = DTableRank.offset(2);
@@ -3017,16 +3013,16 @@ mod tests {
     #[test]
     fn test_buildDEltX2() {
         assert_eq!(
-            unsafe { HUF_buildDEltX2(0xAABB, 0xCC, 0xDD, 0xEE) },
+            HUF_buildDEltX2(0xAA, 0xBB, 0xCC, 0xDD),
             HUF_DEltX2 {
-                sequence: 0xBBDD,
-                nbBits: 0x76,
-                length: 0xEF,
+                sequence: 0xAACC,
+                nbBits: 0xBB,
+                length: 0xDD,
             }
         );
 
         assert_eq!(
-            unsafe { HUF_buildDEltX2(1, 2, 3, 4) },
+            HUF_buildDEltX2(1, 2, 3, 4),
             HUF_DEltX2 {
                 sequence: 0x0103,
                 nbBits: 2,
