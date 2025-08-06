@@ -1469,27 +1469,23 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut iSize: size_t = 0;
     let mut dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUF_DEltX2;
-    let mut rankStart = core::ptr::null_mut::<u32>();
     let wksp = workSpace as *mut HUF_ReadDTableX2_Workspace;
+
     if ::core::mem::size_of::<HUF_ReadDTableX2_Workspace>() as core::ffi::c_ulong > wkspSize {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
     }
-    rankStart = core::ptr::addr_of_mut!((*wksp).rankStart0)
+
+    let mut rankStart = core::ptr::addr_of_mut!((*wksp).rankStart0)
         .cast::<u32>()
         .offset(1);
-    core::ptr::write_bytes(
-        ((*wksp).rankStats).as_mut_ptr() as *mut u8,
-        0,
-        ::core::mem::size_of::<[u32; 13]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    core::ptr::write_bytes(
-        ((*wksp).rankStart0).as_mut_ptr() as *mut u8,
-        0,
-        ::core::mem::size_of::<[u32; 15]>() as core::ffi::c_ulong as libc::size_t,
-    );
+
+    (*wksp).rankStats.fill(0);
+    (*wksp).rankStart0.fill(0);
+
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
         return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
     }
+
     iSize = HUF_readStats_wksp(
         &mut (*wksp).weightList,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
@@ -2860,6 +2856,7 @@ fn HUF_selectDecoder(dstSize: size_t, cSrcSize: size_t) -> Decoder {
         Decoder::A1
     }
 }
+
 pub unsafe fn HUF_decompress1X_DCtx_wksp(
     dctx: *mut HUF_DTable,
     dst: *mut core::ffi::c_void,
