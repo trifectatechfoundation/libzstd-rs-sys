@@ -440,18 +440,14 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             let (lhSize, litSize) = match *istart.offset(0) as core::ffi::c_int >> 2 & 0b11 {
                 1 => (
                     2 as usize,
-                    (MEM_readLE16(istart as *const core::ffi::c_void) as core::ffi::c_int >> 4)
-                        as usize,
+                    (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize,
                 ),
                 3 => {
-                    if src.len() < 3 {
+                    let [a, b, c, ..] = *src else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-                    }
+                    };
 
-                    (
-                        3,
-                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as usize,
-                    )
+                    (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
                 }
                 _ => (1, (*istart.offset(0) >> 3) as usize),
             };
@@ -516,25 +512,18 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         SymbolEncodingType_e::set_rle => {
             let (lhSize, litSize) = match *istart.offset(0) >> 2 & 0b11 {
                 1 => {
-                    if src.len() < 3 {
+                    let [a, b, _, ..] = *src else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-                    }
+                    };
 
-                    (
-                        2 as usize,
-                        (MEM_readLE16(istart as *const core::ffi::c_void) as core::ffi::c_int >> 4)
-                            as usize,
-                    )
+                    (2 as usize, (u16::from_le_bytes([a, b]) >> 4) as usize)
                 }
                 3 => {
-                    if src.len() < 4 {
+                    let [a, b, c, _, ..] = *src else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-                    }
+                    };
 
-                    (
-                        3,
-                        (MEM_readLE24(istart as *const core::ffi::c_void) >> 4) as usize,
-                    )
+                    (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
                 }
                 _ => (1, (*istart.offset(0) >> 3) as usize),
             };
@@ -585,10 +574,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         }
     }
 
-    if src.len() < 5 {
+    let [a, b, c, d, size_correction, ..] = *src else {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
-    let lhc = MEM_readLE32(istart as *const core::ffi::c_void) as usize;
+    };
+    let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
     let flags = {
         let bmi_flag = match ZSTD_DCtx_get_bmi2(dctx) {
@@ -612,7 +601,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         3 => (
             5,
             lhc >> 4 & 0x3ffff,
-            (lhc >> 22) + ((*istart.offset(4) as usize) << 10),
+            (lhc >> 22) + ((size_correction as usize) << 10),
         ),
         _ => (3, lhc >> 4 & 0x3ff, lhc >> 14 & 0x3ff),
     };
