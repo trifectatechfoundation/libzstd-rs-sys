@@ -217,7 +217,7 @@ unsafe extern "C" fn ZSTD_copy16(
 ) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
-pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
+pub const WILDCOPY_OVERLENGTH: usize = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
 unsafe extern "C" fn ZSTD_wildcopy(
@@ -316,26 +316,26 @@ pub unsafe extern "C" fn ZSTD_getcBlockSize(
 unsafe fn ZSTD_allocateLiteralsBuffer(
     dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    litSize: size_t,
+    dstCapacity: usize,
+    litSize: usize,
     streaming: StreamingOperation,
-    expectedWriteSize: size_t,
+    expectedWriteSize: usize,
     splitImmediately: core::ffi::c_uint,
 ) {
-    let blockSizeMax = ZSTD_blockSizeMax(dctx);
+    let blockSizeMax = dctx.block_size_max();
     if streaming == StreamingOperation::NotStreaming
         && dstCapacity
             > blockSizeMax
-                .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
+                .wrapping_add(WILDCOPY_OVERLENGTH)
                 .wrapping_add(litSize)
-                .wrapping_add(WILDCOPY_OVERLENGTH as size_t)
+                .wrapping_add(WILDCOPY_OVERLENGTH)
     {
         dctx.litBuffer = (dst as *mut u8)
             .offset(blockSizeMax as isize)
             .offset(WILDCOPY_OVERLENGTH as isize);
         dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
         dctx.litBufferLocation = LitLocation::ZSTD_in_dst;
-    } else if litSize <= ZSTD_LITBUFFEREXTRASIZE as size_t {
+    } else if litSize <= ZSTD_LITBUFFEREXTRASIZE {
         dctx.litBuffer = (dctx.litExtraBuffer).as_mut_ptr();
         dctx.litBufferEnd = (dctx.litBuffer).offset(litSize as isize);
         dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
@@ -382,6 +382,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     dstCapacity: size_t,
     streaming: StreamingOperation,
 ) -> size_t {
+    let dstCapacity = dstCapacity as usize;
+
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if src.len() < MIN_CBLOCK_SIZE {
@@ -420,7 +422,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
+            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
@@ -429,9 +431,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 dctx,
                 dst,
                 dstCapacity,
-                litSize as _,
+                litSize,
                 streaming,
-                expectedWriteSize as _,
+                expectedWriteSize,
                 1,
             );
 
@@ -495,7 +497,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
+            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
@@ -504,9 +506,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 dctx,
                 dst,
                 dstCapacity,
-                litSize as _,
+                litSize,
                 streaming,
-                expectedWriteSize as _,
+                expectedWriteSize,
                 1,
             );
 
@@ -571,7 +573,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let expectedWriteSize = Ord::min(dstCapacity as usize, blockSizeMax);
+    let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
     if expectedWriteSize < litSize {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -580,9 +582,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         dctx,
         dst,
         dstCapacity,
-        litSize as _,
+        litSize,
         streaming,
-        expectedWriteSize as _,
+        expectedWriteSize,
         0,
     );
 
@@ -651,8 +653,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             dctx.litBuffer as *const core::ffi::c_void,
             litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
         );
-        dctx.litBuffer = (dctx.litBuffer)
-            .offset((ZSTD_LITBUFFEREXTRASIZE as i32 - WILDCOPY_OVERLENGTH) as isize);
+        dctx.litBuffer = (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE - WILDCOPY_OVERLENGTH);
         dctx.litBufferEnd = (dctx.litBufferEnd).offset(-(WILDCOPY_OVERLENGTH as isize));
     }
 
