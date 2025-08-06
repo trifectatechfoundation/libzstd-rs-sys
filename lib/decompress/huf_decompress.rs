@@ -51,13 +51,15 @@ pub struct HUF_ReadDTableX1_Workspace {
     pub symbols: [u8; 256],
     pub huffWeight: [u8; 256],
 }
-#[derive(Copy, Clone)]
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct HUF_DEltX2 {
     pub sequence: u16,
     pub nbBits: u8,
     pub length: u8,
 }
+
 pub type rankValCol_t = [u32; 13];
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1163,6 +1165,7 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
         flags,
     )
 }
+
 fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::c_int) -> u32 {
     let mut seq: u32 = 0;
     if MEM_isLittleEndian() != 0 {
@@ -2995,5 +2998,40 @@ pub unsafe fn HUF_decompress4X_hufOnly_wksp(
         Decoder::A2 => HUF_decompress4X2_DCtx_wksp(
             dctx, dst, dstSize, cSrc, cSrcSize, workSpace, wkspSize, flags,
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_DEltX2_to_u32() {
+        assert_eq!(
+            HUF_buildDEltX2U32(0xAABB, 0xCC, 0xDD, 0xEE).to_le_bytes(),
+            [0xDD, 0xBB, 0x76, 0xEF]
+        );
+        assert_eq!(HUF_buildDEltX2U32(1, 2, 3, 4).to_le_bytes(), [3, 1, 2, 4]);
+    }
+
+    #[test]
+    fn test_buildDEltX2() {
+        assert_eq!(
+            unsafe { HUF_buildDEltX2(0xAABB, 0xCC, 0xDD, 0xEE) },
+            HUF_DEltX2 {
+                sequence: 0xBBDD,
+                nbBits: 0x76,
+                length: 0xEF,
+            }
+        );
+
+        assert_eq!(
+            unsafe { HUF_buildDEltX2(1, 2, 3, 4) },
+            HUF_DEltX2 {
+                sequence: 0x0103,
+                nbBits: 2,
+                length: 4,
+            }
+        );
     }
 }
