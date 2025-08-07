@@ -1036,38 +1036,53 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         Err(e) => return e.to_error_code(),
     };
 
+    assert!(args.ip[0] >= args.ilowest);
     loopFn(&mut args);
-    let segmentSize = dstSize.wrapping_add(3) / 4;
+
+    // Our loop guarantees that ip[] >= ilowest and that we haven't overwritten any op[].
+    assert!(args.ip[0] >= cSrc as *const u8);
+    assert!(args.ip[0] >= cSrc as *const u8);
+    assert!(args.ip[1] >= cSrc as *const u8);
+    assert!(args.ip[2] >= cSrc as *const u8);
+    assert!(args.ip[3] >= cSrc as *const u8);
+    assert!(args.op[3] <= oend);
+
+    assert_eq!(cSrc as *const u8, args.ilowest);
+    assert_eq!((cSrc as *const u8).add(6), args.iend[0]);
+
+    let segmentSize = dstSize.div_ceil(4);
     let mut segmentEnd = dst as *mut u8;
-    let mut i: core::ffi::c_int = 0;
-    i = 0;
-    while i < 4 {
-        if segmentSize <= oend.offset_from(segmentEnd) as core::ffi::c_long as size_t {
+
+    // Finish bit streams one by one.
+    for (i, op) in args.op.iter().copied().enumerate() {
+        if segmentSize <= oend.offset_from(segmentEnd) as size_t {
             segmentEnd = segmentEnd.offset(segmentSize as isize);
         } else {
             segmentEnd = oend;
         }
 
-        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
+        let mut bit = match init_remaining_dstream(&args, i as i32, segmentEnd) {
             Ok(v) => v,
             Err(e) => return e,
         };
 
-        let fresh47 = &mut (*(args.op).as_mut_ptr().offset(i as isize));
-        *fresh47 = (*fresh47).offset(HUF_decodeStreamX1(
-            *(args.op).as_mut_ptr().offset(i as isize),
+        // Decompress and validate that we've produced exactly the expected length.
+        let length = HUF_decodeStreamX1(
+            op,
             &mut bit,
             segmentEnd,
             dt as *const HUF_DEltX1,
             HUF_DECODER_FAST_TABLELOG as u32,
-        ) as isize);
-        if *(args.op).as_mut_ptr().offset(i as isize) != segmentEnd {
+        );
+
+        if op.add(length as usize) != segmentEnd {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        i += 1;
     }
+
     dstSize
 }
+
 unsafe fn HUF_decompress1X1_usingDTable_internal_bmi2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
