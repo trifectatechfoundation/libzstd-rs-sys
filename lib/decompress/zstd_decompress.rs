@@ -225,9 +225,6 @@ unsafe extern "C" fn ZSTD_customFree(
         }
     }
 }
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
-}
 
 const ZSTDv01_magicNumber: u32 = 0xFD2FB51E;
 const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
@@ -2192,7 +2189,7 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
         &mut (*entropy).hufTable,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
-        workspace,
+        unsafe { core::mem::transmute(workspace) },
         workspaceSize,
         0,
     );
