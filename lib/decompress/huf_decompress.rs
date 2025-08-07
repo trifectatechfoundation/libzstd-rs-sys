@@ -44,8 +44,16 @@ pub struct DTableData {
 }
 
 impl DTableData {
+    fn as_x1(&self) -> &[HUF_DEltX1; 4096] {
+        unsafe { core::mem::transmute(&self.data) }
+    }
+
     fn as_x1_mut(&mut self) -> &mut [HUF_DEltX1; 4096] {
         unsafe { core::mem::transmute(&mut self.data) }
+    }
+
+    fn as_x2(&self) -> &[HUF_DEltX2; 4096] {
+        unsafe { core::mem::transmute(&self.data) }
     }
 
     fn as_x2_mut(&mut self) -> &mut [HUF_DEltX2; 4096] {
@@ -145,8 +153,8 @@ pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
-unsafe fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDesc {
-    DTableDesc::from_u32(table.read())
+fn HUF_getDTableDesc(mut table: &DTable) -> DTableDesc {
+    table.description
 }
 
 unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
@@ -166,12 +174,12 @@ impl HUF_DecompressFastArgs {
         dstSize: size_t,
         src: *const core::ffi::c_void,
         srcSize: size_t,
-        DTable: *const HUF_DTable,
+        DTable: &DTable,
     ) -> Result<Option<Self>, Error> {
         let mut args = Self::default();
 
-        let mut dt = DTable.offset(1) as *const core::ffi::c_void;
-        let dtLog = (HUF_getDTableDesc(DTable)).tableLog as u32;
+        let dt = DTable.data.as_x2().as_ptr() as *const core::ffi::c_void;
+        let dtLog = DTable.description.tableLog as u32;
         let istart = src as *const u8;
         let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
@@ -464,9 +472,11 @@ unsafe fn HUF_decodeStreamX1(
     mut p: *mut u8,
     bitDPtr: &mut BIT_DStream_t,
     pEnd: *mut u8,
-    dt: *const HUF_DEltX1,
+    dt: &[HUF_DEltX1; 4096],
     dtLog: u32,
 ) -> size_t {
+    let dt = dt.as_ptr();
+
     let pStart = p;
     if pEnd.offset_from(p) as core::ffi::c_long > 3 {
         while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
@@ -519,13 +529,12 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_body(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     let mut op = dst as *mut u8;
     let oend = ZSTD_maybeNullPtrAdd(op as *mut core::ffi::c_void, dstSize as ptrdiff_t) as *mut u8;
-    let mut dtPtr = DTable.offset(1) as *const core::ffi::c_void;
-    let dt = dtPtr as *const HUF_DEltX1;
-    let dtd = HUF_getDTableDesc(DTable);
+    let dt = DTable.data.as_x1();
+    let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
 
     let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
@@ -548,7 +557,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     if cSrcSize < 10 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -560,8 +569,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let ostart = dst as *mut u8;
     let oend = ostart.offset(dstSize as isize);
     let olimit = oend.offset(-(3));
-    let dtPtr = DTable.offset(1) as *const core::ffi::c_void;
-    let dt = dtPtr as *const HUF_DEltX1;
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
@@ -583,8 +590,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let mut op2 = opStart2;
     let mut op3 = opStart3;
     let mut op4 = opStart4;
-    let dtd = HUF_getDTableDesc(DTable);
-    let dtLog = dtd.tableLog as u32;
     let mut endSignal = 1;
     if length4 > cSrcSize {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -614,9 +619,15 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
         Err(e) => return e.to_error_code(),
     };
 
+    let dt = DTable.data.as_x1();
+    let dtd = DTable.description;
+    let dtLog = dtd.tableLog as u32;
+
     if oend.offset_from(op4) as core::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
+        let dt = dt.as_ptr();
+
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
             if MEM_64bits() != 0 {
                 let fresh23 = op1;
@@ -722,7 +733,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_bmi2(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress4X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -732,7 +743,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_default(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress4X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -869,10 +880,9 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
 ) -> size_t {
-    let mut dt = DTable.offset(1) as *const core::ffi::c_void;
     let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
     let mut args = match HUF_DecompressFastArgs::new(dst, dstSize, cSrc, cSrcSize, DTable) {
@@ -916,7 +926,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
             op,
             &mut bit,
             segmentEnd,
-            dt as *const HUF_DEltX1,
+            DTable.data.as_x1(),
             HUF_DECODER_FAST_TABLELOG as u32,
         );
 
@@ -933,7 +943,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_bmi2(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -943,7 +953,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_default(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -953,7 +963,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
@@ -967,7 +977,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
@@ -1012,7 +1022,6 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress4X1_usingDTable_internal(
@@ -1303,6 +1312,25 @@ pub fn HUF_readDTableX2_wksp(
 }
 
 #[inline(always)]
+unsafe fn HUF_decodeSymbolX2_new(
+    op: *mut u8,
+    DStream: &mut BIT_DStream_t,
+    dt: &[HUF_DEltX2; 4096],
+    dtLog: u32,
+) -> u32 {
+    let HUF_DEltX2 {
+        sequence,
+        nbBits,
+        length,
+    } = dt[DStream.look_bits_fast(dtLog)];
+
+    op.cast::<u16>().write_unaligned(sequence);
+    DStream.skip_bits(nbBits as u32);
+
+    length as u32
+}
+
+#[inline(always)]
 unsafe fn HUF_decodeSymbolX2(
     op: *mut core::ffi::c_void,
     DStream: &mut BIT_DStream_t,
@@ -1335,14 +1363,13 @@ unsafe fn HUF_decodeLastSymbolX2(
     if (*dt.offset(val as isize)).length as core::ffi::c_int == 1 {
         DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
     } else if ((*DStream).bitsConsumed as core::ffi::c_ulong)
-        < (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
+        < (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
     {
         DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
         if (*DStream).bitsConsumed as core::ffi::c_ulong
-            > (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
+            > (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
         {
-            (*DStream).bitsConsumed = (::core::mem::size_of::<BitContainerType>()
-                as core::ffi::c_ulong)
+            (*DStream).bitsConsumed = (size_of::<BitContainerType>() as core::ffi::c_ulong)
                 .wrapping_mul(8) as core::ffi::c_uint;
         }
     }
@@ -1353,7 +1380,7 @@ unsafe fn HUF_decodeStreamX2(
     mut p: *mut u8,
     bitDPtr: &mut BIT_DStream_t,
     pEnd: *mut u8,
-    dt: *const HUF_DEltX2,
+    dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
@@ -1365,21 +1392,11 @@ unsafe fn HUF_decodeStreamX2(
                 & (p < pEnd.offset(-(9))) as core::ffi::c_int
                 != 0
             {
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
             }
         } else {
             while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
@@ -1390,26 +1407,15 @@ unsafe fn HUF_decodeStreamX2(
                 != 0
             {
                 if MEM_64bits() != 0 {
-                    p = p.offset(
-                        HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog)
-                            as isize,
-                    );
+                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
                 }
                 if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                    p = p.offset(
-                        HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog)
-                            as isize,
-                    );
+                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
                 }
                 if MEM_64bits() != 0 {
-                    p = p.offset(
-                        HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog)
-                            as isize,
-                    );
+                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
                 }
-                p = p.offset(
-                    HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-                );
+                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
             }
         }
     } else {
@@ -1420,20 +1426,19 @@ unsafe fn HUF_decodeStreamX2(
             & (p <= pEnd.offset(-(2))) as core::ffi::c_int
             != 0
         {
-            p = p.offset(
-                HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-            );
+            p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
         }
         while p <= pEnd.offset(-(2)) {
-            p = p.offset(
-                HUF_decodeSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-            );
+            p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
         }
     }
     if p < pEnd {
-        p = p.offset(
-            HUF_decodeLastSymbolX2(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-        );
+        p = p.offset(HUF_decodeLastSymbolX2(
+            p as *mut core::ffi::c_void,
+            bitDPtr,
+            dt.as_ptr(),
+            dtLog,
+        ) as isize);
     }
     p.offset_from(pStart) as core::ffi::c_long as size_t
 }
@@ -1444,7 +1449,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_body(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
     let mut bitD = match BIT_DStream_t::new(src) {
@@ -1455,9 +1460,8 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_body(
     let ostart = dst as *mut u8;
     let oend =
         ZSTD_maybeNullPtrAdd(ostart as *mut core::ffi::c_void, dstSize as ptrdiff_t) as *mut u8;
-    let dtPtr = DTable.offset(1) as *const core::ffi::c_void;
-    let dt = dtPtr as *const HUF_DEltX2;
-    let dtd = HUF_getDTableDesc(DTable);
+    let dt = DTable.data.as_x2();
+    let dtd = DTable.description;
     HUF_decodeStreamX2(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
     if !bitD.is_empty() {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -1471,7 +1475,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     if cSrcSize < 10 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -1485,8 +1489,6 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let olimit = oend.offset(
         -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
     );
-    let dtPtr = DTable.offset(1) as *const core::ffi::c_void;
-    let dt = dtPtr as *const HUF_DEltX2;
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
@@ -1542,6 +1544,8 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     if oend.offset_from(op4) as core::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
+        let dt = DTable.data.as_x2().as_ptr();
+
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
             if MEM_64bits() != 0 {
                 op1 = op1.offset(HUF_decodeSymbolX2(
@@ -1674,6 +1678,8 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     if op3 > opStart4 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
+    let dt = DTable.data.as_x2();
     HUF_decodeStreamX2(op1, &mut bitD1, opStart2, dt, dtLog);
     HUF_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUF_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
@@ -1691,7 +1697,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_bmi2(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress4X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -1701,7 +1707,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_default(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress4X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -2145,10 +2151,9 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
 ) -> size_t {
-    let mut dt = DTable.offset(1) as *const core::ffi::c_void;
     let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
     let mut args = match HUF_DecompressFastArgs::new(dst, dstSize, cSrc, cSrcSize, DTable) {
@@ -2190,7 +2195,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
             op,
             &mut bit,
             segmentEnd,
-            dt as *const HUF_DEltX2,
+            DTable.data.as_x2(),
             HUF_DECODER_FAST_TABLELOG as u32,
         );
 
@@ -2207,7 +2212,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
@@ -2236,7 +2241,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -2245,7 +2250,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_default(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
 ) -> size_t {
     HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
 }
@@ -2255,7 +2260,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
@@ -2285,7 +2290,6 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress1X2_usingDTable_internal(
@@ -2319,7 +2323,6 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress4X2_usingDTable_internal(
@@ -2626,10 +2629,10 @@ pub unsafe fn HUF_decompress1X_usingDTable(
     maxDstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let dtd = HUF_getDTableDesc(DTable);
+    let dtd = DTable.description;
     if dtd.tableType as core::ffi::c_int != 0 {
         HUF_decompress1X2_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
     } else {
@@ -2657,7 +2660,6 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress1X1_usingDTable_internal(
@@ -2674,10 +2676,10 @@ pub unsafe fn HUF_decompress4X_usingDTable(
     maxDstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    DTable: *const HUF_DTable,
+    DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let dtd = HUF_getDTableDesc(DTable);
+    let dtd = DTable.description;
     if dtd.tableType as core::ffi::c_int != 0 {
         HUF_decompress4X2_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
     } else {
