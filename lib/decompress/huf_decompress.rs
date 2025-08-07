@@ -3,6 +3,7 @@ use core::ptr;
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::{HUF_readStats_wksp, Workspace};
 use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::fse_decompress::Error;
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST,
     MEM_write16, MEM_write64,
@@ -139,7 +140,7 @@ unsafe fn HUF_DecompressFastArgs_init(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     DTable: *const HUF_DTable,
-) -> size_t {
+) -> Result<bool, Error> {
     let mut dt = DTable.offset(1) as *const core::ffi::c_void;
     let dtLog = (HUF_getDTableDesc(DTable)).tableLog as u32;
     let istart = src as *const u8;
@@ -147,25 +148,25 @@ unsafe fn HUF_DecompressFastArgs_init(
 
     // The fast decoding loop assumes 64-bit little-endian.
     if cfg!(target_endian = "big") || MEM_32bits() != 0 {
-        return 0;
+        return Ok(false);
     }
 
     // Avoid nullptr addition
     if dstSize == 0 {
-        return 0;
+        return Ok(false);
     }
     assert!(!dst.is_null());
 
     // strict minimum : jump table + 1 byte per stream.
     if srcSize < 10 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
 
     // Must have at least 8 bytes per stream because we don't handle initializing smaller bit containers.
     // If table log is not correct at this point, fallback to the old decoder.
     // On small inputs we don't have enough data to trigger the fast loop, so use the old decoder.
     if dtLog != HUF_DECODER_FAST_TABLELOG as u32 {
-        return 0;
+        return Ok(false);
     }
 
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
@@ -180,11 +181,11 @@ unsafe fn HUF_DecompressFastArgs_init(
 
     // HUF_initFastDStream() requires this, and this small of an input won't benefit from the ASM loop anyways.
     if length1 < 8 || length2 < 8 || length3 < 8 || length4 < 8 {
-        return 0;
+        return Ok(false);
     }
 
     if length4 > srcSize {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Err(Error::corruption_detected);
     }
 
     /* ip[] contains the position that is currently loaded into bits[]. */
@@ -201,7 +202,7 @@ unsafe fn HUF_DecompressFastArgs_init(
 
     // No point to call the ASM loop for tiny outputs.
     if *(args.op).as_mut_ptr().offset(3) >= oend {
-        return 0;
+        return Ok(false);
     }
 
     // bits[] is the bit container.
@@ -225,7 +226,7 @@ unsafe fn HUF_DecompressFastArgs_init(
     args.oend = oend;
     args.dt = dt;
 
-    1
+    Ok(true)
 }
 
 unsafe fn init_remaining_dstream(
@@ -1034,14 +1035,13 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         oend: core::ptr::null_mut::<u8>(),
         iend: [core::ptr::null::<u8>(); 4],
     };
-    let ret = HUF_DecompressFastArgs_init(&mut args, dst, dstSize, cSrc, cSrcSize, DTable);
-    let err_code = ret;
-    if ERR_isError(err_code) != 0 {
-        return err_code;
+
+    match HUF_DecompressFastArgs_init(&mut args, dst, dstSize, cSrc, cSrcSize, DTable) {
+        Err(e) => return e.to_error_code(),
+        Ok(false) => return 0,
+        Ok(true) => { /* fall through */ }
     }
-    if ret == 0 {
-        return 0;
-    }
+
     loopFn(&mut args);
     let segmentSize = dstSize.wrapping_add(3) / 4;
     let mut segmentEnd = dst as *mut u8;
@@ -2444,14 +2444,13 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         oend: core::ptr::null_mut::<u8>(),
         iend: [core::ptr::null::<u8>(); 4],
     };
-    let ret = HUF_DecompressFastArgs_init(&mut args, dst, dstSize, cSrc, cSrcSize, DTable);
-    let err_code = ret;
-    if ERR_isError(err_code) != 0 {
-        return err_code;
+
+    match HUF_DecompressFastArgs_init(&mut args, dst, dstSize, cSrc, cSrcSize, DTable) {
+        Err(e) => return e.to_error_code(),
+        Ok(false) => return 0,
+        Ok(true) => { /* fall through */ }
     }
-    if ret == 0 {
-        return 0;
-    }
+
     loopFn(&mut args);
     let segmentSize = dstSize.wrapping_add(3) / 4;
     let mut segmentEnd = dst as *mut u8;
