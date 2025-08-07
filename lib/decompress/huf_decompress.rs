@@ -29,6 +29,7 @@ pub struct algo_time_t {
     pub tableTime: u32,
     pub decode256Time: u32,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DTableDesc {
@@ -37,6 +38,20 @@ pub struct DTableDesc {
     pub tableLog: u8,
     pub reserved: u8,
 }
+
+impl DTableDesc {
+    fn from_u32(value: u32) -> Self {
+        let [maxTableLog, tableType, tableLog, reserved] = value.to_le_bytes();
+
+        Self {
+            maxTableLog,
+            tableType,
+            tableLog,
+            reserved,
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_DEltX1 {
@@ -108,18 +123,7 @@ pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
 unsafe fn HUF_getDTableDesc(mut table: *const HUF_DTable) -> DTableDesc {
-    let mut dtd = DTableDesc {
-        maxTableLog: 0,
-        tableType: 0,
-        tableLog: 0,
-        reserved: 0,
-    };
-    libc::memcpy(
-        &mut dtd as *mut DTableDesc as *mut core::ffi::c_void,
-        table as *const core::ffi::c_void,
-        ::core::mem::size_of::<DTableDesc>() as core::ffi::c_ulong as libc::size_t,
-    );
-    dtd
+    DTableDesc::from_u32(table.read())
 }
 
 unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
@@ -318,16 +322,20 @@ pub unsafe fn HUF_readDTableX1_wksp(
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
+    let mut dtd = DTableDesc::from_u32(DTable[0]);
     let DTable = DTable.as_mut_ptr();
+    let dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
+    let dt = dtPtr as *mut HUF_DEltX1;
+
     let mut tableLog = 0;
     let mut nbSymbols = 0;
     let mut iSize: size_t = 0;
-    let dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
-    let dt = dtPtr as *mut HUF_DEltX1;
+
     let mut wksp = workSpace as *mut HUF_ReadDTableX1_Workspace;
     if ::core::mem::size_of::<HUF_ReadDTableX1_Workspace>() as core::ffi::c_ulong > wkspSize {
         return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
     }
+
     iSize = HUF_readStats_wksp(
         &mut (*wksp).huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
@@ -342,7 +350,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
     if ERR_isError(iSize) != 0 {
         return iSize;
     }
-    let mut dtd = HUF_getDTableDesc(DTable);
+
     let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
     tableLog = HUF_rescaleStats(
@@ -357,45 +365,59 @@ pub unsafe fn HUF_readDTableX1_wksp(
     }
     dtd.tableType = 0;
     dtd.tableLog = tableLog as u8;
+
     libc::memcpy(
         DTable as *mut core::ffi::c_void,
         &mut dtd as *mut DTableDesc as *const core::ffi::c_void,
         ::core::mem::size_of::<DTableDesc>() as core::ffi::c_ulong as libc::size_t,
     );
-    let mut n: core::ffi::c_int = 0;
+
+    // Compute symbols and rankStart given rankVal:
+    //
+    // rankVal already contains the number of values of each weight.
+    //
+    // symbols contains the symbols ordered by weight. First are the rankVal[0]
+    // weight 0 symbols, followed by the rankVal[1] weight 1 symbols, and so on.
+    // symbols[0] is filled (but unused) to avoid a branch.
+    //
+    // rankStart contains the offset where each rank belongs in the DTable.
+    // rankStart[0] is not filled because there are no entries in the table for
+    // weight 0.
     let mut nextRankStart = 0 as core::ffi::c_int as u32;
     let unroll = 4;
     let nLimit = nbSymbols as core::ffi::c_int - unroll + 1;
-    n = 0;
-    while n < tableLog as core::ffi::c_int + 1 {
+    for n in 0..tableLog as usize + 1 {
         let curr = nextRankStart;
-        nextRankStart =
-            nextRankStart.wrapping_add(*((*wksp).rankVal).as_mut_ptr().offset(n as isize));
-        *((*wksp).rankStart).as_mut_ptr().offset(n as isize) = curr;
-        n += 1;
+        nextRankStart += (*wksp).rankVal[n];
+        (*wksp).rankStart[n] = curr;
     }
-    n = 0;
+
+    let mut n = 0;
     while n < nLimit {
-        let mut u: core::ffi::c_int = 0;
-        u = 0;
-        while u < unroll {
-            let w = *((*wksp).huffWeight).as_mut_ptr().offset((n + u) as isize) as size_t;
-            let fresh13 = &mut (*((*wksp).rankStart).as_mut_ptr().offset(w as isize));
-            let fresh14 = *fresh13;
-            *fresh13 = (*fresh13).wrapping_add(1);
-            *((*wksp).symbols).as_mut_ptr().offset(fresh14 as isize) = (n + u) as u8;
-            u += 1;
+        for u in 0..unroll {
+            let w = usize::from((*wksp).huffWeight[(n + u) as usize]);
+
+            (*wksp).symbols[(*wksp).rankStart[w] as usize] = (n + u) as u8;
+            (*wksp).rankStart[w] += 1;
         }
         n += unroll;
     }
+
     while n < nbSymbols as core::ffi::c_int {
-        let w_0 = *((*wksp).huffWeight).as_mut_ptr().offset(n as isize) as size_t;
-        let fresh15 = &mut (*((*wksp).rankStart).as_mut_ptr().offset(w_0 as isize));
-        let fresh16 = *fresh15;
-        *fresh15 = (*fresh15).wrapping_add(1);
-        *((*wksp).symbols).as_mut_ptr().offset(fresh16 as isize) = n as u8;
+        let w = usize::from((*wksp).huffWeight[n as usize]);
+
+        (*wksp).symbols[(*wksp).rankStart[w] as usize] = n as u8;
+        (*wksp).rankStart[w] += 1;
+
         n += 1;
     }
+
+    // fill DTable
+    //
+    // We fill all entries of each weight in order.
+    // That way length is a constant for each iteration of the outer loop.
+    // We can switch based on the length to a different inner loop which is
+    // optimized for that particular case.
     let mut w_1: u32 = 0;
     let mut symbol = *((*wksp).rankVal).as_mut_ptr().offset(0) as core::ffi::c_int;
     let mut rankStart = 0;
