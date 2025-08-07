@@ -272,9 +272,13 @@ fn HUF_DEltX1_set4(mut symbol: u8, mut nbBits: u8) -> u64 {
     D4
 }
 
-unsafe fn HUF_rescaleStats(
-    huffWeight: *mut u8,
-    rankVal: *mut u32,
+/// Increase the tableLog to targetTableLog and rescales the stats.
+///
+/// If tableLog > targetTableLog this is a no-op.
+/// @returns New tableLog
+fn HUF_rescaleStats(
+    huffWeight: &mut [u8; 256],
+    rankVal: &mut rankValCol_t,
     nbSymbols: u32,
     tableLog: u32,
     targetTableLog: u32,
@@ -282,31 +286,27 @@ unsafe fn HUF_rescaleStats(
     if tableLog > targetTableLog {
         return tableLog;
     }
+
     if tableLog < targetTableLog {
-        let scale = targetTableLog.wrapping_sub(tableLog);
-        let mut s: u32 = 0;
-        s = 0;
-        while s < nbSymbols {
-            let fresh12 = &mut (*huffWeight.offset(s as isize));
-            *fresh12 = (*fresh12 as core::ffi::c_int
-                + (if *huffWeight.offset(s as isize) as core::ffi::c_int == 0 {
-                    0
-                } else {
-                    scale
-                }) as u8 as core::ffi::c_int) as u8;
-            s = s.wrapping_add(1);
+        let scale = targetTableLog as usize - tableLog as usize;
+
+        /* Increase the weight for all non-zero probability symbols by scale. */
+        for s in 0..nbSymbols as usize {
+            huffWeight[s] += (if huffWeight[s] == 0 { 0 } else { scale }) as u8;
         }
-        s = targetTableLog;
+
+        // Update rankVal to reflect the new weights.
+        // All weights except 0 get moved to weight + scale.
+        // Weights [1, scale] are empty.
+        let mut s = targetTableLog as usize;
         while s > scale {
-            *rankVal.offset(s as isize) = *rankVal.offset(s.wrapping_sub(scale) as isize);
-            s = s.wrapping_sub(1);
+            rankVal[s as usize] = rankVal[s - scale as usize];
+            s -= 1;
         }
-        s = scale;
-        while s > 0 {
-            *rankVal.offset(s as isize) = 0;
-            s = s.wrapping_sub(1);
-        }
+
+        rankVal[1..=scale as usize].fill(0);
     }
+
     targetTableLog
 }
 
@@ -346,8 +346,8 @@ pub unsafe fn HUF_readDTableX1_wksp(
     let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
     tableLog = HUF_rescaleStats(
-        ((*wksp).huffWeight).as_mut_ptr(),
-        ((*wksp).rankVal).as_mut_ptr(),
+        &mut (*wksp).huffWeight,
+        &mut (*wksp).rankVal,
         nbSymbols,
         tableLog,
         targetTableLog,
