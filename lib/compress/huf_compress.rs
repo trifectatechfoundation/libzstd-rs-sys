@@ -363,14 +363,16 @@ pub unsafe extern "C" fn HUF_writeCTable_wksp(
         .wrapping_div(2)
         .wrapping_add(1) as size_t
 }
-#[export_name = crate::prefix!(HUF_readCTable)]
-pub unsafe extern "C" fn HUF_readCTable(
+
+pub unsafe fn HUF_readCTable(
     mut CTable: *mut HUF_CElt,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut hasZeroWeights: *mut core::ffi::c_uint,
 ) -> size_t {
+    let src = core::slice::from_raw_parts(src.cast(), srcSize as usize);
+
     let mut huffWeight: [u8; 256] = [0; 256];
     let mut rankVal: [u32; 13] = [0; 13];
     let mut tableLog = 0;
@@ -383,7 +385,6 @@ pub unsafe extern "C" fn HUF_readCTable(
         &mut nbSymbols,
         &mut tableLog,
         src,
-        srcSize,
     );
     if ERR_isError(readSize) != 0 {
         return readSize;

@@ -262,14 +262,13 @@ const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize)
 const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
-pub unsafe fn HUF_readStats(
-    mut huffWeight: &mut [u8; 256],
-    mut hwSize: size_t,
-    mut rankStats: &mut [u32; 13],
-    mut nbSymbolsPtr: &mut u32,
-    mut tableLogPtr: &mut u32,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+pub fn HUF_readStats(
+    huffWeight: &mut [u8; 256],
+    hwSize: size_t,
+    rankStats: &mut [u32; 13],
+    nbSymbolsPtr: &mut u32,
+    tableLogPtr: &mut u32,
+    src: &[u8],
 ) -> size_t {
     // We can remove this at some point, it's just a check that the constants are correct.
     const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
@@ -285,7 +284,6 @@ pub unsafe fn HUF_readStats(
         nbSymbolsPtr,
         tableLogPtr,
         src,
-        srcSize,
         &mut wksp,
         0,
     )
@@ -493,16 +491,15 @@ impl quickcheck::Arbitrary for DTable {
     }
 }
 
-pub unsafe fn HUF_readStats_wksp(
-    mut huffWeight: &mut [u8; 256],
-    mut hwSize: size_t,
-    mut rankStats: &mut [u32; 13],
-    mut nbSymbolsPtr: &mut u32,
-    mut tableLogPtr: &mut u32,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+pub fn HUF_readStats_wksp(
+    huffWeight: &mut [u8; 256],
+    hwSize: size_t,
+    rankStats: &mut [u32; 13],
+    nbSymbolsPtr: &mut u32,
+    tableLogPtr: &mut u32,
+    src: &[u8],
     workspace: &mut Workspace,
-    mut flags: core::ffi::c_int,
+    flags: core::ffi::c_int,
 ) -> size_t {
     let use_bmi2 = flags & HUF_flags_bmi2 as core::ffi::c_int != 0;
 
@@ -512,7 +509,7 @@ pub unsafe fn HUF_readStats_wksp(
         rankStats,
         nbSymbolsPtr,
         tableLogPtr,
-        core::slice::from_raw_parts(src.cast(), srcSize as usize),
+        src,
         workspace,
         use_bmi2,
     );

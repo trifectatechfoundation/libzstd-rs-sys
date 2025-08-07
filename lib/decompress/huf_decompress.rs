@@ -337,10 +337,9 @@ fn HUF_rescaleStats(
     targetTableLog
 }
 
-pub unsafe fn HUF_readDTableX1_wksp(
+pub fn HUF_readDTableX1_wksp(
     DTable: &mut DTable,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -360,7 +359,6 @@ pub unsafe fn HUF_readDTableX1_wksp(
         &mut nbSymbols,
         &mut tableLog,
         src,
-        srcSize,
         &mut wksp.statsWksp,
         flags,
     );
@@ -1003,7 +1001,10 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut ip = cSrc as *const u8;
-    let hSize = HUF_readDTableX1_wksp(dctx, cSrc, cSrcSize, workSpace, flags);
+    let hSize = {
+        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+        HUF_readDTableX1_wksp(dctx, src, workSpace, flags)
+    };
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
@@ -1186,10 +1187,9 @@ fn HUF_fillDTableX2(
     }
 }
 
-pub unsafe fn HUF_readDTableX2_wksp(
+pub fn HUF_readDTableX2_wksp(
     DTable: &mut DTable,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -1218,7 +1218,6 @@ pub unsafe fn HUF_readDTableX2_wksp(
         &mut nbSymbols,
         &mut tableLog,
         src,
-        srcSize,
         &mut wksp.calleeWksp,
         flags,
     );
@@ -1278,9 +1277,9 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut consumed: u32 = 0;
     consumed = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
-        let rankValPtr = wksp.rankVal[consumed as usize].as_mut_ptr();
         for w_2 in 0..maxW.wrapping_add(1) {
-            *rankValPtr.offset(w_2 as isize) = wksp.rankVal[0][w_2 as usize] >> consumed;
+            wksp.rankVal[consumed as usize][w_2 as usize] =
+                wksp.rankVal[0][w_2 as usize] >> consumed;
         }
         consumed = consumed.wrapping_add(1);
     }
@@ -2275,7 +2274,10 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut ip = cSrc as *const u8;
-    let hSize = HUF_readDTableX2_wksp(dctx, cSrc, cSrcSize, workSpace, flags);
+    let hSize = {
+        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+        HUF_readDTableX2_wksp(dctx, src, workSpace, flags)
+    };
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
@@ -2306,7 +2308,10 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut ip = cSrc as *const u8;
-    let mut hSize = HUF_readDTableX2_wksp(dctx, cSrc, cSrcSize, workSpace, flags);
+    let hSize = {
+        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+        HUF_readDTableX2_wksp(dctx, src, workSpace, flags)
+    };
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
@@ -2641,7 +2646,10 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut ip = cSrc as *const u8;
-    let hSize = HUF_readDTableX1_wksp(dctx, cSrc, cSrcSize, workSpace, flags);
+    let hSize = {
+        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+        HUF_readDTableX1_wksp(dctx, src, workSpace, flags)
+    };
     if ERR_isError(hSize) != 0 {
         return hSize;
     }

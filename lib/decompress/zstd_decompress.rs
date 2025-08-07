@@ -2187,8 +2187,7 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
         .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 513]>() as core::ffi::c_ulong);
     let hSize = HUF_readDTableX2_wksp(
         &mut (*entropy).hufTable,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
+        core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
         unsafe { core::mem::transmute(workspace) },
         0,
     );
