@@ -418,11 +418,9 @@ pub unsafe fn HUF_readDTableX1_wksp(
     // That way length is a constant for each iteration of the outer loop.
     // We can switch based on the length to a different inner loop which is
     // optimized for that particular case.
-    let mut w_1: u32 = 0;
     let mut symbol = *((*wksp).rankVal).as_mut_ptr().offset(0) as core::ffi::c_int;
     let mut rankStart = 0;
-    w_1 = 1;
-    while w_1 < tableLog.wrapping_add(1) {
+    for w_1 in 1..tableLog.wrapping_add(1) {
         let symbolCount = *((*wksp).rankVal).as_mut_ptr().offset(w_1 as isize) as core::ffi::c_int;
         let length = (1) << w_1 >> 1;
         let mut uStart = rankStart;
@@ -519,8 +517,8 @@ pub unsafe fn HUF_readDTableX1_wksp(
         }
         symbol += symbolCount;
         rankStart += symbolCount * length;
-        w_1 = w_1.wrapping_add(1);
     }
+
     iSize
 }
 
