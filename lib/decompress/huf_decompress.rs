@@ -2451,36 +2451,48 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         Err(e) => return e.to_error_code(),
     };
 
+    assert!(args.ip[0] >= args.ilowest);
     loopFn(&mut args);
-    let segmentSize = dstSize.wrapping_add(3) / 4;
+
+    // note : op4 already verified within main loop.
+    let ilowest = cSrc as *const u8;
+    assert!(args.ip[0] >= ilowest);
+    assert!(args.ip[1] >= ilowest);
+    assert!(args.ip[2] >= ilowest);
+    assert!(args.ip[3] >= ilowest);
+    assert!(args.op[3] <= oend);
+
+    assert_eq!(ilowest, args.ilowest);
+    assert_eq!(ilowest.add(6), args.iend[0]);
+
+    let segmentSize = dstSize.div_ceil(4);
     let mut segmentEnd = dst as *mut u8;
-    let mut i: core::ffi::c_int = 0;
-    i = 0;
-    while i < 4 {
-        if segmentSize <= oend.offset_from(segmentEnd) as core::ffi::c_long as size_t {
+
+    for (i, op) in args.op.iter().copied().enumerate() {
+        if segmentSize <= oend.offset_from(segmentEnd) as size_t {
             segmentEnd = segmentEnd.offset(segmentSize as isize);
         } else {
             segmentEnd = oend;
         }
 
-        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
+        let mut bit = match init_remaining_dstream(&args, i as i32, segmentEnd) {
             Ok(v) => v,
             Err(e) => return e,
         };
 
-        let fresh84 = &mut (*(args.op).as_mut_ptr().offset(i as isize));
-        *fresh84 = (*fresh84).offset(HUF_decodeStreamX2(
-            *(args.op).as_mut_ptr().offset(i as isize),
+        let length = HUF_decodeStreamX2(
+            op,
             &mut bit,
             segmentEnd,
             dt as *const HUF_DEltX2,
             HUF_DECODER_FAST_TABLELOG as u32,
-        ) as isize);
-        if *(args.op).as_mut_ptr().offset(i as isize) != segmentEnd {
+        );
+
+        if op.add(length as usize) != segmentEnd {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        i += 1;
     }
+
     dstSize
 }
 
