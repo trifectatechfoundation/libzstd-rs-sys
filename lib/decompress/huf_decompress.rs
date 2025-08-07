@@ -790,229 +790,127 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_default(
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
     args: &mut HUF_DecompressFastArgs,
 ) {
-    let mut bits: [u64; 4] = [0; 4];
-    let mut ip: [*const u8; 4] = [core::ptr::null::<u8>(); 4];
-    let mut op: [*mut u8; 4] = [core::ptr::null_mut::<u8>(); 4];
-    let dtable = (*args).dt as *const u16;
-    let oend = (*args).oend;
-    let ilowest = (*args).ilowest;
-    libc::memcpy(
-        &mut bits as *mut [u64; 4] as *mut core::ffi::c_void,
-        &mut (*args).bits as *mut [u64; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u64; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut ip as *mut [*const u8; 4] as *mut core::ffi::c_void,
-        &mut (*args).ip as *mut [*const u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*const u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut op as *mut [*mut u8; 4] as *mut core::ffi::c_void,
-        &mut (*args).op as *mut [*mut u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*mut u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    's_33: loop {
-        let mut olimit = core::ptr::null_mut::<u8>();
-        let mut stream: core::ffi::c_int = 0;
-        stream = 0;
-        while stream < 4 {
-            stream += 1;
+    let dtable = args.dt as *const u16;
+    let oend = args.oend;
+    let ilowest = args.ilowest;
+
+    // Copy the arguments to local variables.
+    let mut bits = args.bits;
+    let mut ip = args.ip;
+    let mut op = args.op;
+
+    assert!(cfg!(target_endian = "little"));
+    assert!(cfg!(target_pointer_width = "64"));
+
+    'out: loop {
+        /* Assert loop preconditions */
+        if cfg!(debug_assertions) {
+            for stream in 0..4 {
+                assert!(op[stream] <= (if stream == 3 { oend } else { op[stream + 1] }));
+                assert!(ip[stream] >= ilowest);
+            }
         }
-        let oiters =
-            oend.offset_from(*op.as_mut_ptr().offset(3)) as core::ffi::c_long as size_t / 5;
-        let iiters =
-            (*ip.as_mut_ptr().offset(0)).offset_from(ilowest) as core::ffi::c_long as size_t / 7;
-        let iters = if oiters < iiters { oiters } else { iiters };
+
+        /* Compute olimit */
+
+        // Each iteration consumes up to 11 bits * 5 = 55 bits < 7 bytes per stream.
+        let oiters = oend.offset_from(op[3]) / 5;
+        let iiters = (ip[0]).offset_from(ilowest) / 7;
+        let iters = Ord::min(oiters, iiters);
         let symbols = iters * 5;
-        olimit = (*op.as_mut_ptr().offset(3)).offset(symbols as isize);
-        if *op.as_mut_ptr().offset(3) == olimit {
+
+        // We can simply check that op[3] < olimit, instead of checking all
+        // of our bounds, since we can't hit the other bounds until we've run
+        // iters iterations, which only happens when op[3] == olimit.
+        let olimit = op[3].offset(symbols);
+
+        /* Exit fast decoding loop once we reach the end. */
+        if op[3] == olimit {
             break;
         }
-        stream = 1;
-        while stream < 4 {
-            if *ip.as_mut_ptr().offset(stream as isize)
-                < *ip.as_mut_ptr().offset((stream - 1) as isize)
-            {
-                break 's_33;
+
+        // Exit the decoding loop if any input pointer has crossed the
+        // previous one. This indicates corruption, and a precondition
+        // to our loop is that ip[i] >= ip[0].
+        for stream in 1..4 {
+            if ip[stream] < ip[stream - 1] {
+                break 'out;
             }
-            stream += 1;
         }
-        stream = 1;
-        while stream < 4 {
-            stream += 1;
+
+        if cfg!(debug_assertions) {
+            for stream in 1..4 {
+                assert!(ip[stream] >= ip[stream - 1]);
+            }
         }
+
+        macro_rules! HUF_4X1_DECODE_SYMBOL {
+            ($stream:expr, $symbol:expr) => {
+                let index = bits[$stream] >> 53;
+                let entry = *dtable.add(index as usize);
+
+                bits[$stream] <<= entry & 0x3F;
+                op[$stream]
+                    .offset($symbol)
+                    .write(((entry >> 8) & 0xFF) as u8)
+            };
+        }
+
+        macro_rules! HUF_4X_FOR_EACH_STREAM_WITH_VAR {
+            ($mac:ident, $var:literal) => {
+                $mac!(0, $var);
+                $mac!(1, $var);
+                $mac!(2, $var);
+                $mac!(3, $var);
+            };
+        }
+
+        macro_rules! HUF_4X1_RELOAD_STREAM {
+            ($stream: expr) => {
+                let ctz = bits[$stream].trailing_zeros();
+                let nbBits = ctz & 7;
+                let nbBytes = ctz >> 3;
+
+                op[$stream] = op[$stream].add(5);
+                ip[$stream] = ip[$stream].sub(nbBytes as usize);
+                bits[$stream] = MEM_read64(ip[$stream] as *const core::ffi::c_void) | 1;
+                bits[$stream] <<= nbBits;
+            };
+        }
+
+        macro_rules! HUF_4X_FOR_EACH_STREAM {
+            ($mac:ident ) => {
+                $mac!(0);
+                $mac!(1);
+                $mac!(2);
+                $mac!(3);
+            };
+        }
+
+        /* Manually unroll the loop because compilers don't consistently
+         * unroll the inner loops, which destroys performance.
+         */
         loop {
-            let index = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-            let entry = *dtable.offset(index as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(0) <<= entry & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(0)).offset(0) = (entry >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_0 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-            let entry_0 = *dtable.offset(index_0 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(1) <<= entry_0 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(1)).offset(0) =
-                (entry_0 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_1 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-            let entry_1 = *dtable.offset(index_1 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(2) <<= entry_1 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(2)).offset(0) =
-                (entry_1 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_2 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-            let entry_2 = *dtable.offset(index_2 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(3) <<= entry_2 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(3)).offset(0) =
-                (entry_2 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_3 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-            let entry_3 = *dtable.offset(index_3 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(0) <<= entry_3 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(0)).offset(1) =
-                (entry_3 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_4 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-            let entry_4 = *dtable.offset(index_4 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(1) <<= entry_4 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(1)).offset(1) =
-                (entry_4 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_5 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-            let entry_5 = *dtable.offset(index_5 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(2) <<= entry_5 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(2)).offset(1) =
-                (entry_5 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_6 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-            let entry_6 = *dtable.offset(index_6 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(3) <<= entry_6 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(3)).offset(1) =
-                (entry_6 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_7 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-            let entry_7 = *dtable.offset(index_7 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(0) <<= entry_7 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(0)).offset(2) =
-                (entry_7 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_8 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-            let entry_8 = *dtable.offset(index_8 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(1) <<= entry_8 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(1)).offset(2) =
-                (entry_8 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_9 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-            let entry_9 = *dtable.offset(index_9 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(2) <<= entry_9 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(2)).offset(2) =
-                (entry_9 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_10 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-            let entry_10 = *dtable.offset(index_10 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(3) <<= entry_10 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(3)).offset(2) =
-                (entry_10 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_11 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-            let entry_11 = *dtable.offset(index_11 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(0) <<= entry_11 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(0)).offset(3) =
-                (entry_11 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_12 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-            let entry_12 = *dtable.offset(index_12 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(1) <<= entry_12 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(1)).offset(3) =
-                (entry_12 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_13 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-            let entry_13 = *dtable.offset(index_13 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(2) <<= entry_13 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(2)).offset(3) =
-                (entry_13 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_14 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-            let entry_14 = *dtable.offset(index_14 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(3) <<= entry_14 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(3)).offset(3) =
-                (entry_14 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_15 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-            let entry_15 = *dtable.offset(index_15 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(0) <<= entry_15 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(0)).offset(4) =
-                (entry_15 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_16 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-            let entry_16 = *dtable.offset(index_16 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(1) <<= entry_16 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(1)).offset(4) =
-                (entry_16 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_17 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-            let entry_17 = *dtable.offset(index_17 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(2) <<= entry_17 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(2)).offset(4) =
-                (entry_17 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let index_18 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-            let entry_18 = *dtable.offset(index_18 as isize) as core::ffi::c_int;
-            *bits.as_mut_ptr().offset(3) <<= entry_18 & 0x3f as core::ffi::c_int;
-            *(*op.as_mut_ptr().offset(3)).offset(4) =
-                (entry_18 >> 8 & 0xff as core::ffi::c_int) as u8;
-            let ctz = {
-                let mut val = *bits.as_mut_ptr().offset(0);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits = ctz & 7;
-            let nbBytes = ctz >> 3;
-            let fresh39 = &mut (*op.as_mut_ptr().offset(0));
-            *fresh39 = (*fresh39).offset(5);
-            let fresh40 = &mut (*ip.as_mut_ptr().offset(0));
-            *fresh40 = (*fresh40).offset(-(nbBytes as isize));
-            *bits.as_mut_ptr().offset(0) =
-                MEM_read64(*ip.as_mut_ptr().offset(0) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(0) <<= nbBits;
-            let ctz_0 = {
-                let mut val = *bits.as_mut_ptr().offset(1);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_0 = ctz_0 & 7;
-            let nbBytes_0 = ctz_0 >> 3;
-            let fresh41 = &mut (*op.as_mut_ptr().offset(1));
-            *fresh41 = (*fresh41).offset(5);
-            let fresh42 = &mut (*ip.as_mut_ptr().offset(1));
-            *fresh42 = (*fresh42).offset(-(nbBytes_0 as isize));
-            *bits.as_mut_ptr().offset(1) =
-                MEM_read64(*ip.as_mut_ptr().offset(1) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(1) <<= nbBits_0;
-            let ctz_1 = {
-                let mut val = *bits.as_mut_ptr().offset(2);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_1 = ctz_1 & 7;
-            let nbBytes_1 = ctz_1 >> 3;
-            let fresh43 = &mut (*op.as_mut_ptr().offset(2));
-            *fresh43 = (*fresh43).offset(5);
-            let fresh44 = &mut (*ip.as_mut_ptr().offset(2));
-            *fresh44 = (*fresh44).offset(-(nbBytes_1 as isize));
-            *bits.as_mut_ptr().offset(2) =
-                MEM_read64(*ip.as_mut_ptr().offset(2) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(2) <<= nbBits_1;
-            let ctz_2 = {
-                let mut val = *bits.as_mut_ptr().offset(3);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_2 = ctz_2 & 7;
-            let nbBytes_2 = ctz_2 >> 3;
-            let fresh45 = &mut (*op.as_mut_ptr().offset(3));
-            *fresh45 = (*fresh45).offset(5);
-            let fresh46 = &mut (*ip.as_mut_ptr().offset(3));
-            *fresh46 = (*fresh46).offset(-(nbBytes_2 as isize));
-            *bits.as_mut_ptr().offset(3) =
-                MEM_read64(*ip.as_mut_ptr().offset(3) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(3) <<= nbBits_2;
-            if *op.as_mut_ptr().offset(3) >= olimit {
+            /* Decode 5 symbols in each of the 4 streams */
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X1_DECODE_SYMBOL, 0);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X1_DECODE_SYMBOL, 1);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X1_DECODE_SYMBOL, 2);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X1_DECODE_SYMBOL, 3);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X1_DECODE_SYMBOL, 4);
+
+            /* Reload each of the 4 the bitstreams */
+            HUF_4X_FOR_EACH_STREAM!(HUF_4X1_RELOAD_STREAM);
+
+            if op[3] >= olimit {
                 break;
             }
         }
     }
-    libc::memcpy(
-        &mut (*args).bits as *mut [u64; 4] as *mut core::ffi::c_void,
-        &mut bits as *mut [u64; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u64; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut (*args).ip as *mut [*const u8; 4] as *mut core::ffi::c_void,
-        &mut ip as *mut [*const u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*const u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut (*args).op as *mut [*mut u8; 4] as *mut core::ffi::c_void,
-        &mut op as *mut [*mut u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*mut u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
+
+    // Save the final values of each of the state variables back to args.
+    args.bits = bits;
+    args.ip = ip;
+    args.op = op;
 }
 
 pub type HUF_DecompressFastLoopFn = unsafe extern "C" fn(&mut HUF_DecompressFastArgs) -> ();
