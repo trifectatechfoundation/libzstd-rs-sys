@@ -346,7 +346,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut dtd = DTable.description;
-    let dt = DTable.data.as_x1_mut().as_mut_ptr();
+    let dt = DTable.data.as_x1_mut();
 
     let mut tableLog = 0;
     let mut nbSymbols = 0;
@@ -436,97 +436,21 @@ pub unsafe fn HUF_readDTableX1_wksp(
     // That way length is a constant for each iteration of the outer loop.
     // We can switch based on the length to a different inner loop which is
     // optimized for that particular case.
-    let mut symbol = wksp.rankVal[0] as i32;
+    let mut symbol = wksp.rankVal[0] as usize;
     let mut rankStart = 0;
     for w_1 in 1..tableLog.wrapping_add(1) {
-        let symbolCount = wksp.rankVal[w_1 as usize] as i32;
+        let symbolCount = wksp.rankVal[w_1 as usize] as usize;
         let length = (1) << w_1 >> 1;
-        let mut uStart = rankStart;
+        let mut dt = dt[rankStart..][..length * symbolCount as usize].chunks_exact_mut(length);
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w_1) as u8;
-        let mut s: core::ffi::c_int = 0;
-        let mut u_0: core::ffi::c_int = 0;
-        match length {
-            1 => {
-                s = 0;
-                while s < symbolCount {
-                    let mut D = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D.byte = wksp.symbols[(symbol + s) as usize];
-                    D.nbBits = nbBits;
-                    *dt.offset(uStart as isize) = D;
-                    uStart += 1;
-                    s += 1;
-                }
-            }
-            2 => {
-                s = 0;
-                while s < symbolCount {
-                    let mut D_0 = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D_0.byte = wksp.symbols[(symbol + s) as usize];
-                    D_0.nbBits = nbBits;
-                    *dt.offset((uStart + 0) as isize) = D_0;
-                    *dt.offset((uStart + 1) as isize) = D_0;
-                    uStart += 2;
-                    s += 1;
-                }
-            }
-            4 => {
-                s = 0;
-                while s < symbolCount {
-                    let D4 = HUF_DEltX1_set4(wksp.symbols[(symbol + s) as usize], nbBits);
-                    MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4);
-                    uStart += 4;
-                    s += 1;
-                }
-            }
-            8 => {
-                s = 0;
-                while s < symbolCount {
-                    let D4_0 = HUF_DEltX1_set4(wksp.symbols[(symbol + s) as usize], nbBits);
-                    MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4_0);
-                    MEM_write64(
-                        dt.offset(uStart as isize).offset(4) as *mut core::ffi::c_void,
-                        D4_0,
-                    );
-                    uStart += 8;
-                    s += 1;
-                }
-            }
-            _ => {
-                s = 0;
-                while s < symbolCount {
-                    let D4_1 = HUF_DEltX1_set4(
-                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
-                        nbBits,
-                    );
-                    u_0 = 0;
-                    while u_0 < length {
-                        MEM_write64(
-                            dt.offset(uStart as isize).offset(u_0 as isize).offset(0)
-                                as *mut core::ffi::c_void,
-                            D4_1,
-                        );
-                        MEM_write64(
-                            dt.offset(uStart as isize).offset(u_0 as isize).offset(4)
-                                as *mut core::ffi::c_void,
-                            D4_1,
-                        );
-                        MEM_write64(
-                            dt.offset(uStart as isize).offset(u_0 as isize).offset(8)
-                                as *mut core::ffi::c_void,
-                            D4_1,
-                        );
-                        MEM_write64(
-                            dt.offset(uStart as isize).offset(u_0 as isize).offset(12)
-                                as *mut core::ffi::c_void,
-                            D4_1,
-                        );
-                        u_0 += 16;
-                    }
-                    uStart += length;
-                    s += 1;
-                }
-            }
+
+        // FIXME: zstd unrolls this loop for low values of `length` (a power of 2).
+        // we should investigate whether that is beneficial here.
+        for (s, chunk) in dt.enumerate() {
+            let byte = wksp.symbols[symbol + s];
+            chunk.fill(HUF_DEltX1 { nbBits, byte });
         }
+
         symbol += symbolCount;
         rankStart += symbolCount * length;
     }
