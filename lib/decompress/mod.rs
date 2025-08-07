@@ -119,6 +119,36 @@ pub struct ZSTD_FrameHeader {
 // FIXME: make usize
 type size_t = u64;
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Workspace {
+    data: [u32; 640],
+}
+
+impl Workspace {
+    fn as_mut_ptr(&mut self) -> *mut u32 {
+        self.data.as_mut_ptr()
+    }
+
+    fn as_x1_mut(&mut self) -> &mut huf_decompress::HUF_ReadDTableX1_Workspace {
+        const { assert!(size_of::<Self>() >= size_of::<huf_decompress::HUF_ReadDTableX1_Workspace>()) }
+        const { assert!(align_of::<Self>() >= align_of::<huf_decompress::HUF_ReadDTableX1_Workspace>()) }
+
+        unsafe { core::mem::transmute(&mut self.data) }
+    }
+
+    fn as_x2_mut(&mut self) -> &mut huf_decompress::HUF_ReadDTableX2_Workspace {
+        const { assert!(size_of::<Self>() >= size_of::<huf_decompress::HUF_ReadDTableX2_Workspace>()) }
+        const { assert!(align_of::<Self>() >= align_of::<huf_decompress::HUF_ReadDTableX2_Workspace>()) }
+
+        unsafe { core::mem::transmute(&mut self.data) }
+    }
+
+    fn as_symbols_mut(&mut self) -> &mut [u16; 2 * 640] {
+        unsafe { core::mem::transmute(&mut self.data) }
+    }
+}
+
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -128,7 +158,7 @@ pub struct ZSTD_DCtx_s {
     pub OFTptr: *const ZSTD_seqSymbol,
     pub HUFptr: *const HUF_DTable,
     pub entropy: ZSTD_entropyDTables_t,
-    pub workspace: [u32; 640],
+    pub workspace: Workspace,
     pub previousDstEnd: *const core::ffi::c_void,
     pub prefixStart: *const core::ffi::c_void,
     pub virtualStart: *const core::ffi::c_void,

@@ -17,7 +17,7 @@ use crate::lib::decompress::huf_decompress::{
 };
 use crate::lib::decompress::{
     blockType_e, bt_reserved, bt_rle, HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits,
-    ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_seqSymbol, ZSTD_seqSymbol_header,
+    Workspace, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
 use crate::lib::zstd::*;
 
@@ -619,7 +619,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             litSize as _,
             src[lhSize..].as_ptr().cast(),
             litCSize as _,
-            (dctx.workspace).as_mut_ptr() as *mut core::ffi::c_void,
+            &mut dctx.workspace,
             ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
         )
@@ -630,7 +630,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             litSize as _,
             src[lhSize..].as_ptr().cast(),
             litCSize as _,
-            (dctx.workspace).as_mut_ptr() as *mut core::ffi::c_void,
+            &mut dctx.workspace,
             ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
         )
@@ -2246,8 +2246,7 @@ unsafe extern "C" fn ZSTD_buildSeqTable(
     mut flagRepeatTable: u32,
     mut ddictIsCold: core::ffi::c_int,
     mut nbSeq: core::ffi::c_int,
-    mut wksp: *mut u32,
-    mut wkspSize: size_t,
+    mut wksp: &mut Workspace,
     mut bmi2: core::ffi::c_int,
 ) -> size_t {
     match type_0 as core::ffi::c_uint {
@@ -2304,8 +2303,8 @@ unsafe extern "C" fn ZSTD_buildSeqTable(
                 baseValue,
                 nbAdditionalBits,
                 tableLog,
-                wksp as *mut core::ffi::c_void,
-                wkspSize,
+                wksp.as_mut_ptr() as *mut core::ffi::c_void,
+                size_of_val(wksp) as size_t,
                 bmi2,
             );
             *DTablePtr = DTableSpace;
@@ -2378,8 +2377,7 @@ pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
         (*dctx).fseEntropy,
         (*dctx).ddictIsCold,
         nbSeq,
-        ((*dctx).workspace).as_mut_ptr(),
-        ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
+        &mut (*dctx).workspace,
         ZSTD_DCtx_get_bmi2(dctx),
     );
     if ERR_isError(llhSize) != 0 {
@@ -2400,8 +2398,7 @@ pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
         (*dctx).fseEntropy,
         (*dctx).ddictIsCold,
         nbSeq,
-        ((*dctx).workspace).as_mut_ptr(),
-        ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
+        &mut (*dctx).workspace,
         ZSTD_DCtx_get_bmi2(dctx),
     );
     if ERR_isError(ofhSize) != 0 {
@@ -2422,8 +2419,7 @@ pub unsafe extern "C" fn ZSTD_decodeSeqHeaders(
         (*dctx).fseEntropy,
         (*dctx).ddictIsCold,
         nbSeq,
-        ((*dctx).workspace).as_mut_ptr(),
-        ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
+        &mut (*dctx).workspace,
         ZSTD_DCtx_get_bmi2(dctx),
     );
     if ERR_isError(mlhSize) != 0 {
