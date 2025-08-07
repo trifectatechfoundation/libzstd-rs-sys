@@ -1363,16 +1363,15 @@ pub unsafe fn HUF_readDTableX2_wksp(
 
     /* find maxWeight */
     let mut maxW: u32 = tableLog;
-    while *(wksp.rankStats).as_mut_ptr().offset(maxW as isize) == 0 {
+    while wksp.rankStats[maxW as usize] == 0 {
         maxW = maxW.wrapping_sub(1);
     }
 
     /* Get start index of each weight */
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     for w in 1..maxW + 1 {
         let mut curr = nextRankStart;
-        nextRankStart =
-            nextRankStart.wrapping_add(*(wksp.rankStats).as_mut_ptr().offset(w as isize));
+        nextRankStart = nextRankStart.wrapping_add(wksp.rankStats[w as usize]);
         rankStart[w as usize] = curr;
     }
 
@@ -1393,27 +1392,22 @@ pub unsafe fn HUF_readDTableX2_wksp(
     /* Build rankVal */
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0 as core::ffi::c_int as u32;
-    let mut w_1: u32 = 0;
-    w_1 = 1;
-    while w_1 < maxW.wrapping_add(1) {
+
+    for w_1 in 1..maxW.wrapping_add(1) {
         let mut curr_0 = nextRankVal;
-        nextRankVal = nextRankVal.wrapping_add(
-            *(wksp.rankStats).as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
-        );
+        nextRankVal = nextRankVal
+            .wrapping_add(wksp.rankStats[w_1 as usize] << w_1.wrapping_add(rescale as u32));
 
         wksp.rankVal[0][w_1 as usize] = curr_0;
-        w_1 = w_1.wrapping_add(1);
     }
+
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut consumed: u32 = 0;
     consumed = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
         let rankValPtr = wksp.rankVal[consumed as usize].as_mut_ptr();
-        let mut w_2: u32 = 0;
-        w_2 = 1;
-        while w_2 < maxW.wrapping_add(1) {
+        for w_2 in 0..maxW.wrapping_add(1) {
             *rankValPtr.offset(w_2 as isize) = wksp.rankVal[0][w_2 as usize] >> consumed;
-            w_2 = w_2.wrapping_add(1);
         }
         consumed = consumed.wrapping_add(1);
     }
