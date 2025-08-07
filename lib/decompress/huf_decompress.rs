@@ -234,25 +234,22 @@ impl HUF_DecompressFastArgs {
 
 unsafe fn init_remaining_dstream(
     args: &HUF_DecompressFastArgs,
-    stream: core::ffi::c_int,
+    stream: usize,
     segmentEnd: *mut u8,
-) -> Result<BIT_DStream_t, size_t> {
-    if *(args.op).as_ptr().offset(stream as isize) > segmentEnd {
-        return Err(-(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t);
-    }
-    if *(args.ip).as_ptr().offset(stream as isize)
-        < (*(args.iend).as_ptr().offset(stream as isize)).sub(8)
-    {
-        return Err(-(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t);
+) -> Result<BIT_DStream_t, Error> {
+    if args.op[stream] > segmentEnd {
+        return Err(Error::corruption_detected);
     }
 
-    let bitContainer =
-        MEM_readLEST(*(args.ip).as_ptr().offset(stream as isize) as *const core::ffi::c_void)
-            as usize;
-    let bitsConsumed = (*args.bits.as_ptr().offset(stream as isize)).trailing_zeros();
+    if args.ip[stream] < args.iend[stream].sub(8) {
+        return Err(Error::corruption_detected);
+    }
+
+    let bitContainer = MEM_readLEST(args.ip[stream] as *const core::ffi::c_void) as usize;
+    let bitsConsumed = args.bits[stream].trailing_zeros();
     let start = args.ilowest as *const core::ffi::c_char;
     let limitPtr = start.add(::core::mem::size_of::<size_t>());
-    let ptr = *(args.ip).as_ptr().offset(stream as isize) as *const core::ffi::c_char;
+    let ptr = args.ip[stream] as *const core::ffi::c_char;
 
     Ok(BIT_DStream_t {
         bitContainer,
@@ -1061,9 +1058,9 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
             segmentEnd = oend;
         }
 
-        let mut bit = match init_remaining_dstream(&args, i as i32, segmentEnd) {
+        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
             Ok(v) => v,
-            Err(e) => return e,
+            Err(e) => return e.to_error_code(),
         };
 
         // Decompress and validate that we've produced exactly the expected length.
@@ -2475,9 +2472,9 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
             segmentEnd = oend;
         }
 
-        let mut bit = match init_remaining_dstream(&args, i as i32, segmentEnd) {
+        let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
             Ok(v) => v,
-            Err(e) => return e,
+            Err(e) => return e.to_error_code(),
         };
 
         let length = HUF_decodeStreamX2(
