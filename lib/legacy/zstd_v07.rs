@@ -6,6 +6,7 @@ use crate::lib::common::mem::{
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::lib::decompress::huf_decompress::DTableDesc;
 use libc::free;
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
@@ -156,14 +157,6 @@ pub struct FSEv07_DTableHeader {
 pub type S16 = i16;
 pub const lbt_rle: litBlockType_t = 3;
 pub const lbt_raw: litBlockType_t = 2;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct DTableDesc {
-    pub maxTableLog: u8,
-    pub tableType: u8,
-    pub tableLog: u8,
-    pub reserved: u8,
-}
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUFv07_DEltX4 {
