@@ -2190,7 +2190,6 @@ pub unsafe extern "C" fn ZSTD_loadDEntropy(
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
         unsafe { core::mem::transmute(workspace) },
-        workspaceSize,
         0,
     );
     if ERR_isError(hSize) != 0 {
