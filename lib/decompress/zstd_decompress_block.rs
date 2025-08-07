@@ -620,7 +620,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             src[lhSize..].as_ptr().cast(),
             litCSize as _,
             &mut dctx.workspace,
-            ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
         )
     } else {
@@ -631,7 +630,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             src[lhSize..].as_ptr().cast(),
             litCSize as _,
             &mut dctx.workspace,
-            ::core::mem::size_of::<[u32; 640]>() as core::ffi::c_ulong,
             flags,
         )
     };
