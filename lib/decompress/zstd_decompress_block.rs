@@ -669,7 +669,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         }
     } else if singleStream {
         HUF_decompress1X1_DCtx_wksp(
-            (dctx.entropy.hufTable).as_mut_ptr(),
+            &mut dctx.entropy.hufTable,
             dctx.litBuffer as *mut core::ffi::c_void,
             litSize,
             istart.offset(lhSize as isize) as *const core::ffi::c_void,
@@ -680,7 +680,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         )
     } else {
         HUF_decompress4X_hufOnly_wksp(
-            (dctx.entropy.hufTable).as_mut_ptr(),
+            &mut dctx.entropy.hufTable,
             dctx.litBuffer as *mut core::ffi::c_void,
             litSize,
             istart.offset(lhSize as isize) as *const core::ffi::c_void,
