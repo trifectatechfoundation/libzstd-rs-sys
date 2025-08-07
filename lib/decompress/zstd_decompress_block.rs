@@ -660,7 +660,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     dctx.litEntropy = 1;
 
     if let SymbolEncodingType_e::set_compressed = litEncType {
-        dctx.HUFptr = (dctx.entropy.hufTable).as_mut_ptr();
+        dctx.HUFptr = &raw const dctx.entropy.hufTable as *const u32;
     }
 
     litCSize.wrapping_add(lhSize) as size_t

@@ -2,6 +2,7 @@ use libc::free;
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE32;
+use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{HUF_DTable, ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
@@ -98,7 +99,7 @@ pub unsafe extern "C" fn ZSTD_copyDDictParameters(
         (*dctx).LLTptr = ((*ddict).entropy.LLTable).as_ptr();
         (*dctx).MLTptr = ((*ddict).entropy.MLTable).as_ptr();
         (*dctx).OFTptr = ((*ddict).entropy.OFTable).as_ptr();
-        (*dctx).HUFptr = ((*ddict).entropy.hufTable).as_ptr();
+        (*dctx).HUFptr = &raw const (*ddict).entropy.hufTable as *const u32;
         *((*dctx).entropy.rep).as_mut_ptr().offset(0) = *((*ddict).entropy.rep).as_ptr().offset(0);
         *((*dctx).entropy.rep).as_mut_ptr().offset(1) = *((*ddict).entropy.rep).as_ptr().offset(1);
         *((*dctx).entropy.rep).as_mut_ptr().offset(2) = *((*ddict).entropy.rep).as_ptr().offset(2);
@@ -177,8 +178,7 @@ unsafe extern "C" fn ZSTD_initDDict_internal(
         libc::memcpy(internalBuffer, dict, dictSize as libc::size_t);
     }
     (*ddict).dictSize = dictSize;
-    *((*ddict).entropy.hufTable).as_mut_ptr().offset(0) =
-        (12 * 0x1000001 as core::ffi::c_int) as HUF_DTable;
+    (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
     let err_code = ZSTD_loadEntropy_intoDDict(ddict, dictContentType);
     if ERR_isError(err_code) != 0 {
         return err_code;

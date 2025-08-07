@@ -32,6 +32,29 @@ pub struct algo_time_t {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+pub struct DTable {
+    pub description: DTableDesc,
+    pub data: DTableData,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct DTableData {
+    data: [u32; 4096],
+}
+
+impl DTableData {
+    fn as_x1_mut(&mut self) -> &mut [HUF_DEltX1; 4096] {
+        unsafe { core::mem::transmute(&mut self.data) }
+    }
+
+    fn as_x2_mut(&mut self) -> &mut [HUF_DEltX1; 4096] {
+        unsafe { core::mem::transmute(&mut self.data) }
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
 pub struct DTableDesc {
     pub maxTableLog: u8,
     pub tableType: u8,
@@ -40,7 +63,7 @@ pub struct DTableDesc {
 }
 
 impl DTableDesc {
-    fn from_u32(value: u32) -> Self {
+    pub fn from_u32(value: u32) -> Self {
         let [maxTableLog, tableType, tableLog, reserved] = value.to_le_bytes();
 
         Self {
@@ -315,17 +338,15 @@ fn HUF_rescaleStats(
 }
 
 pub unsafe fn HUF_readDTableX1_wksp(
-    DTable: &mut [HUF_DTable; 4097],
+    DTable: &mut DTable,
     src: *const core::ffi::c_void,
     srcSize: size_t,
     workSpace: *mut core::ffi::c_void,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let mut dtd = DTableDesc::from_u32(DTable[0]);
-    let DTable = DTable.as_mut_ptr();
-    let dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
-    let dt = dtPtr as *mut HUF_DEltX1;
+    let mut dtd = DTable.description;
+    let dt = DTable.data.as_x1_mut().as_mut_ptr();
 
     let mut tableLog = 0;
     let mut nbSymbols = 0;
@@ -367,11 +388,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
     dtd.tableType = 0;
     dtd.tableLog = tableLog as u8;
 
-    libc::memcpy(
-        DTable as *mut core::ffi::c_void,
-        &mut dtd as *mut DTableDesc as *const core::ffi::c_void,
-        ::core::mem::size_of::<DTableDesc>() as core::ffi::c_ulong as libc::size_t,
-    );
+    DTable.description = dtd;
 
     // Compute symbols and rankStart given rankVal:
     //
@@ -419,10 +436,10 @@ pub unsafe fn HUF_readDTableX1_wksp(
     // That way length is a constant for each iteration of the outer loop.
     // We can switch based on the length to a different inner loop which is
     // optimized for that particular case.
-    let mut symbol = *(wksp.rankVal).as_mut_ptr().offset(0) as core::ffi::c_int;
+    let mut symbol = wksp.rankVal[0] as i32;
     let mut rankStart = 0;
     for w_1 in 1..tableLog.wrapping_add(1) {
-        let symbolCount = *(wksp.rankVal).as_mut_ptr().offset(w_1 as isize) as core::ffi::c_int;
+        let symbolCount = wksp.rankVal[w_1 as usize] as i32;
         let length = (1) << w_1 >> 1;
         let mut uStart = rankStart;
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w_1) as u8;
@@ -433,7 +450,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let mut D = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D.byte = *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize);
+                    D.byte = wksp.symbols[(symbol + s) as usize];
                     D.nbBits = nbBits;
                     *dt.offset(uStart as isize) = D;
                     uStart += 1;
@@ -444,7 +461,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let mut D_0 = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D_0.byte = *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize);
+                    D_0.byte = wksp.symbols[(symbol + s) as usize];
                     D_0.nbBits = nbBits;
                     *dt.offset((uStart + 0) as isize) = D_0;
                     *dt.offset((uStart + 1) as isize) = D_0;
@@ -455,10 +472,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
             4 => {
                 s = 0;
                 while s < symbolCount {
-                    let D4 = HUF_DEltX1_set4(
-                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
-                        nbBits,
-                    );
+                    let D4 = HUF_DEltX1_set4(wksp.symbols[(symbol + s) as usize], nbBits);
                     MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4);
                     uStart += 4;
                     s += 1;
@@ -467,10 +481,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
             8 => {
                 s = 0;
                 while s < symbolCount {
-                    let D4_0 = HUF_DEltX1_set4(
-                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
-                        nbBits,
-                    );
+                    let D4_0 = HUF_DEltX1_set4(wksp.symbols[(symbol + s) as usize], nbBits);
                     MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4_0);
                     MEM_write64(
                         dt.offset(uStart as isize).offset(4) as *mut core::ffi::c_void,
@@ -1064,7 +1075,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal(
 }
 
 unsafe fn HUF_decompress4X1_DCtx_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1082,7 +1093,7 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = dctx.as_mut_ptr();
+    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress4X1_usingDTable_internal(
@@ -1383,14 +1394,14 @@ unsafe fn HUF_fillDTableX2(
 }
 
 pub unsafe fn HUF_readDTableX2_wksp(
-    DTable: &mut [HUF_DTable; 4097],
+    DTable: &mut DTable,
     src: *const core::ffi::c_void,
     srcSize: size_t,
     workSpace: *mut core::ffi::c_void,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let DTable = DTable.as_mut_ptr();
+    let DTable = &raw mut *DTable as *mut u32;
 
     let mut tableLog: u32 = 0;
     let mut maxW: u32 = 0;
@@ -2476,7 +2487,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal(
 }
 
 pub unsafe fn HUF_decompress1X2_DCtx_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2494,7 +2505,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = dctx.as_mut_ptr();
+    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress1X2_usingDTable_internal(
@@ -2507,7 +2518,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     )
 }
 unsafe fn HUF_decompress4X2_DCtx_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2525,7 +2536,7 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = dctx.as_mut_ptr();
+    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress4X2_usingDTable_internal(
@@ -2795,7 +2806,7 @@ fn HUF_selectDecoder(dstSize: size_t, cSrcSize: size_t) -> Decoder {
 }
 
 pub unsafe fn HUF_decompress1X_DCtx_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2844,7 +2855,7 @@ pub unsafe fn HUF_decompress1X_usingDTable(
     }
 }
 pub unsafe fn HUF_decompress1X1_DCtx_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2862,7 +2873,7 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let dctx = dctx.as_mut_ptr();
+    let dctx = &raw mut *dctx as *mut u32;
     ip = ip.offset(hSize as isize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
     HUF_decompress1X1_usingDTable_internal(
@@ -2891,7 +2902,7 @@ pub unsafe fn HUF_decompress4X_usingDTable(
 }
 
 pub unsafe fn HUF_decompress4X_hufOnly_wksp(
-    dctx: &mut [HUF_DTable; 4097],
+    dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,

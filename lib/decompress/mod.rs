@@ -1,6 +1,7 @@
 use crate::lib::common::xxhash::XXH64_state_t;
 
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
+use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
 use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
@@ -50,7 +51,7 @@ pub struct ZSTD_entropyDTables_t {
     pub LLTable: [ZSTD_seqSymbol; 513],
     pub OFTable: [ZSTD_seqSymbol; 257],
     pub MLTable: [ZSTD_seqSymbol; 513],
-    pub hufTable: [HUF_DTable; 4097],
+    pub hufTable: DTable,
     pub rep: [u32; 3],
     pub workspace: [u32; 157],
 }

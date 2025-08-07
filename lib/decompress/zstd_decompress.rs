@@ -10,15 +10,15 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
-use crate::lib::decompress::huf_decompress::HUF_readDTableX2_wksp;
+use crate::lib::decompress::huf_decompress::{DTableDesc, HUF_readDTableX2_wksp};
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
     blockProperties_t, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
     ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
-    bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, HUF_DTable,
-    LL_base, ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_dStage,
+    bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, LL_base,
+    ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_dStage,
     ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
     ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame,
     ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader,
@@ -2347,8 +2347,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_
     (*dctx).prefixStart = core::ptr::null();
     (*dctx).virtualStart = core::ptr::null();
     (*dctx).dictEnd = core::ptr::null();
-    *((*dctx).entropy.hufTable).as_mut_ptr().offset(0) =
-        (12 * 0x1000001 as core::ffi::c_int) as HUF_DTable;
+    (*dctx).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
     (*dctx).fseEntropy = 0;
     (*dctx).litEntropy = (*dctx).fseEntropy;
     (*dctx).dictID = 0;
@@ -2362,7 +2361,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_
     (*dctx).LLTptr = ((*dctx).entropy.LLTable).as_mut_ptr();
     (*dctx).MLTptr = ((*dctx).entropy.MLTable).as_mut_ptr();
     (*dctx).OFTptr = ((*dctx).entropy.OFTable).as_mut_ptr();
-    (*dctx).HUFptr = ((*dctx).entropy.hufTable).as_mut_ptr();
+    (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable as *const u32;
     0
 }
 #[export_name = crate::prefix!(ZSTD_decompressBegin_usingDict)]
