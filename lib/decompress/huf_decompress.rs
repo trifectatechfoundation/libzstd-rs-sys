@@ -1072,114 +1072,25 @@ fn HUF_buildDEltX2U64(symbol: u32, nbBits: u32, baseSeq: u16, level: core::ffi::
     DElt as u64 | (DElt as u64) << 32
 }
 
-unsafe fn HUF_fillDTableX2ForWeight(
-    mut DTableRank: *mut HUF_DEltX2,
+fn HUF_fillDTableX2ForWeight(
+    mut DTableRank: &mut [HUF_DEltX2],
     sorted_symbols: &[sortedSymbol_t],
     nbBits: u32,
     tableLog: u32,
     baseSeq: u16,
     level: core::ffi::c_int,
 ) {
-    let length = (1) << (tableLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
-    let mut ptr = core::ptr::null::<sortedSymbol_t>();
-    match length {
-        1 => {
-            for sorted_symbol in sorted_symbols {
-                let DElt = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
-                *DTableRank = DElt;
-                DTableRank = DTableRank.offset(1);
-            }
-        }
-        2 => {
-            for sorted_symbol in sorted_symbols {
-                let DElt_0 = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
-                *DTableRank.offset(0) = DElt_0;
-                *DTableRank.offset(1) = DElt_0;
-                DTableRank = DTableRank.offset(2);
-                ptr = ptr.offset(1);
-            }
-        }
-        4 => {
-            for sorted_symbol in sorted_symbols {
-                let DEltX2 =
-                    HUF_buildDEltX2U64(sorted_symbol.symbol as u32, nbBits, baseSeq, level);
-                libc::memcpy(
-                    DTableRank.offset(0) as *mut core::ffi::c_void,
-                    &DEltX2 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                libc::memcpy(
-                    DTableRank.offset(2) as *mut core::ffi::c_void,
-                    &DEltX2 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                DTableRank = DTableRank.offset(4);
-                ptr = ptr.offset(1);
-            }
-        }
-        8 => {
-            for sorted_symbol in sorted_symbols {
-                let DEltX2_0 =
-                    HUF_buildDEltX2U64(sorted_symbol.symbol as u32, nbBits, baseSeq, level);
-                libc::memcpy(
-                    DTableRank.offset(0) as *mut core::ffi::c_void,
-                    &DEltX2_0 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                libc::memcpy(
-                    DTableRank.offset(2) as *mut core::ffi::c_void,
-                    &DEltX2_0 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                libc::memcpy(
-                    DTableRank.offset(4) as *mut core::ffi::c_void,
-                    &DEltX2_0 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                libc::memcpy(
-                    DTableRank.offset(6) as *mut core::ffi::c_void,
-                    &DEltX2_0 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                DTableRank = DTableRank.offset(8);
-                ptr = ptr.offset(1);
-            }
-        }
-        _ => {
-            for sorted_symbol in sorted_symbols {
-                let DEltX2_1 =
-                    HUF_buildDEltX2U64(sorted_symbol.symbol as u32, nbBits, baseSeq, level);
-                let DTableRankEnd = DTableRank.offset(length as isize);
-                while DTableRank != DTableRankEnd {
-                    libc::memcpy(
-                        DTableRank.offset(0) as *mut core::ffi::c_void,
-                        &DEltX2_1 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTableRank.offset(2) as *mut core::ffi::c_void,
-                        &DEltX2_1 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTableRank.offset(4) as *mut core::ffi::c_void,
-                        &DEltX2_1 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTableRank.offset(6) as *mut core::ffi::c_void,
-                        &DEltX2_1 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    DTableRank = DTableRank.offset(8);
-                }
-                ptr = ptr.offset(1);
-            }
-        }
-    };
+    let length = (1) << (tableLog.wrapping_sub(nbBits) & 0x1f);
+    let chunks = DTableRank[..sorted_symbols.len() * length as usize].chunks_exact_mut(length);
+
+    for (sorted_symbol, chunk) in sorted_symbols.iter().zip(chunks) {
+        let DElt = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
+        chunk.fill(DElt);
+    }
 }
-unsafe fn HUF_fillDTableX2Level2(
-    DTable: *mut HUF_DEltX2,
+
+fn HUF_fillDTableX2Level2(
+    DTable: &mut [HUF_DEltX2],
     targetLog: u32,
     consumedBits: u32,
     rankVal: &[u32; 13],
@@ -1191,55 +1102,19 @@ unsafe fn HUF_fillDTableX2Level2(
     baseSeq: u16,
 ) {
     if minWeight > 1 {
-        let length =
-            (1) << (targetLog.wrapping_sub(consumedBits) & 0x1f as core::ffi::c_int as u32);
-        let DEltX2 = HUF_buildDEltX2U64(baseSeq as u32, consumedBits, 0, 1);
-        let skipSize = rankVal[minWeight as usize] as core::ffi::c_int;
+        let length = 1 << (targetLog.wrapping_sub(consumedBits) & 0x1f);
+        let elem = HUF_DEltX2::from_u32(HUF_buildDEltX2U32(baseSeq as u32, consumedBits, 0, 1));
+        let skipSize = rankVal[minWeight as usize];
         match length {
             2 => {
-                libc::memcpy(
-                    DTable as *mut core::ffi::c_void,
-                    &DEltX2 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
+                DTable[..2].fill(elem);
             }
             4 => {
-                libc::memcpy(
-                    DTable.offset(0) as *mut core::ffi::c_void,
-                    &DEltX2 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
-                libc::memcpy(
-                    DTable.offset(2) as *mut core::ffi::c_void,
-                    &DEltX2 as *const u64 as *const core::ffi::c_void,
-                    ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                );
+                DTable[..4].fill(elem);
             }
             _ => {
-                let mut i: core::ffi::c_int = 0;
-                i = 0;
-                while i < skipSize {
-                    libc::memcpy(
-                        DTable.offset(i as isize).offset(0) as *mut core::ffi::c_void,
-                        &DEltX2 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTable.offset(i as isize).offset(2) as *mut core::ffi::c_void,
-                        &DEltX2 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTable.offset(i as isize).offset(4) as *mut core::ffi::c_void,
-                        &DEltX2 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    libc::memcpy(
-                        DTable.offset(i as isize).offset(6) as *mut core::ffi::c_void,
-                        &DEltX2 as *const u64 as *const core::ffi::c_void,
-                        ::core::mem::size_of::<u64>() as core::ffi::c_ulong as libc::size_t,
-                    );
-                    i += 8;
+                for i in (0..skipSize as usize).step_by(8) {
+                    DTable[i..][..8].fill(elem);
                 }
             }
         }
@@ -1250,7 +1125,7 @@ unsafe fn HUF_fillDTableX2Level2(
         let totalBits = nbBits.wrapping_add(consumedBits);
 
         HUF_fillDTableX2ForWeight(
-            DTable.add(rankVal[w] as usize),
+            &mut DTable[rankVal[w] as usize..],
             &sortedSymbols[rankStart[w] as usize..rankStart[w + 1] as usize],
             totalBits,
             targetLog,
@@ -1260,7 +1135,7 @@ unsafe fn HUF_fillDTableX2Level2(
     }
 }
 
-unsafe fn HUF_fillDTableX2(
+fn HUF_fillDTableX2(
     DTable: &mut [HUF_DEltX2; 4096],
     targetLog: u32,
     sortedList: &[sortedSymbol_t; 256],
@@ -1269,8 +1144,6 @@ unsafe fn HUF_fillDTableX2(
     maxWeight: u32,
     nbBitsBaseline: u32,
 ) {
-    let DTable = DTable.as_mut_ptr();
-
     let rankVal = rankValOrigin[0];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
@@ -1287,7 +1160,7 @@ unsafe fn HUF_fillDTableX2(
 
             for s in range {
                 HUF_fillDTableX2Level2(
-                    DTable.offset(start as isize),
+                    &mut DTable[start as usize..],
                     targetLog,
                     nbBits,
                     &rankValOrigin[nbBits as usize],
@@ -1302,7 +1175,7 @@ unsafe fn HUF_fillDTableX2(
             }
         } else {
             HUF_fillDTableX2ForWeight(
-                DTable.offset(rankVal[w as usize] as isize),
+                &mut DTable[rankVal[w as usize] as usize..],
                 &sortedList[range],
                 nbBits,
                 targetLog,
@@ -1371,7 +1244,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut nextRankStart = 0u32;
     for w in 1..maxW + 1 {
         let mut curr = nextRankStart;
-        nextRankStart = nextRankStart.wrapping_add(wksp.rankStats[w as usize]);
+        nextRankStart += wksp.rankStats[w as usize];
         rankStart[w as usize] = curr;
     }
 
