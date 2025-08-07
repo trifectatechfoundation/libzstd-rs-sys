@@ -76,15 +76,6 @@ pub struct HUF_ReadDTableX2_Workspace {
 pub struct sortedSymbol_t {
     pub symbol: u8,
 }
-pub type HUF_DecompressUsingDTableFn = Option<
-    unsafe fn(
-        *mut core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const HUF_DTable,
-    ) -> size_t,
->;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_DecompressFastArgs {
@@ -142,7 +133,7 @@ unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
 }
 
 unsafe fn HUF_DecompressFastArgs_init(
-    args: *mut HUF_DecompressFastArgs,
+    args: &mut HUF_DecompressFastArgs,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     src: *const core::ffi::c_void,
@@ -153,80 +144,90 @@ unsafe fn HUF_DecompressFastArgs_init(
     let dtLog = (HUF_getDTableDesc(DTable)).tableLog as u32;
     let istart = src as *const u8;
     let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
-    if MEM_isLittleEndian() == 0 || MEM_32bits() != 0 {
+
+    // The fast decoding loop assumes 64-bit little-endian.
+    if cfg!(target_endian = "big") || MEM_32bits() != 0 {
         return 0;
     }
+
+    // Avoid nullptr addition
     if dstSize == 0 {
         return 0;
     }
+    assert!(!dst.is_null());
+
+    // strict minimum : jump table + 1 byte per stream.
     if srcSize < 10 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
+    // Must have at least 8 bytes per stream because we don't handle initializing smaller bit containers.
+    // If table log is not correct at this point, fallback to the old decoder.
+    // On small inputs we don't have enough data to trigger the fast loop, so use the old decoder.
     if dtLog != HUF_DECODER_FAST_TABLELOG as u32 {
         return 0;
     }
+
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
-    let length4 = srcSize.wrapping_sub(
-        length1
-            .wrapping_add(length2)
-            .wrapping_add(length3)
-            .wrapping_add(6),
-    );
-    let fresh0 = &mut (*((*args).iend).as_mut_ptr().offset(0));
-    *fresh0 = istart.offset(6);
-    let fresh1 = &mut (*((*args).iend).as_mut_ptr().offset(1));
-    *fresh1 = (*((*args).iend).as_mut_ptr().offset(0)).offset(length1 as isize);
-    let fresh2 = &mut (*((*args).iend).as_mut_ptr().offset(2));
-    *fresh2 = (*((*args).iend).as_mut_ptr().offset(1)).offset(length2 as isize);
-    let fresh3 = &mut (*((*args).iend).as_mut_ptr().offset(3));
-    *fresh3 = (*((*args).iend).as_mut_ptr().offset(2)).offset(length3 as isize);
+    let length4 = srcSize.wrapping_sub(length1 + length2 + length3 + 6);
+
+    args.iend[0] = istart.add(6); /* jumpTable */
+    args.iend[1] = args.iend[0].add(length1 as usize);
+    args.iend[2] = args.iend[1].add(length2 as usize);
+    args.iend[3] = args.iend[2].add(length3 as usize);
+
+    // HUF_initFastDStream() requires this, and this small of an input won't benefit from the ASM loop anyways.
     if length1 < 8 || length2 < 8 || length3 < 8 || length4 < 8 {
         return 0;
     }
+
     if length4 > srcSize {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let fresh4 = &mut (*((*args).ip).as_mut_ptr().offset(0));
-    *fresh4 = (*((*args).iend).as_mut_ptr().offset(1))
-        .offset(-(::core::mem::size_of::<u64>() as core::ffi::c_ulong as isize));
-    let fresh5 = &mut (*((*args).ip).as_mut_ptr().offset(1));
-    *fresh5 = (*((*args).iend).as_mut_ptr().offset(2))
-        .offset(-(::core::mem::size_of::<u64>() as core::ffi::c_ulong as isize));
-    let fresh6 = &mut (*((*args).ip).as_mut_ptr().offset(2));
-    *fresh6 = (*((*args).iend).as_mut_ptr().offset(3))
-        .offset(-(::core::mem::size_of::<u64>() as core::ffi::c_ulong as isize));
-    let fresh7 = &mut (*((*args).ip).as_mut_ptr().offset(3));
-    *fresh7 = (src as *const u8)
-        .offset(srcSize as isize)
-        .offset(-(::core::mem::size_of::<u64>() as core::ffi::c_ulong as isize));
-    let fresh8 = &mut (*((*args).op).as_mut_ptr().offset(0));
-    *fresh8 = dst as *mut u8;
-    let fresh9 = &mut (*((*args).op).as_mut_ptr().offset(1));
-    *fresh9 = (*((*args).op).as_mut_ptr().offset(0)).offset((dstSize.wrapping_add(3) / 4) as isize);
-    let fresh10 = &mut (*((*args).op).as_mut_ptr().offset(2));
-    *fresh10 =
-        (*((*args).op).as_mut_ptr().offset(1)).offset((dstSize.wrapping_add(3) / 4) as isize);
-    let fresh11 = &mut (*((*args).op).as_mut_ptr().offset(3));
-    *fresh11 =
-        (*((*args).op).as_mut_ptr().offset(2)).offset((dstSize.wrapping_add(3) / 4) as isize);
-    if *((*args).op).as_mut_ptr().offset(3) >= oend {
+
+    /* ip[] contains the position that is currently loaded into bits[]. */
+    args.ip[0] = args.iend[1].sub(size_of::<u64>());
+    args.ip[1] = args.iend[2].sub(size_of::<u64>());
+    args.ip[2] = args.iend[3].sub(size_of::<u64>());
+    args.ip[3] = src.cast::<u8>().add(srcSize as usize - size_of::<u64>());
+
+    /* op[] contains the output pointers. */
+    args.op[0] = dst.cast::<u8>();
+    args.op[1] = args.op[0].add(dstSize.div_ceil(4) as usize);
+    args.op[2] = args.op[1].add(dstSize.div_ceil(4) as usize);
+    args.op[3] = args.op[2].add(dstSize.div_ceil(4) as usize);
+
+    // No point to call the ASM loop for tiny outputs.
+    if *(args.op).as_mut_ptr().offset(3) >= oend {
         return 0;
     }
-    *((*args).bits).as_mut_ptr().offset(0) =
-        HUF_initFastDStream(*((*args).ip).as_mut_ptr().offset(0));
-    *((*args).bits).as_mut_ptr().offset(1) =
-        HUF_initFastDStream(*((*args).ip).as_mut_ptr().offset(1));
-    *((*args).bits).as_mut_ptr().offset(2) =
-        HUF_initFastDStream(*((*args).ip).as_mut_ptr().offset(2));
-    *((*args).bits).as_mut_ptr().offset(3) =
-        HUF_initFastDStream(*((*args).ip).as_mut_ptr().offset(3));
-    (*args).ilowest = istart;
-    (*args).oend = oend;
-    (*args).dt = dt;
+
+    // bits[] is the bit container.
+    //
+    // It is read from the MSB down to the LSB.
+    // It is shifted left as it is read, and zeros are
+    // shifted in. After the lowest valid bit a 1 is
+    // set, so that CountTrailingZeros(bits[]) can be used
+    // to count how many bits we've consumed.
+    args.bits[0] = HUF_initFastDStream(args.ip[0]);
+    args.bits[1] = HUF_initFastDStream(args.ip[1]);
+    args.bits[2] = HUF_initFastDStream(args.ip[2]);
+    args.bits[3] = HUF_initFastDStream(args.ip[3]);
+
+    // The decoders must be sure to never read beyond ilowest.
+    // This is lower than iend[0], but allowing decoders to read
+    // down to ilowest can allow an extra iteration or two in the
+    // fast loop.
+    args.ilowest = istart;
+
+    args.oend = oend;
+    args.dt = dt;
+
     1
 }
+
 unsafe fn init_remaining_dstream(
     args: &HUF_DecompressFastArgs,
     stream: core::ffi::c_int,
