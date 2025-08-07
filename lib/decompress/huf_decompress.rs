@@ -1323,7 +1323,6 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut dtd = DTable.description;
 
     let mut tableLog: u32 = 0;
-    let mut maxW: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let mut maxTableLog = dtd.maxTableLog as u32;
     let mut iSize: size_t = 0;
@@ -1331,12 +1330,9 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let dt = DTable.data.as_x2_mut();
     let wksp = workSpace.as_x2_mut();
 
-    let mut rankStart = core::ptr::addr_of_mut!(wksp.rankStart0)
-        .cast::<u32>()
-        .offset(1);
-
     wksp.rankStats.fill(0);
     wksp.rankStart0.fill(0);
+    let rankStart = &mut wksp.rankStart0[1..];
 
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
         return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
@@ -1364,35 +1360,37 @@ pub unsafe fn HUF_readDTableX2_wksp(
     {
         maxTableLog = HUF_DECODER_FAST_TABLELOG as u32;
     }
-    maxW = tableLog;
+
+    /* find maxWeight */
+    let mut maxW: u32 = tableLog;
     while *(wksp.rankStats).as_mut_ptr().offset(maxW as isize) == 0 {
         maxW = maxW.wrapping_sub(1);
     }
-    let mut w: u32 = 0;
+
+    /* Get start index of each weight */
     let mut nextRankStart = 0 as core::ffi::c_int as u32;
-    w = 1;
-    while w < maxW.wrapping_add(1) {
+    for w in 1..maxW + 1 {
         let mut curr = nextRankStart;
         nextRankStart =
             nextRankStart.wrapping_add(*(wksp.rankStats).as_mut_ptr().offset(w as isize));
-        *rankStart.offset(w as isize) = curr;
-        w = w.wrapping_add(1);
+        rankStart[w as usize] = curr;
     }
-    *rankStart.offset(0) = nextRankStart;
-    *rankStart.offset(maxW.wrapping_add(1) as isize) = nextRankStart;
-    let mut s: u32 = 0;
-    s = 0;
-    while s < nbSymbols {
-        let w_0 = *(wksp.weightList).as_mut_ptr().offset(s as isize) as u32;
-        let fresh49 = &mut (*rankStart.offset(w_0 as isize));
-        let fresh50 = *fresh49;
-        *fresh49 = (*fresh49).wrapping_add(1);
-        let r = fresh50;
-        (*(wksp.sortedSymbol).as_mut_ptr().offset(r as isize)).symbol = s as u8;
-        s = s.wrapping_add(1);
+
+    rankStart[0] = nextRankStart;
+    rankStart[maxW.wrapping_add(1) as usize] = nextRankStart;
+
+    /* sort symbols by weight */
+    for s in 0..nbSymbols {
+        let w = usize::from(wksp.weightList[s as usize]);
+        let r = rankStart[w];
+        rankStart[w] += 1;
+        wksp.sortedSymbol[r as usize].symbol = s as u8;
     }
-    *rankStart.offset(0) = 0;
-    let rankVal0 = (*(wksp.rankVal).as_mut_ptr().offset(0)).as_mut_ptr();
+
+    /* forget 0w symbols; this is beginning of weight(1) */
+    rankStart[0] = 0;
+
+    /* Build rankVal */
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0 as core::ffi::c_int as u32;
     let mut w_1: u32 = 0;
@@ -1402,18 +1400,19 @@ pub unsafe fn HUF_readDTableX2_wksp(
         nextRankVal = nextRankVal.wrapping_add(
             *(wksp.rankStats).as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
         );
-        *rankVal0.offset(w_1 as isize) = curr_0;
+
+        wksp.rankVal[0][w_1 as usize] = curr_0;
         w_1 = w_1.wrapping_add(1);
     }
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut consumed: u32 = 0;
     consumed = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
-        let rankValPtr = (*(wksp.rankVal).as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
+        let rankValPtr = wksp.rankVal[consumed as usize].as_mut_ptr();
         let mut w_2: u32 = 0;
         w_2 = 1;
         while w_2 < maxW.wrapping_add(1) {
-            *rankValPtr.offset(w_2 as isize) = *rankVal0.offset(w_2 as isize) >> consumed;
+            *rankValPtr.offset(w_2 as isize) = wksp.rankVal[0][w_2 as usize] >> consumed;
             w_2 = w_2.wrapping_add(1);
         }
         consumed = consumed.wrapping_add(1);
