@@ -1,13 +1,13 @@
 use core::ptr;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
-use crate::lib::common::entropy_common::{HUF_readStats_wksp, Workspace};
+use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::fse_decompress::Error;
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST,
-    MEM_write16, MEM_write64,
+    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16,
 };
+use crate::lib::decompress::Workspace;
 use crate::lib::zstd::*;
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
@@ -86,7 +86,7 @@ pub struct HUF_DEltX1 {
 pub struct HUF_ReadDTableX1_Workspace {
     pub rankVal: [u32; 13],
     pub rankStart: [u32; 13],
-    pub statsWksp: Workspace,
+    pub statsWksp: crate::lib::common::entropy_common::Workspace,
     pub symbols: [u8; 256],
     pub huffWeight: [u8; 256],
 }
@@ -108,7 +108,7 @@ pub struct HUF_ReadDTableX2_Workspace {
     pub rankStart0: [u32; 15],
     pub sortedSymbol: [sortedSymbol_t; 256],
     pub weightList: [u8; 256],
-    pub calleeWksp: Workspace,
+    pub calleeWksp: crate::lib::common::entropy_common::Workspace,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -341,7 +341,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
     DTable: &mut DTable,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -352,11 +352,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
     let mut nbSymbols = 0;
     let mut iSize: size_t = 0;
 
-    let wksp = workSpace as *mut HUF_ReadDTableX1_Workspace;
-    if ::core::mem::size_of::<HUF_ReadDTableX1_Workspace>() as core::ffi::c_ulong > wkspSize {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
-    }
-    let wksp = unsafe { wksp.as_mut().unwrap() };
+    let wksp = workSpace.as_x1_mut();
 
     iSize = HUF_readStats_wksp(
         &mut wksp.huffWeight,
@@ -1004,7 +1000,7 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -1321,7 +1317,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     DTable: &mut DTable,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -1335,7 +1331,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut iSize: size_t = 0;
     let mut dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUF_DEltX2;
-    let wksp = workSpace as *mut HUF_ReadDTableX2_Workspace;
+    let wksp = workSpace.as_x2_mut();
 
     if ::core::mem::size_of::<HUF_ReadDTableX2_Workspace>() as core::ffi::c_ulong > wkspSize {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
@@ -2416,7 +2412,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -2441,13 +2437,14 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
         flags,
     )
 }
+
 unsafe fn HUF_decompress4X2_DCtx_wksp(
     dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -2735,7 +2732,7 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -2784,7 +2781,7 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     mut cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
@@ -2831,7 +2828,7 @@ pub unsafe fn HUF_decompress4X_hufOnly_wksp(
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: &mut Workspace,
     wkspSize: size_t,
     flags: core::ffi::c_int,
 ) -> size_t {
