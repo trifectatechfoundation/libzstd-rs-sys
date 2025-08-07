@@ -48,7 +48,7 @@ impl DTableData {
         unsafe { core::mem::transmute(&mut self.data) }
     }
 
-    fn as_x2_mut(&mut self) -> &mut [HUF_DEltX1; 4096] {
+    fn as_x2_mut(&mut self) -> &mut [HUF_DEltX2; 4096] {
         unsafe { core::mem::transmute(&mut self.data) }
     }
 }
@@ -1261,7 +1261,7 @@ unsafe fn HUF_fillDTableX2Level2(
 }
 
 unsafe fn HUF_fillDTableX2(
-    DTable: *mut HUF_DEltX2,
+    DTable: &mut [HUF_DEltX2; 4096],
     targetLog: u32,
     sortedList: &[sortedSymbol_t; 256],
     rankStart: &[u32; 15],
@@ -1269,6 +1269,8 @@ unsafe fn HUF_fillDTableX2(
     maxWeight: u32,
     nbBitsBaseline: u32,
 ) {
+    let DTable = DTable.as_mut_ptr();
+
     let rankVal = rankValOrigin[0];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
@@ -1318,38 +1320,37 @@ pub unsafe fn HUF_readDTableX2_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let DTable = &raw mut *DTable as *mut u32;
+    let mut dtd = DTable.description;
 
     let mut tableLog: u32 = 0;
     let mut maxW: u32 = 0;
     let mut nbSymbols: u32 = 0;
-    let mut dtd = HUF_getDTableDesc(DTable);
     let mut maxTableLog = dtd.maxTableLog as u32;
     let mut iSize: size_t = 0;
-    let mut dtPtr = DTable.offset(1) as *mut core::ffi::c_void;
-    let dt = dtPtr as *mut HUF_DEltX2;
+
+    let dt = DTable.data.as_x2_mut();
     let wksp = workSpace.as_x2_mut();
 
-    let mut rankStart = core::ptr::addr_of_mut!((*wksp).rankStart0)
+    let mut rankStart = core::ptr::addr_of_mut!(wksp.rankStart0)
         .cast::<u32>()
         .offset(1);
 
-    (*wksp).rankStats.fill(0);
-    (*wksp).rankStart0.fill(0);
+    wksp.rankStats.fill(0);
+    wksp.rankStart0.fill(0);
 
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
         return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
     }
 
     iSize = HUF_readStats_wksp(
-        &mut (*wksp).weightList,
+        &mut wksp.weightList,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
-        &mut (*wksp).rankStats,
+        &mut wksp.rankStats,
         &mut nbSymbols,
         &mut tableLog,
         src,
         srcSize,
-        &mut (*wksp).calleeWksp,
+        &mut wksp.calleeWksp,
         flags,
     );
     if ERR_isError(iSize) != 0 {
@@ -1364,7 +1365,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
         maxTableLog = HUF_DECODER_FAST_TABLELOG as u32;
     }
     maxW = tableLog;
-    while *((*wksp).rankStats).as_mut_ptr().offset(maxW as isize) == 0 {
+    while *(wksp.rankStats).as_mut_ptr().offset(maxW as isize) == 0 {
         maxW = maxW.wrapping_sub(1);
     }
     let mut w: u32 = 0;
@@ -1373,7 +1374,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     while w < maxW.wrapping_add(1) {
         let mut curr = nextRankStart;
         nextRankStart =
-            nextRankStart.wrapping_add(*((*wksp).rankStats).as_mut_ptr().offset(w as isize));
+            nextRankStart.wrapping_add(*(wksp.rankStats).as_mut_ptr().offset(w as isize));
         *rankStart.offset(w as isize) = curr;
         w = w.wrapping_add(1);
     }
@@ -1382,16 +1383,16 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut s: u32 = 0;
     s = 0;
     while s < nbSymbols {
-        let w_0 = *((*wksp).weightList).as_mut_ptr().offset(s as isize) as u32;
+        let w_0 = *(wksp.weightList).as_mut_ptr().offset(s as isize) as u32;
         let fresh49 = &mut (*rankStart.offset(w_0 as isize));
         let fresh50 = *fresh49;
         *fresh49 = (*fresh49).wrapping_add(1);
         let r = fresh50;
-        (*((*wksp).sortedSymbol).as_mut_ptr().offset(r as isize)).symbol = s as u8;
+        (*(wksp.sortedSymbol).as_mut_ptr().offset(r as isize)).symbol = s as u8;
         s = s.wrapping_add(1);
     }
     *rankStart.offset(0) = 0;
-    let rankVal0 = (*((*wksp).rankVal).as_mut_ptr().offset(0)).as_mut_ptr();
+    let rankVal0 = (*(wksp.rankVal).as_mut_ptr().offset(0)).as_mut_ptr();
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0 as core::ffi::c_int as u32;
     let mut w_1: u32 = 0;
@@ -1399,8 +1400,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     while w_1 < maxW.wrapping_add(1) {
         let mut curr_0 = nextRankVal;
         nextRankVal = nextRankVal.wrapping_add(
-            *((*wksp).rankStats).as_mut_ptr().offset(w_1 as isize)
-                << w_1.wrapping_add(rescale as u32),
+            *(wksp.rankStats).as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
         );
         *rankVal0.offset(w_1 as isize) = curr_0;
         w_1 = w_1.wrapping_add(1);
@@ -1409,7 +1409,7 @@ pub unsafe fn HUF_readDTableX2_wksp(
     let mut consumed: u32 = 0;
     consumed = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
-        let rankValPtr = (*((*wksp).rankVal).as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
+        let rankValPtr = (*(wksp.rankVal).as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
         let mut w_2: u32 = 0;
         w_2 = 1;
         while w_2 < maxW.wrapping_add(1) {
@@ -1418,22 +1418,22 @@ pub unsafe fn HUF_readDTableX2_wksp(
         }
         consumed = consumed.wrapping_add(1);
     }
+
     HUF_fillDTableX2(
         dt,
         maxTableLog,
-        &mut (*wksp).sortedSymbol,
-        &mut (*wksp).rankStart0,
-        &mut (*wksp).rankVal,
+        &mut wksp.sortedSymbol,
+        &mut wksp.rankStart0,
+        &mut wksp.rankVal,
         maxW,
         tableLog.wrapping_add(1),
     );
+
     dtd.tableLog = maxTableLog as u8;
     dtd.tableType = 1;
-    libc::memcpy(
-        DTable as *mut core::ffi::c_void,
-        &mut dtd as *mut DTableDesc as *const core::ffi::c_void,
-        ::core::mem::size_of::<DTableDesc>() as core::ffi::c_ulong as libc::size_t,
-    );
+
+    DTable.description = dtd;
+
     iSize
 }
 
