@@ -331,20 +331,21 @@ pub unsafe fn HUF_readDTableX1_wksp(
     let mut nbSymbols = 0;
     let mut iSize: size_t = 0;
 
-    let mut wksp = workSpace as *mut HUF_ReadDTableX1_Workspace;
+    let wksp = workSpace as *mut HUF_ReadDTableX1_Workspace;
     if ::core::mem::size_of::<HUF_ReadDTableX1_Workspace>() as core::ffi::c_ulong > wkspSize {
         return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
     }
+    let wksp = unsafe { wksp.as_mut().unwrap() };
 
     iSize = HUF_readStats_wksp(
-        &mut (*wksp).huffWeight,
+        &mut wksp.huffWeight,
         (HUF_SYMBOLVALUE_MAX + 1) as size_t,
-        &mut (*wksp).rankVal,
+        &mut wksp.rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,
         srcSize,
-        &mut (*wksp).statsWksp,
+        &mut wksp.statsWksp,
         flags,
     );
     if ERR_isError(iSize) != 0 {
@@ -354,8 +355,8 @@ pub unsafe fn HUF_readDTableX1_wksp(
     let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
     tableLog = HUF_rescaleStats(
-        &mut (*wksp).huffWeight,
-        &mut (*wksp).rankVal,
+        &mut wksp.huffWeight,
+        &mut wksp.rankVal,
         nbSymbols,
         tableLog,
         targetTableLog,
@@ -388,26 +389,26 @@ pub unsafe fn HUF_readDTableX1_wksp(
     let nLimit = nbSymbols as core::ffi::c_int - unroll + 1;
     for n in 0..tableLog as usize + 1 {
         let curr = nextRankStart;
-        nextRankStart += (*wksp).rankVal[n];
-        (*wksp).rankStart[n] = curr;
+        nextRankStart += wksp.rankVal[n];
+        wksp.rankStart[n] = curr;
     }
 
     let mut n = 0;
     while n < nLimit {
         for u in 0..unroll {
-            let w = usize::from((*wksp).huffWeight[(n + u) as usize]);
+            let w = usize::from(wksp.huffWeight[(n + u) as usize]);
 
-            (*wksp).symbols[(*wksp).rankStart[w] as usize] = (n + u) as u8;
-            (*wksp).rankStart[w] += 1;
+            wksp.symbols[wksp.rankStart[w] as usize] = (n + u) as u8;
+            wksp.rankStart[w] += 1;
         }
         n += unroll;
     }
 
     while n < nbSymbols as core::ffi::c_int {
-        let w = usize::from((*wksp).huffWeight[n as usize]);
+        let w = usize::from(wksp.huffWeight[n as usize]);
 
-        (*wksp).symbols[(*wksp).rankStart[w] as usize] = n as u8;
-        (*wksp).rankStart[w] += 1;
+        wksp.symbols[wksp.rankStart[w] as usize] = n as u8;
+        wksp.rankStart[w] += 1;
 
         n += 1;
     }
@@ -418,10 +419,10 @@ pub unsafe fn HUF_readDTableX1_wksp(
     // That way length is a constant for each iteration of the outer loop.
     // We can switch based on the length to a different inner loop which is
     // optimized for that particular case.
-    let mut symbol = *((*wksp).rankVal).as_mut_ptr().offset(0) as core::ffi::c_int;
+    let mut symbol = *(wksp.rankVal).as_mut_ptr().offset(0) as core::ffi::c_int;
     let mut rankStart = 0;
     for w_1 in 1..tableLog.wrapping_add(1) {
-        let symbolCount = *((*wksp).rankVal).as_mut_ptr().offset(w_1 as isize) as core::ffi::c_int;
+        let symbolCount = *(wksp.rankVal).as_mut_ptr().offset(w_1 as isize) as core::ffi::c_int;
         let length = (1) << w_1 >> 1;
         let mut uStart = rankStart;
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w_1) as u8;
@@ -432,7 +433,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let mut D = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D.byte = *((*wksp).symbols).as_mut_ptr().offset((symbol + s) as isize);
+                    D.byte = *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize);
                     D.nbBits = nbBits;
                     *dt.offset(uStart as isize) = D;
                     uStart += 1;
@@ -443,7 +444,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let mut D_0 = HUF_DEltX1 { nbBits: 0, byte: 0 };
-                    D_0.byte = *((*wksp).symbols).as_mut_ptr().offset((symbol + s) as isize);
+                    D_0.byte = *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize);
                     D_0.nbBits = nbBits;
                     *dt.offset((uStart + 0) as isize) = D_0;
                     *dt.offset((uStart + 1) as isize) = D_0;
@@ -455,7 +456,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let D4 = HUF_DEltX1_set4(
-                        *((*wksp).symbols).as_mut_ptr().offset((symbol + s) as isize),
+                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
                         nbBits,
                     );
                     MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4);
@@ -467,7 +468,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let D4_0 = HUF_DEltX1_set4(
-                        *((*wksp).symbols).as_mut_ptr().offset((symbol + s) as isize),
+                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
                         nbBits,
                     );
                     MEM_write64(dt.offset(uStart as isize) as *mut core::ffi::c_void, D4_0);
@@ -483,7 +484,7 @@ pub unsafe fn HUF_readDTableX1_wksp(
                 s = 0;
                 while s < symbolCount {
                     let D4_1 = HUF_DEltX1_set4(
-                        *((*wksp).symbols).as_mut_ptr().offset((symbol + s) as isize),
+                        *(wksp.symbols).as_mut_ptr().offset((symbol + s) as isize),
                         nbBits,
                     );
                     u_0 = 0;
