@@ -153,10 +153,6 @@ pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
-fn HUF_getDTableDesc(mut table: &DTable) -> DTableDesc {
-    table.description
-}
-
 unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7);
     let bitsConsumed = (if lastByte as core::ffi::c_int != 0 {
@@ -1505,7 +1501,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let mut op3 = opStart3;
     let mut op4 = opStart4;
     let mut endSignal = 1;
-    let dtd = HUF_getDTableDesc(DTable);
+    let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
     if length4 > cSrcSize {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
