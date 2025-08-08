@@ -707,6 +707,24 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_default(
     HUF_decompress4X1_usingDTable_internal_body(dst, dstSize, src, DTable)
 }
 
+macro_rules! HUF_4X_FOR_EACH_STREAM_WITH_VAR {
+    ($mac:ident, $var:literal) => {
+        $mac!(0, $var);
+        $mac!(1, $var);
+        $mac!(2, $var);
+        $mac!(3, $var);
+    };
+}
+
+macro_rules! HUF_4X_FOR_EACH_STREAM {
+    ($mac:ident ) => {
+        $mac!(0);
+        $mac!(1);
+        $mac!(2);
+        $mac!(3);
+    };
+}
+
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
     args: &mut HUF_DecompressFastArgs,
 ) {
@@ -776,15 +794,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
             };
         }
 
-        macro_rules! HUF_4X_FOR_EACH_STREAM_WITH_VAR {
-            ($mac:ident, $var:literal) => {
-                $mac!(0, $var);
-                $mac!(1, $var);
-                $mac!(2, $var);
-                $mac!(3, $var);
-            };
-        }
-
         macro_rules! HUF_4X1_RELOAD_STREAM {
             ($stream: expr) => {
                 let ctz = bits[$stream].trailing_zeros();
@@ -795,15 +804,6 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
                 ip[$stream] = ip[$stream].sub(nbBytes as usize);
                 bits[$stream] = MEM_read64(ip[$stream] as *const core::ffi::c_void) | 1;
                 bits[$stream] <<= nbBits;
-            };
-        }
-
-        macro_rules! HUF_4X_FOR_EACH_STREAM {
-            ($mac:ident ) => {
-                $mac!(0);
-                $mac!(1);
-                $mac!(2);
-                $mac!(3);
             };
         }
 
@@ -1549,435 +1549,140 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_default(
 unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
     args: &mut HUF_DecompressFastArgs,
 ) {
-    let mut bits: [u64; 4] = [0; 4];
-    let mut ip: [*const u8; 4] = [core::ptr::null::<u8>(); 4];
-    let mut op: [*mut u8; 4] = [core::ptr::null_mut::<u8>(); 4];
+    let dtable: &[HUF_DEltX2; 4096] = core::mem::transmute(args.dt);
+    let ilowest = args.ilowest;
+
+    let mut bits = args.bits;
+    let mut ip = args.ip;
+    let mut op = args.op;
+
     let mut oend: [*mut u8; 4] = [core::ptr::null_mut::<u8>(); 4];
-    let dtable = (*args).dt as *const HUF_DEltX2;
-    let ilowest = (*args).ilowest;
-    libc::memcpy(
-        &mut bits as *mut [u64; 4] as *mut core::ffi::c_void,
-        &mut (*args).bits as *mut [u64; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u64; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut ip as *mut [*const u8; 4] as *mut core::ffi::c_void,
-        &mut (*args).ip as *mut [*const u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*const u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut op as *mut [*mut u8; 4] as *mut core::ffi::c_void,
-        &mut (*args).op as *mut [*mut u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*mut u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    let fresh51 = &mut (*oend.as_mut_ptr().offset(0));
-    *fresh51 = *op.as_mut_ptr().offset(1);
-    let fresh52 = &mut (*oend.as_mut_ptr().offset(1));
-    *fresh52 = *op.as_mut_ptr().offset(2);
-    let fresh53 = &mut (*oend.as_mut_ptr().offset(2));
-    *fresh53 = *op.as_mut_ptr().offset(3);
-    let fresh54 = &mut (*oend.as_mut_ptr().offset(3));
-    *fresh54 = (*args).oend;
-    's_45: loop {
+    oend[0] = op[1];
+    oend[1] = op[2];
+    oend[2] = op[3];
+    oend[3] = args.oend;
+
+    'out: loop {
         let mut olimit = core::ptr::null_mut::<u8>();
         let mut stream: core::ffi::c_int = 0;
         stream = 0;
-        while stream < 4 {
-            stream += 1;
+
+        /* Assert loop preconditions */
+        if cfg!(debug_assertions) {
+            for stream in 0..4 {
+                assert!(op[stream] <= oend[stream]);
+                assert!(ip[stream] >= ilowest);
+            }
         }
-        let mut iters =
-            (*ip.as_mut_ptr().offset(0)).offset_from(ilowest) as core::ffi::c_long as size_t / 7;
-        stream = 0;
-        while stream < 4 {
-            let oiters = (*oend.as_mut_ptr().offset(stream as isize))
-                .offset_from(*op.as_mut_ptr().offset(stream as isize))
-                as core::ffi::c_long as size_t
-                / 10;
-            iters = if iters < oiters { iters } else { oiters };
-            stream += 1;
+
+        /* Compute olimit */
+
+        /* Each loop does 5 table lookups for each of the 4 streams.
+         * Each table lookup consumes up to 11 bits of input, and produces
+         * up to 2 bytes of output.
+         */
+        /* We can consume up to 7 bytes of input per iteration per stream.
+         * We also know that each input pointer is >= ip[0]. So we can run
+         * iters loops before running out of input.
+         */
+        let mut iters = ip[0].offset_from(ilowest) as size_t / 7;
+
+        /* Each iteration can produce up to 10 bytes of output per stream.
+         * Each output stream my advance at different rates. So take the
+         * minimum number of safe iterations among all the output streams.
+         */
+        for stream in 0..4 {
+            let oiters = oend[stream].offset_from(op[stream]) as size_t / 10;
+            iters = Ord::min(iters, oiters);
         }
-        olimit = (*op.as_mut_ptr().offset(3)).offset((iters * 5) as isize);
-        if *op.as_mut_ptr().offset(3) == olimit {
+
+        /* Each iteration produces at least 5 output symbols. So until
+         * op[3] crosses olimit, we know we haven't executed iters
+         * iterations yet. This saves us maintaining an iters counter,
+         * at the expense of computing the remaining # of iterations
+         * more frequently.
+         */
+        olimit = op[3].add(iters as usize * 5);
+
+        /* Exit the fast decoding loop once we reach the end. */
+        if op[3] == olimit {
             break;
         }
-        stream = 1;
-        while stream < 4 {
-            if *ip.as_mut_ptr().offset(stream as isize)
-                < *ip.as_mut_ptr().offset((stream - 1) as isize)
-            {
-                break 's_45;
+
+        /* Exit the decoding loop if any input pointer has crossed the
+         * previous one. This indicates corruption, and a precondition
+         * to our loop is that ip[i] >= ip[0].
+         */
+        for stream in 1..4 {
+            if ip[stream] < ip[stream - 1] {
+                break 'out;
             }
-            stream += 1;
         }
-        stream = 1;
-        while stream < 4 {
-            stream += 1;
+
+        for stream in 1..4 {
+            assert!(ip[stream] >= ip[stream - 1]);
         }
+
+        macro_rules! HUF_4X2_DECODE_SYMBOL {
+            ($stream:expr, $decode3:expr) => {
+                if (($decode3) != 0 || ($stream) != 3) {
+                    let index = (bits[($stream)] >> 53);
+                    let entry = dtable[index as usize];
+                    MEM_write16(op[($stream)].cast(), entry.sequence);
+                    bits[($stream)] <<= (entry.nbBits) & 0x3F;
+                    op[($stream)] = op[($stream)].add(usize::from(entry.length));
+                }
+            };
+        }
+
+        macro_rules! HUF_4X2_RELOAD_STREAM {
+            ($stream:expr) => {
+                HUF_4X2_DECODE_SYMBOL!(3, 1);
+                {
+                    let ctz = bits[($stream)].trailing_zeros();
+                    let nbBits = ctz & 7;
+                    let nbBytes = ctz >> 3;
+                    ip[($stream)] = ip[$stream].sub(nbBytes as usize);
+                    bits[($stream)] = MEM_read64(ip[($stream)].cast()) | 1;
+                    bits[($stream)] <<= nbBits;
+                }
+            };
+        }
+
+        /* Manually unroll the loop because compilers don't consistently
+         * unroll the inner loops, which destroys performance.
+         */
+
         loop {
-            if 0 != 0 || 0 != 3 {
-                let index = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-                let entry = *dtable.offset(index as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(0) as *mut core::ffi::c_void,
-                    entry.sequence,
-                );
-                *bits.as_mut_ptr().offset(0) <<=
-                    entry.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh55 = &mut (*op.as_mut_ptr().offset(0));
-                *fresh55 = (*fresh55).offset(entry.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 1 != 3 {
-                let index_0 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-                let entry_0 = *dtable.offset(index_0 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(1) as *mut core::ffi::c_void,
-                    entry_0.sequence,
-                );
-                *bits.as_mut_ptr().offset(1) <<=
-                    entry_0.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh56 = &mut (*op.as_mut_ptr().offset(1));
-                *fresh56 = (*fresh56).offset(entry_0.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 2 != 3 {
-                let index_1 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-                let entry_1 = *dtable.offset(index_1 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(2) as *mut core::ffi::c_void,
-                    entry_1.sequence,
-                );
-                *bits.as_mut_ptr().offset(2) <<=
-                    entry_1.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh57 = &mut (*op.as_mut_ptr().offset(2));
-                *fresh57 = (*fresh57).offset(entry_1.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 3 != 3 {
-                let index_2 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_2 = *dtable.offset(index_2 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_2.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_2.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh58 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh58 = (*fresh58).offset(entry_2.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 0 != 3 {
-                let index_3 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-                let entry_3 = *dtable.offset(index_3 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(0) as *mut core::ffi::c_void,
-                    entry_3.sequence,
-                );
-                *bits.as_mut_ptr().offset(0) <<=
-                    entry_3.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh59 = &mut (*op.as_mut_ptr().offset(0));
-                *fresh59 = (*fresh59).offset(entry_3.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 1 != 3 {
-                let index_4 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-                let entry_4 = *dtable.offset(index_4 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(1) as *mut core::ffi::c_void,
-                    entry_4.sequence,
-                );
-                *bits.as_mut_ptr().offset(1) <<=
-                    entry_4.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh60 = &mut (*op.as_mut_ptr().offset(1));
-                *fresh60 = (*fresh60).offset(entry_4.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 2 != 3 {
-                let index_5 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-                let entry_5 = *dtable.offset(index_5 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(2) as *mut core::ffi::c_void,
-                    entry_5.sequence,
-                );
-                *bits.as_mut_ptr().offset(2) <<=
-                    entry_5.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh61 = &mut (*op.as_mut_ptr().offset(2));
-                *fresh61 = (*fresh61).offset(entry_5.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 3 != 3 {
-                let index_6 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_6 = *dtable.offset(index_6 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_6.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_6.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh62 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh62 = (*fresh62).offset(entry_6.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 0 != 3 {
-                let index_7 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-                let entry_7 = *dtable.offset(index_7 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(0) as *mut core::ffi::c_void,
-                    entry_7.sequence,
-                );
-                *bits.as_mut_ptr().offset(0) <<=
-                    entry_7.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh63 = &mut (*op.as_mut_ptr().offset(0));
-                *fresh63 = (*fresh63).offset(entry_7.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 1 != 3 {
-                let index_8 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-                let entry_8 = *dtable.offset(index_8 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(1) as *mut core::ffi::c_void,
-                    entry_8.sequence,
-                );
-                *bits.as_mut_ptr().offset(1) <<=
-                    entry_8.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh64 = &mut (*op.as_mut_ptr().offset(1));
-                *fresh64 = (*fresh64).offset(entry_8.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 2 != 3 {
-                let index_9 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-                let entry_9 = *dtable.offset(index_9 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(2) as *mut core::ffi::c_void,
-                    entry_9.sequence,
-                );
-                *bits.as_mut_ptr().offset(2) <<=
-                    entry_9.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh65 = &mut (*op.as_mut_ptr().offset(2));
-                *fresh65 = (*fresh65).offset(entry_9.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 3 != 3 {
-                let index_10 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_10 = *dtable.offset(index_10 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_10.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_10.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh66 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh66 = (*fresh66).offset(entry_10.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 0 != 3 {
-                let index_11 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-                let entry_11 = *dtable.offset(index_11 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(0) as *mut core::ffi::c_void,
-                    entry_11.sequence,
-                );
-                *bits.as_mut_ptr().offset(0) <<=
-                    entry_11.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh67 = &mut (*op.as_mut_ptr().offset(0));
-                *fresh67 = (*fresh67).offset(entry_11.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 1 != 3 {
-                let index_12 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-                let entry_12 = *dtable.offset(index_12 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(1) as *mut core::ffi::c_void,
-                    entry_12.sequence,
-                );
-                *bits.as_mut_ptr().offset(1) <<=
-                    entry_12.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh68 = &mut (*op.as_mut_ptr().offset(1));
-                *fresh68 = (*fresh68).offset(entry_12.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 2 != 3 {
-                let index_13 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-                let entry_13 = *dtable.offset(index_13 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(2) as *mut core::ffi::c_void,
-                    entry_13.sequence,
-                );
-                *bits.as_mut_ptr().offset(2) <<=
-                    entry_13.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh69 = &mut (*op.as_mut_ptr().offset(2));
-                *fresh69 = (*fresh69).offset(entry_13.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 3 != 3 {
-                let index_14 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_14 = *dtable.offset(index_14 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_14.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_14.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh70 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh70 = (*fresh70).offset(entry_14.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 0 != 3 {
-                let index_15 = (*bits.as_mut_ptr().offset(0) >> 53) as core::ffi::c_int;
-                let entry_15 = *dtable.offset(index_15 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(0) as *mut core::ffi::c_void,
-                    entry_15.sequence,
-                );
-                *bits.as_mut_ptr().offset(0) <<=
-                    entry_15.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh71 = &mut (*op.as_mut_ptr().offset(0));
-                *fresh71 = (*fresh71).offset(entry_15.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 1 != 3 {
-                let index_16 = (*bits.as_mut_ptr().offset(1) >> 53) as core::ffi::c_int;
-                let entry_16 = *dtable.offset(index_16 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(1) as *mut core::ffi::c_void,
-                    entry_16.sequence,
-                );
-                *bits.as_mut_ptr().offset(1) <<=
-                    entry_16.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh72 = &mut (*op.as_mut_ptr().offset(1));
-                *fresh72 = (*fresh72).offset(entry_16.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 2 != 3 {
-                let index_17 = (*bits.as_mut_ptr().offset(2) >> 53) as core::ffi::c_int;
-                let entry_17 = *dtable.offset(index_17 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(2) as *mut core::ffi::c_void,
-                    entry_17.sequence,
-                );
-                *bits.as_mut_ptr().offset(2) <<=
-                    entry_17.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh73 = &mut (*op.as_mut_ptr().offset(2));
-                *fresh73 = (*fresh73).offset(entry_17.length as core::ffi::c_int as isize);
-            }
-            if 0 != 0 || 3 != 3 {
-                let index_18 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_18 = *dtable.offset(index_18 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_18.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_18.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh74 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh74 = (*fresh74).offset(entry_18.length as core::ffi::c_int as isize);
-            }
-            if 1 != 0 || 3 != 3 {
-                let index_19 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_19 = *dtable.offset(index_19 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_19.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_19.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh75 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh75 = (*fresh75).offset(entry_19.length as core::ffi::c_int as isize);
-            }
-            if 1 != 0 || 3 != 3 {
-                let index_20 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_20 = *dtable.offset(index_20 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_20.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_20.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh76 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh76 = (*fresh76).offset(entry_20.length as core::ffi::c_int as isize);
-            }
-            let ctz = {
-                let mut val = *bits.as_mut_ptr().offset(0);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits = ctz & 7;
-            let nbBytes = ctz >> 3;
-            let fresh77 = &mut (*ip.as_mut_ptr().offset(0));
-            *fresh77 = (*fresh77).offset(-(nbBytes as isize));
-            *bits.as_mut_ptr().offset(0) =
-                MEM_read64(*ip.as_mut_ptr().offset(0) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(0) <<= nbBits;
-            if 1 != 0 || 3 != 3 {
-                let index_21 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_21 = *dtable.offset(index_21 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_21.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_21.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh78 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh78 = (*fresh78).offset(entry_21.length as core::ffi::c_int as isize);
-            }
-            let ctz_0 = {
-                let mut val = *bits.as_mut_ptr().offset(1);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_0 = ctz_0 & 7;
-            let nbBytes_0 = ctz_0 >> 3;
-            let fresh79 = &mut (*ip.as_mut_ptr().offset(1));
-            *fresh79 = (*fresh79).offset(-(nbBytes_0 as isize));
-            *bits.as_mut_ptr().offset(1) =
-                MEM_read64(*ip.as_mut_ptr().offset(1) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(1) <<= nbBits_0;
-            if 1 != 0 || 3 != 3 {
-                let index_22 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_22 = *dtable.offset(index_22 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_22.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_22.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh80 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh80 = (*fresh80).offset(entry_22.length as core::ffi::c_int as isize);
-            }
-            let ctz_1 = {
-                let mut val = *bits.as_mut_ptr().offset(2);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_1 = ctz_1 & 7;
-            let nbBytes_1 = ctz_1 >> 3;
-            let fresh81 = &mut (*ip.as_mut_ptr().offset(2));
-            *fresh81 = (*fresh81).offset(-(nbBytes_1 as isize));
-            *bits.as_mut_ptr().offset(2) =
-                MEM_read64(*ip.as_mut_ptr().offset(2) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(2) <<= nbBits_1;
-            if 1 != 0 || 3 != 3 {
-                let index_23 = (*bits.as_mut_ptr().offset(3) >> 53) as core::ffi::c_int;
-                let entry_23 = *dtable.offset(index_23 as isize);
-                MEM_write16(
-                    *op.as_mut_ptr().offset(3) as *mut core::ffi::c_void,
-                    entry_23.sequence,
-                );
-                *bits.as_mut_ptr().offset(3) <<=
-                    entry_23.nbBits as core::ffi::c_int & 0x3f as core::ffi::c_int;
-                let fresh82 = &mut (*op.as_mut_ptr().offset(3));
-                *fresh82 = (*fresh82).offset(entry_23.length as core::ffi::c_int as isize);
-            }
-            let ctz_2 = {
-                let mut val = *bits.as_mut_ptr().offset(3);
-                val.trailing_zeros()
-            } as core::ffi::c_int;
-            let nbBits_2 = ctz_2 & 7;
-            let nbBytes_2 = ctz_2 >> 3;
-            let fresh83 = &mut (*ip.as_mut_ptr().offset(3));
-            *fresh83 = (*fresh83).offset(-(nbBytes_2 as isize));
-            *bits.as_mut_ptr().offset(3) =
-                MEM_read64(*ip.as_mut_ptr().offset(3) as *const core::ffi::c_void) | 1;
-            *bits.as_mut_ptr().offset(3) <<= nbBits_2;
-            if *op.as_mut_ptr().offset(3) >= olimit {
+            /* Decode 5 symbols from each of the first 3 streams.
+             * The final stream will be decoded during the reload phase
+             * to reduce register pressure.
+             */
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X2_DECODE_SYMBOL, 0);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X2_DECODE_SYMBOL, 0);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X2_DECODE_SYMBOL, 0);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X2_DECODE_SYMBOL, 0);
+            HUF_4X_FOR_EACH_STREAM_WITH_VAR!(HUF_4X2_DECODE_SYMBOL, 0);
+
+            /* Decode one symbol from the final stream */
+            HUF_4X2_DECODE_SYMBOL!(3, 1);
+
+            /* Decode 4 symbols from the final stream & reload bitstreams.
+             * The final stream is reloaded last, meaning that all 5 symbols
+             * are decoded from the final stream before it is reloaded.
+             */
+            HUF_4X_FOR_EACH_STREAM!(HUF_4X2_RELOAD_STREAM);
+
+            if !(op[3] < olimit) {
                 break;
             }
         }
     }
-    libc::memcpy(
-        &mut (*args).bits as *mut [u64; 4] as *mut core::ffi::c_void,
-        &mut bits as *mut [u64; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u64; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut (*args).ip as *mut [*const u8; 4] as *mut core::ffi::c_void,
-        &mut ip as *mut [*const u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*const u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
-    libc::memcpy(
-        &mut (*args).op as *mut [*mut u8; 4] as *mut core::ffi::c_void,
-        &mut op as *mut [*mut u8; 4] as *const core::ffi::c_void,
-        ::core::mem::size_of::<[*mut u8; 4]>() as core::ffi::c_ulong as libc::size_t,
-    );
+
+    // Save the final values of each of the state variables back to args.
+    args.bits = bits;
+    args.ip = ip;
+    args.op = op;
 }
 
 unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
