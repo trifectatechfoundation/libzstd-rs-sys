@@ -173,10 +173,6 @@ impl HUF_DecompressFastArgs {
     ) -> Result<Option<Self>, Error> {
         let mut args = Self::default();
 
-        let dt = DTable.data.as_x2().as_ptr() as *const core::ffi::c_void;
-        let dtLog = DTable.description.tableLog as u32;
-        let srcSize = src.len() as size_t;
-        let istart = src.as_ptr();
         let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
         // The fast decoding loop assumes 64-bit little-endian.
@@ -191,22 +187,28 @@ impl HUF_DecompressFastArgs {
         assert!(!dst.is_null());
 
         // strict minimum : jump table + 1 byte per stream.
-        if srcSize < 10 {
+        let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
             return Err(Error::corruption_detected);
-        }
+        };
 
         // Must have at least 8 bytes per stream because we don't handle initializing smaller bit containers.
         // If table log is not correct at this point, fallback to the old decoder.
         // On small inputs we don't have enough data to trigger the fast loop, so use the old decoder.
+        let dtLog = DTable.description.tableLog as u32;
         if dtLog != HUF_DECODER_FAST_TABLELOG as u32 {
             return Ok(None);
         }
 
-        let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
-        let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
-        let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
-        let length4 = srcSize.wrapping_sub(length1 + length2 + length3 + 6);
+        let length1 = usize::from(u16::from_le_bytes([b0, b1]));
+        let length2 = usize::from(u16::from_le_bytes([b2, b3]));
+        let length3 = usize::from(u16::from_le_bytes([b4, b5]));
+        let length4 = src.len().wrapping_sub(6 + length1 + length2 + length3);
 
+        if 6 + length1 + length2 + length3 > src.len() {
+            return Err(Error::corruption_detected);
+        }
+
+        let istart = src.as_ptr();
         args.iend[0] = istart.add(6); /* jumpTable */
         args.iend[1] = args.iend[0].add(length1 as usize);
         args.iend[2] = args.iend[1].add(length2 as usize);
@@ -217,15 +219,11 @@ impl HUF_DecompressFastArgs {
             return Ok(None);
         }
 
-        if length4 > srcSize {
-            return Err(Error::corruption_detected);
-        }
-
         /* ip[] contains the position that is currently loaded into bits[]. */
         args.ip[0] = args.iend[1].sub(size_of::<u64>());
         args.ip[1] = args.iend[2].sub(size_of::<u64>());
         args.ip[2] = args.iend[3].sub(size_of::<u64>());
-        args.ip[3] = src.as_ptr().add(srcSize as usize - size_of::<u64>());
+        args.ip[3] = src.as_ptr().add(src.len() as usize - size_of::<u64>());
 
         /* op[] contains the output pointers. */
         args.op[0] = dst.cast::<u8>();
@@ -234,7 +232,7 @@ impl HUF_DecompressFastArgs {
         args.op[3] = args.op[2].add(dstSize.div_ceil(4) as usize);
 
         // No point to call the ASM loop for tiny outputs.
-        if *(args.op).as_mut_ptr().offset(3) >= oend {
+        if args.op[3] >= oend {
             return Ok(None);
         }
 
@@ -257,7 +255,7 @@ impl HUF_DecompressFastArgs {
         args.ilowest = istart;
 
         args.oend = oend;
-        args.dt = dt;
+        args.dt = DTable.data.as_x2().as_ptr() as *const core::ffi::c_void;
 
         Ok(Some(args))
     }
@@ -546,9 +544,10 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    if src.len() < 10 {
+    // strict minimum : jump table + 1 byte per stream.
+    let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
+    };
 
     if dstSize < 6 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -557,10 +556,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let ostart = dst as *mut u8;
     let oend = ostart.offset(dstSize as isize);
     let olimit = oend.offset(-(3));
-
-    let [b0, b1, b2, b3, b4, b5, ..] = *src else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    };
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
     let length2 = usize::from(u16::from_le_bytes([b2, b3]));
@@ -1393,9 +1388,10 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    if src.len() < 10 {
+    // strict minimum : jump table + 1 byte per stream.
+    let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
+    };
 
     if dstSize < 6 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -1406,10 +1402,6 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let olimit = oend.offset(
         -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
     );
-
-    let [b0, b1, b2, b3, b4, b5, ..] = *src else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    };
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
     let length2 = usize::from(u16::from_le_bytes([b2, b3]));
