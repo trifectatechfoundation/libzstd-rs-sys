@@ -583,7 +583,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let mut op2 = opStart2;
     let mut op3 = opStart3;
     let mut op4 = opStart4;
-    let mut endSignal = 1;
+    let mut end_signal = true;
 
     if opStart4 > oend {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -609,10 +609,8 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let dt = DTable.data.as_x1();
     let dtLog = DTable.description.tableLog as u32;
 
-    if oend.offset_from(op4) as core::ffi::c_long as size_t
-        >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
-    {
-        while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
+    if oend.offset_from(op4) >= size_of::<size_t>() as isize {
+        while end_signal && op4 < olimit {
             if cfg!(target_pointer_width = "64") {
                 *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
                 op1 = op1.offset(1);
@@ -667,10 +665,10 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
             *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             op4 = op4.offset(1);
 
-            endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
-            endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
-            endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
-            endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
+            end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
+            end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
+            end_signal &= bitD3.reload_fast() == StreamStatus::Unfinished;
+            end_signal &= bitD4.reload_fast() == StreamStatus::Unfinished;
         }
     }
 
