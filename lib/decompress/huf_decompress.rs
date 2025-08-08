@@ -527,8 +527,7 @@ unsafe fn HUF_decodeStreamX1(
 unsafe fn HUF_decompress1X1_usingDTable_internal_body(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
     let mut op = dst as *mut u8;
@@ -537,7 +536,6 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_body(
     let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
 
-    let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
     let mut bitD = match BIT_DStream_t::new(src) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
@@ -941,35 +939,33 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
 unsafe fn HUF_decompress1X1_usingDTable_internal_bmi2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
+    HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, src, DTable)
 }
 
 unsafe fn HUF_decompress1X1_usingDTable_internal_default(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
+    HUF_decompress1X1_usingDTable_internal_body(dst, dstSize, src, DTable)
 }
 
 unsafe fn HUF_decompress1X1_usingDTable_internal(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        return HUF_decompress1X1_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
+        HUF_decompress1X1_usingDTable_internal_bmi2(dst, dstSize, src, DTable)
+    } else {
+        HUF_decompress1X1_usingDTable_internal_default(dst, dstSize, src, DTable)
     }
-    HUF_decompress1X1_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
 }
 
 unsafe fn HUF_decompress4X1_usingDTable_internal(
@@ -1447,11 +1443,9 @@ unsafe fn HUF_decodeStreamX2(
 unsafe fn HUF_decompress1X2_usingDTable_internal_body(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
     let mut bitD = match BIT_DStream_t::new(src) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
@@ -2239,67 +2233,51 @@ unsafe fn HUF_decompress4X2_usingDTable_internal(
 unsafe fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
+    HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, src, DTable)
 }
 unsafe fn HUF_decompress1X2_usingDTable_internal_default(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, cSrc, cSrcSize, DTable)
+    HUF_decompress1X2_usingDTable_internal_body(dst, dstSize, src, DTable)
 }
 
 unsafe fn HUF_decompress1X2_usingDTable_internal(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        return HUF_decompress1X2_usingDTable_internal_bmi2(dst, dstSize, cSrc, cSrcSize, DTable);
+        HUF_decompress1X2_usingDTable_internal_bmi2(dst, dstSize, src, DTable)
+    } else {
+        HUF_decompress1X2_usingDTable_internal_default(dst, dstSize, src, DTable)
     }
-    HUF_decompress1X2_usingDTable_internal_default(dst, dstSize, cSrc, cSrcSize, DTable)
 }
 
 pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    mut cSrcSize: size_t,
+    src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let mut ip = cSrc as *const u8;
-    let hSize = {
-        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
-        HUF_readDTableX2_wksp(dctx, src, workSpace, flags)
-    };
+    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace, flags);
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
-    if hSize >= cSrcSize {
+    if hSize as usize >= src.len() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    ip = ip.offset(hSize as isize);
-    cSrcSize = cSrcSize.wrapping_sub(hSize);
-    HUF_decompress1X2_usingDTable_internal(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        dctx,
-        flags,
-    )
+    HUF_decompress1X2_usingDTable_internal(dst, dstSize, &src[hSize as usize..], dctx, flags)
 }
 
 unsafe fn HUF_decompress4X2_DCtx_wksp(
@@ -2615,61 +2593,44 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
         return dstSize;
     }
 
+    let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
+
     match HUF_selectDecoder(dstSize, cSrcSize) {
-        Decoder::A1 => {
-            HUF_decompress1X1_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workSpace, flags)
-        }
-        Decoder::A2 => {
-            HUF_decompress1X2_DCtx_wksp(dctx, dst, dstSize, cSrc, cSrcSize, workSpace, flags)
-        }
+        Decoder::A1 => HUF_decompress1X1_DCtx_wksp(dctx, dst, dstSize, src, workSpace, flags),
+        Decoder::A2 => HUF_decompress1X2_DCtx_wksp(dctx, dst, dstSize, src, workSpace, flags),
     }
 }
 pub unsafe fn HUF_decompress1X_usingDTable(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    cSrcSize: size_t,
+    src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
     let dtd = DTable.description;
     if dtd.tableType as core::ffi::c_int != 0 {
-        HUF_decompress1X2_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
+        HUF_decompress1X2_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
     } else {
-        HUF_decompress1X1_usingDTable_internal(dst, maxDstSize, cSrc, cSrcSize, DTable, flags)
+        HUF_decompress1X1_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
     }
 }
 pub unsafe fn HUF_decompress1X1_DCtx_wksp(
     dctx: &mut DTable,
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    mut cSrcSize: size_t,
+    src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let mut ip = cSrc as *const u8;
-    let hSize = {
-        let src = core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize as usize);
-        HUF_readDTableX1_wksp(dctx, src, workSpace, flags)
-    };
+    let hSize = { HUF_readDTableX1_wksp(dctx, src, workSpace, flags) };
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
-    if hSize >= cSrcSize {
+    if hSize as usize >= src.len() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    ip = ip.offset(hSize as isize);
-    cSrcSize = cSrcSize.wrapping_sub(hSize);
-    HUF_decompress1X1_usingDTable_internal(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        dctx,
-        flags,
-    )
+    HUF_decompress1X1_usingDTable_internal(dst, dstSize, &src[hSize as usize..], dctx, flags)
 }
 pub unsafe fn HUF_decompress4X_usingDTable(
     dst: *mut core::ffi::c_void,

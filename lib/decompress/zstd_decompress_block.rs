@@ -597,8 +597,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             HUF_decompress1X_usingDTable(
                 dctx.litBuffer as *mut core::ffi::c_void,
                 litSize as _,
-                src[lhSize..].as_ptr().cast(),
-                litCSize as _,
+                &src[lhSize..][..litCSize as usize],
                 dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
                 flags,
             )
@@ -617,8 +616,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             &mut dctx.entropy.hufTable,
             dctx.litBuffer as *mut core::ffi::c_void,
             litSize as _,
-            src[lhSize..].as_ptr().cast(),
-            litCSize as _,
+            &src[lhSize..][..litCSize as usize],
             &mut dctx.workspace,
             flags,
         )
