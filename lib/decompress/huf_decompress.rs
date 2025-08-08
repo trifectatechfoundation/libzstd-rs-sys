@@ -614,77 +614,59 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     {
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
             if cfg!(target_pointer_width = "64") {
-                let fresh23 = op1;
+                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
                 op1 = op1.offset(1);
-                *fresh23 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh24 = op2;
+
+                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
                 op2 = op2.offset(1);
-                *fresh24 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh25 = op3;
+
+                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
                 op3 = op3.offset(1);
-                *fresh25 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh26 = op4;
+
+                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
                 op4 = op4.offset(1);
-                *fresh26 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             }
+
             if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                let fresh27 = op1;
+                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
                 op1 = op1.offset(1);
-                *fresh27 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                let fresh28 = op2;
+
+                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
                 op2 = op2.offset(1);
-                *fresh28 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                let fresh29 = op3;
+
+                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
                 op3 = op3.offset(1);
-                *fresh29 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                let fresh30 = op4;
+
+                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
                 op4 = op4.offset(1);
-                *fresh30 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             }
+
             if cfg!(target_pointer_width = "64") {
-                let fresh31 = op1;
+                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
                 op1 = op1.offset(1);
-                *fresh31 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh32 = op2;
+
+                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
                 op2 = op2.offset(1);
-                *fresh32 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh33 = op3;
+
+                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
                 op3 = op3.offset(1);
-                *fresh33 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-            }
-            if cfg!(target_pointer_width = "64") {
-                let fresh34 = op4;
+
+                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
                 op4 = op4.offset(1);
-                *fresh34 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             }
-            let fresh35 = op1;
+
+            *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
             op1 = op1.offset(1);
-            *fresh35 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-            let fresh36 = op2;
+
+            *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
             op2 = op2.offset(1);
-            *fresh36 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-            let fresh37 = op3;
+
+            *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
             op3 = op3.offset(1);
-            *fresh37 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-            let fresh38 = op4;
+
+            *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             op4 = op4.offset(1);
-            *fresh38 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
+
             endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
             endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
             endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
