@@ -1399,63 +1399,65 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     if cSrcSize < 10 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
     if dstSize < 6 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let istart = cSrc as *const u8;
+
     let ostart = dst as *mut u8;
     let oend = ostart.offset(dstSize as isize);
     let olimit = oend.offset(
         -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
     );
-    let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
-    let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
-    let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
-    let length4 = cSrcSize.wrapping_sub(
-        length1
-            .wrapping_add(length2)
-            .wrapping_add(length3)
-            .wrapping_add(6),
-    );
-    let istart1 = istart.offset(6);
-    let istart2 = istart1.offset(length1 as isize);
-    let istart3 = istart2.offset(length2 as isize);
-    let istart4 = istart3.offset(length3 as isize);
+
+    let [b0, b1, b2, b3, b4, b5, ..] = *src else {
+        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+    };
+
+    let length1 = usize::from(u16::from_le_bytes([b0, b1]));
+    let length2 = usize::from(u16::from_le_bytes([b2, b3]));
+    let length3 = usize::from(u16::from_le_bytes([b4, b5]));
+
+    if 6 + length1 + length2 + length3 > src.len() {
+        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+    }
+
+    let istart1 = &src[6..][..length1];
+    let istart2 = &src[6 + length1..][..length2];
+    let istart3 = &src[6 + length1 + length2..][..length3];
+    let istart4 = &src[6 + length1 + length2 + length3..];
+
     let segmentSize = dstSize.wrapping_add(3) / 4;
     let opStart2 = ostart.offset(segmentSize as isize);
     let opStart3 = opStart2.offset(segmentSize as isize);
     let opStart4 = opStart3.offset(segmentSize as isize);
+
     let mut op1 = ostart;
     let mut op2 = opStart2;
     let mut op3 = opStart3;
     let mut op4 = opStart4;
+
     let mut endSignal = 1;
-    let dtd = DTable.description;
-    let dtLog = dtd.tableLog as u32;
-    if length4 > cSrcSize {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
+
+    let dtLog = DTable.description.tableLog as u32;
+
     if opStart4 > oend {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let mut bitD1 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart1, length1 as usize))
-    {
+    let mut bitD1 = match BIT_DStream_t::new(istart1) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
     };
-    let mut bitD2 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart2, length2 as usize))
-    {
+    let mut bitD2 = match BIT_DStream_t::new(istart2) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
     };
-    let mut bitD3 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart3, length3 as usize))
-    {
+    let mut bitD3 = match BIT_DStream_t::new(istart3) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
     };
-    let mut bitD4 = match BIT_DStream_t::new(core::slice::from_raw_parts(istart4, length4 as usize))
-    {
+    let mut bitD4 = match BIT_DStream_t::new(istart4) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
     };
@@ -1512,6 +1514,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
             endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
         }
     }
+
     if op1 > opStart2 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
