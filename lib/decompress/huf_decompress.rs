@@ -1304,7 +1304,7 @@ pub fn HUF_readDTableX2_wksp(
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeSymbolX2_new(
+unsafe fn HUF_decodeSymbolX2(
     op: *mut u8,
     DStream: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
@@ -1320,23 +1320,6 @@ unsafe fn HUF_decodeSymbolX2_new(
     DStream.skip_bits(nbBits as u32);
 
     length as u32
-}
-
-#[inline(always)]
-unsafe fn HUF_decodeSymbolX2(
-    op: *mut core::ffi::c_void,
-    DStream: &mut BIT_DStream_t,
-    dt: *const HUF_DEltX2,
-    dtLog: u32,
-) -> u32 {
-    let val = DStream.look_bits_fast(dtLog);
-    libc::memcpy(
-        op,
-        &(*dt.offset(val as isize)).sequence as *const u16 as *const core::ffi::c_void,
-        2,
-    );
-    DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
-    (*dt.offset(val as isize)).length as u32
 }
 
 #[inline(always)]
@@ -1384,11 +1367,11 @@ unsafe fn HUF_decodeStreamX2(
                 & (p < pEnd.offset(-(9))) as core::ffi::c_int
                 != 0
             {
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
             }
         } else {
             while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
@@ -1399,15 +1382,15 @@ unsafe fn HUF_decodeStreamX2(
                 != 0
             {
                 if MEM_64bits() != 0 {
-                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
                 if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
                 if MEM_64bits() != 0 {
-                    p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
-                p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
             }
         }
     } else {
@@ -1418,10 +1401,10 @@ unsafe fn HUF_decodeStreamX2(
             & (p <= pEnd.offset(-(2))) as core::ffi::c_int
             != 0
         {
-            p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+            p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
         }
         while p <= pEnd.offset(-(2)) {
-            p = p.offset(HUF_decodeSymbolX2_new(p, bitDPtr, dt, dtLog) as isize);
+            p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
         }
     }
     if p < pEnd {
@@ -1531,130 +1514,54 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
         Err(e) => return e.to_error_code(),
     };
 
+    let dt = DTable.data.as_x2();
+
     if oend.offset_from(op4) as core::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
-        let dt = DTable.data.as_x2().as_ptr();
-
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
             if MEM_64bits() != 0 {
-                op1 = op1.offset(HUF_decodeSymbolX2(
-                    op1 as *mut core::ffi::c_void,
-                    &mut bitD1,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                op1 = op1.offset(HUF_decodeSymbolX2(
-                    op1 as *mut core::ffi::c_void,
-                    &mut bitD1,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 {
-                op1 = op1.offset(HUF_decodeSymbolX2(
-                    op1 as *mut core::ffi::c_void,
-                    &mut bitD1,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
-            op1 =
-                op1.offset(
-                    HUF_decodeSymbolX2(op1 as *mut core::ffi::c_void, &mut bitD1, dt, dtLog)
-                        as isize,
-                );
+            op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             if MEM_64bits() != 0 {
-                op2 = op2.offset(HUF_decodeSymbolX2(
-                    op2 as *mut core::ffi::c_void,
-                    &mut bitD2,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                op2 = op2.offset(HUF_decodeSymbolX2(
-                    op2 as *mut core::ffi::c_void,
-                    &mut bitD2,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 {
-                op2 = op2.offset(HUF_decodeSymbolX2(
-                    op2 as *mut core::ffi::c_void,
-                    &mut bitD2,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
-            op2 =
-                op2.offset(
-                    HUF_decodeSymbolX2(op2 as *mut core::ffi::c_void, &mut bitD2, dt, dtLog)
-                        as isize,
-                );
+            op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
             endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
             if MEM_64bits() != 0 {
-                op3 = op3.offset(HUF_decodeSymbolX2(
-                    op3 as *mut core::ffi::c_void,
-                    &mut bitD3,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                op3 = op3.offset(HUF_decodeSymbolX2(
-                    op3 as *mut core::ffi::c_void,
-                    &mut bitD3,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 {
-                op3 = op3.offset(HUF_decodeSymbolX2(
-                    op3 as *mut core::ffi::c_void,
-                    &mut bitD3,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
-            op3 =
-                op3.offset(
-                    HUF_decodeSymbolX2(op3 as *mut core::ffi::c_void, &mut bitD3, dt, dtLog)
-                        as isize,
-                );
+            op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             if MEM_64bits() != 0 {
-                op4 = op4.offset(HUF_decodeSymbolX2(
-                    op4 as *mut core::ffi::c_void,
-                    &mut bitD4,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
-                op4 = op4.offset(HUF_decodeSymbolX2(
-                    op4 as *mut core::ffi::c_void,
-                    &mut bitD4,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
             if MEM_64bits() != 0 {
-                op4 = op4.offset(HUF_decodeSymbolX2(
-                    op4 as *mut core::ffi::c_void,
-                    &mut bitD4,
-                    dt,
-                    dtLog,
-                ) as isize);
+                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
-            op4 =
-                op4.offset(
-                    HUF_decodeSymbolX2(op4 as *mut core::ffi::c_void, &mut bitD4, dt, dtLog)
-                        as isize,
-                );
+            op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
             endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
         }
@@ -1669,7 +1576,6 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let dt = DTable.data.as_x2();
     HUF_decodeStreamX2(op1, &mut bitD1, opStart2, dt, dtLog);
     HUF_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUF_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
