@@ -1304,6 +1304,7 @@ unsafe fn HUF_decodeLastSymbolX2(
     }
     1
 }
+
 #[inline(always)]
 unsafe fn HUF_decodeStreamX2(
     mut p: *mut u8,
@@ -1313,14 +1314,9 @@ unsafe fn HUF_decodeStreamX2(
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    if pEnd.offset_from(p) as core::ffi::c_long as size_t
-        >= ::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong
-    {
+    if pEnd.offset_from(p) >= size_of::<BitContainerType>() as isize {
         if dtLog <= 11 && cfg!(target_pointer_width = "64") {
-            while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
-                & (p < pEnd.offset(-(9))) as core::ffi::c_int
-                != 0
-            {
+            while (bitDPtr.reload() == StreamStatus::Unfinished) && (p < pEnd.offset(-(9))) {
                 p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
@@ -1328,12 +1324,11 @@ unsafe fn HUF_decodeStreamX2(
                 p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
             }
         } else {
-            while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
-                & (p < pEnd.offset(
+            while (bitDPtr.reload() == StreamStatus::Unfinished)
+                && (p < pEnd.offset(
                     -((::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
                         .wrapping_sub(1) as isize),
-                )) as core::ffi::c_int
-                != 0
+                ))
             {
                 if cfg!(target_pointer_width = "64") {
                     p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
@@ -1350,17 +1345,17 @@ unsafe fn HUF_decodeStreamX2(
     } else {
         bitDPtr.reload();
     }
-    if pEnd.offset_from(p) as core::ffi::c_long as size_t >= 2 {
-        while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
-            & (p <= pEnd.offset(-(2))) as core::ffi::c_int
-            != 0
-        {
+
+    if pEnd.offset_from(p) >= 2 {
+        while (bitDPtr.reload() == StreamStatus::Unfinished) && (p <= pEnd.offset(-(2))) {
             p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
         }
+
         while p <= pEnd.offset(-(2)) {
             p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
         }
     }
+
     if p < pEnd {
         p = p.offset(HUF_decodeLastSymbolX2(
             p as *mut core::ffi::c_void,
@@ -1369,6 +1364,7 @@ unsafe fn HUF_decodeStreamX2(
             dtLog,
         ) as isize);
     }
+
     p.offset_from(pStart) as core::ffi::c_long as size_t
 }
 
