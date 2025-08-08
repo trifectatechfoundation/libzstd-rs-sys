@@ -1278,30 +1278,29 @@ unsafe fn HUF_decodeSymbolX2(
 
 #[inline(always)]
 unsafe fn HUF_decodeLastSymbolX2(
-    op: *mut core::ffi::c_void,
+    op: *mut u8,
     DStream: &mut BIT_DStream_t,
-    dt: *const HUF_DEltX2,
+    dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
 ) -> u32 {
-    let val = DStream.look_bits_fast(dtLog);
-    libc::memcpy(
-        op,
-        &(*dt.offset(val as isize)).sequence as *const u16 as *const core::ffi::c_void,
-        1 as libc::size_t,
-    );
-    if (*dt.offset(val as isize)).length as core::ffi::c_int == 1 {
-        DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
-    } else if ((*DStream).bitsConsumed as core::ffi::c_ulong)
-        < (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-    {
-        DStream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
-        if (*DStream).bitsConsumed as core::ffi::c_ulong
-            > (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
-        {
-            (*DStream).bitsConsumed = (size_of::<BitContainerType>() as core::ffi::c_ulong)
-                .wrapping_mul(8) as core::ffi::c_uint;
-        }
+    let HUF_DEltX2 {
+        sequence,
+        nbBits,
+        length,
+    } = dt[DStream.look_bits_fast(dtLog)];
+
+    op.write(sequence.to_le_bytes()[0]);
+
+    if length == 1 {
+        DStream.skip_bits(u32::from(nbBits));
+    } else if (DStream.bitsConsumed as usize) < size_of::<BitContainerType>() * 8 {
+        DStream.skip_bits(u32::from(nbBits));
+        DStream.bitsConsumed = Ord::min(
+            DStream.bitsConsumed,
+            (size_of::<BitContainerType>() * 8) as u32,
+        );
     }
+
     1
 }
 
@@ -1357,12 +1356,7 @@ unsafe fn HUF_decodeStreamX2(
     }
 
     if p < pEnd {
-        p = p.offset(HUF_decodeLastSymbolX2(
-            p as *mut core::ffi::c_void,
-            bitDPtr,
-            dt.as_ptr(),
-            dtLog,
-        ) as isize);
+        p = p.offset(HUF_decodeLastSymbolX2(p, bitDPtr, dt, dtLog) as isize);
     }
 
     p.offset_from(pStart) as core::ffi::c_long as size_t
