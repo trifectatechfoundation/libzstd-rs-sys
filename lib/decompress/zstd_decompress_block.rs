@@ -174,11 +174,26 @@ unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
         ptr
     }
 }
+
+pub const STREAM_ACCUMULATOR_MIN: core::ffi::c_int = match size_of::<usize>() {
+    4 => STREAM_ACCUMULATOR_MIN_32,
+    8 => STREAM_ACCUMULATOR_MIN_64,
+    _ => unreachable!(),
+};
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
+
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+
+pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
+    4 => ZSTD_WINDOWLOG_MAX_32,
+    8 => ZSTD_WINDOWLOG_MAX_64,
+    _ => unreachable!(),
+};
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
+pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
+
 #[inline]
 unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
@@ -3983,22 +3998,31 @@ unsafe extern "C" fn ZSTD_getOffsetInfo(
     }
     info
 }
-unsafe extern "C" fn ZSTD_maxShortOffset() -> size_t {
-    if MEM_64bits() != 0 {
-        -(1 as core::ffi::c_int) as size_t
-    } else {
-        let maxOffbase = ((1 as core::ffi::c_int as size_t)
-            << ((if MEM_32bits() != 0 {
-                STREAM_ACCUMULATOR_MIN_32
-            } else {
-                STREAM_ACCUMULATOR_MIN_64
-            }) as u32)
-                .wrapping_add(1 as core::ffi::c_int as u32))
-        .wrapping_sub(1 as core::ffi::c_int as size_t);
 
-        maxOffbase.wrapping_sub(ZSTD_REP_NUM as size_t)
+/// @returns The maximum offset we can decode in one read of our bitstream, without
+/// reloading more bits in the middle of the offset bits read. Any offsets larger
+/// than this must use the long offset decoder.
+const fn ZSTD_maxShortOffset() -> size_t {
+    match size_of::<usize>() {
+        4 => {
+            // The maximum offBase is (1 << (STREAM_ACCUMULATOR_MIN + 1)) - 1.
+            // This offBase would require STREAM_ACCUMULATOR_MIN extra bits.
+            // Then we have to subtract ZSTD_REP_NUM to get the maximum possible offset.
+            let maxOffbase = ((1 as size_t) << (STREAM_ACCUMULATOR_MIN as u32 + 1)).wrapping_sub(1);
+
+            maxOffbase.wrapping_sub(ZSTD_REP_NUM as size_t)
+        }
+        8 => {
+            // We can decode any offset without reloading bits.
+            // This might change if the max window size grows.
+            const { assert!(ZSTD_WINDOWLOG_MAX <= 31) }
+
+            -(1 as core::ffi::c_int) as size_t
+        }
+        _ => unreachable!(),
     }
 }
+
 #[export_name = crate::prefix!(ZSTD_decompressBlock_internal)]
 pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
     mut dctx: *mut ZSTD_DCtx,
@@ -4034,7 +4058,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
 ) -> size_t {
     let mut srcSize = src.len() as size_t;
 
-    if srcSize > ZSTD_blockSizeMax(dctx) {
+    if src.len() > dctx.block_size_max() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst, dstCapacity, streaming);
@@ -4045,11 +4069,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     let mut ip = src.as_ptr();
     ip = ip.offset(litCSize as isize);
     srcSize = srcSize.wrapping_sub(litCSize);
-    let blockSizeMax = if dstCapacity < ZSTD_blockSizeMax(dctx) {
-        dstCapacity
-    } else {
-        ZSTD_blockSizeMax(dctx)
-    };
+    let blockSizeMax = Ord::min(dstCapacity, dctx.block_size_max() as size_t);
     let totalHistorySize = ZSTD_totalHistorySize(
         ZSTD_maybeNullPtrAdd(dst, blockSizeMax as ptrdiff_t),
         (*dctx).virtualStart as *const u8 as *const core::ffi::c_void,
