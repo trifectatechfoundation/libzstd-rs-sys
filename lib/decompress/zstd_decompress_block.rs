@@ -195,9 +195,10 @@ pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 
 #[inline]
-unsafe extern "C" fn ZSTD_DCtx_get_bmi2(mut dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
+unsafe extern "C" fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
 }
+
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
@@ -2387,7 +2388,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         (*dctx).ddictIsCold,
         nbSeq,
         &mut (*dctx).workspace,
-        ZSTD_DCtx_get_bmi2(dctx),
+        dctx.bmi2,
     );
     if ERR_isError(llhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -2408,7 +2409,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         (*dctx).ddictIsCold,
         nbSeq,
         &mut (*dctx).workspace,
-        ZSTD_DCtx_get_bmi2(dctx),
+        dctx.bmi2,
     );
     if ERR_isError(ofhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -2429,7 +2430,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         (*dctx).ddictIsCold,
         nbSeq,
         &mut (*dctx).workspace,
-        ZSTD_DCtx_get_bmi2(dctx),
+        dctx.bmi2,
     );
     if ERR_isError(mlhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -2437,12 +2438,9 @@ unsafe fn ZSTD_decodeSeqHeaders(
     ip = ip.offset(mlhSize as isize);
     ip.offset_from(istart) as core::ffi::c_long as size_t
 }
+
 #[inline(always)]
-unsafe extern "C" fn ZSTD_overlapCopy8(
-    mut op: *mut *mut u8,
-    mut ip: *mut *const u8,
-    mut offset: size_t,
-) {
+unsafe extern "C" fn ZSTD_overlapCopy8(op: *mut *mut u8, ip: *mut *const u8, offset: size_t) {
     if offset < 8 {
         static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
         static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
@@ -3835,13 +3833,13 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     )
 }
 
-unsafe extern "C" fn ZSTD_decompressSequencesLong_bmi2(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut maxDstSize: size_t,
-    mut seqStart: *const core::ffi::c_void,
-    mut seqSize: size_t,
-    mut nbSeq: core::ffi::c_int,
+unsafe fn ZSTD_decompressSequencesLong_bmi2(
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    maxDstSize: size_t,
+    seqStart: *const core::ffi::c_void,
+    seqSize: size_t,
+    nbSeq: core::ffi::c_int,
     isLongOffset: ZSTD_longOffset_e,
 ) -> size_t {
     ZSTD_decompressSequencesLong_body(
@@ -3854,6 +3852,7 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong_bmi2(
         isLongOffset,
     )
 }
+
 unsafe fn ZSTD_decompressSequences(
     dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
@@ -3918,17 +3917,17 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer(
     }
 }
 
-unsafe extern "C" fn ZSTD_decompressSequencesLong(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut maxDstSize: size_t,
-    mut seqStart: *const core::ffi::c_void,
-    mut seqSize: size_t,
-    mut nbSeq: core::ffi::c_int,
+unsafe fn ZSTD_decompressSequencesLong(
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    maxDstSize: size_t,
+    seqStart: *const core::ffi::c_void,
+    seqSize: size_t,
+    nbSeq: core::ffi::c_int,
     isLongOffset: ZSTD_longOffset_e,
 ) -> size_t {
     if ZSTD_DCtx_get_bmi2(dctx) != 0 {
-        return ZSTD_decompressSequencesLong_bmi2(
+        ZSTD_decompressSequencesLong_bmi2(
             dctx,
             dst,
             maxDstSize,
@@ -3936,28 +3935,31 @@ unsafe extern "C" fn ZSTD_decompressSequencesLong(
             seqSize,
             nbSeq,
             isLongOffset,
-        );
+        )
+    } else {
+        ZSTD_decompressSequencesLong_default(
+            dctx,
+            dst,
+            maxDstSize,
+            seqStart,
+            seqSize,
+            nbSeq,
+            isLongOffset,
+        )
     }
-    ZSTD_decompressSequencesLong_default(
-        dctx,
-        dst,
-        maxDstSize,
-        seqStart,
-        seqSize,
-        nbSeq,
-        isLongOffset,
-    )
 }
-unsafe extern "C" fn ZSTD_totalHistorySize(
-    mut curPtr: *mut core::ffi::c_void,
-    mut virtualStart: *const core::ffi::c_void,
+
+unsafe fn ZSTD_totalHistorySize(
+    curPtr: *mut core::ffi::c_void,
+    virtualStart: *const core::ffi::c_void,
 ) -> size_t {
     (curPtr as *mut core::ffi::c_char).offset_from(virtualStart as *const core::ffi::c_char)
         as core::ffi::c_long as size_t
 }
-unsafe extern "C" fn ZSTD_getOffsetInfo(
-    mut offTable: *const ZSTD_seqSymbol,
-    mut nbSeq: core::ffi::c_int,
+
+unsafe fn ZSTD_getOffsetInfo(
+    offTable: *const ZSTD_seqSymbol,
+    nbSeq: core::ffi::c_int,
 ) -> ZSTD_OffsetInfo {
     let mut info = {
         ZSTD_OffsetInfo {
@@ -4014,13 +4016,12 @@ const fn ZSTD_maxShortOffset() -> size_t {
     }
 }
 
-#[export_name = crate::prefix!(ZSTD_decompressBlock_internal)]
-pub unsafe extern "C" fn ZSTD_decompressBlock_internal(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+pub unsafe fn ZSTD_decompressBlock_internal(
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
     streaming: streaming_operation,
 ) -> size_t {
     let Some(dctx) = dctx.as_mut() else {
@@ -4140,11 +4141,11 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         )
     }
 }
-#[export_name = crate::prefix!(ZSTD_checkContinuity)]
-pub unsafe extern "C" fn ZSTD_checkContinuity(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *const core::ffi::c_void,
-    mut dstSize: size_t,
+
+pub unsafe fn ZSTD_checkContinuity(
+    dctx: *mut ZSTD_DCtx,
+    dst: *const core::ffi::c_void,
+    dstSize: size_t,
 ) {
     if dst != (*dctx).previousDstEnd && dstSize > 0 {
         (*dctx).dictEnd = (*dctx).previousDstEnd;
@@ -4157,13 +4158,13 @@ pub unsafe extern "C" fn ZSTD_checkContinuity(
         (*dctx).previousDstEnd = dst;
     }
 }
-#[export_name = crate::prefix!(ZSTD_decompressBlock_deprecated)]
-pub unsafe extern "C" fn ZSTD_decompressBlock_deprecated(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+
+unsafe fn ZSTD_decompressBlock_deprecated(
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let mut dSize: size_t = 0;
     (*dctx).isFrameDecompression = 0;
@@ -4177,13 +4178,14 @@ pub unsafe extern "C" fn ZSTD_decompressBlock_deprecated(
         (dst as *mut core::ffi::c_char).offset(dSize as isize) as *const core::ffi::c_void;
     dSize
 }
+
 #[export_name = crate::prefix!(ZSTD_decompressBlock)]
 pub unsafe extern "C" fn ZSTD_decompressBlock(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     ZSTD_decompressBlock_deprecated(dctx, dst, dstCapacity, src, srcSize)
 }
