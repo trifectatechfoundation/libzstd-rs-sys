@@ -1393,10 +1393,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    let cSrcSize = src.len() as size_t;
-    let cSrc = src.as_ptr();
-
-    if cSrcSize < 10 {
+    if src.len() < 10 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
@@ -1437,7 +1434,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let mut op3 = opStart3;
     let mut op4 = opStart4;
 
-    let mut endSignal = 1;
+    let mut end_signal = true;
 
     let dtLog = DTable.description.tableLog as u32;
 
@@ -1464,54 +1461,56 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
 
     let dt = DTable.data.as_x2();
 
-    if oend.offset_from(op4) as core::ffi::c_long as size_t
-        >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
-    {
-        while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
+    if oend.offset_from(op4) >= size_of::<size_t>() as isize {
+        while end_signal && op4 < olimit {
             if cfg!(target_pointer_width = "64") {
                 op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") {
+
+                if HUF_TABLELOG_MAX <= 12 {
+                    op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
+                }
                 op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
             op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
+
             if cfg!(target_pointer_width = "64") {
                 op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") {
+
+                if HUF_TABLELOG_MAX <= 12 {
+                    op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
+                }
+
                 op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
             op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-            endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
-            endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
+
+            end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
+            end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
+
             if cfg!(target_pointer_width = "64") {
                 op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") {
+
+                if HUF_TABLELOG_MAX <= 12 {
+                    op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
+                }
+
                 op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
             op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
+
             if cfg!(target_pointer_width = "64") {
                 op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-            }
-            if cfg!(target_pointer_width = "64") {
+
+                if HUF_TABLELOG_MAX <= 12 {
+                    op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
+                }
+
                 op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
             op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-            endSignal &= (bitD3.reload_fast() == StreamStatus::Unfinished) as u32;
-            endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
+
+            end_signal &= bitD3.reload_fast() == StreamStatus::Unfinished;
+            end_signal &= bitD4.reload_fast() == StreamStatus::Unfinished;
         }
     }
 
