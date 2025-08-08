@@ -4,9 +4,7 @@ use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatu
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::fse_decompress::Error;
-use crate::lib::common::mem::{
-    MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16,
-};
+use crate::lib::common::mem::{MEM_isLittleEndian, MEM_read64, MEM_readLEST, MEM_write16};
 use crate::lib::decompress::Workspace;
 use crate::lib::zstd::*;
 extern "C" {
@@ -58,6 +56,10 @@ impl DTableData {
 
     fn as_x2_mut(&mut self) -> &mut [HUF_DEltX2; 4096] {
         unsafe { core::mem::transmute(&mut self.data) }
+    }
+
+    fn as_symbols(&self) -> &[u16; 2 * 4096] {
+        unsafe { core::mem::transmute(&self.data) }
     }
 }
 
@@ -123,13 +125,13 @@ pub struct HUF_ReadDTableX2_Workspace {
 pub struct sortedSymbol_t {
     pub symbol: u8,
 }
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone)]
 #[repr(C)]
-pub struct HUF_DecompressFastArgs {
+pub struct HUF_DecompressFastArgs<'a> {
     pub ip: [*const u8; 4],
     pub op: [*mut u8; 4],
     pub bits: [u64; 4],
-    pub dt: *const core::ffi::c_void,
+    pub dt: &'a DTableData,
     pub ilowest: *const u8,
     pub oend: *mut u8,
     pub iend: [*const u8; 4],
@@ -164,15 +166,13 @@ unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     value << bitsConsumed
 }
 
-impl HUF_DecompressFastArgs {
+impl<'a> HUF_DecompressFastArgs<'a> {
     unsafe fn new(
         dst: *mut core::ffi::c_void,
         dstSize: size_t,
         src: &[u8],
-        DTable: &DTable,
+        DTable: &'a DTable,
     ) -> Result<Option<Self>, Error> {
-        let mut args = Self::default();
-
         let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
         // The fast decoding loop assumes 64-bit little-endian.
@@ -209,10 +209,11 @@ impl HUF_DecompressFastArgs {
         }
 
         let istart = src.as_ptr();
-        args.iend[0] = istart.add(6); /* jumpTable */
-        args.iend[1] = args.iend[0].add(length1 as usize);
-        args.iend[2] = args.iend[1].add(length2 as usize);
-        args.iend[3] = args.iend[2].add(length3 as usize);
+        let mut iend = [core::ptr::null(); 4];
+        iend[0] = istart.add(6); /* jumpTable */
+        iend[1] = iend[0].add(length1 as usize);
+        iend[2] = iend[1].add(length2 as usize);
+        iend[3] = iend[2].add(length3 as usize);
 
         // HUF_initFastDStream() requires this, and this small of an input won't benefit from the ASM loop anyways.
         if length1 < 8 || length2 < 8 || length3 < 8 || length4 < 8 {
@@ -220,19 +221,21 @@ impl HUF_DecompressFastArgs {
         }
 
         /* ip[] contains the position that is currently loaded into bits[]. */
-        args.ip[0] = args.iend[1].sub(size_of::<u64>());
-        args.ip[1] = args.iend[2].sub(size_of::<u64>());
-        args.ip[2] = args.iend[3].sub(size_of::<u64>());
-        args.ip[3] = src.as_ptr().add(src.len() as usize - size_of::<u64>());
+        let mut ip = [core::ptr::null(); 4];
+        ip[0] = iend[1].sub(size_of::<u64>());
+        ip[1] = iend[2].sub(size_of::<u64>());
+        ip[2] = iend[3].sub(size_of::<u64>());
+        ip[3] = src.as_ptr().add(src.len() as usize - size_of::<u64>());
 
         /* op[] contains the output pointers. */
-        args.op[0] = dst.cast::<u8>();
-        args.op[1] = args.op[0].add(dstSize.div_ceil(4) as usize);
-        args.op[2] = args.op[1].add(dstSize.div_ceil(4) as usize);
-        args.op[3] = args.op[2].add(dstSize.div_ceil(4) as usize);
+        let mut op = [core::ptr::null_mut(); 4];
+        op[0] = dst.cast::<u8>();
+        op[1] = op[0].add(dstSize.div_ceil(4) as usize);
+        op[2] = op[1].add(dstSize.div_ceil(4) as usize);
+        op[3] = op[2].add(dstSize.div_ceil(4) as usize);
 
         // No point to call the ASM loop for tiny outputs.
-        if args.op[3] >= oend {
+        if op[3] >= oend {
             return Ok(None);
         }
 
@@ -243,19 +246,21 @@ impl HUF_DecompressFastArgs {
         // shifted in. After the lowest valid bit a 1 is
         // set, so that CountTrailingZeros(bits[]) can be used
         // to count how many bits we've consumed.
-        args.bits[0] = HUF_initFastDStream(args.ip[0]);
-        args.bits[1] = HUF_initFastDStream(args.ip[1]);
-        args.bits[2] = HUF_initFastDStream(args.ip[2]);
-        args.bits[3] = HUF_initFastDStream(args.ip[3]);
+        let bits = ip.map(|v| HUF_initFastDStream(v));
 
         // The decoders must be sure to never read beyond ilowest.
         // This is lower than iend[0], but allowing decoders to read
         // down to ilowest can allow an extra iteration or two in the
         // fast loop.
-        args.ilowest = istart;
-
-        args.oend = oend;
-        args.dt = DTable.data.as_x2().as_ptr() as *const core::ffi::c_void;
+        let args = Self {
+            ip,
+            op,
+            bits,
+            dt: &DTable.data,
+            ilowest: istart,
+            oend,
+            iend,
+        };
 
         Ok(Some(args))
     }
@@ -728,7 +733,7 @@ macro_rules! HUF_4X_FOR_EACH_STREAM {
 unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
     args: &mut HUF_DecompressFastArgs,
 ) {
-    let dtable = args.dt as *const u16;
+    let dtable = args.dt.as_symbols();
     let oend = args.oend;
     let ilowest = args.ilowest;
 
@@ -785,7 +790,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
         macro_rules! HUF_4X1_DECODE_SYMBOL {
             ($stream:expr, $symbol:expr) => {
                 let index = bits[$stream] >> 53;
-                let entry = *dtable.add(index as usize);
+                let entry = dtable[index as usize];
 
                 bits[$stream] <<= entry & 0x3F;
                 op[$stream]
@@ -854,7 +859,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
 
     // Our loop guarantees that ip[] >= ilowest and that we haven't overwritten any op[].
     let istart = src.as_ptr();
-    assert!(args.ip[0] >= istart);
     assert!(args.ip[0] >= istart);
     assert!(args.ip[1] >= istart);
     assert!(args.ip[2] >= istart);
@@ -1564,8 +1568,6 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
 
     'out: loop {
         let mut olimit = core::ptr::null_mut::<u8>();
-        let mut stream: core::ffi::c_int = 0;
-        stream = 0;
 
         /* Assert loop preconditions */
         if cfg!(debug_assertions) {
@@ -2113,7 +2115,7 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     if cSrcSize == dstSize {
-        libc::memcpy(dst, src.as_ptr().cast(), dstSize as libc::size_t);
+        ptr::copy_nonoverlapping(src.as_ptr(), dst.cast::<u8>(), dstSize as usize);
         return dstSize;
     }
     if cSrcSize == 1 {
