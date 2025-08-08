@@ -2469,8 +2469,7 @@ pub unsafe fn HUF_decompress1X_usingDTable(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let dtd = DTable.description;
-    if dtd.tableType as core::ffi::c_int != 0 {
+    if DTable.description.tableType != 0 {
         HUF_decompress1X2_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
     } else {
         HUF_decompress1X1_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
@@ -2503,8 +2502,7 @@ pub unsafe fn HUF_decompress4X_usingDTable(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let dtd = DTable.description;
-    if dtd.tableType as core::ffi::c_int != 0 {
+    if DTable.description.tableType != 0 {
         HUF_decompress4X2_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
     } else {
         HUF_decompress4X1_usingDTable_internal(dst, maxDstSize, src, DTable, flags)
