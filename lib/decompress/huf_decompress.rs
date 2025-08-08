@@ -456,11 +456,10 @@ pub fn HUF_readDTableX1_wksp(
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeSymbolX1(Dstream: &mut BIT_DStream_t, dt: *const HUF_DEltX1, dtLog: u32) -> u8 {
-    let val = Dstream.look_bits_fast(dtLog);
-    let c = (*dt.offset(val as isize)).byte;
-    Dstream.skip_bits((*dt.offset(val as isize)).nbBits as u32);
-    c
+fn HUF_decodeSymbolX1(Dstream: &mut BIT_DStream_t, dt: &[HUF_DEltX1; 4096], dtLog: u32) -> u8 {
+    let HUF_DEltX1 { byte, nbBits, .. } = dt[Dstream.look_bits_fast(dtLog)];
+    Dstream.skip_bits(u32::from(nbBits));
+    byte
 }
 
 #[inline(always)]
@@ -471,8 +470,6 @@ unsafe fn HUF_decodeStreamX1(
     dt: &[HUF_DEltX1; 4096],
     dtLog: u32,
 ) -> size_t {
-    let dt = dt.as_ptr();
-
     let pStart = p;
     if pEnd.offset_from(p) as core::ffi::c_long > 3 {
         while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
@@ -620,8 +617,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     if oend.offset_from(op4) as core::ffi::c_long as size_t
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
-        let dt = dt.as_ptr();
-
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
             if MEM_64bits() != 0 {
                 let fresh23 = op1;
@@ -701,6 +696,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
             endSignal &= (bitD4.reload_fast() == StreamStatus::Unfinished) as u32;
         }
     }
+
     if op1 > opStart2 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -710,6 +706,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     if op3 > opStart4 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+
     HUF_decodeStreamX1(op1, &mut bitD1, opStart2, dt, dtLog);
     HUF_decodeStreamX1(op2, &mut bitD2, opStart3, dt, dtLog);
     HUF_decodeStreamX1(op3, &mut bitD3, opStart4, dt, dtLog);
