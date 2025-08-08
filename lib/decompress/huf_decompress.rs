@@ -5,7 +5,7 @@ use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::fse_decompress::Error;
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16,
+    MEM_isLittleEndian, MEM_read64, MEM_readLE16, MEM_readLEST, MEM_write16,
 };
 use crate::lib::decompress::Workspace;
 use crate::lib::zstd::*;
@@ -180,7 +180,7 @@ impl HUF_DecompressFastArgs {
         let oend = ZSTD_maybeNullPtrAdd(dst, dstSize as ptrdiff_t) as *mut u8;
 
         // The fast decoding loop assumes 64-bit little-endian.
-        if cfg!(target_endian = "big") || MEM_32bits() != 0 {
+        if cfg!(target_endian = "big") || cfg!(target_pointer_width = "32") {
             return Ok(None);
         }
 
@@ -471,22 +471,19 @@ unsafe fn HUF_decodeStreamX1(
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    if pEnd.offset_from(p) as core::ffi::c_long > 3 {
-        while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
-            & (p < pEnd.offset(-(3))) as core::ffi::c_int
-            != 0
-        {
-            if MEM_64bits() != 0 {
+    if pEnd.offset_from(p) > 3 {
+        while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd.offset(-(3)) {
+            if cfg!(target_pointer_width = "64") {
                 let fresh17 = p;
                 p = p.offset(1);
                 *fresh17 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 let fresh18 = p;
                 p = p.offset(1);
                 *fresh18 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh19 = p;
                 p = p.offset(1);
                 *fresh19 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
@@ -498,21 +495,21 @@ unsafe fn HUF_decodeStreamX1(
     } else {
         bitDPtr.reload();
     }
-    if MEM_32bits() != 0 {
-        while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
-            & (p < pEnd) as core::ffi::c_int
-            != 0
-        {
+
+    if cfg!(target_pointer_width = "32") {
+        while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd {
             let fresh21 = p;
             p = p.offset(1);
             *fresh21 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
         }
     }
+
     while p < pEnd {
         let fresh22 = p;
         p = p.offset(1);
         *fresh22 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
     }
+
     pEnd.offset_from(pStart) as core::ffi::c_long as size_t
 }
 
@@ -618,62 +615,62 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh23 = op1;
                 op1 = op1.offset(1);
                 *fresh23 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh24 = op2;
                 op2 = op2.offset(1);
                 *fresh24 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh25 = op3;
                 op3 = op3.offset(1);
                 *fresh25 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh26 = op4;
                 op4 = op4.offset(1);
                 *fresh26 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 let fresh27 = op1;
                 op1 = op1.offset(1);
                 *fresh27 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 let fresh28 = op2;
                 op2 = op2.offset(1);
                 *fresh28 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 let fresh29 = op3;
                 op3 = op3.offset(1);
                 *fresh29 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 let fresh30 = op4;
                 op4 = op4.offset(1);
                 *fresh30 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh31 = op1;
                 op1 = op1.offset(1);
                 *fresh31 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh32 = op2;
                 op2 = op2.offset(1);
                 *fresh32 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh33 = op3;
                 op3 = op3.offset(1);
                 *fresh33 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 let fresh34 = op4;
                 op4 = op4.offset(1);
                 *fresh34 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
@@ -1359,7 +1356,7 @@ unsafe fn HUF_decodeStreamX2(
     if pEnd.offset_from(p) as core::ffi::c_long as size_t
         >= ::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong
     {
-        if dtLog <= 11 && MEM_64bits() != 0 {
+        if dtLog <= 11 && cfg!(target_pointer_width = "64") {
             while (bitDPtr.reload() == StreamStatus::Unfinished) as core::ffi::c_int
                 & (p < pEnd.offset(-(9))) as core::ffi::c_int
                 != 0
@@ -1378,13 +1375,13 @@ unsafe fn HUF_decodeStreamX2(
                 )) as core::ffi::c_int
                 != 0
             {
-                if MEM_64bits() != 0 {
+                if cfg!(target_pointer_width = "64") {
                     p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
-                if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+                if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                     p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
-                if MEM_64bits() != 0 {
+                if cfg!(target_pointer_width = "64") {
                     p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
                 }
                 p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
@@ -1517,45 +1514,45 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
         >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     {
         while endSignal & (op4 < olimit) as core::ffi::c_int as u32 != 0 {
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
             }
             op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             }
             op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
             endSignal &= (bitD1.reload_fast() == StreamStatus::Unfinished) as u32;
             endSignal &= (bitD2.reload_fast() == StreamStatus::Unfinished) as u32;
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
             }
             op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 || HUF_TABLELOG_MAX <= 12 {
+            if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
                 op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
-            if MEM_64bits() != 0 {
+            if cfg!(target_pointer_width = "64") {
                 op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
             }
             op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
