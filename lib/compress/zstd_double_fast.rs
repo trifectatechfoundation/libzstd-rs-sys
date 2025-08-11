@@ -744,7 +744,6 @@ unsafe extern "C" fn ZSTD_compressBlock_doubleFast_noDict_generic(
                             }
                             if ip1 >= nextStep {
                                 step = step.wrapping_add(1);
-                                step;
                                 nextStep = nextStep.offset(kStepIncr as isize);
                             }
                             ip = ip1;
