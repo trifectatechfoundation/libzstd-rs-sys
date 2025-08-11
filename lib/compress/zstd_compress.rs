@@ -10,16 +10,6 @@ extern "C" {
 }
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __loadu_si128 {
-    pub __v: __m128i,
-}
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __storeu_si128 {
-    pub __v: __m128i,
-}
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
