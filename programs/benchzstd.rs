@@ -243,7 +243,7 @@ unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u6
     acc = (acc as core::ffi::c_ulonglong)
         .wrapping_add((input as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
         as xxh_u64 as xxh_u64;
-    acc = ::core::intrinsics::rotate_left(acc, 31 as u32);
+    acc = acc.rotate_left(31);
     acc = (acc as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
     acc
 }
@@ -280,7 +280,7 @@ unsafe extern "C" fn XXH64_finalize(
         );
         ptr = ptr.offset(8);
         hash ^= k1;
-        hash = (::core::intrinsics::rotate_left(hash, 27 as u32) as core::ffi::c_ulonglong)
+        hash = (hash.rotate_left(27) as core::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_1)
             .wrapping_add(XXH_PRIME64_4) as xxh_u64;
         len = len.wrapping_sub(8);
@@ -291,7 +291,7 @@ unsafe extern "C" fn XXH64_finalize(
                 as core::ffi::c_ulonglong)
                 .wrapping_mul(XXH_PRIME64_1)) as xxh_u64;
         ptr = ptr.offset(4);
-        hash = (::core::intrinsics::rotate_left(hash, 23 as u32) as core::ffi::c_ulonglong)
+        hash = (hash.rotate_left(23) as core::ffi::c_ulonglong)
             .wrapping_mul(XXH_PRIME64_2)
             .wrapping_add(XXH_PRIME64_3) as xxh_u64;
         len = len.wrapping_sub(4);
@@ -302,8 +302,8 @@ unsafe extern "C" fn XXH64_finalize(
         hash = (hash as core::ffi::c_ulonglong
             ^ (*fresh0 as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_5))
             as xxh_u64;
-        hash = (::core::intrinsics::rotate_left(hash, 11 as u32) as core::ffi::c_ulonglong)
-            .wrapping_mul(XXH_PRIME64_1) as xxh_u64;
+        hash =
+            (hash.rotate_left(11) as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64;
         len = len.wrapping_sub(1);
     }
     XXH64_avalanche(hash)
@@ -353,10 +353,10 @@ unsafe extern "C" fn XXH64_endian_align(
                 break;
             }
         }
-        h64 = (::core::intrinsics::rotate_left(v1, 1 as u32))
-            .wrapping_add(::core::intrinsics::rotate_left(v2, 7 as u32))
-            .wrapping_add(::core::intrinsics::rotate_left(v3, 12 as u32))
-            .wrapping_add(::core::intrinsics::rotate_left(v4, 18 as u32));
+        h64 = (v1.rotate_left(1))
+            .wrapping_add(v2.rotate_left(7))
+            .wrapping_add(v3.rotate_left(12))
+            .wrapping_add(v4.rotate_left(18));
         h64 = XXH64_mergeRound(h64, v1);
         h64 = XXH64_mergeRound(h64, v2);
         h64 = XXH64_mergeRound(h64, v3);
