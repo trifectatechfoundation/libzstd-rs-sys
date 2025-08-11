@@ -1,4 +1,5 @@
 use core::ptr;
+use std::ffi::CStr;
 
 use libc::{
     __errno_location, clock_t, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, off_t,
@@ -447,26 +448,16 @@ pub const stdoutmark: [core::ffi::c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[core::ffi::c_char; 11]>(b"/*stdout*\\\0") };
 pub const nulmark: [core::ffi::c_char; 10] =
     unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/dev/null\0") };
-pub const LZMA_EXTENSION: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b".lzma\0") };
-pub const XZ_EXTENSION: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b".xz\0") };
-pub const TXZ_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".txz\0") };
-pub const GZ_EXTENSION: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b".gz\0") };
-pub const TGZ_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".tgz\0") };
-pub const ZSTD_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".zst\0") };
-pub const TZSTD_EXTENSION: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b".tzst\0") };
-pub const ZSTD_ALT_EXTENSION: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b".zstd\0") };
-pub const LZ4_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".lz4\0") };
-pub const TLZ4_EXTENSION: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b".tlz4\0") };
+pub const LZMA_EXTENSION: &CStr = c".lzma";
+pub const XZ_EXTENSION: &CStr = c".xz";
+pub const TXZ_EXTENSION: &CStr = c".txz";
+pub const GZ_EXTENSION: &CStr = c".gz";
+pub const TGZ_EXTENSION: &CStr = c".tgz";
+pub const ZSTD_EXTENSION: &CStr = c".zst";
+pub const TZSTD_EXTENSION: &CStr = c"tzst";
+pub const ZSTD_ALT_EXTENSION: &CStr = c"zstd";
+pub const LZ4_EXTENSION: &CStr = c".lz4";
+pub const TLZ4_EXTENSION: &CStr = c"tlz4";
 #[no_mangle]
 pub static mut g_display_prefs: FIO_display_prefs_t = {
     FIO_display_prefs_s {
@@ -5314,121 +5305,120 @@ unsafe extern "C" fn FIO_compressFilename_dstFile(
     }
     result
 }
-static mut compressedFileExtensions: [*const core::ffi::c_char; 114] = [
-    ZSTD_EXTENSION.as_ptr(),
-    TZSTD_EXTENSION.as_ptr(),
-    GZ_EXTENSION.as_ptr(),
-    TGZ_EXTENSION.as_ptr(),
-    LZMA_EXTENSION.as_ptr(),
-    XZ_EXTENSION.as_ptr(),
-    TXZ_EXTENSION.as_ptr(),
-    LZ4_EXTENSION.as_ptr(),
-    TLZ4_EXTENSION.as_ptr(),
-    b".7z\0" as *const u8 as *const core::ffi::c_char,
-    b".aa3\0" as *const u8 as *const core::ffi::c_char,
-    b".aac\0" as *const u8 as *const core::ffi::c_char,
-    b".aar\0" as *const u8 as *const core::ffi::c_char,
-    b".ace\0" as *const u8 as *const core::ffi::c_char,
-    b".alac\0" as *const u8 as *const core::ffi::c_char,
-    b".ape\0" as *const u8 as *const core::ffi::c_char,
-    b".apk\0" as *const u8 as *const core::ffi::c_char,
-    b".apng\0" as *const u8 as *const core::ffi::c_char,
-    b".arc\0" as *const u8 as *const core::ffi::c_char,
-    b".archive\0" as *const u8 as *const core::ffi::c_char,
-    b".arj\0" as *const u8 as *const core::ffi::c_char,
-    b".ark\0" as *const u8 as *const core::ffi::c_char,
-    b".asf\0" as *const u8 as *const core::ffi::c_char,
-    b".avi\0" as *const u8 as *const core::ffi::c_char,
-    b".avif\0" as *const u8 as *const core::ffi::c_char,
-    b".ba\0" as *const u8 as *const core::ffi::c_char,
-    b".br\0" as *const u8 as *const core::ffi::c_char,
-    b".bz2\0" as *const u8 as *const core::ffi::c_char,
-    b".cab\0" as *const u8 as *const core::ffi::c_char,
-    b".cdx\0" as *const u8 as *const core::ffi::c_char,
-    b".chm\0" as *const u8 as *const core::ffi::c_char,
-    b".cr2\0" as *const u8 as *const core::ffi::c_char,
-    b".divx\0" as *const u8 as *const core::ffi::c_char,
-    b".dmg\0" as *const u8 as *const core::ffi::c_char,
-    b".dng\0" as *const u8 as *const core::ffi::c_char,
-    b".docm\0" as *const u8 as *const core::ffi::c_char,
-    b".docx\0" as *const u8 as *const core::ffi::c_char,
-    b".dotm\0" as *const u8 as *const core::ffi::c_char,
-    b".dotx\0" as *const u8 as *const core::ffi::c_char,
-    b".dsft\0" as *const u8 as *const core::ffi::c_char,
-    b".ear\0" as *const u8 as *const core::ffi::c_char,
-    b".eftx\0" as *const u8 as *const core::ffi::c_char,
-    b".emz\0" as *const u8 as *const core::ffi::c_char,
-    b".eot\0" as *const u8 as *const core::ffi::c_char,
-    b".epub\0" as *const u8 as *const core::ffi::c_char,
-    b".f4v\0" as *const u8 as *const core::ffi::c_char,
-    b".flac\0" as *const u8 as *const core::ffi::c_char,
-    b".flv\0" as *const u8 as *const core::ffi::c_char,
-    b".gho\0" as *const u8 as *const core::ffi::c_char,
-    b".gif\0" as *const u8 as *const core::ffi::c_char,
-    b".gifv\0" as *const u8 as *const core::ffi::c_char,
-    b".gnp\0" as *const u8 as *const core::ffi::c_char,
-    b".iso\0" as *const u8 as *const core::ffi::c_char,
-    b".jar\0" as *const u8 as *const core::ffi::c_char,
-    b".jpeg\0" as *const u8 as *const core::ffi::c_char,
-    b".jpg\0" as *const u8 as *const core::ffi::c_char,
-    b".jxl\0" as *const u8 as *const core::ffi::c_char,
-    b".lz\0" as *const u8 as *const core::ffi::c_char,
-    b".lzh\0" as *const u8 as *const core::ffi::c_char,
-    b".m4a\0" as *const u8 as *const core::ffi::c_char,
-    b".m4v\0" as *const u8 as *const core::ffi::c_char,
-    b".mkv\0" as *const u8 as *const core::ffi::c_char,
-    b".mov\0" as *const u8 as *const core::ffi::c_char,
-    b".mp2\0" as *const u8 as *const core::ffi::c_char,
-    b".mp3\0" as *const u8 as *const core::ffi::c_char,
-    b".mp4\0" as *const u8 as *const core::ffi::c_char,
-    b".mpa\0" as *const u8 as *const core::ffi::c_char,
-    b".mpc\0" as *const u8 as *const core::ffi::c_char,
-    b".mpe\0" as *const u8 as *const core::ffi::c_char,
-    b".mpeg\0" as *const u8 as *const core::ffi::c_char,
-    b".mpg\0" as *const u8 as *const core::ffi::c_char,
-    b".mpl\0" as *const u8 as *const core::ffi::c_char,
-    b".mpv\0" as *const u8 as *const core::ffi::c_char,
-    b".msi\0" as *const u8 as *const core::ffi::c_char,
-    b".odp\0" as *const u8 as *const core::ffi::c_char,
-    b".ods\0" as *const u8 as *const core::ffi::c_char,
-    b".odt\0" as *const u8 as *const core::ffi::c_char,
-    b".ogg\0" as *const u8 as *const core::ffi::c_char,
-    b".ogv\0" as *const u8 as *const core::ffi::c_char,
-    b".otp\0" as *const u8 as *const core::ffi::c_char,
-    b".ots\0" as *const u8 as *const core::ffi::c_char,
-    b".ott\0" as *const u8 as *const core::ffi::c_char,
-    b".pea\0" as *const u8 as *const core::ffi::c_char,
-    b".png\0" as *const u8 as *const core::ffi::c_char,
-    b".pptx\0" as *const u8 as *const core::ffi::c_char,
-    b".qt\0" as *const u8 as *const core::ffi::c_char,
-    b".rar\0" as *const u8 as *const core::ffi::c_char,
-    b".s7z\0" as *const u8 as *const core::ffi::c_char,
-    b".sfx\0" as *const u8 as *const core::ffi::c_char,
-    b".sit\0" as *const u8 as *const core::ffi::c_char,
-    b".sitx\0" as *const u8 as *const core::ffi::c_char,
-    b".sqx\0" as *const u8 as *const core::ffi::c_char,
-    b".svgz\0" as *const u8 as *const core::ffi::c_char,
-    b".swf\0" as *const u8 as *const core::ffi::c_char,
-    b".tbz2\0" as *const u8 as *const core::ffi::c_char,
-    b".tib\0" as *const u8 as *const core::ffi::c_char,
-    b".tlz\0" as *const u8 as *const core::ffi::c_char,
-    b".vob\0" as *const u8 as *const core::ffi::c_char,
-    b".war\0" as *const u8 as *const core::ffi::c_char,
-    b".webm\0" as *const u8 as *const core::ffi::c_char,
-    b".webp\0" as *const u8 as *const core::ffi::c_char,
-    b".wma\0" as *const u8 as *const core::ffi::c_char,
-    b".wmv\0" as *const u8 as *const core::ffi::c_char,
-    b".woff\0" as *const u8 as *const core::ffi::c_char,
-    b".woff2\0" as *const u8 as *const core::ffi::c_char,
-    b".wvl\0" as *const u8 as *const core::ffi::c_char,
-    b".xlsx\0" as *const u8 as *const core::ffi::c_char,
-    b".xpi\0" as *const u8 as *const core::ffi::c_char,
-    b".xps\0" as *const u8 as *const core::ffi::c_char,
-    b".zip\0" as *const u8 as *const core::ffi::c_char,
-    b".zipx\0" as *const u8 as *const core::ffi::c_char,
-    b".zoo\0" as *const u8 as *const core::ffi::c_char,
-    b".zpaq\0" as *const u8 as *const core::ffi::c_char,
-    NULL as *const core::ffi::c_char,
+static compressedFileExtensions: [&CStr; 113] = [
+    ZSTD_EXTENSION,
+    TZSTD_EXTENSION,
+    GZ_EXTENSION,
+    TGZ_EXTENSION,
+    LZMA_EXTENSION,
+    XZ_EXTENSION,
+    TXZ_EXTENSION,
+    LZ4_EXTENSION,
+    TLZ4_EXTENSION,
+    c".7z",
+    c".aa3",
+    c".aac",
+    c".aar",
+    c".ace",
+    c".alac",
+    c".ape",
+    c".apk",
+    c".apng",
+    c".arc",
+    c".archive",
+    c".arj",
+    c".ark",
+    c".asf",
+    c".avi",
+    c".avif",
+    c".ba",
+    c".br",
+    c".bz2",
+    c".cab",
+    c".cdx",
+    c".chm",
+    c".cr2",
+    c".divx",
+    c".dmg",
+    c".dng",
+    c".docm",
+    c".docx",
+    c".dotm",
+    c".dotx",
+    c".dsft",
+    c".ear",
+    c".eftx",
+    c".emz",
+    c".eot",
+    c".epub",
+    c".f4v",
+    c".flac",
+    c".flv",
+    c".gho",
+    c".gif",
+    c".gifv",
+    c".gnp",
+    c".iso",
+    c".jar",
+    c".jpeg",
+    c".jpg",
+    c".jxl",
+    c".lz",
+    c".lzh",
+    c".m4a",
+    c".m4v",
+    c".mkv",
+    c".mov",
+    c".mp2",
+    c".mp3",
+    c".mp4",
+    c".mpa",
+    c".mpc",
+    c".mpe",
+    c".mpeg",
+    c".mpg",
+    c".mpl",
+    c".mpv",
+    c".msi",
+    c".odp",
+    c".ods",
+    c".odt",
+    c".ogg",
+    c".ogv",
+    c".otp",
+    c".ots",
+    c".ott",
+    c".pea",
+    c".png",
+    c".pptx",
+    c".qt",
+    c".rar",
+    c".s7z",
+    c".sfx",
+    c".sit",
+    c".sitx",
+    c".sqx",
+    c".svgz",
+    c".swf",
+    c".tbz2",
+    c".tib",
+    c".tlz",
+    c".vob",
+    c".war",
+    c".webm",
+    c".webp",
+    c".wma",
+    c".wmv",
+    c".woff",
+    c".woff2",
+    c".wvl",
+    c".xlsx",
+    c".xpi",
+    c".xps",
+    c".zip",
+    c".zipx",
+    c".zoo",
+    c".zpaq",
 ];
 unsafe extern "C" fn FIO_compressFilename_srcFile(
     fCtx: *mut FIO_ctx_t,
@@ -5507,7 +5497,7 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
         }
     }
     if (*prefs).excludeCompressedFiles == 1
-        && UTIL_isCompressedFile(srcFileName, compressedFileExtensions.as_mut_ptr()) != 0
+        && UTIL_isCompressedFile(srcFileName, &compressedFileExtensions) != 0
     {
         if g_display_prefs.displayLevel >= 4 {
             fprintf(
@@ -5580,54 +5570,21 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
     }
     result
 }
-unsafe extern "C" fn checked_index(
-    mut options: *mut *const core::ffi::c_char,
-    mut length: size_t,
-    mut index: size_t,
-) -> *const core::ffi::c_char {
-    if index < length {
-    } else {
-        __assert_fail(
-            b"index < length\0" as *const u8 as *const core::ffi::c_char,
-            b"fileio.c\0" as *const u8 as *const core::ffi::c_char,
-            2107,
-            (*::core::mem::transmute::<&[u8; 57], &[core::ffi::c_char; 57]>(
-                b"const char *checked_index(const char **, size_t, size_t)\0",
-            ))
-            .as_ptr(),
-        );
-    }
-    *options.offset(index as isize)
-}
 #[no_mangle]
 pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
-    static mut formatOptions: [*const core::ffi::c_char; 5] = [
-        ZSTD_EXTENSION.as_ptr(),
-        GZ_EXTENSION.as_ptr(),
-        XZ_EXTENSION.as_ptr(),
-        LZMA_EXTENSION.as_ptr(),
-        LZ4_EXTENSION.as_ptr(),
+    static formatOptions: [&CStr; 5] = [
+        ZSTD_EXTENSION,
+        GZ_EXTENSION,
+        XZ_EXTENSION,
+        LZMA_EXTENSION,
+        LZ4_EXTENSION,
     ];
-    static mut sparseOptions: [*const core::ffi::c_char; 3] = [
-        b" --no-sparse\0" as *const u8 as *const core::ffi::c_char,
-        b"\0" as *const u8 as *const core::ffi::c_char,
-        b" --sparse\0" as *const u8 as *const core::ffi::c_char,
-    ];
-    static mut checkSumOptions: [*const core::ffi::c_char; 3] = [
-        b" --no-check\0" as *const u8 as *const core::ffi::c_char,
-        b"\0" as *const u8 as *const core::ffi::c_char,
-        b" --check\0" as *const u8 as *const core::ffi::c_char,
-    ];
-    static mut rowMatchFinderOptions: [*const core::ffi::c_char; 3] = [
-        b"\0" as *const u8 as *const core::ffi::c_char,
-        b" --no-row-match-finder\0" as *const u8 as *const core::ffi::c_char,
-        b" --row-match-finder\0" as *const u8 as *const core::ffi::c_char,
-    ];
-    static mut compressLiteralsOptions: [*const core::ffi::c_char; 3] = [
-        b"\0" as *const u8 as *const core::ffi::c_char,
-        b" --compress-literals\0" as *const u8 as *const core::ffi::c_char,
-        b" --no-compress-literals\0" as *const u8 as *const core::ffi::c_char,
-    ];
+    static sparseOptions: [&CStr; 3] = [c" --no-sparse", c"", c" --sparse"];
+    static checkSumOptions: [&CStr; 3] = [c" --no-check", c"", c" --check"];
+    static rowMatchFinderOptions: [&CStr; 3] =
+        [c"", c" --no-row-match-finder", c" --row-match-finder"];
+    static compressLiteralsOptions: [&CStr; 3] =
+        [c"", c" --compress-literals", c" --no-compress-literals"];
     if g_display_prefs.displayLevel >= 4 {
     } else {
         __assert_fail(
@@ -5643,21 +5600,12 @@ pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_
     fprintf(
         stderr,
         b"--format=%s\0" as *const u8 as *const core::ffi::c_char,
-        *formatOptions
-            .as_mut_ptr()
-            .offset((*prefs).compressionType as isize),
+        formatOptions[(*prefs).compressionType as usize].as_ptr(),
     );
     fprintf(
         stderr,
         b"%s\0" as *const u8 as *const core::ffi::c_char,
-        checked_index(
-            sparseOptions.as_mut_ptr(),
-            (::core::mem::size_of::<[*const core::ffi::c_char; 3]>() as core::ffi::c_ulong)
-                .wrapping_div(
-                    ::core::mem::size_of::<*mut core::ffi::c_char>() as core::ffi::c_ulong
-                ),
-            (*prefs).sparseFileSupport as size_t,
-        ),
+        sparseOptions[(*prefs).sparseFileSupport as usize].as_ptr(),
     );
     fprintf(
         stderr,
@@ -5671,14 +5619,7 @@ pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_
     fprintf(
         stderr,
         b"%s\0" as *const u8 as *const core::ffi::c_char,
-        checked_index(
-            checkSumOptions.as_mut_ptr(),
-            (::core::mem::size_of::<[*const core::ffi::c_char; 3]>() as core::ffi::c_ulong)
-                .wrapping_div(
-                    ::core::mem::size_of::<*mut core::ffi::c_char>() as core::ffi::c_ulong
-                ),
-            (*prefs).checksumFlag as size_t,
-        ),
+        checkSumOptions[(*prefs).checksumFlag as usize].as_ptr(),
     );
     fprintf(
         stderr,
@@ -5696,14 +5637,7 @@ pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_
     fprintf(
         stderr,
         b"%s\0" as *const u8 as *const core::ffi::c_char,
-        checked_index(
-            rowMatchFinderOptions.as_mut_ptr(),
-            (::core::mem::size_of::<[*const core::ffi::c_char; 3]>() as core::ffi::c_ulong)
-                .wrapping_div(
-                    ::core::mem::size_of::<*mut core::ffi::c_char>() as core::ffi::c_ulong
-                ),
-            (*prefs).useRowMatchFinder as size_t,
-        ),
+        rowMatchFinderOptions[(*prefs).useRowMatchFinder as usize].as_ptr(),
     );
     fprintf(
         stderr,
@@ -5738,14 +5672,7 @@ pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_
     fprintf(
         stderr,
         b"%s\0" as *const u8 as *const core::ffi::c_char,
-        checked_index(
-            compressLiteralsOptions.as_mut_ptr(),
-            (::core::mem::size_of::<[*const core::ffi::c_char; 3]>() as core::ffi::c_ulong)
-                .wrapping_div(
-                    ::core::mem::size_of::<*mut core::ffi::c_char>() as core::ffi::c_ulong
-                ),
-            (*prefs).literalCompressionMode as size_t,
-        ),
+        compressLiteralsOptions[(*prefs).literalCompressionMode as usize].as_ptr(),
     );
     fprintf(
         stderr,
@@ -7410,8 +7337,7 @@ static mut suffixList: [*const core::ffi::c_char; 9] = [
     TXZ_EXTENSION.as_ptr(),
     NULL as *const core::ffi::c_char,
 ];
-static mut suffixListStr: *const core::ffi::c_char =
-    b".zst/.tzst/.gz/.tgz/.lzma/.xz/.txz\0" as *const u8 as *const core::ffi::c_char;
+static suffixListStr: &CStr = c".zst/.tzst/.gz/.tgz/.lzma/.xz/.txz";
 unsafe extern "C" fn FIO_determineDstName(
     mut srcFileName: *const core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
@@ -7435,7 +7361,7 @@ unsafe extern "C" fn FIO_determineDstName(
                 b"zstd: %s: unknown suffix (%s expected). Can't derive the output file name. Specify it with -o dstFileName. Ignoring.\n\0"
                     as *const u8 as *const core::ffi::c_char,
                 srcFileName,
-                suffixListStr,
+                suffixListStr.as_ptr(),
             );
         }
         return NULL as *const core::ffi::c_char;
@@ -7456,7 +7382,7 @@ unsafe extern "C" fn FIO_determineDstName(
                 b"zstd: %s: unknown suffix (%s expected). Can't derive the output file name. Specify it with -o dstFileName. Ignoring.\n\0"
                     as *const u8 as *const core::ffi::c_char,
                 srcFileName,
-                suffixListStr,
+                suffixListStr.as_ptr(),
             );
         }
         return NULL as *const core::ffi::c_char;

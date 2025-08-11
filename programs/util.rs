@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use libc::{
     __errno_location, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror,
     fgets, fileno, fopen, fprintf, getchar, isatty, mkdir, mode_t, opendir, readdir, strchr,
@@ -1928,18 +1930,16 @@ unsafe extern "C" fn UTIL_prepareFileList(
     closedir(dir);
     nbFiles
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isCompressedFile(
+pub unsafe fn UTIL_isCompressedFile(
     mut inputName: *const core::ffi::c_char,
-    mut extensionList: *mut *const core::ffi::c_char,
+    mut extensionList: &[&CStr],
 ) -> core::ffi::c_int {
     let mut ext = UTIL_getFileExtension(inputName);
-    while !(*extensionList).is_null() {
-        let isCompressedExtension = strcmp(ext, *extensionList);
+    for &candidate_ext in extensionList {
+        let isCompressedExtension = strcmp(ext, candidate_ext.as_ptr());
         if isCompressedExtension == 0 {
             return 1;
         }
-        extensionList = extensionList.offset(1);
     }
     0
 }
