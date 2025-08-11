@@ -1449,25 +1449,40 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
 ) -> size_t {
     ZSTD_findFrameCompressedSize_advanced(src, srcSize, Format::ZSTD_f_zstd1)
 }
+
 #[export_name = crate::prefix!(ZSTD_decompressBound)]
 pub unsafe extern "C" fn ZSTD_decompressBound(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> core::ffi::c_ulonglong {
-    let mut bound = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
-    while srcSize > 0 {
-        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, Format::ZSTD_f_zstd1);
+    decompress_bound(if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+    })
+}
+
+unsafe fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
+    let mut bound = 0;
+
+    while !src.is_empty() {
+        let frameSizeInfo = ZSTD_findFrameSizeInfo(
+            src.as_ptr().cast(),
+            src.len() as size_t,
+            Format::ZSTD_f_zstd1,
+        );
         let compressedSize = frameSizeInfo.compressedSize;
         let decompressedBound = frameSizeInfo.decompressedBound;
         if ERR_isError(compressedSize) != 0 || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
             return ZSTD_CONTENTSIZE_ERROR;
         }
-        src = (src as *const u8).offset(compressedSize as isize) as *const core::ffi::c_void;
-        srcSize = srcSize.wrapping_sub(compressedSize);
-        bound = bound.wrapping_add(decompressedBound);
+        src = &src[compressedSize as usize..];
+        bound += decompressedBound;
     }
+
     bound
 }
+
 #[export_name = crate::prefix!(ZSTD_decompressionMargin)]
 pub unsafe extern "C" fn ZSTD_decompressionMargin(
     mut src: *const core::ffi::c_void,
