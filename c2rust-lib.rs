@@ -15,10 +15,8 @@ pub mod lib {
         pub mod bitstream;
         pub mod debug;
         pub mod entropy_common;
-        pub mod entropy_common_old;
         pub mod error_private;
         pub mod fse_decompress;
-        pub mod fse_decompress_old;
         pub mod mem;
         pub mod pool;
         pub mod threading;

@@ -32,6 +32,7 @@ cc = "1.2.30"
 
 [dev-dependencies]
 quickcheck = "1.0.3"
+zstd-sys = "2.0.15"
 
 [dev-dependencies.xxhash-rust]
 version = "0.8.15"
