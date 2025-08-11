@@ -3841,9 +3841,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
                 if depth >= 1 {
                     while ip < ilimit {
                         ip = ip.offset(1);
-                        ip;
                         curr = curr.wrapping_add(1);
-                        curr;
                         if offBase != 0 {
                             let windowLow_0 = ZSTD_getLowestMatchIndex(ms, curr, windowLog);
                             let repIndex_0 = curr.wrapping_sub(offset_1);

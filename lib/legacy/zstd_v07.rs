@@ -2975,7 +2975,6 @@ pub unsafe extern "C" fn ZSTDv07_decompressBegin(mut dctx: *mut ZSTDv07_DCtx) ->
     while i < ZSTDv07_REP_NUM {
         *((*dctx).rep).as_mut_ptr().offset(i as isize) = *repStartValue.as_ptr().offset(i as isize);
         i += 1;
-        i;
     }
     0
 }

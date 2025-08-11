@@ -526,7 +526,6 @@ unsafe extern "C" fn ss_heapsort(
         ss_fixdown(Td, PA, SA, 0, i);
         *SA.offset(i as isize) = t;
         i -= 1;
-        i;
     }
 }
 #[inline]

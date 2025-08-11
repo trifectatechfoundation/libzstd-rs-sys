@@ -4194,7 +4194,6 @@ unsafe fn main_0(
                     *fresh4 = *((*filenames).fileNames).offset(u as isize);
                 }
                 u = u.wrapping_add(1);
-                u;
             }
             if fileNamesNb == 0 && nbFilenames > 0 {
                 operationResult = 1;
@@ -4236,7 +4235,6 @@ unsafe fn main_0(
                         } else {
                             filenames = UTIL_mergeFileNamesTable(filenames, fnt);
                             flNb = flNb.wrapping_add(1);
-                            flNb;
                         }
                     }
                 } else {
@@ -4362,7 +4360,6 @@ unsafe fn main_0(
                                                 &mut benchParams,
                                             );
                                             i = i.wrapping_add(1);
-                                            i;
                                         }
                                     } else {
                                         operationResult = BMK_benchFilesAdvanced(
@@ -4778,7 +4775,6 @@ unsafe fn main_0(
                                                                     );
                                                                 }
                                                                 fileNb = fileNb.wrapping_add(1);
-                                                                fileNb;
                                                             }
                                                         }
                                                         if g_displayLevel >= 4 {
