@@ -1596,7 +1596,8 @@ unsafe extern "C" fn printVersion() {
         }
     }
 }
-static ZSTD_strategyMap: [&CStr; 10] = [
+const ZSTD_NB_STRATEGIES: usize = 9;
+static ZSTD_strategyMap: [&CStr; ZSTD_NB_STRATEGIES + 1] = [
     c"",
     c"ZSTD_fast",
     c"ZSTD_dfast",
@@ -1664,18 +1665,9 @@ unsafe extern "C" fn printDefaultCParams(
         b" - targetLength  : %u\n\0" as *const u8 as *const core::ffi::c_char,
         cParams.targetLength,
     );
-    if (cParams.strategy as core::ffi::c_uint) < (9 + 1) as core::ffi::c_uint {
-    } else {
-        __assert_fail(
-            b"cParams.strategy < ZSTD_NB_STRATEGIES + 1\0" as *const u8 as *const core::ffi::c_char,
-            b"zstdcli.c\0" as *const u8 as *const core::ffi::c_char,
-            731,
-            (*::core::mem::transmute::<&[u8; 58], &[core::ffi::c_char; 58]>(
-                b"void printDefaultCParams(const char *, const char *, int)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(
+        (cParams.strategy as core::ffi::c_uint) < (ZSTD_NB_STRATEGIES + 1) as core::ffi::c_uint
+    );
     fprintf(
         stderr,
         b" - strategy      : %s (%u)\n\0" as *const u8 as *const core::ffi::c_char,
@@ -1696,21 +1688,7 @@ unsafe extern "C" fn printActualCParams(
         0
     };
     let mut actualCParams = ZSTD_getCParams(cLevel, fileSize, dictSize);
-    if g_displayLevel >= 4 {
-    } else {
-        __assert_fail(
-            b"g_displayLevel >= 4\0" as *const u8 as *const core::ffi::c_char,
-            b"zstdcli.c\0" as *const u8 as *const core::ffi::c_char,
-            739,
-            (*::core::mem::transmute::<
-                &[u8; 93],
-                &[core::ffi::c_char; 93],
-            >(
-                b"void printActualCParams(const char *, const char *, int, const ZSTD_compressionParameters *)\0",
-            ))
-                .as_ptr(),
-        );
-    }
+    assert!(g_displayLevel >= 4);
     actualCParams.windowLog = if (*cParams).windowLog == 0 {
         actualCParams.windowLog
     } else {
@@ -1936,18 +1914,7 @@ unsafe fn main_0(
     let mut benchParams = BMK_initAdvancedParams();
     let mut literalCompressionMode = ZSTD_ps_auto;
     checkLibVersion();
-    if argCount >= 1 {
-    } else {
-        __assert_fail(
-            b"argCount >= 1\0" as *const u8 as *const core::ffi::c_char,
-            b"zstdcli.c\0" as *const u8 as *const core::ffi::c_char,
-            930,
-            (*::core::mem::transmute::<&[u8; 29], &[core::ffi::c_char; 29]>(
-                b"int main(int, const char **)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(argCount >= 1);
     if filenames.is_null() || file_of_names.is_null() {
         if g_displayLevel >= 1 {
             fprintf(
@@ -4714,20 +4681,10 @@ unsafe fn main_0(
                                                         }
                                                         let mut strategyBounds =
                                                             ZSTD_cParam_getBounds(ZSTD_c_strategy);
-                                                        if 9 == strategyBounds.upperBound {
-                                                        } else {
-                                                            __assert_fail(
-                                                                b"ZSTD_NB_STRATEGIES == strategyBounds.upperBound\0"
-                                                                    as *const u8 as *const core::ffi::c_char,
-                                                                b"zstdcli.c\0" as *const u8 as *const core::ffi::c_char,
-                                                                1618,
-                                                                (*::core::mem::transmute::<
-                                                                    &[u8; 29],
-                                                                    &[core::ffi::c_char; 29],
-                                                                >(b"int main(int, const char **)\0"))
-                                                                    .as_ptr(),
-                                                            );
-                                                        }
+                                                        assert!(
+                                                            ZSTD_NB_STRATEGIES as core::ffi::c_int
+                                                                == strategyBounds.upperBound
+                                                        );
                                                         if showDefaultCParams != 0
                                                             || g_displayLevel >= 4
                                                         {
