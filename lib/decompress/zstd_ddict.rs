@@ -68,9 +68,6 @@ unsafe extern "C" fn ZSTD_customFree(
         }
     }
 }
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
-}
 pub const NULL: core::ffi::c_int = 0;
 #[export_name = crate::prefix!(ZSTD_DDict_dictContent)]
 pub unsafe extern "C" fn ZSTD_DDict_dictContent(
