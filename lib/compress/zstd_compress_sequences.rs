@@ -52,9 +52,6 @@ pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
 }
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
-}
 pub const MLFSELog: core::ffi::c_int = 9;
 pub const LLFSELog: core::ffi::c_int = 9;
 pub const OffFSELog: core::ffi::c_int = 8;
