@@ -5,7 +5,6 @@
 #![allow(unused_assignments)]
 #![allow(unused_mut)]
 #![feature(test)]
-#![feature(core_intrinsics)]
 #![feature(likely_unlikely)]
 #![feature(linkage)]
 #[macro_use]
