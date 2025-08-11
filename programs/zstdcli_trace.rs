@@ -1,7 +1,6 @@
-use libc::{
-    fclose, fopen, fprintf, pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock,
-    pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, FILE, PTHREAD_MUTEX_INITIALIZER,
-};
+use std::sync::Mutex;
+
+use libc::{fclose, fopen, fprintf, FILE};
 use libzstd_rs::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s, ZSTD_CCtx_s,
@@ -55,9 +54,10 @@ pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 pub const NULL: core::ffi::c_int = 0;
 static mut g_traceFile: *mut FILE = NULL as *mut FILE;
-static mut g_mutexInit: core::ffi::c_int = 0;
-static mut g_mutex: pthread_mutex_t = PTHREAD_MUTEX_INITIALIZER;
 static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
+
+static WRITE_LOCK: Mutex<()> = Mutex::new(());
+
 #[no_mangle]
 pub unsafe extern "C" fn TRACE_enable(mut filename: *const core::ffi::c_char) {
     let writeHeader = (UTIL_isRegularFile(filename) == 0) as core::ffi::c_int;
@@ -73,13 +73,6 @@ pub unsafe extern "C" fn TRACE_enable(mut filename: *const core::ffi::c_char) {
         );
     }
     g_enableTime = UTIL_getTime();
-    if g_mutexInit == 0 {
-        if pthread_mutex_init(&mut g_mutex, core::ptr::null::<pthread_mutexattr_t>()) == 0 {
-            g_mutexInit = 1;
-        } else {
-            TRACE_finish();
-        }
-    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn TRACE_finish() {
@@ -87,10 +80,6 @@ pub unsafe extern "C" fn TRACE_finish() {
         fclose(g_traceFile);
     }
     g_traceFile = NULL as *mut FILE;
-    if g_mutexInit != 0 {
-        pthread_mutex_destroy(&mut g_mutex);
-        g_mutexInit = 0;
-    }
 }
 unsafe extern "C" fn TRACE_log(
     mut method: *const core::ffi::c_char,
@@ -108,7 +97,7 @@ unsafe extern "C" fn TRACE_log(
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_compressionLevel, &mut level);
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_nbWorkers, &mut workers);
     }
-    pthread_mutex_lock(&mut g_mutex);
+    let _guard = WRITE_LOCK.lock().unwrap();
     fprintf(
         g_traceFile,
         b"zstd, %u, %s, %s, %d, %d, %llu, %llu, %llu, %llu, %.2f, %.2f\n\0" as *const u8
@@ -129,10 +118,9 @@ unsafe extern "C" fn TRACE_log(
         ratio,
         speed,
     );
-    pthread_mutex_unlock(&mut g_mutex);
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_trace_compress_begin(mut cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
+pub unsafe extern "C" fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
     if g_traceFile.is_null() {
         return 0;
     }
@@ -157,7 +145,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_end(
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_trace_decompress_begin(mut dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
+pub unsafe extern "C" fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
     if g_traceFile.is_null() {
         return 0;
     }
