@@ -34,12 +34,6 @@ extern "C" {
         _: core::ffi::c_ulong,
         _: *mut FILE,
     ) -> core::ffi::c_ulong;
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
     fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
     fn calloc(_: core::ffi::c_ulong, _: core::ffi::c_ulong) -> *mut core::ffi::c_void;
     fn free(_: *mut core::ffi::c_void);
@@ -397,30 +391,8 @@ unsafe extern "C" fn writeUint_varLen(
     mut value: core::ffi::c_uint,
 ) {
     let mut endPos = uintSize(value) as core::ffi::c_int - 1;
-    if uintSize(value) >= 1 {
-    } else {
-        __assert_fail(
-            b"uintSize(value) >= 1\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            156,
-            (*::core::mem::transmute::<&[u8; 52], &[core::ffi::c_char; 52]>(
-                b"void writeUint_varLen(char *, size_t, unsigned int)\0",
-            ))
-            .as_ptr(),
-        );
-    }
-    if uintSize(value) < capacity {
-    } else {
-        __assert_fail(
-            b"uintSize(value) < capacity\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            157,
-            (*::core::mem::transmute::<&[u8; 52], &[core::ffi::c_char; 52]>(
-                b"void writeUint_varLen(char *, size_t, unsigned int)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(uintSize(value) >= 1);
+    assert!(uintSize(value) < capacity);
     while endPos >= 0 {
         let mut c = ('0' as i32 + value.wrapping_rem(10) as core::ffi::c_char as core::ffi::c_int)
             as core::ffi::c_char;
@@ -1024,18 +996,7 @@ pub unsafe extern "C" fn BMK_isSuccessful_benchOutcome(
 pub unsafe extern "C" fn BMK_extract_benchResult(
     mut outcome: BMK_benchOutcome_t,
 ) -> BMK_benchResult_t {
-    if outcome.tag == 0 {
-    } else {
-        __assert_fail(
-            b"outcome.tag == 0\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            378,
-            (*::core::mem::transmute::<&[u8; 62], &[core::ffi::c_char; 62]>(
-                b"BMK_benchResult_t BMK_extract_benchResult(BMK_benchOutcome_t)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(outcome.tag == 0);
     outcome.internal_never_use_directly
 }
 unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
@@ -1118,36 +1079,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     let mut cSize = 0;
     let mut ratio = 0.0f64;
     let mut nbChunks = 0;
-    if !cctx.is_null() {
-    } else {
-        __assert_fail(
-            b"cctx != NULL\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            439,
-            (*::core::mem::transmute::<
-                &[u8; 385],
-                &[core::ffi::c_char; 385],
-            >(
-                b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-            ))
-                .as_ptr(),
-        );
-    }
-    if !dctx.is_null() {
-    } else {
-        __assert_fail(
-            b"dctx != NULL\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            440,
-            (*::core::mem::transmute::<
-                &[u8; 385],
-                &[core::ffi::c_char; 385],
-            >(
-                b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-            ))
-                .as_ptr(),
-        );
-    }
+    assert!(!cctx.is_null());
+    assert!(!dctx.is_null());
     ptr::write_bytes(
         &mut benchResult as *mut BMK_benchResult_t as *mut u8,
         0,
@@ -1246,23 +1179,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             srcPtr = srcPtr.offset(*fileSizes.offset(fileNb as isize) as isize);
             fileNb = fileNb.wrapping_add(1);
         }
-        let decodedSize = totalDSize64;
-        if decodedSize == totalDSize64 {
-        } else {
-            __assert_fail(
-                b"(U64)decodedSize == totalDSize64\0" as *const u8
-                    as *const core::ffi::c_char,
-                b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-                472,
-                (*::core::mem::transmute::<
-                    &[u8; 385],
-                    &[core::ffi::c_char; 385],
-                >(
-                    b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                ))
-                    .as_ptr(),
-            );
-        }
+        let decodedSize = totalDSize64 as size_t;
+        assert!(decodedSize == totalDSize64);
         free(*resultBufferPtr);
         if totalDSize64 > decodedSize {
             let mut r_1 = BMK_benchOutcome_t {
@@ -1533,25 +1451,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         );
         fflush(NULL as *mut FILE);
     }
-    if srcSize
-        < (2147483647 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul(2)
-            .wrapping_add(1) as size_t
-    {
-    } else {
-        __assert_fail(
-            b"srcSize < UINT_MAX\0" as *const u8 as *const core::ffi::c_char,
-            b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-            594,
-            (*::core::mem::transmute::<
-                &[u8; 385],
-                &[core::ffi::c_char; 385],
-            >(
-                b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-            ))
-                .as_ptr(),
-        );
-    }
+    assert!(srcSize < core::ffi::c_uint::MAX as size_t);
     if displayLevel >= 2 {
         fprintf(
             stdout,
@@ -1620,25 +1520,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             }
             let ratioDigits =
                 1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
-            if cSize
-                < (2147483647 as core::ffi::c_int as core::ffi::c_uint)
-                    .wrapping_mul(2)
-                    .wrapping_add(1) as size_t
-            {
-            } else {
-                __assert_fail(
-                    b"cSize < UINT_MAX\0" as *const u8 as *const core::ffi::c_char,
-                    b"benchzstd.c\0" as *const u8 as *const core::ffi::c_char,
-                    628,
-                    (*::core::mem::transmute::<
-                        &[u8; 385],
-                        &[core::ffi::c_char; 385],
-                    >(
-                        b"BMK_benchOutcome_t BMK_benchMemAdvancedNoAlloc(const void **, size_t *, void **, size_t *, size_t *, void **, size_t *, void **, void *, size_t, BMK_timedFnState_t *, BMK_timedFnState_t *, const void *, size_t, const size_t *, unsigned int, const int, const ZSTD_compressionParameters *, const void *, size_t, ZSTD_CCtx *, ZSTD_DCtx *, int, const char *, const BMK_advancedParams_t *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(cSize < core::ffi::c_uint::MAX as size_t);
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
