@@ -13,9 +13,10 @@ use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wk
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
+use crate::lib::decompress::{blockProperties_t, BlockType};
 use crate::lib::decompress::{
-    blockType_e, bt_reserved, bt_rle, HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits,
-    Workspace, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_seqSymbol, ZSTD_seqSymbol_header,
+    blockType_e, HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx,
+    ZSTD_DCtx_s, ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
 use crate::lib::zstd::*;
 
@@ -129,13 +130,6 @@ impl TryFrom<u8> for SymbolEncodingType_e {
     }
 }
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct blockProperties_t {
-    pub blockType: blockType_e,
-    pub lastBlock: u32,
-    pub origSize: u32,
-}
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 #[inline]
 unsafe extern "C" fn ZSTD_wrappedPtrAdd(
@@ -303,13 +297,12 @@ pub unsafe fn ZSTD_getcBlockSize(
     let cBlockHeader = MEM_readLE24(src);
     let cSize = cBlockHeader >> 3;
     bpPtr.lastBlock = cBlockHeader & 1;
-    bpPtr.blockType = (cBlockHeader >> 1 & 3) as blockType_e;
+    bpPtr.blockType = BlockType::from(cBlockHeader >> 1 & 0b11);
     bpPtr.origSize = cSize;
-    if bpPtr.blockType as core::ffi::c_uint == bt_rle as core::ffi::c_int as core::ffi::c_uint {
+    if bpPtr.blockType == BlockType::Rle {
         return 1;
     }
-    if bpPtr.blockType as core::ffi::c_uint == bt_reserved as core::ffi::c_int as core::ffi::c_uint
-    {
+    if bpPtr.blockType == BlockType::Reserved {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     cSize as size_t

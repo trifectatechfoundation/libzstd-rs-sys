@@ -13,11 +13,11 @@ use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{DTableDesc, HUF_readDTableX2_wksp};
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
-    blockProperties_t, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
-    ZSTD_getcBlockSize,
+    ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal, ZSTD_getcBlockSize,
 };
+use crate::lib::decompress::BlockType;
 use crate::lib::decompress::{
-    bt_raw, bt_reserved, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, LL_base,
+    blockProperties_t, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, LL_base,
     ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_dStage,
     ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
     ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame,
@@ -1367,7 +1367,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
         remainingSize = remainingSize.wrapping_sub(zfh.headerSize as size_t);
         loop {
             let mut blockProperties = blockProperties_t {
-                blockType: bt_raw,
+                blockType: BlockType::Raw,
                 lastBlock: 0,
                 origSize: 0,
             };
@@ -1637,7 +1637,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
         let mut oBlockEnd = oend;
         let mut decodedSize: size_t = 0;
         let mut blockProperties = blockProperties_t {
-            blockType: bt_raw,
+            blockType: BlockType::Raw,
             lastBlock: 0,
             origSize: 0,
         };
@@ -1657,8 +1657,24 @@ unsafe extern "C" fn ZSTD_decompressFrame(
         if ip >= op as *const u8 && ip < oBlockEnd as *const u8 {
             oBlockEnd = op.offset(ip.offset_from(op) as core::ffi::c_long as isize);
         }
-        match blockProperties.blockType as core::ffi::c_uint {
-            2 => {
+        match blockProperties.blockType {
+            BlockType::Raw => {
+                decodedSize = ZSTD_copyRawBlock(
+                    op as *mut core::ffi::c_void,
+                    oend.offset_from(op) as core::ffi::c_long as size_t,
+                    ip as *const core::ffi::c_void,
+                    cBlockSize,
+                );
+            }
+            BlockType::Rle => {
+                decodedSize = ZSTD_setRleBlock(
+                    op as *mut core::ffi::c_void,
+                    oBlockEnd.offset_from(op) as core::ffi::c_long as size_t,
+                    *ip,
+                    blockProperties.origSize as size_t,
+                );
+            }
+            BlockType::Compressed => {
                 decodedSize = ZSTD_decompressBlock_internal(
                     dctx,
                     op as *mut core::ffi::c_void,
@@ -1668,23 +1684,7 @@ unsafe extern "C" fn ZSTD_decompressFrame(
                     not_streaming,
                 );
             }
-            0 => {
-                decodedSize = ZSTD_copyRawBlock(
-                    op as *mut core::ffi::c_void,
-                    oend.offset_from(op) as core::ffi::c_long as size_t,
-                    ip as *const core::ffi::c_void,
-                    cBlockSize,
-                );
-            }
-            1 => {
-                decodedSize = ZSTD_setRleBlock(
-                    op as *mut core::ffi::c_void,
-                    oBlockEnd.offset_from(op) as core::ffi::c_long as size_t,
-                    *ip,
-                    blockProperties.origSize as size_t,
-                );
-            }
-            3 | _ => {
+            BlockType::Reserved => {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
         }
@@ -1911,7 +1911,7 @@ unsafe extern "C" fn ZSTD_nextSrcSizeToDecompressWithInputSize(
     {
         return (*dctx).expected;
     }
-    if (*dctx).bType as core::ffi::c_uint != bt_raw as core::ffi::c_int as core::ffi::c_uint {
+    if (*dctx).bType != BlockType::Raw {
         return (*dctx).expected;
     }
     if 1 > (if inputSize < (*dctx).expected {
@@ -2006,7 +2006,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         }
         2 => {
             let mut bp = blockProperties_t {
-                blockType: bt_raw,
+                blockType: BlockType::Raw,
                 lastBlock: 0,
                 origSize: 0,
             };
@@ -2346,7 +2346,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_
     (*dctx).fseEntropy = 0;
     (*dctx).litEntropy = (*dctx).fseEntropy;
     (*dctx).dictID = 0;
-    (*dctx).bType = bt_reserved;
+    (*dctx).bType = BlockType::Reserved;
     (*dctx).isFrameDecompression = 1;
     libc::memcpy(
         ((*dctx).entropy.rep).as_mut_ptr() as *mut core::ffi::c_void,
