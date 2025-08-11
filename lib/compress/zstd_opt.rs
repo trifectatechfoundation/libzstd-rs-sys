@@ -5,17 +5,6 @@ pub use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __loadu_si128 {
-    pub __v: __m128i,
-}
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __storeu_si128 {
-    pub __v: __m128i,
-}
-pub type unalignArch = size_t;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;

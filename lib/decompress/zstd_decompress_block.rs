@@ -21,16 +21,6 @@ use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
 pub type size_t = core::ffi::c_ulong;
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __loadu_si128 {
-    pub __v: __m128i,
-}
-#[derive(Copy, Clone)]
-#[repr(C, packed)]
-pub struct __storeu_si128 {
-    pub __v: __m128i,
-}
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
 pub const BIT_DStream_completed: BIT_DStream_status = 2;
