@@ -2186,9 +2186,11 @@ impl<'a> Writer<'a> {
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
     pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
-        let ptr = match len {
-            0 => core::ptr::dangling_mut(),
-            _ => ptr,
+        let ptr = if ptr.is_null() {
+            assert_eq!(len, 0);
+            core::ptr::dangling_mut()
+        } else {
+            ptr
         };
 
         assert!(!ptr.is_null());
@@ -2245,6 +2247,32 @@ impl<'a> Writer<'a> {
             ptr,
             end,
             _marker: core::marker::PhantomData,
+        }
+    }
+
+    fn quarter(&mut self) -> Option<(Self, Self, Self, Self)> {
+        let capacity = self.capacity();
+        let segment_size = capacity.div_ceil(4);
+        let range = self.as_mut_ptr_range();
+        let remainder = capacity - 3 * segment_size;
+
+        unsafe {
+            let w1 = Self::from_raw_parts(range.start, segment_size);
+            let w2 = Self::from_raw_parts(range.start.add(segment_size), segment_size);
+            let w3 = Self::from_raw_parts(range.start.add(2 * segment_size), segment_size);
+            let w4 = Self::from_raw_parts(range.start.add(3 * segment_size), remainder);
+
+            // If the capacity is 6, `6.div_ceil(4)` is 2, but 4 * 2 > 6.
+            if !range.contains(&w4.ptr) {
+                return None;
+            }
+
+            assert!(w1.end <= range.end);
+            assert!(w2.end <= range.end);
+            assert!(w3.end <= range.end);
+            assert!(w4.end <= range.end);
+
+            Some((w1, w2, w3, w4))
         }
     }
 
