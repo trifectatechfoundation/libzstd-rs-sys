@@ -1446,20 +1446,22 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
     }
 }
 
-unsafe extern "C" fn ZSTD_findFrameCompressedSize_advanced(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut format: Format,
-) -> size_t {
-    let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, format);
-    frameSizeInfo.compressedSize
+fn ZSTD_findFrameCompressedSize_advanced(src: &[u8], format: Format) -> size_t {
+    find_frame_size_info(src, format).compressedSize
 }
+
 #[export_name = crate::prefix!(ZSTD_findFrameCompressedSize)]
 pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    ZSTD_findFrameCompressedSize_advanced(src, srcSize, Format::ZSTD_f_zstd1)
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+    };
+
+    ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1)
 }
 
 #[export_name = crate::prefix!(ZSTD_decompressBound)]
@@ -3347,8 +3349,10 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         >= (*zds).fParams.frameContentSize
                 {
                     let cSize = ZSTD_findFrameCompressedSize_advanced(
-                        istart as *const core::ffi::c_void,
-                        iend.offset_from(istart) as core::ffi::c_long as size_t,
+                        core::slice::from_raw_parts(
+                            istart.cast(),
+                            iend.offset_from(istart) as usize,
+                        ),
                         (*zds).format,
                     );
                     if cSize <= iend.offset_from(istart) as core::ffi::c_long as size_t {
