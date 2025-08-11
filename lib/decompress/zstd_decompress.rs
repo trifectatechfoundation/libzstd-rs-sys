@@ -1161,27 +1161,36 @@ fn get_frame_content_size(src: &[u8]) -> u64 {
         zfh.frameContentSize
     }
 }
-unsafe extern "C" fn readSkippableFrameSize(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-) -> size_t {
-    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as size_t;
-    let mut sizeU32: u32 = 0;
-    if srcSize < 8 {
+
+unsafe fn readSkippableFrameSize(mut src: *const core::ffi::c_void, mut srcSize: size_t) -> size_t {
+    read_skippable_frame_size(if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+    })
+}
+
+fn read_skippable_frame_size(src: &[u8]) -> size_t {
+    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as usize;
+
+    let [_, _, _, _, a, b, c, d, ..] = *src else {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
-    }
-    sizeU32 = MEM_readLE32(
-        (src as *const u8).offset(ZSTD_FRAMEIDSIZE as isize) as *const core::ffi::c_void
-    );
-    if sizeU32.wrapping_add(8) < sizeU32 {
+    };
+
+    let size = u32::from_le_bytes([a, b, c, d]);
+
+    if size.wrapping_add(8) < size {
         return -(ZSTD_error_frameParameter_unsupported as core::ffi::c_int) as size_t;
     }
-    let skippableSize = skippableHeaderSize.wrapping_add(sizeU32 as size_t);
-    if skippableSize > srcSize {
+
+    let skippableSize = skippableHeaderSize.wrapping_add(size as usize);
+    if skippableSize > src.len() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    skippableSize
+
+    skippableSize as size_t
 }
+
 #[export_name = crate::prefix!(ZSTD_readSkippableFrame)]
 pub unsafe extern "C" fn ZSTD_readSkippableFrame(
     mut dst: *mut core::ffi::c_void,
