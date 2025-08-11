@@ -37,7 +37,6 @@ use crate::util::{
 };
 use crate::zstdcli_trace::{TRACE_enable, TRACE_finish};
 extern "C" {
-    pub type FIO_ctx_s;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
@@ -155,7 +154,6 @@ pub struct FIO_prefs_s {
     pub mmapDict: ZSTD_ParamSwitch_e,
 }
 pub type FIO_prefs_t = FIO_prefs_s;
-pub type FIO_ctx_t = FIO_ctx_s;
 pub type BMK_mode_t = core::ffi::c_uint;
 pub const BMK_compressOnly: BMK_mode_t = 2;
 pub const BMK_decodeOnly: BMK_mode_t = 1;

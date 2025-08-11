@@ -41,9 +41,10 @@ use crate::util::{
     UTIL_utime,
 };
 
+enum lzma_internal_s {}
+enum internal_state {}
+
 extern "C" {
-    pub type lzma_internal_s;
-    pub type internal_state;
     fn close(__fd: core::ffi::c_int) -> core::ffi::c_int;
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
