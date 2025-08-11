@@ -462,6 +462,7 @@ unsafe extern "C" fn ZSTD_findFrameCompressedSizeLegacy(
     let mut frameSizeInfo = ZSTD_findFrameSizeInfoLegacy(src, srcSize);
     frameSizeInfo.compressedSize
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_freeLegacyStreamContext(
     mut legacyContext: *mut core::ffi::c_void,
@@ -1338,34 +1339,41 @@ fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeInfo {
 }
 
 unsafe extern "C" fn ZSTD_findFrameSizeInfo(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut format: Format,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    format: Format,
 ) -> ZSTD_frameSizeInfo {
+    find_frame_size_info(
+        if src.is_null() {
+            &[]
+        } else {
+            core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        },
+        format,
+    )
+}
+
+fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
     let mut frameSizeInfo = ZSTD_frameSizeInfo {
         nbBlocks: 0,
         compressedSize: 0,
         decompressedBound: 0,
     };
-    ptr::write_bytes(
-        &mut frameSizeInfo as *mut ZSTD_frameSizeInfo as *mut u8,
-        0,
-        ::core::mem::size_of::<ZSTD_frameSizeInfo>(),
-    );
-    if format == Format::ZSTD_f_zstd1 && ZSTD_isLegacy(src, srcSize) != 0 {
-        return ZSTD_findFrameSizeInfoLegacy(src, srcSize);
+
+    if format == Format::ZSTD_f_zstd1 && is_legacy(src) != 0 {
+        return unsafe { find_frame_size_info_legacy(src) };
     }
+
     if format == Format::ZSTD_f_zstd1
-        && srcSize >= ZSTD_SKIPPABLEHEADERSIZE as size_t
-        && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
+        && src.len() >= ZSTD_SKIPPABLEHEADERSIZE as usize
+        && u32::from_le_bytes(*src.first_chunk().unwrap()) & ZSTD_MAGIC_SKIPPABLE_MASK
             == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
     {
-        frameSizeInfo.compressedSize = readSkippableFrameSize(src, srcSize);
+        frameSizeInfo.compressedSize = read_skippable_frame_size(src);
         frameSizeInfo
     } else {
-        let mut ip = src as *const u8;
-        let ipstart = ip;
-        let mut remainingSize = srcSize;
+        let mut ip = 0;
+        let mut remainingSize = src.len() as size_t;
         let mut nbBlocks = 0 as core::ffi::c_int as size_t;
         let mut zfh = ZSTD_FrameHeader {
             frameContentSize: 0,
@@ -1378,7 +1386,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
             _reserved1: 0,
             _reserved2: 0,
         };
-        let ret = ZSTD_getFrameHeader_advanced(&mut zfh, src, srcSize, format as _);
+        let ret = get_frame_header_advanced(&mut zfh, src, format);
         if ERR_isError(ret) != 0 {
             return ZSTD_errorFrameSizeInfo(ret);
         }
@@ -1387,7 +1395,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
                 -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
             );
         }
-        ip = ip.offset(zfh.headerSize as isize);
+        ip += zfh.headerSize as usize;
         remainingSize = remainingSize.wrapping_sub(zfh.headerSize as size_t);
         loop {
             let mut blockProperties = blockProperties_t {
@@ -1395,11 +1403,13 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
                 lastBlock: 0,
                 origSize: 0,
             };
-            let cBlockSize = ZSTD_getcBlockSize(
-                ip as *const core::ffi::c_void,
-                remainingSize,
-                &mut blockProperties,
-            );
+            let cBlockSize = unsafe {
+                ZSTD_getcBlockSize(
+                    src[ip..].as_ptr().cast(),
+                    remainingSize,
+                    &mut blockProperties,
+                )
+            };
             if ERR_isError(cBlockSize) != 0 {
                 return ZSTD_errorFrameSizeInfo(cBlockSize);
             }
@@ -1408,7 +1418,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
                     -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
                 );
             }
-            ip = ip.offset(ZSTD_blockHeaderSize.wrapping_add(cBlockSize) as isize);
+            ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize) as usize;
             remainingSize =
                 remainingSize.wrapping_sub(ZSTD_blockHeaderSize.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
@@ -1422,10 +1432,10 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
                     -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
                 );
             }
-            ip = ip.offset(4);
+            ip += 4;
         }
         frameSizeInfo.nbBlocks = nbBlocks;
-        frameSizeInfo.compressedSize = ip.offset_from(ipstart) as core::ffi::c_long as size_t;
+        frameSizeInfo.compressedSize = ip as size_t;
         frameSizeInfo.decompressedBound = if zfh.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN {
             zfh.frameContentSize
         } else {
@@ -1435,6 +1445,7 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfo(
         frameSizeInfo
     }
 }
+
 unsafe extern "C" fn ZSTD_findFrameCompressedSize_advanced(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
@@ -1463,15 +1474,11 @@ pub unsafe extern "C" fn ZSTD_decompressBound(
     })
 }
 
-unsafe fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
+fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
     let mut bound = 0;
 
     while !src.is_empty() {
-        let frameSizeInfo = ZSTD_findFrameSizeInfo(
-            src.as_ptr().cast(),
-            src.len() as size_t,
-            Format::ZSTD_f_zstd1,
-        );
+        let frameSizeInfo = find_frame_size_info(src, Format::ZSTD_f_zstd1);
         let compressedSize = frameSizeInfo.compressedSize;
         let decompressedBound = frameSizeInfo.decompressedBound;
         if ERR_isError(compressedSize) != 0 || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
