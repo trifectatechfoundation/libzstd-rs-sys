@@ -462,53 +462,41 @@ fn HUF_decodeSymbolX1(Dstream: &mut BIT_DStream_t, dt: &[HUF_DEltX1; 4096], dtLo
 
 #[inline(always)]
 unsafe fn HUF_decodeStreamX1(
-    mut p: *mut u8,
+    mut p: Writer<'_>,
     bitDPtr: &mut BIT_DStream_t,
-    pEnd: *mut u8,
     dt: &[HUF_DEltX1; 4096],
     dtLog: u32,
 ) -> size_t {
-    let pStart = p;
-    if pEnd.offset_from(p) > 3 {
-        while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd.offset(-(3)) {
+    let capacity = p.capacity();
+
+    if p.capacity() >= 4 {
+        while bitDPtr.reload() == StreamStatus::Unfinished && p.capacity() >= 4 {
             if cfg!(target_pointer_width = "64") {
-                let fresh17 = p;
-                p = p.offset(1);
-                *fresh17 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+                p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
             }
             if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                let fresh18 = p;
-                p = p.offset(1);
-                *fresh18 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+                p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
             }
             if cfg!(target_pointer_width = "64") {
-                let fresh19 = p;
-                p = p.offset(1);
-                *fresh19 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+                p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
             }
-            let fresh20 = p;
-            p = p.offset(1);
-            *fresh20 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+            p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
         }
     } else {
         bitDPtr.reload();
     }
 
     if cfg!(target_pointer_width = "32") {
-        while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd {
-            let fresh21 = p;
-            p = p.offset(1);
-            *fresh21 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+        while bitDPtr.reload() == StreamStatus::Unfinished && !p.is_empty() {
+            p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
         }
     }
 
-    while p < pEnd {
-        let fresh22 = p;
-        p = p.offset(1);
-        *fresh22 = HUF_decodeSymbolX1(bitDPtr, dt, dtLog);
+    while !p.is_empty() {
+        p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
     }
 
-    pEnd.offset_from(pStart) as core::ffi::c_long as size_t
+    (capacity - p.capacity()) as size_t
 }
 
 #[inline(always)]
@@ -517,10 +505,6 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_body(
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    let range = dst.as_mut_ptr_range();
-    let op = range.start;
-    let oend = range.end;
-
     let dt = DTable.data.as_x1();
     let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
@@ -530,7 +514,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_body(
         Err(e) => return e.to_error_code(),
     };
 
-    HUF_decodeStreamX1(op, &mut bitD, oend, dt, dtLog);
+    HUF_decodeStreamX1(dst.subslice(..), &mut bitD, dt, dtLog);
 
     if !bitD.is_empty() {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -554,11 +538,6 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let range = dst.as_mut_ptr_range();
-    let ostart = range.start;
-    let oend = range.end;
-    let olimit = oend.offset(-(3));
-
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
     let length2 = usize::from(u16::from_le_bytes([b2, b3]));
     let length3 = usize::from(u16::from_le_bytes([b4, b5]));
@@ -572,19 +551,11 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let istart3 = &src[6 + length1 + length2..][..length3];
     let istart4 = &src[6 + length1 + length2 + length3..];
 
-    let segmentSize = dst.capacity().div_ceil(4) as isize;
-    let opStart2 = ostart.offset(segmentSize);
-    let opStart3 = opStart2.offset(segmentSize);
-    let opStart4 = opStart3.offset(segmentSize);
-    let mut op1 = ostart;
-    let mut op2 = opStart2;
-    let mut op3 = opStart3;
-    let mut op4 = opStart4;
-    let mut end_signal = true;
-
-    if opStart4 > oend {
+    let Some((mut w1, mut w2, mut w3, mut w4)) = dst.quarter() else {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
+    };
+
+    let mut end_signal = true;
 
     let mut bitD1 = match BIT_DStream_t::new(istart1) {
         Ok(v) => v,
@@ -606,61 +577,33 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     let dt = DTable.data.as_x1();
     let dtLog = DTable.description.tableLog as u32;
 
-    if oend.offset_from(op4) >= size_of::<size_t>() as isize {
-        while end_signal && op4 < olimit {
+    if w4.capacity() >= size_of::<size_t>() {
+        while end_signal && w4.capacity() >= 4 {
             if cfg!(target_pointer_width = "64") {
-                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-                op1 = op1.offset(1);
-
-                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-                op2 = op2.offset(1);
-
-                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-                op3 = op3.offset(1);
-
-                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
-                op4 = op4.offset(1);
+                w1.write_u8(HUF_decodeSymbolX1(&mut bitD1, dt, dtLog));
+                w2.write_u8(HUF_decodeSymbolX1(&mut bitD2, dt, dtLog));
+                w3.write_u8(HUF_decodeSymbolX1(&mut bitD3, dt, dtLog));
+                w4.write_u8(HUF_decodeSymbolX1(&mut bitD4, dt, dtLog));
             }
 
             if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-                op1 = op1.offset(1);
-
-                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-                op2 = op2.offset(1);
-
-                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-                op3 = op3.offset(1);
-
-                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
-                op4 = op4.offset(1);
+                w1.write_u8(HUF_decodeSymbolX1(&mut bitD1, dt, dtLog));
+                w2.write_u8(HUF_decodeSymbolX1(&mut bitD2, dt, dtLog));
+                w3.write_u8(HUF_decodeSymbolX1(&mut bitD3, dt, dtLog));
+                w4.write_u8(HUF_decodeSymbolX1(&mut bitD4, dt, dtLog));
             }
 
             if cfg!(target_pointer_width = "64") {
-                *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-                op1 = op1.offset(1);
-
-                *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-                op2 = op2.offset(1);
-
-                *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-                op3 = op3.offset(1);
-
-                *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
-                op4 = op4.offset(1);
+                w1.write_u8(HUF_decodeSymbolX1(&mut bitD1, dt, dtLog));
+                w2.write_u8(HUF_decodeSymbolX1(&mut bitD2, dt, dtLog));
+                w3.write_u8(HUF_decodeSymbolX1(&mut bitD3, dt, dtLog));
+                w4.write_u8(HUF_decodeSymbolX1(&mut bitD4, dt, dtLog));
             }
 
-            *op1 = HUF_decodeSymbolX1(&mut bitD1, dt, dtLog);
-            op1 = op1.offset(1);
-
-            *op2 = HUF_decodeSymbolX1(&mut bitD2, dt, dtLog);
-            op2 = op2.offset(1);
-
-            *op3 = HUF_decodeSymbolX1(&mut bitD3, dt, dtLog);
-            op3 = op3.offset(1);
-
-            *op4 = HUF_decodeSymbolX1(&mut bitD4, dt, dtLog);
-            op4 = op4.offset(1);
+            w1.write_u8(HUF_decodeSymbolX1(&mut bitD1, dt, dtLog));
+            w2.write_u8(HUF_decodeSymbolX1(&mut bitD2, dt, dtLog));
+            w3.write_u8(HUF_decodeSymbolX1(&mut bitD3, dt, dtLog));
+            w4.write_u8(HUF_decodeSymbolX1(&mut bitD4, dt, dtLog));
 
             end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
             end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
@@ -669,20 +612,10 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
         }
     }
 
-    if op1 > opStart2 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
-    if op2 > opStart3 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
-    if op3 > opStart4 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
-    }
-
-    HUF_decodeStreamX1(op1, &mut bitD1, opStart2, dt, dtLog);
-    HUF_decodeStreamX1(op2, &mut bitD2, opStart3, dt, dtLog);
-    HUF_decodeStreamX1(op3, &mut bitD3, opStart4, dt, dtLog);
-    HUF_decodeStreamX1(op4, &mut bitD4, oend, dt, dtLog);
+    HUF_decodeStreamX1(w1, &mut bitD1, dt, dtLog);
+    HUF_decodeStreamX1(w2, &mut bitD2, dt, dtLog);
+    HUF_decodeStreamX1(w3, &mut bitD3, dt, dtLog);
+    HUF_decodeStreamX1(w4, &mut bitD4, dt, dtLog);
 
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -880,9 +813,8 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
 
         // Decompress and validate that we've produced exactly the expected length.
         let length = HUF_decodeStreamX1(
-            op,
+            Writer::from_raw_parts(op, segmentEnd as usize - op as usize),
             &mut bit,
-            segmentEnd,
             DTable.data.as_x1(),
             HUF_DECODER_FAST_TABLELOG as u32,
         );
