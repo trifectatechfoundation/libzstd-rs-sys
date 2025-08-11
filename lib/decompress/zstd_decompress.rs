@@ -983,6 +983,10 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader(
     ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, Format::ZSTD_f_zstd1 as _)
 }
 
+fn get_frame_header(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8]) -> size_t {
+    get_frame_header_advanced(zfhPtr, src, Format::ZSTD_f_zstd1)
+}
+
 #[export_name = crate::prefix!(ZSTD_getFrameHeader_advanced)]
 pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
     mut zfhPtr: *mut ZSTD_FrameHeader,
@@ -1498,49 +1502,54 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    let mut margin = 0 as core::ffi::c_int as size_t;
+    decompession_margin(if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+    })
+}
+
+fn decompession_margin(mut src: &[u8]) -> size_t {
+    let mut margin = 0 as size_t;
     let mut maxBlockSize = 0;
-    while srcSize > 0 {
-        let frameSizeInfo = ZSTD_findFrameSizeInfo(src, srcSize, Format::ZSTD_f_zstd1);
+
+    /* Iterate over each frame */
+    while !src.is_empty() {
+        let frameSizeInfo = find_frame_size_info(src, Format::ZSTD_f_zstd1);
         let compressedSize = frameSizeInfo.compressedSize;
         let decompressedBound = frameSizeInfo.decompressedBound;
-        let mut zfh = ZSTD_FrameHeader {
-            frameContentSize: 0,
-            windowSize: 0,
-            blockSizeMax: 0,
-            frameType: ZSTD_frame,
-            headerSize: 0,
-            dictID: 0,
-            checksumFlag: 0,
-            _reserved1: 0,
-            _reserved2: 0,
-        };
-        let err_code = ZSTD_getFrameHeader(&mut zfh, src, srcSize);
+
+        let mut zfh = ZSTD_FrameHeader::default();
+        let err_code = get_frame_header(&mut zfh, src);
         if ERR_isError(err_code) != 0 {
             return err_code;
         }
+
         if ERR_isError(compressedSize) != 0 || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        if zfh.frameType as core::ffi::c_uint == ZSTD_frame as core::ffi::c_int as core::ffi::c_uint
-        {
-            margin = margin.wrapping_add(zfh.headerSize as size_t);
-            margin = margin.wrapping_add((if zfh.checksumFlag != 0 { 4 } else { 0 }) as size_t);
-            margin = margin.wrapping_add(3 * frameSizeInfo.nbBlocks);
-            maxBlockSize = if maxBlockSize > zfh.blockSizeMax {
-                maxBlockSize
-            } else {
-                zfh.blockSizeMax
-            };
+
+        if zfh.frameType as core::ffi::c_uint == ZSTD_frame as core::ffi::c_uint {
+            /* Add the frame header to our margin */
+            margin += zfh.headerSize as size_t;
+            margin += if zfh.checksumFlag != 0 { 4 } else { 0 };
+            margin += 3 * frameSizeInfo.nbBlocks;
+            maxBlockSize = Ord::max(maxBlockSize, zfh.blockSizeMax)
         } else {
-            margin = margin.wrapping_add(compressedSize);
+            assert!(zfh.frameType == ZSTD_skippableFrame);
+            /* Add the entire skippable frame size to our margin. */
+            margin += compressedSize;
         }
-        src = (src as *const u8).offset(compressedSize as isize) as *const core::ffi::c_void;
-        srcSize = srcSize.wrapping_sub(compressedSize);
+
+        src = &src[compressedSize as usize..];
     }
-    margin = margin.wrapping_add(maxBlockSize as size_t);
+
+    /* Add the max block size back to the margin. */
+    margin += maxBlockSize as size_t;
+
     margin
 }
+
 #[export_name = crate::prefix!(ZSTD_insertBlock)]
 pub unsafe extern "C" fn ZSTD_insertBlock(
     mut dctx: *mut ZSTD_DCtx,
@@ -3686,6 +3695,36 @@ mod tests {
 
                 let actual = {
                     super::ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t)
+                };
+                assert_eq!(expected, actual);
+                expected == actual
+            }
+        }
+    }
+
+    #[test]
+    fn decompression_margin_null() {
+        assert_eq!(unsafe { ZSTD_decompressionMargin(core::ptr::null(), 0) }, 0);
+    }
+
+    quickcheck! {
+        fn decompression_margin_quickcheck(input: Vec<u8>) -> bool {
+            unsafe {
+                let expected = {
+                    use zstd_sys;
+
+                    extern "C" {
+                        fn ZSTD_decompressionMargin(
+                            src: *const core::ffi::c_void,
+                            srcSize: size_t,
+                        ) -> core::ffi::c_ulonglong;
+                    }
+
+                    ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t)
+                };
+
+                let actual = {
+                    super::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t)
                 };
                 assert_eq!(expected, actual);
                 expected == actual
