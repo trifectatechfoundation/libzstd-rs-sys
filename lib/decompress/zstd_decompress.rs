@@ -3608,3 +3608,39 @@ pub unsafe extern "C" fn ZSTD_decompressStream_simpleArgs(
     *srcPos = input.pos;
     cErr
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quickcheck::quickcheck;
+
+    #[test]
+    fn decompress_bound_null() {
+        assert_eq!(unsafe { ZSTD_decompressBound(core::ptr::null(), 0) }, 0);
+    }
+
+    quickcheck! {
+        fn decompress_bound_quickcheck(input: Vec<u8>) -> bool {
+            unsafe {
+                let expected = {
+                    use zstd_sys;
+
+                    extern "C" {
+                        fn ZSTD_decompressBound(
+                            src: *const core::ffi::c_void,
+                            srcSize: size_t,
+                        ) -> core::ffi::c_ulonglong;
+                    }
+
+                    ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t)
+                };
+
+                let actual = {
+                    super::ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t)
+                };
+                assert_eq!(expected, actual);
+                expected == actual
+            }
+        }
+    }
+}
