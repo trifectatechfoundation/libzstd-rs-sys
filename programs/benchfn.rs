@@ -12,12 +12,6 @@ extern "C" {
         _: core::ffi::c_int,
         _: core::ffi::c_ulong,
     ) -> *mut core::ffi::c_void;
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
 }
 pub type size_t = core::ffi::c_ulong;
 pub type PTime = u64;
@@ -298,30 +292,14 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
                 .wrapping_add(1);
         } else {
             let multiplier = 10;
-            if (*cont).nbLoops
-                < (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(multiplier)
-            {
-            } else {
-                __assert_fail(
-                    b"cont->nbLoops < ((unsigned)-1) / multiplier\0" as *const u8
-                        as *const core::ffi::c_char,
-                    b"benchfn.c\0" as *const u8 as *const core::ffi::c_char,
-                    238,
-                    __ASSERT_FUNCTION.as_ptr(),
-                );
-            }
+            assert!(
+                (*cont).nbLoops
+                    < (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(multiplier)
+            );
             (*cont).nbLoops = ((*cont).nbLoops).wrapping_mul(multiplier);
         }
         if loopDuration_ns < runTimeMin_ns as core::ffi::c_double {
-            if completed == 0 {
-            } else {
-                __assert_fail(
-                    b"completed == 0\0" as *const u8 as *const core::ffi::c_char,
-                    b"benchfn.c\0" as *const u8 as *const core::ffi::c_char,
-                    244,
-                    __ASSERT_FUNCTION.as_ptr(),
-                );
-            }
+            assert!(completed == 0);
         } else {
             if newRunTime.nanoSecPerRun < bestRunTime.nanoSecPerRun {
                 bestRunTime = newRunTime;

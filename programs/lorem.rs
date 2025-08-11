@@ -1,12 +1,6 @@
 use std::ffi::CStr;
 
 extern "C" {
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
     fn memcpy(
         _: *mut core::ffi::c_void,
         _: *const core::ffi::c_void,
@@ -281,7 +275,8 @@ static kWords: [&CStr; 255] = [
 static mut kNbWords: core::ffi::c_uint = 0;
 static kWeights: [core::ffi::c_int; 6] = [0, 8, 6, 4, 3, 2];
 static mut kNbWeights: size_t = 0;
-static mut g_distrib: [core::ffi::c_int; 650] = [0; 650];
+const DISTRIB_MAX_SIZE: core::ffi::c_uint = 650;
+static mut g_distrib: [core::ffi::c_int; DISTRIB_MAX_SIZE as usize] = [0; 650];
 static mut g_distribCount: core::ffi::c_uint = 0;
 unsafe extern "C" fn countFreqs(
     mut words: *const &CStr,
@@ -303,18 +298,7 @@ unsafe extern "C" fn countFreqs(
         w = w.wrapping_add(1);
     }
     g_distribCount = total;
-    if g_distribCount <= 650 {
-    } else {
-        __assert_fail(
-            b"g_distribCount <= DISTRIB_SIZE_MAX\0" as *const u8 as *const core::ffi::c_char,
-            b"lorem.c\0" as *const u8 as *const core::ffi::c_char,
-            122,
-            (*::core::mem::transmute::<&[u8; 60], &[core::ffi::c_char; 60]>(
-                b"void countFreqs(const char **, size_t, const int *, size_t)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(g_distribCount <= DISTRIB_MAX_SIZE);
 }
 unsafe extern "C" fn init_word_distrib(
     mut words: *const &CStr,
@@ -361,18 +345,7 @@ unsafe extern "C" fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_ui
 }
 unsafe extern "C" fn writeLastCharacters() {
     let mut lastChars = g_maxChars.wrapping_sub(g_nbChars);
-    if g_maxChars >= g_nbChars {
-    } else {
-        __assert_fail(
-            b"g_maxChars >= g_nbChars\0" as *const u8 as *const core::ffi::c_char,
-            b"lorem.c\0" as *const u8 as *const core::ffi::c_char,
-            168,
-            (*::core::mem::transmute::<&[u8; 31], &[core::ffi::c_char; 31]>(
-                b"void writeLastCharacters(void)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(g_maxChars >= g_nbChars);
     if lastChars == 0 {
         return;
     }
@@ -502,18 +475,7 @@ pub unsafe extern "C" fn LOREM_genBlock(
     mut fill: core::ffi::c_int,
 ) -> size_t {
     g_ptr = buffer as *mut core::ffi::c_char;
-    if size < 2147483647 {
-    } else {
-        __assert_fail(
-            b"size < INT_MAX\0" as *const u8 as *const core::ffi::c_char,
-            b"lorem.c\0" as *const u8 as *const core::ffi::c_char,
-            261,
-            (*::core::mem::transmute::<&[u8; 62], &[core::ffi::c_char; 62]>(
-                b"size_t LOREM_genBlock(void *, size_t, unsigned int, int, int)\0",
-            ))
-            .as_ptr(),
-        );
-    }
+    assert!(size < core::ffi::c_int::MAX as size_t);
     g_maxChars = size;
     g_nbChars = 0;
     g_randRoot = seed;
