@@ -935,14 +935,26 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
     mut buffer: *const core::ffi::c_void,
     mut size: size_t,
 ) -> core::ffi::c_uint {
-    if size < ZSTD_FRAMEIDSIZE as size_t {
-        return 0;
-    }
-    let magic = MEM_readLE32(buffer);
+    let src = if buffer.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(buffer.cast(), size as usize)
+    };
+
+    is_skippable_frame(src) as core::ffi::c_uint
+}
+
+fn is_skippable_frame(src: &[u8]) -> bool {
+    let [a, b, c, d] = *src else {
+        return false;
+    };
+
+    let magic = u32::from_le_bytes([a, b, c, d]);
     if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint {
-        return 1;
+        return true;
     }
-    0
+
+    false
 }
 
 unsafe extern "C" fn ZSTD_frameHeaderSize_internal(
