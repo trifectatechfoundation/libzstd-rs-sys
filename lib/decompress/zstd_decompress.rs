@@ -1187,18 +1187,7 @@ fn get_frame_content_size(src: &[u8]) -> u64 {
         };
     }
 
-    let mut zfh = ZSTD_FrameHeader {
-        frameContentSize: 0,
-        windowSize: 0,
-        blockSizeMax: 0,
-        frameType: ZSTD_frame,
-        headerSize: 0,
-        dictID: 0,
-        checksumFlag: 0,
-        _reserved1: 0,
-        _reserved2: 0,
-    };
-
+    let mut zfh = ZSTD_FrameHeader::default();
     if get_frame_header_advanced(&mut zfh, src, Format::ZSTD_f_zstd1) != 0 {
         return ZSTD_CONTENTSIZE_ERROR;
     }
