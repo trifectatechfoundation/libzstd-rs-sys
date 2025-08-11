@@ -4296,7 +4296,6 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
             largestSize
         };
         tier += 1;
-        tier;
     }
     largestSize
 }
@@ -5955,7 +5954,6 @@ unsafe extern "C" fn ZSTD_fastSequenceLengthSum(
         litLenSum = litLenSum.wrapping_add((*seqBuf.offset(i as isize)).litLength as size_t);
         matchLenSum = matchLenSum.wrapping_add((*seqBuf.offset(i as isize)).matchLength as size_t);
         i = i.wrapping_add(1);
-        i;
     }
     litLenSum.wrapping_add(matchLenSum)
 }

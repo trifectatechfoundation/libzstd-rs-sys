@@ -2622,7 +2622,6 @@ pub unsafe extern "C" fn HUFv06_decompress(
                     * D256,
             );
         n = n.wrapping_add(1);
-        n;
     }
     let fresh39 = &mut (*Dtime.as_mut_ptr().offset(1));
     *fresh39 = (*fresh39).wrapping_add(*Dtime.as_mut_ptr().offset(1) >> 4);

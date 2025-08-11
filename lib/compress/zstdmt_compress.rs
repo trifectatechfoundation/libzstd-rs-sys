@@ -37,18 +37,6 @@ extern "C" {
 pub type size_t = core::ffi::c_ulong;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: core::ffi::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-struct C2RustUnnamed {
-    pub __low: core::ffi::c_uint,
-    pub __high: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ZSTD_CCtx_s {
     pub stage: ZSTD_compressionStage_e,
     pub cParamsChanged: core::ffi::c_int,

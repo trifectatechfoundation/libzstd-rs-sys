@@ -104,18 +104,6 @@ pub struct FIO_prefs_s {
 pub type FIO_prefs_t = FIO_prefs_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union __atomic_wide_counter {
-    pub __value64: core::ffi::c_ulonglong,
-    pub __value32: C2RustUnnamed,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct C2RustUnnamed {
-    pub __low: core::ffi::c_uint,
-    pub __high: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct IOPoolCtx_t {
     pub threadPool: *mut POOL_ctx,
     pub threadPoolActive: core::ffi::c_int,

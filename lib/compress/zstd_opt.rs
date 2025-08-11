@@ -1485,7 +1485,6 @@ unsafe extern "C" fn ZSTD_insertBtAndGetAllMatches(
                 .wrapping_add(ZSTD_REP_NUM as u32);
             (*matches.offset(mnum as isize)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
-            mnum;
             if (matchLength > ZSTD_OPT_NUM as size_t) as core::ffi::c_int
                 | (ip.offset(matchLength as isize) == iLimit) as core::ffi::c_int
                 != 0
