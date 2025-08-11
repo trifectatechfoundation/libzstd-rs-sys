@@ -38,9 +38,6 @@ pub type huf_compress_f = Option<
     ) -> size_t,
 >;
 #[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
-}
-#[inline]
 unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {

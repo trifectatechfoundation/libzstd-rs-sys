@@ -504,9 +504,6 @@ static OF_defaultNorm: [i16; 29] = [
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
-#[inline]
-unsafe extern "C" fn _force_has_format_string(mut format: *const core::ffi::c_char, mut args: ...) {
-}
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const NULL: core::ffi::c_int = 0;
