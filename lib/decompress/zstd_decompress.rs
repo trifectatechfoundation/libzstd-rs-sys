@@ -1341,21 +1341,6 @@ fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeInfo {
     }
 }
 
-unsafe extern "C" fn ZSTD_findFrameSizeInfo(
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    format: Format,
-) -> ZSTD_frameSizeInfo {
-    find_frame_size_info(
-        if src.is_null() {
-            &[]
-        } else {
-            core::slice::from_raw_parts(src.cast(), srcSize as usize)
-        },
-        format,
-    )
-}
-
 fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
     let mut frameSizeInfo = ZSTD_frameSizeInfo {
         nbBlocks: 0,
