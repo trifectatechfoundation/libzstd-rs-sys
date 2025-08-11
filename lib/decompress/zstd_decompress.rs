@@ -386,38 +386,47 @@ unsafe extern "C" fn ZSTD_decompressLegacy(
         _ => -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t,
     }
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_findFrameSizeInfoLegacy(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> ZSTD_frameSizeInfo {
+    find_frame_size_info_legacy(if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+    })
+}
+
+unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     let mut frameSizeInfo = ZSTD_frameSizeInfo {
         nbBlocks: 0,
         compressedSize: 0,
         decompressedBound: 0,
     };
-    let version = ZSTD_isLegacy(src, srcSize);
-    match version {
+
+    match is_legacy(src) {
         5 => {
             ZSTDv05_findFrameSizeInfoLegacy(
-                src,
-                srcSize,
+                src.as_ptr().cast(),
+                src.len() as size_t,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
         }
         6 => {
             ZSTDv06_findFrameSizeInfoLegacy(
-                src,
-                srcSize,
+                src.as_ptr().cast(),
+                src.len() as size_t,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
         }
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
-                src,
-                srcSize,
+                src.as_ptr().cast(),
+                src.len() as size_t,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -428,17 +437,23 @@ unsafe extern "C" fn ZSTD_findFrameSizeInfoLegacy(
             frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
         }
     }
-    if ERR_isError(frameSizeInfo.compressedSize) == 0 && frameSizeInfo.compressedSize > srcSize {
+
+    if ERR_isError(frameSizeInfo.compressedSize) == 0
+        && frameSizeInfo.compressedSize as usize > src.len()
+    {
         frameSizeInfo.compressedSize = -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
         frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
     }
+
     if frameSizeInfo.decompressedBound != ZSTD_CONTENTSIZE_ERROR {
         frameSizeInfo.nbBlocks = (frameSizeInfo.decompressedBound)
             .wrapping_div(ZSTD_BLOCKSIZE_MAX as core::ffi::c_ulonglong)
             as size_t;
     }
+
     frameSizeInfo
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_findFrameCompressedSizeLegacy(
     mut src: *const core::ffi::c_void,
