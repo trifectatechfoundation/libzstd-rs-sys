@@ -292,25 +292,23 @@ unsafe fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
     }) as size_t
 }
 
-#[export_name = crate::prefix!(ZSTD_getcBlockSize)]
-pub unsafe extern "C" fn ZSTD_getcBlockSize(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut bpPtr: *mut blockProperties_t,
+pub unsafe fn ZSTD_getcBlockSize(
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    bpPtr: &mut blockProperties_t,
 ) -> size_t {
     if srcSize < ZSTD_blockHeaderSize {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     let cBlockHeader = MEM_readLE24(src);
     let cSize = cBlockHeader >> 3;
-    (*bpPtr).lastBlock = cBlockHeader & 1;
-    (*bpPtr).blockType = (cBlockHeader >> 1 & 3) as blockType_e;
-    (*bpPtr).origSize = cSize;
-    if (*bpPtr).blockType as core::ffi::c_uint == bt_rle as core::ffi::c_int as core::ffi::c_uint {
+    bpPtr.lastBlock = cBlockHeader & 1;
+    bpPtr.blockType = (cBlockHeader >> 1 & 3) as blockType_e;
+    bpPtr.origSize = cSize;
+    if bpPtr.blockType as core::ffi::c_uint == bt_rle as core::ffi::c_int as core::ffi::c_uint {
         return 1;
     }
-    if (*bpPtr).blockType as core::ffi::c_uint
-        == bt_reserved as core::ffi::c_int as core::ffi::c_uint
+    if bpPtr.blockType as core::ffi::c_uint == bt_reserved as core::ffi::c_int as core::ffi::c_uint
     {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
