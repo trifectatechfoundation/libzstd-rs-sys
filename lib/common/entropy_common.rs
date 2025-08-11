@@ -583,15 +583,39 @@ mod tests {
 
                     let mut workspace =  core::mem::transmute(workspace) ;
 
-                    let v =crate::lib::common::entropy_common_old::HUF_readStats_body(
+                    // Pull in libzstd.a
+                    use zstd_sys;
+
+                    // This is not meant to be exported by the C version of ZSTD,
+                    // so zstd_sys doesn't provide a declaration for it. The
+                    // reason declaring this function works anyway is that static
+                    // libraries don't provide a way to not export symbols.
+                    extern "C" {
+                        fn HUF_readStats_wksp(
+                            huffWeight: &mut [u8; 256],
+                            hwSize: size_t,
+                            rankStats: &mut [u32; 13],
+                            nbSymbolsPtr: &mut u32,
+                            tableLogPtr: &mut u32,
+                            src: *const core::ffi::c_void,
+                            srcSize: usize,
+                            workspace: &mut [u32; 219],
+                            workspace_size: usize,
+                            flags: core::ffi::c_int,
+                        ) -> size_t;
+                    }
+
+                    let v = HUF_readStats_wksp(
                         &mut huffWeight,
                         256,
                         &mut rankStats,
                         &mut nbSymbolsPtr,
                         &mut tableLogPtr,
-                        &src,
+                        src.as_ptr().cast::<core::ffi::c_void>(),
+                        src.len(),
                         &mut workspace,
-                        bmi2,
+                        core::mem::size_of::<Workspace>(),
+                        if bmi2 { HUF_flags_bmi2 as core::ffi::c_int } else { 0 },
                     );
 
                     let v = match ERR_getErrorCode(v) {

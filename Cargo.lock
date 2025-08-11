@@ -64,6 +64,7 @@ dependencies = [
  "libc",
  "quickcheck",
  "xxhash-rust",
+ "zstd-sys",
 ]
 
 [[package]]
