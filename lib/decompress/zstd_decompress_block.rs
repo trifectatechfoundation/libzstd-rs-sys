@@ -9,7 +9,7 @@ use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE24, MEM_write64};
-use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp};
+use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
@@ -599,7 +599,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let hufSuccess = if let SymbolEncodingType_e::set_repeat = litEncType {
         if singleStream {
             HUF_decompress1X_usingDTable(
-                dctx.litBuffer as *mut core::ffi::c_void,
+                Writer::from_raw_parts(dctx.litBuffer, litSize as _),
                 litSize as _,
                 &src[lhSize..][..litCSize],
                 dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
@@ -607,7 +607,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             )
         } else {
             HUF_decompress4X_usingDTable(
-                dctx.litBuffer as *mut core::ffi::c_void,
+                Writer::from_raw_parts(dctx.litBuffer, litSize as _),
                 litSize as _,
                 &src[lhSize..][..litCSize],
                 dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
@@ -617,7 +617,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     } else if singleStream {
         HUF_decompress1X1_DCtx_wksp(
             &mut dctx.entropy.hufTable,
-            dctx.litBuffer as *mut core::ffi::c_void,
+            Writer::from_raw_parts(dctx.litBuffer, litSize as _),
             litSize as _,
             &src[lhSize..][..litCSize],
             &mut dctx.workspace,
@@ -626,7 +626,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     } else {
         HUF_decompress4X_hufOnly_wksp(
             &mut dctx.entropy.hufTable,
-            dctx.litBuffer as *mut core::ffi::c_void,
+            Writer::from_raw_parts(dctx.litBuffer, litSize as _),
             litSize as _,
             &src[lhSize..][..litCSize],
             &mut dctx.workspace,
