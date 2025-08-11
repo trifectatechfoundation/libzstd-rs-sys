@@ -1328,16 +1328,15 @@ unsafe extern "C" fn ZSTD_decodeFrameHeader(
         ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(headerSize) as u64 as u64;
     0
 }
-unsafe extern "C" fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeInfo {
-    let mut frameSizeInfo = ZSTD_frameSizeInfo {
+
+fn ZSTD_errorFrameSizeInfo(mut ret: size_t) -> ZSTD_frameSizeInfo {
+    ZSTD_frameSizeInfo {
         nbBlocks: 0,
-        compressedSize: 0,
-        decompressedBound: 0,
-    };
-    frameSizeInfo.compressedSize = ret;
-    frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
-    frameSizeInfo
+        compressedSize: ret,
+        decompressedBound: ZSTD_CONTENTSIZE_ERROR,
+    }
 }
+
 unsafe extern "C" fn ZSTD_findFrameSizeInfo(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
