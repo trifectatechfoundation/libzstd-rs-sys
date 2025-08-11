@@ -2219,6 +2219,18 @@ impl<'a> Writer<'a> {
         // SAFETY: `ptr..end` is a contiguous allocation.
         self.ptr = unsafe { self.ptr.add(1) }
     }
+
+    fn write_u16(&mut self, value: u16) {
+        if unsafe { self.ptr.add(2) } <= self.end {
+            panic!("write out of bounds");
+        }
+
+        // SAFETY: `ptr < end` and we're allowed to write to this memory.
+        unsafe { self.ptr.cast::<u16>().write_unaligned(value) }
+
+        // SAFETY: `ptr..end` is a contiguous allocation.
+        self.ptr = unsafe { self.ptr.add(1) }
+    }
 }
 
 #[cfg(test)]
