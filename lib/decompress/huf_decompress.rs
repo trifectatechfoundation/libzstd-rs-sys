@@ -1239,52 +1239,70 @@ unsafe fn HUF_decodeLastSymbolX2(
     }
 }
 
+macro_rules! HUF_DECODE_SYMBOLX2_0 {
+    ($($args:expr),*) => {
+        HUF_decodeSymbolX2_new($($args),*)
+    }
+}
+
+macro_rules! HUF_DECODE_SYMBOLX2_1 {
+    ($($args:expr),*) => {
+        if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
+            HUF_decodeSymbolX2_new($($args),*)
+        }
+    }
+}
+
+macro_rules! HUF_DECODE_SYMBOLX2_2 {
+    ($($args:expr),*) => {
+        if cfg!(target_pointer_width = "64") {
+            HUF_decodeSymbolX2_new($($args),*)
+        }
+    }
+}
+
 #[inline(always)]
 unsafe fn HUF_decodeStreamX2(
-    mut p: *mut u8,
+    mut p: Writer<'_>,
     bitDPtr: &mut BIT_DStream_t,
-    pEnd: *mut u8,
     dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
 ) -> size_t {
-    let mut p = Writer::from_raw_parts(p, pEnd as usize - p as usize);
-    assert_eq!(p.end, pEnd);
-
     let capacity = p.capacity();
 
+    /* up to 8 symbols at a time */
     if p.capacity() >= size_of::<usize>() {
         if dtLog <= 11 && cfg!(target_pointer_width = "64") {
+            /* up to 10 symbols at a time */
             while (bitDPtr.reload() == StreamStatus::Unfinished) && p.capacity() >= 10 {
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
             }
         } else {
+            /* up to 8 symbols at a time */
             while bitDPtr.reload() == StreamStatus::Unfinished && p.capacity() >= size_of::<usize>()
             {
-                if cfg!(target_pointer_width = "64") {
-                    HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                    if HUF_TABLELOG_MAX <= 12 {
-                        HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                    }
-                    HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
-                }
-                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut p, bitDPtr, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
             }
         }
     } else {
         bitDPtr.reload();
     }
 
+    /* closer to end : up to 2 symbols at a time */
     if p.capacity() >= 2 {
         while (bitDPtr.reload() == StreamStatus::Unfinished) && p.capacity() >= 2 {
-            HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+            HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
         }
 
         while p.capacity() >= 2 {
-            HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+            HUF_DECODE_SYMBOLX2_0!(&mut p, bitDPtr, dt, dtLog);
         }
     }
 
@@ -1306,13 +1324,9 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_body(
         Err(e) => return e.to_error_code(),
     };
 
-    let range = dst.as_mut_ptr_range();
-    let ostart = range.start;
-    let oend = range.end;
-
     let dt = DTable.data.as_x2();
     let dtd = DTable.description;
-    HUF_decodeStreamX2(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
+    HUF_decodeStreamX2(dst.subslice(..), &mut bitD, dt, dtd.tableLog as u32);
     if !bitD.is_empty() {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -1326,21 +1340,15 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
-    // strict minimum : jump table + 1 byte per stream.
+    // Strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     };
 
+    // Stream 4-way split would not work.
     if dst.capacity() < 6 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-
-    let range = dst.as_mut_ptr_range();
-    let ostart = range.start;
-    let oend = range.end;
-    let olimit = oend.offset(
-        -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
-    );
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
     let length2 = usize::from(u16::from_le_bytes([b2, b3]));
@@ -1355,21 +1363,15 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let istart3 = &src[6 + length1 + length2..][..length3];
     let istart4 = &src[6 + length1 + length2 + length3..];
 
-    let segmentSize = dst.capacity().div_ceil(4) as isize;
-    let opStart2 = ostart.offset(segmentSize as isize);
-    let opStart3 = opStart2.offset(segmentSize as isize);
-    let opStart4 = opStart3.offset(segmentSize as isize);
-
-    let mut op1 = ostart;
-    let mut op2 = opStart2;
-    let mut op3 = opStart3;
-    let mut op4 = opStart4;
+    let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
+        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+    };
 
     let mut end_signal = true;
 
     let dtLog = DTable.description.tableLog as u32;
 
-    if opStart4 > oend {
+    if op4.is_empty() {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
@@ -1392,78 +1394,85 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
 
     let dt = DTable.data.as_x2();
 
-    if oend.offset_from(op4) >= size_of::<size_t>() as isize {
-        while end_signal && op4 < olimit {
-            if cfg!(target_pointer_width = "64") {
-                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
+    /* 16-32 symbols per loop (4-8 symbols per stream) */
+    if op4.capacity() >= size_of::<usize>() {
+        while end_signal && op4.capacity() >= size_of::<usize>() {
+            if cfg!(any(target_arch = "x86_64", target_arch = "x86")) {
+                HUF_DECODE_SYMBOLX2_2!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op2, &mut bitD2, dt, dtLog);
 
-                if HUF_TABLELOG_MAX <= 12 {
-                    op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
-                }
-                op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
+                end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
+                end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
+
+                HUF_DECODE_SYMBOLX2_2!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op4, &mut bitD4, dt, dtLog);
+
+                end_signal &= bitD3.reload_fast() == StreamStatus::Unfinished;
+                end_signal &= bitD4.reload_fast() == StreamStatus::Unfinished;
+            } else {
+                HUF_DECODE_SYMBOLX2_2!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_1!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_2!(&mut op4, &mut bitD4, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op1, &mut bitD1, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op2, &mut bitD2, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op3, &mut bitD3, dt, dtLog);
+                HUF_DECODE_SYMBOLX2_0!(&mut op4, &mut bitD4, dt, dtLog);
+
+                end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
+                end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
+                end_signal &= bitD3.reload_fast() == StreamStatus::Unfinished;
+                end_signal &= bitD4.reload_fast() == StreamStatus::Unfinished;
             }
-            op1 = op1.offset(HUF_decodeSymbolX2(op1, &mut bitD1, dt, dtLog) as isize);
-
-            if cfg!(target_pointer_width = "64") {
-                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-
-                if HUF_TABLELOG_MAX <= 12 {
-                    op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-                }
-
-                op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-            }
-            op2 = op2.offset(HUF_decodeSymbolX2(op2, &mut bitD2, dt, dtLog) as isize);
-
-            end_signal &= bitD1.reload_fast() == StreamStatus::Unfinished;
-            end_signal &= bitD2.reload_fast() == StreamStatus::Unfinished;
-
-            if cfg!(target_pointer_width = "64") {
-                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-
-                if HUF_TABLELOG_MAX <= 12 {
-                    op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-                }
-
-                op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-            }
-            op3 = op3.offset(HUF_decodeSymbolX2(op3, &mut bitD3, dt, dtLog) as isize);
-
-            if cfg!(target_pointer_width = "64") {
-                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-
-                if HUF_TABLELOG_MAX <= 12 {
-                    op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-                }
-
-                op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-            }
-            op4 = op4.offset(HUF_decodeSymbolX2(op4, &mut bitD4, dt, dtLog) as isize);
-
-            end_signal &= bitD3.reload_fast() == StreamStatus::Unfinished;
-            end_signal &= bitD4.reload_fast() == StreamStatus::Unfinished;
         }
     }
 
-    if op1 > opStart2 {
+    // Check for corruption.
+    // NOTE: these conditions do in fact trigger for invalid input. That is why currently
+    // `Writer::write_symbol_x2` does not assert that it is in-bounds.
+    if op1.ptr > op1.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    if op2 > opStart3 {
+    if op2.ptr > op2.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    if op3 > opStart4 {
+    if op3.ptr > op3.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
+    // NOTE: op4 is already verified within main loop.
 
-    HUF_decodeStreamX2(op1, &mut bitD1, opStart2, dt, dtLog);
-    HUF_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
-    HUF_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
-    HUF_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
+    // Finish bit streams one by one.
+    HUF_decodeStreamX2(op1, &mut bitD1, dt, dtLog);
+    HUF_decodeStreamX2(op2, &mut bitD2, dt, dtLog);
+    HUF_decodeStreamX2(op3, &mut bitD3, dt, dtLog);
+    HUF_decodeStreamX2(op4, &mut bitD4, dt, dtLog);
 
+    // Check.
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
+    // The decoded size.
     dst.capacity() as size_t
 }
 
@@ -1664,9 +1673,8 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         };
 
         let length = HUF_decodeStreamX2(
-            op,
+            Writer::from_raw_parts(op, segmentEnd as usize - op as usize),
             &mut bit,
-            segmentEnd,
             DTable.data.as_x2(),
             HUF_DECODER_FAST_TABLELOG as u32,
         );
@@ -2235,9 +2243,10 @@ impl<'a> Writer<'a> {
 
     fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
-        if unsafe { self.ptr.add(length as usize) } > self.end {
-            panic!("write out of bounds");
-        }
+
+        // we can't actually assert this, an earlier reader may write into the next.
+        // that then returns an error. We should return a result here later.
+        // assert!( self.ptr.wrapping_add(length as usize) <= self.end, "write out of bounds {:?} {length}", self.as_mut_ptr_range());
 
         // SAFETY: `ptr < end` and we're allowed to write to this memory.
         unsafe { self.ptr.cast::<u16>().write_unaligned(value) }
