@@ -1197,19 +1197,36 @@ unsafe fn HUF_decodeSymbolX2(
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeLastSymbolX2(
-    op: *mut u8,
+unsafe fn HUF_decodeSymbolX2_new(
+    w: &mut Writer<'_>,
     DStream: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
-) -> u32 {
+) {
     let HUF_DEltX2 {
         sequence,
         nbBits,
         length,
     } = dt[DStream.look_bits_fast(dtLog)];
 
-    op.write(sequence.to_le_bytes()[0]);
+    DStream.skip_bits(nbBits as u32);
+    w.write_symbol_x2(sequence, length);
+}
+
+#[inline(always)]
+unsafe fn HUF_decodeLastSymbolX2(
+    w: &mut Writer<'_>,
+    DStream: &mut BIT_DStream_t,
+    dt: &[HUF_DEltX2; 4096],
+    dtLog: u32,
+) {
+    let HUF_DEltX2 {
+        sequence,
+        nbBits,
+        length,
+    } = dt[DStream.look_bits_fast(dtLog)];
+
+    w.write_u8(sequence.to_le_bytes()[0]);
 
     if length == 1 {
         DStream.skip_bits(u32::from(nbBits));
@@ -1220,8 +1237,6 @@ unsafe fn HUF_decodeLastSymbolX2(
             (size_of::<BitContainerType>() * 8) as u32,
         );
     }
-
-    1
 }
 
 #[inline(always)]
@@ -1232,54 +1247,52 @@ unsafe fn HUF_decodeStreamX2(
     dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
 ) -> size_t {
-    let pStart = p;
-    if pEnd.offset_from(p) >= size_of::<BitContainerType>() as isize {
+    let mut p = Writer::from_raw_parts(p, pEnd as usize - p as usize);
+    assert_eq!(p.end, pEnd);
+
+    let capacity = p.capacity();
+
+    if p.capacity() >= size_of::<usize>() {
         if dtLog <= 11 && cfg!(target_pointer_width = "64") {
-            while (bitDPtr.reload() == StreamStatus::Unfinished) && (p < pEnd.offset(-(9))) {
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+            while (bitDPtr.reload() == StreamStatus::Unfinished) && p.capacity() >= 10 {
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
             }
         } else {
-            while (bitDPtr.reload() == StreamStatus::Unfinished)
-                && (p < pEnd.offset(
-                    -((::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong)
-                        .wrapping_sub(1) as isize),
-                ))
+            while bitDPtr.reload() == StreamStatus::Unfinished && p.capacity() >= size_of::<usize>()
             {
                 if cfg!(target_pointer_width = "64") {
-                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                    HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                    if HUF_TABLELOG_MAX <= 12 {
+                        HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
+                    }
+                    HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
                 }
-                if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                }
-                if cfg!(target_pointer_width = "64") {
-                    p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
-                }
-                p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+                HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
             }
         }
     } else {
         bitDPtr.reload();
     }
 
-    if pEnd.offset_from(p) >= 2 {
-        while (bitDPtr.reload() == StreamStatus::Unfinished) && (p <= pEnd.offset(-(2))) {
-            p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+    if p.capacity() >= 2 {
+        while (bitDPtr.reload() == StreamStatus::Unfinished) && p.capacity() >= 2 {
+            HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
         }
 
-        while p <= pEnd.offset(-(2)) {
-            p = p.offset(HUF_decodeSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+        while p.capacity() >= 2 {
+            HUF_decodeSymbolX2_new(&mut p, bitDPtr, dt, dtLog);
         }
     }
 
-    if p < pEnd {
-        p = p.offset(HUF_decodeLastSymbolX2(p, bitDPtr, dt, dtLog) as isize);
+    if !p.is_empty() {
+        HUF_decodeLastSymbolX2(&mut p, bitDPtr, dt, dtLog);
     }
 
-    p.offset_from(pStart) as core::ffi::c_long as size_t
+    (capacity - p.capacity()) as size_t
 }
 
 #[inline(always)]
@@ -2220,8 +2233,9 @@ impl<'a> Writer<'a> {
         self.ptr = unsafe { self.ptr.add(1) }
     }
 
-    fn write_u16(&mut self, value: u16) {
-        if unsafe { self.ptr.add(2) } <= self.end {
+    fn write_symbol_x2(&mut self, value: u16, length: u8) {
+        debug_assert!(length <= 2);
+        if unsafe { self.ptr.add(length as usize) } > self.end {
             panic!("write out of bounds");
         }
 
@@ -2229,7 +2243,7 @@ impl<'a> Writer<'a> {
         unsafe { self.ptr.cast::<u16>().write_unaligned(value) }
 
         // SAFETY: `ptr..end` is a contiguous allocation.
-        self.ptr = unsafe { self.ptr.add(1) }
+        self.ptr = unsafe { self.ptr.add(length as usize) }
     }
 }
 
