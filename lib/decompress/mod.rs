@@ -97,10 +97,35 @@ pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 
 pub type blockType_e = core::ffi::c_uint;
-pub const bt_reserved: blockType_e = 3;
-pub const bt_compressed: blockType_e = 2;
-pub const bt_rle: blockType_e = 1;
-pub const bt_raw: blockType_e = 0;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct blockProperties_t {
+    pub blockType: BlockType,
+    pub lastBlock: u32,
+    pub origSize: u32,
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BlockType {
+    Raw = 0,
+    Rle = 1,
+    Compressed = 2,
+    Reserved = 3,
+}
+
+impl From<u32> for BlockType {
+    fn from(value: u32) -> Self {
+        match value {
+            0 => Self::Raw,
+            1 => Self::Rle,
+            2 => Self::Compressed,
+            3 => Self::Reserved,
+            _ => panic!("invalid `BlockType`: {value}"),
+        }
+    }
+}
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
@@ -167,7 +192,7 @@ pub struct ZSTD_DCtx_s {
     pub fParams: ZSTD_FrameHeader,
     pub processedCSize: u64,
     pub decodedSize: u64,
-    pub bType: blockType_e,
+    pub bType: BlockType,
     pub stage: ZSTD_dStage,
     pub litEntropy: u32,
     pub fseEntropy: u32,
