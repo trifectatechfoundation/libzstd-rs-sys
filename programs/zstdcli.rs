@@ -1,4 +1,5 @@
 use core::ptr;
+use std::ffi::CStr;
 
 use libc::{exit, fprintf, getchar, getenv, strcmp, strlen, strncmp, strrchr, FILE};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
@@ -781,12 +782,11 @@ unsafe extern "C" fn badUsage(
     }
 }
 unsafe extern "C" fn waitEnter() {
-    let mut unused: core::ffi::c_int = 0;
     fprintf(
         stderr,
         b"Press enter to continue... \n\0" as *const u8 as *const core::ffi::c_char,
     );
-    unused = getchar();
+    getchar();
 }
 unsafe extern "C" fn lastNameFromPath(
     mut path: *const core::ffi::c_char,
@@ -860,25 +860,15 @@ unsafe extern "C" fn readU32FromCharChecked(
 unsafe extern "C" fn readU32FromChar(
     mut stringPtr: *mut *const core::ffi::c_char,
 ) -> core::ffi::c_uint {
-    static mut errorMsg: [core::ffi::c_char; 51] = unsafe {
-        *::core::mem::transmute::<&[u8; 51], &[core::ffi::c_char; 51]>(
-            b"error: numeric value overflows 32-bit unsigned int\0",
-        )
-    };
     let mut result: core::ffi::c_uint = 0;
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
-        errorOut(errorMsg.as_ptr());
+        errorOut(c"error: numeric value overflows 32-bit unsigned int".as_ptr());
     }
     result
 }
 unsafe extern "C" fn readIntFromChar(
     mut stringPtr: *mut *const core::ffi::c_char,
 ) -> core::ffi::c_int {
-    static mut errorMsg: [core::ffi::c_char; 42] = unsafe {
-        *::core::mem::transmute::<&[u8; 42], &[core::ffi::c_char; 42]>(
-            b"error: numeric value overflows 32-bit int\0",
-        )
-    };
     let mut sign = 1;
     let mut result: core::ffi::c_uint = 0;
     if **stringPtr as core::ffi::c_int == '-' as i32 {
@@ -886,7 +876,7 @@ unsafe extern "C" fn readIntFromChar(
         sign = -(1);
     }
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
-        errorOut(errorMsg.as_ptr());
+        errorOut(c"error: numeric value overflows 32-bit int".as_ptr());
     }
     result as core::ffi::c_int * sign
 }
@@ -936,14 +926,9 @@ unsafe extern "C" fn readSizeTFromCharChecked(
     0
 }
 unsafe extern "C" fn readSizeTFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> size_t {
-    static mut errorMsg: [core::ffi::c_char; 38] = unsafe {
-        *::core::mem::transmute::<&[u8; 38], &[core::ffi::c_char; 38]>(
-            b"error: numeric value overflows size_t\0",
-        )
-    };
     let mut result: size_t = 0;
     if readSizeTFromCharChecked(stringPtr, &mut result) != 0 {
-        errorOut(errorMsg.as_ptr());
+        errorOut(c"error: numeric value overflows size_t".as_ptr());
     }
     result
 }
@@ -1611,17 +1596,17 @@ unsafe extern "C" fn printVersion() {
         }
     }
 }
-static mut ZSTD_strategyMap: [*const core::ffi::c_char; 10] = [
-    b"\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_fast\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_dfast\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_greedy\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_lazy\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_lazy2\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_btlazy2\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_btopt\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_btultra\0" as *const u8 as *const core::ffi::c_char,
-    b"ZSTD_btultra2\0" as *const u8 as *const core::ffi::c_char,
+static ZSTD_strategyMap: [&CStr; 10] = [
+    c"",
+    c"ZSTD_fast",
+    c"ZSTD_dfast",
+    c"ZSTD_greedy",
+    c"ZSTD_lazy",
+    c"ZSTD_lazy2",
+    c"ZSTD_btlazy2",
+    c"ZSTD_btopt",
+    c"ZSTD_btultra",
+    c"ZSTD_btultra2",
 ];
 unsafe extern "C" fn printDefaultCParams(
     mut filename: *const core::ffi::c_char,
@@ -1694,9 +1679,7 @@ unsafe extern "C" fn printDefaultCParams(
     fprintf(
         stderr,
         b" - strategy      : %s (%u)\n\0" as *const u8 as *const core::ffi::c_char,
-        *ZSTD_strategyMap
-            .as_mut_ptr()
-            .offset(cParams.strategy as core::ffi::c_int as isize),
+        ZSTD_strategyMap[cParams.strategy as usize].as_ptr(),
         cParams.strategy as core::ffi::c_uint,
     );
 }
