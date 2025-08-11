@@ -600,7 +600,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         if singleStream {
             HUF_decompress1X_usingDTable(
                 Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-                litSize as _,
                 &src[lhSize..][..litCSize],
                 dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
                 flags,
@@ -608,7 +607,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         } else {
             HUF_decompress4X_usingDTable(
                 Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-                litSize as _,
                 &src[lhSize..][..litCSize],
                 dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
                 flags,
@@ -618,7 +616,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         HUF_decompress1X1_DCtx_wksp(
             &mut dctx.entropy.hufTable,
             Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-            litSize as _,
             &src[lhSize..][..litCSize],
             &mut dctx.workspace,
             flags,
@@ -627,7 +624,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         HUF_decompress4X_hufOnly_wksp(
             &mut dctx.entropy.hufTable,
             Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-            litSize as _,
             &src[lhSize..][..litCSize],
             &mut dctx.workspace,
             flags,
