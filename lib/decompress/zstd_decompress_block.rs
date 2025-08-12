@@ -2055,20 +2055,13 @@ unsafe fn ZSTD_buildFSETable_body(
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as size_t;
-        let mut s_1: size_t = 0;
-        let unroll = 2;
-        s_1 = 0;
-        while s_1 < tableSize as size_t {
-            let mut u: size_t = 0;
-            u = 0;
-            while u < unroll {
+        for s_1 in (0..tableSize as size_t).step_by(2) {
+            for u in 0..2 {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
                 (*tableDecode.offset(uPosition as isize)).baseValue =
                     wksp.spread[s_1 as usize + u as usize] as u32;
-                u = u.wrapping_add(1);
             }
-            position = position.wrapping_add(unroll * step) & tableMask;
-            s_1 = s_1.wrapping_add(unroll);
+            position = position.wrapping_add(2 * step) & tableMask;
         }
     } else {
         let tableMask_0 = tableSize.wrapping_sub(1);
@@ -2077,22 +2070,18 @@ unsafe fn ZSTD_buildFSETable_body(
             .wrapping_add(3);
         let mut position_0 = 0u32;
         for (s_2, &v) in normalizedCounter.iter().enumerate() {
-            let mut i_0: core::ffi::c_int = 0;
             let n_0 = i32::from(v);
-            i_0 = 0;
-            while i_0 < n_0 {
+            for _ in 0..n_0 {
                 (*tableDecode.offset(position_0 as isize)).baseValue = s_2 as u32;
                 position_0 = position_0.wrapping_add(step_0) & tableMask_0;
-                while (position_0 > highThreshold) as core::ffi::c_int as core::ffi::c_long != 0 {
+                while core::hint::unlikely(position_0 > highThreshold) {
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 }
-                i_0 += 1;
             }
         }
     }
-    let mut u_0: u32 = 0;
-    u_0 = 0;
-    while u_0 < tableSize {
+
+    for u_0 in 0..tableSize {
         let symbol = (*tableDecode.offset(u_0 as isize)).baseValue;
         let fresh1 = &mut wksp.symbols[symbol as usize];
         let fresh2 = *fresh1;
@@ -2107,7 +2096,6 @@ unsafe fn ZSTD_buildFSETable_body(
             .wrapping_sub(tableSize) as u16;
         (*tableDecode.offset(u_0 as isize)).nbAdditionalBits = nbAdditionalBits[symbol as usize];
         (*tableDecode.offset(u_0 as isize)).baseValue = baseValue[symbol as usize];
-        u_0 = u_0.wrapping_add(1);
     }
 }
 
