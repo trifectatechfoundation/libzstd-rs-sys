@@ -2205,8 +2205,9 @@ unsafe fn ZSTD_refDictContent(
         (dict as *const core::ffi::c_char).offset(dictSize as isize) as *const core::ffi::c_void;
     0
 }
+
 pub unsafe fn ZSTD_loadDEntropy(
-    mut entropy: *mut ZSTD_entropyDTables_t,
+    mut entropy: &mut ZSTD_entropyDTables_t,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
@@ -2332,6 +2333,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     dictPtr.offset_from(dict as *const u8) as core::ffi::c_long as size_t
 }
+
 unsafe fn ZSTD_decompress_insertDictionary(
     mut dctx: *mut ZSTD_DCtx,
     mut dict: *const core::ffi::c_void,

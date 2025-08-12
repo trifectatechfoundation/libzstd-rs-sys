@@ -1996,7 +1996,7 @@ fn ZSTD_buildSeqTable_rle<const N: usize>(dt: &mut SymbolTable<N>, baseValue: u3
 }
 
 #[inline(always)]
-unsafe fn ZSTD_buildFSETable_body<const N: usize>(
+fn ZSTD_buildFSETable_body<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
@@ -2029,12 +2029,10 @@ unsafe fn ZSTD_buildFSETable_body<const N: usize>(
 
     dt.header = DTableH;
 
-    if highThreshold == tableSize.wrapping_sub(1) {
-        let tableMask = tableSize.wrapping_sub(1) as size_t;
-        let step = (tableSize >> 1)
-            .wrapping_add(tableSize >> 3)
-            .wrapping_add(3) as size_t;
-        let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
+    if highThreshold == tableSize - 1 {
+        let tableMask = tableSize - 1;
+        let step = (tableSize >> 1) | (tableSize >> 3) | 0b11;
+        let add = 0x101010101010101u64;
         let mut pos = 0usize;
         let mut sv = 0u64;
         for &v in normalizedCounter {
@@ -2048,28 +2046,25 @@ unsafe fn ZSTD_buildFSETable_body<const N: usize>(
             pos = pos.wrapping_add(n);
             sv = sv.wrapping_add(add);
         }
-        let mut position = 0 as size_t;
-        for s_1 in (0..tableSize as size_t).step_by(2) {
+
+        let mut position = 0usize;
+        for s in (0..tableSize).step_by(2) {
             for u in 0..2 {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                tableDecode[uPosition as usize].baseValue =
-                    wksp.spread[s_1 as usize + u as usize] as u32;
+                tableDecode[uPosition].baseValue = wksp.spread[s + u] as u32;
             }
             position = position.wrapping_add(2 * step) & tableMask;
         }
     } else {
-        let tableMask_0 = tableSize.wrapping_sub(1);
-        let step_0 = (tableSize >> 1)
-            .wrapping_add(tableSize >> 3)
-            .wrapping_add(3);
-        let mut position_0 = 0usize;
-        for (s_2, &v) in normalizedCounter.iter().enumerate() {
-            let n_0 = i32::from(v);
-            for _ in 0..n_0 {
-                tableDecode[position_0].baseValue = s_2 as u32;
-                position_0 = position_0.wrapping_add(step_0) & tableMask_0;
-                while core::hint::unlikely(position_0 > highThreshold) {
-                    position_0 = position_0.wrapping_add(step_0) & tableMask_0;
+        let tableMask = tableSize - 1;
+        let step = (tableSize >> 1) | (tableSize >> 3) | 0b11;
+        let mut position = 0usize;
+        for (s, &v) in normalizedCounter.iter().enumerate() {
+            for _ in 0..i32::from(v) {
+                tableDecode[position].baseValue = s as u32;
+                position = position.wrapping_add(step) & tableMask;
+                while core::hint::unlikely(position > highThreshold) {
+                    position = position.wrapping_add(step) & tableMask;
                 }
             }
         }
@@ -2091,7 +2086,7 @@ unsafe fn ZSTD_buildFSETable_body<const N: usize>(
     }
 }
 
-unsafe fn ZSTD_buildFSETable_body_default<const N: usize>(
+fn ZSTD_buildFSETable_body_default<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
@@ -2109,7 +2104,7 @@ unsafe fn ZSTD_buildFSETable_body_default<const N: usize>(
     );
 }
 
-unsafe fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
+fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
@@ -2152,7 +2147,7 @@ pub struct FseWorkspace {
     spread: [u8; (1 << MaxFSELog) + size_of::<u64>()],
 }
 
-pub unsafe fn ZSTD_buildFSETable<const N: usize>(
+pub fn ZSTD_buildFSETable<const N: usize>(
     dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
