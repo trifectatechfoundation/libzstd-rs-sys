@@ -2184,9 +2184,9 @@ pub unsafe fn ZSTD_buildFSETable(
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
     wksp: &mut FseWorkspace,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) {
-    if bmi2 != 0 {
+    if bmi2 {
         ZSTD_buildFSETable_body_bmi2(
             dt,
             normalizedCounter,
@@ -2220,7 +2220,7 @@ unsafe fn ZSTD_buildSeqTable(
     ddictIsCold: core::ffi::c_int,
     nbSeq: core::ffi::c_int,
     wksp: &mut Workspace,
-    bmi2: core::ffi::c_int,
+    bmi2: bool,
 ) -> size_t {
     match type_0 {
         SymbolEncodingType_e::set_rle => {
@@ -2354,7 +2354,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2,
+        dctx.bmi2 != 0,
     );
     if ERR_isError(llhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -2375,7 +2375,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2,
+        dctx.bmi2 != 0,
     );
     if ERR_isError(ofhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -2396,7 +2396,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2,
+        dctx.bmi2 != 0,
     );
     if ERR_isError(mlhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
