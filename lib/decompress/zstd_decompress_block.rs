@@ -15,7 +15,7 @@ use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wk
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
-use crate::lib::decompress::{blockProperties_t, BlockType};
+use crate::lib::decompress::{blockProperties_t, BlockType, SymbolTable};
 use crate::lib::decompress::{
     HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
@@ -1981,40 +1981,37 @@ static ML_defaultDTable: [ZSTD_seqSymbol; 65] = [
     },
 ];
 
-unsafe fn ZSTD_buildSeqTable_rle(
-    mut dt: *mut ZSTD_seqSymbol,
-    mut baseValue: u32,
-    mut nbAddBits: u8,
-) {
-    let mut ptr = dt as *mut core::ffi::c_void;
-    let DTableH = ptr as *mut ZSTD_seqSymbol_header;
-    let cell = dt.offset(1);
-    (*DTableH).tableLog = 0;
-    (*DTableH).fastMode = 0;
-    (*cell).nbBits = 0;
-    (*cell).nextState = 0;
-    (*cell).nbAdditionalBits = nbAddBits;
-    (*cell).baseValue = baseValue;
+fn ZSTD_buildSeqTable_rle<const N: usize>(dt: &mut SymbolTable<N>, baseValue: u32, nbAddBits: u8) {
+    dt.header = ZSTD_seqSymbol_header {
+        fastMode: 0,
+        tableLog: 0,
+    };
+
+    dt.symbols[0] = ZSTD_seqSymbol {
+        nbBits: 0,
+        nextState: 0,
+        nbAdditionalBits: nbAddBits,
+        baseValue: baseValue,
+    };
 }
 
 #[inline(always)]
-unsafe fn ZSTD_buildFSETable_body(
-    dt: *mut ZSTD_seqSymbol,
+unsafe fn ZSTD_buildFSETable_body<const N: usize>(
+    dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
     wksp: &mut FseWorkspace,
 ) {
-    let tableDecode = dt.offset(1);
+    let tableDecode = dt.symbols.as_mut_ptr();
     let tableSize = ((1) << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     let mut DTableH = ZSTD_seqSymbol_header {
-        fastMode: 0,
-        tableLog: 0,
+        fastMode: 1,
+        tableLog: tableLog,
     };
-    DTableH.tableLog = tableLog;
-    DTableH.fastMode = 1;
+
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
 
     for (s, &v) in normalizedCounter.iter().enumerate() {
@@ -2030,11 +2027,8 @@ unsafe fn ZSTD_buildFSETable_body(
         }
     }
 
-    libc::memcpy(
-        dt as *mut core::ffi::c_void,
-        &mut DTableH as *mut ZSTD_seqSymbol_header as *const core::ffi::c_void,
-        ::core::mem::size_of::<ZSTD_seqSymbol_header>(),
-    );
+    dt.header = DTableH;
+
     if highThreshold == tableSize.wrapping_sub(1) {
         let tableMask = tableSize.wrapping_sub(1) as size_t;
         let step = (tableSize >> 1)
@@ -2099,8 +2093,8 @@ unsafe fn ZSTD_buildFSETable_body(
     }
 }
 
-unsafe fn ZSTD_buildFSETable_body_default(
-    dt: *mut ZSTD_seqSymbol,
+unsafe fn ZSTD_buildFSETable_body_default<const N: usize>(
+    dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
@@ -2117,8 +2111,8 @@ unsafe fn ZSTD_buildFSETable_body_default(
     );
 }
 
-unsafe fn ZSTD_buildFSETable_body_bmi2(
-    dt: *mut ZSTD_seqSymbol,
+unsafe fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
+    dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
@@ -2160,8 +2154,8 @@ pub struct FseWorkspace {
     spread: [u8; (1 << MaxFSELog) + size_of::<u64>()],
 }
 
-pub unsafe fn ZSTD_buildFSETable(
-    dt: *mut ZSTD_seqSymbol,
+pub unsafe fn ZSTD_buildFSETable<const N: usize>(
+    dt: &mut SymbolTable<N>,
     normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
@@ -2189,8 +2183,9 @@ pub unsafe fn ZSTD_buildFSETable(
         );
     }
 }
-unsafe fn ZSTD_buildSeqTable(
-    DTableSpace: *mut ZSTD_seqSymbol,
+
+unsafe fn ZSTD_buildSeqTable<const N: usize>(
+    DTableSpace: &mut SymbolTable<N>,
     DTablePtr: &mut *const ZSTD_seqSymbol,
     type_0: SymbolEncodingType_e,
     mut max: core::ffi::c_uint,
@@ -2219,7 +2214,7 @@ unsafe fn ZSTD_buildSeqTable(
             let nbBits = nbAdditionalBits[usize::from(symbol)];
             ZSTD_buildSeqTable_rle(DTableSpace, baseline, nbBits);
 
-            *DTablePtr = DTableSpace;
+            *DTablePtr = DTableSpace.as_mut_ptr();
             1
         }
         SymbolEncodingType_e::set_basic => {
@@ -2263,7 +2258,7 @@ unsafe fn ZSTD_buildSeqTable(
                 wksp.as_fse_workspace(),
                 bmi2,
             );
-            *DTablePtr = DTableSpace;
+            *DTablePtr = DTableSpace.as_mut_ptr();
             headerSize
         }
     }
@@ -2324,7 +2319,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
 
     ip += 1;
     let llhSize = ZSTD_buildSeqTable(
-        (dctx.entropy.LLTable).as_mut_ptr(),
+        &mut dctx.entropy.LLTable,
         &mut dctx.LLTptr,
         LLtype,
         MaxLL as core::ffi::c_uint,
@@ -2345,7 +2340,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
 
     ip += llhSize as usize;
     let ofhSize = ZSTD_buildSeqTable(
-        (dctx.entropy.OFTable).as_mut_ptr(),
+        &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
         OFtype,
         MaxOff as core::ffi::c_uint,
@@ -2366,7 +2361,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
 
     ip += ofhSize as usize;
     let mlhSize = ZSTD_buildSeqTable(
-        (dctx.entropy.MLTable).as_mut_ptr(),
+        &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
         MLtype,
         MaxML as core::ffi::c_uint,
