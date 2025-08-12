@@ -3173,14 +3173,13 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
         if !seqState.DStream.is_empty() {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        let mut i_0: u32 = 0;
-        i_0 = 0;
-        while i_0 < ZSTD_REP_NUM as u32 {
+
+        for i_0 in 0..ZSTD_REP_NUM {
             *(dctx.entropy.rep).as_mut_ptr().offset(i_0 as isize) =
                 *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
-            i_0 = i_0.wrapping_add(1);
         }
     }
+
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
         let lastLLSize = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
         if lastLLSize > oend.offset_from(op) as core::ffi::c_long as size_t {
@@ -3195,27 +3194,15 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
             op = op.offset(lastLLSize as isize);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
-        litBufferEnd = (dctx.litExtraBuffer).as_mut_ptr().offset(
-            (if 64
-                > (if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                })
-            {
-                64
-            } else if ((1) << 16) < (128) << 10 {
-                (1) << 16
-            } else {
-                (128) << 10
-            }) as isize,
-        );
+        litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
         dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
     }
+
     let lastLLSize_0 = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize_0 > oend.offset_from(op) as core::ffi::c_long as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
+
     if !op.is_null() {
         libc::memcpy(
             op as *mut core::ffi::c_void,
@@ -3238,17 +3225,17 @@ unsafe fn ZSTD_decompressSequences_body(
     isLongOffset: ZSTD_longOffset_e,
 ) -> size_t {
     let ostart = dst as *mut u8;
-    let oend = if (*dctx).litBufferLocation == LitLocation::ZSTD_not_in_dst {
+    let oend = if dctx.litBufferLocation == LitLocation::ZSTD_not_in_dst {
         ZSTD_maybeNullPtrAdd(ostart as *mut core::ffi::c_void, maxDstSize as ptrdiff_t) as *mut u8
     } else {
-        (*dctx).litBuffer
+        dctx.litBuffer
     };
     let mut op = ostart;
-    let mut litPtr = (*dctx).litPtr;
-    let litEnd = litPtr.offset((*dctx).litSize as isize);
-    let prefixStart = (*dctx).prefixStart as *const u8;
-    let vBase = (*dctx).virtualStart as *const u8;
-    let dictEnd = (*dctx).dictEnd as *const u8;
+    let mut litPtr = dctx.litPtr;
+    let litEnd = litPtr.offset(dctx.litSize as isize);
+    let prefixStart = dctx.prefixStart as *const u8;
+    let vBase = dctx.virtualStart as *const u8;
+    let dictEnd = dctx.dictEnd as *const u8;
     if nbSeq != 0 {
         let mut seqState = seqState_t {
             DStream: BIT_DStream_t {
@@ -3272,12 +3259,12 @@ unsafe fn ZSTD_decompressSequences_body(
             },
             prevOffset: [0; 3],
         };
-        (*dctx).fseEntropy = 1;
+        dctx.fseEntropy = 1;
         let mut i: u32 = 0;
         i = 0;
         while i < ZSTD_REP_NUM as u32 {
             *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
-                *((*dctx).entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
+                *(dctx.entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
         }
         let src = core::slice::from_raw_parts(seqStart.cast::<u8>(), seqSize as usize);
@@ -3285,13 +3272,9 @@ unsafe fn ZSTD_decompressSequences_body(
             Ok(v) => v,
             Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
         };
-        ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, (*dctx).LLTptr);
-        ZSTD_initFseState(
-            &mut seqState.stateOffb,
-            &mut seqState.DStream,
-            (*dctx).OFTptr,
-        );
-        ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, (*dctx).MLTptr);
+        ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
+        ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
+        ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
         if !cfg!(miri) {
             asm!(".p2align 6", options(preserves_flags, att_syntax));
             asm!("nop", options(preserves_flags, att_syntax));
@@ -3324,12 +3307,10 @@ unsafe fn ZSTD_decompressSequences_body(
         if !seqState.DStream.is_empty() {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        let mut i_0: u32 = 0;
-        i_0 = 0;
-        while i_0 < ZSTD_REP_NUM as u32 {
-            *((*dctx).entropy.rep).as_mut_ptr().offset(i_0 as isize) =
+
+        for i_0 in 0..ZSTD_REP_NUM {
+            *(dctx.entropy.rep).as_mut_ptr().offset(i_0 as isize) =
                 *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
-            i_0 = i_0.wrapping_add(1);
         }
     }
     let lastLLSize = litEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
@@ -3520,21 +3501,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     op = op.offset(leftoverLit as isize);
                 }
                 litPtr = (dctx.litExtraBuffer).as_mut_ptr();
-                litBufferEnd = (dctx.litExtraBuffer).as_mut_ptr().offset(
-                    (if 64
-                        > (if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        })
-                    {
-                        64
-                    } else if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    }) as isize,
-                );
+                litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
                 dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
                 let oneSeqSize = ZSTD_execSequence(
                     op,
@@ -3626,21 +3593,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     op = op.offset(leftoverLit_0 as isize);
                 }
                 litPtr = (dctx.litExtraBuffer).as_mut_ptr();
-                litBufferEnd = (dctx.litExtraBuffer).as_mut_ptr().offset(
-                    (if 64
-                        > (if ((1) << 16) < (128) << 10 {
-                            (1) << 16
-                        } else {
-                            (128) << 10
-                        })
-                    {
-                        64
-                    } else if ((1) << 16) < (128) << 10 {
-                        (1) << 16
-                    } else {
-                        (128) << 10
-                    }) as isize,
-                );
+                litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
                 dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
                 let oneSeqSize_1 = ZSTD_execSequence(
                     op,
@@ -3712,21 +3665,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             op = op.offset(lastLLSize as isize);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
-        litBufferEnd = (dctx.litExtraBuffer).as_mut_ptr().offset(
-            (if 64
-                > (if ((1) << 16) < (128) << 10 {
-                    (1) << 16
-                } else {
-                    (128) << 10
-                })
-            {
-                64
-            } else if ((1) << 16) < (128) << 10 {
-                (1) << 16
-            } else {
-                (128) << 10
-            }) as isize,
-        );
+        litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
     }
     let lastLLSize_0 = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize_0 > oend.offset_from(op) as core::ffi::c_long as size_t {
