@@ -90,9 +90,8 @@ unsafe extern "C" fn TRACE_log(
     let mut workers = 0;
     let ratio = (*trace).uncompressedSize as core::ffi::c_double
         / (*trace).compressedSize as core::ffi::c_double;
-    let speed = (*trace).uncompressedSize as core::ffi::c_double
-        * 1000 as core::ffi::c_int as core::ffi::c_double
-        / duration as core::ffi::c_double;
+    let speed =
+        (*trace).uncompressedSize as core::ffi::c_double * 1000.0 / duration as core::ffi::c_double;
     if !((*trace).params).is_null() {
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_compressionLevel, &mut level);
         ZSTD_CCtxParams_getParameter((*trace).params, ZSTD_c_nbWorkers, &mut workers);

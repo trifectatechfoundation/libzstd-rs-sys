@@ -284,7 +284,7 @@ unsafe extern "C" fn countFreqs(
     mut weights: *const core::ffi::c_int,
     mut nbWeights: size_t,
 ) {
-    let mut total = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut total = 0 as core::ffi::c_uint;
     let mut w: size_t = 0;
     w = 0;
     while w < nbWords {
@@ -307,7 +307,7 @@ unsafe extern "C" fn init_word_distrib(
     mut nbWeights: size_t,
 ) {
     let mut w: size_t = 0;
-    let mut d = 0 as core::ffi::c_int as size_t;
+    let mut d = 0 as size_t;
     countFreqs(words, nbWords, weights, nbWeights);
     w = 0;
     while w < nbWords {

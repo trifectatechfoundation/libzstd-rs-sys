@@ -24,7 +24,7 @@ pub const THRESHOLD_PENALTY: core::ffi::c_int = 3;
 pub const HASHLENGTH: core::ffi::c_int = 2;
 pub const HASHLOG_MAX: core::ffi::c_int = 10;
 pub const HASHTABLESIZE: core::ffi::c_int = (1) << HASHLOG_MAX;
-pub const KNUTH: core::ffi::c_uint = 0x9e3779b9 as core::ffi::c_uint;
+pub const KNUTH: core::ffi::c_uint = 0x9e3779b9;
 #[inline(always)]
 unsafe extern "C" fn hash2(
     mut p: *const core::ffi::c_void,
@@ -33,8 +33,7 @@ unsafe extern "C" fn hash2(
     if hashLog == 8 {
         return *(p as *const u8).offset(0) as u32;
     }
-    (MEM_read16(p) as u32).wrapping_mul(KNUTH)
-        >> (32 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(hashLog)
+    (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as core::ffi::c_uint).wrapping_sub(hashLog)
 }
 unsafe extern "C" fn initStats(mut fpstats: *mut FPStats) {
     ptr::write_bytes(fpstats as *mut u8, 0, ::core::mem::size_of::<FPStats>());
@@ -112,7 +111,7 @@ unsafe extern "C" fn fpDistance(
     mut fp2: *const Fingerprint,
     mut hashLog: core::ffi::c_uint,
 ) -> u64 {
-    let mut distance = 0 as core::ffi::c_int as u64;
+    let mut distance = 0u64;
     let mut n: size_t = 0;
     n = 0;
     while n < (1) << hashLog {
@@ -244,7 +243,7 @@ unsafe extern "C" fn ZSTD_splitBlock_fromBorders(
 ) -> size_t {
     let fpstats = workspace as *mut FPStats;
     let mut middleEvents = (workspace as *mut core::ffi::c_char).offset(
-        (512 as core::ffi::c_int as core::ffi::c_ulong)
+        (512 as core::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
             as isize,
     ) as *mut core::ffi::c_void as *mut Fingerprint;

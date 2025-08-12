@@ -818,8 +818,7 @@ unsafe extern "C" fn readU32FromCharChecked(
     while **stringPtr as core::ffi::c_int >= '0' as i32
         && **stringPtr as core::ffi::c_int <= '9' as i32
     {
-        let max = (-(1 as core::ffi::c_int) as core::ffi::c_uint)
-            .wrapping_div(10 as core::ffi::c_int as core::ffi::c_uint);
+        let max = (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(10);
         let mut last = result;
         if result > max {
             return 1;
@@ -835,7 +834,7 @@ unsafe extern "C" fn readU32FromCharChecked(
     if **stringPtr as core::ffi::c_int == 'K' as i32
         || **stringPtr as core::ffi::c_int == 'M' as i32
     {
-        let maxK = -(1 as core::ffi::c_int) as core::ffi::c_uint >> 10 as core::ffi::c_int;
+        let maxK = -(1 as core::ffi::c_int) as core::ffi::c_uint >> 10;
         if result > maxK {
             return 1;
         }
@@ -888,7 +887,7 @@ unsafe extern "C" fn readSizeTFromCharChecked(
     while **stringPtr as core::ffi::c_int >= '0' as i32
         && **stringPtr as core::ffi::c_int <= '9' as i32
     {
-        let max = -(1 as core::ffi::c_int) as size_t / 10 as core::ffi::c_int as size_t;
+        let max = -(1 as core::ffi::c_int) as size_t / 10;
         let mut last = result;
         if result > max {
             return 1;
@@ -903,7 +902,7 @@ unsafe extern "C" fn readSizeTFromCharChecked(
     if **stringPtr as core::ffi::c_int == 'K' as i32
         || **stringPtr as core::ffi::c_int == 'M' as i32
     {
-        let maxK = -(1 as core::ffi::c_int) as size_t >> 10 as core::ffi::c_int;
+        let maxK = -(1 as core::ffi::c_int) as size_t >> 10;
         if result > maxK {
             return 1;
         }
@@ -1025,8 +1024,7 @@ unsafe extern "C" fn parseCoverParameters(
             (*params).k,
             (*params).d,
             (*params).steps,
-            ((*params).splitPoint * 100 as core::ffi::c_int as core::ffi::c_double)
-                as core::ffi::c_uint,
+            ((*params).splitPoint * 100.0) as core::ffi::c_uint,
             (*params).shrinkDictMaxRegression,
         );
     }
@@ -1134,8 +1132,7 @@ unsafe extern "C" fn parseFastCoverParameters(
             (*params).d,
             (*params).f,
             (*params).steps,
-            ((*params).splitPoint * 100 as core::ffi::c_int as core::ffi::c_double)
-                as core::ffi::c_uint,
+            ((*params).splitPoint * 100.0) as core::ffi::c_uint,
             (*params).accel,
             (*params).shrinkDictMaxRegression,
         );
@@ -4042,7 +4039,7 @@ unsafe fn main_0(
                                     argument = argument.offset(1);
                                     compressibility = readU32FromChar(&mut argument)
                                         as core::ffi::c_double
-                                        / 100 as core::ffi::c_int as core::ffi::c_double;
+                                        / 100.0;
                                 }
                                 _ => {
                                     let mut shortArgument: [core::ffi::c_char; 3] =
@@ -4595,7 +4592,7 @@ unsafe fn main_0(
                                                         } else {
                                                             memLimit = (1 as u32)
                                                                 << (compressionParams.windowLog
-                                                                    & 31 as core::ffi::c_uint);
+                                                                    & 31);
                                                         }
                                                     }
                                                     if !patchFromDictFileName.is_null() {

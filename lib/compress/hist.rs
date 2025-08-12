@@ -170,7 +170,7 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
         }
         s = s.wrapping_add(1);
     }
-    let mut maxSymbolValue = 255 as core::ffi::c_int as core::ffi::c_uint;
+    let mut maxSymbolValue = 255 as core::ffi::c_uint;
     while *Counting1.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }

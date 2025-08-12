@@ -158,7 +158,7 @@ pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7);
     let bitsConsumed = (if lastByte as core::ffi::c_int != 0 {
-        (8 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(lastByte.ilog2())
+        (8 as core::ffi::c_uint).wrapping_sub(lastByte.ilog2())
     } else {
         0
     }) as size_t;
@@ -396,7 +396,7 @@ pub fn HUF_readDTableX1_wksp(
     // rankStart contains the offset where each rank belongs in the DTable.
     // rankStart[0] is not filled because there are no entries in the table for
     // weight 0.
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     let unroll = 4;
     let nLimit = nbSymbols as core::ffi::c_int - unroll + 1;
     for n in 0..tableLog as usize + 1 {
@@ -1138,7 +1138,7 @@ pub fn HUF_readDTableX2_wksp(
 
     /* Build rankVal */
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
-    let mut nextRankVal = 0 as core::ffi::c_int as u32;
+    let mut nextRankVal = 0u32;
 
     for w_1 in 1..maxW.wrapping_add(1) {
         let mut curr_0 = nextRankVal;

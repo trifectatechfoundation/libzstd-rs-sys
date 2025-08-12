@@ -78,9 +78,8 @@ pub const __ASSERT_FUNCTION: [core::ffi::c_char; 75] = unsafe {
     )
 };
 pub const NULL: core::ffi::c_int = 0;
-pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong = (1 as core::ffi::c_int
-    as core::ffi::c_ulonglong)
-    .wrapping_mul(1000000000 as core::ffi::c_ulonglong);
+pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
+    (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 #[no_mangle]
 pub unsafe extern "C" fn BMK_isSuccessful_runOutcome(
     mut outcome: BMK_runOutcome_t,
@@ -143,12 +142,12 @@ pub unsafe extern "C" fn BMK_benchFunction(
     while i < p.blockCount {
         memset(
             *(p.dstBuffers).offset(i as isize),
-            0xe5 as core::ffi::c_int,
+            0xe5,
             *(p.dstCapacities).offset(i as isize),
         );
         i = i.wrapping_add(1);
     }
-    let mut dstSize = 0 as core::ffi::c_int as size_t;
+    let mut dstSize = 0 as size_t;
     let clockStart = UTIL_getTime();
     let mut loopNb: core::ffi::c_uint = 0;
     let mut blockNb: core::ffi::c_uint = 0;
@@ -248,8 +247,8 @@ pub unsafe extern "C" fn BMK_resetTimedFnState(
     (*timedFnState).runBudget_ns = (run_ms as PTime as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
         .wrapping_div(1000) as PTime;
-    (*timedFnState).fastestRun.nanoSecPerRun = TIMELOOP_NANOSEC as core::ffi::c_double
-        * 2000000000 as core::ffi::c_int as core::ffi::c_double;
+    (*timedFnState).fastestRun.nanoSecPerRun =
+        TIMELOOP_NANOSEC as core::ffi::c_double * 2000000000.0;
     (*timedFnState).fastestRun.sumOfReturn = -(1 as core::ffi::c_longlong) as size_t;
     (*timedFnState).nbLoops = 1;
     (*timedFnState).coolTime = UTIL_getTime();
@@ -279,9 +278,7 @@ pub unsafe extern "C" fn BMK_benchTimedFn(
         (*cont).timeSpent_ns = ((*cont).timeSpent_ns as core::ffi::c_ulonglong)
             .wrapping_add(loopDuration_ns as core::ffi::c_ulonglong)
             as PTime as PTime;
-        if loopDuration_ns
-            > runBudget_ns as core::ffi::c_double / 50 as core::ffi::c_int as core::ffi::c_double
-        {
+        if loopDuration_ns > runBudget_ns as core::ffi::c_double / 50.0 {
             let fastestRun_ns = if bestRunTime.nanoSecPerRun < newRunTime.nanoSecPerRun {
                 bestRunTime.nanoSecPerRun
             } else {
