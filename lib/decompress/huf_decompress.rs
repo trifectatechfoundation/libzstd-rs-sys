@@ -783,16 +783,12 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     assert_eq!(istart, args.ilowest);
     assert_eq!(istart.add(6), args.iend[0]);
 
-    let segmentSize = dst.capacity().div_ceil(4) as isize;
+    let segmentSize = dst.capacity().div_ceil(4);
     let mut segmentEnd = dst.as_mut_ptr_range().start;
 
     // Finish bit streams one by one.
     for (i, op) in args.op.iter().copied().enumerate() {
-        if segmentSize <= oend.offset_from(segmentEnd) {
-            segmentEnd = segmentEnd.offset(segmentSize as isize);
-        } else {
-            segmentEnd = oend;
-        }
+        segmentEnd = Ord::min(segmentEnd.add(segmentSize), oend);
 
         let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
             Ok(v) => v,
