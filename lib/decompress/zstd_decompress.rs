@@ -2255,8 +2255,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &OF_base,
         &OF_bits,
         offcodeLog,
-        ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as size_t,
+        &mut (*entropy).workspace,
         0,
     );
     dictPtr = dictPtr.offset(offcodeHeaderSize as isize);
@@ -2285,8 +2284,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &ML_base,
         &ML_bits,
         matchlengthLog,
-        ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as size_t,
+        &mut (*entropy).workspace,
         0,
     );
     dictPtr = dictPtr.offset(matchlengthHeaderSize as isize);
@@ -2315,8 +2313,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &LL_base,
         &LL_bits,
         litlengthLog,
-        ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as size_t,
+        &mut (*entropy).workspace,
         0,
     );
     dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
