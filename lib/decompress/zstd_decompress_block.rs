@@ -2866,11 +2866,8 @@ fn ZSTD_updateFseStateWithDInfo(
 /// offset bits. But we can only read at most STREAM_ACCUMULATOR_MIN_32
 /// bits before reloading. This value is the maximum number of bytes we read
 /// after reloading when we are decoding long offsets.
-const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 = if ZSTD_WINDOWLOG_MAX_32 > STREAM_ACCUMULATOR_MIN_32 {
-    ZSTD_WINDOWLOG_MAX_32 - STREAM_ACCUMULATOR_MIN_32
-} else {
-    0
-};
+const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
+    ZSTD_WINDOWLOG_MAX_32.saturating_sub(STREAM_ACCUMULATOR_MIN_32);
 
 #[inline(always)]
 unsafe extern "C" fn ZSTD_decodeSequence(
