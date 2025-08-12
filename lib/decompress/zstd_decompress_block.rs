@@ -2862,6 +2862,16 @@ fn ZSTD_updateFseStateWithDInfo(
     DStatePtr.state = (nextState as size_t).wrapping_add(lowBits as u64);
 }
 
+/// We need to add at most (ZSTD_WINDOWLOG_MAX_32 - 1) bits to read the maximum
+/// offset bits. But we can only read at most STREAM_ACCUMULATOR_MIN_32
+/// bits before reloading. This value is the maximum number of bytes we read
+/// after reloading when we are decoding long offsets.
+const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 = if ZSTD_WINDOWLOG_MAX_32 > STREAM_ACCUMULATOR_MIN_32 {
+    ZSTD_WINDOWLOG_MAX_32 - STREAM_ACCUMULATOR_MIN_32
+} else {
+    0
+};
+
 #[inline(always)]
 unsafe extern "C" fn ZSTD_decodeSequence(
     mut seqState: &mut seqState_t,
@@ -2891,17 +2901,29 @@ unsafe extern "C" fn ZSTD_decodeSequence(
     let llnbBits = (*llDInfo).nbBits as u32;
     let mlnbBits = (*mlDInfo).nbBits as u32;
     let ofnbBits = (*ofDInfo).nbBits as u32;
+
+    const MaxMLBits: u8 = 16;
+    const MaxLLBits: u8 = 16;
+    const MaxOff: u8 = 31; // NOTE: different for the legacy versions
+
+    assert!(llBits <= MaxLLBits);
+    assert!(mlBits <= MaxMLBits);
+    assert!(ofBits <= MaxOff);
+
     let mut offset: size_t = 0;
-    if ofBits as core::ffi::c_int > 1 {
+    if ofBits > 1 {
+        const { assert!(ZSTD_lo_isLongOffset == 1) };
+        const { assert!(LONG_OFFSETS_MAX_EXTRA_BITS_32 == 5) };
+        const { assert!(STREAM_ACCUMULATOR_MIN_32 > LONG_OFFSETS_MAX_EXTRA_BITS_32) };
+        const { assert!(STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32 >= MaxMLBits as i32) };
+
         if MEM_32bits() != 0
             && longOffsets as core::ffi::c_uint != 0
             && ofBits as core::ffi::c_int >= STREAM_ACCUMULATOR_MIN_32
         {
-            let extraBits = (if ZSTD_WINDOWLOG_MAX_32 > STREAM_ACCUMULATOR_MIN_32 {
-                ZSTD_WINDOWLOG_MAX_32 - STREAM_ACCUMULATOR_MIN_32
-            } else {
-                0
-            }) as u32;
+            // Always read extra bits, this keeps the logic simple,
+            // avoids branches, and avoids accidentally reading 0 bits.
+            let extraBits = LONG_OFFSETS_MAX_EXTRA_BITS_32 as u32;
             offset = (ofBase as size_t).wrapping_add(
                 (seqState
                     .DStream
