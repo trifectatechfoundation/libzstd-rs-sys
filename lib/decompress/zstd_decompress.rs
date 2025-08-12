@@ -2261,8 +2261,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         ((*entropy).OFTable).as_mut_ptr(),
-        offcodeNCount.as_mut_ptr(),
-        offcodeMaxValue,
+        &mut offcodeNCount[..=offcodeMaxValue as usize],
         &OF_base,
         &OF_bits,
         offcodeLog,
@@ -2292,8 +2291,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         ((*entropy).MLTable).as_mut_ptr(),
-        matchlengthNCount.as_mut_ptr(),
-        matchlengthMaxValue,
+        &mut matchlengthNCount[..=matchlengthMaxValue as usize],
         &ML_base,
         &ML_bits,
         matchlengthLog,
@@ -2323,8 +2321,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         ((*entropy).LLTable).as_mut_ptr(),
-        litlengthNCount.as_mut_ptr(),
-        litlengthMaxValue,
+        &mut litlengthNCount[..=litlengthMaxValue as usize],
         &LL_base,
         &LL_bits,
         litlengthLog,

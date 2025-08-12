@@ -1999,8 +1999,7 @@ unsafe fn ZSTD_buildSeqTable_rle(
 #[inline(always)]
 unsafe fn ZSTD_buildFSETable_body(
     dt: *mut ZSTD_seqSymbol,
-    normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
@@ -2008,7 +2007,7 @@ unsafe fn ZSTD_buildFSETable_body(
     wkspSize: size_t,
 ) {
     let tableDecode = dt.offset(1);
-    let maxSV1 = maxSymbolValue.wrapping_add(1);
+    let maxSV1 = normalizedCounter.len();
     let tableSize = ((1) << tableLog) as u32;
     let mut symbolNext = wksp as *mut u16;
     let mut spread = symbolNext
@@ -2022,24 +2021,20 @@ unsafe fn ZSTD_buildFSETable_body(
     DTableH.tableLog = tableLog;
     DTableH.fastMode = 1;
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
-    let mut s: u32 = 0;
-    s = 0;
-    while s < maxSV1 {
-        if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
-            let fresh0 = highThreshold;
+
+    for (s, &v) in normalizedCounter.iter().enumerate() {
+        if v == -1 {
+            (*tableDecode.offset(highThreshold as isize)).baseValue = s as u32;
             highThreshold = highThreshold.wrapping_sub(1);
-            (*tableDecode.offset(fresh0 as isize)).baseValue = s;
             *symbolNext.offset(s as isize) = 1;
         } else {
-            if *normalizedCounter.offset(s as isize) as core::ffi::c_int
-                >= largeLimit as core::ffi::c_int
-            {
+            if v >= largeLimit {
                 DTableH.fastMode = 0;
             }
-            *symbolNext.offset(s as isize) = *normalizedCounter.offset(s as isize) as u16;
+            *symbolNext.offset(s as isize) = v as u16;
         }
-        s = s.wrapping_add(1);
     }
+
     libc::memcpy(
         dt as *mut core::ffi::c_void,
         &mut DTableH as *mut ZSTD_seqSymbol_header as *const core::ffi::c_void,
@@ -2053,11 +2048,9 @@ unsafe fn ZSTD_buildFSETable_body(
         let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
         let mut pos = 0 as size_t;
         let mut sv = 0;
-        let mut s_0: u32 = 0;
-        s_0 = 0;
-        while s_0 < maxSV1 {
+        for &v in normalizedCounter {
             let mut i: core::ffi::c_int = 0;
-            let n = *normalizedCounter.offset(s_0 as isize) as core::ffi::c_int;
+            let n = i32::from(v);
             MEM_write64(spread.offset(pos as isize) as *mut core::ffi::c_void, sv);
             i = 8;
             while i < n {
@@ -2068,7 +2061,6 @@ unsafe fn ZSTD_buildFSETable_body(
                 i += 8;
             }
             pos = pos.wrapping_add(n as size_t);
-            s_0 = s_0.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as size_t;
@@ -2092,22 +2084,19 @@ unsafe fn ZSTD_buildFSETable_body(
         let step_0 = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3);
-        let mut s_2: u32 = 0;
         let mut position_0 = 0u32;
-        s_2 = 0;
-        while s_2 < maxSV1 {
+        for (s_2, &v) in normalizedCounter.iter().enumerate() {
             let mut i_0: core::ffi::c_int = 0;
-            let n_0 = *normalizedCounter.offset(s_2 as isize) as core::ffi::c_int;
+            let n_0 = i32::from(v);
             i_0 = 0;
             while i_0 < n_0 {
-                (*tableDecode.offset(position_0 as isize)).baseValue = s_2;
+                (*tableDecode.offset(position_0 as isize)).baseValue = s_2 as u32;
                 position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 while (position_0 > highThreshold) as core::ffi::c_int as core::ffi::c_long != 0 {
                     position_0 = position_0.wrapping_add(step_0) & tableMask_0;
                 }
                 i_0 += 1;
             }
-            s_2 = s_2.wrapping_add(1);
         }
     }
     let mut u_0: u32 = 0;
@@ -2133,8 +2122,7 @@ unsafe fn ZSTD_buildFSETable_body(
 
 unsafe fn ZSTD_buildFSETable_body_default(
     dt: *mut ZSTD_seqSymbol,
-    normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
@@ -2144,7 +2132,6 @@ unsafe fn ZSTD_buildFSETable_body_default(
     ZSTD_buildFSETable_body(
         dt,
         normalizedCounter,
-        maxSymbolValue,
         baseValue,
         nbAdditionalBits,
         tableLog,
@@ -2155,8 +2142,7 @@ unsafe fn ZSTD_buildFSETable_body_default(
 
 unsafe fn ZSTD_buildFSETable_body_bmi2(
     dt: *mut ZSTD_seqSymbol,
-    normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
@@ -2166,7 +2152,6 @@ unsafe fn ZSTD_buildFSETable_body_bmi2(
     ZSTD_buildFSETable_body(
         dt,
         normalizedCounter,
-        maxSymbolValue,
         baseValue,
         nbAdditionalBits,
         tableLog,
@@ -2177,8 +2162,7 @@ unsafe fn ZSTD_buildFSETable_body_bmi2(
 
 pub unsafe fn ZSTD_buildFSETable(
     dt: *mut ZSTD_seqSymbol,
-    normalizedCounter: *const core::ffi::c_short,
-    maxSymbolValue: core::ffi::c_uint,
+    normalizedCounter: &[i16],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
@@ -2190,7 +2174,6 @@ pub unsafe fn ZSTD_buildFSETable(
         ZSTD_buildFSETable_body_bmi2(
             dt,
             normalizedCounter,
-            maxSymbolValue,
             baseValue,
             nbAdditionalBits,
             tableLog,
@@ -2201,7 +2184,6 @@ pub unsafe fn ZSTD_buildFSETable(
         ZSTD_buildFSETable_body_default(
             dt,
             normalizedCounter,
-            maxSymbolValue,
             baseValue,
             nbAdditionalBits,
             tableLog,
@@ -2277,8 +2259,7 @@ unsafe fn ZSTD_buildSeqTable(
             }
             ZSTD_buildFSETable(
                 DTableSpace,
-                norm.as_mut_ptr(),
-                max,
+                &mut norm[..=max as usize],
                 &baseValue,
                 &nbAdditionalBits,
                 tableLog,
