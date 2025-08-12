@@ -3932,8 +3932,6 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     src: &[u8],
     streaming: StreamingOperation,
 ) -> size_t {
-    let mut srcSize = src.len() as size_t;
-
     if src.len() > dctx.block_size_max() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
@@ -3943,9 +3941,8 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return litCSize;
     }
 
-    let mut ip = src.as_ptr();
-    ip = ip.offset(litCSize as isize);
-    srcSize = srcSize.wrapping_sub(litCSize);
+    let mut ip = &src[litCSize as usize..];
+
     let blockSizeMax = Ord::min(dstCapacity, dctx.block_size_max() as size_t);
     let totalHistorySize = ZSTD_totalHistorySize(
         ZSTD_maybeNullPtrAdd(dst, blockSizeMax as ptrdiff_t),
@@ -3955,12 +3952,11 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         as core::ffi::c_int as ZSTD_longOffset_e;
     let mut usePrefetchDecoder = dctx.ddictIsCold;
     let mut nbSeq: core::ffi::c_int = 0;
-    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip as *const core::ffi::c_void, srcSize);
+    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip.as_ptr().cast(), ip.len() as _);
     if ERR_isError(seqHSize) != 0 {
         return seqHSize;
     }
-    ip = ip.offset(seqHSize as isize);
-    srcSize = srcSize.wrapping_sub(seqHSize);
+    ip = &ip[seqHSize as usize..];
     if (dst.is_null() || dstCapacity == 0) && nbSeq > 0 {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -3997,8 +3993,8 @@ unsafe fn ZSTD_decompressBlock_internal_help(
             dctx,
             dst,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            srcSize,
+            ip.as_ptr().cast(),
+            ip.len() as _,
             nbSeq,
             isLongOffset,
         );
@@ -4008,8 +4004,8 @@ unsafe fn ZSTD_decompressBlock_internal_help(
             dctx,
             dst,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            srcSize,
+            ip.as_ptr().cast(),
+            ip.len() as _,
             nbSeq,
             isLongOffset,
         )
@@ -4018,8 +4014,8 @@ unsafe fn ZSTD_decompressBlock_internal_help(
             dctx,
             dst,
             dstCapacity,
-            ip as *const core::ffi::c_void,
-            srcSize,
+            ip.as_ptr().cast(),
+            ip.len() as _,
             nbSeq,
             isLongOffset,
         )
