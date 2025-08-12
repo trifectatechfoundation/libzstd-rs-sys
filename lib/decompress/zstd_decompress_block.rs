@@ -2004,16 +2004,11 @@ unsafe fn ZSTD_buildFSETable_body(
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
-    wksp: *mut core::ffi::c_void,
-    wkspSize: size_t,
+    wksp: &mut FseWorkspace,
 ) {
     let tableDecode = dt.offset(1);
-    let maxSV1 = normalizedCounter.len();
     let tableSize = ((1) << tableLog) as u32;
-    let mut symbolNext = wksp as *mut u16;
-    let mut spread = symbolNext
-        .offset((if 35 > 52 { 35 } else { 52 }) as isize)
-        .offset(1) as *mut u8;
+    let mut spread = wksp.spread.as_mut_ptr();
     let mut highThreshold = tableSize.wrapping_sub(1);
     let mut DTableH = ZSTD_seqSymbol_header {
         fastMode: 0,
@@ -2027,12 +2022,12 @@ unsafe fn ZSTD_buildFSETable_body(
         if v == -1 {
             (*tableDecode.offset(highThreshold as isize)).baseValue = s as u32;
             highThreshold = highThreshold.wrapping_sub(1);
-            *symbolNext.offset(s as isize) = 1;
+            wksp.symbols[s as usize] = 1;
         } else {
             if v >= largeLimit {
                 DTableH.fastMode = 0;
             }
-            *symbolNext.offset(s as isize) = v as u16;
+            wksp.symbols[s as usize] = v as u16;
         }
     }
 
@@ -2104,7 +2099,7 @@ unsafe fn ZSTD_buildFSETable_body(
     u_0 = 0;
     while u_0 < tableSize {
         let symbol = (*tableDecode.offset(u_0 as isize)).baseValue;
-        let fresh1 = &mut (*symbolNext.offset(symbol as isize));
+        let fresh1 = &mut wksp.symbols[symbol as usize];
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2 as u32;
@@ -2127,8 +2122,7 @@ unsafe fn ZSTD_buildFSETable_body_default(
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
-    wksp: *mut core::ffi::c_void,
-    wkspSize: size_t,
+    wksp: &mut FseWorkspace,
 ) {
     ZSTD_buildFSETable_body(
         dt,
@@ -2137,7 +2131,6 @@ unsafe fn ZSTD_buildFSETable_body_default(
         nbAdditionalBits,
         tableLog,
         wksp,
-        wkspSize,
     );
 }
 
@@ -2147,8 +2140,7 @@ unsafe fn ZSTD_buildFSETable_body_bmi2(
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
-    wksp: *mut core::ffi::c_void,
-    wkspSize: size_t,
+    wksp: &mut FseWorkspace,
 ) {
     ZSTD_buildFSETable_body(
         dt,
@@ -2157,8 +2149,32 @@ unsafe fn ZSTD_buildFSETable_body_bmi2(
         nbAdditionalBits,
         tableLog,
         wksp,
-        wkspSize,
     );
+}
+
+const fn const_max(a: usize, b: usize) -> usize {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
+const MaxSeq: usize = const_max(MaxLL as usize, MaxML as usize); /* Assumption : MaxOff < MaxLL,MaxML */
+
+const MaxFSELog: usize = const_max(
+    const_max(MLFSELog as usize, LLFSELog as usize),
+    OffFSELog as usize,
+);
+
+const ZSTD_BUILD_FSE_TABLE_WKSP_SIZE: usize =
+    size_of::<i16>() * (MaxSeq + 1) + (1 << MaxFSELog) + size_of::<u64>();
+
+#[derive(Copy, Clone)]
+#[repr(C, align(4))]
+pub struct FseWorkspace {
+    symbols: [u16; MaxSeq + 1],
+    spread: [u8; (1 << MaxFSELog) + size_of::<u64>()],
 }
 
 pub unsafe fn ZSTD_buildFSETable(
@@ -2167,8 +2183,7 @@ pub unsafe fn ZSTD_buildFSETable(
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     tableLog: core::ffi::c_uint,
-    wksp: *mut core::ffi::c_void,
-    wkspSize: size_t,
+    wksp: &mut FseWorkspace,
     bmi2: core::ffi::c_int,
 ) {
     if bmi2 != 0 {
@@ -2179,7 +2194,6 @@ pub unsafe fn ZSTD_buildFSETable(
             nbAdditionalBits,
             tableLog,
             wksp,
-            wkspSize,
         );
     } else {
         ZSTD_buildFSETable_body_default(
@@ -2189,7 +2203,6 @@ pub unsafe fn ZSTD_buildFSETable(
             nbAdditionalBits,
             tableLog,
             wksp,
-            wkspSize,
         );
     }
 }
@@ -2264,8 +2277,7 @@ unsafe fn ZSTD_buildSeqTable(
                 &baseValue,
                 &nbAdditionalBits,
                 tableLog,
-                wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                size_of_val(wksp) as size_t,
+                wksp.as_fse_workspace(),
                 bmi2,
             );
             *DTablePtr = DTableSpace;
