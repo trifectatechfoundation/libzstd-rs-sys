@@ -418,23 +418,23 @@ pub const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 pub const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
+unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
             ZSTD_countTrailingZeros64(val) >> 3
@@ -448,7 +448,7 @@ unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
@@ -485,10 +485,10 @@ pub const NULL: core::ffi::c_int = 0;
 pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 pub const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;
-unsafe extern "C" fn ZDICT_clockSpan(mut nPrevious: clock_t) -> clock_t {
+unsafe fn ZDICT_clockSpan(mut nPrevious: clock_t) -> clock_t {
     clock() - nPrevious
 }
-unsafe extern "C" fn ZDICT_printHex(mut ptr: *const core::ffi::c_void, mut length: size_t) {
+unsafe fn ZDICT_printHex(mut ptr: *const core::ffi::c_void, mut length: size_t) {
     let b = ptr as *const u8;
     let mut u: size_t = 0;
     u = 0;
@@ -549,7 +549,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     free(wksp as *mut core::ffi::c_void);
     headerSize
 }
-unsafe extern "C" fn ZDICT_count(
+unsafe fn ZDICT_count(
     mut pIn: *const core::ffi::c_void,
     mut pMatch: *const core::ffi::c_void,
 ) -> size_t {
@@ -571,14 +571,14 @@ unsafe extern "C" fn ZDICT_count(
         }
     }
 }
-unsafe extern "C" fn ZDICT_initDictItem(mut d: *mut dictItem) {
+unsafe fn ZDICT_initDictItem(mut d: *mut dictItem) {
     (*d).pos = 1;
     (*d).length = 0;
     (*d).savings = -(1 as core::ffi::c_int) as u32;
 }
 pub const LLIMIT: core::ffi::c_int = 64;
 pub const MINMATCHLENGTH: core::ffi::c_int = 7;
-unsafe extern "C" fn ZDICT_analyzePos(
+unsafe fn ZDICT_analyzePos(
     mut doneMarks: *mut u8,
     mut suffix: *const core::ffi::c_uint,
     mut start: u32,
@@ -866,7 +866,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     }
     solution
 }
-unsafe extern "C" fn isIncluded(
+unsafe fn isIncluded(
     mut in_0: *const core::ffi::c_void,
     mut container: *const core::ffi::c_void,
     mut length: size_t,
@@ -885,7 +885,7 @@ unsafe extern "C" fn isIncluded(
     }
     (u == length) as core::ffi::c_int
 }
-unsafe extern "C" fn ZDICT_tryMerge(
+unsafe fn ZDICT_tryMerge(
     mut table: *mut dictItem,
     mut elt: dictItem,
     mut eltNbToSkip: u32,
@@ -986,7 +986,7 @@ unsafe extern "C" fn ZDICT_tryMerge(
     }
     0
 }
-unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: u32) {
+unsafe fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: u32) {
     let max = (*table.offset(0)).pos;
     let mut u: u32 = 0;
     if id == 0 {
@@ -1000,7 +1000,7 @@ unsafe extern "C" fn ZDICT_removeDictItem(mut table: *mut dictItem, mut id: u32)
     (*table).pos = ((*table).pos).wrapping_sub(1);
     (*table).pos;
 }
-unsafe extern "C" fn ZDICT_insertDictItem(
+unsafe fn ZDICT_insertDictItem(
     mut table: *mut dictItem,
     mut maxSize: u32,
     mut elt: dictItem,
@@ -1031,7 +1031,7 @@ unsafe extern "C" fn ZDICT_insertDictItem(
     *table.offset(current.wrapping_add(1) as isize) = elt;
     (*table).pos = nextElt.wrapping_add(1);
 }
-unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
+unsafe fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
@@ -1041,7 +1041,7 @@ unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
     }
     dictSize
 }
-unsafe extern "C" fn ZDICT_trainBuffer_legacy(
+unsafe fn ZDICT_trainBuffer_legacy(
     mut dictList: *mut dictItem,
     mut dictListSize: u32,
     buffer: *const core::ffi::c_void,
@@ -1206,7 +1206,7 @@ unsafe extern "C" fn ZDICT_trainBuffer_legacy(
     free(filePos as *mut core::ffi::c_void);
     result
 }
-unsafe extern "C" fn ZDICT_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
+unsafe fn ZDICT_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
     let prime1 = 2654435761 as core::ffi::c_uint;
     let prime2 = 2246822519 as core::ffi::c_uint;
     let mut acc = prime1;
@@ -1219,7 +1219,7 @@ unsafe extern "C" fn ZDICT_fillNoise(mut buffer: *mut core::ffi::c_void, mut len
     }
 }
 pub const MAXREPOFFSET: core::ffi::c_int = 1024;
-unsafe extern "C" fn ZDICT_countEStats(
+unsafe fn ZDICT_countEStats(
     mut esr: EStats_ress_t,
     mut params: *const ZSTD_parameters,
     mut countLit: *mut core::ffi::c_uint,
@@ -1324,7 +1324,7 @@ unsafe extern "C" fn ZDICT_countEStats(
         }
     }
 }
-unsafe extern "C" fn ZDICT_totalSampleSize(
+unsafe fn ZDICT_totalSampleSize(
     mut fileSizes: *const size_t,
     mut nbFiles: core::ffi::c_uint,
 ) -> size_t {
@@ -1337,11 +1337,7 @@ unsafe extern "C" fn ZDICT_totalSampleSize(
     }
     total
 }
-unsafe extern "C" fn ZDICT_insertSortCount(
-    mut table: *mut offsetCount_t,
-    mut val: u32,
-    mut count: u32,
-) {
+unsafe fn ZDICT_insertSortCount(mut table: *mut offsetCount_t, mut val: u32, mut count: u32) {
     let mut u: u32 = 0;
     (*table.offset(ZSTD_REP_NUM as isize)).offset = val;
     (*table.offset(ZSTD_REP_NUM as isize)).count = count;
@@ -1360,7 +1356,7 @@ unsafe extern "C" fn ZDICT_insertSortCount(
         u = u.wrapping_sub(1);
     }
 }
-unsafe extern "C" fn ZDICT_flatLit(mut countLit: *mut core::ffi::c_uint) {
+unsafe fn ZDICT_flatLit(mut countLit: *mut core::ffi::c_uint) {
     let mut u: core::ffi::c_int = 0;
     u = 1;
     while u < 256 {
@@ -1372,7 +1368,7 @@ unsafe extern "C" fn ZDICT_flatLit(mut countLit: *mut core::ffi::c_uint) {
     *countLit.offset(254) = 1;
 }
 pub const OFFCODE_MAX: core::ffi::c_int = 30;
-unsafe extern "C" fn ZDICT_analyzeEntropy(
+unsafe fn ZDICT_analyzeEntropy(
     mut dstBuffer: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
@@ -1805,7 +1801,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
     free(esr.workPlace);
     eSize
 }
-unsafe extern "C" fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
+unsafe fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
     let mut maxRep = *reps.offset(0);
     let mut r: core::ffi::c_int = 0;
     r = 1;
@@ -1924,7 +1920,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     dictSize
 }
 pub const HBUFFSIZE: core::ffi::c_int = 256;
-unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
+unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictContentSize: size_t,
     mut dictBufferCapacity: size_t,
@@ -2006,7 +2002,7 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
         hSize.wrapping_add(dictContentSize)
     }
 }
-unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
+unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     mut dictBuffer: *mut core::ffi::c_void,
     mut maxDictSize: size_t,
     mut samplesBuffer: *const core::ffi::c_void,

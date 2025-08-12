@@ -151,7 +151,7 @@ pub const LONG_SEEK: unsafe extern "C" fn(
 pub const NULL: core::ffi::c_int = 0;
 static mut segmentSizeT: size_t = 0;
 static mut maskT: size_t = 0;
-unsafe extern "C" fn AIO_fwriteSparse(
+unsafe fn AIO_fwriteSparse(
     mut file: *mut FILE,
     mut buffer: *const core::ffi::c_void,
     mut bufferSize: size_t,
@@ -417,7 +417,7 @@ unsafe extern "C" fn AIO_fwriteSparse(
     }
     storedSkips
 }
-unsafe extern "C" fn AIO_fwriteSparseEnd(
+unsafe fn AIO_fwriteSparseEnd(
     prefs: *const FIO_prefs_t,
     mut file: *mut FILE,
     mut storedSkips: core::ffi::c_uint,
@@ -504,11 +504,10 @@ unsafe extern "C" fn AIO_fwriteSparseEnd(
         }
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_supported() -> core::ffi::c_int {
+pub unsafe fn AIO_supported() -> core::ffi::c_int {
     1
 }
-unsafe extern "C" fn AIO_IOPool_createIoJob(
+unsafe fn AIO_IOPool_createIoJob(
     mut ctx: *mut IOPoolCtx_t,
     mut bufferSize: size_t,
 ) -> *mut IOJob_t {
@@ -552,10 +551,7 @@ unsafe extern "C" fn AIO_IOPool_createIoJob(
     (*job).offset = 0;
     job
 }
-unsafe extern "C" fn AIO_IOPool_createThreadPool(
-    mut ctx: *mut IOPoolCtx_t,
-    mut prefs: *const FIO_prefs_t,
-) {
+unsafe fn AIO_IOPool_createThreadPool(mut ctx: *mut IOPoolCtx_t, mut prefs: *const FIO_prefs_t) {
     (*ctx).threadPool = NULL as *mut POOL_ctx;
     (*ctx).threadPoolActive = 0;
     if (*prefs).asyncIO != 0 {
@@ -628,7 +624,7 @@ unsafe extern "C" fn AIO_IOPool_createThreadPool(
         }
     }
 }
-unsafe extern "C" fn AIO_IOPool_init(
+unsafe fn AIO_IOPool_init(
     mut ctx: *mut IOPoolCtx_t,
     mut prefs: *const FIO_prefs_t,
     mut poolFunction: POOL_function,
@@ -653,20 +649,20 @@ unsafe extern "C" fn AIO_IOPool_init(
     (*ctx).jobBufferSize = bufferSize;
     (*ctx).file = NULL as *mut FILE;
 }
-unsafe extern "C" fn AIO_IOPool_threadPoolActive(mut ctx: *mut IOPoolCtx_t) -> core::ffi::c_int {
+unsafe fn AIO_IOPool_threadPoolActive(mut ctx: *mut IOPoolCtx_t) -> core::ffi::c_int {
     (!((*ctx).threadPool).is_null() && (*ctx).threadPoolActive != 0) as core::ffi::c_int
 }
-unsafe extern "C" fn AIO_IOPool_lockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
+unsafe fn AIO_IOPool_lockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
         pthread_mutex_lock(&mut (*ctx).ioJobsMutex);
     }
 }
-unsafe extern "C" fn AIO_IOPool_unlockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
+unsafe fn AIO_IOPool_unlockJobsMutex(mut ctx: *mut IOPoolCtx_t) {
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
         pthread_mutex_unlock(&mut (*ctx).ioJobsMutex);
     }
 }
-unsafe extern "C" fn AIO_IOPool_releaseIoJob(mut job: *mut IOJob_t) {
+unsafe fn AIO_IOPool_releaseIoJob(mut job: *mut IOJob_t) {
     let ctx = (*job).ctx as *mut IOPoolCtx_t;
     AIO_IOPool_lockJobsMutex(ctx);
     assert!((*ctx).availableJobsCount < (*ctx).totalIoJobs);
@@ -676,15 +672,12 @@ unsafe extern "C" fn AIO_IOPool_releaseIoJob(mut job: *mut IOJob_t) {
     *fresh2 = job as *mut core::ffi::c_void;
     AIO_IOPool_unlockJobsMutex(ctx);
 }
-unsafe extern "C" fn AIO_IOPool_join(mut ctx: *mut IOPoolCtx_t) {
+unsafe fn AIO_IOPool_join(mut ctx: *mut IOPoolCtx_t) {
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
         POOL_joinJobs((*ctx).threadPool);
     }
 }
-unsafe extern "C" fn AIO_IOPool_setThreaded(
-    mut ctx: *mut IOPoolCtx_t,
-    mut threaded: core::ffi::c_int,
-) {
+unsafe fn AIO_IOPool_setThreaded(mut ctx: *mut IOPoolCtx_t, mut threaded: core::ffi::c_int) {
     assert!(threaded == 0 || threaded == 1);
     assert!(!ctx.is_null());
     if (*ctx).threadPoolActive != threaded {
@@ -692,7 +685,7 @@ unsafe extern "C" fn AIO_IOPool_setThreaded(
         (*ctx).threadPoolActive = threaded;
     }
 }
-unsafe extern "C" fn AIO_IOPool_destroy(mut ctx: *mut IOPoolCtx_t) {
+unsafe fn AIO_IOPool_destroy(mut ctx: *mut IOPoolCtx_t) {
     let mut i: core::ffi::c_int = 0;
     if !((*ctx).threadPool).is_null() {
         AIO_IOPool_join(ctx);
@@ -709,7 +702,7 @@ unsafe extern "C" fn AIO_IOPool_destroy(mut ctx: *mut IOPoolCtx_t) {
         i += 1;
     }
 }
-unsafe extern "C" fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IOJob_t {
+unsafe fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IOJob_t {
     let mut job = core::ptr::null_mut::<IOJob_t>();
     assert!(!((*ctx).file).is_null() || (*(*ctx).prefs).testMode != 0);
     AIO_IOPool_lockJobsMutex(ctx);
@@ -724,16 +717,16 @@ unsafe extern "C" fn AIO_IOPool_acquireJob(mut ctx: *mut IOPoolCtx_t) -> *mut IO
     (*job).offset = 0;
     job
 }
-unsafe extern "C" fn AIO_IOPool_setFile(mut ctx: *mut IOPoolCtx_t, mut file: *mut FILE) {
+unsafe fn AIO_IOPool_setFile(mut ctx: *mut IOPoolCtx_t, mut file: *mut FILE) {
     assert!(!ctx.is_null());
     AIO_IOPool_join(ctx);
     assert!((*ctx).availableJobsCount == (*ctx).totalIoJobs);
     (*ctx).file = file;
 }
-unsafe extern "C" fn AIO_IOPool_getFile(mut ctx: *const IOPoolCtx_t) -> *mut FILE {
+unsafe fn AIO_IOPool_getFile(mut ctx: *const IOPoolCtx_t) -> *mut FILE {
     (*ctx).file
 }
-unsafe extern "C" fn AIO_IOPool_enqueueJob(mut job: *mut IOJob_t) {
+unsafe fn AIO_IOPool_enqueueJob(mut job: *mut IOJob_t) {
     let ctx = (*job).ctx as *mut IOPoolCtx_t;
     if AIO_IOPool_threadPoolActive(ctx) != 0 {
         POOL_add(
@@ -745,37 +738,30 @@ unsafe extern "C" fn AIO_IOPool_enqueueJob(mut job: *mut IOJob_t) {
         ((*ctx).poolFunction).unwrap_unchecked()(job as *mut core::ffi::c_void);
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_acquireJob(mut ctx: *mut WritePoolCtx_t) -> *mut IOJob_t {
+pub unsafe fn AIO_WritePool_acquireJob(mut ctx: *mut WritePoolCtx_t) -> *mut IOJob_t {
     AIO_IOPool_acquireJob(&mut (*ctx).base)
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_enqueueAndReacquireWriteJob(mut job: *mut *mut IOJob_t) {
+pub unsafe fn AIO_WritePool_enqueueAndReacquireWriteJob(mut job: *mut *mut IOJob_t) {
     AIO_IOPool_enqueueJob(*job);
     *job = AIO_IOPool_acquireJob((**job).ctx as *mut IOPoolCtx_t);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_sparseWriteEnd(mut ctx: *mut WritePoolCtx_t) {
+pub unsafe fn AIO_WritePool_sparseWriteEnd(mut ctx: *mut WritePoolCtx_t) {
     assert!(!ctx.is_null());
     AIO_IOPool_join(&mut (*ctx).base);
     AIO_fwriteSparseEnd((*ctx).base.prefs, (*ctx).base.file, (*ctx).storedSkips);
     (*ctx).storedSkips = 0;
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_setFile(mut ctx: *mut WritePoolCtx_t, mut file: *mut FILE) {
+pub unsafe fn AIO_WritePool_setFile(mut ctx: *mut WritePoolCtx_t, mut file: *mut FILE) {
     AIO_IOPool_setFile(&mut (*ctx).base, file);
     assert!((*ctx).storedSkips == 0);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_getFile(mut ctx: *const WritePoolCtx_t) -> *mut FILE {
+pub unsafe fn AIO_WritePool_getFile(mut ctx: *const WritePoolCtx_t) -> *mut FILE {
     AIO_IOPool_getFile(&(*ctx).base)
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_releaseIoJob(mut job: *mut IOJob_t) {
+pub unsafe fn AIO_WritePool_releaseIoJob(mut job: *mut IOJob_t) {
     AIO_IOPool_releaseIoJob(job);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_closeFile(mut ctx: *mut WritePoolCtx_t) -> core::ffi::c_int {
+pub unsafe fn AIO_WritePool_closeFile(mut ctx: *mut WritePoolCtx_t) -> core::ffi::c_int {
     let dstFile = (*ctx).base.file;
     assert!(!dstFile.is_null() || (*(*ctx).base.prefs).testMode != 0);
     AIO_WritePool_sparseWriteEnd(ctx);
@@ -794,8 +780,7 @@ unsafe extern "C" fn AIO_WritePool_executeWriteJob(mut opaque: *mut core::ffi::c
     );
     AIO_IOPool_releaseIoJob(job);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_create(
+pub unsafe fn AIO_WritePool_create(
     mut prefs: *const FIO_prefs_t,
     mut bufferSize: size_t,
 ) -> *mut WritePoolCtx_t {
@@ -840,8 +825,7 @@ pub unsafe extern "C" fn AIO_WritePool_create(
     (*ctx).storedSkips = 0;
     ctx
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_free(mut ctx: *mut WritePoolCtx_t) {
+pub unsafe fn AIO_WritePool_free(mut ctx: *mut WritePoolCtx_t) {
     if !(AIO_WritePool_getFile(ctx)).is_null() {
         AIO_WritePool_closeFile(ctx);
     }
@@ -849,14 +833,10 @@ pub unsafe extern "C" fn AIO_WritePool_free(mut ctx: *mut WritePoolCtx_t) {
     assert!((*ctx).storedSkips == 0);
     free(ctx as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_WritePool_setAsync(
-    mut ctx: *mut WritePoolCtx_t,
-    mut async_0: core::ffi::c_int,
-) {
+pub unsafe fn AIO_WritePool_setAsync(mut ctx: *mut WritePoolCtx_t, mut async_0: core::ffi::c_int) {
     AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
 }
-unsafe extern "C" fn AIO_ReadPool_releaseAllCompletedJobs(mut ctx: *mut ReadPoolCtx_t) {
+unsafe fn AIO_ReadPool_releaseAllCompletedJobs(mut ctx: *mut ReadPoolCtx_t) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < (*ctx).completedJobsCount {
@@ -866,7 +846,7 @@ unsafe extern "C" fn AIO_ReadPool_releaseAllCompletedJobs(mut ctx: *mut ReadPool
     }
     (*ctx).completedJobsCount = 0;
 }
-unsafe extern "C" fn AIO_ReadPool_addJobToCompleted(mut job: *mut IOJob_t) {
+unsafe fn AIO_ReadPool_addJobToCompleted(mut job: *mut IOJob_t) {
     let ctx = (*job).ctx as *mut ReadPoolCtx_t;
     AIO_IOPool_lockJobsMutex(&mut (*ctx).base);
     assert!((*ctx).completedJobsCount < MAX_IO_JOBS);
@@ -879,7 +859,7 @@ unsafe extern "C" fn AIO_ReadPool_addJobToCompleted(mut job: *mut IOJob_t) {
     }
     AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
 }
-unsafe extern "C" fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
+unsafe fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
     mut ctx: *mut ReadPoolCtx_t,
 ) -> *mut IOJob_t {
     let mut job = NULL as *mut IOJob_t;
@@ -899,7 +879,7 @@ unsafe extern "C" fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
     }
     NULL as *mut IOJob_t
 }
-unsafe extern "C" fn AIO_ReadPool_numReadsInFlight(mut ctx: *mut ReadPoolCtx_t) -> size_t {
+unsafe fn AIO_ReadPool_numReadsInFlight(mut ctx: *mut ReadPoolCtx_t) -> size_t {
     let jobsHeld = if ((*ctx).currentJobHeld).is_null() {
         0
     } else {
@@ -908,7 +888,7 @@ unsafe extern "C" fn AIO_ReadPool_numReadsInFlight(mut ctx: *mut ReadPoolCtx_t) 
     ((*ctx).base.totalIoJobs
         - ((*ctx).base.availableJobsCount + (*ctx).completedJobsCount + jobsHeld)) as size_t
 }
-unsafe extern "C" fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
+unsafe fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
     let mut job = NULL as *mut IOJob_t;
     AIO_IOPool_lockJobsMutex(&mut (*ctx).base);
     job = AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(ctx);
@@ -999,20 +979,19 @@ unsafe extern "C" fn AIO_ReadPool_executeReadJob(mut opaque: *mut core::ffi::c_v
     }
     AIO_ReadPool_addJobToCompleted(job);
 }
-unsafe extern "C" fn AIO_ReadPool_enqueueRead(mut ctx: *mut ReadPoolCtx_t) {
+unsafe fn AIO_ReadPool_enqueueRead(mut ctx: *mut ReadPoolCtx_t) {
     let job = AIO_IOPool_acquireJob(&mut (*ctx).base);
     (*job).offset = (*ctx).nextReadOffset;
     (*ctx).nextReadOffset =
         ((*ctx).nextReadOffset as core::ffi::c_ulong).wrapping_add((*job).bufferSize) as u64 as u64;
     AIO_IOPool_enqueueJob(job);
 }
-unsafe extern "C" fn AIO_ReadPool_startReading(mut ctx: *mut ReadPoolCtx_t) {
+unsafe fn AIO_ReadPool_startReading(mut ctx: *mut ReadPoolCtx_t) {
     while (*ctx).base.availableJobsCount != 0 {
         AIO_ReadPool_enqueueRead(ctx);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_setFile(mut ctx: *mut ReadPoolCtx_t, mut file: *mut FILE) {
+pub unsafe fn AIO_ReadPool_setFile(mut ctx: *mut ReadPoolCtx_t, mut file: *mut FILE) {
     assert!(!ctx.is_null());
     AIO_IOPool_join(&mut (*ctx).base);
     AIO_ReadPool_releaseAllCompletedJobs(ctx);
@@ -1030,8 +1009,7 @@ pub unsafe extern "C" fn AIO_ReadPool_setFile(mut ctx: *mut ReadPoolCtx_t, mut f
         AIO_ReadPool_startReading(ctx);
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_create(
+pub unsafe fn AIO_ReadPool_create(
     mut prefs: *const FIO_prefs_t,
     mut bufferSize: size_t,
 ) -> *mut ReadPoolCtx_t {
@@ -1145,8 +1123,7 @@ pub unsafe extern "C" fn AIO_ReadPool_create(
     }
     ctx
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_free(mut ctx: *mut ReadPoolCtx_t) {
+pub unsafe fn AIO_ReadPool_free(mut ctx: *mut ReadPoolCtx_t) {
     if !(AIO_ReadPool_getFile(ctx)).is_null() {
         AIO_ReadPool_closeFile(ctx);
     }
@@ -1157,15 +1134,12 @@ pub unsafe extern "C" fn AIO_ReadPool_free(mut ctx: *mut ReadPoolCtx_t) {
     free((*ctx).coalesceBuffer as *mut core::ffi::c_void);
     free(ctx as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_consumeBytes(mut ctx: *mut ReadPoolCtx_t, mut n: size_t) {
+pub unsafe fn AIO_ReadPool_consumeBytes(mut ctx: *mut ReadPoolCtx_t, mut n: size_t) {
     assert!(n <= (*ctx).srcBufferLoaded);
     (*ctx).srcBufferLoaded = ((*ctx).srcBufferLoaded).wrapping_sub(n);
     (*ctx).srcBuffer = ((*ctx).srcBuffer).offset(n as isize);
 }
-unsafe extern "C" fn AIO_ReadPool_releaseCurrentHeldAndGetNext(
-    mut ctx: *mut ReadPoolCtx_t,
-) -> *mut IOJob_t {
+unsafe fn AIO_ReadPool_releaseCurrentHeldAndGetNext(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
     if !((*ctx).currentJobHeld).is_null() {
         AIO_IOPool_releaseIoJob((*ctx).currentJobHeld as *mut IOJob_t);
         (*ctx).currentJobHeld = NULL as *mut core::ffi::c_void;
@@ -1174,11 +1148,7 @@ unsafe extern "C" fn AIO_ReadPool_releaseCurrentHeldAndGetNext(
     (*ctx).currentJobHeld = AIO_ReadPool_getNextCompletedJob(ctx) as *mut core::ffi::c_void;
     (*ctx).currentJobHeld as *mut IOJob_t
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_fillBuffer(
-    mut ctx: *mut ReadPoolCtx_t,
-    mut n: size_t,
-) -> size_t {
+pub unsafe fn AIO_ReadPool_fillBuffer(mut ctx: *mut ReadPoolCtx_t, mut n: size_t) -> size_t {
     let mut job = core::ptr::null_mut::<IOJob_t>();
     let mut useCoalesce = 0;
     if n > (*ctx).base.jobBufferSize {
@@ -1218,26 +1188,19 @@ pub unsafe extern "C" fn AIO_ReadPool_fillBuffer(
     }
     (*job).usedBufferSize
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_consumeAndRefill(mut ctx: *mut ReadPoolCtx_t) -> size_t {
+pub unsafe fn AIO_ReadPool_consumeAndRefill(mut ctx: *mut ReadPoolCtx_t) -> size_t {
     AIO_ReadPool_consumeBytes(ctx, (*ctx).srcBufferLoaded);
     AIO_ReadPool_fillBuffer(ctx, (*ctx).base.jobBufferSize)
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_getFile(mut ctx: *const ReadPoolCtx_t) -> *mut FILE {
+pub unsafe fn AIO_ReadPool_getFile(mut ctx: *const ReadPoolCtx_t) -> *mut FILE {
     AIO_IOPool_getFile(&(*ctx).base)
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_closeFile(mut ctx: *mut ReadPoolCtx_t) -> core::ffi::c_int {
+pub unsafe fn AIO_ReadPool_closeFile(mut ctx: *mut ReadPoolCtx_t) -> core::ffi::c_int {
     let file = AIO_ReadPool_getFile(ctx);
     AIO_ReadPool_setFile(ctx, NULL as *mut FILE);
     fclose(file)
 }
-#[no_mangle]
-pub unsafe extern "C" fn AIO_ReadPool_setAsync(
-    mut ctx: *mut ReadPoolCtx_t,
-    mut async_0: core::ffi::c_int,
-) {
+pub unsafe fn AIO_ReadPool_setAsync(mut ctx: *mut ReadPoolCtx_t, mut async_0: core::ffi::c_int) {
     AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
 }
 unsafe extern "C" fn run_static_initializers() {

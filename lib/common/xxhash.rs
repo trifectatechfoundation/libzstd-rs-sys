@@ -127,8 +127,7 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
     h64 = h64.wrapping_add(input.len() as u64);
     XXH64_finalize(h64, remainder, align)
 }
-#[export_name = crate::prefix!(ZSTD_XXH64)]
-pub unsafe extern "C" fn ZSTD_XXH64(
+pub unsafe fn ZSTD_XXH64(
     mut input: *const core::ffi::c_void,
     mut len: usize,
     mut seed: u64,
@@ -142,8 +141,7 @@ pub unsafe extern "C" fn ZSTD_XXH64(
     XXH64_endian_align(slice, seed, Align::Unaligned)
 }
 
-#[export_name = crate::prefix!(ZSTD_XXH64_reset)]
-pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
+pub fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
     *state = XXH64_state_t::default();
 
     state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
@@ -153,8 +151,7 @@ pub extern "C" fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> 
     XXH_errorcode::XXH_OK
 }
 
-#[export_name = crate::prefix!(ZSTD_XXH64_update)]
-pub unsafe extern "C" fn ZSTD_XXH64_update(
+pub unsafe fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
     mut input: *const c_void,
     mut len: usize,
@@ -209,8 +206,7 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_er
     }
     XXH_errorcode::XXH_OK
 }
-#[export_name = crate::prefix!(ZSTD_XXH64_digest)]
-pub extern "C" fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
+pub fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
     let mut h64;
     if state.total_len >= 32 {
         h64 = (state.v[0].rotate_left(1))

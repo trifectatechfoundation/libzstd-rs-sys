@@ -283,7 +283,7 @@ pub const bt_reserved: C2RustUnnamed_1 = 3;
 pub const bt_rle: C2RustUnnamed_1 = 1;
 pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
 #[inline]
-unsafe extern "C" fn ZSTD_getSequenceLength(
+unsafe fn ZSTD_getSequenceLength(
     mut seqStore: *const SeqStore_t,
     mut seq: *const SeqDef,
 ) -> ZSTD_SequenceLength {
@@ -311,7 +311,7 @@ unsafe extern "C" fn ZSTD_getSequenceLength(
     seqLen
 }
 #[inline]
-unsafe extern "C" fn ZSTD_noCompressBlock(
+unsafe fn ZSTD_noCompressBlock(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut src: *const core::ffi::c_void,
@@ -333,7 +333,7 @@ unsafe extern "C" fn ZSTD_noCompressBlock(
     ZSTD_blockHeaderSize.wrapping_add(srcSize)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
+unsafe fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
         *rep.offset(2) = *rep.offset(1);
         *rep.offset(1) = *rep.offset(0);
@@ -507,7 +507,7 @@ static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const NULL: core::ffi::c_int = 0;
-unsafe extern "C" fn ZSTD_compressSubBlock_literal(
+unsafe fn ZSTD_compressSubBlock_literal(
     mut hufTable: *const HUF_CElt,
     mut hufMetadata: *const ZSTD_hufCTablesMetadata_t,
     mut literals: *const u8,
@@ -642,7 +642,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     *entropyWritten = 1;
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-unsafe extern "C" fn ZSTD_seqDecompressedSize(
+unsafe fn ZSTD_seqDecompressedSize(
     mut seqStore: *const SeqStore_t,
     mut sequences: *const SeqDef,
     mut nbSeqs: size_t,
@@ -662,7 +662,7 @@ unsafe extern "C" fn ZSTD_seqDecompressedSize(
     lastSubBlock == 0;
     matchLengthSum.wrapping_add(litSize)
 }
-unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
+unsafe fn ZSTD_compressSubBlock_sequences(
     mut fseTables: *const ZSTD_fseCTables_t,
     mut fseMetadata: *const ZSTD_fseCTablesMetadata_t,
     mut sequences: *const SeqDef,
@@ -763,7 +763,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_sequences(
     *entropyWritten = 1;
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-unsafe extern "C" fn ZSTD_compressSubBlock(
+unsafe fn ZSTD_compressSubBlock(
     mut entropy: *const ZSTD_entropyCTables_t,
     mut entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
     mut sequences: *const SeqDef,
@@ -836,7 +836,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock(
     MEM_writeLE24(ostart as *mut core::ffi::c_void, cBlockHeader24);
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-unsafe extern "C" fn ZSTD_estimateSubBlockSize_literal(
+unsafe fn ZSTD_estimateSubBlockSize_literal(
     mut literals: *const u8,
     mut litSize: size_t,
     mut huf: *const ZSTD_hufCTables_t,
@@ -881,7 +881,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_literal(
     }
     0
 }
-unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
+unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     mut type_0: SymbolEncodingType_e,
     mut codeTable: *const u8,
     mut maxCode: core::ffi::c_uint,
@@ -936,7 +936,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_symbolType(
     }
     cSymbolTypeSizeEstimateInBits / 8
 }
-unsafe extern "C" fn ZSTD_estimateSubBlockSize_sequences(
+unsafe fn ZSTD_estimateSubBlockSize_sequences(
     mut ofCodeTable: *const u8,
     mut llCodeTable: *const u8,
     mut mlCodeTable: *const u8,
@@ -996,7 +996,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_sequences(
     }
     cSeqSizeEstimate.wrapping_add(sequencesSectionHeaderSize)
 }
-unsafe extern "C" fn ZSTD_estimateSubBlockSize(
+unsafe fn ZSTD_estimateSubBlockSize(
     mut literals: *const u8,
     mut litSize: size_t,
     mut ofCodeTable: *const u8,
@@ -1038,7 +1038,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize(
         (ebs.estBlockSize).wrapping_add((ebs.estLitSize).wrapping_add(ZSTD_blockHeaderSize));
     ebs
 }
-unsafe extern "C" fn ZSTD_needSequenceEntropyTables(
+unsafe fn ZSTD_needSequenceEntropyTables(
     mut fseMetadata: *const ZSTD_fseCTablesMetadata_t,
 ) -> core::ffi::c_int {
     if (*fseMetadata).llType as core::ffi::c_uint
@@ -1064,7 +1064,7 @@ unsafe extern "C" fn ZSTD_needSequenceEntropyTables(
     }
     0
 }
-unsafe extern "C" fn countLiterals(
+unsafe fn countLiterals(
     mut seqStore: *const SeqStore_t,
     mut sp: *const SeqDef,
     mut seqCount: size_t,
@@ -1081,7 +1081,7 @@ unsafe extern "C" fn countLiterals(
     total
 }
 pub const BYTESCALE: core::ffi::c_int = 256;
-unsafe extern "C" fn sizeBlockSequences(
+unsafe fn sizeBlockSequences(
     mut sp: *const SeqDef,
     mut nbSeqs: size_t,
     mut targetBudget: size_t,
@@ -1118,7 +1118,7 @@ unsafe extern "C" fn sizeBlockSequences(
     }
     n
 }
-unsafe extern "C" fn ZSTD_compressSubBlock_multi(
+unsafe fn ZSTD_compressSubBlock_multi(
     mut seqStorePtr: *const SeqStore_t,
     mut prevCBlock: *const ZSTD_compressedBlockState_t,
     mut nextCBlock: *mut ZSTD_compressedBlockState_t,
@@ -1350,8 +1350,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_multi(
     }
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-#[export_name = crate::prefix!(ZSTD_compressSuperBlock)]
-pub unsafe extern "C" fn ZSTD_compressSuperBlock(
+pub unsafe fn ZSTD_compressSuperBlock(
     mut zc: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,

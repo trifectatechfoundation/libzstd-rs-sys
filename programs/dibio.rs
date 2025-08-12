@@ -53,7 +53,7 @@ pub const NOISELENGTH: core::ffi::c_int = 32;
 static mut g_refreshRate: u64 = 0;
 static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const DEBUG: core::ffi::c_int = 0;
-unsafe extern "C" fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
+unsafe fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
     if fileSize == UTIL_FILESIZE_UNKNOWN as u64 {
         -(1) as i64
@@ -61,7 +61,7 @@ unsafe extern "C" fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> 
         fileSize as i64
     }
 }
-unsafe extern "C" fn DiB_loadFiles(
+unsafe fn DiB_loadFiles(
     mut buffer: *mut core::ffi::c_void,
     mut bufferSizePtr: *mut size_t,
     mut sampleSizes: *mut size_t,
@@ -219,7 +219,7 @@ unsafe extern "C" fn DiB_loadFiles(
     *bufferSizePtr = totalDataLoaded;
     nbSamplesLoaded
 }
-unsafe extern "C" fn DiB_rand(mut src: *mut u32) -> u32 {
+unsafe fn DiB_rand(mut src: *mut u32) -> u32 {
     static prime1: u32 = 2654435761;
     static prime2: u32 = 2246822519;
     let mut rand32 = *src;
@@ -229,7 +229,7 @@ unsafe extern "C" fn DiB_rand(mut src: *mut u32) -> u32 {
     *src = rand32;
     rand32 >> 5
 }
-unsafe extern "C" fn DiB_shuffle(
+unsafe fn DiB_shuffle(
     mut fileNamesTable: *mut *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
 ) {
@@ -249,7 +249,7 @@ unsafe extern "C" fn DiB_shuffle(
         i = i.wrapping_sub(1);
     }
 }
-unsafe extern "C" fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
+unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
     let step = (8 * ((1) << 20)) as size_t;
     let mut testmem = NULL as *mut core::ffi::c_void;
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
@@ -264,7 +264,7 @@ unsafe extern "C" fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> 
     free(testmem);
     requiredMem as size_t
 }
-unsafe extern "C" fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
+unsafe fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
     let prime1 = 2654435761 as core::ffi::c_uint;
     let prime2 = 2246822519 as core::ffi::c_uint;
     let mut acc = prime1;
@@ -276,7 +276,7 @@ unsafe extern "C" fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut lengt
         p = p.wrapping_add(1);
     }
 }
-unsafe extern "C" fn DiB_saveDict(
+unsafe fn DiB_saveDict(
     mut dictFileName: *const core::ffi::c_char,
     mut buff: *const core::ffi::c_void,
     mut buffSize: size_t,
@@ -330,7 +330,7 @@ unsafe extern "C" fn DiB_saveDict(
         exit(5);
     }
 }
-unsafe extern "C" fn DiB_fileStats(
+unsafe fn DiB_fileStats(
     mut fileNamesTable: *mut *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_int,
     mut chunkSize: size_t,
@@ -398,8 +398,7 @@ unsafe extern "C" fn DiB_fileStats(
     }
     fs
 }
-#[no_mangle]
-pub unsafe extern "C" fn DiB_trainFromFiles(
+pub unsafe fn DiB_trainFromFiles(
     mut dictFileName: *const core::ffi::c_char,
     mut maxDictSize: size_t,
     mut fileNamesTable: *mut *const core::ffi::c_char,

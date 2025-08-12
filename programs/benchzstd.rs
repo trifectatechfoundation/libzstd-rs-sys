@@ -163,18 +163,18 @@ pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const XXH_FORCE_ALIGN_CHECK: core::ffi::c_int = 0;
-unsafe extern "C" fn XXH_read32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
+unsafe fn XXH_read32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
     *(ptr as *const xxh_unalign32)
 }
 pub const XXH_CPU_LITTLE_ENDIAN: core::ffi::c_int = 1;
-unsafe extern "C" fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
+unsafe fn XXH_swap32(mut x: xxh_u32) -> xxh_u32 {
     x << 24 & 0xff000000 as core::ffi::c_uint
         | x << 8 & 0xff0000 as core::ffi::c_int as xxh_u32
         | x >> 8 & 0xff00 as core::ffi::c_int as xxh_u32
         | x >> 24 & 0xff as core::ffi::c_int as xxh_u32
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
+unsafe fn XXH_readLE32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read32(ptr)
     } else {
@@ -182,7 +182,7 @@ unsafe extern "C" fn XXH_readLE32(mut ptr: *const core::ffi::c_void) -> xxh_u32 
     }
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE32_align(
+unsafe fn XXH_readLE32_align(
     mut ptr: *const core::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u32 {
@@ -194,10 +194,10 @@ unsafe extern "C" fn XXH_readLE32_align(
         XXH_swap32(*(ptr as *const xxh_u32))
     }
 }
-unsafe extern "C" fn XXH_read64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
+unsafe fn XXH_read64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
     *(ptr as *const xxh_unalign64)
 }
-unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
+unsafe fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
     ((x << 56) as core::ffi::c_ulonglong & 0xff00000000000000 as core::ffi::c_ulonglong
         | (x << 40) as core::ffi::c_ulonglong & 0xff000000000000 as core::ffi::c_ulonglong
         | (x << 24) as core::ffi::c_ulonglong & 0xff0000000000 as core::ffi::c_ulonglong
@@ -208,7 +208,7 @@ unsafe extern "C" fn XXH_swap64(mut x: xxh_u64) -> xxh_u64 {
         | (x >> 56) as core::ffi::c_ulonglong & 0xff as core::ffi::c_ulonglong) as xxh_u64
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
+unsafe fn XXH_readLE64(mut ptr: *const core::ffi::c_void) -> xxh_u64 {
     if XXH_CPU_LITTLE_ENDIAN != 0 {
         XXH_read64(ptr)
     } else {
@@ -216,7 +216,7 @@ unsafe extern "C" fn XXH_readLE64(mut ptr: *const core::ffi::c_void) -> xxh_u64 
     }
 }
 #[inline(always)]
-unsafe extern "C" fn XXH_readLE64_align(
+unsafe fn XXH_readLE64_align(
     mut ptr: *const core::ffi::c_void,
     mut align: XXH_alignment,
 ) -> xxh_u64 {
@@ -233,7 +233,7 @@ pub const XXH_PRIME64_2: core::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as core::ff
 pub const XXH_PRIME64_3: core::ffi::c_ulonglong = 0x165667b19e3779f9 as core::ffi::c_ulonglong;
 pub const XXH_PRIME64_4: core::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as core::ffi::c_ulonglong;
 pub const XXH_PRIME64_5: core::ffi::c_ulonglong = 0x27d4eb2f165667c5 as core::ffi::c_ulonglong;
-unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u64 {
     acc = (acc as core::ffi::c_ulonglong)
         .wrapping_add((input as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
         as xxh_u64 as xxh_u64;
@@ -241,7 +241,7 @@ unsafe extern "C" fn XXH64_round(mut acc: xxh_u64, mut input: xxh_u64) -> xxh_u6
     acc = (acc as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
     acc
 }
-unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
     val = XXH64_round(0, val);
     acc ^= val;
     acc = (acc as core::ffi::c_ulonglong)
@@ -249,7 +249,7 @@ unsafe extern "C" fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh
         .wrapping_add(XXH_PRIME64_4) as xxh_u64;
     acc
 }
-unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
+unsafe fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 33;
     hash = (hash as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
     hash ^= hash >> 29;
@@ -257,7 +257,7 @@ unsafe extern "C" fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
     hash ^= hash >> 32;
     hash
 }
-unsafe extern "C" fn XXH64_finalize(
+unsafe fn XXH64_finalize(
     mut hash: xxh_u64,
     mut ptr: *const xxh_u8,
     mut len: size_t,
@@ -303,7 +303,7 @@ unsafe extern "C" fn XXH64_finalize(
     XXH64_avalanche(hash)
 }
 #[inline(always)]
-unsafe extern "C" fn XXH64_endian_align(
+unsafe fn XXH64_endian_align(
     mut input: *const xxh_u8,
     mut len: size_t,
     mut seed: xxh_u64,
@@ -362,7 +362,7 @@ unsafe extern "C" fn XXH64_endian_align(
     XXH64_finalize(h64, input, len, align)
 }
 #[inline]
-unsafe extern "C" fn XXH_INLINE_XXH64(
+unsafe fn XXH_INLINE_XXH64(
     mut input: *const core::ffi::c_void,
     mut len: size_t,
     mut seed: XXH64_hash_t,
@@ -376,7 +376,7 @@ pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
 pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
 static mut maxMemory: size_t = 0;
 pub const DEBUG: core::ffi::c_int = 0;
-unsafe extern "C" fn uintSize(mut value: core::ffi::c_uint) -> size_t {
+unsafe fn uintSize(mut value: core::ffi::c_uint) -> size_t {
     let mut size = 1 as size_t;
     while value >= 10 {
         size = size.wrapping_add(1);
@@ -384,7 +384,7 @@ unsafe extern "C" fn uintSize(mut value: core::ffi::c_uint) -> size_t {
     }
     size
 }
-unsafe extern "C" fn writeUint_varLen(
+unsafe fn writeUint_varLen(
     mut buffer: *mut core::ffi::c_char,
     mut capacity: size_t,
     mut value: core::ffi::c_uint,
@@ -401,7 +401,7 @@ unsafe extern "C" fn writeUint_varLen(
         value = value.wrapping_div(10);
     }
 }
-unsafe extern "C" fn formatString_u(
+unsafe fn formatString_u(
     mut buffer: *mut core::ffi::c_char,
     mut buffer_size: size_t,
     mut formatString: *const core::ffi::c_char,
@@ -447,8 +447,7 @@ unsafe extern "C" fn formatString_u(
     }
     written as core::ffi::c_int
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
+pub unsafe fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
     {
         BMK_advancedParams_t {
             mode: BMK_both,
@@ -468,7 +467,7 @@ pub unsafe extern "C" fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
         }
     }
 }
-unsafe extern "C" fn BMK_initCCtx(
+unsafe fn BMK_initCCtx(
     mut ctx: *mut ZSTD_CCtx,
     mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
@@ -878,7 +877,7 @@ unsafe extern "C" fn BMK_initCCtx(
         exit(1);
     }
 }
-unsafe extern "C" fn BMK_initDCtx(
+unsafe fn BMK_initDCtx(
     mut dctx: *mut ZSTD_DCtx,
     mut dictBuffer: *const core::ffi::c_void,
     mut dictBufferSize: size_t,
@@ -922,7 +921,7 @@ unsafe extern "C" fn BMK_initDCtx(
         exit(1);
     }
 }
-unsafe extern "C" fn local_initCCtx(mut payload: *mut core::ffi::c_void) -> size_t {
+unsafe fn local_initCCtx(mut payload: *mut core::ffi::c_void) -> size_t {
     let mut ag = payload as *mut BMK_initCCtxArgs;
     BMK_initCCtx(
         (*ag).cctx,
@@ -934,12 +933,12 @@ unsafe extern "C" fn local_initCCtx(mut payload: *mut core::ffi::c_void) -> size
     );
     0
 }
-unsafe extern "C" fn local_initDCtx(mut payload: *mut core::ffi::c_void) -> size_t {
+unsafe fn local_initDCtx(mut payload: *mut core::ffi::c_void) -> size_t {
     let mut ag = payload as *mut BMK_initDCtxArgs;
     BMK_initDCtx((*ag).dctx, (*ag).dictBuffer, (*ag).dictBufferSize);
     0
 }
-unsafe extern "C" fn local_defaultCompress(
+unsafe fn local_defaultCompress(
     mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut dstBuffer: *mut core::ffi::c_void,
@@ -949,7 +948,7 @@ unsafe extern "C" fn local_defaultCompress(
     let cctx = addArgs as *mut ZSTD_CCtx;
     ZSTD_compress2(cctx, dstBuffer, dstSize, srcBuffer, srcSize)
 }
-unsafe extern "C" fn local_defaultDecompress(
+unsafe fn local_defaultDecompress(
     mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut dstBuffer: *mut core::ffi::c_void,
@@ -985,20 +984,14 @@ unsafe extern "C" fn local_defaultDecompress(
     }
     out.pos
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_isSuccessful_benchOutcome(
-    mut outcome: BMK_benchOutcome_t,
-) -> core::ffi::c_int {
+pub unsafe fn BMK_isSuccessful_benchOutcome(mut outcome: BMK_benchOutcome_t) -> core::ffi::c_int {
     (outcome.tag == 0) as core::ffi::c_int
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_extract_benchResult(
-    mut outcome: BMK_benchOutcome_t,
-) -> BMK_benchResult_t {
+pub unsafe fn BMK_extract_benchResult(mut outcome: BMK_benchOutcome_t) -> BMK_benchResult_t {
     assert!(outcome.tag == 0);
     outcome.internal_never_use_directly
 }
-unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
+unsafe fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
     let mut b = BMK_benchOutcome_t {
         internal_never_use_directly: BMK_benchResult_t {
             cSize: 0,
@@ -1016,9 +1009,7 @@ unsafe extern "C" fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
     b.tag = 1;
     b
 }
-unsafe extern "C" fn BMK_benchOutcome_setValidResult(
-    mut result: BMK_benchResult_t,
-) -> BMK_benchOutcome_t {
+unsafe fn BMK_benchOutcome_setValidResult(mut result: BMK_benchResult_t) -> BMK_benchOutcome_t {
     let mut b = BMK_benchOutcome_t {
         internal_never_use_directly: BMK_benchResult_t {
             cSize: 0,
@@ -1032,7 +1023,7 @@ unsafe extern "C" fn BMK_benchOutcome_setValidResult(
     b.internal_never_use_directly = result;
     b
 }
-unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
+unsafe fn BMK_benchMemAdvancedNoAlloc(
     mut srcPtrs: *mut *const core::ffi::c_void,
     mut srcSizes: *mut size_t,
     mut cPtrs: *mut *mut core::ffi::c_void,
@@ -1270,18 +1261,18 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     chunkID = 0;
     fileNb_0 = 0;
     while fileNb_0 < nbFiles {
-        let mut remaining = *fileSizes.offset(fileNb_0 as isize);
+        let mut reing = *fileSizes.offset(fileNb_0 as isize);
         let nbChunksforThisFile = if (*adv).mode as core::ffi::c_uint
             == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
         {
             1
         } else {
-            (remaining.wrapping_add(chunkSizeMax.wrapping_sub(1)) / chunkSizeMax) as u32
+            (reing.wrapping_add(chunkSizeMax.wrapping_sub(1)) / chunkSizeMax) as u32
         };
         let chunkIdEnd = chunkID.wrapping_add(nbChunksforThisFile);
         while chunkID < chunkIdEnd {
-            let chunkSize = if remaining < chunkSizeMax {
-                remaining
+            let chunkSize = if reing < chunkSizeMax {
+                reing
             } else {
                 chunkSizeMax
             };
@@ -1309,7 +1300,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             srcPtr_0 = srcPtr_0.offset(chunkSize as isize);
             cPtr = cPtr.offset(*cCapacities.offset(chunkID as isize) as isize);
             resPtr = resPtr.offset(chunkSize as isize);
-            remaining = remaining.wrapping_sub(chunkSize);
+            reing = reing.wrapping_sub(chunkSize);
             if (*adv).mode as core::ffi::c_uint
                 == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
             {
@@ -1395,7 +1386,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     };
     cbp.benchFn = Some(
         local_defaultCompress
-            as unsafe extern "C" fn(
+            as unsafe fn(
                 *const core::ffi::c_void,
                 size_t,
                 *mut core::ffi::c_void,
@@ -1404,7 +1395,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             ) -> size_t,
     );
     cbp.benchPayload = cctx as *mut core::ffi::c_void;
-    cbp.initFn = Some(local_initCCtx as unsafe extern "C" fn(*mut core::ffi::c_void) -> size_t);
+    cbp.initFn = Some(local_initCCtx as unsafe fn(*mut core::ffi::c_void) -> size_t);
     cbp.initPayload = &mut cctxprep as *mut BMK_initCCtxArgs as *mut core::ffi::c_void;
     cbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> core::ffi::c_uint);
     cbp.blockCount = nbChunks as size_t;
@@ -1421,7 +1412,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     cctxprep.adv = adv;
     dbp.benchFn = Some(
         local_defaultDecompress
-            as unsafe extern "C" fn(
+            as unsafe fn(
                 *const core::ffi::c_void,
                 size_t,
                 *mut core::ffi::c_void,
@@ -1430,7 +1421,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
             ) -> size_t,
     );
     dbp.benchPayload = dctx as *mut core::ffi::c_void;
-    dbp.initFn = Some(local_initDCtx as unsafe extern "C" fn(*mut core::ffi::c_void) -> size_t);
+    dbp.initFn = Some(local_initDCtx as unsafe fn(*mut core::ffi::c_void) -> size_t);
     dbp.initPayload = &mut dctxprep as *mut BMK_initDCtxArgs as *mut core::ffi::c_void;
     dbp.errorFn = Some(ZSTD_isError as unsafe extern "C" fn(size_t) -> core::ffi::c_uint);
     dbp.blockCount = nbChunks as size_t;
@@ -1792,8 +1783,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     BMK_benchOutcome_setValidResult(benchResult)
 }
 pub const NB_MARKS: core::ffi::c_int = 4;
-#[no_mangle]
-pub unsafe extern "C" fn BMK_benchMemAdvanced(
+pub unsafe fn BMK_benchMemAdvanced(
     mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut dstBuffer: *mut core::ffi::c_void,
@@ -2011,8 +2001,7 @@ pub unsafe extern "C" fn BMK_benchMemAdvanced(
     }
     outcome
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_benchMem(
+pub unsafe fn BMK_benchMem(
     mut srcBuffer: *const core::ffi::c_void,
     mut srcSize: size_t,
     mut fileSizes: *const size_t,
@@ -2041,7 +2030,7 @@ pub unsafe extern "C" fn BMK_benchMem(
         &adv,
     )
 }
-unsafe extern "C" fn BMK_benchCLevels(
+unsafe fn BMK_benchCLevels(
     mut srcBuffer: *const core::ffi::c_void,
     mut benchedSize: size_t,
     mut fileSizes: *const size_t,
@@ -2131,8 +2120,7 @@ unsafe extern "C" fn BMK_benchCLevels(
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_syntheticTest(
+pub unsafe fn BMK_syntheticTest(
     mut compressibility: core::ffi::c_double,
     mut startingCLevel: core::ffi::c_int,
     mut endCLevel: core::ffi::c_int,
@@ -2188,7 +2176,7 @@ pub unsafe extern "C" fn BMK_syntheticTest(
     free(srcBuffer);
     res
 }
-unsafe extern "C" fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
+unsafe fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
     let step = (64 * ((1) << 20)) as size_t;
     let mut testmem = NULL as *mut u8;
     requiredMem = (requiredMem >> 26).wrapping_add(1) << 26;
@@ -2206,7 +2194,7 @@ unsafe extern "C" fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
     free(testmem as *mut core::ffi::c_void);
     requiredMem
 }
-unsafe extern "C" fn BMK_loadFiles(
+unsafe fn BMK_loadFiles(
     mut buffer: *mut core::ffi::c_void,
     mut bufferSize: size_t,
     mut fileSizes: *mut size_t,
@@ -2340,8 +2328,7 @@ unsafe extern "C" fn BMK_loadFiles(
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_benchFilesAdvanced(
+pub unsafe fn BMK_benchFilesAdvanced(
     mut fileNamesTable: *const *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
     mut dictFileName: *const core::ffi::c_char,
@@ -2541,8 +2528,7 @@ pub unsafe extern "C" fn BMK_benchFilesAdvanced(
     free(fileSizes as *mut core::ffi::c_void);
     res
 }
-#[no_mangle]
-pub unsafe extern "C" fn BMK_benchFiles(
+pub unsafe fn BMK_benchFiles(
     mut fileNamesTable: *const *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
     mut dictFileName: *const core::ffi::c_char,
