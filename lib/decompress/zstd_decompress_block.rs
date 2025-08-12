@@ -3228,12 +3228,12 @@ unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
 }
 
 #[inline(always)]
-unsafe extern "C" fn ZSTD_decompressSequences_body(
-    mut dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut maxDstSize: size_t,
-    mut seqStart: *const core::ffi::c_void,
-    mut seqSize: size_t,
+unsafe fn ZSTD_decompressSequences_body(
+    dctx: &mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    maxDstSize: size_t,
+    seqStart: *const core::ffi::c_void,
+    seqSize: size_t,
     mut nbSeq: core::ffi::c_int,
     isLongOffset: ZSTD_longOffset_e,
 ) -> size_t {
@@ -3767,7 +3767,7 @@ unsafe fn ZSTD_decompressSequencesLong_default(
 }
 
 unsafe fn ZSTD_decompressSequences_bmi2(
-    dctx: *mut ZSTD_DCtx,
+    dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     seqStart: *const core::ffi::c_void,
