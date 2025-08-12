@@ -1998,14 +1998,14 @@ unsafe fn ZSTD_buildSeqTable_rle(
 
 #[inline(always)]
 unsafe fn ZSTD_buildFSETable_body(
-    mut dt: *mut ZSTD_seqSymbol,
-    mut normalizedCounter: *const core::ffi::c_short,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut baseValue: *const u32,
-    mut nbAdditionalBits: *const u8,
-    mut tableLog: core::ffi::c_uint,
-    mut wksp: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    dt: *mut ZSTD_seqSymbol,
+    normalizedCounter: *const core::ffi::c_short,
+    maxSymbolValue: core::ffi::c_uint,
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    tableLog: core::ffi::c_uint,
+    wksp: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) {
     let tableDecode = dt.offset(1);
     let maxSV1 = maxSymbolValue.wrapping_add(1);
@@ -2125,21 +2125,21 @@ unsafe fn ZSTD_buildFSETable_body(
         (*tableDecode.offset(u_0 as isize)).nextState = (nextState
             << (*tableDecode.offset(u_0 as isize)).nbBits as core::ffi::c_int)
             .wrapping_sub(tableSize) as u16;
-        (*tableDecode.offset(u_0 as isize)).nbAdditionalBits =
-            *nbAdditionalBits.offset(symbol as isize);
-        (*tableDecode.offset(u_0 as isize)).baseValue = *baseValue.offset(symbol as isize);
+        (*tableDecode.offset(u_0 as isize)).nbAdditionalBits = nbAdditionalBits[symbol as usize];
+        (*tableDecode.offset(u_0 as isize)).baseValue = baseValue[symbol as usize];
         u_0 = u_0.wrapping_add(1);
     }
 }
+
 unsafe fn ZSTD_buildFSETable_body_default(
-    mut dt: *mut ZSTD_seqSymbol,
-    mut normalizedCounter: *const core::ffi::c_short,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut baseValue: *const u32,
-    mut nbAdditionalBits: *const u8,
-    mut tableLog: core::ffi::c_uint,
-    mut wksp: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    dt: *mut ZSTD_seqSymbol,
+    normalizedCounter: *const core::ffi::c_short,
+    maxSymbolValue: core::ffi::c_uint,
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    tableLog: core::ffi::c_uint,
+    wksp: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) {
     ZSTD_buildFSETable_body(
         dt,
@@ -2152,15 +2152,16 @@ unsafe fn ZSTD_buildFSETable_body_default(
         wkspSize,
     );
 }
+
 unsafe fn ZSTD_buildFSETable_body_bmi2(
-    mut dt: *mut ZSTD_seqSymbol,
-    mut normalizedCounter: *const core::ffi::c_short,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut baseValue: *const u32,
-    mut nbAdditionalBits: *const u8,
-    mut tableLog: core::ffi::c_uint,
-    mut wksp: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    dt: *mut ZSTD_seqSymbol,
+    normalizedCounter: *const core::ffi::c_short,
+    maxSymbolValue: core::ffi::c_uint,
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    tableLog: core::ffi::c_uint,
+    wksp: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) {
     ZSTD_buildFSETable_body(
         dt,
@@ -2173,16 +2174,17 @@ unsafe fn ZSTD_buildFSETable_body_bmi2(
         wkspSize,
     );
 }
+
 pub unsafe fn ZSTD_buildFSETable(
-    mut dt: *mut ZSTD_seqSymbol,
-    mut normalizedCounter: *const core::ffi::c_short,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut baseValue: *const u32,
-    mut nbAdditionalBits: *const u8,
-    mut tableLog: core::ffi::c_uint,
-    mut wksp: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut bmi2: core::ffi::c_int,
+    dt: *mut ZSTD_seqSymbol,
+    normalizedCounter: *const core::ffi::c_short,
+    maxSymbolValue: core::ffi::c_uint,
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    tableLog: core::ffi::c_uint,
+    wksp: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    bmi2: core::ffi::c_int,
 ) {
     if bmi2 != 0 {
         ZSTD_buildFSETable_body_bmi2(
@@ -2195,18 +2197,18 @@ pub unsafe fn ZSTD_buildFSETable(
             wksp,
             wkspSize,
         );
-        return;
+    } else {
+        ZSTD_buildFSETable_body_default(
+            dt,
+            normalizedCounter,
+            maxSymbolValue,
+            baseValue,
+            nbAdditionalBits,
+            tableLog,
+            wksp,
+            wkspSize,
+        );
     }
-    ZSTD_buildFSETable_body_default(
-        dt,
-        normalizedCounter,
-        maxSymbolValue,
-        baseValue,
-        nbAdditionalBits,
-        tableLog,
-        wksp,
-        wkspSize,
-    );
 }
 unsafe fn ZSTD_buildSeqTable(
     DTableSpace: *mut ZSTD_seqSymbol,
@@ -2277,8 +2279,8 @@ unsafe fn ZSTD_buildSeqTable(
                 DTableSpace,
                 norm.as_mut_ptr(),
                 max,
-                baseValue.as_ptr(),
-                nbAdditionalBits.as_ptr(),
+                &baseValue,
+                &nbAdditionalBits,
                 tableLog,
                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
                 size_of_val(wksp) as size_t,
