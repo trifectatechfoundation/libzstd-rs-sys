@@ -95,18 +95,18 @@ pub struct COVER_dictSelection {
     pub totalCompressedSize: size_t,
 }
 static prime6bytes: u64 = 227718039650203;
-unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as core::ffi::c_int - 48 as core::ffi::c_int)) * prime6bytes) ^ s)
         >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
-unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     ((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
 }
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
@@ -118,7 +118,7 @@ pub const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
 pub const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
 pub const DEFAULT_F: core::ffi::c_int = 20;
 pub const DEFAULT_ACCEL: core::ffi::c_int = 1;
-unsafe extern "C" fn FASTCOVER_hashPtrToIndex(
+unsafe fn FASTCOVER_hashPtrToIndex(
     mut p: *const core::ffi::c_void,
     mut f: u32,
     mut d: core::ffi::c_uint,
@@ -196,7 +196,7 @@ static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = [
         }
     },
 ];
-unsafe extern "C" fn FASTCOVER_selectSegment(
+unsafe fn FASTCOVER_selectSegment(
     mut ctx: *const FASTCOVER_ctx_t,
     mut freqs: *mut u32,
     mut begin: u32,
@@ -276,7 +276,7 @@ unsafe extern "C" fn FASTCOVER_selectSegment(
     }
     bestSegment
 }
-unsafe extern "C" fn FASTCOVER_checkParameters(
+unsafe fn FASTCOVER_checkParameters(
     mut parameters: ZDICT_cover_params_t,
     mut maxDictSize: size_t,
     mut f: core::ffi::c_uint,
@@ -305,7 +305,7 @@ unsafe extern "C" fn FASTCOVER_checkParameters(
     }
     1
 }
-unsafe extern "C" fn FASTCOVER_ctx_destroy(mut ctx: *mut FASTCOVER_ctx_t) {
+unsafe fn FASTCOVER_ctx_destroy(mut ctx: *mut FASTCOVER_ctx_t) {
     if ctx.is_null() {
         return;
     }
@@ -314,10 +314,7 @@ unsafe extern "C" fn FASTCOVER_ctx_destroy(mut ctx: *mut FASTCOVER_ctx_t) {
     free((*ctx).offsets as *mut core::ffi::c_void);
     (*ctx).offsets = NULL as *mut size_t;
 }
-unsafe extern "C" fn FASTCOVER_computeFrequency(
-    mut freqs: *mut u32,
-    mut ctx: *const FASTCOVER_ctx_t,
-) {
+unsafe fn FASTCOVER_computeFrequency(mut freqs: *mut u32, mut ctx: *const FASTCOVER_ctx_t) {
     let f = (*ctx).f;
     let d = (*ctx).d;
     let skip = (*ctx).accelParams.skip;
@@ -340,7 +337,7 @@ unsafe extern "C" fn FASTCOVER_computeFrequency(
         i = i.wrapping_add(1);
     }
 }
-unsafe extern "C" fn FASTCOVER_ctx_init(
+unsafe fn FASTCOVER_ctx_init(
     mut ctx: *mut FASTCOVER_ctx_t,
     mut samplesBuffer: *const core::ffi::c_void,
     mut samplesSizes: *const size_t,
@@ -512,7 +509,7 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
     FASTCOVER_computeFrequency((*ctx).freqs, ctx);
     0
 }
-unsafe extern "C" fn FASTCOVER_buildDictionary(
+unsafe fn FASTCOVER_buildDictionary(
     mut ctx: *const FASTCOVER_ctx_t,
     mut freqs: *mut u32,
     mut dictBuffer: *mut core::ffi::c_void,
@@ -675,7 +672,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(mut opaque: *mut core::ffi::c_void)
     COVER_dictSelectionFree(selection);
     free(freqs as *mut core::ffi::c_void);
 }
-unsafe extern "C" fn FASTCOVER_convertToCoverParams(
+unsafe fn FASTCOVER_convertToCoverParams(
     mut fastCoverParams: ZDICT_fastCover_params_t,
     mut coverParams: *mut ZDICT_cover_params_t,
 ) {
@@ -687,7 +684,7 @@ unsafe extern "C" fn FASTCOVER_convertToCoverParams(
     (*coverParams).zParams = fastCoverParams.zParams;
     (*coverParams).shrinkDict = fastCoverParams.shrinkDict;
 }
-unsafe extern "C" fn FASTCOVER_convertToFastCoverParams(
+unsafe fn FASTCOVER_convertToFastCoverParams(
     mut coverParams: ZDICT_cover_params_t,
     mut fastCoverParams: *mut ZDICT_fastCover_params_t,
     mut f: core::ffi::c_uint,

@@ -18,8 +18,7 @@ pub const fn ERR_getErrorCode(mut code: size_t) -> ZSTD_ErrorCode {
     code.wrapping_neg() as _
 }
 
-#[export_name = crate::prefix!(ERR_getErrorString)]
-pub extern "C" fn ERR_getErrorString(mut code: ERR_enum) -> *const c_char {
+pub fn ERR_getErrorString(mut code: ERR_enum) -> *const c_char {
     match code as core::ffi::c_uint {
         0 => b"No error detected\0" as *const u8 as *const c_char,
         1 => b"Error (generic)\0" as *const u8 as *const c_char,

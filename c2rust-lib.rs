@@ -19,7 +19,6 @@ pub mod lib {
         pub mod fse_decompress;
         pub mod mem;
         pub mod pool;
-        pub mod threading;
         pub mod xxhash;
         pub mod zstd_common;
         pub mod zstd_trace;

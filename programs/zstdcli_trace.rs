@@ -58,8 +58,7 @@ static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
-#[no_mangle]
-pub unsafe extern "C" fn TRACE_enable(mut filename: *const core::ffi::c_char) {
+pub unsafe fn TRACE_enable(mut filename: *const core::ffi::c_char) {
     let writeHeader = (UTIL_isRegularFile(filename) == 0) as core::ffi::c_int;
     if !g_traceFile.is_null() {
         fclose(g_traceFile);
@@ -74,14 +73,13 @@ pub unsafe extern "C" fn TRACE_enable(mut filename: *const core::ffi::c_char) {
     }
     g_enableTime = UTIL_getTime();
 }
-#[no_mangle]
-pub unsafe extern "C" fn TRACE_finish() {
+pub unsafe fn TRACE_finish() {
     if !g_traceFile.is_null() {
         fclose(g_traceFile);
     }
     g_traceFile = NULL as *mut FILE;
 }
-unsafe extern "C" fn TRACE_log(
+unsafe fn TRACE_log(
     mut method: *const core::ffi::c_char,
     mut duration: PTime,
     mut trace: *const ZSTD_Trace,

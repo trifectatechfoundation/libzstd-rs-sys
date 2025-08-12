@@ -11,12 +11,10 @@ pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
 pub const HIST_WKSP_SIZE: core::ffi::c_ulong = (HIST_WKSP_SIZE_U32 as core::ffi::c_ulong)
     .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
-#[export_name = crate::prefix!(HIST_isError)]
-pub unsafe extern "C" fn HIST_isError(mut code: size_t) -> core::ffi::c_uint {
+pub unsafe fn HIST_isError(mut code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
-#[export_name = crate::prefix!(HIST_add)]
-pub unsafe extern "C" fn HIST_add(
+pub unsafe fn HIST_add(
     mut count: *mut core::ffi::c_uint,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
@@ -30,8 +28,7 @@ pub unsafe extern "C" fn HIST_add(
         *fresh1 = (*fresh1).wrapping_add(1);
     }
 }
-#[export_name = crate::prefix!(HIST_count_simple)]
-pub unsafe extern "C" fn HIST_count_simple(
+pub unsafe fn HIST_count_simple(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut src: *const core::ffi::c_void,
@@ -72,7 +69,7 @@ pub unsafe extern "C" fn HIST_count_simple(
     }
     largestCount
 }
-unsafe extern "C" fn HIST_count_parallel_wksp(
+unsafe fn HIST_count_parallel_wksp(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut source: *const core::ffi::c_void,
@@ -185,8 +182,7 @@ unsafe extern "C" fn HIST_count_parallel_wksp(
     );
     max as size_t
 }
-#[export_name = crate::prefix!(HIST_countFast_wksp)]
-pub unsafe extern "C" fn HIST_countFast_wksp(
+pub unsafe fn HIST_countFast_wksp(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut source: *const core::ffi::c_void,
@@ -212,8 +208,7 @@ pub unsafe extern "C" fn HIST_countFast_wksp(
         workSpace as *mut u32,
     )
 }
-#[export_name = crate::prefix!(HIST_count_wksp)]
-pub unsafe extern "C" fn HIST_count_wksp(
+pub unsafe fn HIST_count_wksp(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut source: *const core::ffi::c_void,
@@ -247,8 +242,7 @@ pub unsafe extern "C" fn HIST_count_wksp(
         workSpaceSize,
     )
 }
-#[export_name = crate::prefix!(HIST_countFast)]
-pub unsafe extern "C" fn HIST_countFast(
+pub unsafe fn HIST_countFast(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut source: *const core::ffi::c_void,
@@ -264,8 +258,7 @@ pub unsafe extern "C" fn HIST_countFast(
         ::core::mem::size_of::<[core::ffi::c_uint; 1024]>() as core::ffi::c_ulong,
     )
 }
-#[export_name = crate::prefix!(HIST_count)]
-pub unsafe extern "C" fn HIST_count(
+pub unsafe fn HIST_count(
     mut count: *mut core::ffi::c_uint,
     mut maxSymbolValuePtr: *mut core::ffi::c_uint,
     mut src: *const core::ffi::c_void,

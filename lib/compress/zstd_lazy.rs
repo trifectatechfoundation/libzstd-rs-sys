@@ -112,7 +112,7 @@ use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;
-unsafe extern "C" fn ZSTD_safecopyLiterals(
+unsafe fn ZSTD_safecopyLiterals(
     mut op: *mut u8,
     mut ip: *const u8,
     iend: *const u8,
@@ -138,7 +138,7 @@ unsafe extern "C" fn ZSTD_safecopyLiterals(
 }
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 #[inline(always)]
-unsafe extern "C" fn ZSTD_storeSeqOnly(
+unsafe fn ZSTD_storeSeqOnly(
     mut seqStorePtr: *mut SeqStore_t,
     mut litLength: size_t,
     mut offBase: u32,
@@ -167,7 +167,7 @@ unsafe extern "C" fn ZSTD_storeSeqOnly(
     (*seqStorePtr).sequences;
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_storeSeq(
+unsafe fn ZSTD_storeSeq(
     mut seqStorePtr: *mut SeqStore_t,
     mut litLength: size_t,
     mut literals: *const u8,
@@ -197,11 +197,7 @@ unsafe extern "C" fn ZSTD_storeSeq(
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 #[inline]
-unsafe extern "C" fn ZSTD_count(
-    mut pIn: *const u8,
-    mut pMatch: *const u8,
-    pInLimit: *const u8,
-) -> size_t {
+unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const u8) -> size_t {
     let pStart = pIn;
     let pInLoopLimit = pInLimit.offset(
         -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
@@ -248,7 +244,7 @@ unsafe extern "C" fn ZSTD_count(
     pIn.offset_from(pStart) as core::ffi::c_long as size_t
 }
 #[inline]
-unsafe extern "C" fn ZSTD_count_2segments(
+unsafe fn ZSTD_count_2segments(
     mut ip: *const u8,
     mut match_0: *const u8,
     mut iEnd: *const u8,
@@ -267,84 +263,60 @@ unsafe extern "C" fn ZSTD_count_2segments(
     matchLength.wrapping_add(ZSTD_count(ip.offset(matchLength as isize), iStart, iEnd))
 }
 static prime4bytes: u32 = 2654435761;
-unsafe extern "C" fn ZSTD_hash4(mut u: u32, mut h: u32, mut s: u32) -> u32 {
+unsafe fn ZSTD_hash4(mut u: u32, mut h: u32, mut s: u32) -> u32 {
     ((u * prime4bytes) ^ s) >> 32u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash4Ptr(mut ptr: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash4Ptr(mut ptr: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash4(MEM_readLE32(ptr), h, 0) as size_t
 }
-unsafe extern "C" fn ZSTD_hash4PtrS(
-    mut ptr: *const core::ffi::c_void,
-    mut h: u32,
-    mut s: u32,
-) -> size_t {
+unsafe fn ZSTD_hash4PtrS(mut ptr: *const core::ffi::c_void, mut h: u32, mut s: u32) -> size_t {
     ZSTD_hash4(MEM_readLE32(ptr), h, s) as size_t
 }
 static prime5bytes: u64 = 889523592379;
-unsafe extern "C" fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as core::ffi::c_int - 40 as core::ffi::c_int)) * prime5bytes) ^ s)
         >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash5Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash5Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash5(MEM_readLE64(p), h, 0)
 }
-unsafe extern "C" fn ZSTD_hash5PtrS(
-    mut p: *const core::ffi::c_void,
-    mut h: u32,
-    mut s: u64,
-) -> size_t {
+unsafe fn ZSTD_hash5PtrS(mut p: *const core::ffi::c_void, mut h: u32, mut s: u64) -> size_t {
     ZSTD_hash5(MEM_readLE64(p), h, s)
 }
 static prime6bytes: u64 = 227718039650203;
-unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as core::ffi::c_int - 48 as core::ffi::c_int)) * prime6bytes) ^ s)
         >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
-unsafe extern "C" fn ZSTD_hash6PtrS(
-    mut p: *const core::ffi::c_void,
-    mut h: u32,
-    mut s: u64,
-) -> size_t {
+unsafe fn ZSTD_hash6PtrS(mut p: *const core::ffi::c_void, mut h: u32, mut s: u64) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, s)
 }
 static prime7bytes: u64 = 58295818150454627;
-unsafe extern "C" fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as core::ffi::c_int - 56 as core::ffi::c_int)) * prime7bytes) ^ s)
         >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
-unsafe extern "C" fn ZSTD_hash7PtrS(
-    mut p: *const core::ffi::c_void,
-    mut h: u32,
-    mut s: u64,
-) -> size_t {
+unsafe fn ZSTD_hash7PtrS(mut p: *const core::ffi::c_void, mut h: u32, mut s: u64) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, s)
 }
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
-unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
+unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     ((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)
 }
-unsafe extern "C" fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
+unsafe fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
 }
-unsafe extern "C" fn ZSTD_hash8PtrS(
-    mut p: *const core::ffi::c_void,
-    mut h: u32,
-    mut s: u64,
-) -> size_t {
+unsafe fn ZSTD_hash8PtrS(mut p: *const core::ffi::c_void, mut h: u32, mut s: u64) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, s)
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_hashPtr(
-    mut p: *const core::ffi::c_void,
-    mut hBits: u32,
-    mut mls: u32,
-) -> size_t {
+unsafe fn ZSTD_hashPtr(mut p: *const core::ffi::c_void, mut hBits: u32, mut mls: u32) -> size_t {
     match mls {
         5 => ZSTD_hash5Ptr(p, hBits),
         6 => ZSTD_hash6Ptr(p, hBits),
@@ -354,7 +326,7 @@ unsafe extern "C" fn ZSTD_hashPtr(
     }
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_hashPtrSalted(
+unsafe fn ZSTD_hashPtrSalted(
     mut p: *const core::ffi::c_void,
     mut hBits: u32,
     mut mls: u32,
@@ -369,7 +341,7 @@ unsafe extern "C" fn ZSTD_hashPtrSalted(
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_getLowestMatchIndex(
+unsafe fn ZSTD_getLowestMatchIndex(
     mut ms: *const ZSTD_MatchState_t,
     mut curr: u32,
     mut windowLog: core::ffi::c_uint,
@@ -390,7 +362,7 @@ unsafe extern "C" fn ZSTD_getLowestMatchIndex(
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_getLowestPrefixIndex(
+unsafe fn ZSTD_getLowestPrefixIndex(
     mut ms: *const ZSTD_MatchState_t,
     mut curr: u32,
     mut windowLog: core::ffi::c_uint,
@@ -411,30 +383,21 @@ unsafe extern "C" fn ZSTD_getLowestPrefixIndex(
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_index_overlap_check(
-    prefixLowestIndex: u32,
-    repIndex: u32,
-) -> core::ffi::c_int {
+unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const MINMATCH: core::ffi::c_int = 3;
-unsafe extern "C" fn ZSTD_copy8(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-) {
+unsafe fn ZSTD_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
-unsafe extern "C" fn ZSTD_copy16(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-) {
+unsafe fn ZSTD_copy16(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
 pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
-unsafe extern "C" fn ZSTD_wildcopy(
+unsafe fn ZSTD_wildcopy(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
     mut length: size_t,
@@ -477,23 +440,23 @@ unsafe extern "C" fn ZSTD_wildcopy(
     };
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
+unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
             ZSTD_countTrailingZeros64(val) >> 3
@@ -507,23 +470,23 @@ unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     }
 }
 #[inline]
-unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 #[inline]
-unsafe extern "C" fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
+unsafe fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
     count &= 0x3f as core::ffi::c_int as u32;
     value >> count
         | value << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0x3f as core::ffi::c_uint)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_rotateRight_U32(value: u32, mut count: u32) -> u32 {
+unsafe fn ZSTD_rotateRight_U32(value: u32, mut count: u32) -> u32 {
     count &= 0x1f as core::ffi::c_int as u32;
     value >> count
         | value << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0x1f as core::ffi::c_uint)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_rotateRight_U16(value: u16, mut count: u32) -> u16 {
+unsafe fn ZSTD_rotateRight_U16(value: u16, mut count: u32) -> u16 {
     count &= 0xf as core::ffi::c_int as u32;
     (value as core::ffi::c_int >> count
         | ((value as core::ffi::c_int)
@@ -534,7 +497,7 @@ pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const NULL: core::ffi::c_int = 0;
 pub const kLazySkippingStep: core::ffi::c_int = 8;
-unsafe extern "C" fn ZSTD_updateDUBT(
+unsafe fn ZSTD_updateDUBT(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     mut iend: *const u8,
@@ -566,7 +529,7 @@ unsafe extern "C" fn ZSTD_updateDUBT(
     }
     (*ms).nextToUpdate = target;
 }
-unsafe extern "C" fn ZSTD_insertDUBT1(
+unsafe fn ZSTD_insertDUBT1(
     mut ms: *const ZSTD_MatchState_t,
     mut curr: u32,
     mut inputEnd: *const u8,
@@ -677,7 +640,7 @@ unsafe extern "C" fn ZSTD_insertDUBT1(
     *largerPtr = 0;
     *smallerPtr = *largerPtr;
 }
-unsafe extern "C" fn ZSTD_DUBT_findBetterDictMatch(
+unsafe fn ZSTD_DUBT_findBetterDictMatch(
     mut ms: *const ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
@@ -770,7 +733,7 @@ unsafe extern "C" fn ZSTD_DUBT_findBetterDictMatch(
     }
     bestLength
 }
-unsafe extern "C" fn ZSTD_DUBT_findBestMatch(
+unsafe fn ZSTD_DUBT_findBestMatch(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
@@ -930,7 +893,7 @@ unsafe extern "C" fn ZSTD_DUBT_findBestMatch(
     bestLength
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch(
+unsafe fn ZSTD_BtFindBestMatch(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
@@ -944,8 +907,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch(
     ZSTD_updateDUBT(ms, ip, iLimit, mls);
     ZSTD_DUBT_findBestMatch(ms, ip, iLimit, offBasePtr, mls, dictMode)
 }
-#[export_name = crate::prefix!(ZSTD_dedicatedDictSearch_lazy_loadDictionary)]
-pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
+pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
 ) {
@@ -1072,7 +1034,7 @@ pub unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     (*ms).nextToUpdate = target;
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
+unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     mut offsetPtr: *mut size_t,
     mut ml: size_t,
     mut nbAttempts: u32,
@@ -1185,7 +1147,7 @@ unsafe extern "C" fn ZSTD_dedicatedDictSearch_lazy_search(
     ml
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_insertAndFindFirstIndex_internal(
+unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     mut ms: *mut ZSTD_MatchState_t,
     cParams: *const ZSTD_compressionParameters,
     mut ip: *const u8,
@@ -1215,8 +1177,7 @@ unsafe extern "C" fn ZSTD_insertAndFindFirstIndex_internal(
     (*ms).nextToUpdate = target;
     *hashTable.offset(ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls) as isize)
 }
-#[export_name = crate::prefix!(ZSTD_insertAndFindFirstIndex)]
-pub unsafe extern "C" fn ZSTD_insertAndFindFirstIndex(
+pub unsafe fn ZSTD_insertAndFindFirstIndex(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
 ) -> u32 {
@@ -1224,7 +1185,7 @@ pub unsafe extern "C" fn ZSTD_insertAndFindFirstIndex(
     ZSTD_insertAndFindFirstIndex_internal(ms, cParams, ip, (*ms).cParams.minMatch, 0)
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch(
+unsafe fn ZSTD_HcFindBestMatch(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
@@ -1402,18 +1363,18 @@ pub const ZSTD_ROW_HASH_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_ROW_HASH_TAG_BITS).wrapping_sub(1);
 pub const ZSTD_ROW_HASH_CACHE_MASK: core::ffi::c_int = ZSTD_ROW_HASH_CACHE_SIZE - 1;
 #[inline]
-unsafe extern "C" fn ZSTD_VecMask_next(mut val: ZSTD_VecMask) -> u32 {
+unsafe fn ZSTD_VecMask_next(mut val: ZSTD_VecMask) -> u32 {
     ZSTD_countTrailingZeros64(val)
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_nextIndex(tagRow: *mut u8, rowMask: u32) -> u32 {
+unsafe fn ZSTD_row_nextIndex(tagRow: *mut u8, rowMask: u32) -> u32 {
     let mut next = (*tagRow as core::ffi::c_int - 1) as u32 & rowMask;
     next = next.wrapping_add(if next == 0 { rowMask } else { 0 });
     *tagRow = next as u8;
     next
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_prefetch(
+unsafe fn ZSTD_row_prefetch(
     mut hashTable: *const u32,
     mut tagTable: *const u8,
     relRow: u32,
@@ -1423,7 +1384,7 @@ unsafe extern "C" fn ZSTD_row_prefetch(
     rowLog == 6;
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_fillHashCache(
+unsafe fn ZSTD_row_fillHashCache(
     mut ms: *mut ZSTD_MatchState_t,
     mut base: *const u8,
     rowLog: u32,
@@ -1460,7 +1421,7 @@ unsafe extern "C" fn ZSTD_row_fillHashCache(
     }
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_nextCachedHash(
+unsafe fn ZSTD_row_nextCachedHash(
     mut cache: *mut u32,
     mut hashTable: *const u32,
     mut tagTable: *const u8,
@@ -1485,7 +1446,7 @@ unsafe extern "C" fn ZSTD_row_nextCachedHash(
     hash
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_update_internalImpl(
+unsafe fn ZSTD_row_update_internalImpl(
     mut ms: *mut ZSTD_MatchState_t,
     mut updateStartIdx: u32,
     updateEndIdx: u32,
@@ -1529,7 +1490,7 @@ unsafe extern "C" fn ZSTD_row_update_internalImpl(
     }
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_update_internal(
+unsafe fn ZSTD_row_update_internal(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     mls: u32,
@@ -1554,8 +1515,7 @@ unsafe extern "C" fn ZSTD_row_update_internal(
     ZSTD_row_update_internalImpl(ms, idx, target, mls, rowLog, rowMask, useCache);
     (*ms).nextToUpdate = target;
 }
-#[export_name = crate::prefix!(ZSTD_row_update)]
-pub unsafe extern "C" fn ZSTD_row_update(ms: *mut ZSTD_MatchState_t, mut ip: *const u8) {
+pub unsafe fn ZSTD_row_update(ms: *mut ZSTD_MatchState_t, mut ip: *const u8) {
     let rowLog = if 4
         > (if (*ms).cParams.searchLog < 6 {
             (*ms).cParams.searchLog
@@ -1577,11 +1537,11 @@ pub unsafe extern "C" fn ZSTD_row_update(ms: *mut ZSTD_MatchState_t, mut ip: *co
     ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, 0);
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_matchMaskGroupWidth(rowEntries: u32) -> u32 {
+unsafe fn ZSTD_row_matchMaskGroupWidth(rowEntries: u32) -> u32 {
     1
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_getSSEMask(
+unsafe fn ZSTD_row_getSSEMask(
     mut nbChunks: core::ffi::c_int,
     src: *const u8,
     tag: u8,
@@ -1617,7 +1577,7 @@ unsafe extern "C" fn ZSTD_row_getSSEMask(
     )
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_row_getMatchMask(
+unsafe fn ZSTD_row_getMatchMask(
     tagRow: *const u8,
     tag: u8,
     headGrouped: u32,
@@ -1627,7 +1587,7 @@ unsafe extern "C" fn ZSTD_row_getMatchMask(
     ZSTD_row_getSSEMask((rowEntries / 16) as core::ffi::c_int, src, tag, headGrouped)
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch(
+unsafe fn ZSTD_RowFindBestMatch(
     mut ms: *mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
@@ -1869,7 +1829,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch(
     ml
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_6(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1878,7 +1838,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_6(
+unsafe fn ZSTD_RowFindBestMatch_extDict_4_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1887,7 +1847,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_4(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1896,7 +1856,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_6(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1905,7 +1865,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_6(
+unsafe fn ZSTD_RowFindBestMatch_extDict_6_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1914,7 +1874,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_5(
+unsafe fn ZSTD_RowFindBestMatch_extDict_6_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1923,7 +1883,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_4(
+unsafe fn ZSTD_RowFindBestMatch_extDict_6_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1932,7 +1892,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_6_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_6(
+unsafe fn ZSTD_RowFindBestMatch_extDict_5_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1941,7 +1901,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_5(
+unsafe fn ZSTD_RowFindBestMatch_extDict_5_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1950,7 +1910,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_4(
+unsafe fn ZSTD_RowFindBestMatch_extDict_5_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1959,7 +1919,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_5_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_5(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1968,7 +1928,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_5(
+unsafe fn ZSTD_RowFindBestMatch_extDict_4_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1977,7 +1937,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_4(
+unsafe fn ZSTD_RowFindBestMatch_extDict_4_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1986,7 +1946,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_extDict_4_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_5(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -1995,7 +1955,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_4(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2004,7 +1964,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_6(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2013,7 +1973,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_5(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2022,7 +1982,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_4(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2031,7 +1991,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_6(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2040,7 +2000,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_6(
+unsafe fn ZSTD_RowFindBestMatch_noDict_6_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2049,7 +2009,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_5(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2058,7 +2018,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_4(
+unsafe fn ZSTD_RowFindBestMatch_noDict_6_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2067,7 +2027,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_6(
+unsafe fn ZSTD_RowFindBestMatch_noDict_5_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2076,7 +2036,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_5(
+unsafe fn ZSTD_RowFindBestMatch_noDict_5_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2085,7 +2045,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_4(
+unsafe fn ZSTD_RowFindBestMatch_noDict_5_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2094,7 +2054,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_5_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_6(
+unsafe fn ZSTD_RowFindBestMatch_noDict_4_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2103,7 +2063,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_5(
+unsafe fn ZSTD_RowFindBestMatch_noDict_4_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2112,7 +2072,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_4(
+unsafe fn ZSTD_RowFindBestMatch_noDict_4_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2121,7 +2081,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_4_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_4(
+unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2130,7 +2090,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_6(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2139,7 +2099,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_4_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_5(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2148,7 +2108,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_4(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2157,7 +2117,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_6_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_6(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2166,7 +2126,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_6(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 6)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_5(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2175,7 +2135,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_4(
+unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2184,7 +2144,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_dictMatchState_5_4(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 4)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_5(
+unsafe fn ZSTD_RowFindBestMatch_noDict_6_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2193,7 +2153,7 @@ unsafe extern "C" fn ZSTD_RowFindBestMatch_noDict_6_5(
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 5)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_6(
+unsafe fn ZSTD_BtFindBestMatch_noDict_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2202,7 +2162,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_6(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_6(
+unsafe fn ZSTD_BtFindBestMatch_dictMatchState_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2211,7 +2171,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_6(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_5(
+unsafe fn ZSTD_BtFindBestMatch_noDict_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2220,7 +2180,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_5(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_5(
+unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2229,7 +2189,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_5(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_6(
+unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2238,7 +2198,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_6(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_4(
+unsafe fn ZSTD_BtFindBestMatch_dedicatedDictSearch_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2247,7 +2207,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dedicatedDictSearch_4(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_4(
+unsafe fn ZSTD_BtFindBestMatch_extDict_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2256,7 +2216,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_4(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_extDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_4(
+unsafe fn ZSTD_BtFindBestMatch_dictMatchState_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2265,7 +2225,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_4(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_6(
+unsafe fn ZSTD_BtFindBestMatch_extDict_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2274,7 +2234,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_6(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 6, ZSTD_extDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_4(
+unsafe fn ZSTD_BtFindBestMatch_noDict_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2283,7 +2243,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_noDict_4(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 4, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_5(
+unsafe fn ZSTD_BtFindBestMatch_extDict_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2292,7 +2252,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_extDict_5(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_extDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_5(
+unsafe fn ZSTD_BtFindBestMatch_dictMatchState_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2301,7 +2261,7 @@ unsafe extern "C" fn ZSTD_BtFindBestMatch_dictMatchState_5(
     ZSTD_BtFindBestMatch(ms, ip, iLimit, offBasePtr, 5, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_6(
+unsafe fn ZSTD_HcFindBestMatch_noDict_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2310,7 +2270,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_6(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_5(
+unsafe fn ZSTD_HcFindBestMatch_dictMatchState_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2319,7 +2279,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_5(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_6(
+unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2328,7 +2288,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_6(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_4(
+unsafe fn ZSTD_HcFindBestMatch_dictMatchState_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2337,7 +2297,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_4(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_5(
+unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2346,7 +2306,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_5(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_4(
+unsafe fn ZSTD_HcFindBestMatch_dedicatedDictSearch_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2355,7 +2315,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dedicatedDictSearch_4(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_5(
+unsafe fn ZSTD_HcFindBestMatch_noDict_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2364,7 +2324,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_5(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_6(
+unsafe fn ZSTD_HcFindBestMatch_dictMatchState_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2373,7 +2333,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_dictMatchState_6(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_4(
+unsafe fn ZSTD_HcFindBestMatch_noDict_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2382,7 +2342,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_noDict_4(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_6(
+unsafe fn ZSTD_HcFindBestMatch_extDict_6(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2391,7 +2351,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_6(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_5(
+unsafe fn ZSTD_HcFindBestMatch_extDict_5(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2400,7 +2360,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_5(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict)
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_4(
+unsafe fn ZSTD_HcFindBestMatch_extDict_4(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     iLimit: *const u8,
@@ -2409,7 +2369,7 @@ unsafe extern "C" fn ZSTD_HcFindBestMatch_extDict_4(
     ZSTD_HcFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict)
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_searchMax(
+unsafe fn ZSTD_searchMax(
     mut ms: *mut ZSTD_MatchState_t,
     mut ip: *const u8,
     mut iend: *const u8,
@@ -2749,7 +2709,7 @@ unsafe extern "C" fn ZSTD_searchMax(
     0
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
+unsafe fn ZSTD_compressBlock_lazy_generic(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3319,8 +3279,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_generic(
     };
     iend.offset_from(anchor) as core::ffi::c_long as size_t
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy(
+pub unsafe fn ZSTD_compressBlock_greedy(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3338,8 +3297,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dictMatchState)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState(
+pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3357,8 +3315,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dedicatedDictSearch)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
+pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3376,8 +3333,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_row(
+pub unsafe fn ZSTD_compressBlock_greedy_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3395,8 +3351,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_row(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dictMatchState_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState_row(
+pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3414,8 +3369,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_dedicatedDictSearch_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
+pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3433,8 +3387,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy(
+pub unsafe fn ZSTD_compressBlock_lazy(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3452,8 +3405,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dictMatchState)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState(
+pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3471,8 +3423,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dedicatedDictSearch)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
+pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3490,8 +3441,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_row(
+pub unsafe fn ZSTD_compressBlock_lazy_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3509,8 +3459,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_row(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dictMatchState_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState_row(
+pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3528,8 +3477,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_dedicatedDictSearch_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
+pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3547,8 +3495,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2(
+pub unsafe fn ZSTD_compressBlock_lazy2(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3566,8 +3513,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dictMatchState)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState(
+pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3585,8 +3531,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dedicatedDictSearch)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
+pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3604,8 +3549,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_row(
+pub unsafe fn ZSTD_compressBlock_lazy2_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3623,8 +3567,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_row(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dictMatchState_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState_row(
+pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3642,8 +3585,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dictMatchState_row(
         ZSTD_dictMatchState,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_dedicatedDictSearch_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
+pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3661,8 +3603,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
         ZSTD_dedicatedDictSearch,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2)]
-pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2(
+pub unsafe fn ZSTD_compressBlock_btlazy2(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3680,8 +3621,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2(
         ZSTD_noDict,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2_dictMatchState)]
-pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2_dictMatchState(
+pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -3700,7 +3640,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2_dictMatchState(
     )
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
+unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4061,8 +4001,7 @@ unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_generic(
     *rep.offset(1) = offset_2;
     iend.offset_from(anchor) as core::ffi::c_long as size_t
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_extDict)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict(
+pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4071,8 +4010,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 0)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_greedy_extDict_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict_row(
+pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4081,8 +4019,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_greedy_extDict_row(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 0)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_extDict)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict(
+pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4091,8 +4028,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 1)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy_extDict_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_row(
+pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4101,8 +4037,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy_extDict_row(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 1)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_extDict)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict(
+pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4111,8 +4046,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_hashChain, 2)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_lazy2_extDict_row)]
-pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict_row(
+pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,
@@ -4121,8 +4055,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_lazy2_extDict_row(
 ) -> size_t {
     ZSTD_compressBlock_lazy_extDict_generic(ms, seqStore, rep, src, srcSize, search_rowHash, 2)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_btlazy2_extDict)]
-pub unsafe extern "C" fn ZSTD_compressBlock_btlazy2_extDict(
+pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     mut ms: *mut ZSTD_MatchState_t,
     mut seqStore: *mut SeqStore_t,
     mut rep: *mut u32,

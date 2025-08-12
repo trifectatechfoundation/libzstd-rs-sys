@@ -132,21 +132,21 @@ impl TryFrom<u8> for SymbolEncodingType_e {
 
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 #[inline]
-unsafe extern "C" fn ZSTD_wrappedPtrAdd(
+unsafe fn ZSTD_wrappedPtrAdd(
     mut ptr: *const core::ffi::c_void,
     mut add: ptrdiff_t,
 ) -> *const core::ffi::c_void {
     (ptr as *const core::ffi::c_char).offset(add as isize) as *const core::ffi::c_void
 }
 #[inline]
-unsafe extern "C" fn ZSTD_wrappedPtrSub(
+unsafe fn ZSTD_wrappedPtrSub(
     mut ptr: *const core::ffi::c_void,
     mut sub: ptrdiff_t,
 ) -> *const core::ffi::c_void {
     (ptr as *const core::ffi::c_char).offset(-(sub as isize)) as *const core::ffi::c_void
 }
 #[inline]
-unsafe extern "C" fn ZSTD_maybeNullPtrAdd(
+unsafe fn ZSTD_maybeNullPtrAdd(
     mut ptr: *mut core::ffi::c_void,
     mut add: ptrdiff_t,
 ) -> *mut core::ffi::c_void {
@@ -177,7 +177,7 @@ pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 
 #[inline]
-unsafe extern "C" fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
+unsafe fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
 }
 
@@ -203,22 +203,16 @@ static ML_bits: [u8; 53] = [
 ];
 pub const ML_DEFAULTNORMLOG: core::ffi::c_int = 6;
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
-unsafe extern "C" fn ZSTD_copy8(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-) {
+unsafe fn ZSTD_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
-unsafe extern "C" fn ZSTD_copy16(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-) {
+unsafe fn ZSTD_copy16(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
 pub const WILDCOPY_OVERLENGTH: usize = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
-unsafe extern "C" fn ZSTD_wildcopy(
+unsafe fn ZSTD_wildcopy(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
     mut length: size_t,
@@ -261,10 +255,7 @@ unsafe extern "C" fn ZSTD_wildcopy(
     };
 }
 pub const NULL: core::ffi::c_int = 0;
-unsafe extern "C" fn ZSTD_copy4(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-) {
+unsafe fn ZSTD_copy4(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 4);
 }
 
@@ -648,8 +639,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     litCSize.wrapping_add(lhSize) as size_t
 }
 
-#[export_name = crate::prefix!(ZSTD_decodeLiteralsBlock_wrapper)]
-pub unsafe extern "C" fn ZSTD_decodeLiteralsBlock_wrapper(
+pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
     mut dctx: *mut ZSTD_DCtx,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
@@ -1986,7 +1976,7 @@ static ML_defaultDTable: [ZSTD_seqSymbol; 65] = [
         }
     },
 ];
-unsafe extern "C" fn ZSTD_buildSeqTable_rle(
+unsafe fn ZSTD_buildSeqTable_rle(
     mut dt: *mut ZSTD_seqSymbol,
     mut baseValue: u32,
     mut nbAddBits: u8,
@@ -2002,7 +1992,7 @@ unsafe extern "C" fn ZSTD_buildSeqTable_rle(
     (*cell).baseValue = baseValue;
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_buildFSETable_body(
+unsafe fn ZSTD_buildFSETable_body(
     mut dt: *mut ZSTD_seqSymbol,
     mut normalizedCounter: *const core::ffi::c_short,
     mut maxSymbolValue: core::ffi::c_uint,
@@ -2136,7 +2126,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
         u_0 = u_0.wrapping_add(1);
     }
 }
-unsafe extern "C" fn ZSTD_buildFSETable_body_default(
+unsafe fn ZSTD_buildFSETable_body_default(
     mut dt: *mut ZSTD_seqSymbol,
     mut normalizedCounter: *const core::ffi::c_short,
     mut maxSymbolValue: core::ffi::c_uint,
@@ -2157,7 +2147,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body_default(
         wkspSize,
     );
 }
-unsafe extern "C" fn ZSTD_buildFSETable_body_bmi2(
+unsafe fn ZSTD_buildFSETable_body_bmi2(
     mut dt: *mut ZSTD_seqSymbol,
     mut normalizedCounter: *const core::ffi::c_short,
     mut maxSymbolValue: core::ffi::c_uint,
@@ -2178,8 +2168,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body_bmi2(
         wkspSize,
     );
 }
-#[export_name = crate::prefix!(ZSTD_buildFSETable)]
-pub unsafe extern "C" fn ZSTD_buildFSETable(
+pub unsafe fn ZSTD_buildFSETable(
     mut dt: *mut ZSTD_seqSymbol,
     mut normalizedCounter: *const core::ffi::c_short,
     mut maxSymbolValue: core::ffi::c_uint,
@@ -2214,7 +2203,7 @@ pub unsafe extern "C" fn ZSTD_buildFSETable(
         wkspSize,
     );
 }
-unsafe extern "C" fn ZSTD_buildSeqTable(
+unsafe fn ZSTD_buildSeqTable(
     mut DTableSpace: *mut ZSTD_seqSymbol,
     mut DTablePtr: *mut *const ZSTD_seqSymbol,
     mut type_0: SymbolEncodingType_e,
@@ -2412,7 +2401,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
 }
 
 #[inline(always)]
-unsafe extern "C" fn ZSTD_overlapCopy8(op: *mut *mut u8, ip: *mut *const u8, offset: size_t) {
+unsafe fn ZSTD_overlapCopy8(op: *mut *mut u8, ip: *mut *const u8, offset: size_t) {
     if offset < 8 {
         static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
         static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
@@ -2436,7 +2425,7 @@ unsafe extern "C" fn ZSTD_overlapCopy8(op: *mut *mut u8, ip: *mut *const u8, off
     *ip = (*ip).offset(8);
     *op = (*op).offset(8);
 }
-unsafe extern "C" fn ZSTD_safecopy(
+unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
     oend_w: *const u8,
     mut ip: *const u8,
@@ -2488,11 +2477,7 @@ unsafe extern "C" fn ZSTD_safecopy(
         *fresh8 = *fresh7;
     }
 }
-unsafe extern "C" fn ZSTD_safecopyDstBeforeSrc(
-    mut op: *mut u8,
-    mut ip: *const u8,
-    mut length: size_t,
-) {
+unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, mut length: size_t) {
     let diff = op.offset_from(ip) as core::ffi::c_long;
     let oend = op.offset(length as isize);
     if length < 8 || diff > -(8) as ptrdiff_t {
@@ -2527,7 +2512,7 @@ unsafe extern "C" fn ZSTD_safecopyDstBeforeSrc(
     }
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_execSequenceEnd(
+unsafe fn ZSTD_execSequenceEnd(
     mut op: *mut u8,
     oend: *mut u8,
     mut sequence: seq_t,
@@ -2584,7 +2569,7 @@ unsafe extern "C" fn ZSTD_execSequenceEnd(
     sequenceLength
 }
 #[inline(never)]
-unsafe extern "C" fn ZSTD_execSequenceEndSplitLitBuffer(
+unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     mut op: *mut u8,
     oend: *mut u8,
     oend_w: *const u8,
@@ -2740,7 +2725,7 @@ unsafe fn ZSTD_execSequence(
     sequenceLength
 }
 #[inline(always)]
-unsafe extern "C" fn ZSTD_execSequenceSplitLitBuffer(
+unsafe fn ZSTD_execSequenceSplitLitBuffer(
     mut op: *mut u8,
     oend: *mut u8,
     oend_w: *const u8,
@@ -2867,7 +2852,7 @@ const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
     ZSTD_WINDOWLOG_MAX_32.saturating_sub(STREAM_ACCUMULATOR_MIN_32);
 
 #[inline(always)]
-unsafe extern "C" fn ZSTD_decodeSequence(
+unsafe fn ZSTD_decodeSequence(
     mut seqState: &mut seqState_t,
     longOffsets: ZSTD_longOffset_e,
     is_last_sequence: bool,
@@ -3025,7 +3010,7 @@ unsafe extern "C" fn ZSTD_decodeSequence(
 }
 
 #[inline(always)]
-unsafe extern "C" fn ZSTD_decompressSequences_bodySplitLitBuffer(
+unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
@@ -3363,7 +3348,7 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
 }
 
 #[inline(always)]
-unsafe extern "C" fn ZSTD_prefetchMatch(
+unsafe fn ZSTD_prefetchMatch(
     mut prefetchPos: size_t,
     sequence: seq_t,
     prefixStart: *const u8,

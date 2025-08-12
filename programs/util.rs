@@ -125,9 +125,8 @@ pub const NULL_0: core::ffi::c_int = 0;
 pub const ENOMEM: core::ffi::c_int = 12;
 pub const EEXIST: core::ffi::c_int = 17;
 static mut g_traceDepth: core::ffi::c_int = 0;
-#[no_mangle]
 pub static mut g_traceFileStat: core::ffi::c_int = 0;
-unsafe extern "C" fn UTIL_realloc(
+unsafe fn UTIL_realloc(
     mut ptr: *mut core::ffi::c_void,
     mut size: size_t,
 ) -> *mut core::ffi::c_void {
@@ -138,10 +137,8 @@ unsafe extern "C" fn UTIL_realloc(
     free(ptr);
     NULL_0 as *mut core::ffi::c_void
 }
-#[no_mangle]
 pub static mut g_utilDisplayLevel: core::ffi::c_int = 0;
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_requireUserConfirmation(
+pub unsafe fn UTIL_requireUserConfirmation(
     mut prompt: *const core::ffi::c_char,
     mut abortMsg: *const core::ffi::c_char,
     mut acceptableLetters: *const core::ffi::c_char,
@@ -178,12 +175,10 @@ pub unsafe extern "C" fn UTIL_requireUserConfirmation(
 }
 pub const LIST_SIZE_INCREASE: core::ffi::c_int = 8 * ((1) << 10);
 pub const MAX_FILE_OF_FILE_NAMES_SIZE: core::ffi::c_int = ((1) << 20) * 50;
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_traceFileStat() {
+pub unsafe fn UTIL_traceFileStat() {
     g_traceFileStat = 1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_fstat(
+pub unsafe fn UTIL_fstat(
     fd: core::ffi::c_int,
     mut filename: *const core::ffi::c_char,
     mut statbuf: *mut stat_t,
@@ -222,15 +217,13 @@ pub unsafe extern "C" fn UTIL_fstat(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_stat(
+pub unsafe fn UTIL_stat(
     mut filename: *const core::ffi::c_char,
     mut statbuf: *mut stat_t,
 ) -> core::ffi::c_int {
     UTIL_fstat(-(1), filename, statbuf)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: core::ffi::c_int) -> core::ffi::c_int {
+pub unsafe fn UTIL_isFdRegularFile(mut fd: core::ffi::c_int) -> core::ffi::c_int {
     let mut statbuf = core::mem::zeroed::<stat>();
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
@@ -267,10 +260,7 @@ pub unsafe extern "C" fn UTIL_isFdRegularFile(mut fd: core::ffi::c_int) -> core:
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isRegularFile(
-    mut infilename: *const core::ffi::c_char,
-) -> core::ffi::c_int {
+pub unsafe fn UTIL_isRegularFile(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
     let mut statbuf = core::mem::zeroed::<stat>();
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
@@ -302,22 +292,19 @@ pub unsafe extern "C" fn UTIL_isRegularFile(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isRegularFileStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isRegularFileStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
     (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as core::ffi::c_int as __mode_t)
         as core::ffi::c_int
         != 0) as core::ffi::c_int
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_chmod(
+pub unsafe fn UTIL_chmod(
     mut filename: *const core::ffi::c_char,
     mut statbuf: *const stat_t,
     mut permissions: mode_t,
 ) -> core::ffi::c_int {
     UTIL_fchmod(-(1), filename, statbuf, permissions)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_fchmod(
+pub unsafe fn UTIL_fchmod(
     fd: core::ffi::c_int,
     mut filename: *const core::ffi::c_char,
     mut statbuf: *const stat_t,
@@ -441,8 +428,7 @@ pub unsafe extern "C" fn UTIL_fchmod(
         ret_0
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_utime(
+pub unsafe fn UTIL_utime(
     mut filename: *const core::ffi::c_char,
     mut statbuf: *const stat_t,
 ) -> core::ffi::c_int {
@@ -488,15 +474,13 @@ pub unsafe extern "C" fn UTIL_utime(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_setFileStat(
+pub unsafe fn UTIL_setFileStat(
     mut filename: *const core::ffi::c_char,
     mut statbuf: *const stat_t,
 ) -> core::ffi::c_int {
     UTIL_setFDStat(-(1), filename, statbuf)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_setFDStat(
+pub unsafe fn UTIL_setFDStat(
     fd: core::ffi::c_int,
     mut filename: *const core::ffi::c_char,
     mut statbuf: *const stat_t,
@@ -596,10 +580,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
     }
     -res
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isDirectory(
-    mut infilename: *const core::ffi::c_char,
-) -> core::ffi::c_int {
+pub unsafe fn UTIL_isDirectory(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -656,8 +637,7 @@ pub unsafe extern "C" fn UTIL_isDirectory(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isDirectoryStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isDirectoryStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -688,7 +668,6 @@ pub unsafe extern "C" fn UTIL_isDirectoryStat(mut statbuf: *const stat_t) -> cor
     }
     ret
 }
-#[no_mangle]
 pub unsafe extern "C" fn UTIL_compareStr(
     mut p1: *const core::ffi::c_void,
     mut p2: *const core::ffi::c_void,
@@ -698,8 +677,7 @@ pub unsafe extern "C" fn UTIL_compareStr(
         *(p2 as *const *mut core::ffi::c_char),
     )
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isSameFile(
+pub unsafe fn UTIL_isSameFile(
     mut fName1: *const core::ffi::c_char,
     mut fName2: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -790,8 +768,7 @@ pub unsafe extern "C" fn UTIL_isSameFile(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isSameFileStat(
+pub unsafe fn UTIL_isSameFileStat(
     mut fName1: *const core::ffi::c_char,
     mut fName2: *const core::ffi::c_char,
     mut file1Stat: *const stat_t,
@@ -830,8 +807,7 @@ pub unsafe extern "C" fn UTIL_isSameFileStat(
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
+pub unsafe fn UTIL_isFIFO(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
     if g_traceFileStat != 0 {
         fprintf(
             stderr,
@@ -898,15 +874,13 @@ pub unsafe extern "C" fn UTIL_isFIFO(mut infilename: *const core::ffi::c_char) -
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isFIFOStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isFIFOStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o10000 as core::ffi::c_int as __mode_t {
         return 1;
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
+pub unsafe fn UTIL_isFileDescriptorPipe(
     mut filename: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     if g_traceFileStat != 0 {
@@ -974,15 +948,13 @@ pub unsafe extern "C" fn UTIL_isFileDescriptorPipe(
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isBlockDevStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
+pub unsafe fn UTIL_isBlockDevStat(mut statbuf: *const stat_t) -> core::ffi::c_int {
     if (*statbuf).st_mode & __S_IFMT as __mode_t == 0o60000 as core::ffi::c_int as __mode_t {
         return 1;
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
+pub unsafe fn UTIL_isLink(mut infilename: *const core::ffi::c_char) -> core::ffi::c_int {
     if g_traceFileStat != 0 {
         fprintf(
             stderr,
@@ -1054,8 +1026,7 @@ pub unsafe extern "C" fn UTIL_isLink(mut infilename: *const core::ffi::c_char) -
 static mut g_fakeStdinIsConsole: core::ffi::c_int = 0;
 static mut g_fakeStderrIsConsole: core::ffi::c_int = 0;
 static mut g_fakeStdoutIsConsole: core::ffi::c_int = 0;
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> core::ffi::c_int {
+pub unsafe fn UTIL_isConsole(mut file: *mut FILE) -> core::ffi::c_int {
     let mut ret: core::ffi::c_int = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -1093,20 +1064,16 @@ pub unsafe extern "C" fn UTIL_isConsole(mut file: *mut FILE) -> core::ffi::c_int
     }
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_fakeStdinIsConsole() {
+pub unsafe fn UTIL_fakeStdinIsConsole() {
     g_fakeStdinIsConsole = 1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_fakeStdoutIsConsole() {
+pub unsafe fn UTIL_fakeStdoutIsConsole() {
     g_fakeStdoutIsConsole = 1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_fakeStderrIsConsole() {
+pub unsafe fn UTIL_fakeStderrIsConsole() {
     g_fakeStderrIsConsole = 1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const core::ffi::c_char) -> u64 {
+pub unsafe fn UTIL_getFileSize(mut infilename: *const core::ffi::c_char) -> u64 {
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -1174,8 +1141,7 @@ pub unsafe extern "C" fn UTIL_getFileSize(mut infilename: *const core::ffi::c_ch
     }
     size
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> u64 {
+pub unsafe fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> u64 {
     if UTIL_isRegularFileStat(statbuf) == 0 {
         return UTIL_FILESIZE_UNKNOWN as u64;
     }
@@ -1184,8 +1150,7 @@ pub unsafe extern "C" fn UTIL_getFileSizeStat(mut statbuf: *const stat_t) -> u64
     }
     (*statbuf).st_size as u64
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: u64) -> UTIL_HumanReadableSize_t {
+pub unsafe fn UTIL_makeHumanReadableSize(mut size: u64) -> UTIL_HumanReadableSize_t {
     let mut hrs = UTIL_HumanReadableSize_t {
         value: 0.,
         precision: 0,
@@ -1245,8 +1210,7 @@ pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: u64) -> UTIL_Human
     }
     hrs
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_getTotalFileSize(
+pub unsafe fn UTIL_getTotalFileSize(
     mut fileNamesTable: *const *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
 ) -> u64 {
@@ -1298,7 +1262,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
     }
     total
 }
-unsafe extern "C" fn UTIL_readFileContent(
+unsafe fn UTIL_readFileContent(
     mut inFile: *mut FILE,
     mut totalReadPtr: *mut size_t,
 ) -> *mut core::ffi::c_char {
@@ -1343,10 +1307,7 @@ unsafe extern "C" fn UTIL_readFileContent(
     *totalReadPtr = totalRead;
     buf
 }
-unsafe extern "C" fn UTIL_processLines(
-    mut buffer: *mut core::ffi::c_char,
-    mut bufferSize: size_t,
-) -> size_t {
+unsafe fn UTIL_processLines(mut buffer: *mut core::ffi::c_char, mut bufferSize: size_t) -> size_t {
     let mut lineCount = 0 as size_t;
     let mut i = 0;
     while i < bufferSize {
@@ -1363,7 +1324,7 @@ unsafe extern "C" fn UTIL_processLines(
     }
     lineCount
 }
-unsafe extern "C" fn UTIL_createLinePointers(
+unsafe fn UTIL_createLinePointers(
     mut buffer: *mut core::ffi::c_char,
     mut numLines: size_t,
     mut bufferSize: size_t,
@@ -1399,8 +1360,7 @@ unsafe extern "C" fn UTIL_createLinePointers(
     }
     linePointers
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_createFileNamesTable_fromFileList(
+pub unsafe fn UTIL_createFileNamesTable_fromFileList(
     mut fileList: *const core::ffi::c_char,
 ) -> *mut FileNamesTable {
     let mut statbuf = stat {
@@ -1462,7 +1422,7 @@ pub unsafe extern "C" fn UTIL_createFileNamesTable_fromFileList(
     }
     UTIL_assembleFileNamesTable(linePointers, numLines, buffer)
 }
-unsafe extern "C" fn UTIL_assembleFileNamesTable2(
+unsafe fn UTIL_assembleFileNamesTable2(
     mut filenames: *mut *const core::ffi::c_char,
     mut tableSize: size_t,
     mut tableCapacity: size_t,
@@ -1488,16 +1448,14 @@ unsafe extern "C" fn UTIL_assembleFileNamesTable2(
     (*table).tableCapacity = tableCapacity;
     table
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_assembleFileNamesTable(
+pub unsafe fn UTIL_assembleFileNamesTable(
     mut filenames: *mut *const core::ffi::c_char,
     mut tableSize: size_t,
     mut buf: *mut core::ffi::c_char,
 ) -> *mut FileNamesTable {
     UTIL_assembleFileNamesTable2(filenames, tableSize, tableSize, buf)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_freeFileNamesTable(mut table: *mut FileNamesTable) {
+pub unsafe fn UTIL_freeFileNamesTable(mut table: *mut FileNamesTable) {
     if table.is_null() {
         return;
     }
@@ -1505,8 +1463,7 @@ pub unsafe extern "C" fn UTIL_freeFileNamesTable(mut table: *mut FileNamesTable)
     free((*table).buf as *mut core::ffi::c_void);
     free(table as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_allocateFileNamesTable(mut tableSize: size_t) -> *mut FileNamesTable {
+pub unsafe fn UTIL_allocateFileNamesTable(mut tableSize: size_t) -> *mut FileNamesTable {
     let fnTable = malloc(
         tableSize
             .wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>() as core::ffi::c_ulong),
@@ -1519,8 +1476,7 @@ pub unsafe extern "C" fn UTIL_allocateFileNamesTable(mut tableSize: size_t) -> *
     (*fnt).tableSize = 0;
     fnt
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_searchFileNamesTable(
+pub unsafe fn UTIL_searchFileNamesTable(
     mut table: *mut FileNamesTable,
     mut name: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -1534,8 +1490,7 @@ pub unsafe extern "C" fn UTIL_searchFileNamesTable(
     }
     -(1)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_refFilename(
+pub unsafe fn UTIL_refFilename(
     mut fnt: *mut FileNamesTable,
     mut filename: *const core::ffi::c_char,
 ) {
@@ -1545,7 +1500,7 @@ pub unsafe extern "C" fn UTIL_refFilename(
     (*fnt).tableSize = ((*fnt).tableSize).wrapping_add(1);
     (*fnt).tableSize;
 }
-unsafe extern "C" fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t {
+unsafe fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t {
     let mut fnb: size_t = 0;
     let mut totalSize = 0;
     fnb = 0;
@@ -1557,8 +1512,7 @@ unsafe extern "C" fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t
     }
     totalSize
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
+pub unsafe fn UTIL_mergeFileNamesTable(
     mut table1: *mut FileNamesTable,
     mut table2: *mut FileNamesTable,
 ) -> *mut FileNamesTable {
@@ -1662,7 +1616,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
     UTIL_freeFileNamesTable(table2);
     newTable
 }
-unsafe extern "C" fn UTIL_prepareFileList(
+unsafe fn UTIL_prepareFileList(
     mut dirName: *const core::ffi::c_char,
     mut bufStart: *mut *mut core::ffi::c_char,
     mut pos: *mut size_t,
@@ -1810,8 +1764,7 @@ pub unsafe fn UTIL_isCompressedFile(
     }
     0
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_getFileExtension(
+pub unsafe fn UTIL_getFileExtension(
     mut infilename: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     let mut extension: *const core::ffi::c_char = strrchr(infilename, '.' as i32);
@@ -1820,7 +1773,7 @@ pub unsafe extern "C" fn UTIL_getFileExtension(
     }
     extension
 }
-unsafe extern "C" fn pathnameHas2Dots(mut pathname: *const core::ffi::c_char) -> core::ffi::c_int {
+unsafe fn pathnameHas2Dots(mut pathname: *const core::ffi::c_char) -> core::ffi::c_int {
     let mut needle = pathname;
     loop {
         needle = strstr(needle, b"..\0" as *const u8 as *const core::ffi::c_char);
@@ -1836,13 +1789,13 @@ unsafe extern "C" fn pathnameHas2Dots(mut pathname: *const core::ffi::c_char) ->
         needle = needle.offset(1);
     }
 }
-unsafe extern "C" fn isFileNameValidForMirroredOutput(
+unsafe fn isFileNameValidForMirroredOutput(
     mut filename: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     (pathnameHas2Dots(filename) == 0) as core::ffi::c_int
 }
 pub const DIR_DEFAULT_MODE: core::ffi::c_int = 0o755 as core::ffi::c_int;
-unsafe extern "C" fn getDirMode(mut dirName: *const core::ffi::c_char) -> mode_t {
+unsafe fn getDirMode(mut dirName: *const core::ffi::c_char) -> mode_t {
     let mut st = stat {
         st_dev: 0,
         st_ino: 0,
@@ -1888,10 +1841,7 @@ unsafe extern "C" fn getDirMode(mut dirName: *const core::ffi::c_char) -> mode_t
     }
     st.st_mode
 }
-unsafe extern "C" fn makeDir(
-    mut dir: *const core::ffi::c_char,
-    mut mode: mode_t,
-) -> core::ffi::c_int {
+unsafe fn makeDir(mut dir: *const core::ffi::c_char, mut mode: mode_t) -> core::ffi::c_int {
     let mut ret = mkdir(dir, mode);
     if ret != 0 {
         if *__errno_location() == EEXIST {
@@ -1906,7 +1856,7 @@ unsafe extern "C" fn makeDir(
     }
     ret
 }
-unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut core::ffi::c_char) {
+unsafe fn convertPathnameToDirName(mut pathname: *mut core::ffi::c_char) {
     let mut len = 0;
     let mut pos = NULL_0 as *mut core::ffi::c_char;
     assert!(!pathname.is_null());
@@ -1927,16 +1877,14 @@ unsafe extern "C" fn convertPathnameToDirName(mut pathname: *mut core::ffi::c_ch
         *pos = '\0' as i32 as core::ffi::c_char;
     };
 }
-unsafe extern "C" fn trimLeadingRootChar(
-    mut pathname: *const core::ffi::c_char,
-) -> *const core::ffi::c_char {
+unsafe fn trimLeadingRootChar(mut pathname: *const core::ffi::c_char) -> *const core::ffi::c_char {
     assert!(!pathname.is_null());
     if *pathname.offset(0) as core::ffi::c_int == PATH_SEP {
         return pathname.offset(1);
     }
     pathname
 }
-unsafe extern "C" fn trimLeadingCurrentDirConst(
+unsafe fn trimLeadingCurrentDirConst(
     mut pathname: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     assert!(!pathname.is_null());
@@ -1947,19 +1895,17 @@ unsafe extern "C" fn trimLeadingCurrentDirConst(
     }
     pathname
 }
-unsafe extern "C" fn trimLeadingCurrentDir(
-    mut pathname: *mut core::ffi::c_char,
-) -> *mut core::ffi::c_char {
+unsafe fn trimLeadingCurrentDir(mut pathname: *mut core::ffi::c_char) -> *mut core::ffi::c_char {
     let mut ptr = charunion {
         chr: core::ptr::null_mut::<core::ffi::c_char>(),
     };
     ptr.cchr = trimLeadingCurrentDirConst(pathname);
     ptr.chr
 }
-unsafe extern "C" fn trimPath(mut pathname: *const core::ffi::c_char) -> *const core::ffi::c_char {
+unsafe fn trimPath(mut pathname: *const core::ffi::c_char) -> *const core::ffi::c_char {
     trimLeadingRootChar(trimLeadingCurrentDirConst(pathname))
 }
-unsafe extern "C" fn mallocAndJoin2Dir(
+unsafe fn mallocAndJoin2Dir(
     mut dir1: *const core::ffi::c_char,
     mut dir2: *const core::ffi::c_char,
 ) -> *mut core::ffi::c_char {
@@ -2001,8 +1947,7 @@ unsafe extern "C" fn mallocAndJoin2Dir(
     *buffer.offset(dir2Size as isize) = '\0' as i32 as core::ffi::c_char;
     outDirBuffer
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_createMirroredDestDirName(
+pub unsafe fn UTIL_createMirroredDestDirName(
     mut srcFileName: *const core::ffi::c_char,
     mut outDirRootName: *const core::ffi::c_char,
 ) -> *mut core::ffi::c_char {
@@ -2014,7 +1959,7 @@ pub unsafe extern "C" fn UTIL_createMirroredDestDirName(
     convertPathnameToDirName(pathname);
     pathname
 }
-unsafe extern "C" fn mirrorSrcDir(
+unsafe fn mirrorSrcDir(
     mut srcDirName: *mut core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -2029,7 +1974,7 @@ unsafe extern "C" fn mirrorSrcDir(
     free(newDir as *mut core::ffi::c_void);
     status
 }
-unsafe extern "C" fn mirrorSrcDirRecursive(
+unsafe fn mirrorSrcDirRecursive(
     mut srcDirName: *mut core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -2054,7 +1999,7 @@ unsafe extern "C" fn mirrorSrcDirRecursive(
     status = mirrorSrcDir(srcDirName, outDirName);
     status
 }
-unsafe extern "C" fn makeMirroredDestDirsWithSameSrcDirMode(
+unsafe fn makeMirroredDestDirsWithSameSrcDirMode(
     mut srcDirNames: *mut *mut core::ffi::c_char,
     mut nbFile: core::ffi::c_uint,
     mut outDirName: *const core::ffi::c_char,
@@ -2066,7 +2011,7 @@ unsafe extern "C" fn makeMirroredDestDirsWithSameSrcDirMode(
         i = i.wrapping_add(1);
     }
 }
-unsafe extern "C" fn firstIsParentOrSameDirOfSecond(
+unsafe fn firstIsParentOrSameDirOfSecond(
     mut firstDir: *const core::ffi::c_char,
     mut secondDir: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -2085,7 +2030,7 @@ unsafe extern "C" fn compareDir(
     let mut s2 = trimPath(*(pathname2 as *const *mut core::ffi::c_char));
     strcmp(s1, s2)
 }
-unsafe extern "C" fn makeUniqueMirroredDestDirs(
+unsafe fn makeUniqueMirroredDestDirs(
     mut srcDirNames: *mut *mut core::ffi::c_char,
     mut nbFile: core::ffi::c_uint,
     mut outDirName: *const core::ffi::c_char,
@@ -2141,7 +2086,7 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
     makeMirroredDestDirsWithSameSrcDirMode(uniqueDirNames, uniqueDirNr, outDirName);
     free(uniqueDirNames as *mut core::ffi::c_void);
 }
-unsafe extern "C" fn makeMirroredDestDirs(
+unsafe fn makeMirroredDestDirs(
     mut srcFileNames: *mut *mut core::ffi::c_char,
     mut nbFile: core::ffi::c_uint,
     mut outDirName: *const core::ffi::c_char,
@@ -2154,8 +2099,7 @@ unsafe extern "C" fn makeMirroredDestDirs(
     }
     makeUniqueMirroredDestDirs(srcFileNames, nbFile, outDirName);
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
+pub unsafe fn UTIL_mirrorSourceFilesDirectories(
     mut inFileNames: *mut *const core::ffi::c_char,
     mut nbFile: core::ffi::c_uint,
     mut outDirName: *const core::ffi::c_char,
@@ -2212,8 +2156,7 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
     }
     free(srcFileNames as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_createExpandedFNT(
+pub unsafe fn UTIL_createExpandedFNT(
     mut inputNames: *const *const core::ffi::c_char,
     mut nbIfns: size_t,
     mut followLinks: core::ffi::c_int,
@@ -2294,11 +2237,7 @@ pub unsafe extern "C" fn UTIL_createExpandedFNT(
     }
     UTIL_assembleFileNamesTable2(fileNamesTable, nbFiles as size_t, fntCapacity, buf)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_expandFNT(
-    mut fnt: *mut *mut FileNamesTable,
-    mut followLinks: core::ffi::c_int,
-) {
+pub unsafe fn UTIL_expandFNT(mut fnt: *mut *mut FileNamesTable, mut followLinks: core::ffi::c_int) {
     let newFNT = UTIL_createExpandedFNT((**fnt).fileNames, (**fnt).tableSize, followLinks);
     if newFNT.is_null() {
         if g_utilDisplayLevel >= 1 {
@@ -2315,8 +2254,7 @@ pub unsafe extern "C" fn UTIL_expandFNT(
     UTIL_freeFileNamesTable(*fnt);
     *fnt = newFNT;
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_createFNT_fromROTable(
+pub unsafe fn UTIL_createFNT_fromROTable(
     mut filenames: *mut *const core::ffi::c_char,
     mut nbFilenames: size_t,
 ) -> *mut FileNamesTable {
@@ -2333,8 +2271,7 @@ pub unsafe extern "C" fn UTIL_createFNT_fromROTable(
     );
     UTIL_assembleFileNamesTable(newFNTable, nbFilenames, NULL_0 as *mut core::ffi::c_char)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_countCores(mut logical: core::ffi::c_int) -> core::ffi::c_int {
+pub unsafe fn UTIL_countCores(mut logical: core::ffi::c_int) -> core::ffi::c_int {
     let mut current_block: u64;
     static mut numCores: core::ffi::c_int = 0;
     if numCores != 0 {
@@ -2408,11 +2345,9 @@ pub unsafe extern "C" fn UTIL_countCores(mut logical: core::ffi::c_int) -> core:
     numCores
 }
 pub const BUF_SIZE: core::ffi::c_int = 80;
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_countPhysicalCores() -> core::ffi::c_int {
+pub unsafe fn UTIL_countPhysicalCores() -> core::ffi::c_int {
     UTIL_countCores(0)
 }
-#[no_mangle]
-pub unsafe extern "C" fn UTIL_countLogicalCores() -> core::ffi::c_int {
+pub unsafe fn UTIL_countLogicalCores() -> core::ffi::c_int {
     UTIL_countCores(1)
 }

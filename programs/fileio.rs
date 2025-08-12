@@ -452,14 +452,12 @@ pub const TZSTD_EXTENSION: &CStr = c"tzst";
 pub const ZSTD_ALT_EXTENSION: &CStr = c"zstd";
 pub const LZ4_EXTENSION: &CStr = c".lz4";
 pub const TLZ4_EXTENSION: &CStr = c"tlz4";
-#[no_mangle]
 pub static mut g_display_prefs: FIO_display_prefs_t = {
     FIO_display_prefs_s {
         displayLevel: 2,
         progressSetting: FIO_ps_auto,
     }
 };
-#[no_mangle]
 pub static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const ZLIB_VERSION: [core::ffi::c_char; 4] =
     unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b"1.3\0") };
@@ -485,16 +483,13 @@ pub const SIGINT: core::ffi::c_int = 2;
 pub const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
 pub const LONG_TELL: unsafe extern "C" fn(*mut FILE) -> core::ffi::c_long = ftell;
 pub const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
-#[no_mangle]
-pub unsafe extern "C" fn FIO_zlibVersion() -> *const core::ffi::c_char {
+pub unsafe fn FIO_zlibVersion() -> *const core::ffi::c_char {
     zlibVersion()
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_lz4Version() -> *const core::ffi::c_char {
+pub unsafe fn FIO_lz4Version() -> *const core::ffi::c_char {
     b"Unsupported\0" as *const u8 as *const core::ffi::c_char
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_lzmaVersion() -> *const core::ffi::c_char {
+pub unsafe fn FIO_lzmaVersion() -> *const core::ffi::c_char {
     lzma_version_string()
 }
 pub const ADAPT_WINDOWLOG_DEFAULT: core::ffi::c_int = 23;
@@ -516,7 +511,7 @@ unsafe extern "C" fn INThandler(mut sig: core::ffi::c_int) {
     fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
     exit(2);
 }
-unsafe extern "C" fn addHandler(mut dstFileName: *const core::ffi::c_char) {
+unsafe fn addHandler(mut dstFileName: *const core::ffi::c_char) {
     if UTIL_isRegularFile(dstFileName) != 0 {
         g_artefact = dstFileName;
         signal(
@@ -527,7 +522,7 @@ unsafe extern "C" fn addHandler(mut dstFileName: *const core::ffi::c_char) {
         g_artefact = NULL as *const core::ffi::c_char;
     };
 }
-unsafe extern "C" fn clearHandler() {
+unsafe fn clearHandler() {
     if !g_artefact.is_null() {
         signal(
             SIGINT,
@@ -536,14 +531,11 @@ unsafe extern "C" fn clearHandler() {
     }
     g_artefact = NULL as *const core::ffi::c_char;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_addAbortHandler() {}
-unsafe extern "C" fn FIO_shouldDisplayFileSummary(mut fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
+pub unsafe fn FIO_addAbortHandler() {}
+unsafe fn FIO_shouldDisplayFileSummary(mut fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
     ((*fCtx).nbFilesTotal <= 1 || g_display_prefs.displayLevel >= 3) as core::ffi::c_int
 }
-unsafe extern "C" fn FIO_shouldDisplayMultipleFileSummary(
-    mut fCtx: *const FIO_ctx_t,
-) -> core::ffi::c_int {
+unsafe fn FIO_shouldDisplayMultipleFileSummary(mut fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
     let shouldDisplay =
         ((*fCtx).nbFilesProcessed >= 1 && (*fCtx).nbFilesTotal > 1) as core::ffi::c_int;
     assert!(
@@ -555,8 +547,7 @@ unsafe extern "C" fn FIO_shouldDisplayMultipleFileSummary(
 }
 pub const FIO_OVERLAP_LOG_NOTSET: core::ffi::c_int = 9999;
 pub const FIO_LDM_PARAM_NOTSET: core::ffi::c_int = 9999;
-#[no_mangle]
-pub unsafe extern "C" fn FIO_createPreferences() -> *mut FIO_prefs_t {
+pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     let ret =
         malloc(::core::mem::size_of::<FIO_prefs_t>() as core::ffi::c_ulong) as *mut FIO_prefs_t;
     if ret.is_null() {
@@ -619,8 +610,7 @@ pub unsafe extern "C" fn FIO_createPreferences() -> *mut FIO_prefs_t {
     (*ret).passThrough = -(1);
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_createContext() -> *mut FIO_ctx_t {
+pub unsafe fn FIO_createContext() -> *mut FIO_ctx_t {
     let ret = malloc(::core::mem::size_of::<FIO_ctx_t>() as core::ffi::c_ulong) as *mut FIO_ctx_t;
     if ret.is_null() {
         if g_display_prefs.displayLevel >= 1 {
@@ -661,82 +651,58 @@ pub unsafe extern "C" fn FIO_createContext() -> *mut FIO_ctx_t {
     (*ret).totalBytesOutput = 0;
     ret
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_freePreferences(prefs: *mut FIO_prefs_t) {
+pub unsafe fn FIO_freePreferences(prefs: *mut FIO_prefs_t) {
     free(prefs as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_freeContext(fCtx: *mut FIO_ctx_t) {
+pub unsafe fn FIO_freeContext(fCtx: *mut FIO_ctx_t) {
     free(fCtx as *mut core::ffi::c_void);
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setNotificationLevel(mut level: core::ffi::c_int) {
+pub unsafe fn FIO_setNotificationLevel(mut level: core::ffi::c_int) {
     g_display_prefs.displayLevel = level;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setProgressSetting(mut setting: FIO_progressSetting_e) {
+pub unsafe fn FIO_setProgressSetting(mut setting: FIO_progressSetting_e) {
     g_display_prefs.progressSetting = setting;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setCompressionType(
+pub unsafe fn FIO_setCompressionType(
     prefs: *mut FIO_prefs_t,
     mut compressionType: FIO_compressionType_t,
 ) {
     (*prefs).compressionType = compressionType;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_overwriteMode(prefs: *mut FIO_prefs_t) {
+pub unsafe fn FIO_overwriteMode(prefs: *mut FIO_prefs_t) {
     (*prefs).overwrite = 1;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setSparseWrite(prefs: *mut FIO_prefs_t, mut sparse: core::ffi::c_int) {
+pub unsafe fn FIO_setSparseWrite(prefs: *mut FIO_prefs_t, mut sparse: core::ffi::c_int) {
     (*prefs).sparseFileSupport = sparse;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setDictIDFlag(
-    prefs: *mut FIO_prefs_t,
-    mut dictIDFlag: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setDictIDFlag(prefs: *mut FIO_prefs_t, mut dictIDFlag: core::ffi::c_int) {
     (*prefs).dictIDFlag = dictIDFlag;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setChecksumFlag(
-    prefs: *mut FIO_prefs_t,
-    mut checksumFlag: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setChecksumFlag(prefs: *mut FIO_prefs_t, mut checksumFlag: core::ffi::c_int) {
     (*prefs).checksumFlag = checksumFlag;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, mut flag: core::ffi::c_int) {
+pub unsafe fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, mut flag: core::ffi::c_int) {
     (*prefs).removeSrcFile = (flag != 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, mut memLimit: core::ffi::c_uint) {
+pub unsafe fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, mut memLimit: core::ffi::c_uint) {
     (*prefs).memLimit = memLimit;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setNbWorkers(
-    prefs: *mut FIO_prefs_t,
-    mut nbWorkers: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setNbWorkers(prefs: *mut FIO_prefs_t, mut nbWorkers: core::ffi::c_int) {
     (*prefs).nbWorkers = nbWorkers;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setExcludeCompressedFile(
+pub unsafe fn FIO_setExcludeCompressedFile(
     prefs: *mut FIO_prefs_t,
     mut excludeCompressedFiles: core::ffi::c_int,
 ) {
     (*prefs).excludeCompressedFiles = excludeCompressedFiles;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setAllowBlockDevices(
+pub unsafe fn FIO_setAllowBlockDevices(
     prefs: *mut FIO_prefs_t,
     mut allowBlockDevices: core::ffi::c_int,
 ) {
     (*prefs).allowBlockDevices = allowBlockDevices;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: core::ffi::c_int) {
+pub unsafe fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: core::ffi::c_int) {
     if jobSize != 0 && (*prefs).nbWorkers == 0 && g_display_prefs.displayLevel >= 2 {
         fprintf(
             stderr,
@@ -746,11 +712,7 @@ pub unsafe extern "C" fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: co
     }
     (*prefs).jobSize = jobSize;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setOverlapLog(
-    prefs: *mut FIO_prefs_t,
-    mut overlapLog: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setOverlapLog(prefs: *mut FIO_prefs_t, mut overlapLog: core::ffi::c_int) {
     if overlapLog != 0 && (*prefs).nbWorkers == 0 && g_display_prefs.displayLevel >= 2 {
         fprintf(
             stderr,
@@ -760,8 +722,7 @@ pub unsafe extern "C" fn FIO_setOverlapLog(
     }
     (*prefs).overlapLog = overlapLog;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, mut adapt: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, mut adapt: core::ffi::c_int) {
     if adapt > 0 && (*prefs).nbWorkers == 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -795,18 +756,13 @@ pub unsafe extern "C" fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, mut adapt:
     }
     (*prefs).adaptiveMode = adapt;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setUseRowMatchFinder(
+pub unsafe fn FIO_setUseRowMatchFinder(
     prefs: *mut FIO_prefs_t,
     mut useRowMatchFinder: core::ffi::c_int,
 ) {
     (*prefs).useRowMatchFinder = useRowMatchFinder;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setRsyncable(
-    prefs: *mut FIO_prefs_t,
-    mut rsyncable: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, mut rsyncable: core::ffi::c_int) {
     if rsyncable > 0 && (*prefs).nbWorkers == 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -840,116 +796,72 @@ pub unsafe extern "C" fn FIO_setRsyncable(
     }
     (*prefs).rsyncable = rsyncable;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, mut streamSrcSize: size_t) {
+pub unsafe fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, mut streamSrcSize: size_t) {
     (*prefs).streamSrcSize = streamSrcSize;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setTargetCBlockSize(
-    prefs: *mut FIO_prefs_t,
-    mut targetCBlockSize: size_t,
-) {
+pub unsafe fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, mut targetCBlockSize: size_t) {
     (*prefs).targetCBlockSize = targetCBlockSize;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, mut srcSizeHint: size_t) {
+pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, mut srcSizeHint: size_t) {
     (*prefs).srcSizeHint = (if (2147483647) < srcSizeHint {
         2147483647
     } else {
         srcSizeHint
     }) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setTestMode(prefs: *mut FIO_prefs_t, mut testMode: core::ffi::c_int) {
+pub unsafe fn FIO_setTestMode(prefs: *mut FIO_prefs_t, mut testMode: core::ffi::c_int) {
     (*prefs).testMode = (testMode != 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLiteralCompressionMode(
-    prefs: *mut FIO_prefs_t,
-    mut mode: ZSTD_ParamSwitch_e,
-) {
+pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mut mode: ZSTD_ParamSwitch_e) {
     (*prefs).literalCompressionMode = mode;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, mut minCLevel: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, mut minCLevel: core::ffi::c_int) {
     assert!(minCLevel >= ZSTD_minCLevel());
     (*prefs).minAdaptLevel = minCLevel;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, mut maxCLevel: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, mut maxCLevel: core::ffi::c_int) {
     (*prefs).maxAdaptLevel = maxCLevel;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, mut ldmFlag: core::ffi::c_uint) {
+pub unsafe fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, mut ldmFlag: core::ffi::c_uint) {
     (*prefs).ldmFlag = (ldmFlag > 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLdmHashLog(
-    prefs: *mut FIO_prefs_t,
-    mut ldmHashLog: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setLdmHashLog(prefs: *mut FIO_prefs_t, mut ldmHashLog: core::ffi::c_int) {
     (*prefs).ldmHashLog = ldmHashLog;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLdmMinMatch(
-    prefs: *mut FIO_prefs_t,
-    mut ldmMinMatch: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setLdmMinMatch(prefs: *mut FIO_prefs_t, mut ldmMinMatch: core::ffi::c_int) {
     (*prefs).ldmMinMatch = ldmMinMatch;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLdmBucketSizeLog(
+pub unsafe fn FIO_setLdmBucketSizeLog(
     prefs: *mut FIO_prefs_t,
     mut ldmBucketSizeLog: core::ffi::c_int,
 ) {
     (*prefs).ldmBucketSizeLog = ldmBucketSizeLog;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setLdmHashRateLog(
-    prefs: *mut FIO_prefs_t,
-    mut ldmHashRateLog: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setLdmHashRateLog(prefs: *mut FIO_prefs_t, mut ldmHashRateLog: core::ffi::c_int) {
     (*prefs).ldmHashRateLog = ldmHashRateLog;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setPatchFromMode(
-    prefs: *mut FIO_prefs_t,
-    mut value: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setPatchFromMode(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
     (*prefs).patchFromMode = (value != 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setContentSize(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setContentSize(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
     (*prefs).contentSize = (value != 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
     (*prefs).asyncIO = value;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setPassThroughFlag(
-    prefs: *mut FIO_prefs_t,
-    mut value: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
     (*prefs).passThrough = (value != 0) as core::ffi::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, mut value: ZSTD_ParamSwitch_e) {
+pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, mut value: ZSTD_ParamSwitch_e) {
     (*prefs).mmapDict = value;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
     (*fCtx).hasStdoutOutput = value;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
     (*fCtx).nbFilesTotal = value;
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_determineHasStdinInput(
-    fCtx: *mut FIO_ctx_t,
-    filenames: *const FileNamesTable,
-) {
+pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const FileNamesTable) {
     let mut i = 0;
     while i < (*filenames).tableSize {
         if strcmp(
@@ -963,7 +875,7 @@ pub unsafe extern "C" fn FIO_determineHasStdinInput(
         i = i.wrapping_add(1);
     }
 }
-unsafe extern "C" fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core::ffi::c_int {
+unsafe fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core::ffi::c_int {
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -1014,7 +926,7 @@ unsafe extern "C" fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core:
     }
     remove(path)
 }
-unsafe extern "C" fn FIO_openSrcFile(
+unsafe fn FIO_openSrcFile(
     prefs: *const FIO_prefs_t,
     mut srcFileName: *const core::ffi::c_char,
     mut statbuf: *mut stat_t,
@@ -1076,7 +988,7 @@ unsafe extern "C" fn FIO_openSrcFile(
     }
     f
 }
-unsafe extern "C" fn FIO_openDstFile(
+unsafe fn FIO_openDstFile(
     mut fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut srcFileName: *const core::ffi::c_char,
@@ -1232,7 +1144,7 @@ unsafe extern "C" fn FIO_openDstFile(
     }
     f
 }
-unsafe extern "C" fn FIO_getDictFileStat(
+unsafe fn FIO_getDictFileStat(
     mut fileName: *const core::ffi::c_char,
     mut dictFileStat: *mut stat_t,
 ) {
@@ -1304,7 +1216,7 @@ unsafe extern "C" fn FIO_getDictFileStat(
         exit(32);
     }
 }
-unsafe extern "C" fn FIO_setDictBufferMalloc(
+unsafe fn FIO_setDictBufferMalloc(
     mut dict: *mut FIO_Dict_t,
     mut fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
@@ -1468,12 +1380,12 @@ unsafe extern "C" fn FIO_setDictBufferMalloc(
 }
 pub const PROT_READ: core::ffi::c_int = 0x1 as core::ffi::c_int;
 pub const MAP_PRIVATE: core::ffi::c_int = 0x2 as core::ffi::c_int;
-unsafe extern "C" fn FIO_munmap(mut dict: *mut FIO_Dict_t) {
+unsafe fn FIO_munmap(mut dict: *mut FIO_Dict_t) {
     munmap((*dict).dictBuffer, (*dict).dictBufferSize);
     (*dict).dictBuffer = NULL as *mut core::ffi::c_void;
     (*dict).dictBufferSize = 0;
 }
-unsafe extern "C" fn FIO_setDictBufferMMap(
+unsafe fn FIO_setDictBufferMMap(
     mut dict: *mut FIO_Dict_t,
     mut fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
@@ -1609,7 +1521,7 @@ unsafe extern "C" fn FIO_setDictBufferMMap(
     close(fileHandle);
     fileSize
 }
-unsafe extern "C" fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
+unsafe fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
     if (*dict).dictBufferType as core::ffi::c_uint
         == FIO_mallocDict as core::ffi::c_int as core::ffi::c_uint
     {
@@ -1624,7 +1536,7 @@ unsafe extern "C" fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
         unreachable!();
     };
 }
-unsafe extern "C" fn FIO_initDict(
+unsafe fn FIO_initDict(
     mut dict: *mut FIO_Dict_t,
     mut fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
@@ -1644,8 +1556,7 @@ unsafe extern "C" fn FIO_initDict(
         unreachable!();
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_checkFilenameCollisions(
+pub unsafe fn FIO_checkFilenameCollisions(
     mut filenameTable: *mut *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
 ) -> core::ffi::c_int {
@@ -1710,7 +1621,7 @@ pub unsafe extern "C" fn FIO_checkFilenameCollisions(
     free(filenameTableSorted as *mut core::ffi::c_void);
     0
 }
-unsafe extern "C" fn extractFilename(
+unsafe fn extractFilename(
     mut path: *const core::ffi::c_char,
     mut separator: core::ffi::c_char,
 ) -> *const core::ffi::c_char {
@@ -1720,7 +1631,7 @@ unsafe extern "C" fn extractFilename(
     }
     search.offset(1)
 }
-unsafe extern "C" fn FIO_createFilename_fromOutDir(
+unsafe fn FIO_createFilename_fromOutDir(
     mut path: *const core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
     suffixLen: size_t,
@@ -1797,7 +1708,7 @@ unsafe extern "C" fn FIO_createFilename_fromOutDir(
     }
     result
 }
-unsafe extern "C" fn FIO_highbit64(mut v: core::ffi::c_ulonglong) -> core::ffi::c_uint {
+unsafe fn FIO_highbit64(mut v: core::ffi::c_ulonglong) -> core::ffi::c_uint {
     let mut count = 0 as core::ffi::c_uint;
     assert!(v != 0);
     v >>= 1;
@@ -1807,7 +1718,7 @@ unsafe extern "C" fn FIO_highbit64(mut v: core::ffi::c_ulonglong) -> core::ffi::
     }
     count
 }
-unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
+unsafe fn FIO_adjustMemLimitForPatchFromMode(
     prefs: *mut FIO_prefs_t,
     dictSize: core::ffi::c_ulonglong,
     maxSrcFileSize: core::ffi::c_ulonglong,
@@ -1898,7 +1809,7 @@ unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
     }
     FIO_setMemLimit(prefs, maxSize as core::ffi::c_uint);
 }
-unsafe extern "C" fn FIO_multiFilesConcatWarning(
+unsafe fn FIO_multiFilesConcatWarning(
     mut fCtx: *const FIO_ctx_t,
     mut prefs: *mut FIO_prefs_t,
     mut outFileName: *const core::ffi::c_char,
@@ -2038,7 +1949,7 @@ unsafe extern "C" fn FIO_multiFilesConcatWarning(
         (*fCtx).hasStdinInput,
     )
 }
-unsafe extern "C" fn setInBuffer(
+unsafe fn setInBuffer(
     mut buf: *const core::ffi::c_void,
     mut s: size_t,
     mut pos: size_t,
@@ -2053,7 +1964,7 @@ unsafe extern "C" fn setInBuffer(
     i.pos = pos;
     i
 }
-unsafe extern "C" fn setOutBuffer(
+unsafe fn setOutBuffer(
     mut buf: *mut core::ffi::c_void,
     mut s: size_t,
     mut pos: size_t,
@@ -2068,13 +1979,13 @@ unsafe extern "C" fn setOutBuffer(
     o.pos = pos;
     o
 }
-unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
+unsafe fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
     let btScale =
         (strat as u32 >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
-unsafe extern "C" fn FIO_adjustParamsForPatchFromMode(
+unsafe fn FIO_adjustParamsForPatchFromMode(
     prefs: *mut FIO_prefs_t,
     mut comprParams: *mut ZSTD_compressionParameters,
     dictSize: core::ffi::c_ulonglong,
@@ -2209,7 +2120,7 @@ unsafe extern "C" fn FIO_adjustParamsForPatchFromMode(
         }
     }
 }
-unsafe extern "C" fn FIO_createCResources(
+unsafe fn FIO_createCResources(
     prefs: *mut FIO_prefs_t,
     mut dictFileName: *const core::ffi::c_char,
     maxSrcFileSize: core::ffi::c_ulonglong,
@@ -3550,13 +3461,13 @@ unsafe extern "C" fn FIO_createCResources(
     }
     ress
 }
-unsafe extern "C" fn FIO_freeCResources(ress: *mut cRess_t) {
+unsafe fn FIO_freeCResources(ress: *mut cRess_t) {
     FIO_freeDict(&mut (*ress).dict);
     AIO_WritePool_free((*ress).writeCtx);
     AIO_ReadPool_free((*ress).readCtx);
     ZSTD_freeCStream((*ress).cctx);
 }
-unsafe extern "C" fn FIO_compressGzFrame(
+unsafe fn FIO_compressGzFrame(
     mut ress: *const cRess_t,
     mut srcFileName: *const core::ffi::c_char,
     srcFileSize: u64,
@@ -3824,7 +3735,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     outFileSize
 }
-unsafe extern "C" fn FIO_compressLzmaFrame(
+unsafe fn FIO_compressLzmaFrame(
     mut ress: *mut cRess_t,
     mut srcFileName: *const core::ffi::c_char,
     srcFileSize: u64,
@@ -4110,7 +4021,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     outFileSize
 }
-unsafe extern "C" fn FIO_compressZstdFrame(
+unsafe fn FIO_compressZstdFrame(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ressPtr: *const cRess_t,
@@ -4763,7 +4674,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     AIO_WritePool_sparseWriteEnd((*ressPtr).writeCtx);
     compressedfilesize as core::ffi::c_ulonglong
 }
-unsafe extern "C" fn FIO_compressFilename_internal(
+unsafe fn FIO_compressFilename_internal(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: cRess_t,
@@ -4927,7 +4838,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
     }
     0
 }
-unsafe extern "C" fn FIO_compressFilename_dstFile(
+unsafe fn FIO_compressFilename_dstFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: cRess_t,
@@ -5129,7 +5040,7 @@ static compressedFileExtensions: [&CStr; 113] = [
     c".zoo",
     c".zpaq",
 ];
-unsafe extern "C" fn FIO_compressFilename_srcFile(
+unsafe fn FIO_compressFilename_srcFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: cRess_t,
@@ -5279,8 +5190,7 @@ unsafe extern "C" fn FIO_compressFilename_srcFile(
     }
     result
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
+pub unsafe fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
     static formatOptions: [&CStr; 5] = [
         ZSTD_EXTENSION,
         GZ_EXTENSION,
@@ -5406,8 +5316,7 @@ pub unsafe extern "C" fn FIO_displayCompressionParameters(mut prefs: *const FIO_
     );
     fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_compressFilename(
+pub unsafe fn FIO_compressFilename(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut dstFileName: *const core::ffi::c_char,
@@ -5434,7 +5343,7 @@ pub unsafe extern "C" fn FIO_compressFilename(
     FIO_freeCResources(&mut ress);
     result
 }
-unsafe extern "C" fn FIO_determineCompressedName(
+unsafe fn FIO_determineCompressedName(
     mut srcFileName: *const core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
     mut suffix: *const core::ffi::c_char,
@@ -5510,7 +5419,7 @@ unsafe extern "C" fn FIO_determineCompressedName(
     );
     dstFileNameBuffer
 }
-unsafe extern "C" fn FIO_getLargestFileSize(
+unsafe fn FIO_getLargestFileSize(
     mut inFileNames: *mut *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
 ) -> core::ffi::c_ulonglong {
@@ -5529,8 +5438,7 @@ unsafe extern "C" fn FIO_getLargestFileSize(
     }
     maxFileSize
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_compressMultipleFilenames(
+pub unsafe fn FIO_compressMultipleFilenames(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut inFileNamesTable: *mut *const core::ffi::c_char,
@@ -5744,7 +5652,7 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
     FIO_freeCResources(&mut ress);
     error
 }
-unsafe extern "C" fn FIO_createDResources(
+unsafe fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
     mut dictFileName: *const core::ffi::c_char,
 ) -> dRess_t {
@@ -6070,7 +5978,7 @@ unsafe extern "C" fn FIO_createDResources(
     ress.readCtx = AIO_ReadPool_create(prefs, ZSTD_DStreamInSize());
     ress
 }
-unsafe extern "C" fn FIO_freeDResources(mut ress: dRess_t) {
+unsafe fn FIO_freeDResources(mut ress: dRess_t) {
     FIO_freeDict(&mut ress.dict);
     let mut err: size_t = 0;
     err = ZSTD_freeDStream(ress.dctx);
@@ -6115,7 +6023,7 @@ unsafe extern "C" fn FIO_freeDResources(mut ress: dRess_t) {
     AIO_WritePool_free(ress.writeCtx);
     AIO_ReadPool_free(ress.readCtx);
 }
-unsafe extern "C" fn FIO_passThrough(mut ress: *mut dRess_t) -> core::ffi::c_int {
+unsafe fn FIO_passThrough(mut ress: *mut dRess_t) -> core::ffi::c_int {
     let blockSize = if (if ((64 * ((1) << 10)) as size_t) < ZSTD_DStreamInSize() {
         (64 * ((1) << 10)) as size_t
     } else {
@@ -6155,7 +6063,7 @@ unsafe extern "C" fn FIO_passThrough(mut ress: *mut dRess_t) -> core::ffi::c_int
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     0
 }
-unsafe extern "C" fn FIO_zstdErrorHelp(
+unsafe fn FIO_zstdErrorHelp(
     prefs: *const FIO_prefs_t,
     mut ress: *const dRess_t,
     mut err: size_t,
@@ -6240,7 +6148,7 @@ unsafe extern "C" fn FIO_zstdErrorHelp(
     }
 }
 pub const FIO_ERROR_FRAME_DECODING: core::ffi::c_int = -(2);
-unsafe extern "C" fn FIO_decompressZstdFrame(
+unsafe fn FIO_decompressZstdFrame(
     fCtx: *mut FIO_ctx_t,
     mut ress: *mut dRess_t,
     prefs: *const FIO_prefs_t,
@@ -6363,7 +6271,7 @@ unsafe extern "C" fn FIO_decompressZstdFrame(
     AIO_WritePool_sparseWriteEnd((*ress).writeCtx);
     frameSize as core::ffi::c_ulonglong
 }
-unsafe extern "C" fn FIO_decompressGzFrame(
+unsafe fn FIO_decompressGzFrame(
     mut ress: *mut dRess_t,
     mut srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_ulonglong {
@@ -6474,7 +6382,7 @@ unsafe extern "C" fn FIO_decompressGzFrame(
         outFileSize
     }
 }
-unsafe extern "C" fn FIO_decompressLzmaFrame(
+unsafe fn FIO_decompressLzmaFrame(
     mut ress: *mut dRess_t,
     mut srcFileName: *const core::ffi::c_char,
     mut plain_lzma: core::ffi::c_int,
@@ -6597,7 +6505,7 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
         outFileSize
     }
 }
-unsafe extern "C" fn FIO_decompressFrames(
+unsafe fn FIO_decompressFrames(
     fCtx: *mut FIO_ctx_t,
     mut ress: dRess_t,
     prefs: *const FIO_prefs_t,
@@ -6733,7 +6641,7 @@ unsafe extern "C" fn FIO_decompressFrames(
     }
     0
 }
-unsafe extern "C" fn FIO_decompressDstFile(
+unsafe fn FIO_decompressDstFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: dRess_t,
@@ -6790,7 +6698,7 @@ unsafe extern "C" fn FIO_decompressDstFile(
     }
     result
 }
-unsafe extern "C" fn FIO_decompressSrcFile(
+unsafe fn FIO_decompressSrcFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: dRess_t,
@@ -6887,8 +6795,7 @@ unsafe extern "C" fn FIO_decompressSrcFile(
     }
     result
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_decompressFilename(
+pub unsafe fn FIO_decompressFilename(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut dstFileName: *const core::ffi::c_char,
@@ -6912,7 +6819,7 @@ static mut suffixList: [*const core::ffi::c_char; 9] = [
     NULL as *const core::ffi::c_char,
 ];
 static suffixListStr: &CStr = c".zst/.tzst/.gz/.tgz/.lzma/.xz/.txz";
-unsafe extern "C" fn FIO_determineDstName(
+unsafe fn FIO_determineDstName(
     mut srcFileName: *const core::ffi::c_char,
     mut outDirName: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
@@ -7030,8 +6937,7 @@ unsafe extern "C" fn FIO_determineDstName(
     );
     dstFileNameBuffer
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
+pub unsafe fn FIO_decompressMultipleFilenames(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut srcNamesTable: *mut *const core::ffi::c_char,
@@ -7215,7 +7121,7 @@ pub unsafe extern "C" fn FIO_decompressMultipleFilenames(
     FIO_freeDResources(ress);
     error
 }
-unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
+unsafe fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
     loop {
         let mut headerBuffer: [u8; 18] = [0; 18];
         let numBytesRead = fread(
@@ -7490,7 +7396,7 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
     }
     info_success
 }
-unsafe extern "C" fn getFileInfo_fileConfirmed(
+unsafe fn getFileInfo_fileConfirmed(
     mut info: *mut fileInfo_t,
     mut inFileName: *const core::ffi::c_char,
 ) -> InfoError {
@@ -7541,7 +7447,7 @@ unsafe extern "C" fn getFileInfo_fileConfirmed(
     (*info).nbFiles = 1;
     status
 }
-unsafe extern "C" fn getFileInfo(
+unsafe fn getFileInfo(
     mut info: *mut fileInfo_t,
     mut srcFileName: *const core::ffi::c_char,
 ) -> InfoError {
@@ -7560,7 +7466,7 @@ unsafe extern "C" fn getFileInfo(
     }
     getFileInfo_fileConfirmed(info, srcFileName)
 }
-unsafe extern "C" fn displayInfo(
+unsafe fn displayInfo(
     mut inFileName: *const core::ffi::c_char,
     mut info: *const fileInfo_t,
     mut displayLevel: core::ffi::c_int,
@@ -7685,7 +7591,7 @@ unsafe extern "C" fn displayInfo(
         fprintf(stdout, b"\n\0" as *const u8 as *const core::ffi::c_char);
     };
 }
-unsafe extern "C" fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> fileInfo_t {
+unsafe fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> fileInfo_t {
     let mut total = fileInfo_t {
         decompressedSize: 0,
         compressedSize: 0,
@@ -7712,7 +7618,7 @@ unsafe extern "C" fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> f
     total.nbFiles = (fi1.nbFiles).wrapping_add(fi2.nbFiles);
     total
 }
-unsafe extern "C" fn FIO_listFile(
+unsafe fn FIO_listFile(
     mut total: *mut fileInfo_t,
     mut inFileName: *const core::ffi::c_char,
     mut displayLevel: core::ffi::c_int,
@@ -7784,8 +7690,7 @@ unsafe extern "C" fn FIO_listFile(
     );
     error as core::ffi::c_int
 }
-#[no_mangle]
-pub unsafe extern "C" fn FIO_listMultipleFiles(
+pub unsafe fn FIO_listMultipleFiles(
     mut numFiles: core::ffi::c_uint,
     mut filenameTable: *mut *const core::ffi::c_char,
     mut displayLevel: core::ffi::c_int,
