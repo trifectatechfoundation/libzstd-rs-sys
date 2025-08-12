@@ -532,7 +532,7 @@ unsafe extern "C" fn ZSTD_compressSubBlock_literal(
     } else {
         set_repeat as core::ffi::c_int as core::ffi::c_uint
     }) as SymbolEncodingType_e;
-    let mut cLitSize = 0 as core::ffi::c_int as size_t;
+    let mut cLitSize = 0 as size_t;
     *entropyWritten = 0;
     if litSize == 0
         || (*hufMetadata).hType as core::ffi::c_uint
@@ -649,8 +649,8 @@ unsafe extern "C" fn ZSTD_seqDecompressedSize(
     mut litSize: size_t,
     mut lastSubBlock: core::ffi::c_int,
 ) -> size_t {
-    let mut matchLengthSum = 0 as core::ffi::c_int as size_t;
-    let mut litLengthSum = 0 as core::ffi::c_int as size_t;
+    let mut matchLengthSum = 0 as size_t;
+    let mut litLengthSum = 0 as size_t;
     let mut n: size_t = 0;
     n = 0;
     while n < nbSeqs {
@@ -948,7 +948,7 @@ unsafe extern "C" fn ZSTD_estimateSubBlockSize_sequences(
     mut writeEntropy: core::ffi::c_int,
 ) -> size_t {
     let sequencesSectionHeaderSize = 3;
-    let mut cSeqSizeEstimate = 0 as core::ffi::c_int as size_t;
+    let mut cSeqSizeEstimate = 0 as size_t;
     if nbSeq == 0 {
         return sequencesSectionHeaderSize;
     }
@@ -1070,7 +1070,7 @@ unsafe extern "C" fn countLiterals(
     mut seqCount: size_t,
 ) -> size_t {
     let mut n: size_t = 0;
-    let mut total = 0 as core::ffi::c_int as size_t;
+    let mut total = 0 as size_t;
     n = 0;
     while n < seqCount {
         total = total.wrapping_add(
@@ -1090,7 +1090,7 @@ unsafe extern "C" fn sizeBlockSequences(
     mut firstSubBlock: core::ffi::c_int,
 ) -> size_t {
     let mut n: size_t = 0;
-    let mut budget = 0 as core::ffi::c_int as size_t;
+    let mut budget = 0 as size_t;
     let mut inSize = 0;
     let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
     budget = budget.wrapping_add(headerSize);

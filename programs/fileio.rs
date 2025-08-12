@@ -429,9 +429,9 @@ pub const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0 as core::ffi
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
@@ -1798,7 +1798,7 @@ unsafe extern "C" fn FIO_createFilename_fromOutDir(
     result
 }
 unsafe extern "C" fn FIO_highbit64(mut v: core::ffi::c_ulonglong) -> core::ffi::c_uint {
-    let mut count = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut count = 0 as core::ffi::c_uint;
     assert!(v != 0);
     v >>= 1;
     while v != 0 {
@@ -1887,8 +1887,7 @@ unsafe extern "C" fn FIO_adjustMemLimitForPatchFromMode(
                 b"Can't handle files larger than %u GB\n\0" as *const u8
                     as *const core::ffi::c_char,
                 maxWindowSize.wrapping_div(
-                    (1 as core::ffi::c_int as core::ffi::c_uint)
-                        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int),
+                    (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30),
                 ),
             );
         }
@@ -3564,8 +3563,8 @@ unsafe extern "C" fn FIO_compressGzFrame(
     mut compressionLevel: core::ffi::c_int,
     mut readsize: *mut u64,
 ) -> core::ffi::c_ulonglong {
-    let mut inFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
-    let mut outFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
+    let mut inFileSize = 0 as core::ffi::c_ulonglong;
+    let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = z_stream_s {
         next_in: core::ptr::null_mut::<Bytef>(),
         avail_in: 0,
@@ -3711,8 +3710,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
                     stderr,
                     b"\rRead : %u MB ==> %.2f%% \0" as *const u8 as *const core::ffi::c_char,
                     (inFileSize >> 20) as core::ffi::c_uint,
-                    outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double
-                        * 100 as core::ffi::c_int as core::ffi::c_double,
+                    outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double * 100.0,
                 );
                 if g_display_prefs.displayLevel >= 4 {
                     fflush(stderr);
@@ -3735,8 +3733,7 @@ unsafe extern "C" fn FIO_compressGzFrame(
                 b"\rRead : %u / %u MB ==> %.2f%% \0" as *const u8 as *const core::ffi::c_char,
                 (inFileSize >> 20) as core::ffi::c_uint,
                 (srcFileSize >> 20) as core::ffi::c_uint,
-                outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double
-                    * 100 as core::ffi::c_int as core::ffi::c_double,
+                outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double * 100.0,
             );
             if g_display_prefs.displayLevel >= 4 {
                 fflush(stderr);
@@ -3835,8 +3832,8 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
     mut readsize: *mut u64,
     mut plain_lzma: core::ffi::c_int,
 ) -> core::ffi::c_ulonglong {
-    let mut inFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
-    let mut outFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
+    let mut inFileSize = 0 as core::ffi::c_ulonglong;
+    let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
             next_in: NULL as *const u8,
@@ -4074,8 +4071,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                     stderr,
                     b"\rRead : %u MB ==> %.2f%%\0" as *const u8 as *const core::ffi::c_char,
                     (inFileSize >> 20) as core::ffi::c_uint,
-                    outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double
-                        * 100 as core::ffi::c_int as core::ffi::c_double,
+                    outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double * 100.0,
                 );
                 if g_display_prefs.displayLevel >= 4 {
                     fflush(stderr);
@@ -4098,8 +4094,7 @@ unsafe extern "C" fn FIO_compressLzmaFrame(
                 b"\rRead : %u / %u MB ==> %.2f%%\0" as *const u8 as *const core::ffi::c_char,
                 (inFileSize >> 20) as core::ffi::c_uint,
                 (srcFileSize >> 20) as core::ffi::c_uint,
-                outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double
-                    * 100 as core::ffi::c_int as core::ffi::c_double,
+                outFileSize as core::ffi::c_double / inFileSize as core::ffi::c_double * 100.0,
             );
             if g_display_prefs.displayLevel >= 4 {
                 fflush(stderr);
@@ -4151,8 +4146,8 @@ unsafe extern "C" fn FIO_compressZstdFrame(
     };
     let mut speedChange = noChange;
     let mut flushWaiting = 0;
-    let mut inputPresented = 0 as core::ffi::c_int as core::ffi::c_uint;
-    let mut inputBlocked = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut inputPresented = 0 as core::ffi::c_uint;
+    let mut inputBlocked = 0 as core::ffi::c_uint;
     let mut lastJobID = 0;
     let mut lastAdaptTime = UTIL_getTime();
     let adaptEveryMicro = REFRESH_RATE;
@@ -4504,7 +4499,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                     inputPresented,
                                     inputBlocked as core::ffi::c_double
                                         / inputPresented as core::ffi::c_double
-                                        * 100 as core::ffi::c_int as core::ffi::c_double,
+                                        * 100.0,
                                     newlyIngested as core::ffi::c_uint,
                                     newlyConsumed as core::ffi::c_uint,
                                     newlyFlushed_0 as core::ffi::c_uint,
@@ -4595,7 +4590,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                     / (zfp_0.consumed).wrapping_add(
                         (zfp_0.consumed == 0) as core::ffi::c_int as core::ffi::c_ulonglong,
                     ) as core::ffi::c_double
-                    * 100 as core::ffi::c_int as core::ffi::c_double;
+                    * 100.0;
                 let buffered_hrs = UTIL_makeHumanReadableSize(
                     (zfp_0.ingested).wrapping_sub(zfp_0.consumed) as u64,
                 );
@@ -4675,8 +4670,7 @@ unsafe extern "C" fn FIO_compressZstdFrame(
                                     as *const core::ffi::c_char,
                                 (*fCtx).currFileIdx + 1,
                                 (*fCtx).nbFilesTotal,
-                                (18 as core::ffi::c_int as size_t).wrapping_sub(srcFileNameSize)
-                                    as core::ffi::c_int,
+                                (18 as size_t).wrapping_sub(srcFileNameSize) as core::ffi::c_int,
                                 srcFileName,
                             );
                         }
@@ -4904,8 +4898,7 @@ unsafe extern "C" fn FIO_compressFilename_internal(
                 b"%-20s :%6.2f%%   (%6.*f%s => %6.*f%s, %s) \n\0" as *const u8
                     as *const core::ffi::c_char,
                 srcFileName,
-                compressedfilesize as core::ffi::c_double / readsize as core::ffi::c_double
-                    * 100 as core::ffi::c_int as core::ffi::c_double,
+                compressedfilesize as core::ffi::c_double / readsize as core::ffi::c_double * 100.0,
                 hr_isize.precision,
                 hr_isize.value,
                 hr_isize.suffix,
@@ -4920,9 +4913,8 @@ unsafe extern "C" fn FIO_compressFilename_internal(
     let cpuLoad_s =
         (cpuEnd - cpuStart) as core::ffi::c_double / CLOCKS_PER_SEC as core::ffi::c_double;
     let timeLength_ns = UTIL_clockSpanNano(timeStart);
-    let timeLength_s = timeLength_ns as core::ffi::c_double
-        / 1000000000 as core::ffi::c_int as core::ffi::c_double;
-    let cpuLoad_pct = cpuLoad_s / timeLength_s * 100 as core::ffi::c_int as core::ffi::c_double;
+    let timeLength_s = timeLength_ns as core::ffi::c_double / 1000000000.0;
+    let cpuLoad_pct = cpuLoad_s / timeLength_s * 100.0;
     if g_display_prefs.displayLevel >= 4 {
         fprintf(
             stderr,
@@ -5739,7 +5731,7 @@ pub unsafe extern "C" fn FIO_compressMultipleFilenames(
                 (*fCtx).nbFilesProcessed,
                 (*fCtx).totalBytesOutput as core::ffi::c_double
                     / (*fCtx).totalBytesInput as core::ffi::c_double
-                    * 100 as core::ffi::c_int as core::ffi::c_double,
+                    * 100.0,
                 hr_isize.precision,
                 hr_isize.value,
                 hr_isize.suffix,
@@ -6218,9 +6210,7 @@ unsafe extern "C" fn FIO_zstdErrorHelp(
                     as core::ffi::c_int as core::ffi::c_ulonglong,
             ) as core::ffi::c_uint;
             assert!(
-                windowSize
-                    < ((1 as core::ffi::c_ulonglong) << 52 as core::ffi::c_int) as u64
-                        as core::ffi::c_ulonglong
+                windowSize < ((1 as core::ffi::c_ulonglong) << 52) as u64 as core::ffi::c_ulonglong
             );
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
@@ -6377,7 +6367,7 @@ unsafe extern "C" fn FIO_decompressGzFrame(
     mut ress: *mut dRess_t,
     mut srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_ulonglong {
-    let mut outFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
+    let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = z_stream_s {
         next_in: core::ptr::null_mut::<Bytef>(),
         avail_in: 0,
@@ -6489,7 +6479,7 @@ unsafe extern "C" fn FIO_decompressLzmaFrame(
     mut srcFileName: *const core::ffi::c_char,
     mut plain_lzma: core::ffi::c_int,
 ) -> core::ffi::c_ulonglong {
-    let mut outFileSize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
+    let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
             next_in: NULL as *const u8,
@@ -6615,7 +6605,7 @@ unsafe extern "C" fn FIO_decompressFrames(
     mut srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut readSomething = 0;
-    let mut filesize = 0 as core::ffi::c_int as core::ffi::c_ulonglong;
+    let mut filesize = 0 as core::ffi::c_ulonglong;
     let mut passThrough = (*prefs).passThrough;
     if passThrough == -(1) {
         passThrough = ((*prefs).overwrite != 0 && strcmp(dstFileName, stdoutmark.as_ptr()) == 0)
@@ -7476,8 +7466,8 @@ unsafe extern "C" fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut 
             {
                 let frameSize =
                     MEM_readLE32(headerBuffer.as_mut_ptr().offset(4) as *const core::ffi::c_void);
-                let seek = ((8 as core::ffi::c_int as u32).wrapping_add(frameSize) as size_t)
-                    .wrapping_sub(numBytesRead) as core::ffi::c_long;
+                let seek = (8u32.wrapping_add(frameSize) as size_t).wrapping_sub(numBytesRead)
+                    as core::ffi::c_long;
                 if fseek(srcFile, seek, 1) != 0 {
                     if g_display_prefs.displayLevel >= 1 {
                         fprintf(
@@ -7578,8 +7568,8 @@ unsafe extern "C" fn displayInfo(
     let window_hrs = UTIL_makeHumanReadableSize((*info).windowSize);
     let compressed_hrs = UTIL_makeHumanReadableSize((*info).compressedSize);
     let decompressed_hrs = UTIL_makeHumanReadableSize((*info).decompressedSize);
-    let ratio = if (*info).compressedSize == 0 as core::ffi::c_int as u64 {
-        0 as core::ffi::c_int as core::ffi::c_double
+    let ratio = if (*info).compressedSize == 0 {
+        0.0
     } else {
         (*info).decompressedSize as core::ffi::c_double
             / (*info).compressedSize as core::ffi::c_double
@@ -7877,8 +7867,8 @@ pub unsafe extern "C" fn FIO_listMultipleFiles(
     if numFiles > 1 && displayLevel <= 2 {
         let compressed_hrs = UTIL_makeHumanReadableSize(total.compressedSize);
         let decompressed_hrs = UTIL_makeHumanReadableSize(total.decompressedSize);
-        let ratio = if total.compressedSize == 0 as core::ffi::c_int as u64 {
-            0 as core::ffi::c_int as core::ffi::c_double
+        let ratio = if total.compressedSize == 0 {
+            0.0
         } else {
             total.decompressedSize as core::ffi::c_double
                 / total.compressedSize as core::ffi::c_double

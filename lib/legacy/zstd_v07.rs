@@ -269,8 +269,7 @@ unsafe extern "C" fn BITv07_initDStream(
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).offset(srcSize.wrapping_sub(1) as isize);
         (*bitD).bitsConsumed = if lastByte as core::ffi::c_int != 0 {
-            (8 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_sub(BITv07_highbit32(lastByte as u32))
+            (8 as core::ffi::c_uint).wrapping_sub(BITv07_highbit32(lastByte as u32))
         } else {
             0
         };
@@ -345,8 +344,7 @@ unsafe extern "C" fn BITv07_initDStream(
         }
         let lastByte_0 = *(srcBuffer as *const u8).offset(srcSize.wrapping_sub(1) as isize);
         (*bitD).bitsConsumed = if lastByte_0 as core::ffi::c_int != 0 {
-            (8 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_sub(BITv07_highbit32(lastByte_0 as u32))
+            (8 as core::ffi::c_uint).wrapping_sub(BITv07_highbit32(lastByte_0 as u32))
         } else {
             0
         };
@@ -812,7 +810,7 @@ pub unsafe extern "C" fn FSEv07_buildDTable(
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3);
     let mut s_0: u32 = 0;
-    let mut position = 0 as core::ffi::c_int as u32;
+    let mut position = 0u32;
     s_0 = 0;
     while s_0 < maxSV1 {
         let mut i: core::ffi::c_int = 0;
@@ -1133,7 +1131,7 @@ pub unsafe extern "C" fn HUFv07_readDTableX2(
         ::core::mem::size_of::<DTableDesc>() as core::ffi::c_ulong,
     );
     let mut n: u32 = 0;
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     n = 1;
     while n < tableLog.wrapping_add(1) {
         let mut current = nextRankStart;
@@ -1720,7 +1718,7 @@ pub unsafe extern "C" fn HUFv07_readDTableX4(
         maxW = maxW.wrapping_sub(1);
     }
     let mut w: u32 = 0;
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     w = 1;
     while w < maxW.wrapping_add(1) {
         let mut current = nextRankStart;
@@ -1745,7 +1743,7 @@ pub unsafe extern "C" fn HUFv07_readDTableX4(
     *rankStart.offset(0) = 0;
     let rankVal0 = (*rankVal.as_mut_ptr().offset(0)).as_mut_ptr();
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
-    let mut nextRankVal = 0 as core::ffi::c_int as u32;
+    let mut nextRankVal = 0u32;
     let mut w_1: u32 = 0;
     w_1 = 1;
     while w_1 < maxW.wrapping_add(1) {
@@ -2768,7 +2766,7 @@ pub const FSEv07_ENCODING_RLE: core::ffi::c_int = 1;
 pub const FSEv07_ENCODING_STATIC: core::ffi::c_int = 2;
 pub const FSEv07_ENCODING_DYNAMIC: core::ffi::c_int = 3;
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
@@ -3086,7 +3084,7 @@ pub unsafe extern "C" fn ZSTDv07_getFrameParams(
         return fhsize;
     }
     let fhdByte = *ip.offset(4);
-    let mut pos = 5 as core::ffi::c_int as size_t;
+    let mut pos = 5 as size_t;
     let dictIDSizeCode = (fhdByte as core::ffi::c_int & 3) as u32;
     let checksumFlag = (fhdByte as core::ffi::c_int >> 2 & 1) as u32;
     let directMode = (fhdByte as core::ffi::c_int >> 5 & 1) as u32;
@@ -3097,7 +3095,7 @@ pub unsafe extern "C" fn ZSTDv07_getFrameParams(
         } else {
             ZSTDv07_WINDOWLOG_MAX_64
         }) as u32;
-    let mut windowSize = 0 as core::ffi::c_int as u32;
+    let mut windowSize = 0u32;
     let mut dictID = 0;
     let mut frameContentSize = 0;
     if fhdByte as core::ffi::c_int & 0x8 as core::ffi::c_int != 0 {
@@ -3610,128 +3608,18 @@ unsafe extern "C" fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> se
     let ofBits = ofCode;
     let totalBits = llBits.wrapping_add(mlBits).wrapping_add(ofBits);
     static LL_base: [u32; 36] = [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        18,
-        20,
-        22,
-        24,
-        28,
-        32,
-        40,
-        48,
-        64,
-        0x80 as core::ffi::c_int as u32,
-        0x100 as core::ffi::c_int as u32,
-        0x200 as core::ffi::c_int as u32,
-        0x400 as core::ffi::c_int as u32,
-        0x800 as core::ffi::c_int as u32,
-        0x1000 as core::ffi::c_int as u32,
-        0x2000 as core::ffi::c_int as u32,
-        0x4000 as core::ffi::c_int as u32,
-        0x8000 as core::ffi::c_int as u32,
-        0x10000 as core::ffi::c_int as u32,
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 40, 48,
+        64, 0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000,
     ];
     static ML_base: [u32; 53] = [
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23,
-        24,
-        25,
-        26,
-        27,
-        28,
-        29,
-        30,
-        31,
-        32,
-        33,
-        34,
-        35,
-        37,
-        39,
-        41,
-        43,
-        47,
-        51,
-        59,
-        67,
-        83,
-        99,
-        0x83 as core::ffi::c_int as u32,
-        0x103 as core::ffi::c_int as u32,
-        0x203 as core::ffi::c_int as u32,
-        0x403 as core::ffi::c_int as u32,
-        0x803 as core::ffi::c_int as u32,
-        0x1003 as core::ffi::c_int as u32,
-        0x2003 as core::ffi::c_int as u32,
-        0x4003 as core::ffi::c_int as u32,
-        0x8003 as core::ffi::c_int as u32,
-        0x10003 as core::ffi::c_int as u32,
+        3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+        27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 39, 41, 43, 47, 51, 59, 67, 83, 99, 0x83, 0x103,
+        0x203, 0x403, 0x803, 0x1003, 0x2003, 0x4003, 0x8003, 0x10003,
     ];
     static OF_base: [u32; 29] = [
-        0 as core::ffi::c_int as u32,
-        1 as core::ffi::c_int as u32,
-        1 as core::ffi::c_int as u32,
-        5 as core::ffi::c_int as u32,
-        0xd as core::ffi::c_int as u32,
-        0x1d as core::ffi::c_int as u32,
-        0x3d as core::ffi::c_int as u32,
-        0x7d as core::ffi::c_int as u32,
-        0xfd as core::ffi::c_int as u32,
-        0x1fd as core::ffi::c_int as u32,
-        0x3fd as core::ffi::c_int as u32,
-        0x7fd as core::ffi::c_int as u32,
-        0xffd as core::ffi::c_int as u32,
-        0x1ffd as core::ffi::c_int as u32,
-        0x3ffd as core::ffi::c_int as u32,
-        0x7ffd as core::ffi::c_int as u32,
-        0xfffd as core::ffi::c_int as u32,
-        0x1fffd as core::ffi::c_int as u32,
-        0x3fffd as core::ffi::c_int as u32,
-        0x7fffd as core::ffi::c_int as u32,
-        0xffffd as core::ffi::c_int as u32,
-        0x1ffffd as core::ffi::c_int as u32,
-        0x3ffffd as core::ffi::c_int as u32,
-        0x7ffffd as core::ffi::c_int as u32,
-        0xfffffd as core::ffi::c_int as u32,
-        0x1fffffd as core::ffi::c_int as u32,
-        0x3fffffd as core::ffi::c_int as u32,
-        0x7fffffd as core::ffi::c_int as u32,
-        0xffffffd as core::ffi::c_int as u32,
+        0, 1, 1, 5, 0xd, 0x1d, 0x3d, 0x7d, 0xfd, 0x1fd, 0x3fd, 0x7fd, 0xffd, 0x1ffd, 0x3ffd,
+        0x7ffd, 0xfffd, 0x1fffd, 0x3fffd, 0x7fffd, 0xffffd, 0x1ffffd, 0x3ffffd, 0x7ffffd, 0xfffffd,
+        0x1fffffd, 0x3fffffd, 0x7fffffd, 0xffffffd,
     ];
     let mut offset: size_t = 0;
     if ofCode == 0 {
@@ -3745,7 +3633,7 @@ unsafe extern "C" fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> se
     }
     if ofCode <= 1 {
         if (llCode == 0) as core::ffi::c_int & (offset <= 1) as core::ffi::c_int != 0 {
-            offset = (1 as core::ffi::c_int as size_t).wrapping_sub(offset);
+            offset = (1 as size_t).wrapping_sub(offset);
         }
         if offset != 0 {
             let temp = *((*seqState).prevOffset)
@@ -4291,7 +4179,7 @@ pub unsafe extern "C" fn ZSTDv07_findFrameSizeInfoLegacy(
 ) {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
-    let mut nbBlocks = 0 as core::ffi::c_int as size_t;
+    let mut nbBlocks = 0 as size_t;
     if srcSize < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
         ZSTD_errorFrameSizeInfoLegacy(
             cSize,

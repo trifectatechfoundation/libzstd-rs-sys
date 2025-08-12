@@ -72,7 +72,7 @@ unsafe extern "C" fn DiB_loadFiles(
     mut displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let buff = buffer as *mut core::ffi::c_char;
-    let mut totalDataLoaded = 0 as core::ffi::c_int as size_t;
+    let mut totalDataLoaded = 0 as size_t;
     let mut nbSamplesLoaded = 0 as core::ffi::c_int;
     let mut fileIndex = 0 as core::ffi::c_int;
     let mut f = NULL as *mut FILE;
@@ -452,8 +452,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
         maxMem as i64
     } else {
         fs.totalSizeToLoad
-    }) < (2 as core::ffi::c_int as core::ffi::c_uint)
-        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+    }) < (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
         as i64
     {
         if (maxMem as i64) < fs.totalSizeToLoad {
@@ -462,8 +461,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
             fs.totalSizeToLoad
         }
     } else {
-        (2 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int) as i64
+        (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30) as i64
     }) as size_t;
     if memLimit != 0 {
         if displayLevel >= 2 {
@@ -622,9 +620,7 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 coverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
-                let mut splitPercentage = ((*coverParams).splitPoint
-                    * 100 as core::ffi::c_int as core::ffi::c_double)
-                    as core::ffi::c_uint;
+                let mut splitPercentage = ((*coverParams).splitPoint * 100.0) as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(
                         stderr,
@@ -658,9 +654,8 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
                 fastCoverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
-                let mut splitPercentage_0 = ((*fastCoverParams).splitPoint
-                    * 100 as core::ffi::c_int as core::ffi::c_double)
-                    as core::ffi::c_uint;
+                let mut splitPercentage_0 =
+                    ((*fastCoverParams).splitPoint * 100.0) as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(
                         stderr,
@@ -714,14 +709,13 @@ pub unsafe extern "C" fn DiB_trainFromFiles(
 }
 unsafe extern "C" fn run_static_initializers() {
     g_maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
-        (2 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+        (2 as core::ffi::c_uint)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30)
             .wrapping_sub(
-                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int))
-                    as core::ffi::c_uint,
+                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as core::ffi::c_uint,
             ) as size_t
     } else {
-        ((512 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int)) as size_t)
+        ((512 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as size_t)
             << ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
     };
     g_refreshRate = SEC_TO_MICRO as PTime / 6;

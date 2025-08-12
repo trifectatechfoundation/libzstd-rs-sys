@@ -228,7 +228,7 @@ pub const FSEv06_ENCODING_RLE: core::ffi::c_int = 1;
 pub const FSEv06_ENCODING_STATIC: core::ffi::c_int = 2;
 pub const FSEv06_ENCODING_DYNAMIC: core::ffi::c_int = 3;
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
@@ -417,8 +417,8 @@ unsafe extern "C" fn BITv06_initDStream(
         if lastByte as core::ffi::c_int == 0 {
             return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
         }
-        (*bitD).bitsConsumed = (8 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_sub(BITv06_highbit32(lastByte as u32));
+        (*bitD).bitsConsumed =
+            (8 as core::ffi::c_uint).wrapping_sub(BITv06_highbit32(lastByte as u32));
     } else {
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
         (*bitD).ptr = (*bitD).start;
@@ -489,8 +489,8 @@ unsafe extern "C" fn BITv06_initDStream(
         if lastByte_0 as core::ffi::c_int == 0 {
             return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
         }
-        (*bitD).bitsConsumed = (8 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_sub(BITv06_highbit32(lastByte_0 as u32));
+        (*bitD).bitsConsumed =
+            (8 as core::ffi::c_uint).wrapping_sub(BITv06_highbit32(lastByte_0 as u32));
         (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
             (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(srcSize) as u32
                 * 8,
@@ -840,7 +840,7 @@ pub unsafe extern "C" fn FSEv06_buildDTable(
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3);
     let mut s_0: u32 = 0;
-    let mut position = 0 as core::ffi::c_int as u32;
+    let mut position = 0u32;
     s_0 = 0;
     while s_0 < maxSV1 {
         let mut i: core::ffi::c_int = 0;
@@ -1783,7 +1783,7 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
         maxW = maxW.wrapping_sub(1);
     }
     let mut w: u32 = 0;
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     w = 1;
     while w < maxW.wrapping_add(1) {
         let mut current = nextRankStart;
@@ -1808,7 +1808,7 @@ pub unsafe extern "C" fn HUFv06_readDTableX4(
     *rankStart.offset(0) = 0;
     let rankVal0 = (*rankVal.as_mut_ptr().offset(0)).as_mut_ptr();
     let rescale = memLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
-    let mut nextRankVal = 0 as core::ffi::c_int as u32;
+    let mut nextRankVal = 0u32;
     let mut w_1: u32 = 0;
     w_1 = 1;
     while w_1 < maxW.wrapping_add(1) {
@@ -3322,7 +3322,7 @@ unsafe extern "C" fn ZSTDv06_decodeSequence(mut seq: *mut seq_t, mut seqState: *
     }
     if offset < ZSTDv06_REP_NUM as size_t {
         if llCode == 0 && offset <= 1 {
-            offset = (1 as core::ffi::c_int as size_t).wrapping_sub(offset);
+            offset = (1 as size_t).wrapping_sub(offset);
         }
         if offset != 0 {
             let mut temp = *((*seqState).prevOffset)
@@ -3837,7 +3837,7 @@ pub unsafe extern "C" fn ZSTDv06_findFrameSizeInfoLegacy(
 ) {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
-    let mut nbBlocks = 0 as core::ffi::c_int as size_t;
+    let mut nbBlocks = 0 as size_t;
     let mut blockProperties = {
         blockProperties_t {
             blockType: bt_compressed,
@@ -4320,8 +4320,7 @@ pub unsafe extern "C" fn ZBUFFv06_decompressContinue(
                             return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
                         }
                     }
-                    let neededOutSize = ((1 as core::ffi::c_int as size_t)
-                        << (*zbd).fParams.windowLog)
+                    let neededOutSize = ((1 as size_t) << (*zbd).fParams.windowLog)
                         .wrapping_add(blockSize)
                         .wrapping_add((WILDCOPY_OVERLENGTH * 2) as size_t);
                     if (*zbd).outBuffSize < neededOutSize {

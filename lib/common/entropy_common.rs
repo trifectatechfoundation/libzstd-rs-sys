@@ -35,7 +35,7 @@ fn FSE_readNCount_body(
     let mut threshold: core::ffi::c_int = 0;
     let mut bitStream: u32 = 0;
     let mut bitCount: core::ffi::c_int = 0;
-    let mut charnum = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut charnum = 0 as core::ffi::c_uint;
     let maxSV1 = (*maxSVPtr).wrapping_add(1);
     let mut previous_was_0 = false;
     if hbSize < 8 {

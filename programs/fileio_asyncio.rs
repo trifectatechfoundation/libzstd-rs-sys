@@ -202,14 +202,10 @@ unsafe extern "C" fn AIO_fwriteSparse(
         }
         return 0;
     }
-    if storedSkips
-        > (1 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
-    {
+    if storedSkips > (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30) {
         if fseek(
             file,
-            (1 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+            (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
                 as core::ffi::c_long,
             SEEK_CUR,
         ) != 0
@@ -244,10 +240,8 @@ unsafe extern "C" fn AIO_fwriteSparse(
             }
             exit(91);
         }
-        storedSkips = storedSkips.wrapping_sub(
-            (1 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int),
-        );
+        storedSkips = storedSkips
+            .wrapping_sub((1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30));
     }
     while ptrT < bufferTEnd {
         let mut nb0T: size_t = 0;

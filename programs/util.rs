@@ -559,7 +559,7 @@ pub unsafe extern "C" fn UTIL_setFDStat(
         }
         return -(1);
     }
-    if fd >= 0 as core::ffi::c_int {
+    if fd >= 0 {
         res += fchown(fd, -(1 as core::ffi::c_int) as __uid_t, (*statbuf).st_gid);
     } else {
         res += chown(
@@ -1191,66 +1191,56 @@ pub unsafe extern "C" fn UTIL_makeHumanReadableSize(mut size: u64) -> UTIL_Human
         precision: 0,
         suffix: core::ptr::null::<core::ffi::c_char>(),
     };
-    if g_utilDisplayLevel > 3 as core::ffi::c_int {
-        if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 53 as core::ffi::c_int
-        {
+    if g_utilDisplayLevel > 3 {
+        if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 53 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 20 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 20) as core::ffi::c_double;
             hrs.suffix = b" MiB\0" as *const u8 as *const core::ffi::c_char;
-            hrs.precision = 2 as core::ffi::c_int;
+            hrs.precision = 2;
         } else {
             hrs.value = size as core::ffi::c_double;
             hrs.suffix = b" B\0" as *const u8 as *const core::ffi::c_char;
-            hrs.precision = 0 as core::ffi::c_int;
+            hrs.precision = 0;
         }
     } else {
-        if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 60 as core::ffi::c_int
-        {
+        if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 60 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 60 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 60) as core::ffi::c_double;
             hrs.suffix = b" EiB\0" as *const u8 as *const core::ffi::c_char;
-        } else if size as core::ffi::c_ulonglong
-            >= (1 as core::ffi::c_ulonglong) << 50 as core::ffi::c_int
-        {
+        } else if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 50 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 50 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 50) as core::ffi::c_double;
             hrs.suffix = b" PiB\0" as *const u8 as *const core::ffi::c_char;
         } else if size as core::ffi::c_ulonglong
             >= (1 as core::ffi::c_ulonglong) << 40 as core::ffi::c_int
         {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 40 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 40) as core::ffi::c_double;
             hrs.suffix = b" TiB\0" as *const u8 as *const core::ffi::c_char;
-        } else if size as core::ffi::c_ulonglong
-            >= (1 as core::ffi::c_ulonglong) << 30 as core::ffi::c_int
-        {
+        } else if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 30 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 30 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 30) as core::ffi::c_double;
             hrs.suffix = b" GiB\0" as *const u8 as *const core::ffi::c_char;
-        } else if size as core::ffi::c_ulonglong
-            >= (1 as core::ffi::c_ulonglong) << 20 as core::ffi::c_int
-        {
+        } else if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 20 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 20 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 20) as core::ffi::c_double;
             hrs.suffix = b" MiB\0" as *const u8 as *const core::ffi::c_char;
-        } else if size as core::ffi::c_ulonglong
-            >= (1 as core::ffi::c_ulonglong) << 10 as core::ffi::c_int
-        {
+        } else if size as core::ffi::c_ulonglong >= (1 as core::ffi::c_ulonglong) << 10 {
             hrs.value = size as core::ffi::c_double
-                / ((1 as core::ffi::c_ulonglong) << 10 as core::ffi::c_int) as core::ffi::c_double;
+                / ((1 as core::ffi::c_ulonglong) << 10) as core::ffi::c_double;
             hrs.suffix = b" KiB\0" as *const u8 as *const core::ffi::c_char;
         } else {
             hrs.value = size as core::ffi::c_double;
             hrs.suffix = b" B\0" as *const u8 as *const core::ffi::c_char;
         }
-        if hrs.value >= 100 as core::ffi::c_int as core::ffi::c_double || hrs.value as u64 == size {
-            hrs.precision = 0 as core::ffi::c_int;
-        } else if hrs.value >= 10 as core::ffi::c_int as core::ffi::c_double {
-            hrs.precision = 1 as core::ffi::c_int;
-        } else if hrs.value > 1 as core::ffi::c_int as core::ffi::c_double {
-            hrs.precision = 2 as core::ffi::c_int;
+        if hrs.value >= 100.0 || hrs.value as u64 == size {
+            hrs.precision = 0;
+        } else if hrs.value >= 10.0 {
+            hrs.precision = 1;
+        } else if hrs.value > 1.0 {
+            hrs.precision = 2;
         } else {
-            hrs.precision = 3 as core::ffi::c_int;
+            hrs.precision = 3;
         }
     }
     hrs
@@ -1260,7 +1250,7 @@ pub unsafe extern "C" fn UTIL_getTotalFileSize(
     mut fileNamesTable: *const *const core::ffi::c_char,
     mut nbFiles: core::ffi::c_uint,
 ) -> u64 {
-    let mut total = 0 as core::ffi::c_int as u64;
+    let mut total = 0u64;
     let mut n: core::ffi::c_uint = 0;
     if g_traceFileStat != 0 {
         fprintf(
@@ -1357,7 +1347,7 @@ unsafe extern "C" fn UTIL_processLines(
     mut buffer: *mut core::ffi::c_char,
     mut bufferSize: size_t,
 ) -> size_t {
-    let mut lineCount = 0 as core::ffi::c_int as size_t;
+    let mut lineCount = 0 as size_t;
     let mut i = 0;
     while i < bufferSize {
         if *buffer.offset(i as isize) as core::ffi::c_int == '\n' as i32 {
@@ -1572,7 +1562,7 @@ pub unsafe extern "C" fn UTIL_mergeFileNamesTable(
     mut table1: *mut FileNamesTable,
     mut table2: *mut FileNamesTable,
 ) -> *mut FileNamesTable {
-    let mut newTableIdx = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut newTableIdx = 0 as core::ffi::c_uint;
     let mut pos = 0;
     let mut newTotalTableSize: size_t = 0;
     let mut buf = core::ptr::null_mut::<core::ffi::c_char>();
@@ -2101,7 +2091,7 @@ unsafe extern "C" fn makeUniqueMirroredDestDirs(
     mut outDirName: *const core::ffi::c_char,
 ) {
     let mut i = 0;
-    let mut uniqueDirNr = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut uniqueDirNr = 0 as core::ffi::c_uint;
     let mut uniqueDirNames = NULL_0 as *mut *mut core::ffi::c_char;
     if nbFile == 0 {
         return;
@@ -2171,7 +2161,7 @@ pub unsafe extern "C" fn UTIL_mirrorSourceFilesDirectories(
     mut outDirName: *const core::ffi::c_char,
 ) {
     let mut i = 0;
-    let mut validFilenamesNr = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut validFilenamesNr = 0 as core::ffi::c_uint;
     let mut srcFileNames = malloc(
         (nbFile as core::ffi::c_ulong)
             .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_char>() as core::ffi::c_ulong),

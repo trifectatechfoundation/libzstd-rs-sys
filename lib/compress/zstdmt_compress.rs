@@ -507,7 +507,7 @@ pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as core::ffi::c_int;
 pub const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
     ZSTD_c_experimentalParam15 as core::ffi::c_int;
@@ -682,7 +682,7 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const NULL: core::ffi::c_int = 0;
 pub const NULL_0: core::ffi::c_int = 0;
@@ -753,7 +753,7 @@ unsafe extern "C" fn ZSTDMT_sizeof_bufferPool(mut bufPool: *mut ZSTDMT_bufferPoo
     let arraySize = ((*bufPool).totalBuffers as core::ffi::c_ulong)
         .wrapping_mul(::core::mem::size_of::<Buffer>() as core::ffi::c_ulong);
     let mut u: core::ffi::c_uint = 0;
-    let mut totalBufferSize = 0 as core::ffi::c_int as size_t;
+    let mut totalBufferSize = 0 as size_t;
     pthread_mutex_lock(&mut (*bufPool).poolMutex);
     u = 0;
     while u < (*bufPool).totalBuffers {
@@ -965,7 +965,7 @@ unsafe extern "C" fn ZSTDMT_sizeof_CCtxPool(mut cctxPool: *mut ZSTDMT_CCtxPool) 
     let poolSize = ::core::mem::size_of::<ZSTDMT_CCtxPool>() as core::ffi::c_ulong;
     let arraySize = ((*cctxPool).totalCCtx as core::ffi::c_ulong)
         .wrapping_mul(::core::mem::size_of::<*mut ZSTD_CCtx>() as core::ffi::c_ulong);
-    let mut totalCCtxSize = 0 as core::ffi::c_int as size_t;
+    let mut totalCCtxSize = 0 as size_t;
     let mut u: core::ffi::c_uint = 0;
     u = 0;
     while u < nbWorkers {
@@ -1032,7 +1032,7 @@ unsafe extern "C" fn ZSTDMT_serialState_reset(
     {
         let mut cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
-        let hashSize = ((1 as core::ffi::c_int as size_t) << hashLog)
+        let hashSize = ((1 as size_t) << hashLog)
             .wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as core::ffi::c_ulong);
         let bucketLog = (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
         let prevBucketLog = ((*serialState).params.ldmParams.hashLog)
@@ -1628,7 +1628,7 @@ unsafe extern "C" fn ZSTDMT_createCCtx_advanced_internal(
     (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, cMem);
     (*mtctx).jobIDMask = nbJobs.wrapping_sub(1);
     (*mtctx).bufPool = ZSTDMT_createBufferPool(
-        (2 as core::ffi::c_int as core::ffi::c_uint)
+        (2 as core::ffi::c_uint)
             .wrapping_mul(nbWorkers)
             .wrapping_add(3),
         cMem,
@@ -1756,7 +1756,7 @@ unsafe extern "C" fn ZSTDMT_resize(
     }
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
         (*mtctx).bufPool,
-        (2 as core::ffi::c_int as core::ffi::c_uint)
+        (2 as core::ffi::c_uint)
             .wrapping_mul(nbWorkers)
             .wrapping_add(3),
     );
@@ -2005,9 +2005,8 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
         let jobSizeKB = ((*mtctx).targetSectionSize >> 10) as u32;
         let rsyncBits = (ZSTD_highbit32(jobSizeKB)).wrapping_add(10);
         (*mtctx).rsync.hash = 0;
-        (*mtctx).rsync.hitMask = ((1 as core::ffi::c_ulonglong) << rsyncBits)
-            .wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong)
-            as u64;
+        (*mtctx).rsync.hitMask =
+            ((1 as core::ffi::c_ulonglong) << rsyncBits).wrapping_sub(1) as u64;
         (*mtctx).rsync.primePower = ZSTD_rollingHash_primePower(RSYNC_LENGTH as u32);
     }
     if (*mtctx).targetSectionSize < (*mtctx).targetPrefixSize {

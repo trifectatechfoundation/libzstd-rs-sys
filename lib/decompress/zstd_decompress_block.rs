@@ -207,7 +207,7 @@ unsafe extern "C" fn ZSTD_copy8(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
 ) {
-    libc::memcpy(dst, src, 8 as libc::size_t);
+    libc::memcpy(dst, src, 8);
 }
 unsafe extern "C" fn ZSTD_copy16(
     mut dst: *mut core::ffi::c_void,
@@ -265,7 +265,7 @@ unsafe extern "C" fn ZSTD_copy4(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
 ) {
-    libc::memcpy(dst, src, 4 as libc::size_t);
+    libc::memcpy(dst, src, 4);
 }
 
 impl ZSTD_DCtx {
@@ -390,10 +390,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
-                1 => (
-                    2 as usize,
-                    (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize,
-                ),
+                1 => (2usize, (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize),
                 3 => {
                     let [a, b, c, ..] = *src else {
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
@@ -467,7 +464,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                     };
 
-                    (2 as usize, (u16::from_le_bytes([a, b]) >> 4) as usize)
+                    (2usize, (u16::from_le_bytes([a, b]) >> 4) as usize)
                 }
                 3 => {
                     let [a, b, c, _, ..] = *src else {
@@ -2059,7 +2056,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3) as size_t;
         let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
-        let mut pos = 0 as core::ffi::c_int as size_t;
+        let mut pos = 0 as size_t;
         let mut sv = 0;
         let mut s_0: u32 = 0;
         s_0 = 0;
@@ -2079,7 +2076,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             s_0 = s_0.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
-        let mut position = 0 as core::ffi::c_int as size_t;
+        let mut position = 0 as size_t;
         let mut s_1: size_t = 0;
         let unroll = 2;
         s_1 = 0;
@@ -2101,7 +2098,7 @@ unsafe extern "C" fn ZSTD_buildFSETable_body(
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3);
         let mut s_2: u32 = 0;
-        let mut position_0 = 0 as core::ffi::c_int as u32;
+        let mut position_0 = 0u32;
         s_2 = 0;
         while s_2 < maxSV1 {
             let mut i_0: core::ffi::c_int = 0;
@@ -3986,7 +3983,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         && ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
             == ::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong
         && (-(1 as core::ffi::c_int) as size_t).wrapping_sub(dst as size_t)
-            < ((1 as core::ffi::c_int) << 20 as core::ffi::c_int) as size_t
+            < ((1 as core::ffi::c_int) << 20) as size_t
     {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }

@@ -159,10 +159,10 @@ pub struct BMK_initCCtxArgs {
 pub const BMK_TIMETEST_DEFAULT_S: core::ffi::c_int = 3;
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
-pub const XXH_FORCE_ALIGN_CHECK: core::ffi::c_int = 0 as core::ffi::c_int;
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
+pub const XXH_FORCE_ALIGN_CHECK: core::ffi::c_int = 0;
 unsafe extern "C" fn XXH_read32(mut ptr: *const core::ffi::c_void) -> xxh_u32 {
     *(ptr as *const xxh_unalign32)
 }
@@ -371,14 +371,13 @@ unsafe extern "C" fn XXH_INLINE_XXH64(
 }
 pub const MB_UNIT: core::ffi::c_int = 1000000;
 pub const NULL: core::ffi::c_int = 0;
-pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong = (1 as core::ffi::c_int
-    as core::ffi::c_ulonglong)
-    .wrapping_mul(1000000000 as core::ffi::c_ulonglong);
+pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
+    (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
 static mut maxMemory: size_t = 0;
 pub const DEBUG: core::ffi::c_int = 0;
 unsafe extern "C" fn uintSize(mut value: core::ffi::c_uint) -> size_t {
-    let mut size = 1 as core::ffi::c_int as size_t;
+    let mut size = 1 as size_t;
     while value >= 10 {
         size = size.wrapping_add(1);
         value = value.wrapping_div(10);
@@ -1091,7 +1090,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
     }
     if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
         let mut srcPtr = srcBuffer as *const core::ffi::c_char;
-        let mut totalDSize64 = 0 as core::ffi::c_int as u64;
+        let mut totalDSize64 = 0u64;
         let mut fileNb: u32 = 0;
         fileNb = 0;
         while fileNb < nbFiles {
@@ -1348,7 +1347,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
         b" =\0" as *const u8 as *const core::ffi::c_char,
         b" \\\0" as *const u8 as *const core::ffi::c_char,
     ];
-    let mut markNb = 0 as core::ffi::c_int as u32;
+    let mut markNb = 0u32;
     let mut compressionCompleted = ((*adv).mode as core::ffi::c_uint
         == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
@@ -1537,8 +1536,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     } else {
                         1
                     },
-                    benchResult.cSpeed as core::ffi::c_double
-                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
+                    benchResult.cSpeed as core::ffi::c_double / 1000000.0,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -1608,10 +1606,8 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                     } else {
                         1
                     },
-                    benchResult.cSpeed as core::ffi::c_double
-                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
-                    benchResult.dSpeed as core::ffi::c_double
-                        / 1000000 as core::ffi::c_int as core::ffi::c_double,
+                    benchResult.cSpeed as core::ffi::c_double / 1000000.0,
+                    benchResult.dSpeed as core::ffi::c_double / 1000000.0,
                 );
                 fflush(NULL as *mut FILE);
             }
@@ -1642,7 +1638,7 @@ unsafe extern "C" fn BMK_benchMemAdvancedNoAlloc(
                 let mut segNb: core::ffi::c_uint = 0;
                 let mut bNb: core::ffi::c_uint = 0;
                 let mut pos: core::ffi::c_uint = 0;
-                let mut bacc = 0 as core::ffi::c_int as size_t;
+                let mut bacc = 0 as size_t;
                 fprintf(
                     stderr,
                     b"Decoding error at pos %u \0" as *const u8 as *const core::ffi::c_char,
@@ -2172,7 +2168,7 @@ pub unsafe extern "C" fn BMK_syntheticTest(
             nameBuff.as_mut_ptr(),
             ::core::mem::size_of::<[core::ffi::c_char; 20]>() as core::ffi::c_ulong,
             b"Synthetic %u%%\0" as *const u8 as *const core::ffi::c_char,
-            (compressibility * 100 as core::ffi::c_int as core::ffi::c_double) as core::ffi::c_uint,
+            (compressibility * 100.0) as core::ffi::c_uint,
         );
     }
     let mut res = BMK_benchCLevels(
@@ -2219,7 +2215,7 @@ unsafe extern "C" fn BMK_loadFiles(
     mut displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut pos = 0;
-    let mut totalSize = 0 as core::ffi::c_int as size_t;
+    let mut totalSize = 0 as size_t;
     let mut n: core::ffi::c_uint = 0;
     n = 0;
     while n < nbFiles {
@@ -2568,17 +2564,16 @@ pub unsafe extern "C" fn BMK_benchFiles(
 }
 unsafe extern "C" fn run_static_initializers() {
     maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
-        (2 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+        (2 as core::ffi::c_uint)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30)
             .wrapping_sub(
-                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20 as core::ffi::c_int))
-                    as core::ffi::c_uint,
+                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as core::ffi::c_uint,
             ) as size_t
     } else {
         ((1 as core::ffi::c_ulonglong)
             << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
-                .wrapping_mul(8 as core::ffi::c_int as core::ffi::c_ulong)
-                .wrapping_sub(31 as core::ffi::c_int as core::ffi::c_ulong)) as size_t
+                .wrapping_mul(8)
+                .wrapping_sub(31)) as size_t
     };
 }
 #[used]
