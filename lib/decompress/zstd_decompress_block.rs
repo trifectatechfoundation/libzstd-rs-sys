@@ -2940,68 +2940,68 @@ unsafe extern "C" fn ZSTD_decodeSequence(
                 seqState.DStream.reload();
             }
         }
-        *(seqState.prevOffset).as_mut_ptr().offset(2) =
-            *(seqState.prevOffset).as_mut_ptr().offset(1);
-        *(seqState.prevOffset).as_mut_ptr().offset(1) =
-            *((*seqState).prevOffset).as_mut_ptr().offset(0);
-        *((*seqState).prevOffset).as_mut_ptr().offset(0) = offset;
+
+        seqState.prevOffset[2] = seqState.prevOffset[1];
+        seqState.prevOffset[1] = seqState.prevOffset[0];
+        seqState.prevOffset[0] = offset;
     } else {
-        let ll0 = ((*llDInfo).baseValue == 0) as core::ffi::c_int as u32;
-        if (ofBits as core::ffi::c_int == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
-            offset = *(seqState.prevOffset).as_mut_ptr().offset(ll0 as isize);
-            *(seqState.prevOffset).as_mut_ptr().offset(1) = *(seqState.prevOffset)
-                .as_mut_ptr()
-                .offset((ll0 == 0) as core::ffi::c_int as isize);
-            *(seqState.prevOffset).as_mut_ptr().offset(0) = offset;
+        let ll0 = usize::from((*llDInfo).baseValue == 0);
+        if core::hint::likely(ofBits == 0) {
+            offset = seqState.prevOffset[ll0];
+            seqState.prevOffset[1] = seqState.prevOffset[usize::from(ll0 == 0)];
+            seqState.prevOffset[0] = offset;
         } else {
-            offset = (ofBase.wrapping_add(ll0) as size_t)
+            offset = (ofBase.wrapping_add(ll0 as u32) as u64)
                 .wrapping_add(seqState.DStream.read_bits_fast(1) as u64);
-            let mut temp = if offset == 3 {
-                (*(seqState.prevOffset).as_mut_ptr().offset(0)).wrapping_sub(1)
-            } else {
-                *(seqState.prevOffset).as_mut_ptr().offset(offset as isize)
+
+            let mut temp = match offset {
+                3 => seqState.prevOffset[0] - 1,
+                _ => seqState.prevOffset[offset as usize],
             };
-            temp = temp.wrapping_sub((temp == 0) as core::ffi::c_int as size_t);
+            temp = temp.wrapping_sub((temp == 0) as _); /* 0 is not valid: input corrupted => force offset to -1 => corruption detected at execSequence */
+
             if offset != 1 {
-                *(seqState.prevOffset).as_mut_ptr().offset(2) =
-                    *(seqState.prevOffset).as_mut_ptr().offset(1);
+                seqState.prevOffset[2] = seqState.prevOffset[1];
             }
-            *(seqState.prevOffset).as_mut_ptr().offset(1) =
-                *(seqState.prevOffset).as_mut_ptr().offset(0);
+            seqState.prevOffset[1] = seqState.prevOffset[0];
+            seqState.prevOffset[0] = temp;
             offset = temp;
-            *(seqState.prevOffset).as_mut_ptr().offset(0) = offset;
         }
     }
     seq.offset = offset;
-    if mlBits as core::ffi::c_int > 0 {
-        seq.matchLength = (seq.matchLength)
+
+    if mlBits > 0 {
+        seq.matchLength = seq
+            .matchLength
             .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as u64);
     }
-    if MEM_32bits() != 0
-        && mlBits as core::ffi::c_int + llBits as core::ffi::c_int
-            >= STREAM_ACCUMULATOR_MIN_32
-                - (if ZSTD_WINDOWLOG_MAX_32 > STREAM_ACCUMULATOR_MIN_32 {
-                    ZSTD_WINDOWLOG_MAX_32 - STREAM_ACCUMULATOR_MIN_32
-                } else {
-                    0
-                })
+
+    if cfg!(target_pointer_width = "32")
+        && (i32::from(mlBits + llBits)
+            >= STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32)
     {
         seqState.DStream.reload();
     }
-    if MEM_64bits() != 0
+    if cfg!(target_pointer_width = "64")
         && (totalBits as core::ffi::c_int >= 57 - (9 + 9 + 8)) as core::ffi::c_int
             as core::ffi::c_long
             != 0
     {
         seqState.DStream.reload();
     }
-    if llBits as core::ffi::c_int > 0 {
+
+    // Ensure there are enough bits to read the rest of data in 64-bit mode.
+    const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64) };
+
+    if llBits > 0 {
         seq.litLength = (seq.litLength)
             .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as u64);
     }
     if MEM_32bits() != 0 {
         seqState.DStream.reload();
     }
+
+    // Don't update FSE state for last Sequence.
     if isLastSeq == 0 {
         ZSTD_updateFseStateWithDInfo(
             &mut seqState.stateLL,
@@ -3026,6 +3026,7 @@ unsafe extern "C" fn ZSTD_decodeSequence(
         );
         seqState.DStream.reload();
     }
+
     seq
 }
 
