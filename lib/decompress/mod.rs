@@ -51,12 +51,29 @@ pub struct ZSTD_seqSymbol {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_entropyDTables_t {
-    pub LLTable: [ZSTD_seqSymbol; 513],
-    pub OFTable: [ZSTD_seqSymbol; 257],
-    pub MLTable: [ZSTD_seqSymbol; 513],
+    pub LLTable: SymbolTable<512>,
+    pub OFTable: SymbolTable<256>,
+    pub MLTable: SymbolTable<512>,
     pub hufTable: DTable,
     pub rep: [u32; 3],
     pub workspace: FseWorkspace,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct SymbolTable<const N: usize> {
+    header: ZSTD_seqSymbol_header,
+    symbols: [ZSTD_seqSymbol; N],
+}
+
+impl<const N: usize> SymbolTable<N> {
+    fn as_mut_ptr(&mut self) -> *mut ZSTD_seqSymbol {
+        unsafe { core::mem::transmute(self) }
+    }
+
+    fn as_ptr(&self) -> *const ZSTD_seqSymbol {
+        unsafe { core::mem::transmute(self) }
+    }
 }
 
 pub type HUF_DTable = u32;

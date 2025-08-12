@@ -2216,13 +2216,11 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     dictPtr = dictPtr.offset(8);
-    let workspace = &mut (*entropy).LLTable as *mut [ZSTD_seqSymbol; 513] as *mut core::ffi::c_void;
-    let workspaceSize = (::core::mem::size_of::<[ZSTD_seqSymbol; 513]>())
-        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 257]>())
-        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 513]>());
+    let workspace = &mut (*entropy).LLTable;
     let hSize = HUF_readDTableX2_wksp(
         &mut (*entropy).hufTable,
         core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
+        // NOTE: this is probably invalid because it provides insufficient space.
         unsafe { core::mem::transmute(workspace) },
         0,
     );
@@ -2250,7 +2248,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        ((*entropy).OFTable).as_mut_ptr(),
+        &mut (*entropy).OFTable,
         &mut offcodeNCount[..=offcodeMaxValue as usize],
         &OF_base,
         &OF_bits,
@@ -2279,7 +2277,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        ((*entropy).MLTable).as_mut_ptr(),
+        &mut (*entropy).MLTable,
         &mut matchlengthNCount[..=matchlengthMaxValue as usize],
         &ML_base,
         &ML_bits,
@@ -2308,7 +2306,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        ((*entropy).LLTable).as_mut_ptr(),
+        &mut (*entropy).LLTable,
         &mut litlengthNCount[..=litlengthMaxValue as usize],
         &LL_base,
         &LL_bits,
