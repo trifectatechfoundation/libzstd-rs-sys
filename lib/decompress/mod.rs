@@ -5,6 +5,7 @@ use crate::lib::common::xxhash::XXH64_state_t;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
+use crate::lib::decompress::zstd_decompress_block::FseWorkspace;
 use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
@@ -55,7 +56,7 @@ pub struct ZSTD_entropyDTables_t {
     pub MLTable: [ZSTD_seqSymbol; 513],
     pub hufTable: DTable,
     pub rep: [u32; 3],
-    pub workspace: [u32; 157],
+    pub workspace: FseWorkspace,
 }
 
 pub type HUF_DTable = u32;
@@ -168,7 +169,9 @@ impl Workspace {
         unsafe { core::mem::transmute(&mut self.data) }
     }
 
-    fn as_symbols_mut(&mut self) -> &mut [u16; 2 * 640] {
+    fn as_fse_workspace(&mut self) -> &mut FseWorkspace {
+        const { assert!(size_of::<Self>() >= size_of::<FseWorkspace>()) }
+        const { assert!(align_of::<Self>() >= align_of::<FseWorkspace>()) }
         unsafe { core::mem::transmute(&mut self.data) }
     }
 }
