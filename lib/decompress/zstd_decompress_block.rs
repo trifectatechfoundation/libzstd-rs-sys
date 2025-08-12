@@ -2207,42 +2207,42 @@ pub unsafe fn ZSTD_buildFSETable(
     );
 }
 unsafe fn ZSTD_buildSeqTable(
-    mut DTableSpace: *mut ZSTD_seqSymbol,
-    mut DTablePtr: *mut *const ZSTD_seqSymbol,
-    mut type_0: SymbolEncodingType_e,
+    DTableSpace: *mut ZSTD_seqSymbol,
+    DTablePtr: &mut *const ZSTD_seqSymbol,
+    type_0: SymbolEncodingType_e,
     mut max: core::ffi::c_uint,
-    mut maxLog: u32,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut baseValue: *const u32,
-    mut nbAdditionalBits: *const u8,
-    mut defaultTable: *const ZSTD_seqSymbol,
-    mut flagRepeatTable: u32,
-    mut ddictIsCold: core::ffi::c_int,
-    mut nbSeq: core::ffi::c_int,
-    mut wksp: &mut Workspace,
-    mut bmi2: core::ffi::c_int,
+    maxLog: u32,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    defaultTable: &'static [ZSTD_seqSymbol],
+    flagRepeatTable: u32,
+    ddictIsCold: core::ffi::c_int,
+    nbSeq: core::ffi::c_int,
+    wksp: &mut Workspace,
+    bmi2: core::ffi::c_int,
 ) -> size_t {
-    match type_0 as core::ffi::c_uint {
-        1 => {
+    match type_0 {
+        SymbolEncodingType_e::set_rle => {
             if srcSize == 0 {
                 return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
             }
             if *(src as *const u8) as core::ffi::c_uint > max {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
-            let symbol = *(src as *const u8) as u32;
-            let baseline = *baseValue.offset(symbol as isize);
-            let nbBits = *nbAdditionalBits.offset(symbol as isize);
+            let symbol = *(src as *const u8);
+            let baseline = baseValue[usize::from(symbol)];
+            let nbBits = nbAdditionalBits[usize::from(symbol)];
             ZSTD_buildSeqTable_rle(DTableSpace, baseline, nbBits);
             *DTablePtr = DTableSpace;
             1
         }
-        0 => {
-            *DTablePtr = defaultTable;
+        SymbolEncodingType_e::set_basic => {
+            *DTablePtr = defaultTable.as_ptr();
             0
         }
-        3 => {
+        SymbolEncodingType_e::set_repeat => {
             if flagRepeatTable == 0 {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
@@ -2260,7 +2260,7 @@ unsafe fn ZSTD_buildSeqTable(
             }
             0
         }
-        2 => {
+        SymbolEncodingType_e::set_compressed => {
             let mut tableLog: core::ffi::c_uint = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize = FSE_readNCount(&mut norm, &mut max, &mut tableLog, src, srcSize);
@@ -2274,8 +2274,8 @@ unsafe fn ZSTD_buildSeqTable(
                 DTableSpace,
                 norm.as_mut_ptr(),
                 max,
-                baseValue,
-                nbAdditionalBits,
+                baseValue.as_ptr(),
+                nbAdditionalBits.as_ptr(),
                 tableLog,
                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
                 size_of_val(wksp) as size_t,
@@ -2284,7 +2284,6 @@ unsafe fn ZSTD_buildSeqTable(
             *DTablePtr = DTableSpace;
             headerSize
         }
-        _ => -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t,
     }
 }
 
@@ -2344,9 +2343,9 @@ unsafe fn ZSTD_decodeSeqHeaders(
         LLFSELog as u32,
         ip as *const core::ffi::c_void,
         iend.offset_from(ip) as core::ffi::c_long as size_t,
-        LL_base.as_ptr(),
-        LL_bits.as_ptr(),
-        LL_defaultDTable.as_ptr(),
+        &LL_base,
+        &LL_bits,
+        &LL_defaultDTable,
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,
@@ -2365,9 +2364,9 @@ unsafe fn ZSTD_decodeSeqHeaders(
         OffFSELog as u32,
         ip as *const core::ffi::c_void,
         iend.offset_from(ip) as core::ffi::c_long as size_t,
-        OF_base.as_ptr(),
-        OF_bits.as_ptr(),
-        OF_defaultDTable.as_ptr(),
+        &OF_base,
+        &OF_bits,
+        &OF_defaultDTable,
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,
@@ -2386,9 +2385,9 @@ unsafe fn ZSTD_decodeSeqHeaders(
         MLFSELog as u32,
         ip as *const core::ffi::c_void,
         iend.offset_from(ip) as core::ffi::c_long as size_t,
-        ML_base.as_ptr(),
-        ML_bits.as_ptr(),
-        ML_defaultDTable.as_ptr(),
+        &ML_base,
+        &ML_bits,
+        &ML_defaultDTable,
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,
