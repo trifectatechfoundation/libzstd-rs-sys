@@ -137,18 +137,6 @@ pub struct HUF_DecompressFastArgs<'a> {
     pub iend: [*const u8; 4],
 }
 
-#[inline]
-unsafe fn ZSTD_maybeNullPtrAdd(
-    ptr: *mut core::ffi::c_void,
-    add: ptrdiff_t,
-) -> *mut core::ffi::c_void {
-    if add > 0 {
-        (ptr as *mut core::ffi::c_char).offset(add as isize) as *mut core::ffi::c_void
-    } else {
-        ptr
-    }
-}
-
 pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
@@ -461,7 +449,7 @@ fn HUF_decodeSymbolX1(Dstream: &mut BIT_DStream_t, dt: &[HUF_DEltX1; 4096], dtLo
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeStreamX1(
+fn HUF_decodeStreamX1(
     mut p: Writer<'_>,
     bitDPtr: &mut BIT_DStream_t,
     dt: &[HUF_DEltX1; 4096],
@@ -500,7 +488,7 @@ unsafe fn HUF_decodeStreamX1(
 }
 
 #[inline(always)]
-unsafe fn HUF_decompress1X1_usingDTable_internal_body(
+fn HUF_decompress1X1_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -524,7 +512,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_body(
 }
 
 #[inline(always)]
-unsafe fn HUF_decompress4X1_usingDTable_internal_body(
+fn HUF_decompress4X1_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -624,7 +612,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_body(
     dst.capacity() as size_t
 }
 
-unsafe fn HUF_decompress4X1_usingDTable_internal_bmi2(
+fn HUF_decompress4X1_usingDTable_internal_bmi2(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -632,7 +620,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_bmi2(
     HUF_decompress4X1_usingDTable_internal_body(dst, src, DTable)
 }
 
-unsafe fn HUF_decompress4X1_usingDTable_internal_default(
+fn HUF_decompress4X1_usingDTable_internal_default(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
