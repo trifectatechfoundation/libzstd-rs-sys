@@ -225,7 +225,7 @@ pub unsafe fn FSE_readNCount(
 
     match ret {
         Ok(v) => v,
-        Err(e) => return -(e as core::ffi::c_int) as size_t,
+        Err(e) => return e.to_error_code(),
     }
 }
 
