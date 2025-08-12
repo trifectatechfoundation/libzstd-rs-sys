@@ -2008,7 +2008,6 @@ unsafe fn ZSTD_buildFSETable_body(
 ) {
     let tableDecode = dt.offset(1);
     let tableSize = ((1) << tableLog) as u32;
-    let mut spread = wksp.spread.as_mut_ptr();
     let mut highThreshold = tableSize.wrapping_sub(1);
     let mut DTableH = ZSTD_seqSymbol_header {
         fastMode: 0,
@@ -2042,21 +2041,17 @@ unsafe fn ZSTD_buildFSETable_body(
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3) as size_t;
         let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
-        let mut pos = 0 as size_t;
-        let mut sv = 0;
+        let mut pos = 0usize;
+        let mut sv = 0u64;
         for &v in normalizedCounter {
-            let mut i: core::ffi::c_int = 0;
-            let n = i32::from(v);
-            MEM_write64(spread.offset(pos as isize) as *mut core::ffi::c_void, sv);
-            i = 8;
+            let n = v as usize;
+            wksp.spread[pos..][..8].copy_from_slice(&sv.to_le_bytes());
+            let mut i: usize = 8;
             while i < n {
-                MEM_write64(
-                    spread.offset(pos as isize).offset(i as isize) as *mut core::ffi::c_void,
-                    sv,
-                );
+                wksp.spread[pos..][i..][..8].copy_from_slice(&sv.to_le_bytes());
                 i += 8;
             }
-            pos = pos.wrapping_add(n as size_t);
+            pos = pos.wrapping_add(n);
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as size_t;
@@ -2069,7 +2064,7 @@ unsafe fn ZSTD_buildFSETable_body(
             while u < unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
                 (*tableDecode.offset(uPosition as isize)).baseValue =
-                    *spread.offset(s_1.wrapping_add(u) as isize) as u32;
+                    wksp.spread[s_1 as usize + u as usize] as u32;
                 u = u.wrapping_add(1);
             }
             position = position.wrapping_add(unroll * step) & tableMask;
