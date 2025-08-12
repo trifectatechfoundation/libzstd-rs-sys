@@ -2290,15 +2290,14 @@ unsafe fn ZSTD_buildSeqTable(
 
 unsafe fn ZSTD_decodeSeqHeaders(
     dctx: &mut ZSTD_DCtx,
-    nbSeqPtr: *mut core::ffi::c_int,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    nbSeqPtr: &mut core::ffi::c_int,
+    src: &[u8],
 ) -> size_t {
-    let istart = src as *const u8;
-    let iend = istart.offset(srcSize as isize);
+    let istart = src.as_ptr() as *const u8;
+    let iend = src.as_ptr_range().end;
     let mut ip = istart;
     let mut nbSeq: core::ffi::c_int = 0;
-    if srcSize < 1 {
+    if src.len() < 1 {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     let fresh3 = ip;
@@ -2338,8 +2337,8 @@ unsafe fn ZSTD_decodeSeqHeaders(
     let MLtype = SymbolEncodingType_e::try_from(*ip as u8 >> 2 & 0b11).unwrap();
     ip = ip.offset(1);
     let llhSize = ZSTD_buildSeqTable(
-        ((*dctx).entropy.LLTable).as_mut_ptr(),
-        &mut (*dctx).LLTptr,
+        (dctx.entropy.LLTable).as_mut_ptr(),
+        &mut dctx.LLTptr,
         LLtype,
         MaxLL as core::ffi::c_uint,
         LLFSELog as u32,
@@ -2348,10 +2347,10 @@ unsafe fn ZSTD_decodeSeqHeaders(
         LL_base.as_ptr(),
         LL_bits.as_ptr(),
         LL_defaultDTable.as_ptr(),
-        (*dctx).fseEntropy,
-        (*dctx).ddictIsCold,
+        dctx.fseEntropy,
+        dctx.ddictIsCold,
         nbSeq,
-        &mut (*dctx).workspace,
+        &mut dctx.workspace,
         dctx.bmi2,
     );
     if ERR_isError(llhSize) != 0 {
@@ -2359,8 +2358,8 @@ unsafe fn ZSTD_decodeSeqHeaders(
     }
     ip = ip.offset(llhSize as isize);
     let ofhSize = ZSTD_buildSeqTable(
-        ((*dctx).entropy.OFTable).as_mut_ptr(),
-        &mut (*dctx).OFTptr,
+        (dctx.entropy.OFTable).as_mut_ptr(),
+        &mut dctx.OFTptr,
         OFtype,
         MaxOff as core::ffi::c_uint,
         OffFSELog as u32,
@@ -2369,10 +2368,10 @@ unsafe fn ZSTD_decodeSeqHeaders(
         OF_base.as_ptr(),
         OF_bits.as_ptr(),
         OF_defaultDTable.as_ptr(),
-        (*dctx).fseEntropy,
-        (*dctx).ddictIsCold,
+        dctx.fseEntropy,
+        dctx.ddictIsCold,
         nbSeq,
-        &mut (*dctx).workspace,
+        &mut dctx.workspace,
         dctx.bmi2,
     );
     if ERR_isError(ofhSize) != 0 {
@@ -2380,8 +2379,8 @@ unsafe fn ZSTD_decodeSeqHeaders(
     }
     ip = ip.offset(ofhSize as isize);
     let mlhSize = ZSTD_buildSeqTable(
-        ((*dctx).entropy.MLTable).as_mut_ptr(),
-        &mut (*dctx).MLTptr,
+        (dctx.entropy.MLTable).as_mut_ptr(),
+        &mut dctx.MLTptr,
         MLtype,
         MaxML as core::ffi::c_uint,
         MLFSELog as u32,
@@ -2390,10 +2389,10 @@ unsafe fn ZSTD_decodeSeqHeaders(
         ML_base.as_ptr(),
         ML_bits.as_ptr(),
         ML_defaultDTable.as_ptr(),
-        (*dctx).fseEntropy,
-        (*dctx).ddictIsCold,
+        dctx.fseEntropy,
+        dctx.ddictIsCold,
         nbSeq,
-        &mut (*dctx).workspace,
+        &mut dctx.workspace,
         dctx.bmi2,
     );
     if ERR_isError(mlhSize) != 0 {
@@ -3848,7 +3847,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     };
     let mut use_prefetch_decoder = dctx.ddictIsCold != 0;
     let mut nbSeq: core::ffi::c_int = 0;
-    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip.as_ptr().cast(), ip.len() as _);
+    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip);
     if ERR_isError(seqHSize) != 0 {
         return seqHSize;
     }
