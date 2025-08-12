@@ -1504,14 +1504,14 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> size_t {
-    decompession_margin(if src.is_null() {
+    decompression_margin(if src.is_null() {
         &[]
     } else {
         core::slice::from_raw_parts(src.cast(), srcSize as usize)
     })
 }
 
-fn decompession_margin(mut src: &[u8]) -> size_t {
+fn decompression_margin(mut src: &[u8]) -> size_t {
     let mut margin = 0 as size_t;
     let mut maxBlockSize = 0;
 
@@ -3682,22 +3682,9 @@ mod tests {
     quickcheck! {
         fn decompress_bound_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
-                let expected = {
-                    use zstd_sys;
+                let expected = zstd_sys::ZSTD_decompressBound(input.as_ptr().cast(), input.len() );
+                let actual = super::ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t);
 
-                    extern "C" {
-                        fn ZSTD_decompressBound(
-                            src: *const core::ffi::c_void,
-                            srcSize: size_t,
-                        ) -> core::ffi::c_ulonglong;
-                    }
-
-                    ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t)
-                };
-
-                let actual = {
-                    super::ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t)
-                };
                 assert_eq!(expected, actual);
                 expected == actual
             }
@@ -3712,22 +3699,9 @@ mod tests {
     quickcheck! {
         fn decompression_margin_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
-                let expected = {
-                    use zstd_sys;
+                let expected = zstd_sys::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() );
+                let actual = super::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t) as usize;
 
-                    extern "C" {
-                        fn ZSTD_decompressionMargin(
-                            src: *const core::ffi::c_void,
-                            srcSize: size_t,
-                        ) -> core::ffi::c_ulonglong;
-                    }
-
-                    ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t)
-                };
-
-                let actual = {
-                    super::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t)
-                };
                 assert_eq!(expected, actual);
                 expected == actual
             }
