@@ -262,7 +262,7 @@ static mut g_ldmBucketSizeLog: u32 = LDM_PARAM_DEFAULT as u32;
 pub const DEFAULT_ACCEL: core::ffi::c_int = 1;
 pub const NBWORKERS_AUTOCPU: core::ffi::c_int = 0;
 static mut g_displayLevel: core::ffi::c_int = DISPLAY_LEVEL_DEFAULT;
-unsafe extern "C" fn checkLibVersion() {
+unsafe fn checkLibVersion() {
     if strcmp(
         b"1.5.8\0" as *const u8 as *const core::ffi::c_char,
         ZSTD_versionString(),
@@ -288,7 +288,7 @@ unsafe extern "C" fn checkLibVersion() {
         exit(1);
     }
 }
-unsafe extern "C" fn exeNameMatch(
+unsafe fn exeNameMatch(
     mut exeName: *const core::ffi::c_char,
     mut test: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -297,7 +297,7 @@ unsafe extern "C" fn exeNameMatch(
             || *exeName.offset(strlen(test) as isize) as core::ffi::c_int == '.' as i32))
         as core::ffi::c_int
 }
-unsafe extern "C" fn usage(mut f: *mut FILE, mut programName: *const core::ffi::c_char) {
+unsafe fn usage(mut f: *mut FILE, mut programName: *const core::ffi::c_char) {
     fprintf(
         f,
         b"Compress or decompress the INPUT file(s); reads from STDIN if INPUT is `-` or not provided.\n\n\0"
@@ -397,7 +397,7 @@ unsafe extern "C" fn usage(mut f: *mut FILE, mut programName: *const core::ffi::
     );
     fprintf(f, b"\n\0" as *const u8 as *const core::ffi::c_char);
 }
-unsafe extern "C" fn usageAdvanced(mut programName: *const core::ffi::c_char) {
+unsafe fn usageAdvanced(mut programName: *const core::ffi::c_char) {
     fprintf(
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
@@ -766,7 +766,7 @@ unsafe extern "C" fn usageAdvanced(mut programName: *const core::ffi::c_char) {
             as *const core::ffi::c_char,
     );
 }
-unsafe extern "C" fn badUsage(
+unsafe fn badUsage(
     mut programName: *const core::ffi::c_char,
     mut parameter: *const core::ffi::c_char,
 ) {
@@ -781,16 +781,14 @@ unsafe extern "C" fn badUsage(
         usage(stderr, programName);
     }
 }
-unsafe extern "C" fn waitEnter() {
+unsafe fn waitEnter() {
     fprintf(
         stderr,
         b"Press enter to continue... \n\0" as *const u8 as *const core::ffi::c_char,
     );
     getchar();
 }
-unsafe extern "C" fn lastNameFromPath(
-    mut path: *const core::ffi::c_char,
-) -> *const core::ffi::c_char {
+unsafe fn lastNameFromPath(mut path: *const core::ffi::c_char) -> *const core::ffi::c_char {
     let mut name = path;
     if !(strrchr(name, '/' as i32)).is_null() {
         name = (strrchr(name, '/' as i32)).offset(1);
@@ -800,7 +798,7 @@ unsafe extern "C" fn lastNameFromPath(
     }
     name
 }
-unsafe extern "C" fn errorOut(mut msg: *const core::ffi::c_char) {
+unsafe fn errorOut(mut msg: *const core::ffi::c_char) {
     if g_displayLevel >= 1 {
         fprintf(
             stderr,
@@ -810,7 +808,7 @@ unsafe extern "C" fn errorOut(mut msg: *const core::ffi::c_char) {
     }
     exit(1);
 }
-unsafe extern "C" fn readU32FromCharChecked(
+unsafe fn readU32FromCharChecked(
     mut stringPtr: *mut *const core::ffi::c_char,
     mut value: *mut core::ffi::c_uint,
 ) -> core::ffi::c_int {
@@ -856,18 +854,14 @@ unsafe extern "C" fn readU32FromCharChecked(
     *value = result;
     0
 }
-unsafe extern "C" fn readU32FromChar(
-    mut stringPtr: *mut *const core::ffi::c_char,
-) -> core::ffi::c_uint {
+unsafe fn readU32FromChar(mut stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_uint {
     let mut result: core::ffi::c_uint = 0;
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(c"error: numeric value overflows 32-bit unsigned int".as_ptr());
     }
     result
 }
-unsafe extern "C" fn readIntFromChar(
-    mut stringPtr: *mut *const core::ffi::c_char,
-) -> core::ffi::c_int {
+unsafe fn readIntFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_int {
     let mut sign = 1;
     let mut result: core::ffi::c_uint = 0;
     if **stringPtr as core::ffi::c_int == '-' as i32 {
@@ -879,7 +873,7 @@ unsafe extern "C" fn readIntFromChar(
     }
     result as core::ffi::c_int * sign
 }
-unsafe extern "C" fn readSizeTFromCharChecked(
+unsafe fn readSizeTFromCharChecked(
     mut stringPtr: *mut *const core::ffi::c_char,
     mut value: *mut size_t,
 ) -> core::ffi::c_int {
@@ -924,14 +918,14 @@ unsafe extern "C" fn readSizeTFromCharChecked(
     *value = result;
     0
 }
-unsafe extern "C" fn readSizeTFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> size_t {
+unsafe fn readSizeTFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> size_t {
     let mut result: size_t = 0;
     if readSizeTFromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(c"error: numeric value overflows size_t".as_ptr());
     }
     result
 }
-unsafe extern "C" fn longCommandWArg(
+unsafe fn longCommandWArg(
     mut stringPtr: *mut *const core::ffi::c_char,
     mut longCommand: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
@@ -943,7 +937,7 @@ unsafe extern "C" fn longCommandWArg(
     result
 }
 static mut kDefaultRegression: core::ffi::c_uint = 1;
-unsafe extern "C" fn parseCoverParameters(
+unsafe fn parseCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
     mut params: *mut ZDICT_cover_params_t,
 ) -> core::ffi::c_uint {
@@ -1030,7 +1024,7 @@ unsafe extern "C" fn parseCoverParameters(
     }
     1
 }
-unsafe extern "C" fn parseFastCoverParameters(
+unsafe fn parseFastCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
     mut params: *mut ZDICT_fastCover_params_t,
 ) -> core::ffi::c_uint {
@@ -1139,7 +1133,7 @@ unsafe extern "C" fn parseFastCoverParameters(
     }
     1
 }
-unsafe extern "C" fn parseLegacyParameters(
+unsafe fn parseLegacyParameters(
     mut stringPtr: *const core::ffi::c_char,
     mut selectivity: *mut core::ffi::c_uint,
 ) -> core::ffi::c_uint {
@@ -1167,7 +1161,7 @@ unsafe extern "C" fn parseLegacyParameters(
     }
     1
 }
-unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
+unsafe fn defaultCoverParams() -> ZDICT_cover_params_t {
     let mut params = ZDICT_cover_params_t {
         k: 0,
         d: 0,
@@ -1194,7 +1188,7 @@ unsafe extern "C" fn defaultCoverParams() -> ZDICT_cover_params_t {
     params.shrinkDictMaxRegression = kDefaultRegression;
     params
 }
-unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
+unsafe fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     let mut params = ZDICT_fastCover_params_t {
         k: 0,
         d: 0,
@@ -1225,7 +1219,7 @@ unsafe extern "C" fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     params.shrinkDictMaxRegression = kDefaultRegression;
     params
 }
-unsafe extern "C" fn parseAdaptParameters(
+unsafe fn parseAdaptParameters(
     mut stringPtr: *const core::ffi::c_char,
     mut adaptMinPtr: *mut core::ffi::c_int,
     mut adaptMaxPtr: *mut core::ffi::c_int,
@@ -1275,7 +1269,7 @@ unsafe extern "C" fn parseAdaptParameters(
     }
     1
 }
-unsafe extern "C" fn parseCompressionParameters(
+unsafe fn parseCompressionParameters(
     mut stringPtr: *const core::ffi::c_char,
     mut params: *mut ZSTD_compressionParameters,
 ) -> core::ffi::c_uint {
@@ -1463,7 +1457,7 @@ unsafe extern "C" fn parseCompressionParameters(
     }
     1
 }
-unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParameters) {
+unsafe fn setMaxCompression(mut params: *mut ZSTD_compressionParameters) {
     (*params).windowLog = (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
@@ -1515,7 +1509,7 @@ unsafe extern "C" fn setMaxCompression(mut params: *mut ZSTD_compressionParamete
     g_ldmMinMatch = 16;
     g_ldmBucketSizeLog = ZSTD_LDM_BUCKETSIZELOG_MAX as u32;
 }
-unsafe extern "C" fn printVersion() {
+unsafe fn printVersion() {
     if g_displayLevel < DISPLAY_LEVEL_DEFAULT {
         fprintf(
             stdout,
@@ -1606,7 +1600,7 @@ static ZSTD_strategyMap: [&CStr; ZSTD_NB_STRATEGIES + 1] = [
     c"ZSTD_btultra",
     c"ZSTD_btultra2",
 ];
-unsafe extern "C" fn printDefaultCParams(
+unsafe fn printDefaultCParams(
     mut filename: *const core::ffi::c_char,
     mut dictFileName: *const core::ffi::c_char,
     mut cLevel: core::ffi::c_int,
@@ -1672,7 +1666,7 @@ unsafe extern "C" fn printDefaultCParams(
         cParams.strategy as core::ffi::c_uint,
     );
 }
-unsafe extern "C" fn printActualCParams(
+unsafe fn printActualCParams(
     mut filename: *const core::ffi::c_char,
     mut dictFileName: *const core::ffi::c_char,
     mut cLevel: core::ffi::c_int,
@@ -1738,7 +1732,7 @@ pub const ENV_CLEVEL: [core::ffi::c_char; 12] =
     unsafe { *::core::mem::transmute::<&[u8; 12], &[core::ffi::c_char; 12]>(b"ZSTD_CLEVEL\0") };
 pub const ENV_NBWORKERS: [core::ffi::c_char; 15] =
     unsafe { *::core::mem::transmute::<&[u8; 15], &[core::ffi::c_char; 15]>(b"ZSTD_NBTHREADS\0") };
-unsafe extern "C" fn init_cLevel() -> core::ffi::c_int {
+unsafe fn init_cLevel() -> core::ffi::c_int {
     let env: *const core::ffi::c_char = getenv(ENV_CLEVEL.as_ptr());
     if !env.is_null() {
         let mut ptr = env;
@@ -1778,7 +1772,7 @@ unsafe extern "C" fn init_cLevel() -> core::ffi::c_int {
     }
     ZSTDCLI_CLEVEL_DEFAULT
 }
-unsafe extern "C" fn init_nbWorkers() -> core::ffi::c_uint {
+unsafe fn init_nbWorkers() -> core::ffi::c_uint {
     let env: *const core::ffi::c_char = getenv(ENV_NBWORKERS.as_ptr());
     if !env.is_null() {
         let mut ptr = env;

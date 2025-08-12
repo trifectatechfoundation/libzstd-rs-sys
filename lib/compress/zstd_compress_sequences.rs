@@ -64,7 +64,7 @@ static ML_bits: [u8; 53] = [
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
 #[inline]
-unsafe extern "C" fn FSE_initCState(mut statePtr: *mut FSE_CState_t, mut ct: *const FSE_CTable) {
+unsafe fn FSE_initCState(mut statePtr: *mut FSE_CState_t, mut ct: *const FSE_CTable) {
     let mut ptr = ct as *const core::ffi::c_void;
     let mut u16ptr = ptr as *const u16;
     let tableLog = MEM_read16(ptr) as u32;
@@ -80,7 +80,7 @@ unsafe extern "C" fn FSE_initCState(mut statePtr: *mut FSE_CState_t, mut ct: *co
     (*statePtr).stateLog = tableLog;
 }
 #[inline]
-unsafe extern "C" fn FSE_initCState2(
+unsafe fn FSE_initCState2(
     mut statePtr: *mut FSE_CState_t,
     mut ct: *const FSE_CTable,
     mut symbol: u32,
@@ -96,7 +96,7 @@ unsafe extern "C" fn FSE_initCState2(
         as ptrdiff_t;
 }
 #[inline]
-unsafe extern "C" fn FSE_encodeSymbol(
+unsafe fn FSE_encodeSymbol(
     mut bitC: *mut BIT_CStream_t,
     mut statePtr: *mut FSE_CState_t,
     mut symbol: core::ffi::c_uint,
@@ -111,10 +111,7 @@ unsafe extern "C" fn FSE_encodeSymbol(
         as ptrdiff_t;
 }
 #[inline]
-unsafe extern "C" fn FSE_flushCState(
-    mut bitC: *mut BIT_CStream_t,
-    mut statePtr: *const FSE_CState_t,
-) {
+unsafe fn FSE_flushCState(mut bitC: *mut BIT_CStream_t, mut statePtr: *const FSE_CState_t) {
     BIT_addBits(
         bitC,
         (*statePtr).value as BitContainerType,
@@ -123,7 +120,7 @@ unsafe extern "C" fn FSE_flushCState(
     BIT_flushBits(bitC);
 }
 #[inline]
-unsafe extern "C" fn FSE_bitCost(
+unsafe fn FSE_bitCost(
     mut symbolTTPtr: *const core::ffi::c_void,
     mut tableLog: u32,
     mut symbolValue: u32,
@@ -175,7 +172,7 @@ static BIT_mask: [core::ffi::c_uint; 32] = [
     0x7fffffff as core::ffi::c_int as core::ffi::c_uint,
 ];
 #[inline]
-unsafe extern "C" fn BIT_initCStream(
+unsafe fn BIT_initCStream(
     mut bitC: *mut BIT_CStream_t,
     mut startPtr: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -193,14 +190,11 @@ unsafe extern "C" fn BIT_initCStream(
     0
 }
 #[inline(always)]
-unsafe extern "C" fn BIT_getLowerBits(
-    mut bitContainer: BitContainerType,
-    nbBits: u32,
-) -> BitContainerType {
+unsafe fn BIT_getLowerBits(mut bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
     bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType
 }
 #[inline]
-unsafe extern "C" fn BIT_addBits(
+unsafe fn BIT_addBits(
     mut bitC: *mut BIT_CStream_t,
     mut value: BitContainerType,
     mut nbBits: core::ffi::c_uint,
@@ -209,7 +203,7 @@ unsafe extern "C" fn BIT_addBits(
     (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
 }
 #[inline]
-unsafe extern "C" fn BIT_addBitsFast(
+unsafe fn BIT_addBitsFast(
     mut bitC: *mut BIT_CStream_t,
     mut value: BitContainerType,
     mut nbBits: core::ffi::c_uint,
@@ -218,7 +212,7 @@ unsafe extern "C" fn BIT_addBitsFast(
     (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
 }
 #[inline]
-unsafe extern "C" fn BIT_flushBits(mut bitC: *mut BIT_CStream_t) {
+unsafe fn BIT_flushBits(mut bitC: *mut BIT_CStream_t) {
     let nbBytes = ((*bitC).bitPos >> 3) as size_t;
     MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
     (*bitC).ptr = ((*bitC).ptr).offset(nbBytes as isize);
@@ -229,7 +223,7 @@ unsafe extern "C" fn BIT_flushBits(mut bitC: *mut BIT_CStream_t) {
     (*bitC).bitContainer >>= nbBytes * 8;
 }
 #[inline]
-unsafe extern "C" fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
+unsafe fn BIT_closeCStream(mut bitC: *mut BIT_CStream_t) -> size_t {
     BIT_addBitsFast(bitC, 1, 1);
     BIT_flushBits(bitC);
     if (*bitC).ptr >= (*bitC).endPtr {
@@ -253,16 +247,16 @@ static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     78, 76, 74, 73, 71, 69, 67, 66, 64, 62, 61, 59, 57, 55, 54, 52, 50, 49, 47, 46, 44, 42, 41, 39,
     37, 36, 34, 33, 31, 30, 28, 26, 25, 23, 22, 20, 19, 17, 16, 14, 13, 11, 10, 8, 7, 5, 4, 2, 1,
 ];
-unsafe extern "C" fn ZSTD_getFSEMaxSymbolValue(mut ctable: *const FSE_CTable) -> core::ffi::c_uint {
+unsafe fn ZSTD_getFSEMaxSymbolValue(mut ctable: *const FSE_CTable) -> core::ffi::c_uint {
     let mut ptr = ctable as *const core::ffi::c_void;
     let mut u16ptr = ptr as *const u16;
 
     MEM_read16(u16ptr.offset(1) as *const core::ffi::c_void) as u32
 }
-unsafe extern "C" fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
+unsafe fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
     (nbSeq >= 2048) as core::ffi::c_int as core::ffi::c_uint
 }
-unsafe extern "C" fn ZSTD_NCountCost(
+unsafe fn ZSTD_NCountCost(
     mut count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
     nbSeq: size_t,
@@ -290,7 +284,7 @@ unsafe extern "C" fn ZSTD_NCountCost(
         tableLog,
     )
 }
-unsafe extern "C" fn ZSTD_entropyCost(
+unsafe fn ZSTD_entropyCost(
     mut count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
     total: size_t,
@@ -313,8 +307,7 @@ unsafe extern "C" fn ZSTD_entropyCost(
     }
     (cost >> 8) as size_t
 }
-#[export_name = crate::prefix!(ZSTD_fseBitCost)]
-pub unsafe extern "C" fn ZSTD_fseBitCost(
+pub unsafe fn ZSTD_fseBitCost(
     mut ctable: *const FSE_CTable,
     mut count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
@@ -347,8 +340,7 @@ pub unsafe extern "C" fn ZSTD_fseBitCost(
     }
     cost >> kAccuracyLog
 }
-#[export_name = crate::prefix!(ZSTD_crossEntropyCost)]
-pub unsafe extern "C" fn ZSTD_crossEntropyCost(
+pub unsafe fn ZSTD_crossEntropyCost(
     mut norm: *const core::ffi::c_short,
     mut accuracyLog: core::ffi::c_uint,
     mut count: *const core::ffi::c_uint,
@@ -374,8 +366,7 @@ pub unsafe extern "C" fn ZSTD_crossEntropyCost(
     }
     cost >> 8
 }
-#[export_name = crate::prefix!(ZSTD_selectEncodingType)]
-pub unsafe extern "C" fn ZSTD_selectEncodingType(
+pub unsafe fn ZSTD_selectEncodingType(
     mut repeatMode: *mut FSE_repeat,
     mut count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
@@ -442,8 +433,7 @@ pub unsafe extern "C" fn ZSTD_selectEncodingType(
     *repeatMode = FSE_repeat_check;
     set_compressed
 }
-#[export_name = crate::prefix!(ZSTD_buildCTable)]
-pub unsafe extern "C" fn ZSTD_buildCTable(
+pub unsafe fn ZSTD_buildCTable(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut nextCTable: *mut FSE_CTable,
@@ -545,8 +535,7 @@ pub unsafe extern "C" fn ZSTD_buildCTable(
         _ => -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t,
     }
 }
-#[inline(always)]
-unsafe extern "C" fn ZSTD_encodeSequences_body(
+unsafe fn ZSTD_encodeSequences_body(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut CTable_MatchLength: *const FSE_CTable,
@@ -744,7 +733,7 @@ unsafe extern "C" fn ZSTD_encodeSequences_body(
     }
     streamSize
 }
-unsafe extern "C" fn ZSTD_encodeSequences_default(
+unsafe fn ZSTD_encodeSequences_default(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut CTable_MatchLength: *const FSE_CTable,
@@ -771,7 +760,7 @@ unsafe extern "C" fn ZSTD_encodeSequences_default(
         longOffsets,
     )
 }
-unsafe extern "C" fn ZSTD_encodeSequences_bmi2(
+unsafe fn ZSTD_encodeSequences_bmi2(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut CTable_MatchLength: *const FSE_CTable,
@@ -798,8 +787,7 @@ unsafe extern "C" fn ZSTD_encodeSequences_bmi2(
         longOffsets,
     )
 }
-#[export_name = crate::prefix!(ZSTD_encodeSequences)]
-pub unsafe extern "C" fn ZSTD_encodeSequences(
+pub unsafe fn ZSTD_encodeSequences(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut CTable_MatchLength: *const FSE_CTable,

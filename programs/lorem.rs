@@ -278,7 +278,7 @@ static mut kNbWeights: size_t = 0;
 const DISTRIB_MAX_SIZE: core::ffi::c_uint = 650;
 static mut g_distrib: [core::ffi::c_int; DISTRIB_MAX_SIZE as usize] = [0; 650];
 static mut g_distribCount: core::ffi::c_uint = 0;
-unsafe extern "C" fn countFreqs(
+unsafe fn countFreqs(
     mut words: *const &CStr,
     mut nbWords: size_t,
     mut weights: *const core::ffi::c_int,
@@ -300,7 +300,7 @@ unsafe extern "C" fn countFreqs(
     g_distribCount = total;
     assert!(g_distribCount <= DISTRIB_MAX_SIZE);
 }
-unsafe extern "C" fn init_word_distrib(
+unsafe fn init_word_distrib(
     mut words: *const &CStr,
     mut nbWords: size_t,
     mut weights: *const core::ffi::c_int,
@@ -332,7 +332,7 @@ static mut g_ptr: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
 static mut g_nbChars: size_t = 0;
 static mut g_maxChars: size_t = 10000000;
 static mut g_randRoot: core::ffi::c_uint = 0;
-unsafe extern "C" fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_uint {
+unsafe fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_uint {
     static prime1: core::ffi::c_uint = 2654435761;
     static prime2: core::ffi::c_uint = 2246822519;
     let mut rand32 = g_randRoot;
@@ -343,7 +343,7 @@ unsafe extern "C" fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_ui
     ((rand32 as core::ffi::c_ulonglong).wrapping_mul(range as core::ffi::c_ulonglong) >> 32)
         as core::ffi::c_uint
 }
-unsafe extern "C" fn writeLastCharacters() {
+unsafe fn writeLastCharacters() {
     let mut lastChars = g_maxChars.wrapping_sub(g_nbChars);
     assert!(g_maxChars >= g_nbChars);
     if lastChars == 0 {
@@ -364,7 +364,7 @@ unsafe extern "C" fn writeLastCharacters() {
     }
     g_nbChars = g_maxChars;
 }
-unsafe extern "C" fn generateWord(
+unsafe fn generateWord(
     mut word: *const core::ffi::c_char,
     mut separator: *const core::ffi::c_char,
     mut upCase: core::ffi::c_int,
@@ -394,12 +394,12 @@ unsafe extern "C" fn generateWord(
     g_nbChars =
         (g_nbChars as core::ffi::c_ulong).wrapping_add(strlen(separator)) as size_t as size_t;
 }
-unsafe extern "C" fn about(mut target: core::ffi::c_uint) -> core::ffi::c_int {
+unsafe fn about(mut target: core::ffi::c_uint) -> core::ffi::c_int {
     (LOREM_rand(target))
         .wrapping_add(LOREM_rand(target))
         .wrapping_add(1) as core::ffi::c_int
 }
-unsafe extern "C" fn generateSentence(mut nbWords: core::ffi::c_int) {
+unsafe fn generateSentence(mut nbWords: core::ffi::c_int) {
     let mut commaPos = about(9);
     let mut comma2 = commaPos + about(7);
     let mut qmark = (LOREM_rand(11) == 7) as core::ffi::c_int;
@@ -427,7 +427,7 @@ unsafe extern "C" fn generateSentence(mut nbWords: core::ffi::c_int) {
         i += 1;
     }
 }
-unsafe extern "C" fn generateParagraph(mut nbSentences: core::ffi::c_int) {
+unsafe fn generateParagraph(mut nbSentences: core::ffi::c_int) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < nbSentences {
@@ -446,7 +446,7 @@ unsafe extern "C" fn generateParagraph(mut nbSentences: core::ffi::c_int) {
         *g_ptr.offset(fresh3 as isize) = '\n' as i32 as core::ffi::c_char;
     }
 }
-unsafe extern "C" fn generateFirstSentence() {
+unsafe fn generateFirstSentence() {
     let mut i = 0;
     while i < 18 {
         let mut word = kWords[i].as_ptr();
@@ -466,8 +466,7 @@ unsafe extern "C" fn generateFirstSentence() {
         0,
     );
 }
-#[no_mangle]
-pub unsafe extern "C" fn LOREM_genBlock(
+pub unsafe fn LOREM_genBlock(
     mut buffer: *mut core::ffi::c_void,
     mut size: size_t,
     mut seed: core::ffi::c_uint,
@@ -500,8 +499,7 @@ pub unsafe extern "C" fn LOREM_genBlock(
     g_ptr = NULL as *mut core::ffi::c_char;
     g_nbChars
 }
-#[no_mangle]
-pub unsafe extern "C" fn LOREM_genBuffer(
+pub unsafe fn LOREM_genBuffer(
     mut buffer: *mut core::ffi::c_void,
     mut size: size_t,
     mut seed: core::ffi::c_uint,

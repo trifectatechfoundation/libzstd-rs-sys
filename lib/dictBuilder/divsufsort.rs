@@ -310,7 +310,7 @@ static lg_table: [core::ffi::c_int; 256] = [
     7,
 ];
 #[inline]
-unsafe extern "C" fn ss_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn ss_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
     if n & 0xff00 as core::ffi::c_int != 0 {
         8 + *lg_table
             .as_ptr()
@@ -338,7 +338,7 @@ static sqq_table: [core::ffi::c_int; 256] = [
     255,
 ];
 #[inline]
-unsafe extern "C" fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
     let mut y: core::ffi::c_int = 0;
     let mut e: core::ffi::c_int = 0;
     if x >= SS_BLOCKSIZE * SS_BLOCKSIZE {
@@ -381,7 +381,7 @@ unsafe extern "C" fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
     }
 }
 #[inline]
-unsafe extern "C" fn ss_compare(
+unsafe fn ss_compare(
     mut T: *const core::ffi::c_uchar,
     mut p1: *const core::ffi::c_int,
     mut p2: *const core::ffi::c_int,
@@ -411,7 +411,7 @@ unsafe extern "C" fn ss_compare(
         0
     }
 }
-unsafe extern "C" fn ss_insertionsort(
+unsafe fn ss_insertionsort(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -450,7 +450,7 @@ unsafe extern "C" fn ss_insertionsort(
     }
 }
 #[inline]
-unsafe extern "C" fn ss_fixdown(
+unsafe fn ss_fixdown(
     mut Td: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
@@ -487,7 +487,7 @@ unsafe extern "C" fn ss_fixdown(
     }
     *SA.offset(i as isize) = v;
 }
-unsafe extern "C" fn ss_heapsort(
+unsafe fn ss_heapsort(
     mut Td: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
@@ -529,7 +529,7 @@ unsafe extern "C" fn ss_heapsort(
     }
 }
 #[inline]
-unsafe extern "C" fn ss_median3(
+unsafe fn ss_median3(
     mut Td: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
@@ -558,7 +558,7 @@ unsafe extern "C" fn ss_median3(
     v2
 }
 #[inline]
-unsafe extern "C" fn ss_median5(
+unsafe fn ss_median5(
     mut Td: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
@@ -617,7 +617,7 @@ unsafe extern "C" fn ss_median5(
     v3
 }
 #[inline]
-unsafe extern "C" fn ss_pivot(
+unsafe fn ss_pivot(
     mut Td: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -668,7 +668,7 @@ unsafe extern "C" fn ss_pivot(
     ss_median3(Td, PA, first, middle, last)
 }
 #[inline]
-unsafe extern "C" fn ss_partition(
+unsafe fn ss_partition(
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
@@ -705,7 +705,7 @@ unsafe extern "C" fn ss_partition(
     }
     a
 }
-unsafe extern "C" fn ss_mintrosort(
+unsafe fn ss_mintrosort(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -1356,7 +1356,7 @@ unsafe extern "C" fn ss_mintrosort(
     }
 }
 #[inline]
-unsafe extern "C" fn ss_blockswap(
+unsafe fn ss_blockswap(
     mut a: *mut core::ffi::c_int,
     mut b: *mut core::ffi::c_int,
     mut n: core::ffi::c_int,
@@ -1372,7 +1372,7 @@ unsafe extern "C" fn ss_blockswap(
     }
 }
 #[inline]
-unsafe extern "C" fn ss_rotate(
+unsafe fn ss_rotate(
     mut first: *mut core::ffi::c_int,
     mut middle: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
@@ -1439,7 +1439,7 @@ unsafe extern "C" fn ss_rotate(
         }
     }
 }
-unsafe extern "C" fn ss_inplacemerge(
+unsafe fn ss_inplacemerge(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -1509,7 +1509,7 @@ unsafe extern "C" fn ss_inplacemerge(
         }
     }
 }
-unsafe extern "C" fn ss_mergeforward(
+unsafe fn ss_mergeforward(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -1623,7 +1623,7 @@ unsafe extern "C" fn ss_mergeforward(
         }
     }
 }
-unsafe extern "C" fn ss_mergebackward(
+unsafe fn ss_mergebackward(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -1814,7 +1814,7 @@ unsafe extern "C" fn ss_mergebackward(
         }
     }
 }
-unsafe extern "C" fn ss_swapmerge(
+unsafe fn ss_swapmerge(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -2182,7 +2182,7 @@ unsafe extern "C" fn ss_swapmerge(
         }
     }
 }
-unsafe extern "C" fn sssort(
+unsafe fn sssort(
     mut T: *const core::ffi::c_uchar,
     mut PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -2300,7 +2300,7 @@ unsafe extern "C" fn sssort(
     }
 }
 #[inline]
-unsafe extern "C" fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
     if n as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
         if n as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
             24 + *lg_table
@@ -2321,7 +2321,7 @@ unsafe extern "C" fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
             .offset((n >> 0 & 0xff as core::ffi::c_int) as isize)
     }
 }
-unsafe extern "C" fn tr_insertionsort(
+unsafe fn tr_insertionsort(
     mut ISAd: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
@@ -2358,7 +2358,7 @@ unsafe extern "C" fn tr_insertionsort(
     }
 }
 #[inline]
-unsafe extern "C" fn tr_fixdown(
+unsafe fn tr_fixdown(
     mut ISAd: *const core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
     mut i: core::ffi::c_int,
@@ -2394,7 +2394,7 @@ unsafe extern "C" fn tr_fixdown(
     }
     *SA.offset(i as isize) = v;
 }
-unsafe extern "C" fn tr_heapsort(
+unsafe fn tr_heapsort(
     mut ISAd: *const core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
     mut size: core::ffi::c_int,
@@ -2434,7 +2434,7 @@ unsafe extern "C" fn tr_heapsort(
     }
 }
 #[inline]
-unsafe extern "C" fn tr_median3(
+unsafe fn tr_median3(
     mut ISAd: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
@@ -2456,7 +2456,7 @@ unsafe extern "C" fn tr_median3(
     v2
 }
 #[inline]
-unsafe extern "C" fn tr_median5(
+unsafe fn tr_median5(
     mut ISAd: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
@@ -2502,7 +2502,7 @@ unsafe extern "C" fn tr_median5(
     v3
 }
 #[inline]
-unsafe extern "C" fn tr_pivot(
+unsafe fn tr_pivot(
     mut ISAd: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
@@ -2548,7 +2548,7 @@ unsafe extern "C" fn tr_pivot(
     tr_median3(ISAd, first, middle, last)
 }
 #[inline]
-unsafe extern "C" fn trbudget_init(
+unsafe fn trbudget_init(
     mut budget: *mut trbudget_t,
     mut chance: core::ffi::c_int,
     mut incval: core::ffi::c_int,
@@ -2558,7 +2558,7 @@ unsafe extern "C" fn trbudget_init(
     (*budget).remain = (*budget).incval;
 }
 #[inline]
-unsafe extern "C" fn trbudget_check(
+unsafe fn trbudget_check(
     mut budget: *mut trbudget_t,
     mut size: core::ffi::c_int,
 ) -> core::ffi::c_int {
@@ -2575,7 +2575,7 @@ unsafe extern "C" fn trbudget_check(
     1
 }
 #[inline]
-unsafe extern "C" fn tr_partition(
+unsafe fn tr_partition(
     mut ISAd: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut middle: *mut core::ffi::c_int,
@@ -2722,7 +2722,7 @@ unsafe extern "C" fn tr_partition(
     *pa = first;
     *pb = last;
 }
-unsafe extern "C" fn tr_copy(
+unsafe fn tr_copy(
     mut ISA: *mut core::ffi::c_int,
     mut SA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -2761,7 +2761,7 @@ unsafe extern "C" fn tr_copy(
         c = c.offset(-1);
     }
 }
-unsafe extern "C" fn tr_partialcopy(
+unsafe fn tr_partialcopy(
     mut ISA: *mut core::ffi::c_int,
     mut SA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
@@ -2828,7 +2828,7 @@ unsafe extern "C" fn tr_partialcopy(
         c = c.offset(-1);
     }
 }
-unsafe extern "C" fn tr_introsort(
+unsafe fn tr_introsort(
     mut ISA: *mut core::ffi::c_int,
     mut ISAd: *const core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
@@ -4032,7 +4032,7 @@ unsafe extern "C" fn tr_introsort(
         }
     }
 }
-unsafe extern "C" fn trsort(
+unsafe fn trsort(
     mut ISA: *mut core::ffi::c_int,
     mut SA: *mut core::ffi::c_int,
     mut n: core::ffi::c_int,
@@ -4093,7 +4093,7 @@ unsafe extern "C" fn trsort(
         ISAd = ISAd.offset(ISAd.offset_from(ISA) as core::ffi::c_long as isize);
     }
 }
-unsafe extern "C" fn sort_typeBstar(
+unsafe fn sort_typeBstar(
     mut T: *const core::ffi::c_uchar,
     mut SA: *mut core::ffi::c_int,
     mut bucket_A: *mut core::ffi::c_int,
@@ -4303,7 +4303,7 @@ unsafe extern "C" fn sort_typeBstar(
     }
     m
 }
-unsafe extern "C" fn construct_SA(
+unsafe fn construct_SA(
     mut T: *const core::ffi::c_uchar,
     mut SA: *mut core::ffi::c_int,
     mut bucket_A: *mut core::ffi::c_int,
@@ -4543,7 +4543,7 @@ unsafe extern "C" fn construct_SA(
         i = i.offset(1);
     }
 }
-unsafe extern "C" fn construct_BWT(
+unsafe fn construct_BWT(
     mut T: *const core::ffi::c_uchar,
     mut SA: *mut core::ffi::c_int,
     mut bucket_A: *mut core::ffi::c_int,
@@ -4773,7 +4773,7 @@ unsafe extern "C" fn construct_BWT(
     }
     orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
-unsafe extern "C" fn construct_BWT_indexes(
+unsafe fn construct_BWT_indexes(
     mut T: *const core::ffi::c_uchar,
     mut SA: *mut core::ffi::c_int,
     mut bucket_A: *mut core::ffi::c_int,
@@ -5034,8 +5034,7 @@ unsafe extern "C" fn construct_BWT_indexes(
     }
     orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
-#[export_name = crate::prefix!(divsufsort)]
-pub unsafe extern "C" fn divsufsort(
+pub unsafe fn divsufsort(
     mut T: *const core::ffi::c_uchar,
     mut SA: *mut core::ffi::c_int,
     mut n: core::ffi::c_int,
@@ -5077,8 +5076,7 @@ pub unsafe extern "C" fn divsufsort(
     free(bucket_A as *mut core::ffi::c_void);
     err
 }
-#[export_name = crate::prefix!(divbwt)]
-pub unsafe extern "C" fn divbwt(
+pub unsafe fn divbwt(
     mut T: *const core::ffi::c_uchar,
     mut U: *mut core::ffi::c_uchar,
     mut A: *mut core::ffi::c_int,

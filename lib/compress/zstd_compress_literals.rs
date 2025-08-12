@@ -38,7 +38,7 @@ pub type huf_compress_f = Option<
     ) -> size_t,
 >;
 #[inline]
-unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
+unsafe fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
             (strat as u32).wrapping_sub(1)
@@ -50,8 +50,7 @@ unsafe extern "C" fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy)
 pub const LitHufLog: core::ffi::c_int = 11;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
-#[export_name = crate::prefix!(ZSTD_noCompressLiterals)]
-pub unsafe extern "C" fn ZSTD_noCompressLiterals(
+pub unsafe fn ZSTD_noCompressLiterals(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut src: *const core::ffi::c_void,
@@ -91,7 +90,7 @@ pub unsafe extern "C" fn ZSTD_noCompressLiterals(
     );
     srcSize.wrapping_add(flSize as size_t)
 }
-unsafe extern "C" fn allBytesIdentical(
+unsafe fn allBytesIdentical(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
 ) -> core::ffi::c_int {
@@ -106,8 +105,7 @@ unsafe extern "C" fn allBytesIdentical(
     }
     1
 }
-#[export_name = crate::prefix!(ZSTD_compressRleLiteralsBlock)]
-pub unsafe extern "C" fn ZSTD_compressRleLiteralsBlock(
+pub unsafe fn ZSTD_compressRleLiteralsBlock(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut src: *const core::ffi::c_void,
@@ -140,7 +138,7 @@ pub unsafe extern "C" fn ZSTD_compressRleLiteralsBlock(
     *ostart.offset(flSize as isize) = *(src as *const u8);
     flSize.wrapping_add(1) as size_t
 }
-unsafe extern "C" fn ZSTD_minLiteralsToCompress(
+unsafe fn ZSTD_minLiteralsToCompress(
     mut strategy: ZSTD_strategy,
     mut huf_repeat: HUF_repeat,
 ) -> size_t {
@@ -157,8 +155,7 @@ unsafe extern "C" fn ZSTD_minLiteralsToCompress(
         (8) << shift
     }
 }
-#[export_name = crate::prefix!(ZSTD_compressLiterals)]
-pub unsafe extern "C" fn ZSTD_compressLiterals(
+pub unsafe fn ZSTD_compressLiterals(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut src: *const core::ffi::c_void,

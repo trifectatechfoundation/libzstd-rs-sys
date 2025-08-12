@@ -69,21 +69,13 @@ unsafe extern "C" fn ZSTD_customFree(
     }
 }
 pub const NULL: core::ffi::c_int = 0;
-#[export_name = crate::prefix!(ZSTD_DDict_dictContent)]
-pub unsafe extern "C" fn ZSTD_DDict_dictContent(
-    mut ddict: *const ZSTD_DDict,
-) -> *const core::ffi::c_void {
+pub unsafe fn ZSTD_DDict_dictContent(mut ddict: *const ZSTD_DDict) -> *const core::ffi::c_void {
     (*ddict).dictContent
 }
-#[export_name = crate::prefix!(ZSTD_DDict_dictSize)]
-pub unsafe extern "C" fn ZSTD_DDict_dictSize(mut ddict: *const ZSTD_DDict) -> size_t {
+pub unsafe fn ZSTD_DDict_dictSize(mut ddict: *const ZSTD_DDict) -> size_t {
     (*ddict).dictSize
 }
-#[export_name = crate::prefix!(ZSTD_copyDDictParameters)]
-pub unsafe extern "C" fn ZSTD_copyDDictParameters(
-    mut dctx: *mut ZSTD_DCtx,
-    mut ddict: *const ZSTD_DDict,
-) {
+pub unsafe fn ZSTD_copyDDictParameters(mut dctx: *mut ZSTD_DCtx, mut ddict: *const ZSTD_DDict) {
     (*dctx).dictID = (*ddict).dictID;
     (*dctx).prefixStart = (*ddict).dictContent;
     (*dctx).virtualStart = (*ddict).dictContent;
@@ -105,7 +97,7 @@ pub unsafe extern "C" fn ZSTD_copyDDictParameters(
         (*dctx).fseEntropy = 0;
     };
 }
-unsafe extern "C" fn ZSTD_loadEntropy_intoDDict(
+unsafe fn ZSTD_loadEntropy_intoDDict(
     mut ddict: *mut ZSTD_DDict,
     mut dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
@@ -148,7 +140,7 @@ unsafe extern "C" fn ZSTD_loadEntropy_intoDDict(
     (*ddict).entropyPresent = 1;
     0
 }
-unsafe extern "C" fn ZSTD_initDDict_internal(
+unsafe fn ZSTD_initDDict_internal(
     mut ddict: *mut ZSTD_DDict,
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
