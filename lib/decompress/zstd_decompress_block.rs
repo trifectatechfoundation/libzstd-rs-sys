@@ -2401,7 +2401,7 @@ unsafe fn ZSTD_decodeSeqHeaders(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_overlapCopy8(op: *mut *mut u8, ip: *mut *const u8, offset: size_t) {
+unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t) {
     if offset < 8 {
         static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
         static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
@@ -2822,9 +2822,9 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
 }
 
 unsafe fn ZSTD_initFseState(
-    mut DStatePtr: &mut ZSTD_fseState,
-    mut bitD: &mut BIT_DStream_t,
-    mut dt: *const ZSTD_seqSymbol,
+    DStatePtr: &mut ZSTD_fseState,
+    bitD: &mut BIT_DStream_t,
+    dt: *const ZSTD_seqSymbol,
 ) {
     let mut ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const ZSTD_seqSymbol_header;
@@ -2835,10 +2835,10 @@ unsafe fn ZSTD_initFseState(
 
 #[inline(always)]
 fn ZSTD_updateFseStateWithDInfo(
-    mut DStatePtr: &mut ZSTD_fseState,
-    mut bitD: &mut BIT_DStream_t,
-    mut nextState: u16,
-    mut nbBits: u32,
+    DStatePtr: &mut ZSTD_fseState,
+    bitD: &mut BIT_DStream_t,
+    nextState: u16,
+    nbBits: u32,
 ) {
     let lowBits = bitD.read_bits(nbBits);
     DStatePtr.state = (nextState as size_t).wrapping_add(lowBits as u64);
