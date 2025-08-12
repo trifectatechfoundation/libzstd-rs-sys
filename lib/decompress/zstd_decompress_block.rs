@@ -2873,9 +2873,9 @@ unsafe extern "C" fn ZSTD_decodeSequence(
         matchLength: 0,
         offset: 0,
     };
-    let llDInfo = ((*seqState).stateLL.table).offset((*seqState).stateLL.state as isize);
-    let mlDInfo = ((*seqState).stateML.table).offset((*seqState).stateML.state as isize);
-    let ofDInfo = ((*seqState).stateOffb.table).offset((*seqState).stateOffb.state as isize);
+    let llDInfo = (seqState.stateLL.table).offset(seqState.stateLL.state as isize);
+    let mlDInfo = (seqState.stateML.table).offset(seqState.stateML.state as isize);
+    let ofDInfo = (seqState.stateOffb.table).offset(seqState.stateOffb.state as isize);
     seq.matchLength = (*mlDInfo).baseValue as size_t;
     seq.litLength = (*llDInfo).baseValue as size_t;
     let ofBase = (*ofDInfo).baseValue;
@@ -2903,65 +2903,57 @@ unsafe extern "C" fn ZSTD_decodeSequence(
                 0
             }) as u32;
             offset = (ofBase as size_t).wrapping_add(
-                ((*seqState)
+                (seqState
                     .DStream
                     .read_bits_fast((ofBits as u32).wrapping_sub(extraBits))
                     as u64)
                     << extraBits,
             );
-            (*seqState).DStream.reload();
-            offset = offset.wrapping_add((*seqState).DStream.read_bits_fast(extraBits) as u64);
+            seqState.DStream.reload();
+            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as u64);
         } else {
-            offset = (ofBase as size_t).wrapping_add(
-                (*seqState)
-                    .DStream
-                    .read_bits_fast(ofBits as core::ffi::c_uint) as u64,
-            );
+            offset = (ofBase as size_t)
+                .wrapping_add(seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as u64);
             if MEM_32bits() != 0 {
-                (*seqState).DStream.reload();
+                seqState.DStream.reload();
             }
         }
-        *((*seqState).prevOffset).as_mut_ptr().offset(2) =
-            *((*seqState).prevOffset).as_mut_ptr().offset(1);
-        *((*seqState).prevOffset).as_mut_ptr().offset(1) =
+        *(seqState.prevOffset).as_mut_ptr().offset(2) =
+            *(seqState.prevOffset).as_mut_ptr().offset(1);
+        *(seqState.prevOffset).as_mut_ptr().offset(1) =
             *((*seqState).prevOffset).as_mut_ptr().offset(0);
         *((*seqState).prevOffset).as_mut_ptr().offset(0) = offset;
     } else {
         let ll0 = ((*llDInfo).baseValue == 0) as core::ffi::c_int as u32;
         if (ofBits as core::ffi::c_int == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
-            offset = *((*seqState).prevOffset).as_mut_ptr().offset(ll0 as isize);
-            *((*seqState).prevOffset).as_mut_ptr().offset(1) = *((*seqState).prevOffset)
+            offset = *(seqState.prevOffset).as_mut_ptr().offset(ll0 as isize);
+            *(seqState.prevOffset).as_mut_ptr().offset(1) = *(seqState.prevOffset)
                 .as_mut_ptr()
                 .offset((ll0 == 0) as core::ffi::c_int as isize);
-            *((*seqState).prevOffset).as_mut_ptr().offset(0) = offset;
+            *(seqState.prevOffset).as_mut_ptr().offset(0) = offset;
         } else {
             offset = (ofBase.wrapping_add(ll0) as size_t)
-                .wrapping_add((*seqState).DStream.read_bits_fast(1) as u64);
+                .wrapping_add(seqState.DStream.read_bits_fast(1) as u64);
             let mut temp = if offset == 3 {
-                (*((*seqState).prevOffset).as_mut_ptr().offset(0)).wrapping_sub(1)
+                (*(seqState.prevOffset).as_mut_ptr().offset(0)).wrapping_sub(1)
             } else {
-                *((*seqState).prevOffset)
-                    .as_mut_ptr()
-                    .offset(offset as isize)
+                *(seqState.prevOffset).as_mut_ptr().offset(offset as isize)
             };
             temp = temp.wrapping_sub((temp == 0) as core::ffi::c_int as size_t);
             if offset != 1 {
-                *((*seqState).prevOffset).as_mut_ptr().offset(2) =
-                    *((*seqState).prevOffset).as_mut_ptr().offset(1);
+                *(seqState.prevOffset).as_mut_ptr().offset(2) =
+                    *(seqState.prevOffset).as_mut_ptr().offset(1);
             }
-            *((*seqState).prevOffset).as_mut_ptr().offset(1) =
-                *((*seqState).prevOffset).as_mut_ptr().offset(0);
+            *(seqState.prevOffset).as_mut_ptr().offset(1) =
+                *(seqState.prevOffset).as_mut_ptr().offset(0);
             offset = temp;
-            *((*seqState).prevOffset).as_mut_ptr().offset(0) = offset;
+            *(seqState.prevOffset).as_mut_ptr().offset(0) = offset;
         }
     }
     seq.offset = offset;
     if mlBits as core::ffi::c_int > 0 {
-        seq.matchLength = (seq.matchLength).wrapping_add(
-            (*seqState)
-                .DStream
-                .read_bits_fast(mlBits as core::ffi::c_uint) as u64,
-        );
+        seq.matchLength = (seq.matchLength)
+            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as u64);
     }
     if MEM_32bits() != 0
         && mlBits as core::ffi::c_int + llBits as core::ffi::c_int
@@ -2972,48 +2964,45 @@ unsafe extern "C" fn ZSTD_decodeSequence(
                     0
                 })
     {
-        (*seqState).DStream.reload();
+        seqState.DStream.reload();
     }
     if MEM_64bits() != 0
         && (totalBits as core::ffi::c_int >= 57 - (9 + 9 + 8)) as core::ffi::c_int
             as core::ffi::c_long
             != 0
     {
-        (*seqState).DStream.reload();
+        seqState.DStream.reload();
     }
     if llBits as core::ffi::c_int > 0 {
-        seq.litLength = (seq.litLength).wrapping_add(
-            (*seqState)
-                .DStream
-                .read_bits_fast(llBits as core::ffi::c_uint) as u64,
-        );
+        seq.litLength = (seq.litLength)
+            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as u64);
     }
     if MEM_32bits() != 0 {
-        (*seqState).DStream.reload();
+        seqState.DStream.reload();
     }
     if isLastSeq == 0 {
         ZSTD_updateFseStateWithDInfo(
-            &mut (*seqState).stateLL,
-            &mut (*seqState).DStream,
+            &mut seqState.stateLL,
+            &mut seqState.DStream,
             llNext,
             llnbBits,
         );
         ZSTD_updateFseStateWithDInfo(
-            &mut (*seqState).stateML,
-            &mut (*seqState).DStream,
+            &mut seqState.stateML,
+            &mut seqState.DStream,
             mlNext,
             mlnbBits,
         );
         if MEM_32bits() != 0 {
-            (*seqState).DStream.reload();
+            seqState.DStream.reload();
         }
         ZSTD_updateFseStateWithDInfo(
-            &mut (*seqState).stateOffb,
-            &mut (*seqState).DStream,
+            &mut seqState.stateOffb,
+            &mut seqState.DStream,
             ofNext,
             ofnbBits,
         );
-        (*seqState).DStream.reload();
+        seqState.DStream.reload();
     }
     seq
 }
