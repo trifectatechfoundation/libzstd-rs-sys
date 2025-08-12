@@ -2292,57 +2292,62 @@ unsafe fn ZSTD_decodeSeqHeaders(
     nbSeqPtr: &mut core::ffi::c_int,
     src: &[u8],
 ) -> size_t {
-    let istart = src.as_ptr() as *const u8;
-    let iend = src.as_ptr_range().end;
-    let mut ip = istart;
+    let mut ip = 0;
     let mut nbSeq: core::ffi::c_int = 0;
     if src.len() < 1 {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    let fresh3 = ip;
-    ip = ip.offset(1);
-    nbSeq = *fresh3 as core::ffi::c_int;
+    nbSeq = i32::from(src[ip]);
+    ip += 1;
     if nbSeq > 0x7f as core::ffi::c_int {
         if nbSeq == 0xff as core::ffi::c_int {
-            if ip.offset(2) > iend {
+            let [_, a, b, ..] = *src else {
                 return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
-            }
-            nbSeq = MEM_readLE16(ip as *const core::ffi::c_void) as core::ffi::c_int + LONGNBSEQ;
-            ip = ip.offset(2);
+            };
+            nbSeq = i32::from(u16::from_le_bytes([a, b])) + LONGNBSEQ;
+            ip += 2;
         } else {
-            if ip >= iend {
+            if ip >= src.len() {
                 return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
             }
-            let fresh4 = ip;
-            ip = ip.offset(1);
-            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + *fresh4 as core::ffi::c_int;
+            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + i32::from(src[ip]);
+            ip += 1;
         }
     }
     *nbSeqPtr = nbSeq;
     if nbSeq == 0 {
-        if ip != iend {
+        if ip != src.len() {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
-        return ip.offset_from(istart) as core::ffi::c_long as size_t;
+        return ip as size_t;
     }
-    if ip.offset(1) > iend {
+
+    /* FSE table descriptors */
+
+    // Minimum possible size: 1 byte for symbol encoding types.
+    if ip + 1 > src.len() {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    if *ip as core::ffi::c_int & 3 != 0 {
+
+    // The last field, Reserved, must be all-zeroes.
+    if src[ip] & 3 != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    let LLtype = SymbolEncodingType_e::try_from(*ip as u8 >> 6).unwrap();
-    let OFtype = SymbolEncodingType_e::try_from(*ip as u8 >> 4 & 0b11).unwrap();
-    let MLtype = SymbolEncodingType_e::try_from(*ip as u8 >> 2 & 0b11).unwrap();
-    ip = ip.offset(1);
+
+    let byte = src[ip];
+    let LLtype = SymbolEncodingType_e::try_from(byte >> 6).unwrap();
+    let OFtype = SymbolEncodingType_e::try_from(byte >> 4 & 0b11).unwrap();
+    let MLtype = SymbolEncodingType_e::try_from(byte >> 2 & 0b11).unwrap();
+
+    ip += 1;
     let llhSize = ZSTD_buildSeqTable(
         (dctx.entropy.LLTable).as_mut_ptr(),
         &mut dctx.LLTptr,
         LLtype,
         MaxLL as core::ffi::c_uint,
         LLFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as core::ffi::c_long as size_t,
+        src[ip..].as_ptr().cast(),
+        src[ip..].len() as _,
         &LL_base,
         &LL_bits,
         &LL_defaultDTable,
@@ -2352,18 +2357,20 @@ unsafe fn ZSTD_decodeSeqHeaders(
         &mut dctx.workspace,
         dctx.bmi2,
     );
+
     if ERR_isError(llhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    ip = ip.offset(llhSize as isize);
+
+    ip += llhSize as usize;
     let ofhSize = ZSTD_buildSeqTable(
         (dctx.entropy.OFTable).as_mut_ptr(),
         &mut dctx.OFTptr,
         OFtype,
         MaxOff as core::ffi::c_uint,
         OffFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as core::ffi::c_long as size_t,
+        src[ip..].as_ptr().cast(),
+        src[ip..].len() as _,
         &OF_base,
         &OF_bits,
         &OF_defaultDTable,
@@ -2373,18 +2380,20 @@ unsafe fn ZSTD_decodeSeqHeaders(
         &mut dctx.workspace,
         dctx.bmi2,
     );
+
     if ERR_isError(ofhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    ip = ip.offset(ofhSize as isize);
+
+    ip += ofhSize as usize;
     let mlhSize = ZSTD_buildSeqTable(
         (dctx.entropy.MLTable).as_mut_ptr(),
         &mut dctx.MLTptr,
         MLtype,
         MaxML as core::ffi::c_uint,
         MLFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as core::ffi::c_long as size_t,
+        src[ip..].as_ptr().cast(),
+        src[ip..].len() as _,
         &ML_base,
         &ML_bits,
         &ML_defaultDTable,
@@ -2397,8 +2406,10 @@ unsafe fn ZSTD_decodeSeqHeaders(
     if ERR_isError(mlhSize) != 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    ip = ip.offset(mlhSize as isize);
-    ip.offset_from(istart) as core::ffi::c_long as size_t
+
+    ip += mlhSize as usize;
+
+    ip as size_t
 }
 
 #[inline(always)]
