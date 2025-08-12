@@ -3889,14 +3889,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         || usePrefetchDecoder == 0 && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
     {
         let info = ZSTD_getOffsetInfo(dctx.OFTptr, nbSeq);
-        if isLongOffset as core::ffi::c_uint != 0
-            && info.maxNbAdditionalBits
-                <= (if MEM_32bits() != 0 {
-                    STREAM_ACCUMULATOR_MIN_32
-                } else {
-                    STREAM_ACCUMULATOR_MIN_64
-                }) as u32
-        {
+        if isLongOffset != 0 && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
             isLongOffset = ZSTD_lo_isRegularOffset;
         }
         if usePrefetchDecoder == 0 {
