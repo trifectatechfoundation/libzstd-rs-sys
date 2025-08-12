@@ -15,7 +15,7 @@ pub const fn ERR_getErrorCode(mut code: size_t) -> ZSTD_ErrorCode {
         return 0;
     }
 
-    (0 as size_t).wrapping_sub(code) as _
+    code.wrapping_neg() as _
 }
 
 #[export_name = crate::prefix!(ERR_getErrorString)]

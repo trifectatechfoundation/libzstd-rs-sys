@@ -449,7 +449,7 @@ unsafe extern "C" fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
 pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
@@ -618,7 +618,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     {
         let pattern16 = MEM_read16(b.offset(pos as isize).offset(4) as *const core::ffi::c_void);
         let mut u: u32 = 0;
-        let mut patternEnd = 6 as core::ffi::c_int as u32;
+        let mut patternEnd = 6u32;
         while MEM_read16(
             b.offset(pos as isize).offset(patternEnd as isize) as *const core::ffi::c_void
         ) as core::ffi::c_int
@@ -699,7 +699,7 @@ unsafe extern "C" fn ZDICT_analyzePos(
     mml = MINMATCHLENGTH as u32;
     loop {
         let mut currentChar = 0;
-        let mut currentCount = 0 as core::ffi::c_int as u32;
+        let mut currentCount = 0u32;
         let mut currentID = refinedStart;
         let mut id: u32 = 0;
         let mut selectedCount = 0;
@@ -1033,7 +1033,7 @@ unsafe extern "C" fn ZDICT_insertDictItem(
 }
 unsafe extern "C" fn ZDICT_dictSize(mut dictList: *const dictItem) -> u32 {
     let mut u: u32 = 0;
-    let mut dictSize = 0 as core::ffi::c_int as u32;
+    let mut dictSize = 0u32;
     u = 1;
     while u < (*dictList.offset(0)).pos {
         dictSize = dictSize.wrapping_add((*dictList.offset(u as isize)).length);
@@ -1328,7 +1328,7 @@ unsafe extern "C" fn ZDICT_totalSampleSize(
     mut fileSizes: *const size_t,
     mut nbFiles: core::ffi::c_uint,
 ) -> size_t {
-    let mut total = 0 as core::ffi::c_int as size_t;
+    let mut total = 0 as size_t;
     let mut u: core::ffi::c_uint = 0;
     u = 0;
     while u < nbFiles {
@@ -1427,7 +1427,7 @@ unsafe extern "C" fn ZDICT_analyzeEntropy(
     let mut mlLog = MLFSELog as u32;
     let mut llLog = LLFSELog as u32;
     let mut total: u32 = 0;
-    let mut pos = 0 as core::ffi::c_int as size_t;
+    let mut pos = 0 as size_t;
     let mut errorCode: size_t = 0;
     let mut eSize = 0;
     let totalSrcSize = ZDICT_totalSampleSize(fileSizes, nbFiles);
@@ -1851,10 +1851,8 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         ZSTD_MAGIC_DICTIONARY,
     );
     let randomID = ZSTD_XXH64(customDictContent, dictContentSize as usize, 0);
-    let compliantID = (randomID
-        % ((1 as core::ffi::c_uint) << 31 as core::ffi::c_int)
-            .wrapping_sub(32768 as core::ffi::c_int as core::ffi::c_uint) as u64)
-        .wrapping_add(32768 as core::ffi::c_int as u64) as u32;
+    let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
+        .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID
     } else {
@@ -1982,10 +1980,8 @@ unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer_advanced(
         dictContentSize as usize,
         0,
     );
-    let compliantID = (randomID
-        % ((1 as core::ffi::c_uint) << 31 as core::ffi::c_int)
-            .wrapping_sub(32768 as core::ffi::c_int as core::ffi::c_uint) as u64)
-        .wrapping_add(32768 as core::ffi::c_int as u64) as u32;
+    let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
+        .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID
     } else {
@@ -2211,7 +2207,7 @@ unsafe extern "C" fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
     }
     let max = (*dictList).pos;
-    let mut currentSize = 0 as core::ffi::c_int as u32;
+    let mut currentSize = 0u32;
     let mut n: u32 = 0;
     n = 1;
     while n < max {

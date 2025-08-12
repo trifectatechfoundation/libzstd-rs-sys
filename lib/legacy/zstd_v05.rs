@@ -234,7 +234,7 @@ pub const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2 as core::ffi::c_int as core::ffi::c_ulonglong);
+    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 unsafe extern "C" fn ZSTDv05_copy8(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
@@ -288,8 +288,7 @@ unsafe extern "C" fn BITv05_initDStream(
         if contain32 == 0 {
             return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
         }
-        (*bitD).bitsConsumed =
-            (8 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(BITv05_highbit32(contain32));
+        (*bitD).bitsConsumed = (8 as core::ffi::c_uint).wrapping_sub(BITv05_highbit32(contain32));
     } else {
         let mut contain32_0: u32 = 0;
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
@@ -361,8 +360,7 @@ unsafe extern "C" fn BITv05_initDStream(
         if contain32_0 == 0 {
             return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
         }
-        (*bitD).bitsConsumed = (8 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_sub(BITv05_highbit32(contain32_0));
+        (*bitD).bitsConsumed = (8 as core::ffi::c_uint).wrapping_sub(BITv05_highbit32(contain32_0));
         (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
             (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(srcSize) as u32
                 * 8,
@@ -548,7 +546,7 @@ pub unsafe extern "C" fn FSEv05_buildDTable(
     let tableMask = tableSize.wrapping_sub(1);
     let step = FSEv05_tableStep(tableSize);
     let mut symbolNext: [u16; 256] = [0; 256];
-    let mut position = 0 as core::ffi::c_int as u32;
+    let mut position = 0u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
     let mut noLarge = 1;
@@ -1663,7 +1661,7 @@ pub unsafe extern "C" fn HUFv05_readDTableX4(
         maxW = maxW.wrapping_sub(1);
     }
     let mut w: u32 = 0;
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     w = 1;
     while w <= maxW {
         let mut current = nextRankStart;
@@ -1687,7 +1685,7 @@ pub unsafe extern "C" fn HUFv05_readDTableX4(
     }
     *rankStart.offset(0) = 0;
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
-    let mut nextRankVal = 0 as core::ffi::c_int as u32;
+    let mut nextRankVal = 0u32;
     let mut w_1: u32 = 0;
     let mut consumed: u32 = 0;
     let rescale = memLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
@@ -3631,7 +3629,7 @@ pub unsafe extern "C" fn ZSTDv05_findFrameSizeInfoLegacy(
 ) {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
-    let mut nbBlocks = 0 as core::ffi::c_int as size_t;
+    let mut nbBlocks = 0 as size_t;
     let mut blockProperties = blockProperties_t {
         blockType: bt_compressed,
         origSize: 0,

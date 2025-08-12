@@ -363,13 +363,11 @@ unsafe extern "C" fn ZSTD_window_needOverflowCorrection(
     let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     (curr
         > (if MEM_64bits() != 0 {
-            (3500 as core::ffi::c_uint).wrapping_mul(
-                ((1 as core::ffi::c_int) << 20 as core::ffi::c_int) as core::ffi::c_uint,
-            )
+            (3500 as core::ffi::c_uint)
+                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {
-            (2000 as core::ffi::c_uint).wrapping_mul(
-                ((1 as core::ffi::c_int) << 20 as core::ffi::c_int) as core::ffi::c_uint,
-            )
+            (2000 as core::ffi::c_uint)
+                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         })) as core::ffi::c_int as u32
 }
 #[inline]
@@ -455,7 +453,7 @@ unsafe extern "C" fn ZSTD_copy8(
     mut dst: *mut core::ffi::c_void,
     mut src: *const core::ffi::c_void,
 ) {
-    libc::memcpy(dst, src, 8 as libc::size_t);
+    libc::memcpy(dst, src, 8);
 }
 unsafe extern "C" fn ZSTD_copy16(
     mut dst: *mut core::ffi::c_void,
@@ -815,14 +813,12 @@ unsafe extern "C" fn ZSTD_ldm_gear_init(
         64
     };
     let mut hashRateLog = (*params).hashRateLog;
-    (*state).rolling = !(0 as core::ffi::c_int as u32) as u64;
-    if hashRateLog > 0 as core::ffi::c_int as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
-        (*state).stopMask = ((1 as core::ffi::c_int as u64) << hashRateLog)
-            .wrapping_sub(1 as core::ffi::c_int as u64)
-            << maxBitsInMask.wrapping_sub(hashRateLog);
+    (*state).rolling = !0u32 as u64;
+    if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
+        (*state).stopMask =
+            (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
     } else {
-        (*state).stopMask = ((1 as core::ffi::c_int as u64) << hashRateLog)
-            .wrapping_sub(1 as core::ffi::c_int as u64);
+        (*state).stopMask = (1u64 << hashRateLog).wrapping_sub(1);
     };
 }
 unsafe extern "C" fn ZSTD_ldm_gear_reset(
@@ -831,7 +827,7 @@ unsafe extern "C" fn ZSTD_ldm_gear_reset(
     mut minMatchLength: size_t,
 ) {
     let mut hash = (*state).rolling;
-    let mut n = 0 as core::ffi::c_int as size_t;
+    let mut n = 0 as size_t;
     while n.wrapping_add(3) < minMatchLength {
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
             (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
@@ -970,7 +966,7 @@ pub unsafe extern "C" fn ZSTD_ldm_adjustParameters(
                 (*params).hashRateLog = ((*params).windowLog).wrapping_sub((*params).hashLog);
             }
         } else {
-            (*params).hashRateLog = (7 as core::ffi::c_int as core::ffi::c_uint)
+            (*params).hashRateLog = (7 as core::ffi::c_uint)
                 .wrapping_sub(((*cParams).strategy as core::ffi::c_uint).wrapping_div(3));
         }
     }
@@ -1074,7 +1070,7 @@ pub unsafe extern "C" fn ZSTD_ldm_adjustParameters(
 }
 #[export_name = crate::prefix!(ZSTD_ldm_getTableSize)]
 pub unsafe extern "C" fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_t {
-    let ldmHSize = (1 as core::ffi::c_int as size_t) << params.hashLog;
+    let ldmHSize = (1 as size_t) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
         params.bucketSizeLog
     } else {
@@ -1121,9 +1117,8 @@ unsafe extern "C" fn ZSTD_ldm_insertEntry(
     let pOffset = ((*ldmState).bucketOffsets).offset(hash as isize);
     let offset = *pOffset as core::ffi::c_uint;
     *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
-    *pOffset = (offset.wrapping_add(1 as core::ffi::c_int as core::ffi::c_uint)
-        & ((1 as core::ffi::c_uint) << bucketSizeLog)
-            .wrapping_sub(1 as core::ffi::c_int as core::ffi::c_uint)) as u8;
+    *pOffset = (offset.wrapping_add(1)
+        & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1)) as u8;
 }
 unsafe extern "C" fn ZSTD_ldm_countBackwardsMatch(
     mut pIn: *const u8,
@@ -1131,7 +1126,7 @@ unsafe extern "C" fn ZSTD_ldm_countBackwardsMatch(
     mut pMatch: *const u8,
     mut pMatchBase: *const u8,
 ) -> size_t {
-    let mut matchLength = 0 as core::ffi::c_int as size_t;
+    let mut matchLength = 0 as size_t;
     while pIn > pAnchor
         && pMatch > pMatchBase
         && *pIn.offset(-(1) as isize) as core::ffi::c_int
@@ -1232,10 +1227,7 @@ pub unsafe extern "C" fn ZSTD_ldm_fillHashTable(
                     minMatchLength as usize,
                     0,
                 );
-                let hash = (xxhash
-                    & ((1 as core::ffi::c_int as u32) << hBits)
-                        .wrapping_sub(1 as core::ffi::c_int as u32) as u64)
-                    as u32;
+                let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
                 let mut entry = ldmEntry_t {
                     offset: 0,
                     checksum: 0,
@@ -1337,10 +1329,7 @@ unsafe extern "C" fn ZSTD_ldm_generateSequences_internal(
                 minMatchLength as usize,
                 0,
             );
-            let hash = (xxhash
-                & ((1 as core::ffi::c_int as u32) << hBits)
-                    .wrapping_sub(1 as core::ffi::c_int as u32) as u64)
-                as u32;
+            let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
             let fresh2 = &mut (*candidates.offset(n as isize)).split;
             *fresh2 = split;
             (*candidates.offset(n as isize)).hash = hash;

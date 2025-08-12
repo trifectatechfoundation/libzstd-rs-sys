@@ -35,41 +35,12 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 static BIT_mask: [core::ffi::c_uint; 32] = [
-    0 as core::ffi::c_int as core::ffi::c_uint,
-    1 as core::ffi::c_int as core::ffi::c_uint,
-    3 as core::ffi::c_int as core::ffi::c_uint,
-    7 as core::ffi::c_int as core::ffi::c_uint,
-    0xf as core::ffi::c_int as core::ffi::c_uint,
-    0x1f as core::ffi::c_int as core::ffi::c_uint,
-    0x3f as core::ffi::c_int as core::ffi::c_uint,
-    0x7f as core::ffi::c_int as core::ffi::c_uint,
-    0xff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ff as core::ffi::c_int as core::ffi::c_uint,
-    0xfff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fff as core::ffi::c_int as core::ffi::c_uint,
-    0xffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ffff as core::ffi::c_int as core::ffi::c_uint,
-    0xfffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fffff as core::ffi::c_int as core::ffi::c_uint,
-    0xffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0xfffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fffffff as core::ffi::c_int as core::ffi::c_uint,
+    0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff,
+    0xffff, 0x1ffff, 0x3ffff, 0x7ffff, 0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff,
+    0x3ffffff, 0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff,
 ];
 #[inline]
 unsafe extern "C" fn BIT_initCStream(
@@ -273,8 +244,8 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
     if highThreshold == tableSize.wrapping_sub(1) {
         let spread = tableSymbol.offset(tableSize as isize);
         let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
-        let mut pos = 0 as core::ffi::c_int as size_t;
-        let mut sv = 0 as core::ffi::c_int as u64;
+        let mut pos = 0 as size_t;
+        let mut sv = 0u64;
         let mut s: u32 = 0;
         s = 0;
         while s < maxSV1 {
@@ -293,7 +264,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
             s = s.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
-        let mut position = 0 as core::ffi::c_int as size_t;
+        let mut position = 0 as size_t;
         let mut s_0: size_t = 0;
         let unroll = 2;
         s_0 = 0;
@@ -310,7 +281,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
             s_0 = s_0.wrapping_add(unroll);
         }
     } else {
-        let mut position_0 = 0 as core::ffi::c_int as u32;
+        let mut position_0 = 0u32;
         let mut symbol: u32 = 0;
         symbol = 0;
         while symbol < maxSV1 {
@@ -338,7 +309,7 @@ pub unsafe extern "C" fn FSE_buildCTable_wksp(
         *tableU16.offset(fresh2 as isize) = tableSize.wrapping_add(u_1) as u16;
         u_1 = u_1.wrapping_add(1);
     }
-    let mut total = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut total = 0 as core::ffi::c_uint;
     let mut s_2: core::ffi::c_uint = 0;
     s_2 = 0;
     while s_2 <= maxSymbolValue {
@@ -593,7 +564,7 @@ unsafe extern "C" fn FSE_normalizeM2(
 ) -> size_t {
     let NOT_YET_ASSIGNED = -(2) as core::ffi::c_short;
     let mut s: u32 = 0;
-    let mut distributed = 0 as core::ffi::c_int as u32;
+    let mut distributed = 0u32;
     let mut ToDistribute: u32 = 0;
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
@@ -614,7 +585,7 @@ unsafe extern "C" fn FSE_normalizeM2(
         }
         s = s.wrapping_add(1);
     }
-    ToDistribute = (((1) << tableLog) as u32).wrapping_sub(distributed);
+    ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
     if ToDistribute == 0 {
         return 0;
     }
@@ -631,7 +602,7 @@ unsafe extern "C" fn FSE_normalizeM2(
             }
             s = s.wrapping_add(1);
         }
-        ToDistribute = (((1) << tableLog) as u32).wrapping_sub(distributed);
+        ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
     }
     if distributed == maxSymbolValue.wrapping_add(1) {
         let mut maxV = 0;
@@ -662,10 +633,9 @@ unsafe extern "C" fn FSE_normalizeM2(
         }
         return 0;
     }
-    let vStepLog = (62 as core::ffi::c_int as u32).wrapping_sub(tableLog) as u64;
-    let mid = ((1 as core::ffi::c_ulonglong) << vStepLog.wrapping_sub(1 as core::ffi::c_int as u64))
-        .wrapping_sub(1 as core::ffi::c_int as core::ffi::c_ulonglong) as u64;
-    let rStep = (((1) << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
+    let vStepLog = 62u32.wrapping_sub(tableLog) as u64;
+    let mid = ((1 as core::ffi::c_ulonglong) << vStepLog.wrapping_sub(1)).wrapping_sub(1) as u64;
+    let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
     s = 0;
     while s <= maxSymbolValue {
@@ -707,9 +677,9 @@ pub unsafe extern "C" fn FSE_normalizeCount(
     }
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
     let lowProbCount = (if useLowProbCount != 0 { -(1) } else { 1 }) as core::ffi::c_short;
-    let scale = (62 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
-    let step = ((1) << 62) / total as u32 as u64;
-    let vStep = ((1) << scale.wrapping_sub(20)) as u64;
+    let scale = (62 as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
+    let step = (1 << 62) / total as u32 as u64;
+    let vStep = (1 << scale.wrapping_sub(20)) as u64;
     let mut stillToDistribute = (1) << tableLog;
     let mut s: core::ffi::c_uint = 0;
     let mut largest = 0;

@@ -101,14 +101,12 @@ unsafe extern "C" fn RDG_genBlock(
     mut seedPtr: *mut u32,
 ) {
     let buffPtr = buffer as *mut u8;
-    let matchProba32 = (32768 as core::ffi::c_int as core::ffi::c_double * matchProba) as u32;
+    let matchProba32 = (32768.0f64 * matchProba) as u32;
     let mut pos = prefixSize;
     let mut prevOffset = 1;
     while matchProba >= 1.0f64 {
-        let mut size0 = (RDG_rand(seedPtr) & 3 as core::ffi::c_int as u32) as size_t;
-        size0 = (1 as core::ffi::c_int as size_t)
-            << (16 as core::ffi::c_int as size_t)
-                .wrapping_add(size0 * 2 as core::ffi::c_int as size_t);
+        let mut size0 = (RDG_rand(seedPtr) & 3u32) as size_t;
+        size0 = (1 as size_t) << (16 as size_t).wrapping_add(size0 * 2);
         size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
         if buffSize < pos.wrapping_add(size0) {
             memset(
@@ -193,7 +191,7 @@ pub unsafe extern "C" fn RDG_genBuffer(
     }
     RDG_fillLiteralDistrib(
         ldt.as_mut_ptr(),
-        (litProba * 256 as core::ffi::c_int as core::ffi::c_double + 0.001f64) as fixedPoint_24_8,
+        (litProba * 256.0 + 0.001f64) as fixedPoint_24_8,
     );
     RDG_genBlock(buffer, size, 0, matchProba, ldt.as_mut_ptr(), &mut seed32);
 }
@@ -224,7 +222,7 @@ pub unsafe extern "C" fn RDG_genStdout(
     );
     RDG_fillLiteralDistrib(
         ldt.as_mut_ptr(),
-        (litProba * 256 as core::ffi::c_int as core::ffi::c_double + 0.001f64) as fixedPoint_24_8,
+        (litProba * 256.0 + 0.001f64) as fixedPoint_24_8,
     );
     RDG_genBlock(
         buff as *mut core::ffi::c_void,

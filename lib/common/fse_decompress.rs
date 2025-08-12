@@ -235,8 +235,8 @@ fn FSE_buildDTable_internal(
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3) as size_t;
         let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
-        let mut pos = 0 as core::ffi::c_int as size_t;
-        let mut sv = 0 as core::ffi::c_int as u64;
+        let mut pos = 0 as size_t;
+        let mut sv = 0u64;
 
         for s_0 in 0..maxSV1 {
             let mut i: core::ffi::c_int = 0;
@@ -251,7 +251,7 @@ fn FSE_buildDTable_internal(
             sv = sv.wrapping_add(add);
         }
 
-        let mut position = 0 as core::ffi::c_int as size_t;
+        let mut position = 0 as size_t;
         let mut s_1: size_t = 0;
         let unroll = 2;
         s_1 = 0;
@@ -272,7 +272,7 @@ fn FSE_buildDTable_internal(
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3);
 
-        let mut position_0 = 0 as core::ffi::c_int as u32;
+        let mut position_0 = 0u32;
         for s_2 in 0..maxSV1 {
             for _ in 0..normalizedCounter[s_2 as usize] {
                 elements[position_0 as usize].symbol = s_2 as u8;

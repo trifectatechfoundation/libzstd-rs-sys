@@ -99,7 +99,7 @@ const fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
 }
 #[inline]
 const fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const HUF_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
 pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
@@ -343,9 +343,7 @@ pub unsafe extern "C" fn HUF_writeCTable_wksp(
     {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
-    *op.offset(0 as core::ffi::c_int as isize) = (128 as core::ffi::c_int as core::ffi::c_uint)
-        .wrapping_add(maxSymbolValue.wrapping_sub(1 as core::ffi::c_int as core::ffi::c_uint))
-        as u8;
+    *op.offset(0) = (128 as core::ffi::c_uint).wrapping_add(maxSymbolValue.wrapping_sub(1)) as u8;
     *((*wksp).huffWeight)
         .as_mut_ptr()
         .offset(maxSymbolValue as isize) = 0;
@@ -400,7 +398,7 @@ pub unsafe fn HUF_readCTable(
     *maxSymbolValuePtr = nbSymbols.wrapping_sub(1);
     HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
     let mut n: u32 = 0;
-    let mut nextRankStart = 0 as core::ffi::c_int as u32;
+    let mut nextRankStart = 0u32;
     n = 1;
     while n <= tableLog {
         let mut curr = nextRankStart;
@@ -896,7 +894,7 @@ pub unsafe extern "C" fn HUF_estimateCompressedSize(
     mut maxSymbolValue: core::ffi::c_uint,
 ) -> size_t {
     let mut ct = CTable.offset(1);
-    let mut nbBits = 0 as core::ffi::c_int as size_t;
+    let mut nbBits = 0 as size_t;
     let mut s: core::ffi::c_int = 0;
     s = 0;
     while s <= maxSymbolValue as core::ffi::c_int {
@@ -1368,12 +1366,12 @@ pub unsafe extern "C" fn HUF_cardinality(
     mut count: *const core::ffi::c_uint,
     mut maxSymbolValue: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
-    let mut cardinality = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut cardinality = 0 as core::ffi::c_uint;
     let mut i: core::ffi::c_uint = 0;
     i = 0;
     while i < maxSymbolValue.wrapping_add(1) {
         if *count.offset(i as isize) != 0 {
-            cardinality = cardinality.wrapping_add(1 as core::ffi::c_int as core::ffi::c_uint);
+            cardinality = cardinality.wrapping_add(1);
         }
         i = i.wrapping_add(1);
     }
@@ -1514,7 +1512,7 @@ unsafe extern "C" fn HUF_compress_internal(
         && srcSize
             >= (SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE * SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO) as size_t
     {
-        let mut largestTotal = 0 as core::ffi::c_int as size_t;
+        let mut largestTotal = 0 as size_t;
         let mut maxSymbolValueBegin = maxSymbolValue;
         let largestBegin = HIST_count_simple(
             ((*table).count).as_mut_ptr(),

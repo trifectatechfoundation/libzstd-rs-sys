@@ -97,14 +97,14 @@ pub struct COVER_dictSelection {
 static prime6bytes: u64 = 227718039650203;
 unsafe extern "C" fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u << (64 as core::ffi::c_int - 48 as core::ffi::c_int)) * prime6bytes) ^ s)
-        >> (64 as core::ffi::c_int as u32).wrapping_sub(h)
+        >> 64u32.wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
 unsafe extern "C" fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    ((u * prime8bytes) ^ s) >> (64 as core::ffi::c_int as u32).wrapping_sub(h)
+    ((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)
 }
 unsafe extern "C" fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
@@ -297,9 +297,7 @@ unsafe extern "C" fn FASTCOVER_checkParameters(
     if f > FASTCOVER_MAX_F as core::ffi::c_uint || f == 0 {
         return 0;
     }
-    if parameters.splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
-        || parameters.splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
-    {
+    if parameters.splitPoint <= 0.0 || parameters.splitPoint > 1.0 {
         return 0;
     }
     if accel > 10 || accel == 0 {
@@ -386,8 +384,7 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
             >= (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
                 -(1 as core::ffi::c_int) as core::ffi::c_uint
             } else {
-                (1 as core::ffi::c_int as core::ffi::c_uint)
-                    .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+                (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
             }) as size_t
     {
         if displayLevel >= 1 {
@@ -399,9 +396,8 @@ unsafe extern "C" fn FASTCOVER_ctx_init(
                 (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
-                    (1 as core::ffi::c_int as core::ffi::c_uint)
-                        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
-                }) >> 20 as core::ffi::c_int,
+                    (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
+                }) >> 20,
             );
             fflush(stderr);
         }
@@ -534,7 +530,7 @@ unsafe extern "C" fn FASTCOVER_buildDictionary(
     );
     let maxZeroScoreRun = 10;
     let displayLevel = (*ctx).displayLevel;
-    let mut zeroScoreRun = 0 as core::ffi::c_int as size_t;
+    let mut zeroScoreRun = 0 as size_t;
     let mut lastUpdateTime = 0;
     let mut epoch: size_t = 0;
     if displayLevel >= 2 {
@@ -623,8 +619,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(mut opaque: *mut core::ffi::c_void)
     let mut selection =
         COVER_dictSelectionError(-(ZSTD_error_GENERIC as core::ffi::c_int) as size_t);
     let mut freqs = malloc(
-        ((1 as core::ffi::c_int as u64) << (*ctx).f)
-            .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
+        (1u64 << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
     ) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
     if segmentFreqs.is_null() || dict.is_null() || freqs.is_null() {
@@ -640,8 +635,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(mut opaque: *mut core::ffi::c_void)
         memcpy(
             freqs as *mut core::ffi::c_void,
             (*ctx).freqs as *const core::ffi::c_void,
-            ((1 as core::ffi::c_int as u64) << (*ctx).f)
-                .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
+            (1u64 << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
         );
         let tail = FASTCOVER_buildDictionary(
             ctx,
@@ -942,10 +936,10 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     } else {
         1
     };
-    let kIterations = (1 as core::ffi::c_int as core::ffi::c_uint)
+    let kIterations = (1 as core::ffi::c_uint)
         .wrapping_add(kMaxD.wrapping_sub(kMinD).wrapping_div(2))
         .wrapping_mul(
-            (1 as core::ffi::c_int as core::ffi::c_uint)
+            (1 as core::ffi::c_uint)
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
     let f = if (*parameters).f == 0 {
@@ -960,7 +954,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     };
     let shrinkDict = 0;
     let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
-    let mut iteration = 1 as core::ffi::c_int as core::ffi::c_uint;
+    let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_s {
@@ -988,9 +982,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut pool = NULL as *mut POOL_ctx;
     let mut warned = 0;
     let mut lastUpdateTime = 0;
-    if splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
-        || splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
-    {
+    if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,

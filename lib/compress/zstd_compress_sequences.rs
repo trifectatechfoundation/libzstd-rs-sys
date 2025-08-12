@@ -295,12 +295,12 @@ unsafe extern "C" fn ZSTD_entropyCost(
     max: core::ffi::c_uint,
     total: size_t,
 ) -> size_t {
-    let mut cost = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let mut cost = 0 as core::ffi::c_uint;
     let mut s: core::ffi::c_uint = 0;
     s = 0;
     while s <= max {
-        let mut norm = ((256 as core::ffi::c_int as core::ffi::c_uint)
-            .wrapping_mul(*count.offset(s as isize)) as size_t
+        let mut norm = ((256 as core::ffi::c_uint).wrapping_mul(*count.offset(s as isize))
+            as size_t
             / total) as core::ffi::c_uint;
         if *count.offset(s as isize) != 0 && norm == 0 {
             norm = 1;
@@ -320,7 +320,7 @@ pub unsafe extern "C" fn ZSTD_fseBitCost(
     max: core::ffi::c_uint,
 ) -> size_t {
     let kAccuracyLog = 8;
-    let mut cost = 0 as core::ffi::c_int as size_t;
+    let mut cost = 0 as size_t;
     let mut s: core::ffi::c_uint = 0;
     let mut cstate = FSE_CState_t {
         value: 0,
@@ -354,8 +354,8 @@ pub unsafe extern "C" fn ZSTD_crossEntropyCost(
     mut count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
 ) -> size_t {
-    let shift = (8 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(accuracyLog);
-    let mut cost = 0 as core::ffi::c_int as size_t;
+    let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
+    let mut cost = 0 as size_t;
     let mut s: core::ffi::c_uint = 0;
     s = 0;
     while s <= max {
@@ -398,8 +398,8 @@ pub unsafe extern "C" fn ZSTD_selectEncodingType(
     if (strategy as core::ffi::c_uint) < ZSTD_lazy as core::ffi::c_int as core::ffi::c_uint {
         if isDefaultAllowed as u64 != 0 {
             let staticFse_nbSeq_max = 1000;
-            let mult = (10 as core::ffi::c_int as core::ffi::c_uint)
-                .wrapping_sub(strategy as core::ffi::c_uint) as size_t;
+            let mult =
+                (10 as core::ffi::c_uint).wrapping_sub(strategy as core::ffi::c_uint) as size_t;
             let baseLog = 3;
             let dynamicFse_nbSeq_min = (((1) << defaultNormLog) * mult) >> baseLog;
             if *repeatMode as core::ffi::c_uint

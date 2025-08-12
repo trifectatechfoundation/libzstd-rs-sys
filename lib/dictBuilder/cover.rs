@@ -149,7 +149,7 @@ unsafe extern "C" fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint
 }
 #[inline]
 unsafe extern "C" fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_int as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
+    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
@@ -182,7 +182,7 @@ unsafe extern "C" fn COVER_map_init(mut map: *mut COVER_map_t, mut size: u32) ->
 }
 static COVER_prime4bytes: u32 = 2654435761;
 unsafe extern "C" fn COVER_map_hash(mut map: *mut COVER_map_t, mut key: u32) -> u32 {
-    (key * COVER_prime4bytes) >> (32 as core::ffi::c_int as u32).wrapping_sub((*map).sizeLog)
+    (key * COVER_prime4bytes) >> 32u32.wrapping_sub((*map).sizeLog)
 }
 unsafe extern "C" fn COVER_map_index(mut map: *mut COVER_map_t, mut key: u32) -> u32 {
     let hash = COVER_map_hash(map, key);
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn COVER_sum(
     mut samplesSizes: *const size_t,
     mut nbSamples: core::ffi::c_uint,
 ) -> size_t {
-    let mut sum = 0 as core::ffi::c_int as size_t;
+    let mut sum = 0 as size_t;
     let mut i: core::ffi::c_uint = 0;
     i = 0;
     while i < nbSamples {
@@ -277,12 +277,10 @@ unsafe extern "C" fn COVER_cmp8(
     mut lp: *const core::ffi::c_void,
     mut rp: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
-    let mask = if (*ctx).d == 8 as core::ffi::c_int as core::ffi::c_uint {
+    let mask = if (*ctx).d == 8 {
         -(1 as core::ffi::c_int) as u64
     } else {
-        ((1 as core::ffi::c_int as u64)
-            << (8 as core::ffi::c_int as core::ffi::c_uint).wrapping_mul((*ctx).d))
-        .wrapping_sub(1 as core::ffi::c_int as u64)
+        (1u64 << (8 as core::ffi::c_uint).wrapping_mul((*ctx).d)).wrapping_sub(1)
     };
     let lhs = MEM_readLE64(
         ((*ctx).samples).offset(*(lp as *const u32) as isize) as *const core::ffi::c_void
@@ -415,7 +413,7 @@ unsafe extern "C" fn COVER_group(
     let mut grpPtr = group as *const u32;
     let mut grpEnd = groupEnd as *const u32;
     let dmerId = grpPtr.offset_from((*ctx).suffix) as core::ffi::c_long as u32;
-    let mut freq = 0 as core::ffi::c_int as u32;
+    let mut freq = 0u32;
     let mut curOffsetPtr: *const size_t = (*ctx).offsets;
     let mut offsetsEnd: *const size_t = ((*ctx).offsets).offset((*ctx).nbSamples as isize);
     let mut curSampleEnd = *((*ctx).offsets).offset(0);
@@ -520,9 +518,7 @@ unsafe extern "C" fn COVER_checkParameters(
     if parameters.d > parameters.k {
         return 0;
     }
-    if parameters.splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
-        || parameters.splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
-    {
+    if parameters.splitPoint <= 0.0 || parameters.splitPoint > 1.0 {
         return 0;
     }
     1
@@ -590,8 +586,7 @@ unsafe extern "C" fn COVER_ctx_init(
             >= (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
                 -(1 as core::ffi::c_int) as core::ffi::c_uint
             } else {
-                (1 as core::ffi::c_int as core::ffi::c_uint)
-                    .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
+                (1 as core::ffi::c_int as core::ffi::c_uint).wrapping_mul((1) << 30)
             }) as size_t
     {
         if displayLevel >= 1 {
@@ -603,9 +598,8 @@ unsafe extern "C" fn COVER_ctx_init(
                 (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
-                    (1 as core::ffi::c_int as core::ffi::c_uint)
-                        .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
-                }) >> 20 as core::ffi::c_int,
+                    (1 as core::ffi::c_uint).wrapping_mul((1) << 30)
+                }) >> 20,
             );
             fflush(stderr);
         }
@@ -765,7 +759,7 @@ pub unsafe extern "C" fn COVER_warnOnSmallCorpus(
     mut displayLevel: core::ffi::c_int,
 ) {
     let ratio = nbDmers as core::ffi::c_double / maxDictSize as core::ffi::c_double;
-    if ratio >= 10 as core::ffi::c_int as core::ffi::c_double {
+    if ratio >= 10.0 {
         return;
     }
     if displayLevel >= 1 {
@@ -834,7 +828,7 @@ unsafe extern "C" fn COVER_buildDictionary(
     } else {
         epochs.num >> 3
     }) as size_t;
-    let mut zeroScoreRun = 0 as core::ffi::c_int as size_t;
+    let mut zeroScoreRun = 0 as size_t;
     let mut epoch: size_t = 0;
     let mut lastUpdateTime = 0;
     let displayLevel = (*ctx).displayLevel;
@@ -1480,19 +1474,15 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     } else {
         1
     };
-    let kIterations = (1 as core::ffi::c_int as core::ffi::c_uint)
-        .wrapping_add(
-            kMaxD
-                .wrapping_sub(kMinD)
-                .wrapping_div(2 as core::ffi::c_int as core::ffi::c_uint),
-        )
+    let kIterations = (1 as core::ffi::c_uint)
+        .wrapping_add(kMaxD.wrapping_sub(kMinD).wrapping_div(2))
         .wrapping_mul(
-            (1 as core::ffi::c_int as core::ffi::c_uint)
+            (1 as core::ffi::c_uint)
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
-    let shrinkDict = 0 as core::ffi::c_int as core::ffi::c_uint;
+    let shrinkDict = 0 as core::ffi::c_uint;
     let mut displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
-    let mut iteration = 1 as core::ffi::c_int as core::ffi::c_uint;
+    let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_s {
@@ -1520,9 +1510,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut pool = NULL as *mut POOL_ctx;
     let mut warned = 0;
     let mut lastUpdateTime = 0;
-    if splitPoint <= 0 as core::ffi::c_int as core::ffi::c_double
-        || splitPoint > 1 as core::ffi::c_int as core::ffi::c_double
-    {
+    if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
             fprintf(
                 stderr,
