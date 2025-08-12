@@ -3846,7 +3846,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     } else {
         Offset::Regular
     };
-    let mut usePrefetchDecoder = dctx.ddictIsCold;
+    let mut use_prefetch_decoder = dctx.ddictIsCold != 0;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip.as_ptr().cast(), ip.len() as _);
     if ERR_isError(seqHSize) != 0 {
@@ -3865,19 +3865,19 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     if offset == Offset::Long
-        || usePrefetchDecoder == 0 && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
+        || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
     {
         let info = ZSTD_getOffsetInfo(dctx.OFTptr, nbSeq);
         if offset == Offset::Long && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
             offset = Offset::Regular;
         }
-        if usePrefetchDecoder == 0 {
+        if !use_prefetch_decoder {
             let minShare = (if MEM_64bits() != 0 { 7 } else { 20 }) as u32;
-            usePrefetchDecoder = (info.longOffsetShare >= minShare) as core::ffi::c_int;
+            use_prefetch_decoder = info.longOffsetShare >= minShare;
         }
     }
     dctx.ddictIsCold = 0;
-    if usePrefetchDecoder != 0 {
+    if use_prefetch_decoder {
         return ZSTD_decompressSequencesLong(dctx, dst, dstCapacity, ip, nbSeq, offset);
     }
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
