@@ -73,9 +73,12 @@ impl TryFrom<u32> for StreamingOperation {
     }
 }
 
-pub type ZSTD_longOffset_e = core::ffi::c_uint;
-pub const ZSTD_lo_isLongOffset: ZSTD_longOffset_e = 1;
-pub const ZSTD_lo_isRegularOffset: ZSTD_longOffset_e = 0;
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum Offset {
+    Regular = 0,
+    Long = 1,
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seqState_t {
@@ -2854,7 +2857,7 @@ const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
 #[inline(always)]
 unsafe fn ZSTD_decodeSequence(
     mut seqState: &mut seqState_t,
-    longOffsets: ZSTD_longOffset_e,
+    longOffsets: Offset,
     is_last_sequence: bool,
 ) -> seq_t {
     let mut seq = seq_t {
@@ -2891,13 +2894,13 @@ unsafe fn ZSTD_decodeSequence(
 
     let mut offset: size_t = 0;
     if ofBits > 1 {
-        const { assert!(ZSTD_lo_isLongOffset == 1) };
+        const { assert!(Offset::Long as usize == 1) };
         const { assert!(LONG_OFFSETS_MAX_EXTRA_BITS_32 == 5) };
         const { assert!(STREAM_ACCUMULATOR_MIN_32 > LONG_OFFSETS_MAX_EXTRA_BITS_32) };
         const { assert!(STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32 >= MaxMLBits as i32) };
 
         if MEM_32bits() != 0
-            && longOffsets as core::ffi::c_uint != 0
+            && longOffsets != Offset::Regular
             && ofBits as core::ffi::c_int >= STREAM_ACCUMULATOR_MIN_32
         {
             // Always read extra bits, this keeps the logic simple,
@@ -3016,7 +3019,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     maxDstSize: size_t,
     seq: &[u8],
     mut nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let oend =
@@ -3070,7 +3073,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         };
         asm!(".p2align 6", options(preserves_flags, att_syntax));
         while nbSeq != 0 {
-            sequence = ZSTD_decodeSequence(&mut seqState, isLongOffset, nbSeq == 1);
+            sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
             if litPtr.offset(sequence.litLength as isize) > dctx.litBufferEnd {
                 break;
             }
@@ -3130,7 +3133,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             asm!("nop", options(preserves_flags, att_syntax));
             asm!(".p2align 3", options(preserves_flags, att_syntax));
             while nbSeq != 0 {
-                let sequence_0 = ZSTD_decodeSequence(&mut seqState, isLongOffset, nbSeq == 1);
+                let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
                 let oneSeqSize_1 = ZSTD_execSequence(
                     op,
                     oend,
@@ -3202,7 +3205,7 @@ unsafe fn ZSTD_decompressSequences_body(
     maxDstSize: size_t,
     seq: &[u8],
     mut nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let oend = if dctx.litBufferLocation == LitLocation::ZSTD_not_in_dst {
@@ -3262,7 +3265,7 @@ unsafe fn ZSTD_decompressSequences_body(
             asm!(".p2align 3", options(preserves_flags, att_syntax));
         }
         while nbSeq != 0 {
-            let sequence = ZSTD_decodeSequence(&mut seqState, isLongOffset, nbSeq == 1);
+            let sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
             let oneSeqSize = ZSTD_execSequence(
                 op,
                 oend,
@@ -3309,9 +3312,9 @@ unsafe fn ZSTD_decompressSequences_default(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
@@ -3320,16 +3323,9 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_bodySplitLitBuffer(
-        dctx,
-        dst,
-        maxDstSize,
-        seqStart,
-        nbSeq,
-        isLongOffset,
-    )
+    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 #[inline(always)]
@@ -3363,7 +3359,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     maxDstSize: size_t,
     seq: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let oend = if dctx.litBufferLocation == LitLocation::ZSTD_in_dst {
@@ -3425,14 +3421,13 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
         seqNb = 0;
         while seqNb < seqAdvance {
-            let sequence = ZSTD_decodeSequence(&mut seqState, isLongOffset, seqNb == nbSeq - 1);
+            let sequence = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence, prefixStart, dictEnd);
             *sequences.as_mut_ptr().offset(seqNb as isize) = sequence;
             seqNb += 1;
         }
         while seqNb < nbSeq {
-            let mut sequence_0 =
-                ZSTD_decodeSequence(&mut seqState, isLongOffset, seqNb == nbSeq - 1);
+            let mut sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             if dctx.litBufferLocation == LitLocation::ZSTD_split
                 && litPtr.offset(
                     (*sequences
@@ -3646,9 +3641,9 @@ unsafe fn ZSTD_decompressSequencesLong_default(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequencesLong_body(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+    ZSTD_decompressSequencesLong_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequences_bmi2(
@@ -3657,9 +3652,9 @@ unsafe fn ZSTD_decompressSequences_bmi2(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
@@ -3668,16 +3663,9 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_bodySplitLitBuffer(
-        dctx,
-        dst,
-        maxDstSize,
-        seqStart,
-        nbSeq,
-        isLongOffset,
-    )
+    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequencesLong_bmi2(
@@ -3686,9 +3674,9 @@ unsafe fn ZSTD_decompressSequencesLong_bmi2(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequencesLong_body(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+    ZSTD_decompressSequencesLong_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequences(
@@ -3697,12 +3685,12 @@ unsafe fn ZSTD_decompressSequences(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     if ZSTD_DCtx_get_bmi2(dctx) != 0 {
-        ZSTD_decompressSequences_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+        ZSTD_decompressSequences_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
-        ZSTD_decompressSequences_default(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+        ZSTD_decompressSequences_default(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     }
 }
 
@@ -3712,25 +3700,13 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     if ZSTD_DCtx_get_bmi2(dctx) != 0 {
-        ZSTD_decompressSequencesSplitLitBuffer_bmi2(
-            dctx,
-            dst,
-            maxDstSize,
-            seqStart,
-            nbSeq,
-            isLongOffset,
-        )
+        ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequencesSplitLitBuffer_default(
-            dctx,
-            dst,
-            maxDstSize,
-            seqStart,
-            nbSeq,
-            isLongOffset,
+            dctx, dst, maxDstSize, seqStart, nbSeq, offset,
         )
     }
 }
@@ -3741,12 +3717,12 @@ unsafe fn ZSTD_decompressSequencesLong(
     maxDstSize: size_t,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
-    isLongOffset: ZSTD_longOffset_e,
+    offset: Offset,
 ) -> size_t {
     if ZSTD_DCtx_get_bmi2(dctx) != 0 {
-        ZSTD_decompressSequencesLong_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+        ZSTD_decompressSequencesLong_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
-        ZSTD_decompressSequencesLong_default(dctx, dst, maxDstSize, seqStart, nbSeq, isLongOffset)
+        ZSTD_decompressSequencesLong_default(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     }
 }
 
@@ -3865,8 +3841,11 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         ZSTD_maybeNullPtrAdd(dst, blockSizeMax as ptrdiff_t),
         dctx.virtualStart as *const u8 as *const core::ffi::c_void,
     );
-    let mut isLongOffset = (MEM_32bits() != 0 && totalHistorySize > ZSTD_maxShortOffset())
-        as core::ffi::c_int as ZSTD_longOffset_e;
+    let mut offset = if MEM_32bits() != 0 && totalHistorySize > ZSTD_maxShortOffset() {
+        Offset::Long
+    } else {
+        Offset::Regular
+    };
     let mut usePrefetchDecoder = dctx.ddictIsCold;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip.as_ptr().cast(), ip.len() as _);
@@ -3885,12 +3864,12 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
-    if isLongOffset as core::ffi::c_uint != 0
+    if offset == Offset::Long
         || usePrefetchDecoder == 0 && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
     {
         let info = ZSTD_getOffsetInfo(dctx.OFTptr, nbSeq);
-        if isLongOffset != 0 && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
-            isLongOffset = ZSTD_lo_isRegularOffset;
+        if offset == Offset::Long && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
+            offset = Offset::Regular;
         }
         if usePrefetchDecoder == 0 {
             let minShare = (if MEM_64bits() != 0 { 7 } else { 20 }) as u32;
@@ -3899,12 +3878,12 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
     dctx.ddictIsCold = 0;
     if usePrefetchDecoder != 0 {
-        return ZSTD_decompressSequencesLong(dctx, dst, dstCapacity, ip, nbSeq, isLongOffset);
+        return ZSTD_decompressSequencesLong(dctx, dst, dstCapacity, ip, nbSeq, offset);
     }
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, dstCapacity, ip, nbSeq, isLongOffset)
+        ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, dstCapacity, ip, nbSeq, offset)
     } else {
-        ZSTD_decompressSequences(dctx, dst, dstCapacity, ip, nbSeq, isLongOffset)
+        ZSTD_decompressSequences(dctx, dst, dstCapacity, ip, nbSeq, offset)
     }
 }
 
