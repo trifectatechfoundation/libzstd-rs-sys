@@ -811,7 +811,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     dst.capacity() as size_t
 }
 
-unsafe fn HUF_decompress1X1_usingDTable_internal_bmi2(
+fn HUF_decompress1X1_usingDTable_internal_bmi2(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -819,7 +819,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_bmi2(
     HUF_decompress1X1_usingDTable_internal_body(dst, src, DTable)
 }
 
-unsafe fn HUF_decompress1X1_usingDTable_internal_default(
+fn HUF_decompress1X1_usingDTable_internal_default(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -827,7 +827,7 @@ unsafe fn HUF_decompress1X1_usingDTable_internal_default(
     HUF_decompress1X1_usingDTable_internal_body(dst, src, DTable)
 }
 
-unsafe fn HUF_decompress1X1_usingDTable_internal(
+fn HUF_decompress1X1_usingDTable_internal(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1179,7 +1179,7 @@ unsafe fn HUF_decodeSymbolX2(
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeLastSymbolX2(
+fn HUF_decodeLastSymbolX2(
     w: &mut Writer<'_>,
     DStream: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
