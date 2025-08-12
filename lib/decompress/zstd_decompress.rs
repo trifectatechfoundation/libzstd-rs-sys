@@ -2255,7 +2255,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &OF_bits,
         offcodeLog,
         &mut (*entropy).workspace,
-        0,
+        false,
     );
     dictPtr = dictPtr.offset(offcodeHeaderSize as isize);
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
@@ -2284,7 +2284,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &ML_bits,
         matchlengthLog,
         &mut (*entropy).workspace,
-        0,
+        false,
     );
     dictPtr = dictPtr.offset(matchlengthHeaderSize as isize);
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
@@ -2313,7 +2313,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &LL_bits,
         litlengthLog,
         &mut (*entropy).workspace,
-        0,
+        false,
     );
     dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
     if dictPtr.offset(12) > dictEnd {
