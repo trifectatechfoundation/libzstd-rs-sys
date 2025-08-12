@@ -1163,25 +1163,6 @@ pub fn HUF_readDTableX2_wksp(
 
 #[inline(always)]
 unsafe fn HUF_decodeSymbolX2(
-    op: *mut u8,
-    DStream: &mut BIT_DStream_t,
-    dt: &[HUF_DEltX2; 4096],
-    dtLog: u32,
-) -> u32 {
-    let HUF_DEltX2 {
-        sequence,
-        nbBits,
-        length,
-    } = dt[DStream.look_bits_fast(dtLog)];
-
-    op.cast::<u16>().write_unaligned(sequence);
-    DStream.skip_bits(nbBits as u32);
-
-    length as u32
-}
-
-#[inline(always)]
-unsafe fn HUF_decodeSymbolX2_new(
     w: &mut Writer<'_>,
     DStream: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
@@ -1225,14 +1206,14 @@ unsafe fn HUF_decodeLastSymbolX2(
 
 macro_rules! HUF_DECODE_SYMBOLX2_0 {
     ($($args:expr),*) => {
-        HUF_decodeSymbolX2_new($($args),*)
+        HUF_decodeSymbolX2($($args),*)
     }
 }
 
 macro_rules! HUF_DECODE_SYMBOLX2_1 {
     ($($args:expr),*) => {
         if cfg!(target_pointer_width = "64") || HUF_TABLELOG_MAX <= 12 {
-            HUF_decodeSymbolX2_new($($args),*)
+            HUF_decodeSymbolX2($($args),*)
         }
     }
 }
@@ -1240,7 +1221,7 @@ macro_rules! HUF_DECODE_SYMBOLX2_1 {
 macro_rules! HUF_DECODE_SYMBOLX2_2 {
     ($($args:expr),*) => {
         if cfg!(target_pointer_width = "64") {
-            HUF_decodeSymbolX2_new($($args),*)
+            HUF_decodeSymbolX2($($args),*)
         }
     }
 }
