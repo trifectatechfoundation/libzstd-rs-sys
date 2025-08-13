@@ -367,7 +367,7 @@ pub unsafe fn HUF_readCTable(
     mut srcSize: size_t,
     mut hasZeroWeights: *mut core::ffi::c_uint,
 ) -> size_t {
-    let src = core::slice::from_raw_parts(src.cast(), srcSize as usize);
+    let src = core::slice::from_raw_parts(src.cast(), srcSize);
 
     let mut huffWeight: [u8; 256] = [0; 256];
     let mut rankVal: [u32; 13] = [0; 13];

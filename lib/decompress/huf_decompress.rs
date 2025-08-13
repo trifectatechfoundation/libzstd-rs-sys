@@ -195,9 +195,9 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         let istart = src.as_ptr();
         let mut iend = [core::ptr::null(); 4];
         iend[0] = istart.add(6); /* jumpTable */
-        iend[1] = iend[0].add(length1 as usize);
-        iend[2] = iend[1].add(length2 as usize);
-        iend[3] = iend[2].add(length3 as usize);
+        iend[1] = iend[0].add(length1);
+        iend[2] = iend[1].add(length2);
+        iend[3] = iend[2].add(length3);
 
         // HUF_initFastDStream() requires this, and this small of an input won't benefit from the ASM loop anyways.
         if length1 < 8 || length2 < 8 || length3 < 8 || length4 < 8 {
@@ -209,7 +209,7 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         ip[0] = iend[1].sub(size_of::<u64>());
         ip[1] = iend[2].sub(size_of::<u64>());
         ip[2] = iend[3].sub(size_of::<u64>());
-        ip[3] = src.as_ptr().add(src.len() as usize - size_of::<u64>());
+        ip[3] = src.as_ptr().add(src.len() - size_of::<u64>());
 
         /* op[] contains the output pointers. */
         let mut op = [core::ptr::null_mut(); 4];
@@ -285,8 +285,7 @@ fn HUF_DEltX1_set4(mut symbol: u8, mut nbBits: u8) -> u64 {
     } else {
         D4 = (symbol as core::ffi::c_int + ((nbBits as core::ffi::c_int) << 8)) as u64;
     }
-    D4 = (D4 as core::ffi::c_ulonglong).wrapping_mul(0x1000100010001 as core::ffi::c_ulonglong)
-        as u64 as u64;
+    D4 = D4.wrapping_mul(0x1000100010001u64);
     D4
 }
 
@@ -318,11 +317,11 @@ fn HUF_rescaleStats(
         // Weights [1, scale] are empty.
         let mut s = targetTableLog as usize;
         while s > scale {
-            rankVal[s as usize] = rankVal[s - scale as usize];
+            rankVal[s] = rankVal[s - scale];
             s -= 1;
         }
 
-        rankVal[1..=scale as usize].fill(0);
+        rankVal[1..=scale].fill(0);
     }
 
     targetTableLog
@@ -425,7 +424,7 @@ pub fn HUF_readDTableX1_wksp(
     for w_1 in 1..tableLog.wrapping_add(1) {
         let symbolCount = wksp.rankVal[w_1 as usize] as usize;
         let length = (1) << w_1 >> 1;
-        let mut dt = dt[rankStart..][..length * symbolCount as usize].chunks_exact_mut(length);
+        let mut dt = dt[rankStart..][..length * symbolCount].chunks_exact_mut(length);
         let nbBits = tableLog.wrapping_add(1).wrapping_sub(w_1) as u8;
 
         // FIXME: zstd unrolls this loop for low values of `length` (a power of 2).
@@ -942,7 +941,7 @@ fn HUF_fillDTableX2ForWeight(
     level: core::ffi::c_int,
 ) {
     let length = (1) << (tableLog.wrapping_sub(nbBits) & 0x1f);
-    let chunks = DTableRank[..sorted_symbols.len() * length as usize].chunks_exact_mut(length);
+    let chunks = DTableRank[..sorted_symbols.len() * length].chunks_exact_mut(length);
 
     for (sorted_symbol, chunk) in sorted_symbols.iter().zip(chunks) {
         let DElt = HUF_buildDEltX2(sorted_symbol.symbol, nbBits, baseSeq, level);
@@ -1011,11 +1010,11 @@ fn HUF_fillDTableX2(
 
     let wEnd = maxWeight as core::ffi::c_int + 1;
     for w in 1..wEnd as usize {
-        let range = rankStart[w as usize] as usize..rankStart[(w + 1) as usize] as usize;
+        let range = rankStart[w] as usize..rankStart[w + 1] as usize;
 
         let nbBits = nbBitsBaseline.wrapping_sub(w as u32);
         if targetLog.wrapping_sub(nbBits) >= minBits {
-            let mut start = rankVal[w as usize] as core::ffi::c_int;
+            let mut start = rankVal[w] as core::ffi::c_int;
             let length = (1) << (targetLog.wrapping_sub(nbBits) & 0x1f as core::ffi::c_int as u32);
             let minWeight = Ord::max(nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int, 1);
 
@@ -1036,7 +1035,7 @@ fn HUF_fillDTableX2(
             }
         } else {
             HUF_fillDTableX2ForWeight(
-                &mut DTable[rankVal[w as usize] as usize..],
+                &mut DTable[rankVal[w] as usize..],
                 &sortedList[range],
                 nbBits,
                 targetLog,
@@ -1195,11 +1194,11 @@ fn HUF_decodeLastSymbolX2(
 
     if length == 1 {
         DStream.skip_bits(u32::from(nbBits));
-    } else if (DStream.bitsConsumed as usize) < size_of::<BitContainerType>() * 8 {
+    } else if (DStream.bitsConsumed as usize) < BitContainerType::BITS as usize {
         DStream.skip_bits(u32::from(nbBits));
         DStream.bitsConsumed = Ord::min(
             DStream.bitsConsumed,
-            (size_of::<BitContainerType>() * 8) as u32,
+            BitContainerType::BITS,
         );
     }
 }
@@ -1511,7 +1510,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
          * at the expense of computing the remaining # of iterations
          * more frequently.
          */
-        olimit = op[3].add(iters as usize * 5);
+        olimit = op[3].add(iters * 5);
 
         /* Exit the fast decoding loop once we reach the end. */
         if op[3] == olimit {
@@ -1582,7 +1581,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
              */
             HUF_4X_FOR_EACH_STREAM!(HUF_4X2_RELOAD_STREAM);
 
-            if !(op[3] < olimit) {
+            if op[3] >= olimit {
                 break;
             }
         }
@@ -1627,7 +1626,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
 
     for (i, op) in args.op.iter().copied().enumerate() {
         if segmentSize <= oend.offset_from(segmentEnd) {
-            segmentEnd = segmentEnd.offset(segmentSize as isize);
+            segmentEnd = segmentEnd.offset(segmentSize);
         } else {
             segmentEnd = oend;
         }
@@ -1985,7 +1984,7 @@ fn HUF_selectDecoder(dst_size: usize, src_size: usize) -> Decoder {
     let Q = if src_size >= dst_size {
         15
     } else {
-        (src_size * 16 / dst_size) as usize
+        src_size * 16 / dst_size
     };
 
     let [time0, time1] = algoTime[Q];

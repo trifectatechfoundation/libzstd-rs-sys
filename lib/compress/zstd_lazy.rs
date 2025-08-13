@@ -304,7 +304,7 @@ unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
 unsafe fn ZSTD_hash7PtrS(mut p: *const core::ffi::c_void, mut h: u32, mut s: u64) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, s)
 }
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
@@ -3121,13 +3121,13 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                     ) > prefixLowest)
                                         as core::ffi::c_int
                                     != 0
-                                    && *start.offset(-(1) as isize) as core::ffi::c_int
+                                    && *start.offset(-1_isize) as core::ffi::c_int
                                         == *start
                                             .offset(
                                                 -(offBase.wrapping_sub(ZSTD_REP_NUM as size_t)
                                                     as isize),
                                             )
-                                            .offset(-(1) as isize)
+                                            .offset(-1_isize)
                                             as core::ffi::c_int
                                 {
                                     start = start.offset(-1);
@@ -3153,8 +3153,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                 };
                                 while start > anchor
                                     && match_0 > mStart
-                                    && *start.offset(-(1) as isize) as core::ffi::c_int
-                                        == *match_0.offset(-(1) as isize) as core::ffi::c_int
+                                    && *start.offset(-1_isize) as core::ffi::c_int
+                                        == *match_0.offset(-1_isize) as core::ffi::c_int
                                 {
                                     start = start.offset(-1);
                                     match_0 = match_0.offset(-1);
@@ -3914,8 +3914,8 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                     };
                     while start > anchor
                         && match_0 > mStart
-                        && *start.offset(-(1) as isize) as core::ffi::c_int
-                            == *match_0.offset(-(1) as isize) as core::ffi::c_int
+                        && *start.offset(-1_isize) as core::ffi::c_int
+                            == *match_0.offset(-1_isize) as core::ffi::c_int
                     {
                         start = start.offset(-1);
                         match_0 = match_0.offset(-1);

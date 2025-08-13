@@ -293,7 +293,7 @@ unsafe fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
@@ -683,8 +683,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                             while (ip > anchor) as core::ffi::c_int
                                 & (matchl0 > prefixLowest) as core::ffi::c_int
                                 != 0
-                                && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                    == *matchl0.offset(-(1) as isize) as core::ffi::c_int
+                                && *ip.offset(-1_isize) as core::ffi::c_int
+                                    == *matchl0.offset(-1_isize) as core::ffi::c_int
                             {
                                 ip = ip.offset(-1);
                                 matchl0 = matchl0.offset(-1);
@@ -747,8 +747,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                             while (ip > anchor) as core::ffi::c_int
                                 & (matchs0 > prefixLowest) as core::ffi::c_int
                                 != 0
-                                && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                    == *matchs0.offset(-(1) as isize) as core::ffi::c_int
+                                && *ip.offset(-1_isize) as core::ffi::c_int
+                                    == *matchs0.offset(-1_isize) as core::ffi::c_int
                             {
                                 ip = ip.offset(-1);
                                 matchs0 = matchs0.offset(-1);
@@ -987,8 +987,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 while (ip > anchor) as core::ffi::c_int
                     & (matchLong > prefixLowest) as core::ffi::c_int
                     != 0
-                    && *ip.offset(-(1) as isize) as core::ffi::c_int
-                        == *matchLong.offset(-(1) as isize) as core::ffi::c_int
+                    && *ip.offset(-1_isize) as core::ffi::c_int
+                        == *matchLong.offset(-1_isize) as core::ffi::c_int
                 {
                     ip = ip.offset(-1);
                     matchLong = matchLong.offset(-1);
@@ -1016,8 +1016,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                         while (ip > anchor) as core::ffi::c_int
                             & (dictMatchL > dictStart) as core::ffi::c_int
                             != 0
-                            && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                == *dictMatchL.offset(-(1) as isize) as core::ffi::c_int
+                            && *ip.offset(-1_isize) as core::ffi::c_int
+                                == *dictMatchL.offset(-1_isize) as core::ffi::c_int
                         {
                             ip = ip.offset(-1);
                             dictMatchL = dictMatchL.offset(-1);
@@ -1096,8 +1096,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                     while (ip > anchor) as core::ffi::c_int
                                         & (matchL3 > prefixLowest) as core::ffi::c_int
                                         != 0
-                                        && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                            == *matchL3.offset(-(1) as isize) as core::ffi::c_int
+                                        && *ip.offset(-1_isize) as core::ffi::c_int
+                                            == *matchL3.offset(-1_isize) as core::ffi::c_int
                                     {
                                         ip = ip.offset(-1);
                                         matchL3 = matchL3.offset(-1);
@@ -1131,8 +1131,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                             while (ip > anchor) as core::ffi::c_int
                                                 & (dictMatchL3 > dictStart) as core::ffi::c_int
                                                 != 0
-                                                && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                                    == *dictMatchL3.offset(-(1) as isize)
+                                                && *ip.offset(-1_isize) as core::ffi::c_int
+                                                    == *dictMatchL3.offset(-1_isize)
                                                         as core::ffi::c_int
                                             {
                                                 ip = ip.offset(-1);
@@ -1162,8 +1162,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                                 while (ip > anchor) as core::ffi::c_int
                                                     & (match_0 > dictStart) as core::ffi::c_int
                                                     != 0
-                                                    && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                                        == *match_0.offset(-(1) as isize)
+                                                    && *ip.offset(-1_isize) as core::ffi::c_int
+                                                        == *match_0.offset(-1_isize)
                                                             as core::ffi::c_int
                                                 {
                                                     ip = ip.offset(-1);
@@ -1183,8 +1183,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                                 while (ip > anchor) as core::ffi::c_int
                                                     & (match_0 > prefixLowest) as core::ffi::c_int
                                                     != 0
-                                                    && *ip.offset(-(1) as isize) as core::ffi::c_int
-                                                        == *match_0.offset(-(1) as isize)
+                                                    && *ip.offset(-1_isize) as core::ffi::c_int
+                                                        == *match_0.offset(-1_isize)
                                                             as core::ffi::c_int
                                                 {
                                                     ip = ip.offset(-1);
@@ -1501,8 +1501,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             offset = curr.wrapping_sub(matchLongIndex);
             while (ip > anchor) as core::ffi::c_int & (matchLong > lowMatchPtr) as core::ffi::c_int
                 != 0
-                && *ip.offset(-(1) as isize) as core::ffi::c_int
-                    == *matchLong.offset(-(1) as isize) as core::ffi::c_int
+                && *ip.offset(-1_isize) as core::ffi::c_int
+                    == *matchLong.offset(-1_isize) as core::ffi::c_int
             {
                 ip = ip.offset(-1);
                 matchLong = matchLong.offset(-1);
@@ -1559,8 +1559,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                 while (ip > anchor) as core::ffi::c_int
                     & (match3 > lowMatchPtr_0) as core::ffi::c_int
                     != 0
-                    && *ip.offset(-(1) as isize) as core::ffi::c_int
-                        == *match3.offset(-(1) as isize) as core::ffi::c_int
+                    && *ip.offset(-1_isize) as core::ffi::c_int
+                        == *match3.offset(-1_isize) as core::ffi::c_int
                 {
                     ip = ip.offset(-1);
                     match3 = match3.offset(-1);
@@ -1589,8 +1589,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                 while (ip > anchor) as core::ffi::c_int
                     & (match_0 > lowMatchPtr_1) as core::ffi::c_int
                     != 0
-                    && *ip.offset(-(1) as isize) as core::ffi::c_int
-                        == *match_0.offset(-(1) as isize) as core::ffi::c_int
+                    && *ip.offset(-1_isize) as core::ffi::c_int
+                        == *match_0.offset(-1_isize) as core::ffi::c_int
                 {
                     ip = ip.offset(-1);
                     match_0 = match_0.offset(-1);

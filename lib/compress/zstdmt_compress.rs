@@ -517,7 +517,7 @@ static mut kNullRawSeqStore: RawSeqStore_t = {
     }
 };
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     let mut power = 1;
     while exponent != 0 {
@@ -1146,7 +1146,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
             pthread_mutex_unlock(&mut (*serialState).ldmWindowMutex);
         }
         if (*serialState).params.fParams.checksumFlag != 0 && src.size > 0 {
-            ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size as usize);
+            ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size);
         }
     }
     (*serialState).nextJobID = ((*serialState).nextJobID).wrapping_add(1);
@@ -1254,11 +1254,11 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut core::ffi::c
                             current_block = 16738040538446813684;
                         }
                     } else {
-                        let pledgedSrcSize = (if (*job).firstJob != 0 {
+                        let pledgedSrcSize = if (*job).firstJob != 0 {
                             (*job).fullFrameSize
                         } else {
                             (*job).src.size as core::ffi::c_ulonglong
-                        }) as u64;
+                        };
                         let forceWindowError = ZSTD_CCtxParams_setParameter(
                             &mut jobParams,
                             ZSTD_c_forceMaxWindow as ZSTD_cParameter,
@@ -1753,7 +1753,7 @@ pub unsafe extern "C" fn ZSTDMT_updateCParams_whileCompressing(
     (*mtctx).params.compressionLevel = compressionLevel;
     let mut cParams = ZSTD_getCParamsFromCCtxParams(
         cctxParams,
-        ZSTD_CONTENTSIZE_UNKNOWN as u64,
+        ZSTD_CONTENTSIZE_UNKNOWN,
         0,
         ZSTD_cpm_noAttachDict,
     );

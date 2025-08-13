@@ -4581,9 +4581,9 @@ unsafe fn main_0(
                                                             == 0 as core::ffi::c_uint
                                                         {
                                                             memLimit =
-                                                                (1 as u32) << g_defaultMaxWindowLog;
+                                                                1_u32 << g_defaultMaxWindowLog;
                                                         } else {
-                                                            memLimit = (1 as u32)
+                                                            memLimit = 1_u32
                                                                 << (compressionParams.windowLog
                                                                     & 31);
                                                         }

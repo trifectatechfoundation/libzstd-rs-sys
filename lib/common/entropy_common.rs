@@ -221,12 +221,12 @@ pub unsafe fn FSE_readNCount(
         normalizedCounter,
         maxSVPtr,
         tableLogPtr,
-        core::slice::from_raw_parts(headerBuffer.cast(), hbSize as usize),
+        core::slice::from_raw_parts(headerBuffer.cast(), hbSize),
     );
 
     match ret {
         Ok(v) => v,
-        Err(e) => return e.to_error_code(),
+        Err(e) => e.to_error_code(),
     }
 }
 
@@ -257,7 +257,7 @@ const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize)
     FSE_DTABLE_SIZE_U32(maxTableLog)
         + 1
         + FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog, maxSymbolValue).div_ceil(size_of::<u32>())
-        + (FSE_MAX_SYMBOL_VALUE + 1) / 2
+        + FSE_MAX_SYMBOL_VALUE.div_ceil(2)
         + 1
 }
 const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
@@ -332,7 +332,7 @@ fn HUF_readStats_body(
 
         oSize = FSE_decompress_wksp_bmi2(
             // At most (hwSize-1) values decoded, the last one is implied.
-            &mut huffWeight[..hwSize as usize - 1],
+            &mut huffWeight[..hwSize - 1],
             &ip[1..][..iSize as usize],
             6,
             // TODO this should probably be a (4-byte aligned) byte slice from the start.
@@ -517,7 +517,7 @@ pub fn HUF_readStats_wksp(
 
     match ret {
         Ok(v) => v,
-        Err(e) => return -(e as core::ffi::c_int) as size_t,
+        Err(e) => -(e as core::ffi::c_int) as size_t,
     }
 }
 

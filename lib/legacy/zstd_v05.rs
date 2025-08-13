@@ -3094,7 +3094,7 @@ unsafe fn ZSTDv05_execSequence(
     let oMatchEnd = op.add(sequenceLength);
     let oend_8 = oend.wrapping_sub(8);
     let litEnd = (*litPtr).add(sequence.litLength);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let seqLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from(op) as core::ffi::c_long as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
