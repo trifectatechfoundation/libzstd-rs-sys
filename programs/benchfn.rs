@@ -185,8 +185,8 @@ pub unsafe fn BMK_createTimedFnState(
     mut total_ms: core::ffi::c_uint,
     mut run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
-    let r = malloc(::core::mem::size_of::<BMK_timedFnState_t>() as core::ffi::c_ulong)
-        as *mut BMK_timedFnState_t;
+    let r =
+        malloc(::core::mem::size_of::<BMK_timedFnState_t>() as size_t) as *mut BMK_timedFnState_t;
     if r.is_null() {
         return NULL as *mut BMK_timedFnState_t;
     }
@@ -207,7 +207,7 @@ pub unsafe fn BMK_initStatic_timedFnState(
     if buffer.is_null() {
         return NULL as *mut BMK_timedFnState_t;
     }
-    if size < ::core::mem::size_of::<BMK_timedFnState_s>() as core::ffi::c_ulong {
+    if size < ::core::mem::size_of::<BMK_timedFnState_s>() as size_t {
         return NULL as *mut BMK_timedFnState_t;
     }
     if !(buffer as size_t).is_multiple_of(tfs_alignment) {

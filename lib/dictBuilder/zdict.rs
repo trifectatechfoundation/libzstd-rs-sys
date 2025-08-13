@@ -437,12 +437,12 @@ unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
 unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val) >> 3
+            ZSTD_countTrailingZeros64(val as u64) >> 3
         } else {
             ZSTD_countTrailingZeros32(val as u32) >> 3
         }
     } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val) >> 3
+        ZSTD_countLeadingZeros64(val as u64) >> 3
     } else {
         ZSTD_countLeadingZeros32(val as u32) >> 3
     }
@@ -536,9 +536,9 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     if dictSize <= 8 || MEM_readLE32(dictBuffer) != ZSTD_MAGIC_DICTIONARY {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    let mut bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>() as core::ffi::c_ulong)
+    let mut bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>() as size_t)
         as *mut ZSTD_compressedBlockState_t;
-    let mut wksp = malloc(HUF_WORKSPACE_SIZE as core::ffi::c_ulong) as *mut u32;
+    let mut wksp = malloc(HUF_WORKSPACE_SIZE as size_t) as *mut u32;
     if bs.is_null() || wksp.is_null() {
         headerSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     } else {
@@ -558,10 +558,10 @@ unsafe fn ZDICT_count(
         let diff = MEM_readST(pMatch) ^ MEM_readST(pIn);
         if diff == 0 {
             pIn = (pIn as *const core::ffi::c_char)
-                .offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize)
+                .offset(::core::mem::size_of::<size_t>() as isize)
                 as *const core::ffi::c_void;
             pMatch = (pMatch as *const core::ffi::c_char)
-                .offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize)
+                .offset(::core::mem::size_of::<size_t>() as isize)
                 as *const core::ffi::c_void;
         } else {
             pIn = (pIn as *const core::ffi::c_char).offset(ZSTD_NbCommonBytes(diff) as isize)
@@ -1054,21 +1054,19 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let suffix0 = malloc(
         bufferSize
             .wrapping_add(2)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong),
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t),
     ) as *mut core::ffi::c_uint;
     let suffix = suffix0.offset(1);
     let mut reverseSuffix =
-        malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong))
-            as *mut u32;
+        malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>() as size_t)) as *mut u32;
     let mut doneMarks = malloc(
         bufferSize
             .wrapping_add(16)
-            .wrapping_mul(::core::mem::size_of::<u8>() as core::ffi::c_ulong),
+            .wrapping_mul(::core::mem::size_of::<u8>() as size_t),
     ) as *mut u8;
-    let mut filePos = malloc(
-        (nbFiles as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
-    ) as *mut u32;
+    let mut filePos =
+        malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
+            as *mut u32;
     let mut result = 0;
     let mut displayClock = 0;
     let refreshRate = CLOCKS_PER_SEC as __clock_t * 3 / 10;
@@ -1486,7 +1484,7 @@ unsafe fn ZDICT_analyzeEntropy(
             ZSTD_defaultCMem,
         );
         esr.zc = ZSTD_createCCtx();
-        esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as core::ffi::c_ulong);
+        esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as size_t);
         if (esr.dict).is_null() || (esr.zc).is_null() || (esr.workPlace).is_null() {
             eSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
             if notificationLevel >= 1 {
@@ -1543,7 +1541,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 255,
                 huffLog,
                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 1216]>() as core::ffi::c_ulong,
+                ::core::mem::size_of::<[u32; 1216]>() as size_t,
             );
             if ERR_isError(maxNbBits) != 0 {
                 eSize = maxNbBits;
@@ -1571,7 +1569,7 @@ unsafe fn ZDICT_analyzeEntropy(
                         255,
                         huffLog,
                         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                        ::core::mem::size_of::<[u32; 1216]>() as core::ffi::c_ulong,
+                        ::core::mem::size_of::<[u32; 1216]>() as size_t,
                     );
                 }
                 huffLog = maxNbBits as u32;
@@ -1677,7 +1675,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                 255,
                                 huffLog,
                                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                                ::core::mem::size_of::<[u32; 1216]>() as core::ffi::c_ulong,
+                                ::core::mem::size_of::<[u32; 1216]>() as size_t,
                             );
                             if ERR_isError(hhSize) != 0 {
                                 eSize = hhSize;
@@ -2020,10 +2018,9 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         } else {
             (maxDictSize / 16) as u32
         };
-    let dictList = malloc(
-        (dictListSize as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<dictItem>() as core::ffi::c_ulong),
-    ) as *mut dictItem;
+    let dictList =
+        malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>() as size_t))
+            as *mut dictItem;
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {
@@ -2232,7 +2229,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
             (samplesBuffer as *const core::ffi::c_char)
                 .offset((*dictList.offset(u_0 as isize)).pos as isize)
                 as *const core::ffi::c_void,
-            l as core::ffi::c_ulong,
+            l as size_t,
         );
         u_0 = u_0.wrapping_add(1);
     }

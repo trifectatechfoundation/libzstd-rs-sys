@@ -204,7 +204,7 @@ pub unsafe fn RDG_genStdout(
     let stdBlockSize = (128 * ((1) << 10)) as size_t;
     let stdDictSize = (32 * ((1) << 10)) as size_t;
     let buff = malloc(stdDictSize.wrapping_add(stdBlockSize)) as *mut u8;
-    let mut total = 0;
+    let mut total = 0u64;
     let mut ldt: [u8; 8192] = [0; 8192];
     if buff.is_null() {
         perror(b"datagen\0" as *const u8 as *const core::ffi::c_char);
@@ -246,7 +246,7 @@ pub unsafe fn RDG_genStdout(
             ldt.as_mut_ptr(),
             &mut seed32,
         );
-        total = (total as core::ffi::c_ulong).wrapping_add(genBlockSize) as u64 as u64;
+        total = total.wrapping_add(genBlockSize as u64);
         let unused = fwrite(buff as *const core::ffi::c_void, 1, genBlockSize, stdout);
         memcpy(
             buff as *mut core::ffi::c_void,

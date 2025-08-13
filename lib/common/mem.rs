@@ -139,7 +139,7 @@ pub(crate) unsafe fn MEM_readLEST(mut memPtr: *const c_void) -> size_t {
 pub(crate) unsafe fn MEM_writeLEST(mut memPtr: *mut c_void, mut val: size_t) {
     match mem::size_of::<size_t>() {
         4 => MEM_writeLE32(memPtr, val as u32),
-        8 => MEM_writeLE64(memPtr, val),
+        8 => MEM_writeLE64(memPtr, val as u64),
         _ => unreachable!(),
     }
 }
