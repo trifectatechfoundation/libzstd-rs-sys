@@ -398,11 +398,11 @@ unsafe fn BITv06_initDStream(
         );
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    if srcSize >= ::core::mem::size_of::<size_t>() as core::ffi::c_ulong {
+    if srcSize >= ::core::mem::size_of::<size_t>() as size_t {
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
         (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
             .offset(srcSize as isize)
-            .offset(-(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize));
+            .offset(-(::core::mem::size_of::<size_t>() as isize));
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).offset(srcSize.wrapping_sub(1) as isize);
         if lastByte as core::ffi::c_int == 0 {
@@ -419,7 +419,7 @@ unsafe fn BITv06_initDStream(
             7 => {
                 (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
                     (*(srcBuffer as *const u8).offset(6) as size_t)
-                        << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+                        << (::core::mem::size_of::<size_t>() as size_t)
                             .wrapping_mul(8)
                             .wrapping_sub(16),
                 );
@@ -447,7 +447,7 @@ unsafe fn BITv06_initDStream(
         if current_block_20 == 11220331375136032509 {
             (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
                 (*(srcBuffer as *const u8).offset(5) as size_t)
-                    << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+                    << (::core::mem::size_of::<size_t>())
                         .wrapping_mul(8)
                         .wrapping_sub(24),
             );
@@ -456,7 +456,7 @@ unsafe fn BITv06_initDStream(
         if current_block_20 == 10901957826175510184 {
             (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
                 (*(srcBuffer as *const u8).offset(4) as size_t)
-                    << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+                    << (::core::mem::size_of::<size_t>())
                         .wrapping_mul(8)
                         .wrapping_sub(32),
             );
@@ -483,15 +483,14 @@ unsafe fn BITv06_initDStream(
         (*bitD).bitsConsumed =
             (8 as core::ffi::c_uint).wrapping_sub(BITv06_highbit32(lastByte_0 as u32));
         (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
-            (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(srcSize) as u32
-                * 8,
+            (::core::mem::size_of::<size_t>() as size_t).wrapping_sub(srcSize) as u32 * 8,
         );
     }
     srcSize
 }
 #[inline]
 unsafe fn BITv06_lookBits(mut bitD: *const BITv06_DStream_t, mut nbBits: u32) -> size_t {
-    let bitMask = (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+    let bitMask = (::core::mem::size_of::<size_t>() as size_t)
         .wrapping_mul(8)
         .wrapping_sub(1) as u32;
     (*bitD).bitContainer << ((*bitD).bitsConsumed & bitMask)
@@ -500,7 +499,7 @@ unsafe fn BITv06_lookBits(mut bitD: *const BITv06_DStream_t, mut nbBits: u32) ->
 }
 #[inline]
 unsafe fn BITv06_lookBitsFast(mut bitD: *const BITv06_DStream_t, mut nbBits: u32) -> size_t {
-    let bitMask = (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+    let bitMask = (::core::mem::size_of::<size_t>() as size_t)
         .wrapping_mul(8)
         .wrapping_sub(1) as u32;
     (*bitD).bitContainer << ((*bitD).bitsConsumed & bitMask)
@@ -524,22 +523,19 @@ unsafe fn BITv06_readBitsFast(mut bitD: *mut BITv06_DStream_t, mut nbBits: u32) 
 }
 #[inline]
 unsafe fn BITv06_reloadDStream(mut bitD: *mut BITv06_DStream_t) -> BITv06_DStream_status {
-    if (*bitD).bitsConsumed as core::ffi::c_ulong
-        > (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+    if (*bitD).bitsConsumed as size_t > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
     {
         return BITv06_DStream_overflow;
     }
-    if (*bitD).ptr
-        >= ((*bitD).start).offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize)
-    {
+    if (*bitD).ptr >= ((*bitD).start).offset(::core::mem::size_of::<size_t>() as isize) {
         (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3) as isize));
         (*bitD).bitsConsumed &= 7;
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
         return BITv06_DStream_unfinished;
     }
     if (*bitD).ptr == (*bitD).start {
-        if ((*bitD).bitsConsumed as core::ffi::c_ulong)
-            < (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+        if ((*bitD).bitsConsumed as size_t)
+            < (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
         {
             return BITv06_DStream_endOfBuffer;
         }
@@ -559,9 +555,9 @@ unsafe fn BITv06_reloadDStream(mut bitD: *mut BITv06_DStream_t) -> BITv06_DStrea
 #[inline]
 unsafe fn BITv06_endOfDStream(mut DStream: *const BITv06_DStream_t) -> core::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start
-        && (*DStream).bitsConsumed as core::ffi::c_ulong
-            == (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8))
-        as core::ffi::c_int as core::ffi::c_uint
+        && (*DStream).bitsConsumed as size_t
+            == (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)) as core::ffi::c_int
+        as core::ffi::c_uint
 }
 #[inline]
 unsafe fn FSEv06_initDState(
@@ -749,8 +745,7 @@ pub unsafe fn FSEv06_createDTable(mut tableLog: core::ffi::c_uint) -> *mut FSEv0
         tableLog = FSEv06_TABLELOG_ABSOLUTE_MAX as core::ffi::c_uint;
     }
     malloc(
-        ((1 + ((1) << tableLog)) as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
+        ((1 + ((1) << tableLog)) as size_t).wrapping_mul(::core::mem::size_of::<u32>() as size_t),
     ) as *mut FSEv06_DTable
 }
 pub unsafe fn FSEv06_freeDTable(mut dt: *mut FSEv06_DTable) {
@@ -803,7 +798,7 @@ pub unsafe fn FSEv06_buildDTable(
     memcpy(
         dt as *mut core::ffi::c_void,
         &mut DTableH as *mut FSEv06_DTableHeader as *const core::ffi::c_void,
-        ::core::mem::size_of::<FSEv06_DTableHeader>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<FSEv06_DTableHeader>() as size_t,
     );
     let tableMask = tableSize.wrapping_sub(1);
     let step = (tableSize >> 1)
@@ -926,8 +921,8 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         } else {
             FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv06_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-            > (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (FSEv06_MAX_TABLELOG * 2 + 7) as size_t
+            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
         {
             BITv06_reloadDStream(&mut bitD);
         }
@@ -936,8 +931,8 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         } else {
             FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv06_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
-            > (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (FSEv06_MAX_TABLELOG * 4 + 7) as size_t
+            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
             && BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
                 > BITv06_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
         {
@@ -949,8 +944,8 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         } else {
             FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv06_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
-            > (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (FSEv06_MAX_TABLELOG * 2 + 7) as size_t
+            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
         {
             BITv06_reloadDStream(&mut bitD);
         }
@@ -1137,8 +1132,8 @@ unsafe fn HUFv06_readStats(
     memset(
         rankStats as *mut core::ffi::c_void,
         0,
-        ((HUFv06_ABSOLUTEMAX_TABLELOG + 1) as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong),
+        ((HUFv06_ABSOLUTEMAX_TABLELOG + 1) as size_t)
+            .wrapping_mul(::core::mem::size_of::<u32>() as size_t),
     );
     weightTotal = 0;
     let mut n_0: u32 = 0;
@@ -1580,7 +1575,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
     memcpy(
         rankVal.as_mut_ptr() as *mut core::ffi::c_void,
         rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 17]>() as size_t,
     );
     if minWeight > 1 {
         let mut i: u32 = 0;
@@ -1643,7 +1638,7 @@ unsafe fn HUFv06_fillDTableX4(
     memcpy(
         rankVal.as_mut_ptr() as *mut core::ffi::c_void,
         rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 17]>() as size_t,
     );
     s = 0;
     while s < sortedListSize {
@@ -1822,15 +1817,15 @@ unsafe fn HUFv06_decodeLastSymbolX4(
     memcpy(op, dt.offset(val as isize) as *const core::ffi::c_void, 1);
     if (*dt.offset(val as isize)).length as core::ffi::c_int == 1 {
         BITv06_skipBits(DStream, (*dt.offset(val as isize)).nbBits as u32);
-    } else if ((*DStream).bitsConsumed as core::ffi::c_ulong)
-        < (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+    } else if ((*DStream).bitsConsumed as size_t)
+        < (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
     {
         BITv06_skipBits(DStream, (*dt.offset(val as isize)).nbBits as u32);
-        if (*DStream).bitsConsumed as core::ffi::c_ulong
-            > (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (*DStream).bitsConsumed as size_t
+            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
         {
-            (*DStream).bitsConsumed = (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
-                .wrapping_mul(8) as core::ffi::c_uint;
+            (*DStream).bitsConsumed =
+                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
         }
     }
     1
@@ -2612,7 +2607,7 @@ unsafe extern "C" fn ZSTDv06_copy4(
 }
 #[export_name = crate::prefix!(ZSTDv06_sizeofDCtx)]
 pub unsafe extern "C" fn ZSTDv06_sizeofDCtx() -> size_t {
-    ::core::mem::size_of::<ZSTDv06_DCtx>() as core::ffi::c_ulong
+    ::core::mem::size_of::<ZSTDv06_DCtx>() as size_t
 }
 #[export_name = crate::prefix!(ZSTDv06_decompressBegin)]
 pub unsafe extern "C" fn ZSTDv06_decompressBegin(mut dctx: *mut ZSTDv06_DCtx) -> size_t {
@@ -2629,8 +2624,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin(mut dctx: *mut ZSTDv06_DCtx) ->
 }
 #[export_name = crate::prefix!(ZSTDv06_createDCtx)]
 pub unsafe extern "C" fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx {
-    let mut dctx =
-        malloc(::core::mem::size_of::<ZSTDv06_DCtx>() as core::ffi::c_ulong) as *mut ZSTDv06_DCtx;
+    let mut dctx = malloc(::core::mem::size_of::<ZSTDv06_DCtx>() as size_t) as *mut ZSTDv06_DCtx;
     if dctx.is_null() {
         return NULL as *mut ZSTDv06_DCtx;
     }
@@ -2650,7 +2644,7 @@ pub unsafe extern "C" fn ZSTDv06_copyDCtx(
     memcpy(
         dstDCtx as *mut core::ffi::c_void,
         srcDCtx as *const core::ffi::c_void,
-        (::core::mem::size_of::<ZSTDv06_DCtx>() as core::ffi::c_ulong).wrapping_sub(
+        (::core::mem::size_of::<ZSTDv06_DCtx>() as size_t).wrapping_sub(
             ((ZSTDv06_BLOCKSIZE_MAX + WILDCOPY_OVERLENGTH) as size_t)
                 .wrapping_add(ZSTDv06_frameHeaderSize_max),
         ),
@@ -4110,8 +4104,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin_usingDict(
     0
 }
 pub unsafe fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
-    let mut zbd =
-        malloc(::core::mem::size_of::<ZBUFFv06_DCtx>() as core::ffi::c_ulong) as *mut ZBUFFv06_DCtx;
+    let mut zbd = malloc(::core::mem::size_of::<ZBUFFv06_DCtx>() as size_t) as *mut ZBUFFv06_DCtx;
     if zbd.is_null() {
         return NULL as *mut ZBUFFv06_DCtx;
     }
@@ -4203,7 +4196,7 @@ pub unsafe fn ZBUFFv06_decompressContinue(
                                     .offset((*zbd).lhSize as isize)
                                     as *mut core::ffi::c_void,
                                 ip as *const core::ffi::c_void,
-                                iend.offset_from(ip) as core::ffi::c_long as core::ffi::c_ulong,
+                                iend.offset_from(ip) as size_t,
                             );
                         }
                         (*zbd).lhSize = ((*zbd).lhSize)

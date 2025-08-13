@@ -188,10 +188,8 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     {
         return NULL as *mut ZSTD_DDict;
     }
-    let ddict = ZSTD_customMalloc(
-        ::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong,
-        customMem,
-    ) as *mut ZSTD_DDict;
+    let ddict = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DDict>() as size_t, customMem)
+        as *mut ZSTD_DDict;
     if ddict.is_null() {
         return NULL as *mut ZSTD_DDict;
     }
@@ -255,7 +253,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
     mut dictContentType: ZSTD_dictContentType_e,
 ) -> *const ZSTD_DDict {
-    let neededSpace = (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
+    let neededSpace = (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
         if dictLoadMethod as core::ffi::c_uint
             == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
         {
@@ -308,7 +306,7 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
-    (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
+    (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
         if dictLoadMethod as core::ffi::c_uint
             == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
         {
@@ -323,7 +321,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
     if ddict.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DDict>() as core::ffi::c_ulong).wrapping_add(
+    (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
         if !((*ddict).dictBuffer).is_null() {
             (*ddict).dictSize
         } else {

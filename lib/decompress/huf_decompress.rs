@@ -229,7 +229,7 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         // shifted in. After the lowest valid bit a 1 is
         // set, so that CountTrailingZeros(bits[]) can be used
         // to count how many bits we've consumed.
-        let bits = ip.map(|v| HUF_initFastDStream(v));
+        let bits = ip.map(|v| HUF_initFastDStream(v) as u64);
 
         // The decoders must be sure to never read beyond ilowest.
         // This is lower than iend[0], but allowing decoders to read
