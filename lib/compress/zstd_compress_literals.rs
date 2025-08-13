@@ -42,7 +42,7 @@ pub type huf_compress_f = Option<
 unsafe fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
-            (strat as u32).wrapping_sub(1)
+            strat.wrapping_sub(1)
         } else {
             6
         };
@@ -171,7 +171,7 @@ pub unsafe fn ZSTD_compressLiterals(
     mut bmi2: core::ffi::c_int,
 ) -> size_t {
     let lhSize = (3
-        + (srcSize >= (1 * ((1) << 10)) as size_t) as core::ffi::c_int
+        + (srcSize >= (((1) << 10)) as size_t) as core::ffi::c_int
         + (srcSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
     let ostart = dst as *mut u8;
     let mut singleStream = (srcSize < 256) as core::ffi::c_int as u32;
@@ -193,7 +193,7 @@ pub unsafe fn ZSTD_compressLiterals(
     }
     let mut repeat = (*prevHuf).repeatMode;
     let flags =
-        0 | (if bmi2 != 0 {
+        (if bmi2 != 0 {
             HUF_flags_bmi2 as core::ffi::c_int
         } else {
             0

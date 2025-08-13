@@ -54,7 +54,7 @@ const fn get_middle_bits(
     // if start > regMask, the bitstream is corrupted, and the result is undefined.
     assert!(nbBits < MASK.len() as u32);
 
-    const REG_MASK: usize = size_of::<BitContainerType>() * 8 - 1;
+    const REG_MASK: usize = BitContainerType::BITS as usize - 1;
 
     if cfg!(target_arch = "x86_64") {
         // x86 transform & ((1 << nbBits) - 1) to bzhi instruction, it is better
@@ -166,8 +166,8 @@ impl BIT_DStream_t {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
 
-        const MASK: u32 = (size_of::<BitContainerType>() * 8 - 1) as u32;
-        (*self).bitContainer << ((*self).bitsConsumed & MASK)
+        const MASK: u32 = (BitContainerType::BITS as usize - 1) as u32;
+        self.bitContainer << (self.bitsConsumed & MASK)
             >> (MASK.wrapping_add(1).wrapping_sub(nbBits) & MASK)
     }
 

@@ -1262,7 +1262,7 @@ unsafe fn UTIL_readFileContent(
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
-        if bufSize.wrapping_sub(totalRead) < (1 * ((1) << 10)) as size_t {
+        if bufSize.wrapping_sub(totalRead) < (((1) << 10)) as size_t {
             if bufSize >= MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
                 free(buf as *mut core::ffi::c_void);
                 return NULL_0 as *mut core::ffi::c_char;
@@ -1752,7 +1752,7 @@ unsafe fn pathnameHas2Dots(mut pathname: *const core::ffi::c_char) -> core::ffi:
         if needle.is_null() {
             return 0;
         }
-        if (needle == pathname || *needle.offset(-(1) as isize) as core::ffi::c_int == PATH_SEP)
+        if (needle == pathname || *needle.offset(-1_isize) as core::ffi::c_int == PATH_SEP)
             && (*needle.offset(2) as core::ffi::c_int == '\0' as i32
                 || *needle.offset(2) as core::ffi::c_int == PATH_SEP)
         {
@@ -1835,7 +1835,7 @@ unsafe fn convertPathnameToDirName(mut pathname: *mut core::ffi::c_char) {
     len = strlen(pathname);
     assert!(len > 0);
     while *pathname.add(len) as core::ffi::c_int == PATH_SEP {
-        *pathname.add(len) = '\0' as i32 as core::ffi::c_char;
+        *pathname.add(len) = 0;
         len = len.wrapping_sub(1);
     }
     if len == 0 {
@@ -1905,7 +1905,7 @@ unsafe fn mallocAndJoin2Dir(
         dir1 as *const core::ffi::c_void,
         dir1Size,
     );
-    *outDirBuffer.add(dir1Size) = '\0' as i32 as core::ffi::c_char;
+    *outDirBuffer.add(dir1Size) = 0;
     buffer = outDirBuffer.add(dir1Size);
     if dir1Size > 0 && *buffer.offset(-(1)) as core::ffi::c_int != PATH_SEP {
         *buffer = PATH_SEP as core::ffi::c_char;
@@ -1916,7 +1916,7 @@ unsafe fn mallocAndJoin2Dir(
         dir2 as *const core::ffi::c_void,
         dir2Size,
     );
-    *buffer.add(dir2Size) = '\0' as i32 as core::ffi::c_char;
+    *buffer.add(dir2Size) = 0;
     outDirBuffer
 }
 pub unsafe fn UTIL_createMirroredDestDirName(

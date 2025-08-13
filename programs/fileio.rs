@@ -1102,7 +1102,7 @@ unsafe fn FIO_openDstFile(
         f,
         NULL as *mut core::ffi::c_char,
         _IOFBF,
-        (1 * ((1) << 20)) as size_t,
+        (((1) << 20)) as size_t,
     ) != 0
         && g_display_prefs.displayLevel >= 2
     {
@@ -1951,7 +1951,7 @@ unsafe fn setOutBuffer(
 }
 unsafe fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
     let btScale =
-        (strat as u32 >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
+        (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
@@ -4004,7 +4004,7 @@ unsafe fn FIO_compressZstdFrame(
     let mut writeJob = AIO_WritePool_acquireJob((*ressPtr).writeCtx);
     let mut compressedfilesize = 0;
     let mut directive = ZSTD_e_continue;
-    let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN as u64;
+    let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     let mut previous_zfp_update = {
         ZSTD_frameProgression {
             ingested: 0,
@@ -6085,11 +6085,11 @@ unsafe fn FIO_zstdErrorHelp(
             }) as core::ffi::c_uint
         {
             let windowMB = (windowSize >> 20).wrapping_add(
-                (windowSize & (1 * ((1) << 20) - 1) as core::ffi::c_ulonglong != 0)
+                (windowSize & ((((1) << 20)) - 1) as core::ffi::c_ulonglong != 0)
                     as core::ffi::c_int as core::ffi::c_ulonglong,
             ) as core::ffi::c_uint;
             assert!(
-                windowSize < ((1 as core::ffi::c_ulonglong) << 52) as u64 as core::ffi::c_ulonglong
+                windowSize < (((1 as core::ffi::c_ulonglong) << 52)) as core::ffi::c_ulonglong
             );
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
@@ -7206,7 +7206,7 @@ unsafe fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> In
                 } else {
                     (*info).dictID = header.dictID;
                 }
-                (*info).windowSize = header.windowSize as u64;
+                (*info).windowSize = header.windowSize;
                 let headerSize = ZSTD_frameHeaderSize(
                     headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                     numBytesRead,

@@ -384,7 +384,7 @@ unsafe fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
@@ -625,7 +625,7 @@ unsafe fn ZSTD_downscaleStats(
             (*table.offset(s as isize) > 0) as core::ffi::c_int
         }) as core::ffi::c_uint;
         let newStat = base.wrapping_add(*table.offset(s as isize) >> shift);
-        sum = (sum as core::ffi::c_uint).wrapping_add(newStat) as u32 as u32;
+        sum = (sum as core::ffi::c_uint).wrapping_add(newStat);
         *table.offset(s as isize) = newStat;
         s = s.wrapping_add(1);
     }

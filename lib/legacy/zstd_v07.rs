@@ -3607,7 +3607,7 @@ unsafe fn ZSTDv07_execSequence(
     let oMatchEnd = op.add(sequenceLength);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
     let iLitEnd = (*litPtr).add(sequence.litLength);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH as size_t)
         > oend.offset_from(op) as core::ffi::c_long as size_t
     {

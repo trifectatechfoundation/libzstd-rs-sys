@@ -314,9 +314,9 @@ unsafe fn ss_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
             .as_ptr()
             .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
-        0 + *lg_table
+        *lg_table
             .as_ptr()
-            .offset((n >> 0 & 0xff as core::ffi::c_int) as isize)
+            .offset((n & 0xff as core::ffi::c_int) as isize)
     }
 }
 static sqq_table: [core::ffi::c_int; 256] = [
@@ -357,9 +357,9 @@ unsafe fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
             .as_ptr()
             .offset((x >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
-        0 + *lg_table
+        *lg_table
             .as_ptr()
-            .offset((x >> 0 & 0xff as core::ffi::c_int) as isize)
+            .offset((x & 0xff as core::ffi::c_int) as isize)
     };
     if e >= 16 {
         y = *sqq_table.as_ptr().offset((x >> (e - 6 - (e & 1))) as isize) << ((e >> 1) - 7);
@@ -2314,9 +2314,9 @@ unsafe fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
             .as_ptr()
             .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
     } else {
-        0 + *lg_table
+        *lg_table
             .as_ptr()
-            .offset((n >> 0 & 0xff as core::ffi::c_int) as isize)
+            .offset((n & 0xff as core::ffi::c_int) as isize)
     }
 }
 unsafe fn tr_insertionsort(
@@ -4675,23 +4675,21 @@ unsafe fn construct_BWT(
                     *fresh195 = s;
                 } else if s != 0 {
                     *j = !s;
+                } else if *T.offset(s as isize) as core::ffi::c_int == c1 {
                 } else {
-                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
-                    } else {
-                        __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1710,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    __assert_fail(
+                        b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
+                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
+                            as *const u8 as *const core::ffi::c_char,
+                        1710,
+                        (*::core::mem::transmute::<
+                            &[u8; 72],
+                            &[core::ffi::c_char; 72],
+                        >(
+                            b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
+                        ))
+                            .as_ptr(),
+                    );
                 }
                 j = j.offset(-1);
             }
@@ -4919,23 +4917,21 @@ unsafe fn construct_BWT_indexes(
                     *fresh198 = s;
                 } else if s != 0 {
                     *j = !s;
+                } else if *T.offset(s as isize) as core::ffi::c_int == c1 {
                 } else {
-                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
-                    } else {
-                        __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1794,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    __assert_fail(
+                        b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
+                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
+                            as *const u8 as *const core::ffi::c_char,
+                        1794,
+                        (*::core::mem::transmute::<
+                            &[u8; 104],
+                            &[core::ffi::c_char; 104],
+                        >(
+                            b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
+                        ))
+                            .as_ptr(),
+                    );
                 }
                 j = j.offset(-1);
             }

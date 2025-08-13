@@ -16,7 +16,7 @@ unsafe fn RDG_rand(mut src: *mut u32) -> u32 {
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;
-    rand32 = rand32 << 13 | rand32 >> (32 - 13);
+    rand32 = rand32.rotate_left(13);
     *src = rand32;
     rand32 >> 5
 }

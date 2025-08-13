@@ -71,7 +71,7 @@ unsafe fn recordFingerprint_generic(
     ptr::write_bytes(
         fp as *mut u8,
         0,
-        ::core::mem::size_of::<core::ffi::c_uint>() * 1 << hashLog,
+        ::core::mem::size_of::<core::ffi::c_uint>() << hashLog,
     );
     (*fp).nbEvents = 0;
     addEvents_generic(fp, src, srcSize, samplingRate, hashLog);

@@ -358,7 +358,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     dstCapacity: size_t,
     streaming: StreamingOperation,
 ) -> size_t {
-    let dstCapacity = dstCapacity as usize;
+    let dstCapacity = dstCapacity;
 
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
@@ -410,7 +410,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 true,
             );
 
-            if lhSize + litSize + WILDCOPY_OVERLENGTH as usize > src.len() {
+            if lhSize + litSize + WILDCOPY_OVERLENGTH > src.len() {
                 if litSize.wrapping_add(lhSize) > src.len() {
                     return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                 }
@@ -649,7 +649,7 @@ pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
     let src = if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
     dctx.isFrameDecompression = 0;
@@ -1983,7 +1983,7 @@ fn ZSTD_buildSeqTable_rle<const N: usize>(dt: &mut SymbolTable<N>, baseValue: u3
         nbBits: 0,
         nextState: 0,
         nbAdditionalBits: nbAddBits,
-        baseValue: baseValue,
+        baseValue,
     };
 }
 
@@ -2001,7 +2001,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
     let mut highThreshold = tableSize.wrapping_sub(1);
     let mut DTableH = ZSTD_seqSymbol_header {
         fastMode: 1,
-        tableLog: tableLog,
+        tableLog,
     };
 
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
@@ -2010,12 +2010,12 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         if v == -1 {
             tableDecode[highThreshold].baseValue = s as u32;
             highThreshold = highThreshold.wrapping_sub(1);
-            wksp.symbols[s as usize] = 1;
+            wksp.symbols[s] = 1;
         } else {
             if v >= largeLimit {
                 DTableH.fastMode = 0;
             }
-            wksp.symbols[s as usize] = v as u16;
+            wksp.symbols[s] = v as u16;
         }
     }
 
@@ -2237,8 +2237,8 @@ unsafe fn ZSTD_buildSeqTable<const N: usize>(
             ZSTD_buildFSETable(
                 DTableSpace,
                 &mut norm[..=max as usize],
-                &baseValue,
-                &nbAdditionalBits,
+                baseValue,
+                nbAdditionalBits,
                 tableLog,
                 wksp.as_fse_workspace(),
                 bmi2,
@@ -2495,8 +2495,8 @@ unsafe fn ZSTD_execSequenceEnd(
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
-    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     if sequenceLength > oend.offset_from(op) as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -2613,7 +2613,7 @@ unsafe fn ZSTD_execSequence(
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
-    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_offset(-(sequence.offset as isize));
     if (iLitEnd > litLimit
@@ -3065,7 +3065,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         }
         if nbSeq > 0 {
             let leftoverLit =
-                ((*dctx).litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
+                (dctx.litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
             if leftoverLit != 0 {
                 if leftoverLit > oend.offset_from(op) as core::ffi::c_long as size_t {
                     return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -3773,7 +3773,7 @@ pub unsafe fn ZSTD_decompressBlock_internal(
     let src = if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
     ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, streaming)

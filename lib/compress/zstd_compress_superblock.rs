@@ -404,10 +404,10 @@ static LL_defaultNorm: [i16; 36] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 pub const LL_DEFAULTNORMLOG: core::ffi::c_int = 6;
 static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
@@ -462,13 +462,13 @@ static ML_defaultNorm: [i16; 53] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 pub const ML_DEFAULTNORMLOG: core::ffi::c_int = 6;
 static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
@@ -497,11 +497,11 @@ static OF_defaultNorm: [i16; 29] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
@@ -521,7 +521,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> size_t {
     let header = (if writeEntropy != 0 { 200 } else { 0 }) as size_t;
     let lhSize = (3
-        + (litSize >= ((1 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int
+        + (litSize >= ((((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int
         + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
         as size_t;
     let ostart = dst as *mut u8;
@@ -605,7 +605,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
     if lhSize
-        < (3 + (cLitSize >= (1 * ((1) << 10)) as size_t) as core::ffi::c_int
+        < (3 + (cLitSize >= (((1) << 10)) as size_t) as core::ffi::c_int
             + (cLitSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t
     {
         return ZSTD_noCompressLiterals(
@@ -715,9 +715,9 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     op = op.offset(1);
     seqHead = fresh1;
     if writeEntropy != 0 {
-        let LLtype = (*fseMetadata).llType as u32;
-        let Offtype = (*fseMetadata).ofType as u32;
-        let MLtype = (*fseMetadata).mlType as u32;
+        let LLtype = (*fseMetadata).llType;
+        let Offtype = (*fseMetadata).ofType;
+        let MLtype = (*fseMetadata).mlType;
         *seqHead = (LLtype << 6)
             .wrapping_add(Offtype << 4)
             .wrapping_add(MLtype << 2) as u8;

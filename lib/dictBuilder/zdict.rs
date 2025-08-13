@@ -913,14 +913,13 @@ unsafe fn ZDICT_tryMerge(
                 if addedLength_0 > 0 {
                     let fresh6 = &mut (*table.offset(u as isize)).length;
                     *fresh6 = (*fresh6 as core::ffi::c_uint)
-                        .wrapping_add(addedLength_0 as core::ffi::c_uint)
-                        as u32 as u32;
+                        .wrapping_add(addedLength_0 as core::ffi::c_uint);
                     let fresh7 = &mut (*table.offset(u as isize)).savings;
                     *fresh7 = (*fresh7 as core::ffi::c_uint).wrapping_add(
                         (elt.savings)
                             .wrapping_mul(addedLength_0 as core::ffi::c_uint)
                             .wrapping_div(elt.length),
-                    ) as u32 as u32;
+                    );
                 }
                 elt = *table.offset(u as isize);
                 while u > 1 && (*table.offset(u.wrapping_sub(1) as isize)).savings < elt.savings {
@@ -1565,8 +1564,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 u = 0;
                 while u <= offcodeMax {
                     total = (total as core::ffi::c_uint)
-                        .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize))
-                        as u32 as u32;
+                        .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize));
                     u = u.wrapping_add(1);
                 }
                 errorCode = FSE_normalizeCount(
@@ -1593,8 +1591,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     u = 0;
                     while u <= MaxML as u32 {
                         total = (total as core::ffi::c_uint)
-                            .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize))
-                            as u32 as u32;
+                            .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize));
                         u = u.wrapping_add(1);
                     }
                     errorCode = FSE_normalizeCount(
@@ -1621,8 +1618,7 @@ unsafe fn ZDICT_analyzeEntropy(
                         u = 0;
                         while u <= MaxLL as u32 {
                             total = (total as core::ffi::c_uint)
-                                .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize))
-                                as u32 as u32;
+                                .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize));
                             u = u.wrapping_add(1);
                         }
                         errorCode = FSE_normalizeCount(
@@ -1822,7 +1818,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         header.as_mut_ptr() as *mut core::ffi::c_void,
         ZSTD_MAGIC_DICTIONARY,
     );
-    let randomID = ZSTD_XXH64(customDictContent, dictContentSize as usize, 0);
+    let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
@@ -1947,7 +1943,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     let randomID = ZSTD_XXH64(
         (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
-        dictContentSize as usize,
+        dictContentSize,
         0,
     );
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
