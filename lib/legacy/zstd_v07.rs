@@ -608,8 +608,8 @@ pub unsafe fn HUFv07_readStats(
     iSize = *ip.offset(0) as size_t;
     if iSize >= 128 {
         if iSize >= 242 {
-            static mut l: [u32; 14] = [1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128];
-            oSize = *l.as_mut_ptr().offset(iSize.wrapping_sub(242) as isize) as size_t;
+            static l: [u32; 14] = [1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128];
+            oSize = l[iSize.wrapping_sub(242)] as size_t;
             memset(huffWeight as *mut core::ffi::c_void, 1, hwSize);
             iSize = 0;
         } else {

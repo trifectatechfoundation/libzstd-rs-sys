@@ -2,7 +2,7 @@ use core::ptr;
 
 use libc::{
     __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
-    memcpy, memset, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
+    memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{

@@ -22,10 +22,10 @@ use crate::lib::decompress::{
     blockProperties_t, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, LL_base,
     ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_dStage,
     ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
-    ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_seqSymbol, ZSTD_skippableFrame,
-    ZSTD_use_indefinitely, ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader,
-    ZSTDds_decodeFrameHeader, ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock,
-    ZSTDds_decompressLastBlock, ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
+    ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_skippableFrame, ZSTD_use_indefinitely,
+    ZSTD_use_once, ZSTDds_checkChecksum, ZSTDds_decodeBlockHeader, ZSTDds_decodeFrameHeader,
+    ZSTDds_decodeSkippableHeader, ZSTDds_decompressBlock, ZSTDds_decompressLastBlock,
+    ZSTDds_getFrameHeaderSize, ZSTDds_skipFrame,
 };
 use crate::lib::zstd::*;
 
