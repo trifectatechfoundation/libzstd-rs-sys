@@ -1050,7 +1050,7 @@ fn HUF_fillDTableX2(
 pub fn HUF_readDTableX2_wksp(
     DTable: &mut DTable,
     src: &[u8],
-    workSpace: &mut Workspace,
+    wksp: &mut HUF_ReadDTableX2_Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
     let mut dtd = DTable.description;
@@ -1061,7 +1061,6 @@ pub fn HUF_readDTableX2_wksp(
     let mut iSize: size_t = 0;
 
     let dt = DTable.data.as_x2_mut();
-    let wksp = workSpace.as_x2_mut();
 
     wksp.rankStats.fill(0);
     wksp.rankStart0.fill(0);
@@ -1714,7 +1713,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace, flags);
+    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
@@ -1732,7 +1731,7 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
 ) -> size_t {
-    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace, flags);
+    let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
     if ERR_isError(hSize) != 0 {
         return hSize;
     }
