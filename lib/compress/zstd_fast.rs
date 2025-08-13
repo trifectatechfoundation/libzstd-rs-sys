@@ -293,7 +293,7 @@ unsafe fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
 unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
+static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
     (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
@@ -660,8 +660,8 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
             {
                 ip0 = ip2;
                 match0 = ip0.offset(-(rep_offset1 as isize));
-                mLength = (*ip0.offset(-(1) as isize) as core::ffi::c_int
-                    == *match0.offset(-(1) as isize) as core::ffi::c_int)
+                mLength = (*ip0.offset(-1_isize) as core::ffi::c_int
+                    == *match0.offset(-1_isize) as core::ffi::c_int)
                     as core::ffi::c_int as size_t;
                 ip0 = ip0.offset(-(mLength as isize));
                 match0 = match0.offset(-(mLength as isize));
@@ -730,8 +730,8 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
             mLength = 4;
             while (ip0 > anchor) as core::ffi::c_int & (match0 > prefixStart) as core::ffi::c_int
                 != 0
-                && *ip0.offset(-(1) as isize) as core::ffi::c_int
-                    == *match0.offset(-(1) as isize) as core::ffi::c_int
+                && *ip0.offset(-1_isize) as core::ffi::c_int
+                    == *match0.offset(-1_isize) as core::ffi::c_int
             {
                 ip0 = ip0.offset(-1);
                 match0 = match0.offset(-1);
@@ -1033,8 +1033,8 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                         while (ip0 > anchor) as core::ffi::c_int
                             & (dictMatch > dictStart) as core::ffi::c_int
                             != 0
-                            && *ip0.offset(-(1) as isize) as core::ffi::c_int
-                                == *dictMatch.offset(-(1) as isize) as core::ffi::c_int
+                            && *ip0.offset(-1_isize) as core::ffi::c_int
+                                == *dictMatch.offset(-1_isize) as core::ffi::c_int
                         {
                             ip0 = ip0.offset(-1);
                             dictMatch = dictMatch.offset(-1);
@@ -1059,8 +1059,8 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                     while (ip0 > anchor) as core::ffi::c_int
                         & (match_0 > prefixStart) as core::ffi::c_int
                         != 0
-                        && *ip0.offset(-(1) as isize) as core::ffi::c_int
-                            == *match_0.offset(-(1) as isize) as core::ffi::c_int
+                        && *ip0.offset(-1_isize) as core::ffi::c_int
+                            == *match_0.offset(-1_isize) as core::ffi::c_int
                     {
                         ip0 = ip0.offset(-1);
                         match_0 = match_0.offset(-1);
@@ -1318,8 +1318,8 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
                 } else {
                     iend
                 };
-                mLength = (*ip0.offset(-(1) as isize) as core::ffi::c_int
-                    == *match0.offset(-(1) as isize) as core::ffi::c_int)
+                mLength = (*ip0.offset(-1_isize) as core::ffi::c_int
+                    == *match0.offset(-1_isize) as core::ffi::c_int)
                     as core::ffi::c_int as size_t;
                 ip0 = ip0.offset(-(mLength as isize));
                 match0 = match0.offset(-(mLength as isize));
@@ -1400,8 +1400,8 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
             mLength = 4;
             while (ip0 > anchor) as core::ffi::c_int & (match0 > lowMatchPtr) as core::ffi::c_int
                 != 0
-                && *ip0.offset(-(1) as isize) as core::ffi::c_int
-                    == *match0.offset(-(1) as isize) as core::ffi::c_int
+                && *ip0.offset(-1_isize) as core::ffi::c_int
+                    == *match0.offset(-1_isize) as core::ffi::c_int
             {
                 ip0 = ip0.offset(-1);
                 match0 = match0.offset(-1);

@@ -242,10 +242,10 @@ static LL_defaultNorm: [i16; 36] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 static LL_defaultNormLog: u32 = 6;
 static ML_bits: [u32; 53] = [
@@ -299,13 +299,13 @@ static ML_defaultNorm: [i16; 53] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 static ML_defaultNormLog: u32 = 6;
 static OF_defaultNorm: [i16; 29] = [
@@ -333,11 +333,11 @@ static OF_defaultNorm: [i16; 29] = [
     1,
     1,
     1,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
-    -(1) as i16,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
 ];
 static OF_defaultNormLog: u32 = 5;
 unsafe fn ZSTDv06_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
@@ -3312,7 +3312,7 @@ unsafe fn ZSTDv06_execSequence(
     let oMatchEnd = op.add(sequenceLength);
     let oend_8 = oend.wrapping_sub(8);
     let iLitEnd = (*litPtr).add(sequence.litLength);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset as usize);
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let seqLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     if seqLength > oend.offset_from(op) as core::ffi::c_long as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;

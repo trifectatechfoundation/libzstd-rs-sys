@@ -48,7 +48,7 @@ pub const DEBUG: core::ffi::c_int = 0;
 unsafe fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
     if fileSize == UTIL_FILESIZE_UNKNOWN as u64 {
-        -(1) as i64
+        -1_i64
     } else {
         fileSize as i64
     }
@@ -204,7 +204,7 @@ unsafe fn DiB_loadFiles(
             stderr,
             b"Loaded %d KB total training data, %d nb samples \n\0" as *const u8
                 as *const core::ffi::c_char,
-            (totalDataLoaded / (1 * ((1) << 10)) as size_t) as core::ffi::c_int,
+            (totalDataLoaded / (((1) << 10)) as size_t) as core::ffi::c_int,
             nbSamplesLoaded,
         );
     }
@@ -217,7 +217,7 @@ unsafe fn DiB_rand(mut src: *mut u32) -> u32 {
     let mut rand32 = *src;
     rand32 *= prime1;
     rand32 ^= prime2;
-    rand32 = rand32 << 13 | rand32 >> (32 - 13);
+    rand32 = rand32.rotate_left(13);
     *src = rand32;
     rand32 >> 5
 }
@@ -365,7 +365,7 @@ unsafe fn DiB_fileStats(
                         b"Sample file '%s' is too large, limiting to %d KB\n\0" as *const u8
                             as *const core::ffi::c_char,
                         *fileNamesTable.offset(n as isize),
-                        128 * ((1) << 10) / (1 * ((1) << 10)),
+                        128 * ((1) << 10) / (((1) << 10)),
                     );
                 }
             }
@@ -384,7 +384,7 @@ unsafe fn DiB_fileStats(
             b"Found training data %d files, %d KB, %d samples\n\0" as *const u8
                 as *const core::ffi::c_char,
             nbFiles,
-            (fs.totalSizeToLoad / (1 * ((1) << 10)) as i64) as core::ffi::c_int,
+            (fs.totalSizeToLoad / (((1) << 10)) as i64) as core::ffi::c_int,
             fs.nbSamples,
         );
     }
@@ -462,8 +462,7 @@ pub unsafe fn DiB_trainFromFiles(
                     as *const u8 as *const core::ffi::c_char,
                 memLimit
                     .wrapping_div(
-                        (1
-                            * ((1) << 20))
+                        (((1) << 20))
                             as core::ffi::c_uint,
                     ),
             );
@@ -570,8 +569,8 @@ pub unsafe fn DiB_trainFromFiles(
             stderr,
             b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
                 as *const core::ffi::c_char,
-            (fs.totalSizeToLoad / (1 * ((1) << 20)) as i64) as core::ffi::c_uint,
-            (loadedSize / (1 * ((1) << 20)) as size_t) as core::ffi::c_uint,
+            (fs.totalSizeToLoad / (((1) << 20)) as i64) as core::ffi::c_uint,
+            (loadedSize / (((1) << 20)) as size_t) as core::ffi::c_uint,
         );
     }
     nbSamplesLoaded = DiB_loadFiles(

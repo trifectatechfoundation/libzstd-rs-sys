@@ -229,7 +229,7 @@ const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB527;
 
 #[inline]
 unsafe fn ZSTD_isLegacy(mut src: *const core::ffi::c_void, mut srcSize: size_t) -> u32 {
-    is_legacy(unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize) })
+    is_legacy(unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize) })
 }
 
 fn is_legacy(src: &[u8]) -> u32 {
@@ -386,7 +386,7 @@ unsafe fn ZSTD_findFrameSizeInfoLegacy(
     find_frame_size_info_legacy(if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast(), srcSize)
     })
 }
 
@@ -430,7 +430,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     }
 
     if ERR_isError(frameSizeInfo.compressedSize) == 0
-        && frameSizeInfo.compressedSize as usize > src.len()
+        && frameSizeInfo.compressedSize > src.len()
     {
         frameSizeInfo.compressedSize = -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
         frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
@@ -889,7 +889,7 @@ pub unsafe extern "C" fn ZSTD_isFrame(
     let src = if buffer.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(buffer.cast(), size as usize)
+        core::slice::from_raw_parts(buffer.cast(), size)
     };
 
     is_frame(src) as core::ffi::c_uint
@@ -924,7 +924,7 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
     let src = if buffer.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(buffer.cast(), size as usize)
+        core::slice::from_raw_parts(buffer.cast(), size)
     };
 
     is_skippable_frame(src) as core::ffi::c_uint
@@ -1026,7 +1026,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 
     get_frame_header_advanced(
         zfhPtr,
-        core::slice::from_raw_parts(src as *const u8, srcSize as usize),
+        core::slice::from_raw_parts(src as *const u8, srcSize),
         format,
     )
 }
@@ -1034,8 +1034,8 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: Format) -> size_t {
     let minInputSize = ZSTD_startingInputLength(format);
     if src.len() < minInputSize as usize {
-        if !src.is_empty() && format != Format::ZSTD_f_zstd1_magicless {
-            if src != &ZSTD_MAGICNUMBER.to_le_bytes()[..src.len()] {
+        if !src.is_empty() && format != Format::ZSTD_f_zstd1_magicless
+            && src != &ZSTD_MAGICNUMBER.to_le_bytes()[..src.len()] {
                 let mut hbuf = ZSTD_MAGIC_SKIPPABLE_START.to_le_bytes();
                 hbuf[..src.len()].copy_from_slice(src);
                 if u32::from_le_bytes(hbuf) & ZSTD_MAGIC_SKIPPABLE_MASK
@@ -1044,7 +1044,6 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
                     return -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t;
                 }
             }
-        }
         return minInputSize;
     }
 
@@ -1068,7 +1067,7 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
                 blockSizeMax: 0,
                 frameType: ZSTD_skippableFrame,
                 headerSize: ZSTD_SKIPPABLEHEADERSIZE as core::ffi::c_uint,
-                dictID: dictID,
+                dictID,
                 checksumFlag: 0,
                 _reserved1: 0,
                 _reserved2: 0,
@@ -1161,7 +1160,7 @@ pub unsafe extern "C" fn ZSTD_getFrameContentSize(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> core::ffi::c_ulonglong {
-    let src = unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize as usize) };
+    let src = unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize) };
     get_frame_content_size(src)
 }
 
@@ -1189,7 +1188,7 @@ unsafe fn readSkippableFrameSize(mut src: *const core::ffi::c_void, mut srcSize:
     read_skippable_frame_size(if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast(), srcSize)
     })
 }
 
@@ -1333,7 +1332,7 @@ unsafe fn ZSTD_decodeFrameHeader(
         ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
     }
     (*dctx).processedCSize =
-        ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64 as u64;
+        ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64;
     0
 }
 
@@ -1450,7 +1449,7 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
     let src = if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast(), srcSize)
     };
 
     ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1)
@@ -1464,7 +1463,7 @@ pub unsafe extern "C" fn ZSTD_decompressBound(
     decompress_bound(if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast(), srcSize)
     })
 }
 
@@ -1493,7 +1492,7 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
     decompression_margin(if src.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts(src.cast(), srcSize as usize)
+        core::slice::from_raw_parts(src.cast(), srcSize)
     })
 }
 
@@ -1995,7 +1994,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
-    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(srcSize) as u64 as u64;
+    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(srcSize) as u64;
     match (*dctx).stage as core::ffi::c_uint {
         0 => {
             if (*dctx).format == Format::ZSTD_f_zstd1
@@ -2226,11 +2225,11 @@ pub unsafe fn ZSTD_loadDEntropy(
         align_of::<crate::lib::decompress::SymbolTable<512>>()
             >= align_of::<HUF_ReadDTableX2_Workspace>()
     );
-    let workspace = &mut (*entropy).LLTable;
+    let workspace = &mut entropy.LLTable;
     let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
 
     let hSize = HUF_readDTableX2_wksp(
-        &mut (*entropy).hufTable,
+        &mut entropy.hufTable,
         core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
         wksp,
         0,
@@ -2259,12 +2258,12 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        &mut (*entropy).OFTable,
+        &mut entropy.OFTable,
         &mut offcodeNCount[..=offcodeMaxValue as usize],
         &OF_base,
         &OF_bits,
         offcodeLog,
-        &mut (*entropy).workspace,
+        &mut entropy.workspace,
         false,
     );
     dictPtr = dictPtr.add(offcodeHeaderSize);
@@ -2288,12 +2287,12 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        &mut (*entropy).MLTable,
+        &mut entropy.MLTable,
         &mut matchlengthNCount[..=matchlengthMaxValue as usize],
         &ML_base,
         &ML_bits,
         matchlengthLog,
-        &mut (*entropy).workspace,
+        &mut entropy.workspace,
         false,
     );
     dictPtr = dictPtr.add(matchlengthHeaderSize);
@@ -2317,12 +2316,12 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     ZSTD_buildFSETable(
-        &mut (*entropy).LLTable,
+        &mut entropy.LLTable,
         &mut litlengthNCount[..=litlengthMaxValue as usize],
         &LL_base,
         &LL_bits,
         litlengthLog,
-        &mut (*entropy).workspace,
+        &mut entropy.workspace,
         false,
     );
     dictPtr = dictPtr.add(litlengthHeaderSize);
@@ -2338,7 +2337,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         if rep == 0 || rep as size_t > dictContentSize {
             return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
         }
-        *((*entropy).rep).as_mut_ptr().offset(i as isize) = rep;
+        *(entropy.rep).as_mut_ptr().offset(i as isize) = rep;
         i += 1;
     }
     dictPtr.offset_from(dict as *const u8) as core::ffi::c_long as size_t

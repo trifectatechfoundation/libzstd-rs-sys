@@ -147,7 +147,7 @@ impl<'a> FSE_DState_t<'a> {
             nbBits,
             symbol,
             newState,
-        } = self.table[self.state as usize];
+        } = self.table[self.state];
 
         let lowBits = bitD.read_bits(u32::from(nbBits));
         self.state = usize::from(newState) + lowBits;
@@ -161,7 +161,7 @@ impl<'a> FSE_DState_t<'a> {
             nbBits,
             symbol,
             newState,
-        } = self.table[self.state as usize];
+        } = self.table[self.state];
 
         let lowBits = bitD.read_bits_fast(u32::from(nbBits));
         self.state = usize::from(newState) + lowBits;
@@ -234,7 +234,7 @@ fn FSE_buildDTable_internal(
         let step = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
             .wrapping_add(3) as size_t;
-        let add = 0x101010101010101 as core::ffi::c_ulonglong as u64;
+        let add = 0x101010101010101u64;
         let mut pos = 0 as size_t;
         let mut sv = 0u64;
 

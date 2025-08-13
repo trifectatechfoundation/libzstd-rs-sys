@@ -335,7 +335,7 @@ unsafe fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_uint {
     let mut rand32 = g_randRoot;
     rand32 = rand32.wrapping_mul(prime1);
     rand32 ^= prime2;
-    rand32 = rand32 << 13 | rand32 >> (32 - 13);
+    rand32 = rand32.rotate_left(13);
     g_randRoot = rand32;
     ((rand32 as core::ffi::c_ulonglong).wrapping_mul(range as core::ffi::c_ulonglong) >> 32)
         as core::ffi::c_uint

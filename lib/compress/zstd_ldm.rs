@@ -1041,14 +1041,14 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
     }
     if (*params).bucketSizeLog == 0 {
         (*params).bucketSizeLog = if 4
-            > (if ((*cParams).strategy as u32) < 8 {
-                (*cParams).strategy as u32
+            > (if (*cParams).strategy < 8 {
+                (*cParams).strategy
             } else {
                 8
             }) {
             4
-        } else if ((*cParams).strategy as u32) < 8 {
-            (*cParams).strategy as u32
+        } else if (*cParams).strategy < 8 {
+            (*cParams).strategy
         } else {
             8
         };
@@ -1115,8 +1115,8 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     let mut matchLength = 0 as size_t;
     while pIn > pAnchor
         && pMatch > pMatchBase
-        && *pIn.offset(-(1) as isize) as core::ffi::c_int
-            == *pMatch.offset(-(1) as isize) as core::ffi::c_int
+        && *pIn.offset(-1_isize) as core::ffi::c_int
+            == *pMatch.offset(-1_isize) as core::ffi::c_int
     {
         pIn = pIn.offset(-1);
         pMatch = pMatch.offset(-1);
@@ -1487,7 +1487,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let iend = istart.add(srcSize);
     let kMaxChunkSize = ((1) << 20) as size_t;
     let nbChunks = (srcSize / kMaxChunkSize)
-        .wrapping_add((srcSize % kMaxChunkSize != 0) as core::ffi::c_int as size_t);
+        .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
     let mut chunk: size_t = 0;
     let mut leftoverSize = 0;
     chunk = 0;
