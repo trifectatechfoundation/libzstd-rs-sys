@@ -2023,7 +2023,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
 
     if highThreshold == tableSize - 1 {
         let tableMask = tableSize - 1;
-        let step = (tableSize >> 1) | (tableSize >> 3) | 0b11;
+        let step = (tableSize >> 1) + (tableSize >> 3) + 3;
         let add = 0x101010101010101u64;
         let mut pos = 0usize;
         let mut sv = 0u64;
@@ -2049,7 +2049,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         }
     } else {
         let tableMask = tableSize - 1;
-        let step = (tableSize >> 1) | (tableSize >> 3) | 0b11;
+        let step = (tableSize >> 1) + (tableSize >> 3) + 3;
         let mut position = 0usize;
         for (s, &v) in normalizedCounter.iter().enumerate() {
             for _ in 0..i32::from(v) {
