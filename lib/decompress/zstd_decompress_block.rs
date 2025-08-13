@@ -273,14 +273,6 @@ impl ZSTD_DCtx {
     }
 }
 
-unsafe fn ZSTD_blockSizeMax(mut dctx: *const ZSTD_DCtx) -> size_t {
-    (if (*dctx).isFrameDecompression != 0 {
-        (*dctx).fParams.blockSizeMax
-    } else {
-        ZSTD_BLOCKSIZE_MAX as core::ffi::c_uint
-    }) as size_t
-}
-
 pub unsafe fn ZSTD_getcBlockSize(
     src: *const core::ffi::c_void,
     srcSize: size_t,
