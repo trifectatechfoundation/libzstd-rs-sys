@@ -10,7 +10,9 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
-use crate::lib::decompress::huf_decompress::{DTableDesc, HUF_readDTableX2_wksp};
+use crate::lib::decompress::huf_decompress::{
+    DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp,
+};
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
     ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal, ZSTD_getcBlockSize,
@@ -2216,12 +2218,22 @@ pub unsafe fn ZSTD_loadDEntropy(
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
     dictPtr = dictPtr.offset(8);
+
+    const _: () = assert!(
+        size_of::<crate::lib::decompress::SymbolTable<512>>()
+            >= size_of::<HUF_ReadDTableX2_Workspace>()
+    );
+    const _: () = assert!(
+        align_of::<crate::lib::decompress::SymbolTable<512>>()
+            >= align_of::<HUF_ReadDTableX2_Workspace>()
+    );
     let workspace = &mut (*entropy).LLTable;
+    let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
+
     let hSize = HUF_readDTableX2_wksp(
         &mut (*entropy).hufTable,
         core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
-        // NOTE: this is probably invalid because it provides insufficient space.
-        unsafe { core::mem::transmute(workspace) },
+        wksp,
         0,
     );
     if ERR_isError(hSize) != 0 {
