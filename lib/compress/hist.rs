@@ -8,8 +8,8 @@ use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_read32;
 use crate::lib::zstd::*;
 pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
-pub const HIST_WKSP_SIZE: core::ffi::c_ulong = (HIST_WKSP_SIZE_U32 as core::ffi::c_ulong)
-    .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
+pub const HIST_WKSP_SIZE: size_t =
+    (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t);
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 pub unsafe fn HIST_isError(mut code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
@@ -255,7 +255,7 @@ pub unsafe fn HIST_countFast(
         source,
         sourceSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>() as size_t,
     )
 }
 pub unsafe fn HIST_count(
@@ -271,6 +271,6 @@ pub unsafe fn HIST_count(
         src,
         srcSize,
         tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>() as size_t,
     )
 }
