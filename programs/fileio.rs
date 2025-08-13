@@ -218,240 +218,240 @@ pub struct cRess_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct lzma_stream {
-    pub next_in: *const u8,
-    pub avail_in: size_t,
-    pub total_in: u64,
-    pub next_out: *mut u8,
-    pub avail_out: size_t,
-    pub total_out: u64,
-    pub allocator: *const lzma_allocator,
-    pub internal: *mut lzma_internal,
-    pub reserved_ptr1: *mut core::ffi::c_void,
-    pub reserved_ptr2: *mut core::ffi::c_void,
-    pub reserved_ptr3: *mut core::ffi::c_void,
-    pub reserved_ptr4: *mut core::ffi::c_void,
-    pub seek_pos: u64,
-    pub reserved_int2: u64,
-    pub reserved_int3: size_t,
-    pub reserved_int4: size_t,
-    pub reserved_enum1: lzma_reserved_enum,
-    pub reserved_enum2: lzma_reserved_enum,
+struct lzma_stream {
+    next_in: *const u8,
+    avail_in: size_t,
+    total_in: u64,
+    next_out: *mut u8,
+    avail_out: size_t,
+    total_out: u64,
+    allocator: *const lzma_allocator,
+    internal: *mut lzma_internal,
+    reserved_ptr1: *mut core::ffi::c_void,
+    reserved_ptr2: *mut core::ffi::c_void,
+    reserved_ptr3: *mut core::ffi::c_void,
+    reserved_ptr4: *mut core::ffi::c_void,
+    seek_pos: u64,
+    reserved_int2: u64,
+    reserved_int3: size_t,
+    reserved_int4: size_t,
+    reserved_enum1: lzma_reserved_enum,
+    reserved_enum2: lzma_reserved_enum,
 }
-pub type lzma_reserved_enum = core::ffi::c_uint;
-pub const LZMA_RESERVED_ENUM: lzma_reserved_enum = 0;
-pub type lzma_internal = lzma_internal_s;
+type lzma_reserved_enum = core::ffi::c_uint;
+const LZMA_RESERVED_ENUM: lzma_reserved_enum = 0;
+type lzma_internal = lzma_internal_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct lzma_allocator {
-    pub alloc: Option<
+struct lzma_allocator {
+    alloc: Option<
         unsafe extern "C" fn(*mut core::ffi::c_void, size_t, size_t) -> *mut core::ffi::c_void,
     >,
-    pub free: Option<unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>,
-    pub opaque: *mut core::ffi::c_void,
+    free: Option<unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>,
+    opaque: *mut core::ffi::c_void,
 }
-pub const LZMA_STREAM_END: lzma_ret = 1;
-pub type lzma_ret = core::ffi::c_uint;
-pub const LZMA_RET_INTERNAL8: lzma_ret = 108;
-pub const LZMA_RET_INTERNAL7: lzma_ret = 107;
-pub const LZMA_RET_INTERNAL6: lzma_ret = 106;
-pub const LZMA_RET_INTERNAL5: lzma_ret = 105;
-pub const LZMA_RET_INTERNAL4: lzma_ret = 104;
-pub const LZMA_RET_INTERNAL3: lzma_ret = 103;
-pub const LZMA_RET_INTERNAL2: lzma_ret = 102;
-pub const LZMA_RET_INTERNAL1: lzma_ret = 101;
-pub const LZMA_SEEK_NEEDED: lzma_ret = 12;
-pub const LZMA_PROG_ERROR: lzma_ret = 11;
-pub const LZMA_BUF_ERROR: lzma_ret = 10;
-pub const LZMA_DATA_ERROR: lzma_ret = 9;
-pub const LZMA_OPTIONS_ERROR: lzma_ret = 8;
-pub const LZMA_FORMAT_ERROR: lzma_ret = 7;
-pub const LZMA_MEMLIMIT_ERROR: lzma_ret = 6;
-pub const LZMA_MEM_ERROR: lzma_ret = 5;
-pub const LZMA_GET_CHECK: lzma_ret = 4;
-pub const LZMA_UNSUPPORTED_CHECK: lzma_ret = 3;
-pub const LZMA_NO_CHECK: lzma_ret = 2;
-pub const LZMA_OK: lzma_ret = 0;
-pub type lzma_action = core::ffi::c_uint;
-pub const LZMA_FINISH: lzma_action = 3;
-pub const LZMA_FULL_BARRIER: lzma_action = 4;
-pub const LZMA_FULL_FLUSH: lzma_action = 2;
-pub const LZMA_SYNC_FLUSH: lzma_action = 1;
-pub const LZMA_RUN: lzma_action = 0;
-pub type lzma_check = core::ffi::c_uint;
-pub const LZMA_CHECK_SHA256: lzma_check = 10;
-pub const LZMA_CHECK_CRC64: lzma_check = 4;
-pub const LZMA_CHECK_CRC32: lzma_check = 1;
-pub const LZMA_CHECK_NONE: lzma_check = 0;
+const LZMA_STREAM_END: lzma_ret = 1;
+type lzma_ret = core::ffi::c_uint;
+const LZMA_RET_INTERNAL8: lzma_ret = 108;
+const LZMA_RET_INTERNAL7: lzma_ret = 107;
+const LZMA_RET_INTERNAL6: lzma_ret = 106;
+const LZMA_RET_INTERNAL5: lzma_ret = 105;
+const LZMA_RET_INTERNAL4: lzma_ret = 104;
+const LZMA_RET_INTERNAL3: lzma_ret = 103;
+const LZMA_RET_INTERNAL2: lzma_ret = 102;
+const LZMA_RET_INTERNAL1: lzma_ret = 101;
+const LZMA_SEEK_NEEDED: lzma_ret = 12;
+const LZMA_PROG_ERROR: lzma_ret = 11;
+const LZMA_BUF_ERROR: lzma_ret = 10;
+const LZMA_DATA_ERROR: lzma_ret = 9;
+const LZMA_OPTIONS_ERROR: lzma_ret = 8;
+const LZMA_FORMAT_ERROR: lzma_ret = 7;
+const LZMA_MEMLIMIT_ERROR: lzma_ret = 6;
+const LZMA_MEM_ERROR: lzma_ret = 5;
+const LZMA_GET_CHECK: lzma_ret = 4;
+const LZMA_UNSUPPORTED_CHECK: lzma_ret = 3;
+const LZMA_NO_CHECK: lzma_ret = 2;
+const LZMA_OK: lzma_ret = 0;
+type lzma_action = core::ffi::c_uint;
+const LZMA_FINISH: lzma_action = 3;
+const LZMA_FULL_BARRIER: lzma_action = 4;
+const LZMA_FULL_FLUSH: lzma_action = 2;
+const LZMA_SYNC_FLUSH: lzma_action = 1;
+const LZMA_RUN: lzma_action = 0;
+type lzma_check = core::ffi::c_uint;
+const LZMA_CHECK_SHA256: lzma_check = 10;
+const LZMA_CHECK_CRC64: lzma_check = 4;
+const LZMA_CHECK_CRC32: lzma_check = 1;
+const LZMA_CHECK_NONE: lzma_check = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct lzma_options_lzma {
-    pub dict_size: u32,
-    pub preset_dict: *const u8,
-    pub preset_dict_size: u32,
-    pub lc: u32,
-    pub lp: u32,
-    pub pb: u32,
-    pub mode: lzma_mode,
-    pub nice_len: u32,
-    pub mf: lzma_match_finder,
-    pub depth: u32,
-    pub ext_flags: u32,
-    pub ext_size_low: u32,
-    pub ext_size_high: u32,
-    pub reserved_int4: u32,
-    pub reserved_int5: u32,
-    pub reserved_int6: u32,
-    pub reserved_int7: u32,
-    pub reserved_int8: u32,
-    pub reserved_enum1: lzma_reserved_enum,
-    pub reserved_enum2: lzma_reserved_enum,
-    pub reserved_enum3: lzma_reserved_enum,
-    pub reserved_enum4: lzma_reserved_enum,
-    pub reserved_ptr1: *mut core::ffi::c_void,
-    pub reserved_ptr2: *mut core::ffi::c_void,
+struct lzma_options_lzma {
+    dict_size: u32,
+    preset_dict: *const u8,
+    preset_dict_size: u32,
+    lc: u32,
+    lp: u32,
+    pb: u32,
+    mode: lzma_mode,
+    nice_len: u32,
+    mf: lzma_match_finder,
+    depth: u32,
+    ext_flags: u32,
+    ext_size_low: u32,
+    ext_size_high: u32,
+    reserved_int4: u32,
+    reserved_int5: u32,
+    reserved_int6: u32,
+    reserved_int7: u32,
+    reserved_int8: u32,
+    reserved_enum1: lzma_reserved_enum,
+    reserved_enum2: lzma_reserved_enum,
+    reserved_enum3: lzma_reserved_enum,
+    reserved_enum4: lzma_reserved_enum,
+    reserved_ptr1: *mut core::ffi::c_void,
+    reserved_ptr2: *mut core::ffi::c_void,
 }
-pub type lzma_match_finder = core::ffi::c_uint;
-pub const LZMA_MF_BT4: lzma_match_finder = 20;
-pub const LZMA_MF_BT3: lzma_match_finder = 19;
-pub const LZMA_MF_BT2: lzma_match_finder = 18;
-pub const LZMA_MF_HC4: lzma_match_finder = 4;
-pub const LZMA_MF_HC3: lzma_match_finder = 3;
-pub type lzma_mode = core::ffi::c_uint;
-pub const LZMA_MODE_NORMAL: lzma_mode = 2;
-pub const LZMA_MODE_FAST: lzma_mode = 1;
-pub type lzma_bool = core::ffi::c_uchar;
-pub type z_stream = z_stream_s;
+type lzma_match_finder = core::ffi::c_uint;
+const LZMA_MF_BT4: lzma_match_finder = 20;
+const LZMA_MF_BT3: lzma_match_finder = 19;
+const LZMA_MF_BT2: lzma_match_finder = 18;
+const LZMA_MF_HC4: lzma_match_finder = 4;
+const LZMA_MF_HC3: lzma_match_finder = 3;
+type lzma_mode = core::ffi::c_uint;
+const LZMA_MODE_NORMAL: lzma_mode = 2;
+const LZMA_MODE_FAST: lzma_mode = 1;
+type lzma_bool = core::ffi::c_uchar;
+type z_stream = z_stream_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct z_stream_s {
-    pub next_in: *mut Bytef,
-    pub avail_in: uInt,
-    pub total_in: uLong,
-    pub next_out: *mut Bytef,
-    pub avail_out: uInt,
-    pub total_out: uLong,
-    pub msg: *mut core::ffi::c_char,
-    pub state: *mut internal_state,
-    pub zalloc: alloc_func,
-    pub zfree: free_func,
-    pub opaque: voidpf,
-    pub data_type: core::ffi::c_int,
-    pub adler: uLong,
-    pub reserved: uLong,
+struct z_stream_s {
+    next_in: *mut Bytef,
+    avail_in: uInt,
+    total_in: uLong,
+    next_out: *mut Bytef,
+    avail_out: uInt,
+    total_out: uLong,
+    msg: *mut core::ffi::c_char,
+    state: *mut internal_state,
+    zalloc: alloc_func,
+    zfree: free_func,
+    opaque: voidpf,
+    data_type: core::ffi::c_int,
+    adler: uLong,
+    reserved: uLong,
 }
-pub type uLong = core::ffi::c_ulong;
-pub type voidpf = *mut core::ffi::c_void;
-pub type free_func = Option<unsafe extern "C" fn(voidpf, voidpf) -> ()>;
-pub type alloc_func = Option<unsafe extern "C" fn(voidpf, uInt, uInt) -> voidpf>;
-pub type uInt = core::ffi::c_uint;
-pub type Bytef = Byte;
-pub type Byte = core::ffi::c_uchar;
-pub type z_streamp = *mut z_stream;
-pub type speedChange_e = core::ffi::c_uint;
-pub const faster: speedChange_e = 2;
-pub const slower: speedChange_e = 1;
-pub const noChange: speedChange_e = 0;
+type uLong = core::ffi::c_ulong;
+type voidpf = *mut core::ffi::c_void;
+type free_func = Option<unsafe extern "C" fn(voidpf, voidpf) -> ()>;
+type alloc_func = Option<unsafe extern "C" fn(voidpf, uInt, uInt) -> voidpf>;
+type uInt = core::ffi::c_uint;
+type Bytef = Byte;
+type Byte = core::ffi::c_uchar;
+type z_streamp = *mut z_stream;
+type speedChange_e = core::ffi::c_uint;
+const faster: speedChange_e = 2;
+const slower: speedChange_e = 1;
+const noChange: speedChange_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct dRess_t {
-    pub dict: FIO_Dict_t,
-    pub dctx: *mut ZSTD_DStream,
-    pub writeCtx: *mut WritePoolCtx_t,
-    pub readCtx: *mut ReadPoolCtx_t,
+struct dRess_t {
+    dict: FIO_Dict_t,
+    dctx: *mut ZSTD_DStream,
+    writeCtx: *mut WritePoolCtx_t,
+    readCtx: *mut ReadPoolCtx_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fileInfo_t {
-    pub decompressedSize: u64,
-    pub compressedSize: u64,
-    pub windowSize: u64,
-    pub numActualFrames: core::ffi::c_int,
-    pub numSkippableFrames: core::ffi::c_int,
-    pub decompUnavailable: core::ffi::c_int,
-    pub usesCheck: core::ffi::c_int,
-    pub checksum: [u8; 4],
-    pub nbFiles: u32,
-    pub dictID: core::ffi::c_uint,
+struct fileInfo_t {
+    decompressedSize: u64,
+    compressedSize: u64,
+    windowSize: u64,
+    numActualFrames: core::ffi::c_int,
+    numSkippableFrames: core::ffi::c_int,
+    decompUnavailable: core::ffi::c_int,
+    usesCheck: core::ffi::c_int,
+    checksum: [u8; 4],
+    nbFiles: u32,
+    dictID: core::ffi::c_uint,
 }
-pub type InfoError = core::ffi::c_uint;
-pub const info_truncated_input: InfoError = 4;
-pub const info_file_error: InfoError = 3;
-pub const info_not_zstd: InfoError = 2;
-pub const info_frame_error: InfoError = 1;
-pub const info_success: InfoError = 0;
-pub const _IOFBF: core::ffi::c_int = 0;
-pub const UINT64_MAX: core::ffi::c_ulong = 18446744073709551615;
+type InfoError = core::ffi::c_uint;
+const info_truncated_input: InfoError = 4;
+const info_file_error: InfoError = 3;
+const info_not_zstd: InfoError = 2;
+const info_frame_error: InfoError = 1;
+const info_success: InfoError = 0;
+const _IOFBF: core::ffi::c_int = 0;
+const UINT64_MAX: core::ffi::c_ulong = 18446744073709551615;
 
-pub const PATH_SEP: core::ffi::c_int = '/' as i32;
-pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
-pub const S_IRUSR: core::ffi::c_int = __S_IREAD;
-pub const S_IWUSR: core::ffi::c_int = __S_IWRITE;
-pub const S_IRGRP: core::ffi::c_int = S_IRUSR >> 3;
-pub const S_IWGRP: core::ffi::c_int = S_IWUSR >> 3;
-pub const S_IROTH: core::ffi::c_int = S_IRGRP >> 3;
-pub const S_IWOTH: core::ffi::c_int = S_IWGRP >> 3;
-pub const SEC_TO_MICRO: core::ffi::c_int = 1000000;
-pub const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
-pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
-pub const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0 as core::ffi::c_uint;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
+const PATH_SEP: core::ffi::c_int = '/' as i32;
+const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
+const S_IRUSR: core::ffi::c_int = __S_IREAD;
+const S_IWUSR: core::ffi::c_int = __S_IWRITE;
+const S_IRGRP: core::ffi::c_int = S_IRUSR >> 3;
+const S_IWGRP: core::ffi::c_int = S_IWUSR >> 3;
+const S_IROTH: core::ffi::c_int = S_IRGRP >> 3;
+const S_IWOTH: core::ffi::c_int = S_IWGRP >> 3;
+const SEC_TO_MICRO: core::ffi::c_int = 1000000;
+const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
+const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
+const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0 as core::ffi::c_uint;
+const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
+const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
+const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
-pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
-pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-pub const stdinmark: [core::ffi::c_char; 10] =
+const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
+const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
+const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
+const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+const stdinmark: [core::ffi::c_char; 10] =
     unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/*stdin*\\\0") };
-pub const stdoutmark: [core::ffi::c_char; 11] =
+const stdoutmark: [core::ffi::c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[core::ffi::c_char; 11]>(b"/*stdout*\\\0") };
-pub const nulmark: [core::ffi::c_char; 10] =
+const nulmark: [core::ffi::c_char; 10] =
     unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/dev/null\0") };
-pub const LZMA_EXTENSION: &CStr = c".lzma";
-pub const XZ_EXTENSION: &CStr = c".xz";
-pub const TXZ_EXTENSION: &CStr = c".txz";
-pub const GZ_EXTENSION: &CStr = c".gz";
-pub const TGZ_EXTENSION: &CStr = c".tgz";
-pub const ZSTD_EXTENSION: &CStr = c".zst";
-pub const TZSTD_EXTENSION: &CStr = c"tzst";
-pub const ZSTD_ALT_EXTENSION: &CStr = c"zstd";
-pub const LZ4_EXTENSION: &CStr = c".lz4";
-pub const TLZ4_EXTENSION: &CStr = c"tlz4";
+const LZMA_EXTENSION: &CStr = c".lzma";
+const XZ_EXTENSION: &CStr = c".xz";
+const TXZ_EXTENSION: &CStr = c".txz";
+const GZ_EXTENSION: &CStr = c".gz";
+const TGZ_EXTENSION: &CStr = c".tgz";
+const ZSTD_EXTENSION: &CStr = c".zst";
+const TZSTD_EXTENSION: &CStr = c"tzst";
+const ZSTD_ALT_EXTENSION: &CStr = c"zstd";
+const LZ4_EXTENSION: &CStr = c".lz4";
+const TLZ4_EXTENSION: &CStr = c"tlz4";
 pub static mut g_display_prefs: FIO_display_prefs_t = {
     FIO_display_prefs_s {
         displayLevel: 2,
         progressSetting: FIO_ps_auto,
     }
 };
-pub static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
-pub const ZLIB_VERSION: [core::ffi::c_char; 4] =
+static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
+const ZLIB_VERSION: [core::ffi::c_char; 4] =
     unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b"1.3\0") };
-pub const Z_NO_FLUSH: core::ffi::c_int = 0;
-pub const Z_FINISH: core::ffi::c_int = 4;
-pub const Z_OK: core::ffi::c_int = 0;
-pub const Z_STREAM_END: core::ffi::c_int = 1;
-pub const Z_BUF_ERROR: core::ffi::c_int = -(5);
-pub const Z_BEST_COMPRESSION: core::ffi::c_int = 9;
-pub const Z_NULL: core::ffi::c_int = 0;
-pub const ZSTD_SPARSE_DEFAULT: core::ffi::c_int = 1;
-pub const __S_IREAD: core::ffi::c_int = 0o400 as core::ffi::c_int;
-pub const __S_IWRITE: core::ffi::c_int = 0o200 as core::ffi::c_int;
-pub const NULL: core::ffi::c_int = 0;
-pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-pub const O_RDONLY: core::ffi::c_int = 0;
-pub const O_WRONLY: core::ffi::c_int = 0o1 as core::ffi::c_int;
-pub const O_CREAT: core::ffi::c_int = 0o100 as core::ffi::c_int;
-pub const O_TRUNC: core::ffi::c_int = 0o1000 as core::ffi::c_int;
-pub const SIG_DFL: core::ffi::c_int = 0;
-pub const SIG_IGN: core::ffi::c_int = 1;
-pub const SIGINT: core::ffi::c_int = 2;
-pub const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
-pub const LONG_TELL: unsafe extern "C" fn(*mut FILE) -> core::ffi::c_long = ftell;
-pub const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
+const Z_NO_FLUSH: core::ffi::c_int = 0;
+const Z_FINISH: core::ffi::c_int = 4;
+const Z_OK: core::ffi::c_int = 0;
+const Z_STREAM_END: core::ffi::c_int = 1;
+const Z_BUF_ERROR: core::ffi::c_int = -(5);
+const Z_BEST_COMPRESSION: core::ffi::c_int = 9;
+const Z_NULL: core::ffi::c_int = 0;
+const ZSTD_SPARSE_DEFAULT: core::ffi::c_int = 1;
+const __S_IREAD: core::ffi::c_int = 0o400 as core::ffi::c_int;
+const __S_IWRITE: core::ffi::c_int = 0o200 as core::ffi::c_int;
+const NULL: core::ffi::c_int = 0;
+const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
+const O_RDONLY: core::ffi::c_int = 0;
+const O_WRONLY: core::ffi::c_int = 0o1 as core::ffi::c_int;
+const O_CREAT: core::ffi::c_int = 0o100 as core::ffi::c_int;
+const O_TRUNC: core::ffi::c_int = 0o1000 as core::ffi::c_int;
+const SIG_DFL: core::ffi::c_int = 0;
+const SIG_IGN: core::ffi::c_int = 1;
+const SIGINT: core::ffi::c_int = 2;
+const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
+const LONG_TELL: unsafe extern "C" fn(*mut FILE) -> core::ffi::c_long = ftell;
+const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
 pub unsafe fn FIO_zlibVersion() -> *const core::ffi::c_char {
     zlibVersion()
 }
@@ -6778,16 +6778,15 @@ pub unsafe fn FIO_decompressFilename(
     FIO_freeDResources(ress);
     decodingError
 }
-static mut suffixList: [*const core::ffi::c_char; 9] = [
-    ZSTD_EXTENSION.as_ptr(),
-    TZSTD_EXTENSION.as_ptr(),
-    ZSTD_ALT_EXTENSION.as_ptr(),
-    GZ_EXTENSION.as_ptr(),
-    TGZ_EXTENSION.as_ptr(),
-    LZMA_EXTENSION.as_ptr(),
-    XZ_EXTENSION.as_ptr(),
-    TXZ_EXTENSION.as_ptr(),
-    NULL as *const core::ffi::c_char,
+static suffixList: [&CStr; 8] = [
+    ZSTD_EXTENSION,
+    TZSTD_EXTENSION,
+    ZSTD_ALT_EXTENSION,
+    GZ_EXTENSION,
+    TGZ_EXTENSION,
+    LZMA_EXTENSION,
+    XZ_EXTENSION,
+    TXZ_EXTENSION,
 ];
 static suffixListStr: &CStr = c".zst/.tzst/.gz/.tgz/.lzma/.xz/.txz";
 unsafe fn FIO_determineDstName(
@@ -6819,15 +6818,10 @@ unsafe fn FIO_determineDstName(
         return NULL as *const core::ffi::c_char;
     }
     srcSuffixLen = strlen(srcSuffix);
-    let mut matchedSuffixPtr = core::ptr::null_mut::<*const core::ffi::c_char>();
-    matchedSuffixPtr = suffixList.as_mut_ptr();
-    while !(*matchedSuffixPtr).is_null() {
-        if strcmp(*matchedSuffixPtr, srcSuffix) == 0 {
-            break;
-        }
-        matchedSuffixPtr = matchedSuffixPtr.offset(1);
-    }
-    if sfnSize <= srcSuffixLen || (*matchedSuffixPtr).is_null() {
+    let matchedSuffix = suffixList
+        .iter()
+        .find(|suffix| strcmp(suffix.as_ptr(), srcSuffix) == 0);
+    if sfnSize <= srcSuffixLen || matchedSuffix.is_none() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
                 stderr,
@@ -6839,7 +6833,7 @@ unsafe fn FIO_determineDstName(
         }
         return NULL as *const core::ffi::c_char;
     }
-    if *(*matchedSuffixPtr).offset(1) as core::ffi::c_int == 't' as i32 {
+    if *matchedSuffix.unwrap().as_ptr().offset(1) as core::ffi::c_int == 't' as i32 {
         dstSuffix = b".tar\0" as *const u8 as *const core::ffi::c_char;
         dstSuffixLen = strlen(dstSuffix);
     }

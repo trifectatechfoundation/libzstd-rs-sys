@@ -12,8 +12,7 @@ use libzstd_rs::lib::dictBuilder::fastcover::{
     ZDICT_trainFromBuffer_fastCover,
 };
 use libzstd_rs::lib::dictBuilder::zdict::{
-    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_params_t,
-    ZDICT_trainFromBuffer_legacy,
+    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_trainFromBuffer_legacy,
 };
 use libzstd_rs::lib::zstd::*;
 

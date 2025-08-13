@@ -228,7 +228,7 @@ pub unsafe fn RDG_genStdout(
             &mut seed32,
         );
         total = total.wrapping_add(genBlockSize as u64);
-        let unused = fwrite(buff as *const core::ffi::c_void, 1, genBlockSize, stdout);
+        let _ = fwrite(buff as *const core::ffi::c_void, 1, genBlockSize, stdout);
         memcpy(
             buff as *mut core::ffi::c_void,
             buff.offset(stdBlockSize as isize) as *const core::ffi::c_void,

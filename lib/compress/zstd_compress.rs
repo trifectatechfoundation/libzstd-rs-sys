@@ -1898,17 +1898,15 @@ unsafe fn ZSTD_cpuid() -> ZSTD_cpuid_t {
         options(preserves_flags, pure, readonly, att_syntax)
     );
     if n >= 1 {
-        let mut f1a: u32 = 0;
         asm!(
-            "cpuid", inlateout("ax") 1 => f1a, lateout("cx") f1c,
+            "cpuid", inlateout("ax") 1 => _, lateout("cx") f1c,
             lateout("dx") f1d, options(preserves_flags, pure, readonly, att_syntax)
         );
     }
     if n >= 7 {
-        let mut f7a: u32 = 0;
         asm!(
             "cpuid\nmov {restmp0:x}, %bx", restmp0 = lateout(reg) f7b, inlateout("ax") 7
-            as core::ffi::c_int => f7a, inlateout("cx") 0 => f7c,
+            as core::ffi::c_int => _, inlateout("cx") 0 => f7c,
             out("edx") _, options(preserves_flags, pure, readonly, att_syntax)
         );
     }

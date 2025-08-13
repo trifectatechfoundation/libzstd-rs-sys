@@ -585,7 +585,7 @@ mod tests {
                     let mut workspace =  core::mem::transmute(workspace) ;
 
                     // Pull in libzstd.a
-                    use zstd_sys;
+                    use zstd_sys as _;
 
                     // This is not meant to be exported by the C version of ZSTD,
                     // so zstd_sys doesn't provide a declaration for it. The
