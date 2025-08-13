@@ -4328,22 +4328,7 @@ unsafe fn construct_SA(
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
-                    } else {
-                        __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1630,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
                     if (s + 1) < n
                         && *T.offset(s as isize) as core::ffi::c_int
                             <= *T.offset((s + 1) as isize) as core::ffi::c_int
@@ -4433,23 +4418,7 @@ unsafe fn construct_SA(
                     k = k.offset(-1);
                     *fresh192 = s;
                 } else {
-                    if s == 0 && *T.offset(s as isize) as core::ffi::c_int == c1 || s < 0 {
-                    } else {
-                        __assert_fail(
-                            b"((s == 0) && (T[s] == c1)) || (s < 0)\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1643,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(s == 0 && *T.offset(s as isize) as core::ffi::c_int == c1 || s < 0);
                     *j = !s;
                 }
                 j = j.offset(-1);
@@ -4569,22 +4538,7 @@ unsafe fn construct_BWT(
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
-                    } else {
-                        __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1694,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
                     if (s + 1) < n
                         && *T.offset(s as isize) as core::ffi::c_int
                             <= *T.offset((s + 1) as isize) as core::ffi::c_int
@@ -4675,21 +4629,8 @@ unsafe fn construct_BWT(
                     *fresh195 = s;
                 } else if s != 0 {
                     *j = !s;
-                } else if *T.offset(s as isize) as core::ffi::c_int == c1 {
                 } else {
-                    __assert_fail(
-                        b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                            as *const u8 as *const core::ffi::c_char,
-                        1710,
-                        (*::core::mem::transmute::<
-                            &[u8; 72],
-                            &[core::ffi::c_char; 72],
-                        >(
-                            b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                        ))
-                            .as_ptr(),
-                    );
+                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
                 }
                 j = j.offset(-1);
             }
@@ -4807,22 +4748,7 @@ unsafe fn construct_BWT_indexes(
             while i <= j {
                 s = *j;
                 if (0) < s {
-                    if *T.offset(s as isize) as core::ffi::c_int == c1 {
-                    } else {
-                        __assert_fail(
-                            b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1775,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
                     if (s + 1) < n
                         && *T.offset(s as isize) as core::ffi::c_int
                             <= *T.offset((s + 1) as isize) as core::ffi::c_int
@@ -4917,21 +4843,8 @@ unsafe fn construct_BWT_indexes(
                     *fresh198 = s;
                 } else if s != 0 {
                     *j = !s;
-                } else if *T.offset(s as isize) as core::ffi::c_int == c1 {
                 } else {
-                    __assert_fail(
-                        b"T[s] == c1\0" as *const u8 as *const core::ffi::c_char,
-                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                            as *const u8 as *const core::ffi::c_char,
-                        1794,
-                        (*::core::mem::transmute::<
-                            &[u8; 104],
-                            &[core::ffi::c_char; 104],
-                        >(
-                            b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                        ))
-                            .as_ptr(),
-                    );
+                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
                 }
                 j = j.offset(-1);
             }
