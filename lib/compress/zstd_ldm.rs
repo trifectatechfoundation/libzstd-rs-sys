@@ -216,7 +216,7 @@ unsafe fn ZSTD_storeSeq(
     mut matchLength: size_t,
 ) {
     let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
-    let litEnd = literals.offset(litLength as isize);
+    let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
             (*seqStorePtr).lit as *mut core::ffi::c_void,
@@ -233,7 +233,7 @@ unsafe fn ZSTD_storeSeq(
     } else {
         ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
     }
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).offset(litLength as isize);
+    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 #[inline]
@@ -297,10 +297,10 @@ unsafe fn ZSTD_count_2segments(
         iEnd
     };
     let matchLength = ZSTD_count(ip, match_0, vEnd);
-    if match_0.offset(matchLength as isize) != mEnd {
+    if match_0.add(matchLength) != mEnd {
         return matchLength;
     }
-    matchLength.wrapping_add(ZSTD_count(ip.offset(matchLength as isize), iStart, iEnd))
+    matchLength.wrapping_add(ZSTD_count(ip.add(matchLength), iStart, iEnd))
 }
 #[inline]
 unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
@@ -465,7 +465,7 @@ unsafe fn ZSTD_wildcopy(
     let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let oend = op.offset(length as isize);
+    let oend = op.add(length);
     if ovtype as core::ffi::c_uint
         == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
         && diff < WILDCOPY_VECLEN as ptrdiff_t
@@ -822,25 +822,25 @@ unsafe fn ZSTD_ldm_gear_reset(
     let mut n = 0 as size_t;
     while n.wrapping_add(3) < minMatchLength {
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
     }
     while n < minMatchLength {
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
     }
@@ -865,7 +865,7 @@ unsafe fn ZSTD_ldm_gear_feed(
             break;
         }
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
@@ -877,7 +877,7 @@ unsafe fn ZSTD_ldm_gear_feed(
             }
         }
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
@@ -889,7 +889,7 @@ unsafe fn ZSTD_ldm_gear_feed(
             }
         }
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
@@ -901,7 +901,7 @@ unsafe fn ZSTD_ldm_gear_feed(
             }
         }
         hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
         ));
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
@@ -926,7 +926,7 @@ unsafe fn ZSTD_ldm_gear_feed(
                     continue;
                 }
                 hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-                    (*data.offset(n as isize) as core::ffi::c_int & 0xff as core::ffi::c_int)
+                    (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int)
                         as isize,
                 ));
                 n = n.wrapping_add(1);
@@ -1092,7 +1092,7 @@ unsafe fn ZSTD_ldm_getBucket(
     mut hash: size_t,
     bucketSizeLog: u32,
 ) -> *mut ldmEntry_t {
-    ((*ldmState).hashTable).offset((hash << bucketSizeLog) as isize)
+    ((*ldmState).hashTable).add(hash << bucketSizeLog)
 }
 unsafe fn ZSTD_ldm_insertEntry(
     mut ldmState: *mut ldmState_t,
@@ -1100,7 +1100,7 @@ unsafe fn ZSTD_ldm_insertEntry(
     entry: ldmEntry_t,
     bucketSizeLog: u32,
 ) {
-    let pOffset = ((*ldmState).bucketOffsets).offset(hash as isize);
+    let pOffset = ((*ldmState).bucketOffsets).add(hash);
     let offset = *pOffset as core::ffi::c_uint;
     *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
     *pOffset = (offset.wrapping_add(1)
@@ -1201,11 +1201,10 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         );
         n = 0;
         while n < numSplits {
-            if ip.offset(*splits.offset(n as isize) as isize)
+            if ip.add(*splits.offset(n as isize))
                 >= istart.offset(minMatchLength as isize)
             {
-                let split = ip
-                    .offset(*splits.offset(n as isize) as isize)
+                let split = ip.add(*splits.offset(n as isize))
                     .offset(-(minMatchLength as isize));
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
@@ -1223,7 +1222,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             }
             n = n.wrapping_add(1);
         }
-        ip = ip.offset(hashed as isize);
+        ip = ip.add(hashed);
     }
 }
 unsafe fn ZSTD_ldm_limitTableUpdate(mut ms: *mut ZSTD_MatchState_t, mut anchor: *const u8) {
@@ -1273,7 +1272,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     };
     let lowPrefixPtr = base.offset(dictLimit as isize);
     let istart = src as *const u8;
-    let iend = istart.offset(srcSize as isize);
+    let iend = istart.add(srcSize);
     let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
     let mut anchor = istart;
     let mut ip = istart;
@@ -1303,8 +1302,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         );
         n = 0;
         while n < numSplits {
-            let split = ip
-                .offset(*splits.offset(n as isize) as isize)
+            let split = ip.add(*splits.offset(n as isize))
                 .offset(-(minMatchLength as isize));
             let xxhash = ZSTD_XXH64(
                 split as *const core::ffi::c_void,
@@ -1428,7 +1426,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     offset = (split_0.offset_from(base) as core::ffi::c_long as u32)
                         .wrapping_sub((*bestEntry).offset);
                     mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
-                    let seq = ((*rawSeqStore).seq).offset((*rawSeqStore).size as isize);
+                    let seq = ((*rawSeqStore).seq).add((*rawSeqStore).size);
                     if (*rawSeqStore).size == (*rawSeqStore).capacity {
                         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
                     }
@@ -1446,8 +1444,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         newEntry,
                         (*params).bucketSizeLog,
                     );
-                    anchor = split_0.offset(forwardMatchLength as isize);
-                    if anchor > ip.offset(hashed as isize) {
+                    anchor = split_0.add(forwardMatchLength);
+                    if anchor > ip.add(hashed) {
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
                             anchor.offset(-(minMatchLength as isize)),
@@ -1460,7 +1458,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             }
             n = n.wrapping_add(1);
         }
-        ip = ip.offset(hashed as isize);
+        ip = ip.add(hashed);
     }
     iend.offset_from(anchor) as core::ffi::c_long as size_t
 }
@@ -1486,7 +1484,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
 ) -> size_t {
     let maxDist = (1) << (*params).windowLog;
     let istart = src as *const u8;
-    let iend = istart.offset(srcSize as isize);
+    let iend = istart.add(srcSize);
     let kMaxChunkSize = ((1) << 20) as size_t;
     let nbChunks = (srcSize / kMaxChunkSize)
         .wrapping_add((srcSize % kMaxChunkSize != 0) as core::ffi::c_int as size_t);
@@ -1494,12 +1492,12 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let mut leftoverSize = 0;
     chunk = 0;
     while chunk < nbChunks && (*sequences).size < (*sequences).capacity {
-        let chunkStart = istart.offset((chunk * kMaxChunkSize) as isize);
+        let chunkStart = istart.add(chunk * kMaxChunkSize);
         let remaining = iend.offset_from(chunkStart) as core::ffi::c_long as size_t;
         let chunkEnd = if remaining < kMaxChunkSize {
             iend
         } else {
-            chunkStart.offset(kMaxChunkSize as isize)
+            chunkStart.add(kMaxChunkSize)
         };
         let chunkSize = chunkEnd.offset_from(chunkStart) as core::ffi::c_long as size_t;
         let mut newLeftoverSize: size_t = 0;
@@ -1541,7 +1539,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             return newLeftoverSize;
         }
         if prevSize < (*sequences).size {
-            let fresh5 = &mut (*((*sequences).seq).offset(prevSize as isize)).litLength;
+            let fresh5 = &mut (*((*sequences).seq).add(prevSize)).litLength;
             *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
             leftoverSize = newLeftoverSize;
         } else {
@@ -1557,7 +1555,7 @@ pub unsafe fn ZSTD_ldm_skipSequences(
     minMatch: u32,
 ) {
     while srcSize > 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let mut seq = ((*rawSeqStore).seq).offset((*rawSeqStore).pos as isize);
+        let mut seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if srcSize <= (*seq).litLength as size_t {
             (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
             return;
@@ -1587,7 +1585,7 @@ unsafe fn maybeSplitSequence(
     remaining: u32,
     minMatch: u32,
 ) -> rawSeq {
-    let mut sequence = *((*rawSeqStore).seq).offset((*rawSeqStore).pos as isize);
+    let mut sequence = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
     if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
         (*rawSeqStore).pos;
@@ -1610,7 +1608,7 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(
 ) {
     let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let mut currSeq = *((*rawSeqStore).seq).offset((*rawSeqStore).pos as isize);
+        let mut currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
@@ -1641,7 +1639,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         ZSTD_matchState_dictMode(ms),
     );
     let istart = src as *const u8;
-    let iend = istart.offset(srcSize as isize);
+    let iend = istart.add(srcSize);
     let mut ip = istart;
     if (*cParams).strategy as core::ffi::c_uint
         >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint

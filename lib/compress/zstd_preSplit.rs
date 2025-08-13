@@ -54,7 +54,7 @@ unsafe fn addEvents_generic(
     while n < limit {
         let fresh0 = &mut (*((*fp).events)
             .as_mut_ptr()
-            .offset(hash2(p.offset(n as isize) as *const core::ffi::c_void, hashLog) as isize));
+            .offset(hash2(p.add(n) as *const core::ffi::c_void, hashLog) as isize));
         *fresh0 = (*fresh0).wrapping_add(1);
         n = n.wrapping_add(samplingRate);
     }
@@ -117,8 +117,8 @@ unsafe fn fpDistance(
     n = 0;
     while n < (1) << hashLog {
         distance = distance.wrapping_add(abs64(
-            *((*fp1).events).as_ptr().offset(n as isize) as i64 * (*fp2).nbEvents as i64
-                - *((*fp2).events).as_ptr().offset(n as isize) as i64 * (*fp1).nbEvents as i64,
+            *((*fp1).events).as_ptr().add(n) as i64 * (*fp2).nbEvents as i64
+                - *((*fp2).events).as_ptr().add(n) as i64 * (*fp1).nbEvents as i64,
         ));
         n = n.wrapping_add(1);
     }
@@ -140,8 +140,8 @@ unsafe fn mergeEvents(mut acc: *mut Fingerprint, mut newfp: *const Fingerprint) 
     let mut n: size_t = 0;
     n = 0;
     while n < HASHTABLESIZE as size_t {
-        let fresh1 = &mut (*((*acc).events).as_mut_ptr().offset(n as isize));
-        *fresh1 = (*fresh1).wrapping_add(*((*newfp).events).as_ptr().offset(n as isize));
+        let fresh1 = &mut (*((*acc).events).as_mut_ptr().add(n));
+        *fresh1 = (*fresh1).wrapping_add(*((*newfp).events).as_ptr().add(n));
         n = n.wrapping_add(1);
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
@@ -151,10 +151,8 @@ unsafe fn flushEvents(mut fpstats: *mut FPStats) {
     n = 0;
     while n < HASHTABLESIZE as size_t {
         *((*fpstats).pastEvents.events)
-            .as_mut_ptr()
-            .offset(n as isize) = *((*fpstats).newEvents.events)
-            .as_mut_ptr()
-            .offset(n as isize);
+            .as_mut_ptr().add(n) = *((*fpstats).newEvents.events)
+            .as_mut_ptr().add(n);
         n = n.wrapping_add(1);
     }
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
@@ -168,8 +166,8 @@ unsafe fn removeEvents(mut acc: *mut Fingerprint, mut slice: *const Fingerprint)
     let mut n: size_t = 0;
     n = 0;
     while n < HASHTABLESIZE as size_t {
-        let fresh2 = &mut (*((*acc).events).as_mut_ptr().offset(n as isize));
-        *fresh2 = (*fresh2).wrapping_sub(*((*slice).events).as_ptr().offset(n as isize));
+        let fresh2 = &mut (*((*acc).events).as_mut_ptr().add(n));
+        *fresh2 = (*fresh2).wrapping_sub(*((*slice).events).as_ptr().add(n));
         n = n.wrapping_add(1);
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_sub((*slice).nbEvents);
@@ -216,7 +214,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
     while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
         record_f.unwrap_unchecked()(
             &mut (*fpstats).newEvents,
-            p.offset(pos as isize) as *const core::ffi::c_void,
+            p.add(pos) as *const core::ffi::c_void,
             CHUNKSIZE as size_t,
         );
         if compareFingerprints(
@@ -257,8 +255,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     );
     HIST_add(
         ((*fpstats).newEvents.events).as_mut_ptr(),
-        (blockStart as *const core::ffi::c_char)
-            .offset(blockSize as isize)
+        (blockStart as *const core::ffi::c_char).add(blockSize)
             .offset(-(SEGMENT_SIZE as isize)) as *const core::ffi::c_void,
         SEGMENT_SIZE as size_t,
     );
@@ -269,8 +266,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     }
     HIST_add(
         ((*middleEvents).events).as_mut_ptr(),
-        (blockStart as *const core::ffi::c_char)
-            .offset((blockSize / 2) as isize)
+        (blockStart as *const core::ffi::c_char).add(blockSize / 2)
             .offset(-((SEGMENT_SIZE / 2) as isize)) as *const core::ffi::c_void,
         SEGMENT_SIZE as size_t,
     );

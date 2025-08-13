@@ -91,19 +91,19 @@ unsafe fn RDG_genBlock(
         size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
         if buffSize < pos.wrapping_add(size0) {
             memset(
-                buffPtr.offset(pos as isize) as *mut core::ffi::c_void,
+                buffPtr.add(pos) as *mut core::ffi::c_void,
                 0,
                 buffSize.wrapping_sub(pos),
             );
             return;
         }
         memset(
-            buffPtr.offset(pos as isize) as *mut core::ffi::c_void,
+            buffPtr.add(pos) as *mut core::ffi::c_void,
             0,
             size0,
         );
         pos = pos.wrapping_add(size0);
-        *buffPtr.offset(pos.wrapping_sub(1) as isize) = RDG_genChar(seedPtr, ldt);
+        *buffPtr.add(pos.wrapping_sub(1)) = RDG_genChar(seedPtr, ldt);
     }
     if pos == 0 {
         *buffPtr.offset(0) = RDG_genChar(seedPtr, ldt);
@@ -134,7 +134,7 @@ unsafe fn RDG_genBlock(
                 match_0 = match_0.wrapping_add(1);
                 let fresh2 = pos;
                 pos = pos.wrapping_add(1);
-                *buffPtr.offset(fresh2 as isize) = *buffPtr.offset(fresh1 as isize);
+                *buffPtr.add(fresh2) = *buffPtr.add(fresh1);
             }
             prevOffset = offset;
         } else {
@@ -147,7 +147,7 @@ unsafe fn RDG_genBlock(
             while pos < d_0 as size_t {
                 let fresh3 = pos;
                 pos = pos.wrapping_add(1);
-                *buffPtr.offset(fresh3 as isize) = RDG_genChar(seedPtr, ldt);
+                *buffPtr.add(fresh3) = RDG_genChar(seedPtr, ldt);
             }
         }
     }
@@ -231,7 +231,7 @@ pub unsafe fn RDG_genStdout(
         let _ = fwrite(buff as *const core::ffi::c_void, 1, genBlockSize, stdout);
         memcpy(
             buff as *mut core::ffi::c_void,
-            buff.offset(stdBlockSize as isize) as *const core::ffi::c_void,
+            buff.add(stdBlockSize) as *const core::ffi::c_void,
             stdDictSize,
         );
     }

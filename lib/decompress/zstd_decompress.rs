@@ -541,10 +541,10 @@ unsafe fn ZSTD_decompressLegacyStream(
     match version {
         5 => {
             let mut dctx = legacyContext as *mut ZBUFFv05_DCtx;
-            let mut src = ((*input).src as *const core::ffi::c_char).offset((*input).pos as isize)
+            let mut src = ((*input).src as *const core::ffi::c_char).add((*input).pos)
                 as *const core::ffi::c_void;
             let mut readSize = ((*input).size).wrapping_sub((*input).pos);
-            let mut dst = ((*output).dst as *mut core::ffi::c_char).offset((*output).pos as isize)
+            let mut dst = ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
                 as *mut core::ffi::c_void;
             let mut decodedSize = ((*output).size).wrapping_sub((*output).pos);
             let hintSize =
@@ -555,10 +555,10 @@ unsafe fn ZSTD_decompressLegacyStream(
         }
         6 => {
             let mut dctx_0 = legacyContext as *mut ZBUFFv06_DCtx;
-            let mut src_0 = ((*input).src as *const core::ffi::c_char).offset((*input).pos as isize)
+            let mut src_0 = ((*input).src as *const core::ffi::c_char).add((*input).pos)
                 as *const core::ffi::c_void;
             let mut readSize_0 = ((*input).size).wrapping_sub((*input).pos);
-            let mut dst_0 = ((*output).dst as *mut core::ffi::c_char).offset((*output).pos as isize)
+            let mut dst_0 = ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
                 as *mut core::ffi::c_void;
             let mut decodedSize_0 = ((*output).size).wrapping_sub((*output).pos);
             let hintSize_0 = ZBUFFv06_decompressContinue(
@@ -574,10 +574,10 @@ unsafe fn ZSTD_decompressLegacyStream(
         }
         7 => {
             let mut dctx_1 = legacyContext as *mut ZBUFFv07_DCtx;
-            let mut src_1 = ((*input).src as *const core::ffi::c_char).offset((*input).pos as isize)
+            let mut src_1 = ((*input).src as *const core::ffi::c_char).add((*input).pos)
                 as *const core::ffi::c_void;
             let mut readSize_1 = ((*input).size).wrapping_sub((*input).pos);
-            let mut dst_1 = ((*output).dst as *mut core::ffi::c_char).offset((*output).pos as isize)
+            let mut dst_1 = ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
                 as *mut core::ffi::c_void;
             let mut decodedSize_1 = ((*output).size).wrapping_sub((*output).pos);
             let hintSize_1 = ZBUFFv07_decompressContinue(
@@ -619,16 +619,16 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     if (*hashSet).ddictPtrCount == (*hashSet).ddictPtrTableSize {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
     }
-    while !(*((*hashSet).ddictPtrTable).offset(idx as isize)).is_null() {
-        if ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).offset(idx as isize)) == dictID {
-            let fresh0 = &mut (*((*hashSet).ddictPtrTable).offset(idx as isize));
+    while !(*((*hashSet).ddictPtrTable).add(idx)).is_null() {
+        if ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).add(idx)) == dictID {
+            let fresh0 = &mut (*((*hashSet).ddictPtrTable).add(idx));
             *fresh0 = ddict;
             return 0;
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
-    let fresh1 = &mut (*((*hashSet).ddictPtrTable).offset(idx as isize));
+    let fresh1 = &mut (*((*hashSet).ddictPtrTable).add(idx));
     *fresh1 = ddict;
     (*hashSet).ddictPtrCount = ((*hashSet).ddictPtrCount).wrapping_add(1);
     (*hashSet).ddictPtrCount;
@@ -654,8 +654,8 @@ unsafe fn ZSTD_DDictHashSet_expand(
     (*hashSet).ddictPtrCount = 0;
     i = 0;
     while i < oldTableSize {
-        if !(*oldTable.offset(i as isize)).is_null() {
-            let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.offset(i as isize));
+        if !(*oldTable.add(i)).is_null() {
+            let err_code = ZSTD_DDictHashSet_emplaceDDict(hashSet, *oldTable.add(i));
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
@@ -673,14 +673,14 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
     let idxRangeMask = ((*hashSet).ddictPtrTableSize).wrapping_sub(1);
     loop {
         let mut currDictID =
-            ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).offset(idx as isize)) as size_t;
+            ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).add(idx)) as size_t;
         if currDictID == dictID as size_t || currDictID == 0 {
             break;
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
-    *((*hashSet).ddictPtrTable).offset(idx as isize)
+    *((*hashSet).ddictPtrTable).add(idx)
 }
 unsafe fn ZSTD_createDDictHashSet(mut customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
     let mut ret = ZSTD_customMalloc(
@@ -952,7 +952,7 @@ unsafe fn ZSTD_frameHeaderSize_internal(
     if srcSize < minInputSize {
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
-    let fhd = *(src as *const u8).offset(minInputSize.wrapping_sub(1) as isize);
+    let fhd = *(src as *const u8).add(minInputSize.wrapping_sub(1));
     let dictID = (fhd as core::ffi::c_int & 3) as u32;
     let singleSegment = (fhd as core::ffi::c_int >> 5 & 1) as u32;
     let fcsId = (fhd as core::ffi::c_int >> 6) as u32;
@@ -1265,7 +1265,7 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
             if ERR_isError(skippableSize) != 0 {
                 return ZSTD_CONTENTSIZE_ERROR;
             }
-            src = (src as *const u8).offset(skippableSize as isize) as *const core::ffi::c_void;
+            src = (src as *const u8).add(skippableSize) as *const core::ffi::c_void;
             srcSize = srcSize.wrapping_sub(skippableSize);
         } else {
             let fcs = ZSTD_getFrameContentSize(src, srcSize);
@@ -1280,7 +1280,7 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
             if ERR_isError(frameSrcSize) != 0 {
                 return ZSTD_CONTENTSIZE_ERROR;
             }
-            src = (src as *const u8).offset(frameSrcSize as isize) as *const core::ffi::c_void;
+            src = (src as *const u8).add(frameSrcSize) as *const core::ffi::c_void;
             srcSize = srcSize.wrapping_sub(frameSrcSize);
         }
     }
@@ -1545,7 +1545,7 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
     mut blockSize: size_t,
 ) -> size_t {
     ZSTD_checkContinuity(dctx, blockStart, blockSize);
-    (*dctx).previousDstEnd = (blockStart as *const core::ffi::c_char).offset(blockSize as isize)
+    (*dctx).previousDstEnd = (blockStart as *const core::ffi::c_char).add(blockSize)
         as *const core::ffi::c_void;
     blockSize
 }
@@ -1633,7 +1633,7 @@ unsafe fn ZSTD_decompressFrame(
     let mut ip = istart;
     let ostart = dst as *mut u8;
     let oend = if dstCapacity != 0 {
-        ostart.offset(dstCapacity as isize)
+        ostart.add(dstCapacity)
     } else {
         ostart
     };
@@ -1668,7 +1668,7 @@ unsafe fn ZSTD_decompressFrame(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    ip = ip.offset(frameHeaderSize as isize);
+    ip = ip.add(frameHeaderSize);
     remainingSrcSize = remainingSrcSize.wrapping_sub(frameHeaderSize);
     if (*dctx).maxBlockSizeParam != 0 {
         (*dctx).fParams.blockSizeMax =
@@ -1694,7 +1694,7 @@ unsafe fn ZSTD_decompressFrame(
         if ERR_isError(cBlockSize) != 0 {
             return cBlockSize;
         }
-        ip = ip.offset(ZSTD_blockHeaderSize as isize);
+        ip = ip.add(ZSTD_blockHeaderSize);
         remainingSrcSize = remainingSrcSize.wrapping_sub(ZSTD_blockHeaderSize);
         if cBlockSize > remainingSrcSize {
             return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
@@ -1745,9 +1745,9 @@ unsafe fn ZSTD_decompressFrame(
             );
         }
         if decodedSize != 0 {
-            op = op.offset(decodedSize as isize);
+            op = op.add(decodedSize);
         }
-        ip = ip.offset(cBlockSize as isize);
+        ip = ip.add(cBlockSize);
         remainingSrcSize = remainingSrcSize.wrapping_sub(cBlockSize);
         if blockProperties.lastBlock != 0 {
             break;
@@ -1823,9 +1823,9 @@ unsafe fn ZSTD_decompressMultiFrame(
             {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
-            dst = (dst as *mut u8).offset(decodedSize as isize) as *mut core::ffi::c_void;
+            dst = (dst as *mut u8).add(decodedSize) as *mut core::ffi::c_void;
             dstCapacity = dstCapacity.wrapping_sub(decodedSize);
-            src = (src as *const u8).offset(frameSize as isize) as *const core::ffi::c_void;
+            src = (src as *const u8).add(frameSize) as *const core::ffi::c_void;
             srcSize = srcSize.wrapping_sub(frameSize);
         } else {
             if (*dctx).format == Format::ZSTD_f_zstd1 && srcSize >= 4 {
@@ -1838,7 +1838,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                     if ERR_isError(err_code) != 0 {
                         return err_code;
                     }
-                    src = (src as *const u8).offset(skippableSize as isize)
+                    src = (src as *const u8).add(skippableSize)
                         as *const core::ffi::c_void;
                     srcSize = srcSize.wrapping_sub(skippableSize);
                     continue;
@@ -1867,7 +1867,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                 return res;
             }
             if res != 0 {
-                dst = (dst as *mut u8).offset(res as isize) as *mut core::ffi::c_void;
+                dst = (dst as *mut u8).add(res) as *mut core::ffi::c_void;
             }
             dstCapacity = dstCapacity.wrapping_sub(res);
             moreThan1Frame = 1;
@@ -2027,8 +2027,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         1 => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
-                    .as_mut_ptr()
-                    .offset(((*dctx).headerSize).wrapping_sub(srcSize) as isize)
+                    .as_mut_ptr().add(((*dctx).headerSize).wrapping_sub(srcSize))
                     as *mut core::ffi::c_void,
                 src,
                 srcSize as libc::size_t,
@@ -2126,7 +2125,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
             }
             (*dctx).previousDstEnd =
-                (dst as *mut core::ffi::c_char).offset(rSize as isize) as *const core::ffi::c_void;
+                (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
             if (*dctx).expected > 0 {
                 return rSize;
             }
@@ -2169,8 +2168,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         6 => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
-                    .as_mut_ptr()
-                    .offset((8 as size_t).wrapping_sub(srcSize) as isize)
+                    .as_mut_ptr().add((8 as size_t).wrapping_sub(srcSize))
                     as *mut core::ffi::c_void,
                 src,
                 srcSize as libc::size_t,
@@ -2204,7 +2202,7 @@ unsafe fn ZSTD_refDictContent(
     ) as *const core::ffi::c_void;
     (*dctx).prefixStart = dict;
     (*dctx).previousDstEnd =
-        (dict as *const core::ffi::c_char).offset(dictSize as isize) as *const core::ffi::c_void;
+        (dict as *const core::ffi::c_char).add(dictSize) as *const core::ffi::c_void;
     0
 }
 
@@ -2214,7 +2212,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     dictSize: size_t,
 ) -> size_t {
     let mut dictPtr = dict as *const u8;
-    let dictEnd = dictPtr.offset(dictSize as isize);
+    let dictEnd = dictPtr.add(dictSize);
     if dictSize <= 8 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
@@ -2240,7 +2238,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     if ERR_isError(hSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dictPtr = dictPtr.offset(hSize as isize);
+    dictPtr = dictPtr.add(hSize);
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
     let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
     let mut offcodeLog: core::ffi::c_uint = 0;
@@ -2269,7 +2267,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut (*entropy).workspace,
         false,
     );
-    dictPtr = dictPtr.offset(offcodeHeaderSize as isize);
+    dictPtr = dictPtr.add(offcodeHeaderSize);
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
@@ -2298,7 +2296,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut (*entropy).workspace,
         false,
     );
-    dictPtr = dictPtr.offset(matchlengthHeaderSize as isize);
+    dictPtr = dictPtr.add(matchlengthHeaderSize);
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
@@ -2327,7 +2325,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut (*entropy).workspace,
         false,
     );
-    dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
+    dictPtr = dictPtr.add(litlengthHeaderSize);
     if dictPtr.offset(12) > dictEnd {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
@@ -2366,7 +2364,7 @@ unsafe fn ZSTD_decompress_insertDictionary(
     if ERR_isError(eSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dict = (dict as *const core::ffi::c_char).offset(eSize as isize) as *const core::ffi::c_void;
+    dict = (dict as *const core::ffi::c_char).add(eSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(eSize);
     (*dctx).fseEntropy = 1;
     (*dctx).litEntropy = (*dctx).fseEntropy;
@@ -2426,7 +2424,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     if !ddict.is_null() {
         let dictStart = ZSTD_DDict_dictContent(ddict) as *const core::ffi::c_char;
         let dictSize = ZSTD_DDict_dictSize(ddict);
-        let dictEnd = dictStart.offset(dictSize as isize) as *const core::ffi::c_void;
+        let dictEnd = dictStart.add(dictSize) as *const core::ffi::c_void;
         (*dctx).ddictIsCold = ((*dctx).dictEnd != dictEnd) as core::ffi::c_int;
     }
     let err_code = ZSTD_decompressBegin(dctx);
@@ -3083,7 +3081,7 @@ unsafe fn ZSTD_decompressContinueStream(
         };
         let decodedSize = ZSTD_decompressContinue(
             zds,
-            ((*zds).outBuff).offset((*zds).outStart as isize) as *mut core::ffi::c_void,
+            ((*zds).outBuff).add((*zds).outStart) as *mut core::ffi::c_void,
             dstSize,
             src,
             srcSize,
@@ -3110,7 +3108,7 @@ unsafe fn ZSTD_decompressContinueStream(
         if ERR_isError(err_code_0) != 0 {
             return err_code_0;
         }
-        *op = (*op).offset(decodedSize_0 as isize);
+        *op = (*op).add(decodedSize_0);
         (*zds).streamStage = zdss_read;
     }
     0
@@ -3123,24 +3121,24 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
 ) -> size_t {
     let src = (*input).src as *const core::ffi::c_char;
     let istart = if (*input).pos != 0 {
-        src.offset((*input).pos as isize)
+        src.add((*input).pos)
     } else {
         src
     };
     let iend = if (*input).size != 0 {
-        src.offset((*input).size as isize)
+        src.add((*input).size)
     } else {
         src
     };
     let mut ip = istart;
     let dst = (*output).dst as *mut core::ffi::c_char;
     let ostart = if (*output).pos != 0 {
-        dst.offset((*output).pos as isize)
+        dst.add((*output).pos)
     } else {
         dst
     };
     let oend = if (*output).size != 0 {
-        dst.offset((*output).size as isize)
+        dst.add((*output).size)
     } else {
         dst
     };
@@ -3184,11 +3182,11 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 let flushedSize = ZSTD_limitCopy(
                     op as *mut core::ffi::c_void,
                     oend.offset_from(op) as core::ffi::c_long as size_t,
-                    ((*zds).outBuff).offset((*zds).outStart as isize) as *const core::ffi::c_void,
+                    ((*zds).outBuff).add((*zds).outStart) as *const core::ffi::c_void,
                     toFlushSize,
                 );
                 op = if !op.is_null() {
-                    op.offset(flushedSize as isize)
+                    op.add(flushedSize)
                 } else {
                     op
                 };
@@ -3287,8 +3285,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     if remainingInput > 0 {
                         libc::memcpy(
                             ((*zds).headerBuffer)
-                                .as_mut_ptr()
-                                .offset((*zds).lhSize as isize)
+                                .as_mut_ptr().add((*zds).lhSize)
                                 as *mut core::ffi::c_void,
                             ip as *const core::ffi::c_void,
                             remainingInput as libc::size_t,
@@ -3325,14 +3322,13 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 }
                 libc::memcpy(
                     ((*zds).headerBuffer)
-                        .as_mut_ptr()
-                        .offset((*zds).lhSize as isize)
+                        .as_mut_ptr().add((*zds).lhSize)
                         as *mut core::ffi::c_void,
                     ip as *const core::ffi::c_void,
                     toLoad as libc::size_t,
                 );
                 (*zds).lhSize = hSize;
-                ip = ip.offset(toLoad as isize);
+                ip = ip.add(toLoad);
                 current_block_402 = 7792909578691485565;
             } else {
                 if (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
@@ -3360,9 +3356,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         if ERR_isError(decompressedSize) != 0 {
                             return decompressedSize;
                         }
-                        ip = istart.offset(cSize as isize);
+                        ip = istart.add(cSize);
                         op = if !op.is_null() {
-                            op.offset(decompressedSize as isize)
+                            op.add(decompressedSize)
                         } else {
                             op
                         };
@@ -3489,7 +3485,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                                 }
                             }
                             (*zds).inBuffSize = neededInBuffSize;
-                            (*zds).outBuff = ((*zds).inBuff).offset((*zds).inBuffSize as isize);
+                            (*zds).outBuff = ((*zds).inBuff).add((*zds).inBuffSize);
                             (*zds).outBuffSize = neededOutBuffSize;
                         }
                         (*zds).streamStage = zdss_read;
@@ -3518,7 +3514,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if ERR_isError(err_code_4) != 0 {
                     return err_code_4;
                 }
-                ip = ip.offset(neededInSize as isize);
+                ip = ip.add(neededInSize);
                 current_block_402 = 7792909578691485565;
             } else if ip == iend {
                 someMoreWork = 0;
@@ -3544,14 +3540,14 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
                 }
                 loadedSize = ZSTD_limitCopy(
-                    ((*zds).inBuff).offset((*zds).inPos as isize) as *mut core::ffi::c_void,
+                    ((*zds).inBuff).add((*zds).inPos) as *mut core::ffi::c_void,
                     toLoad_0,
                     ip as *const core::ffi::c_void,
                     iend.offset_from(ip) as core::ffi::c_long as size_t,
                 );
             }
             if loadedSize != 0 {
-                ip = ip.offset(loadedSize as isize);
+                ip = ip.add(loadedSize);
                 (*zds).inPos = ((*zds).inPos).wrapping_add(loadedSize);
             }
             if loadedSize < toLoad_0 {

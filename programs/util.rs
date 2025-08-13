@@ -1253,7 +1253,7 @@ unsafe fn UTIL_readFileContent(
     }
     loop {
         bytesRead = fread(
-            buf.offset(totalRead as isize) as *mut core::ffi::c_void,
+            buf.add(totalRead) as *mut core::ffi::c_void,
             1,
             bufSize.wrapping_sub(totalRead).wrapping_sub(1),
             inFile,
@@ -1281,7 +1281,7 @@ unsafe fn UTIL_readFileContent(
             bufSize = newBufSize;
         }
     }
-    *buf.offset(totalRead as isize) = '\0' as i32 as core::ffi::c_char;
+    *buf.add(totalRead) = '\0' as i32 as core::ffi::c_char;
     *totalReadPtr = totalRead;
     buf
 }
@@ -1289,14 +1289,14 @@ unsafe fn UTIL_processLines(mut buffer: *mut core::ffi::c_char, mut bufferSize: 
     let mut lineCount = 0 as size_t;
     let mut i = 0;
     while i < bufferSize {
-        if *buffer.offset(i as isize) as core::ffi::c_int == '\n' as i32 {
-            *buffer.offset(i as isize) = '\0' as i32 as core::ffi::c_char;
+        if *buffer.add(i) as core::ffi::c_int == '\n' as i32 {
+            *buffer.add(i) = '\0' as i32 as core::ffi::c_char;
             lineCount = lineCount.wrapping_add(1);
         }
         i = i.wrapping_add(1);
     }
     if bufferSize > 0
-        && (i == 0 || *buffer.offset(i.wrapping_sub(1) as isize) as core::ffi::c_int != '\0' as i32)
+        && (i == 0 || *buffer.add(i.wrapping_sub(1)) as core::ffi::c_int != '\0' as i32)
     {
         lineCount = lineCount.wrapping_add(1);
     }
@@ -1320,10 +1320,10 @@ unsafe fn UTIL_createLinePointers(
         let mut len = 0;
         let fresh0 = lineIndex;
         lineIndex = lineIndex.wrapping_add(1);
-        let fresh1 = &mut (*linePointers.offset(fresh0 as isize));
-        *fresh1 = buffer.offset(pos as isize);
+        let fresh1 = &mut (*linePointers.add(fresh0));
+        *fresh1 = buffer.add(pos);
         while pos.wrapping_add(len) < bufferSize
-            && *buffer.offset(pos.wrapping_add(len) as isize) as core::ffi::c_int != '\0' as i32
+            && *buffer.add(pos.wrapping_add(len)) as core::ffi::c_int != '\0' as i32
         {
             len = len.wrapping_add(1);
         }
@@ -1460,7 +1460,7 @@ pub unsafe fn UTIL_searchFileNamesTable(
     let mut i: size_t = 0;
     i = 0;
     while i < (*table).tableSize {
-        if strcmp(*((*table).fileNames).offset(i as isize), name) == 0 {
+        if strcmp(*((*table).fileNames).add(i), name) == 0 {
             return i as core::ffi::c_int;
         }
         i = i.wrapping_add(1);
@@ -1472,7 +1472,7 @@ pub unsafe fn UTIL_refFilename(
     mut filename: *const core::ffi::c_char,
 ) {
     assert!((*fnt).tableSize < (*fnt).tableCapacity);
-    let fresh2 = &mut (*((*fnt).fileNames).offset((*fnt).tableSize as isize));
+    let fresh2 = &mut (*((*fnt).fileNames).add((*fnt).tableSize));
     *fresh2 = filename;
     (*fnt).tableSize = ((*fnt).tableSize).wrapping_add(1);
     (*fnt).tableSize;
@@ -1481,9 +1481,9 @@ unsafe fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t {
     let mut fnb: size_t = 0;
     let mut totalSize = 0 as size_t;
     fnb = 0;
-    while fnb < (*table).tableSize && !(*((*table).fileNames).offset(fnb as isize)).is_null() {
+    while fnb < (*table).tableSize && !(*((*table).fileNames).add(fnb)).is_null() {
         totalSize = totalSize
-            .wrapping_add((strlen(*((*table).fileNames).offset(fnb as isize))).wrapping_add(1));
+            .wrapping_add((strlen(*((*table).fileNames).add(fnb))).wrapping_add(1));
         fnb = fnb.wrapping_add(1);
     }
     totalSize
@@ -1556,13 +1556,13 @@ pub unsafe fn UTIL_mergeFileNamesTable(
     {
         let curLen = strlen(*((*table1).fileNames).offset(idx1 as isize));
         memcpy(
-            buf.offset(pos as isize) as *mut core::ffi::c_void,
+            buf.add(pos) as *mut core::ffi::c_void,
             *((*table1).fileNames).offset(idx1 as isize) as *const core::ffi::c_void,
             curLen,
         );
         assert!(newTableIdx as size_t <= (*newTable).tableSize);
         let fresh3 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
-        *fresh3 = buf.offset(pos as isize);
+        *fresh3 = buf.add(pos);
         pos = pos.wrapping_add(curLen.wrapping_add(1));
         idx1 = idx1.wrapping_add(1);
         newTableIdx = newTableIdx.wrapping_add(1);
@@ -1575,13 +1575,13 @@ pub unsafe fn UTIL_mergeFileNamesTable(
     {
         let curLen_0 = strlen(*((*table2).fileNames).offset(idx2 as isize));
         memcpy(
-            buf.offset(pos as isize) as *mut core::ffi::c_void,
+            buf.add(pos) as *mut core::ffi::c_void,
             *((*table2).fileNames).offset(idx2 as isize) as *const core::ffi::c_void,
             curLen_0,
         );
         assert!((newTableIdx as size_t) < (*newTable).tableSize);
         let fresh4 = &mut (*((*newTable).fileNames).offset(newTableIdx as isize));
-        *fresh4 = buf.offset(pos as isize);
+        *fresh4 = buf.add(pos);
         pos = pos.wrapping_add(curLen_0.wrapping_add(1));
         idx2 = idx2.wrapping_add(1);
         newTableIdx = newTableIdx.wrapping_add(1);
@@ -1648,14 +1648,14 @@ unsafe fn UTIL_prepareFileList(
             dirName as *const core::ffi::c_void,
             dirLength,
         );
-        *path.offset(dirLength as isize) = '/' as i32 as core::ffi::c_char;
+        *path.add(dirLength) = '/' as i32 as core::ffi::c_char;
         memcpy(
-            path.offset(dirLength as isize).offset(1) as *mut core::ffi::c_void,
+            path.add(dirLength).offset(1) as *mut core::ffi::c_void,
             ((*entry).d_name).as_mut_ptr() as *const core::ffi::c_void,
             fnameLength,
         );
         pathLength = dirLength.wrapping_add(1).wrapping_add(fnameLength);
-        *path.offset(pathLength as isize) = 0;
+        *path.add(pathLength) = 0;
         if followLinks == 0 && UTIL_isLink(path) != 0 {
             if g_utilDisplayLevel >= 2 {
                 fprintf(
@@ -1675,9 +1675,7 @@ unsafe fn UTIL_prepareFileList(
                     return 0;
                 }
             } else {
-                if (*bufStart)
-                    .offset(*pos as isize)
-                    .offset(pathLength as isize)
+                if (*bufStart).add(*pos).add(pathLength)
                     >= *bufEnd
                 {
                     let mut newListSize = (*bufEnd).offset_from(*bufStart) as core::ffi::c_long
@@ -1694,13 +1692,11 @@ unsafe fn UTIL_prepareFileList(
                         return 0;
                     }
                 }
-                if (*bufStart)
-                    .offset(*pos as isize)
-                    .offset(pathLength as isize)
+                if (*bufStart).add(*pos).add(pathLength)
                     < *bufEnd
                 {
                     memcpy(
-                        (*bufStart).offset(*pos as isize) as *mut core::ffi::c_void,
+                        (*bufStart).add(*pos) as *mut core::ffi::c_void,
                         path as *const core::ffi::c_void,
                         pathLength.wrapping_add(1),
                     );
@@ -1838,8 +1834,8 @@ unsafe fn convertPathnameToDirName(mut pathname: *mut core::ffi::c_char) {
     assert!(!pathname.is_null());
     len = strlen(pathname);
     assert!(len > 0);
-    while *pathname.offset(len as isize) as core::ffi::c_int == PATH_SEP {
-        *pathname.offset(len as isize) = '\0' as i32 as core::ffi::c_char;
+    while *pathname.add(len) as core::ffi::c_int == PATH_SEP {
+        *pathname.add(len) = '\0' as i32 as core::ffi::c_char;
         len = len.wrapping_sub(1);
     }
     if len == 0 {
@@ -1909,8 +1905,8 @@ unsafe fn mallocAndJoin2Dir(
         dir1 as *const core::ffi::c_void,
         dir1Size,
     );
-    *outDirBuffer.offset(dir1Size as isize) = '\0' as i32 as core::ffi::c_char;
-    buffer = outDirBuffer.offset(dir1Size as isize);
+    *outDirBuffer.add(dir1Size) = '\0' as i32 as core::ffi::c_char;
+    buffer = outDirBuffer.add(dir1Size);
     if dir1Size > 0 && *buffer.offset(-(1)) as core::ffi::c_int != PATH_SEP {
         *buffer = PATH_SEP as core::ffi::c_char;
         buffer = buffer.offset(1);
@@ -1920,7 +1916,7 @@ unsafe fn mallocAndJoin2Dir(
         dir2 as *const core::ffi::c_void,
         dir2Size,
     );
-    *buffer.offset(dir2Size as isize) = '\0' as i32 as core::ffi::c_char;
+    *buffer.add(dir2Size) = '\0' as i32 as core::ffi::c_char;
     outDirBuffer
 }
 pub unsafe fn UTIL_createMirroredDestDirName(
@@ -1994,8 +1990,8 @@ unsafe fn firstIsParentOrSameDirOfSecond(
     let mut firstDirLen = strlen(firstDir);
     let mut secondDirLen = strlen(secondDir);
     (firstDirLen <= secondDirLen
-        && (*secondDir.offset(firstDirLen as isize) as core::ffi::c_int == PATH_SEP
-            || *secondDir.offset(firstDirLen as isize) as core::ffi::c_int == '\0' as i32)
+        && (*secondDir.add(firstDirLen) as core::ffi::c_int == PATH_SEP
+            || *secondDir.add(firstDirLen) as core::ffi::c_int == '\0' as i32)
         && 0 == strncmp(firstDir, secondDir, firstDirLen)) as core::ffi::c_int
 }
 unsafe extern "C" fn compareDir(
@@ -2137,7 +2133,7 @@ pub unsafe fn UTIL_createExpandedFNT(
 ) -> *mut FileNamesTable {
     let mut nbFiles: core::ffi::c_uint = 0;
     let mut buf = malloc(LIST_SIZE_INCREASE) as *mut core::ffi::c_char;
-    let mut bufend = buf.offset(LIST_SIZE_INCREASE as isize);
+    let mut bufend = buf.add(LIST_SIZE_INCREASE);
     if buf.is_null() {
         return NULL_0 as *mut FileNamesTable;
     }
@@ -2147,9 +2143,9 @@ pub unsafe fn UTIL_createExpandedFNT(
     pos = 0;
     nbFiles = 0;
     while ifnNb < nbIfns {
-        if UTIL_isDirectory(*inputNames.offset(ifnNb as isize)) == 0 {
-            let len = strlen(*inputNames.offset(ifnNb as isize));
-            if buf.offset(pos as isize).offset(len as isize) >= bufend {
+        if UTIL_isDirectory(*inputNames.add(ifnNb)) == 0 {
+            let len = strlen(*inputNames.add(ifnNb));
+            if buf.add(pos).add(len) >= bufend {
                 let mut newListSize = bufend.offset_from(buf) as core::ffi::c_long
                     + LIST_SIZE_INCREASE as core::ffi::c_long;
                 assert!(newListSize >= 0);
@@ -2160,10 +2156,10 @@ pub unsafe fn UTIL_createExpandedFNT(
                 }
                 bufend = buf.offset(newListSize as isize);
             }
-            if buf.offset(pos as isize).offset(len as isize) < bufend {
+            if buf.add(pos).add(len) < bufend {
                 memcpy(
-                    buf.offset(pos as isize) as *mut core::ffi::c_void,
-                    *inputNames.offset(ifnNb as isize) as *const core::ffi::c_void,
+                    buf.add(pos) as *mut core::ffi::c_void,
+                    *inputNames.add(ifnNb) as *const core::ffi::c_void,
                     len.wrapping_add(1),
                 );
                 pos = pos.wrapping_add(len.wrapping_add(1));
@@ -2171,7 +2167,7 @@ pub unsafe fn UTIL_createExpandedFNT(
             }
         } else {
             nbFiles = nbFiles.wrapping_add(UTIL_prepareFileList(
-                *inputNames.offset(ifnNb as isize),
+                *inputNames.add(ifnNb),
                 &mut buf,
                 &mut pos,
                 &mut bufend,
@@ -2196,15 +2192,15 @@ pub unsafe fn UTIL_createExpandedFNT(
     ifnNb_0 = 0;
     pos_0 = 0;
     while ifnNb_0 < nbFiles as size_t {
-        let fresh9 = &mut (*fileNamesTable.offset(ifnNb_0 as isize));
-        *fresh9 = buf.offset(pos_0 as isize);
-        if buf.offset(pos_0 as isize) > bufend {
+        let fresh9 = &mut (*fileNamesTable.add(ifnNb_0));
+        *fresh9 = buf.add(pos_0);
+        if buf.add(pos_0) > bufend {
             free(buf as *mut core::ffi::c_void);
             free(fileNamesTable as *mut core::ffi::c_void);
             return NULL_0 as *mut FileNamesTable;
         }
         pos_0 = pos_0
-            .wrapping_add((strlen(*fileNamesTable.offset(ifnNb_0 as isize))).wrapping_add(1))
+            .wrapping_add((strlen(*fileNamesTable.add(ifnNb_0))).wrapping_add(1))
             as size_t as size_t;
         ifnNb_0 = ifnNb_0.wrapping_add(1);
     }

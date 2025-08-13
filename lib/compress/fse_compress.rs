@@ -53,8 +53,7 @@ unsafe fn BIT_initCStream(
     (*bitC).bitPos = 0;
     (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
     (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
-        .offset(dstCapacity as isize)
+    (*bitC).endPtr = ((*bitC).startPtr).add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -87,7 +86,7 @@ unsafe fn BIT_addBitsFast(
 unsafe fn BIT_flushBitsFast(mut bitC: *mut BIT_CStream_t) {
     let nbBytes = ((*bitC).bitPos >> 3) as size_t;
     MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).offset(nbBytes as isize);
+    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
     (*bitC).bitPos &= 7;
     (*bitC).bitContainer >>= nbBytes * 8;
 }
@@ -95,7 +94,7 @@ unsafe fn BIT_flushBitsFast(mut bitC: *mut BIT_CStream_t) {
 unsafe fn BIT_flushBits(mut bitC: *mut BIT_CStream_t) {
     let nbBytes = ((*bitC).bitPos >> 3) as size_t;
     MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).offset(nbBytes as isize);
+    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
     if (*bitC).ptr > (*bitC).endPtr {
         (*bitC).ptr = (*bitC).endPtr;
     }
@@ -245,11 +244,11 @@ pub unsafe fn FSE_buildCTable_wksp(
         while s < maxSV1 {
             let mut i: core::ffi::c_int = 0;
             let n = *normalizedCounter.offset(s as isize) as core::ffi::c_int;
-            MEM_write64(spread.offset(pos as isize) as *mut core::ffi::c_void, sv);
+            MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
             i = 8;
             while i < n {
                 MEM_write64(
-                    spread.offset(pos as isize).offset(i as isize) as *mut core::ffi::c_void,
+                    spread.add(pos).offset(i as isize) as *mut core::ffi::c_void,
                     sv,
                 );
                 i += 8;
@@ -267,8 +266,8 @@ pub unsafe fn FSE_buildCTable_wksp(
             u_0 = 0;
             while u_0 < unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
-                *tableSymbol.offset(uPosition as isize) =
-                    *spread.offset(s_0.wrapping_add(u_0) as isize);
+                *tableSymbol.add(uPosition) =
+                    *spread.add(s_0.wrapping_add(u_0));
                 u_0 = u_0.wrapping_add(1);
             }
             position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
@@ -365,7 +364,7 @@ unsafe fn FSE_writeNCount_generic(
 ) -> size_t {
     let ostart = header as *mut u8;
     let mut out = ostart;
-    let oend = ostart.offset(headerBufferSize as isize);
+    let oend = ostart.add(headerBufferSize);
     let mut nbBits: core::ffi::c_int = 0;
     let tableSize = (1) << tableLog;
     let mut remaining: core::ffi::c_int = 0;
@@ -746,7 +745,7 @@ unsafe fn FSE_compress_usingCTable_generic(
     fast: core::ffi::c_uint,
 ) -> size_t {
     let istart = src as *const u8;
-    let iend = istart.offset(srcSize as isize);
+    let iend = istart.add(srcSize);
     let mut ip = iend;
     let mut bitC = BIT_CStream_t {
         bitContainer: 0,

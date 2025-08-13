@@ -136,7 +136,7 @@ unsafe fn AIO_fwriteSparse(
 ) -> core::ffi::c_uint {
     let bufferT = buffer as *const size_t;
     let mut bufferSizeT = bufferSize.wrapping_div(::core::mem::size_of::<size_t>() as size_t);
-    let bufferTEnd = bufferT.offset(bufferSizeT as isize);
+    let bufferTEnd = bufferT.add(bufferSizeT);
     let mut ptrT = bufferT;
     if (*prefs).testMode != 0 {
         return 0;
@@ -226,7 +226,7 @@ unsafe fn AIO_fwriteSparse(
         }
         bufferSizeT = bufferSizeT.wrapping_sub(seg0SizeT);
         nb0T = 0;
-        while nb0T < seg0SizeT && *ptrT.offset(nb0T as isize) == 0 {
+        while nb0T < seg0SizeT && *ptrT.add(nb0T) == 0 {
             nb0T = nb0T.wrapping_add(1);
         }
         storedSkips = storedSkips.wrapping_add(
@@ -268,7 +268,7 @@ unsafe fn AIO_fwriteSparse(
             }
             storedSkips = 0;
             if fwrite(
-                ptrT.offset(nb0T as isize) as *const core::ffi::c_void,
+                ptrT.add(nb0T) as *const core::ffi::c_void,
                 ::core::mem::size_of::<size_t>() as size_t,
                 nbNon0ST,
                 file,
@@ -307,12 +307,12 @@ unsafe fn AIO_fwriteSparse(
                 exit(93);
             }
         }
-        ptrT = ptrT.offset(seg0SizeT as isize);
+        ptrT = ptrT.add(seg0SizeT);
     }
     if bufferSize & maskT != 0 {
         let restStart = bufferTEnd as *const core::ffi::c_char;
         let mut restPtr = restStart;
-        let restEnd = (buffer as *const core::ffi::c_char).offset(bufferSize as isize);
+        let restEnd = (buffer as *const core::ffi::c_char).add(bufferSize);
         assert!(restEnd > restStart && restEnd < restStart.add(::core::mem::size_of::<size_t>()));
         while restPtr < restEnd && *restPtr as core::ffi::c_int == 0 {
             restPtr = restPtr.offset(1);
@@ -1109,7 +1109,7 @@ pub unsafe fn AIO_ReadPool_free(mut ctx: *mut ReadPoolCtx_t) {
 pub unsafe fn AIO_ReadPool_consumeBytes(mut ctx: *mut ReadPoolCtx_t, mut n: size_t) {
     assert!(n <= (*ctx).srcBufferLoaded);
     (*ctx).srcBufferLoaded = ((*ctx).srcBufferLoaded).wrapping_sub(n);
-    (*ctx).srcBuffer = ((*ctx).srcBuffer).offset(n as isize);
+    (*ctx).srcBuffer = ((*ctx).srcBuffer).add(n);
 }
 unsafe fn AIO_ReadPool_releaseCurrentHeldAndGetNext(mut ctx: *mut ReadPoolCtx_t) -> *mut IOJob_t {
     if !((*ctx).currentJobHeld).is_null() {
@@ -1148,7 +1148,7 @@ pub unsafe fn AIO_ReadPool_fillBuffer(mut ctx: *mut ReadPoolCtx_t, mut n: size_t
                 <= 2 * (*ctx).base.jobBufferSize
         );
         memcpy(
-            ((*ctx).coalesceBuffer).offset((*ctx).srcBufferLoaded as isize)
+            ((*ctx).coalesceBuffer).add((*ctx).srcBufferLoaded)
                 as *mut core::ffi::c_void,
             (*job).buffer,
             (*job).usedBufferSize,

@@ -836,7 +836,7 @@ pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const
     while i < (*filenames).tableSize {
         if strcmp(
             stdinmark.as_ptr(),
-            *((*filenames).fileNames).offset(i as isize),
+            *((*filenames).fileNames).add(i),
         ) == 0
         {
             (*fCtx).hasStdinInput = 1;
@@ -1656,22 +1656,22 @@ unsafe fn FIO_createFilename_fromOutDir(
         outDirName as *const core::ffi::c_void,
         strlen(outDirName),
     );
-    if *outDirName.offset((strlen(outDirName)).wrapping_sub(1) as isize) as core::ffi::c_int
+    if *outDirName.add((strlen(outDirName)).wrapping_sub(1)) as core::ffi::c_int
         == separator as core::ffi::c_int
     {
         memcpy(
-            result.offset(strlen(outDirName) as isize) as *mut core::ffi::c_void,
+            result.add(strlen(outDirName)) as *mut core::ffi::c_void,
             filenameStart as *const core::ffi::c_void,
             strlen(filenameStart),
         );
     } else {
         memcpy(
-            result.offset(strlen(outDirName) as isize) as *mut core::ffi::c_void,
+            result.add(strlen(outDirName)) as *mut core::ffi::c_void,
             &mut separator as *mut core::ffi::c_char as *const core::ffi::c_void,
             1,
         );
         memcpy(
-            result.offset(strlen(outDirName) as isize).offset(1) as *mut core::ffi::c_void,
+            result.add(strlen(outDirName)).offset(1) as *mut core::ffi::c_void,
             filenameStart as *const core::ffi::c_void,
             strlen(filenameStart),
         );
@@ -4521,7 +4521,7 @@ unsafe fn FIO_compressZstdFrame(
                         let mut srcFileNameSize = strlen(srcFileName);
                         if srcFileNameSize > 18 {
                             let mut truncatedSrcFileName =
-                                srcFileName.offset(srcFileNameSize as isize).offset(-(15));
+                                srcFileName.add(srcFileNameSize).offset(-(15));
                             if g_display_prefs.progressSetting as core::ffi::c_uint
                                 != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
                                 && (g_display_prefs.displayLevel >= 2
@@ -5384,7 +5384,7 @@ unsafe fn FIO_determineCompressedName(
         );
     }
     memcpy(
-        dstFileNameBuffer.offset(sfnSize as isize) as *mut core::ffi::c_void,
+        dstFileNameBuffer.add(sfnSize) as *mut core::ffi::c_void,
         suffix as *const core::ffi::c_void,
         srcSuffixLen.wrapping_add(1),
     );
@@ -5399,7 +5399,7 @@ unsafe fn FIO_getLargestFileSize(
     let mut maxFileSize = 0;
     i = 0;
     while i < nbFiles as size_t {
-        fileSize = UTIL_getFileSize(*inFileNames.offset(i as isize)) as core::ffi::c_ulonglong;
+        fileSize = UTIL_getFileSize(*inFileNames.add(i)) as core::ffi::c_ulonglong;
         maxFileSize = if fileSize > maxFileSize {
             fileSize
         } else {
@@ -6132,7 +6132,7 @@ unsafe fn FIO_decompressZstdFrame(
     assert!(!writeJob.is_null());
     let srcFileLength = strlen(srcFileName);
     if srcFileLength > 20 && g_display_prefs.displayLevel < 3 {
-        srcFName20 = srcFName20.offset(srcFileLength.wrapping_sub(20) as isize);
+        srcFName20 = srcFName20.add(srcFileLength.wrapping_sub(20));
     }
     ZSTD_DCtx_reset((*ress).dctx, ZSTD_reset_session_only);
     AIO_ReadPool_fillBuffer((*ress).readCtx, ZSTD_FRAMEHEADERSIZE_MAX as size_t);
@@ -6897,7 +6897,7 @@ unsafe fn FIO_determineDstName(
         );
     }
     strcpy(
-        dstFileNameBuffer.offset(dstFileNameEndPos as isize),
+        dstFileNameBuffer.add(dstFileNameEndPos),
         dstSuffix,
     );
     dstFileNameBuffer

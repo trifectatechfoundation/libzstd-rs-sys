@@ -298,7 +298,7 @@ unsafe fn XXH64_endian_align(
         ::core::hint::assert_unchecked(len == 0);
     }
     if len >= 32 {
-        let bEnd = input.offset(len as isize);
+        let bEnd = input.add(len);
         let limit = bEnd.offset(-(31));
         let mut v1 = (seed as core::ffi::c_ulonglong)
             .wrapping_add(XXH_PRIME64_1)
@@ -405,7 +405,7 @@ unsafe fn formatString_u(
         if *formatString.offset(i as isize) as core::ffi::c_int != '%' as i32 {
             let fresh2 = written;
             written = written.wrapping_add(1);
-            *buffer.offset(fresh2 as isize) = *formatString.offset(i as isize);
+            *buffer.add(fresh2) = *formatString.offset(i as isize);
         } else {
             i += 1;
             if *formatString.offset(i as isize) as core::ffi::c_int == 'u' as i32 {
@@ -413,7 +413,7 @@ unsafe fn formatString_u(
                     abort();
                 }
                 writeUint_varLen(
-                    buffer.offset(written as isize),
+                    buffer.add(written),
                     buffer_size.wrapping_sub(written),
                     value,
                 );
@@ -421,7 +421,7 @@ unsafe fn formatString_u(
             } else if *formatString.offset(i as isize) as core::ffi::c_int == '%' as i32 {
                 let fresh3 = written;
                 written = written.wrapping_add(1);
-                *buffer.offset(fresh3 as isize) = '%' as i32 as core::ffi::c_char;
+                *buffer.add(fresh3) = '%' as i32 as core::ffi::c_char;
             } else {
                 abort();
             }
@@ -429,7 +429,7 @@ unsafe fn formatString_u(
         i += 1;
     }
     if written < buffer_size {
-        *buffer.offset(written as isize) = '\0' as i32 as core::ffi::c_char;
+        *buffer.add(written) = '\0' as i32 as core::ffi::c_char;
     } else {
         abort();
     }
@@ -1065,7 +1065,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         ::core::mem::size_of::<BMK_benchResult_t>(),
     );
     if strlen(displayName) > 17 {
-        displayName = displayName.offset((strlen(displayName)).wrapping_sub(17) as isize);
+        displayName = displayName.add((strlen(displayName)).wrapping_sub(17));
     }
     if (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint {
         let mut srcPtr = srcBuffer as *const core::ffi::c_char;
@@ -1154,7 +1154,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 return r_0;
             }
             totalDSize64 = totalDSize64.wrapping_add(fSize64);
-            srcPtr = srcPtr.offset(*fileSizes.offset(fileNb as isize) as isize);
+            srcPtr = srcPtr.add(*fileSizes.offset(fileNb as isize));
             fileNb = fileNb.wrapping_add(1);
         }
         let decodedSize = totalDSize64 as size_t;
@@ -1285,9 +1285,9 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             } else {
                 chunkSize
             };
-            srcPtr_0 = srcPtr_0.offset(chunkSize as isize);
-            cPtr = cPtr.offset(*cCapacities.offset(chunkID as isize) as isize);
-            resPtr = resPtr.offset(chunkSize as isize);
+            srcPtr_0 = srcPtr_0.add(chunkSize);
+            cPtr = cPtr.add(*cCapacities.offset(chunkID as isize));
+            resPtr = resPtr.add(chunkSize);
             reing = reing.wrapping_sub(chunkSize);
             if (*adv).mode as core::ffi::c_uint
                 == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
@@ -1611,8 +1611,8 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         fflush(NULL as *mut FILE);
         u = 0;
         while u < srcSize {
-            if *(srcBuffer as *const u8).offset(u as isize) as core::ffi::c_int
-                != *resultBuffer.offset(u as isize) as core::ffi::c_int
+            if *(srcBuffer as *const u8).add(u) as core::ffi::c_int
+                != *resultBuffer.add(u) as core::ffi::c_int
             {
                 let mut segNb: core::ffi::c_uint = 0;
                 let mut bNb: core::ffi::c_uint = 0;
@@ -1654,7 +1654,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).offset(u.wrapping_sub(n) as isize)
+                        *(srcBuffer as *const u8).add(u.wrapping_sub(n))
                             as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
@@ -1663,7 +1663,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
-                    *(srcBuffer as *const u8).offset(u as isize) as core::ffi::c_int,
+                    *(srcBuffer as *const u8).add(u) as core::ffi::c_int,
                 );
                 fflush(NULL as *mut FILE);
                 n = 1;
@@ -1671,7 +1671,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).offset(u.wrapping_add(n) as isize)
+                        *(srcBuffer as *const u8).add(u.wrapping_add(n))
                             as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
@@ -1689,7 +1689,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *resultBuffer.offset(u.wrapping_sub(n) as isize) as core::ffi::c_int,
+                        *resultBuffer.add(u.wrapping_sub(n)) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
@@ -1697,7 +1697,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
-                    *resultBuffer.offset(u as isize) as core::ffi::c_int,
+                    *resultBuffer.add(u) as core::ffi::c_int,
                 );
                 fflush(NULL as *mut FILE);
                 n = 1;
@@ -1705,7 +1705,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *resultBuffer.offset(u.wrapping_add(n) as isize) as core::ffi::c_int,
+                        *resultBuffer.add(u.wrapping_add(n)) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);
@@ -2252,7 +2252,7 @@ unsafe fn BMK_loadFiles(
                 fflush(NULL as *mut FILE);
             }
             let readSize = fread(
-                (buffer as *mut core::ffi::c_char).offset(pos as isize) as *mut core::ffi::c_void,
+                (buffer as *mut core::ffi::c_char).add(pos) as *mut core::ffi::c_void,
                 1,
                 fileSize as size_t,
                 f,
