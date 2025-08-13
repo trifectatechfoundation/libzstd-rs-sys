@@ -570,7 +570,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     if dctx.ddictIsCold != 0 && litSize > 768 {
         let _ptr = dctx.HUFptr as *const core::ffi::c_char;
-        let _size = ::core::mem::size_of::<[HUF_DTable; 4097]>() as core::ffi::c_ulong;
+        let _size = ::core::mem::size_of::<[HUF_DTable; 4097]>() as size_t;
         let mut _pos: size_t = 0;
         _pos = 0;
         while _pos < _size {
@@ -2038,7 +2038,7 @@ unsafe fn ZSTD_buildFSETable_body(
     libc::memcpy(
         dt as *mut core::ffi::c_void,
         &mut DTableH as *mut ZSTD_seqSymbol_header as *const core::ffi::c_void,
-        ::core::mem::size_of::<ZSTD_seqSymbol_header>() as core::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<ZSTD_seqSymbol_header>(),
     );
     if highThreshold == tableSize.wrapping_sub(1) {
         let tableMask = tableSize.wrapping_sub(1) as size_t;
@@ -2235,8 +2235,8 @@ unsafe fn ZSTD_buildSeqTable(
             }
             if ddictIsCold != 0 && nbSeq > 24 {
                 let pStart = *DTablePtr as *const core::ffi::c_void;
-                let pSize = (::core::mem::size_of::<ZSTD_seqSymbol>() as core::ffi::c_ulong)
-                    .wrapping_mul((1 + ((1) << maxLog)) as core::ffi::c_ulong);
+                let pSize = (::core::mem::size_of::<ZSTD_seqSymbol>() as size_t)
+                    .wrapping_mul((1 + ((1) << maxLog)) as size_t);
                 let _ptr = pStart as *const core::ffi::c_char;
                 let _size = pSize;
                 let mut _pos: size_t = 0;
@@ -2822,7 +2822,7 @@ unsafe fn ZSTD_initFseState(
 ) {
     let mut ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const ZSTD_seqSymbol_header;
-    DStatePtr.state = bitD.read_bits((*DTableH).tableLog) as u64;
+    DStatePtr.state = bitD.read_bits((*DTableH).tableLog) as size_t;
     bitD.reload();
     DStatePtr.table = dt.offset(1);
 }
@@ -2835,7 +2835,7 @@ fn ZSTD_updateFseStateWithDInfo(
     nbBits: u32,
 ) {
     let lowBits = bitD.read_bits(nbBits);
-    DStatePtr.state = (nextState as size_t).wrapping_add(lowBits as u64);
+    DStatePtr.state = (nextState as size_t).wrapping_add(lowBits as size_t);
 }
 
 /// We need to add at most (ZSTD_WINDOWLOG_MAX_32 - 1) bits to read the maximum
@@ -2901,14 +2901,15 @@ unsafe fn ZSTD_decodeSequence(
                 (seqState
                     .DStream
                     .read_bits_fast((ofBits as u32).wrapping_sub(extraBits))
-                    as u64)
+                    as size_t)
                     << extraBits,
             );
             seqState.DStream.reload();
-            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as u64);
+            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as size_t);
         } else {
-            offset = (ofBase as size_t)
-                .wrapping_add(seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as u64);
+            offset = (ofBase as size_t).wrapping_add(
+                seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as size_t,
+            );
             if MEM_32bits() != 0 {
                 seqState.DStream.reload();
             }
@@ -2924,8 +2925,8 @@ unsafe fn ZSTD_decodeSequence(
             seqState.prevOffset[1] = seqState.prevOffset[usize::from(ll0 == 0)];
             seqState.prevOffset[0] = offset;
         } else {
-            offset = (ofBase.wrapping_add(ll0 as u32) as u64)
-                .wrapping_add(seqState.DStream.read_bits_fast(1) as u64);
+            offset = (ofBase.wrapping_add(ll0 as u32) as size_t)
+                .wrapping_add(seqState.DStream.read_bits_fast(1) as size_t);
 
             let mut temp = match offset {
                 3 => seqState.prevOffset[0] - 1,
@@ -2946,7 +2947,7 @@ unsafe fn ZSTD_decodeSequence(
     if mlBits > 0 {
         seq.matchLength = seq
             .matchLength
-            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as u64);
+            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as size_t);
     }
 
     if cfg!(target_pointer_width = "32")
@@ -2968,7 +2969,7 @@ unsafe fn ZSTD_decodeSequence(
 
     if llBits > 0 {
         seq.litLength = (seq.litLength)
-            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as u64);
+            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as size_t);
     }
     if MEM_32bits() != 0 {
         seqState.DStream.reload();
@@ -3046,7 +3047,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         };
         dctx.fseEntropy = 1;
 
-        seqState.prevOffset = dctx.entropy.rep.map(|v| v.into());
+        seqState.prevOffset = dctx.entropy.rep.map(|v| v as size_t);
 
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
@@ -3848,8 +3849,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     if MEM_64bits() != 0
-        && ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
-            == ::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong
+        && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
         && (-(1 as core::ffi::c_int) as size_t).wrapping_sub(dst as size_t)
             < ((1 as core::ffi::c_int) << 20) as size_t
     {
@@ -3943,7 +3943,7 @@ mod test {
 
         // Get decompressed size from frame header
         let decompressed_size =
-            unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size as u64) };
+            unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size as size_t) };
         if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
             return (decompressed_size as usize, vec![]);
         } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
@@ -3955,9 +3955,9 @@ mod test {
         let result = unsafe {
             ZSTD_decompress(
                 decompressed.as_mut_ptr() as *mut c_void,
-                decompressed.len() as u64,
+                decompressed.len() as size_t,
                 compressed_ptr,
-                compressed_size as u64,
+                compressed_size as size_t,
             )
         };
 

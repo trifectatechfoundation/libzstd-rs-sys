@@ -611,7 +611,7 @@ unsafe fn ZSTD_DDictHashSet_getIndex(
         ::core::mem::size_of::<u32>(),
         0,
     );
-    hash & ((*hashSet).ddictPtrTableSize).wrapping_sub(1)
+    hash as size_t & ((*hashSet).ddictPtrTableSize).wrapping_sub(1)
 }
 unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     mut hashSet: *mut ZSTD_DDictHashSet,
@@ -644,8 +644,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
 ) -> size_t {
     let mut newTableSize = (*hashSet).ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let mut newTable = ZSTD_customCalloc(
-        (::core::mem::size_of::<*mut ZSTD_DDict>() as core::ffi::c_ulong)
-            .wrapping_mul(newTableSize),
+        (::core::mem::size_of::<*mut ZSTD_DDict>() as size_t).wrapping_mul(newTableSize),
         customMem,
     ) as *mut *const ZSTD_DDict;
     let mut oldTable = (*hashSet).ddictPtrTable;
@@ -689,15 +688,15 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
 }
 unsafe fn ZSTD_createDDictHashSet(mut customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
     let mut ret = ZSTD_customMalloc(
-        ::core::mem::size_of::<ZSTD_DDictHashSet>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<ZSTD_DDictHashSet>() as size_t,
         customMem,
     ) as *mut ZSTD_DDictHashSet;
     if ret.is_null() {
         return core::ptr::null_mut();
     }
     (*ret).ddictPtrTable = ZSTD_customCalloc(
-        (DDICT_HASHSET_TABLE_BASE_SIZE as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>() as core::ffi::c_ulong),
+        (DDICT_HASHSET_TABLE_BASE_SIZE as size_t)
+            .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>() as size_t),
         customMem,
     ) as *mut *const ZSTD_DDict;
     if ((*ret).ddictPtrTable).is_null() {
@@ -748,14 +747,14 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(mut dctx: *const ZSTD_DCtx) -> size_t 
     if dctx.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DCtx>() as core::ffi::c_ulong)
+    (::core::mem::size_of::<ZSTD_DCtx>() as size_t)
         .wrapping_add(ZSTD_sizeof_DDict((*dctx).ddictLocal))
         .wrapping_add((*dctx).inBuffSize)
         .wrapping_add((*dctx).outBuffSize)
 }
 #[export_name = crate::prefix!(ZSTD_estimateDCtxSize)]
 pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
-    ::core::mem::size_of::<ZSTD_DCtx>() as core::ffi::c_ulong
+    ::core::mem::size_of::<ZSTD_DCtx>() as size_t
 }
 
 const fn ZSTD_startingInputLength(format: Format) -> size_t {
@@ -803,7 +802,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     if workspace as size_t & 7 != 0 {
         return core::ptr::null_mut();
     }
-    if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() as core::ffi::c_ulong {
+    if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() as size_t {
         return core::ptr::null_mut();
     }
     ZSTD_initDCtx_internal(dctx);
@@ -818,10 +817,8 @@ unsafe fn ZSTD_createDCtx_internal(mut customMem: ZSTD_customMem) -> *mut ZSTD_D
     {
         return core::ptr::null_mut();
     }
-    let dctx = ZSTD_customMalloc(
-        ::core::mem::size_of::<ZSTD_DCtx>() as core::ffi::c_ulong,
-        customMem,
-    ) as *mut ZSTD_DCtx;
+    let dctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>() as size_t, customMem)
+        as *mut ZSTD_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }
@@ -1339,7 +1336,7 @@ unsafe fn ZSTD_decodeFrameHeader(
         ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
     }
     (*dctx).processedCSize =
-        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(headerSize) as u64 as u64;
+        ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64 as u64;
     0
 }
 
@@ -1622,8 +1619,8 @@ unsafe fn ZSTD_DCtx_trace_end(
             trace.dictionarySize = ZSTD_DDict_dictSize((*dctx).ddict);
             trace.dictionaryIsCold = (*dctx).ddictIsCold;
         }
-        trace.uncompressedSize = uncompressedSize;
-        trace.compressedSize = compressedSize;
+        trace.uncompressedSize = uncompressedSize as size_t;
+        trace.compressedSize = compressedSize as size_t;
         trace.dctx = dctx;
         ZSTD_trace_decompress_end.unwrap()((*dctx).traceCtx, &mut trace);
     }
@@ -2001,8 +1998,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
-    (*dctx).processedCSize =
-        ((*dctx).processedCSize as core::ffi::c_ulong).wrapping_add(srcSize) as u64 as u64;
+    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(srcSize) as u64 as u64;
     match (*dctx).stage as core::ffi::c_uint {
         0 => {
             if (*dctx).format == Format::ZSTD_f_zstd1
@@ -2128,8 +2124,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             if rSize > (*dctx).fParams.blockSizeMax as size_t {
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
-            (*dctx).decodedSize =
-                ((*dctx).decodedSize as core::ffi::c_ulong).wrapping_add(rSize) as u64 as u64;
+            (*dctx).decodedSize = ((*dctx).decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
             if (*dctx).validateChecksum != 0 {
                 ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
             }
@@ -2227,9 +2222,9 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     dictPtr = dictPtr.offset(8);
     let workspace = &mut (*entropy).LLTable as *mut [ZSTD_seqSymbol; 513] as *mut core::ffi::c_void;
-    let workspaceSize = (::core::mem::size_of::<[ZSTD_seqSymbol; 513]>() as core::ffi::c_ulong)
-        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 257]>() as core::ffi::c_ulong)
-        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 513]>() as core::ffi::c_ulong);
+    let workspaceSize = (::core::mem::size_of::<[ZSTD_seqSymbol; 513]>())
+        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 257]>())
+        .wrapping_add(::core::mem::size_of::<[ZSTD_seqSymbol; 513]>());
     let hSize = HUF_readDTableX2_wksp(
         &mut (*entropy).hufTable,
         core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
@@ -2266,7 +2261,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &OF_bits,
         offcodeLog,
         ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 157]>() as size_t,
         0,
     );
     dictPtr = dictPtr.offset(offcodeHeaderSize as isize);
@@ -2296,7 +2291,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &ML_bits,
         matchlengthLog,
         ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 157]>() as size_t,
         0,
     );
     dictPtr = dictPtr.offset(matchlengthHeaderSize as isize);
@@ -2326,7 +2321,7 @@ pub unsafe fn ZSTD_loadDEntropy(
         &LL_bits,
         litlengthLog,
         ((*entropy).workspace).as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 157]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u32; 157]>() as size_t,
         0,
     );
     dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
@@ -2393,7 +2388,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(mut dctx: *mut ZSTD_DCtx) -> size_
     libc::memcpy(
         ((*dctx).entropy.rep).as_mut_ptr() as *mut core::ffi::c_void,
         repStartValue.as_ptr() as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
+        ::core::mem::size_of::<[u32; 3]>() as libc::size_t,
     );
     (*dctx).LLTptr = ((*dctx).entropy.LLTable).as_mut_ptr();
     (*dctx).MLTptr = ((*dctx).entropy.MLTable).as_mut_ptr();
@@ -2729,7 +2724,7 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(mut dParam: ZSTD_dParameter) -> Z
     match dParam as core::ffi::c_uint {
         100 => {
             bounds.lowerBound = ZSTD_WINDOWLOG_ABSOLUTEMIN;
-            bounds.upperBound = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+            bounds.upperBound = if ::core::mem::size_of::<size_t>() == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
@@ -2995,7 +2990,7 @@ pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
     mut srcSize: size_t,
 ) -> size_t {
     let windowSizeMax = (1)
-        << (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+        << (if ::core::mem::size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -3470,7 +3465,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                                         ZSTD_DCtx,
                                     >(
                                     )
-                                        as core::ffi::c_ulong)
+                                        as size_t)
                                 {
                                     return -(ZSTD_error_memory_allocation as core::ffi::c_int)
                                         as size_t;
