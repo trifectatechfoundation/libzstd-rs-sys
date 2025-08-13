@@ -45,7 +45,7 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn to_error_code(self) -> u64 {
+    pub fn to_error_code(self) -> size_t {
         -(self as core::ffi::c_int) as size_t
     }
 }
@@ -431,7 +431,7 @@ fn FSE_decompress_wksp_body(
 
     let mut tableLog: core::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as core::ffi::c_uint;
-    if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as core::ffi::c_ulong {
+    if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as size_t {
         return Err(Error::GENERIC);
     }
     let NCountLength = FSE_readNCount_bmi2(

@@ -1607,7 +1607,7 @@ unsafe fn printDefaultCParams(
 ) {
     let mut fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
-        UTIL_getFileSize(dictFileName)
+        UTIL_getFileSize(dictFileName) as size_t
     } else {
         0
     };
@@ -1674,7 +1674,7 @@ unsafe fn printActualCParams(
 ) {
     let mut fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
-        UTIL_getFileSize(dictFileName)
+        UTIL_getFileSize(dictFileName) as size_t
     } else {
         0
     };

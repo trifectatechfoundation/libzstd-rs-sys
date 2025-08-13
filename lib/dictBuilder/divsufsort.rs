@@ -1,4 +1,4 @@
-use libc::free;
+use libc::{free, malloc, size_t};
 
 extern "C" {
     fn __assert_fail(
@@ -7,9 +7,7 @@ extern "C" {
         __line: core::ffi::c_uint,
         __function: *const core::ffi::c_char,
     ) -> !;
-    fn malloc(_: core::ffi::c_ulong) -> *mut core::ffi::c_void;
 }
-pub type size_t = core::ffi::c_ulong;
 pub type trbudget_t = _trbudget_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -5058,14 +5056,12 @@ pub unsafe fn divsufsort(
         *SA.offset(m as isize) = 1;
         return 0;
     }
-    bucket_A = malloc(
-        (BUCKET_A_SIZE as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
-    ) as *mut core::ffi::c_int;
-    bucket_B = malloc(
-        (BUCKET_B_SIZE as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
-    ) as *mut core::ffi::c_int;
+    bucket_A =
+        malloc((BUCKET_A_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
+            as *mut core::ffi::c_int;
+    bucket_B =
+        malloc((BUCKET_B_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
+            as *mut core::ffi::c_int;
     if !bucket_A.is_null() && !bucket_B.is_null() {
         m = sort_typeBstar(T, SA, bucket_A, bucket_B, n, openMP);
         construct_SA(T, SA, bucket_A, bucket_B, n, m);
@@ -5101,19 +5097,15 @@ pub unsafe fn divbwt(
     }
     B = A;
     if B.is_null() {
-        B = malloc(
-            ((n + 1) as size_t)
-                .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
-        ) as *mut core::ffi::c_int;
+        B = malloc(((n + 1) as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
+            as *mut core::ffi::c_int;
     }
-    bucket_A = malloc(
-        (BUCKET_A_SIZE as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
-    ) as *mut core::ffi::c_int;
-    bucket_B = malloc(
-        (BUCKET_B_SIZE as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong),
-    ) as *mut core::ffi::c_int;
+    bucket_A =
+        malloc((BUCKET_A_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
+            as *mut core::ffi::c_int;
+    bucket_B =
+        malloc((BUCKET_B_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
+            as *mut core::ffi::c_int;
     if !B.is_null() && !bucket_A.is_null() && !bucket_B.is_null() {
         m = sort_typeBstar(T, B, bucket_A, bucket_B, n, openMP);
         if num_indexes.is_null() || indexes.is_null() {
