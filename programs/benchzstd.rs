@@ -358,7 +358,11 @@ pub const NULL: core::ffi::c_int = 0;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
-static mut maxMemory: size_t = 0;
+static maxMemory: usize = if ::core::mem::size_of::<size_t>() == 4 {
+    2 * (1 << 30) - 64 * (1 << 20)
+} else {
+    1usize << (::core::mem::size_of::<usize>() * 8 - 31)
+};
 pub const DEBUG: core::ffi::c_int = 0;
 unsafe fn uintSize(mut value: core::ffi::c_uint) -> size_t {
     let mut size = 1 as size_t;
@@ -2528,22 +2532,3 @@ pub unsafe fn BMK_benchFiles(
         &adv,
     )
 }
-unsafe extern "C" fn run_static_initializers() {
-    maxMemory = if ::core::mem::size_of::<size_t>() == 4 {
-        (2 as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
-            .wrapping_sub(
-                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as core::ffi::c_uint,
-            ) as size_t
-    } else {
-        ((1 as core::ffi::c_ulonglong)
-            << (::core::mem::size_of::<size_t>())
-                .wrapping_mul(8)
-                .wrapping_sub(31)) as size_t
-    };
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: unsafe extern "C" fn() = run_static_initializers;

@@ -125,8 +125,8 @@ pub const LONG_SEEK: unsafe extern "C" fn(
     core::ffi::c_int,
 ) -> core::ffi::c_int = fseek;
 pub const NULL: core::ffi::c_int = 0;
-static mut segmentSizeT: size_t = 0;
-static mut maskT: size_t = 0;
+static segmentSizeT: usize = 32usize * (1 << 10) / ::core::mem::size_of::<size_t>();
+static maskT: usize = ::core::mem::size_of::<size_t>() - 1;
 unsafe fn AIO_fwriteSparse(
     mut file: *mut FILE,
     mut buffer: *const core::ffi::c_void,
@@ -1175,13 +1175,3 @@ pub unsafe fn AIO_ReadPool_closeFile(mut ctx: *mut ReadPoolCtx_t) -> core::ffi::
 pub unsafe fn AIO_ReadPool_setAsync(mut ctx: *mut ReadPoolCtx_t, mut async_0: core::ffi::c_int) {
     AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
 }
-unsafe extern "C" fn run_static_initializers() {
-    segmentSizeT =
-        ((32 * ((1) << 10)) as size_t).wrapping_div(::core::mem::size_of::<size_t>() as size_t);
-    maskT = (::core::mem::size_of::<size_t>() as size_t).wrapping_sub(1);
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: unsafe extern "C" fn() = run_static_initializers;

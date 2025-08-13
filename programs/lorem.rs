@@ -269,9 +269,9 @@ static kWords: [&CStr; 255] = [
     c"aute",
     c"irure",
 ];
-static mut kNbWords: core::ffi::c_uint = 0;
+static kNbWords: usize = kWords.len();
 static kWeights: [core::ffi::c_int; 6] = [0, 8, 6, 4, 3, 2];
-static mut kNbWeights: size_t = 0;
+static kNbWeights: usize = kWeights.len();
 const DISTRIB_MAX_SIZE: core::ffi::c_uint = 650;
 static mut g_distrib: [core::ffi::c_int; DISTRIB_MAX_SIZE as usize] = [0; 650];
 static mut g_distribCount: core::ffi::c_uint = 0;
@@ -475,12 +475,7 @@ pub unsafe fn LOREM_genBlock(
     g_nbChars = 0;
     g_randRoot = seed;
     if g_distribCount == 0 {
-        init_word_distrib(
-            kWords.as_ptr(),
-            kNbWords as size_t,
-            kWeights.as_ptr(),
-            kNbWeights,
-        );
+        init_word_distrib(kWords.as_ptr(), kNbWords, kWeights.as_ptr(), kNbWeights);
     }
     if first != 0 {
         generateFirstSentence();
@@ -502,15 +497,3 @@ pub unsafe fn LOREM_genBuffer(
 ) {
     LOREM_genBlock(buffer, size, seed, 1, 1);
 }
-unsafe extern "C" fn run_static_initializers() {
-    kNbWords = (::core::mem::size_of::<[*const core::ffi::c_char; 255]>())
-        .wrapping_div(::core::mem::size_of::<*const core::ffi::c_char>())
-        as core::ffi::c_uint;
-    kNbWeights = (::core::mem::size_of::<[core::ffi::c_int; 6]>() as size_t)
-        .wrapping_div(::core::mem::size_of::<core::ffi::c_int>() as size_t);
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: unsafe extern "C" fn() = run_static_initializers;
