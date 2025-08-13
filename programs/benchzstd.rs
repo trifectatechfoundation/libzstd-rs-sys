@@ -358,7 +358,7 @@ unsafe fn XXH64_endian_align(
     } else {
         h64 = (seed as core::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
     }
-    h64 = h64.wrapping_add(len);
+    h64 = h64.wrapping_add(len as xxh_u64);
     XXH64_finalize(h64, input, len, align)
 }
 #[inline]
@@ -1170,9 +1170,9 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             fileNb = fileNb.wrapping_add(1);
         }
         let decodedSize = totalDSize64 as size_t;
-        assert!(decodedSize == totalDSize64);
+        assert!(decodedSize as u64 == totalDSize64);
         free(*resultBufferPtr);
-        if totalDSize64 > decodedSize {
+        if totalDSize64 > decodedSize as u64 {
             let mut r_1 = BMK_benchOutcome_t {
                 internal_never_use_directly: BMK_benchResult_t {
                     cSize: 0,
@@ -1812,33 +1812,29 @@ pub unsafe fn BMK_benchMemAdvanced(
     let nbChunksMax = ((srcSize.wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize) as u32)
         .wrapping_add(nbFiles);
     let srcPtrs = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+        (nbChunksMax as size_t)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as size_t),
     ) as *mut *const core::ffi::c_void;
-    let srcSizes = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
-    ) as *mut size_t;
+    let srcSizes =
+        malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>() as size_t))
+            as *mut size_t;
     let cPtrs = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+        (nbChunksMax as size_t)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as size_t),
     ) as *mut *mut core::ffi::c_void;
-    let cSizes = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
-    ) as *mut size_t;
-    let cCapacities = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
-    ) as *mut size_t;
+    let cSizes =
+        malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>() as size_t))
+            as *mut size_t;
+    let cCapacities =
+        malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>() as size_t))
+            as *mut size_t;
     let resPtrs = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong),
+        (nbChunksMax as size_t)
+            .wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>() as size_t),
     ) as *mut *mut core::ffi::c_void;
-    let resSizes = malloc(
-        (nbChunksMax as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
-    ) as *mut size_t;
+    let resSizes =
+        malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>() as size_t))
+            as *mut size_t;
     let mut timeStateCompress = BMK_createTimedFnState(
         ((*adv).nbSeconds).wrapping_mul(1000),
         BMK_RUNTEST_DEFAULT_MS as core::ffi::c_uint,
@@ -2154,7 +2150,7 @@ pub unsafe fn BMK_syntheticTest(
         RDG_genBuffer(srcBuffer, benchedSize, compressibility, 0.0f64, 0);
         formatString_u(
             nameBuff.as_mut_ptr(),
-            ::core::mem::size_of::<[core::ffi::c_char; 20]>() as core::ffi::c_ulong,
+            ::core::mem::size_of::<[core::ffi::c_char; 20]>() as size_t,
             b"Synthetic %u%%\0" as *const u8 as *const core::ffi::c_char,
             (compressibility * 100.0) as core::ffi::c_uint,
         );
@@ -2180,19 +2176,19 @@ unsafe fn BMK_findMaxMem(mut requiredMem: u64) -> size_t {
     let step = (64 * ((1) << 20)) as size_t;
     let mut testmem = NULL as *mut u8;
     requiredMem = (requiredMem >> 26).wrapping_add(1) << 26;
-    requiredMem = (requiredMem as core::ffi::c_ulong).wrapping_add(step) as u64 as u64;
-    if requiredMem > maxMemory {
-        requiredMem = maxMemory;
+    requiredMem = requiredMem.wrapping_add(step as u64);
+    if requiredMem > maxMemory as u64 {
+        requiredMem = maxMemory as u64;
     }
     loop {
-        testmem = malloc(requiredMem) as *mut u8;
-        requiredMem = (requiredMem as core::ffi::c_ulong).wrapping_sub(step) as u64 as u64;
+        testmem = malloc(requiredMem as size_t) as *mut u8;
+        requiredMem = requiredMem.wrapping_sub(step as u64);
         if !(testmem.is_null() && requiredMem > 0) {
             break;
         }
     }
     free(testmem as *mut core::ffi::c_void);
-    requiredMem
+    requiredMem as size_t
 }
 unsafe fn BMK_loadFiles(
     mut buffer: *mut core::ffi::c_void,
@@ -2231,8 +2227,8 @@ unsafe fn BMK_loadFiles(
             }
             *fileSizes.offset(n as isize) = 0;
         } else {
-            if fileSize > bufferSize.wrapping_sub(pos) {
-                fileSize = bufferSize.wrapping_sub(pos);
+            if fileSize > bufferSize.wrapping_sub(pos) as u64 {
+                fileSize = bufferSize.wrapping_sub(pos) as u64;
                 nbFiles = n;
             }
             let f = fopen(filename, b"rb\0" as *const u8 as *const core::ffi::c_char);
@@ -2270,10 +2266,10 @@ unsafe fn BMK_loadFiles(
             let readSize = fread(
                 (buffer as *mut core::ffi::c_char).offset(pos as isize) as *mut core::ffi::c_void,
                 1,
-                fileSize,
+                fileSize as size_t,
                 f,
             );
-            if readSize != fileSize {
+            if readSize != fileSize as size_t {
                 fclose(f);
                 if displayLevel >= 1 {
                     fprintf(
@@ -2298,8 +2294,8 @@ unsafe fn BMK_loadFiles(
                 return 11;
             }
             pos = pos.wrapping_add(readSize);
-            *fileSizes.offset(n as isize) = fileSize;
-            totalSize = totalSize.wrapping_add(fileSize);
+            *fileSizes.offset(n as isize) = fileSize as size_t;
+            totalSize = totalSize.wrapping_add(fileSize as size_t);
             fclose(f);
         }
         n = n.wrapping_add(1);
@@ -2377,8 +2373,8 @@ pub unsafe fn BMK_benchFilesAdvanced(
         return 15;
     }
     fileSizes = calloc(
-        nbFiles as core::ffi::c_ulong,
-        ::core::mem::size_of::<size_t>() as core::ffi::c_ulong,
+        nbFiles as size_t,
+        ::core::mem::size_of::<size_t>() as size_t,
     ) as *mut size_t;
     if fileSizes.is_null() {
         if displayLevel >= 1 {
@@ -2424,7 +2420,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
             }
             return 18;
         }
-        dictBufferSize = dictFileSize;
+        dictBufferSize = dictFileSize as size_t;
         dictBuffer = malloc(dictBufferSize);
         if dictBuffer.is_null() {
             free(fileSizes as *mut core::ffi::c_void);
@@ -2457,10 +2453,10 @@ pub unsafe fn BMK_benchFilesAdvanced(
     }
     if current_block == 5181772461570869434 {
         benchedSize = BMK_findMaxMem(totalSizeToLoad * 3) / 3;
-        if benchedSize > totalSizeToLoad {
-            benchedSize = totalSizeToLoad;
+        if benchedSize > totalSizeToLoad as size_t {
+            benchedSize = totalSizeToLoad as size_t;
         }
-        if benchedSize < totalSizeToLoad {
+        if benchedSize < totalSizeToLoad as size_t {
             fprintf(
                 stderr,
                 b"Not enough memory; testing %u MB only...\n\0" as *const u8
@@ -2498,7 +2494,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
             let mut mfName: [core::ffi::c_char; 20] = [0; 20];
             formatString_u(
                 mfName.as_mut_ptr(),
-                ::core::mem::size_of::<[core::ffi::c_char; 20]>() as core::ffi::c_ulong,
+                ::core::mem::size_of::<[core::ffi::c_char; 20]>() as size_t,
                 b" %u files\0" as *const u8 as *const core::ffi::c_char,
                 nbFiles,
             );
@@ -2549,15 +2545,15 @@ pub unsafe fn BMK_benchFiles(
     )
 }
 unsafe extern "C" fn run_static_initializers() {
-    maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+    maxMemory = if ::core::mem::size_of::<size_t>() == 4 {
         (2 as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30)
+            .wrapping_mul((1 as core::ffi::c_uint) << 30 as core::ffi::c_int)
             .wrapping_sub(
                 (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as core::ffi::c_uint,
             ) as size_t
     } else {
         ((1 as core::ffi::c_ulonglong)
-            << (::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
+            << (::core::mem::size_of::<size_t>())
                 .wrapping_mul(8)
                 .wrapping_sub(31)) as size_t
     };

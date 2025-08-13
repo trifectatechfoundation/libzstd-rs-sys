@@ -124,16 +124,14 @@ pub unsafe fn POOL_create_advanced(
     if numThreads == 0 {
         return NULL_0 as *mut POOL_ctx;
     }
-    ctx = ZSTD_customCalloc(
-        ::core::mem::size_of::<POOL_ctx>() as core::ffi::c_ulong,
-        customMem,
-    ) as *mut POOL_ctx;
+    ctx =
+        ZSTD_customCalloc(::core::mem::size_of::<POOL_ctx>() as size_t, customMem) as *mut POOL_ctx;
     if ctx.is_null() {
         return NULL_0 as *mut POOL_ctx;
     }
     (*ctx).queueSize = queueSize.wrapping_add(1);
     (*ctx).queue = ZSTD_customCalloc(
-        ((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>() as core::ffi::c_ulong),
+        ((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>() as size_t),
         customMem,
     ) as *mut POOL_job;
     (*ctx).queueHead = 0;
@@ -159,7 +157,7 @@ pub unsafe fn POOL_create_advanced(
     }
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as core::ffi::c_ulong),
+        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
         customMem,
     ) as *mut pthread_t;
     (*ctx).threadCapacity = 0;
@@ -233,14 +231,10 @@ pub unsafe fn POOL_sizeof(mut ctx: *const POOL_ctx) -> size_t {
     if ctx.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<POOL_ctx>() as core::ffi::c_ulong)
+    (::core::mem::size_of::<POOL_ctx>() as size_t)
+        .wrapping_add(((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>() as size_t))
         .wrapping_add(
-            ((*ctx).queueSize)
-                .wrapping_mul(::core::mem::size_of::<POOL_job>() as core::ffi::c_ulong),
-        )
-        .wrapping_add(
-            ((*ctx).threadCapacity)
-                .wrapping_mul(::core::mem::size_of::<pthread_t>() as core::ffi::c_ulong),
+            ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
         )
 }
 unsafe fn POOL_resize_internal(mut ctx: *mut POOL_ctx, mut numThreads: size_t) -> core::ffi::c_int {
@@ -252,7 +246,7 @@ unsafe fn POOL_resize_internal(mut ctx: *mut POOL_ctx, mut numThreads: size_t) -
         return 0;
     }
     let threadPool = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as core::ffi::c_ulong),
+        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
         (*ctx).customMem,
     ) as *mut pthread_t;
     if threadPool.is_null() {
@@ -261,8 +255,7 @@ unsafe fn POOL_resize_internal(mut ctx: *mut POOL_ctx, mut numThreads: size_t) -
     libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
-        ((*ctx).threadCapacity)
-            .wrapping_mul(::core::mem::size_of::<pthread_t>() as core::ffi::c_ulong)
+        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t)
             as libc::size_t,
     );
     ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);

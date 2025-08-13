@@ -159,8 +159,7 @@ unsafe fn AIO_fwriteSparse(
     mut storedSkips: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
     let bufferT = buffer as *const size_t;
-    let mut bufferSizeT =
-        bufferSize.wrapping_div(::core::mem::size_of::<size_t>() as core::ffi::c_ulong);
+    let mut bufferSizeT = bufferSize.wrapping_div(::core::mem::size_of::<size_t>() as size_t);
     let bufferTEnd = bufferT.offset(bufferSizeT as isize);
     let mut ptrT = bufferT;
     if (*prefs).testMode != 0 {
@@ -255,8 +254,7 @@ unsafe fn AIO_fwriteSparse(
             nb0T = nb0T.wrapping_add(1);
         }
         storedSkips = storedSkips.wrapping_add(
-            nb0T.wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong)
-                as core::ffi::c_uint,
+            nb0T.wrapping_mul(::core::mem::size_of::<size_t>() as size_t) as core::ffi::c_uint,
         );
         if nb0T != seg0SizeT {
             let nbNon0ST = seg0SizeT.wrapping_sub(nb0T);
@@ -295,7 +293,7 @@ unsafe fn AIO_fwriteSparse(
             storedSkips = 0;
             if fwrite(
                 ptrT.offset(nb0T as isize) as *const core::ffi::c_void,
-                ::core::mem::size_of::<size_t>() as core::ffi::c_ulong,
+                ::core::mem::size_of::<size_t>() as size_t,
                 nbNon0ST,
                 file,
             ) != nbNon0ST
@@ -511,7 +509,7 @@ unsafe fn AIO_IOPool_createIoJob(
     mut ctx: *mut IOPoolCtx_t,
     mut bufferSize: size_t,
 ) -> *mut IOJob_t {
-    let job = malloc(::core::mem::size_of::<IOJob_t>() as core::ffi::c_ulong) as *mut IOJob_t;
+    let job = malloc(::core::mem::size_of::<IOJob_t>() as size_t) as *mut IOJob_t;
     let buffer = malloc(bufferSize);
     if job.is_null() || buffer.is_null() {
         if g_display_prefs.displayLevel >= 1 {
@@ -784,8 +782,7 @@ pub unsafe fn AIO_WritePool_create(
     mut prefs: *const FIO_prefs_t,
     mut bufferSize: size_t,
 ) -> *mut WritePoolCtx_t {
-    let ctx = malloc(::core::mem::size_of::<WritePoolCtx_t>() as core::ffi::c_ulong)
-        as *mut WritePoolCtx_t;
+    let ctx = malloc(::core::mem::size_of::<WritePoolCtx_t>() as size_t) as *mut WritePoolCtx_t;
     if ctx.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -899,8 +896,9 @@ unsafe fn AIO_ReadPool_getNextCompletedJob(mut ctx: *mut ReadPoolCtx_t) -> *mut 
     }
     if !job.is_null() {
         assert!((*job).offset == (*ctx).waitingOnOffset);
-        (*ctx).waitingOnOffset = ((*ctx).waitingOnOffset as core::ffi::c_ulong)
-            .wrapping_add((*job).usedBufferSize) as u64 as u64;
+        (*ctx).waitingOnOffset = (*ctx)
+            .waitingOnOffset
+            .wrapping_add((*job).usedBufferSize as u64);
     }
     AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
     job
@@ -982,8 +980,7 @@ unsafe extern "C" fn AIO_ReadPool_executeReadJob(mut opaque: *mut core::ffi::c_v
 unsafe fn AIO_ReadPool_enqueueRead(mut ctx: *mut ReadPoolCtx_t) {
     let job = AIO_IOPool_acquireJob(&mut (*ctx).base);
     (*job).offset = (*ctx).nextReadOffset;
-    (*ctx).nextReadOffset =
-        ((*ctx).nextReadOffset as core::ffi::c_ulong).wrapping_add((*job).bufferSize) as u64 as u64;
+    (*ctx).nextReadOffset = (*ctx).nextReadOffset.wrapping_add((*job).bufferSize as u64);
     AIO_IOPool_enqueueJob(job);
 }
 unsafe fn AIO_ReadPool_startReading(mut ctx: *mut ReadPoolCtx_t) {
@@ -1013,8 +1010,7 @@ pub unsafe fn AIO_ReadPool_create(
     mut prefs: *const FIO_prefs_t,
     mut bufferSize: size_t,
 ) -> *mut ReadPoolCtx_t {
-    let ctx =
-        malloc(::core::mem::size_of::<ReadPoolCtx_t>() as core::ffi::c_ulong) as *mut ReadPoolCtx_t;
+    let ctx = malloc(::core::mem::size_of::<ReadPoolCtx_t>() as size_t) as *mut ReadPoolCtx_t;
     if ctx.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -1204,9 +1200,9 @@ pub unsafe fn AIO_ReadPool_setAsync(mut ctx: *mut ReadPoolCtx_t, mut async_0: co
     AIO_IOPool_setThreaded(&mut (*ctx).base, async_0);
 }
 unsafe extern "C" fn run_static_initializers() {
-    segmentSizeT = ((32 * ((1) << 10)) as core::ffi::c_ulong)
-        .wrapping_div(::core::mem::size_of::<size_t>() as core::ffi::c_ulong);
-    maskT = (::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1);
+    segmentSizeT =
+        ((32 * ((1) << 10)) as size_t).wrapping_div(::core::mem::size_of::<size_t>() as size_t);
+    maskT = (::core::mem::size_of::<size_t>() as size_t).wrapping_sub(1);
 }
 #[used]
 #[cfg_attr(target_os = "linux", link_section = ".init_array")]

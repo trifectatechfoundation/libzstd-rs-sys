@@ -385,14 +385,13 @@ unsafe fn generateWord(
             + toUp as core::ffi::c_int)
             as core::ffi::c_char;
     }
-    g_nbChars = (g_nbChars as core::ffi::c_ulong).wrapping_add(strlen(word)) as size_t as size_t;
+    g_nbChars = g_nbChars.wrapping_add(strlen(word)) as size_t as size_t;
     memcpy(
         g_ptr.offset(g_nbChars as isize) as *mut core::ffi::c_void,
         separator as *const core::ffi::c_void,
         strlen(separator),
     );
-    g_nbChars =
-        (g_nbChars as core::ffi::c_ulong).wrapping_add(strlen(separator)) as size_t as size_t;
+    g_nbChars = g_nbChars.wrapping_add(strlen(separator)) as size_t as size_t;
 }
 unsafe fn about(mut target: core::ffi::c_uint) -> core::ffi::c_int {
     (LOREM_rand(target))
@@ -507,11 +506,11 @@ pub unsafe fn LOREM_genBuffer(
     LOREM_genBlock(buffer, size, seed, 1, 1);
 }
 unsafe extern "C" fn run_static_initializers() {
-    kNbWords = (::core::mem::size_of::<[*const core::ffi::c_char; 255]>() as core::ffi::c_ulong)
-        .wrapping_div(::core::mem::size_of::<*const core::ffi::c_char>() as core::ffi::c_ulong)
+    kNbWords = (::core::mem::size_of::<[*const core::ffi::c_char; 255]>())
+        .wrapping_div(::core::mem::size_of::<*const core::ffi::c_char>())
         as core::ffi::c_uint;
-    kNbWeights = (::core::mem::size_of::<[core::ffi::c_int; 6]>() as core::ffi::c_ulong)
-        .wrapping_div(::core::mem::size_of::<core::ffi::c_int>() as core::ffi::c_ulong);
+    kNbWeights = (::core::mem::size_of::<[core::ffi::c_int; 6]>() as size_t)
+        .wrapping_div(::core::mem::size_of::<core::ffi::c_int>() as size_t);
 }
 #[used]
 #[cfg_attr(target_os = "linux", link_section = ".init_array")]

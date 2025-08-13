@@ -483,10 +483,9 @@ pub unsafe fn DiB_trainFromFiles(
         };
     }
     srcBuffer = malloc(loadedSize.wrapping_add(NOISELENGTH as size_t));
-    sampleSizes = malloc(
-        (fs.nbSamples as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as core::ffi::c_ulong),
-    ) as *mut size_t;
+    sampleSizes =
+        malloc((fs.nbSamples as size_t).wrapping_mul(::core::mem::size_of::<size_t>() as size_t))
+            as *mut size_t;
     if fs.nbSamples != 0 && sampleSizes.is_null() || srcBuffer.is_null() || dictBuffer.is_null() {
         fprintf(
             stderr,
