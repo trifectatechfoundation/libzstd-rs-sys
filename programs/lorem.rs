@@ -285,12 +285,12 @@ unsafe fn countFreqs(
     let mut w: size_t = 0;
     w = 0;
     while w < nbWords {
-        let mut len = strlen((*words.offset(w as isize)).as_ptr());
+        let mut len = strlen((*words.add(w)).as_ptr());
         let mut lmax: core::ffi::c_int = 0;
         if len >= nbWeights {
             len = nbWeights.wrapping_sub(1);
         }
-        lmax = *weights.offset(len as isize);
+        lmax = *weights.add(len);
         total = total.wrapping_add(lmax as core::ffi::c_uint);
         w = w.wrapping_add(1);
     }
@@ -308,18 +308,18 @@ unsafe fn init_word_distrib(
     countFreqs(words, nbWords, weights, nbWeights);
     w = 0;
     while w < nbWords {
-        let mut len = strlen((*words.offset(w as isize)).as_ptr());
+        let mut len = strlen((*words.add(w)).as_ptr());
         let mut l: core::ffi::c_int = 0;
         let mut lmax: core::ffi::c_int = 0;
         if len >= nbWeights {
             len = nbWeights.wrapping_sub(1);
         }
-        lmax = *weights.offset(len as isize);
+        lmax = *weights.add(len);
         l = 0;
         while l < lmax {
             let fresh0 = d;
             d = d.wrapping_add(1);
-            *g_distrib.as_mut_ptr().offset(fresh0 as isize) = w as core::ffi::c_int;
+            *g_distrib.as_mut_ptr().add(fresh0) = w as core::ffi::c_int;
             l += 1;
         }
         w = w.wrapping_add(1);
@@ -348,16 +348,16 @@ unsafe fn writeLastCharacters() {
     }
     let fresh1 = g_nbChars;
     g_nbChars = g_nbChars.wrapping_add(1);
-    *g_ptr.offset(fresh1 as isize) = '.' as i32 as core::ffi::c_char;
+    *g_ptr.add(fresh1) = '.' as i32 as core::ffi::c_char;
     if lastChars > 2 {
         memset(
-            g_ptr.offset(g_nbChars as isize) as *mut core::ffi::c_void,
+            g_ptr.add(g_nbChars) as *mut core::ffi::c_void,
             ' ' as i32,
             lastChars.wrapping_sub(2),
         );
     }
     if lastChars > 1 {
-        *g_ptr.offset(g_maxChars.wrapping_sub(1) as isize) = '\n' as i32 as core::ffi::c_char;
+        *g_ptr.add(g_maxChars.wrapping_sub(1)) = '\n' as i32 as core::ffi::c_char;
     }
     g_nbChars = g_maxChars;
 }
@@ -372,19 +372,19 @@ unsafe fn generateWord(
         return;
     }
     memcpy(
-        g_ptr.offset(g_nbChars as isize) as *mut core::ffi::c_void,
+        g_ptr.add(g_nbChars) as *mut core::ffi::c_void,
         word as *const core::ffi::c_void,
         strlen(word),
     );
     if upCase != 0 {
         static toUp: core::ffi::c_char = ('A' as i32 - 'a' as i32) as core::ffi::c_char;
-        *g_ptr.offset(g_nbChars as isize) = (*g_ptr.offset(g_nbChars as isize) as core::ffi::c_int
+        *g_ptr.add(g_nbChars) = (*g_ptr.add(g_nbChars) as core::ffi::c_int
             + toUp as core::ffi::c_int)
             as core::ffi::c_char;
     }
     g_nbChars = g_nbChars.wrapping_add(strlen(word)) as size_t as size_t;
     memcpy(
-        g_ptr.offset(g_nbChars as isize) as *mut core::ffi::c_void,
+        g_ptr.add(g_nbChars) as *mut core::ffi::c_void,
         separator as *const core::ffi::c_void,
         strlen(separator),
     );
@@ -434,12 +434,12 @@ unsafe fn generateParagraph(mut nbSentences: core::ffi::c_int) {
     if g_nbChars < g_maxChars {
         let fresh2 = g_nbChars;
         g_nbChars = g_nbChars.wrapping_add(1);
-        *g_ptr.offset(fresh2 as isize) = '\n' as i32 as core::ffi::c_char;
+        *g_ptr.add(fresh2) = '\n' as i32 as core::ffi::c_char;
     }
     if g_nbChars < g_maxChars {
         let fresh3 = g_nbChars;
         g_nbChars = g_nbChars.wrapping_add(1);
-        *g_ptr.offset(fresh3 as isize) = '\n' as i32 as core::ffi::c_char;
+        *g_ptr.add(fresh3) = '\n' as i32 as core::ffi::c_char;
     }
 }
 unsafe fn generateFirstSentence() {

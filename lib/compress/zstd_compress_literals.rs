@@ -99,7 +99,7 @@ unsafe fn allBytesIdentical(
     let mut p: size_t = 0;
     p = 1;
     while p < srcSize {
-        if *(src as *const u8).offset(p as isize) as core::ffi::c_int != b as core::ffi::c_int {
+        if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
             return 0;
         }
         p = p.wrapping_add(1);
@@ -255,7 +255,7 @@ pub unsafe fn ZSTD_compressLiterals(
         )
     };
     cLitSize = huf_compress.unwrap_unchecked()(
-        ostart.offset(lhSize as isize) as *mut core::ffi::c_void,
+        ostart.add(lhSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(lhSize),
         src,
         srcSize,

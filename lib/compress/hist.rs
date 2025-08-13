@@ -21,7 +21,7 @@ pub unsafe fn HIST_add(
     mut srcSize: size_t,
 ) {
     let mut ip = src as *const u8;
-    let end = ip.offset(srcSize as isize);
+    let end = ip.add(srcSize);
     while ip < end {
         let fresh0 = ip;
         ip = ip.offset(1);
@@ -36,7 +36,7 @@ pub unsafe fn HIST_count_simple(
     mut srcSize: size_t,
 ) -> core::ffi::c_uint {
     let mut ip = src as *const u8;
-    let end = ip.offset(srcSize as isize);
+    let end = ip.add(srcSize);
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
     ptr::write_bytes(
@@ -79,7 +79,7 @@ unsafe fn HIST_count_parallel_wksp(
     workSpace: *mut u32,
 ) -> size_t {
     let mut ip = source as *const u8;
-    let iend = ip.offset(sourceSize as isize);
+    let iend = ip.add(sourceSize);
     let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as core::ffi::c_ulong)
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
     let mut max = 0;

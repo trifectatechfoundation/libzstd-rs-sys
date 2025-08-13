@@ -92,7 +92,7 @@ unsafe fn POOL_thread(mut opaque: *mut core::ffi::c_void) -> *mut core::ffi::c_v
             }
             pthread_cond_wait(&mut (*ctx).queuePopCond, &mut (*ctx).queueMutex);
         }
-        let job = *((*ctx).queue).offset((*ctx).queueHead as isize);
+        let job = *((*ctx).queue).add((*ctx).queueHead);
         (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_add(1);
         (*ctx).numThreadsBusy;
@@ -169,7 +169,7 @@ pub unsafe fn POOL_create_advanced(
     i = 0;
     while i < numThreads {
         if pthread_create(
-            &mut *((*ctx).threads).offset(i as isize),
+            &mut *((*ctx).threads).add(i),
             core::ptr::null::<pthread_attr_t>(),
             core::mem::transmute(
                 POOL_thread as unsafe fn(*mut core::ffi::c_void) -> *mut core::ffi::c_void,
@@ -197,7 +197,7 @@ unsafe fn POOL_join(mut ctx: *mut POOL_ctx) {
     i = 0;
     while i < (*ctx).threadCapacity {
         pthread_join(
-            *((*ctx).threads).offset(i as isize),
+            *((*ctx).threads).add(i),
             NULL_0 as *mut *mut core::ffi::c_void,
         );
         i = i.wrapping_add(1);
@@ -263,7 +263,7 @@ unsafe fn POOL_resize_internal(mut ctx: *mut POOL_ctx, mut numThreads: size_t) -
     threadId = (*ctx).threadCapacity;
     while threadId < numThreads {
         if pthread_create(
-            &mut *threadPool.offset(threadId as isize),
+            &mut *threadPool.add(threadId),
             core::ptr::null::<pthread_attr_t>(),
             core::mem::transmute(
                 POOL_thread as unsafe fn(*mut core::ffi::c_void) -> *mut core::ffi::c_void,
@@ -314,7 +314,7 @@ unsafe fn POOL_add_internal(
         return;
     }
     (*ctx).queueEmpty = 0;
-    *((*ctx).queue).offset((*ctx).queueTail as isize) = job;
+    *((*ctx).queue).add((*ctx).queueTail) = job;
     (*ctx).queueTail = ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize;
     pthread_cond_signal(&mut (*ctx).queuePopCond);
 }

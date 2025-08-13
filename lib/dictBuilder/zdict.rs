@@ -475,7 +475,7 @@ unsafe fn ZDICT_printHex(mut ptr: *const core::ffi::c_void, mut length: size_t) 
     let mut u: size_t = 0;
     u = 0;
     while u < length {
-        let mut c = *b.offset(u as isize);
+        let mut c = *b.add(u);
         if (c as core::ffi::c_int) < 32 || c as core::ffi::c_int > 126 {
             c = '.' as i32 as u8;
         }
@@ -539,11 +539,9 @@ unsafe fn ZDICT_count(
     loop {
         let diff = MEM_readST(pMatch) ^ MEM_readST(pIn);
         if diff == 0 {
-            pIn = (pIn as *const core::ffi::c_char)
-                .offset(::core::mem::size_of::<size_t>() as isize)
+            pIn = (pIn as *const core::ffi::c_char).add(::core::mem::size_of::<size_t>())
                 as *const core::ffi::c_void;
-            pMatch = (pMatch as *const core::ffi::c_char)
-                .offset(::core::mem::size_of::<size_t>() as isize)
+            pMatch = (pMatch as *const core::ffi::c_char).add(::core::mem::size_of::<size_t>())
                 as *const core::ffi::c_void;
         } else {
             pIn = (pIn as *const core::ffi::c_char).offset(ZSTD_NbCommonBytes(diff) as isize)
@@ -585,38 +583,38 @@ unsafe fn ZDICT_analyzePos(
         0,
         ::core::mem::size_of::<dictItem>(),
     );
-    *doneMarks.offset(pos as isize) = 1;
-    if MEM_read16(b.offset(pos as isize).offset(0) as *const core::ffi::c_void) as core::ffi::c_int
-        == MEM_read16(b.offset(pos as isize).offset(2) as *const core::ffi::c_void)
+    *doneMarks.add(pos) = 1;
+    if MEM_read16(b.add(pos).offset(0) as *const core::ffi::c_void) as core::ffi::c_int
+        == MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void)
             as core::ffi::c_int
-        || MEM_read16(b.offset(pos as isize).offset(1) as *const core::ffi::c_void)
+        || MEM_read16(b.add(pos).offset(1) as *const core::ffi::c_void)
             as core::ffi::c_int
-            == MEM_read16(b.offset(pos as isize).offset(3) as *const core::ffi::c_void)
+            == MEM_read16(b.add(pos).offset(3) as *const core::ffi::c_void)
                 as core::ffi::c_int
-        || MEM_read16(b.offset(pos as isize).offset(2) as *const core::ffi::c_void)
+        || MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void)
             as core::ffi::c_int
-            == MEM_read16(b.offset(pos as isize).offset(4) as *const core::ffi::c_void)
+            == MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void)
                 as core::ffi::c_int
     {
-        let pattern16 = MEM_read16(b.offset(pos as isize).offset(4) as *const core::ffi::c_void);
+        let pattern16 = MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void);
         let mut u: u32 = 0;
         let mut patternEnd = 6u32;
         while MEM_read16(
-            b.offset(pos as isize).offset(patternEnd as isize) as *const core::ffi::c_void
+            b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void
         ) as core::ffi::c_int
             == pattern16 as core::ffi::c_int
         {
             patternEnd = patternEnd.wrapping_add(2);
         }
-        if *b.offset(pos.wrapping_add(patternEnd as size_t) as isize) as core::ffi::c_int
-            == *b.offset(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1) as isize)
+        if *b.add(pos.wrapping_add(patternEnd as size_t)) as core::ffi::c_int
+            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1))
                 as core::ffi::c_int
         {
             patternEnd = patternEnd.wrapping_add(1);
         }
         u = 1;
         while u < patternEnd {
-            *doneMarks.offset(pos.wrapping_add(u as size_t) as isize) = 1;
+            *doneMarks.add(pos.wrapping_add(u as size_t)) = 1;
             u = u.wrapping_add(1);
         }
         return solution;
@@ -625,7 +623,7 @@ unsafe fn ZDICT_analyzePos(
     loop {
         end = end.wrapping_add(1);
         length = ZDICT_count(
-            b.offset(pos as isize) as *const core::ffi::c_void,
+            b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
         if length < MINMATCHLENGTH as size_t {
@@ -635,7 +633,7 @@ unsafe fn ZDICT_analyzePos(
     let mut length_0: size_t = 0;
     loop {
         length_0 = ZDICT_count(
-            b.offset(pos as isize) as *const core::ffi::c_void,
+            b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start as isize).offset(-(1)) as isize)
                 as *const core::ffi::c_void,
         );
@@ -726,13 +724,13 @@ unsafe fn ZDICT_analyzePos(
     loop {
         end = end.wrapping_add(1);
         length_1 = ZDICT_count(
-            b.offset(pos as isize) as *const core::ffi::c_void,
+            b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
         if length_1 >= LLIMIT as size_t {
             length_1 = (LLIMIT - 1) as size_t;
         }
-        let fresh0 = &mut (*lengthList.as_mut_ptr().offset(length_1 as isize));
+        let fresh0 = &mut (*lengthList.as_mut_ptr().add(length_1));
         *fresh0 = (*fresh0).wrapping_add(1);
         if length_1 < MINMATCHLENGTH as size_t {
             break;
@@ -744,14 +742,14 @@ unsafe fn ZDICT_analyzePos(
         != 0
     {
         length_2 = ZDICT_count(
-            b.offset(pos as isize) as *const core::ffi::c_void,
+            b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start.wrapping_sub(1) as isize) as isize)
                 as *const core::ffi::c_void,
         );
         if length_2 >= LLIMIT as size_t {
             length_2 = (LLIMIT - 1) as size_t;
         }
-        let fresh1 = &mut (*lengthList.as_mut_ptr().offset(length_2 as isize));
+        let fresh1 = &mut (*lengthList.as_mut_ptr().add(length_2));
         *fresh1 = (*fresh1).wrapping_add(1);
         if length_2 >= MINMATCHLENGTH as size_t {
             start = start.wrapping_sub(1);
@@ -763,10 +761,8 @@ unsafe fn ZDICT_analyzePos(
         ::core::mem::size_of::<[u32; 64]>(),
     );
     *cumulLength
-        .as_mut_ptr()
-        .offset(maxLength.wrapping_sub(1) as isize) = *lengthList
-        .as_mut_ptr()
-        .offset(maxLength.wrapping_sub(1) as isize);
+        .as_mut_ptr().add(maxLength.wrapping_sub(1)) = *lengthList
+        .as_mut_ptr().add(maxLength.wrapping_sub(1));
     i = maxLength.wrapping_sub(2) as core::ffi::c_int;
     while i >= 0 {
         *cumulLength.as_mut_ptr().offset(i as isize) =
@@ -784,8 +780,8 @@ unsafe fn ZDICT_analyzePos(
     }
     maxLength = u_0 as size_t;
     let mut l = maxLength as u32;
-    let c = *b.offset(pos.wrapping_add(maxLength).wrapping_sub(1) as isize);
-    while *b.offset(pos.wrapping_add(l as size_t).wrapping_sub(2) as isize) as core::ffi::c_int
+    let c = *b.add(pos.wrapping_add(maxLength).wrapping_sub(1));
+    while *b.add(pos.wrapping_add(l as size_t).wrapping_sub(2)) as core::ffi::c_int
         == c as core::ffi::c_int
     {
         l = l.wrapping_sub(1);
@@ -811,15 +807,15 @@ unsafe fn ZDICT_analyzePos(
                 as *const u8 as *const core::ffi::c_char,
             pos as core::ffi::c_uint,
             maxLength as core::ffi::c_uint,
-            *savings.as_mut_ptr().offset(maxLength as isize),
-            *savings.as_mut_ptr().offset(maxLength as isize) as core::ffi::c_double
+            *savings.as_mut_ptr().add(maxLength),
+            *savings.as_mut_ptr().add(maxLength) as core::ffi::c_double
                 / maxLength as core::ffi::c_double,
         );
         fflush(stderr);
     }
     solution.pos = pos as u32;
     solution.length = maxLength as u32;
-    solution.savings = *savings.as_mut_ptr().offset(maxLength as isize);
+    solution.savings = *savings.as_mut_ptr().add(maxLength);
     let mut id_0: u32 = 0;
     id_0 = start;
     while id_0 < end {
@@ -831,7 +827,7 @@ unsafe fn ZDICT_analyzePos(
             length_3 = solution.length;
         } else {
             length_3 = ZDICT_count(
-                b.offset(pos as isize) as *const core::ffi::c_void,
+                b.add(pos) as *const core::ffi::c_void,
                 b.offset(testedPos as isize) as *const core::ffi::c_void,
             ) as u32;
             if length_3 > solution.length {
@@ -858,8 +854,8 @@ unsafe fn isIncluded(
     let mut u: size_t = 0;
     u = 0;
     while u < length {
-        if *ip.offset(u as isize) as core::ffi::c_int
-            != *into.offset(u as isize) as core::ffi::c_int
+        if *ip.add(u) as core::ffi::c_int
+            != *into.add(u) as core::ffi::c_int
         {
             break;
         }
@@ -1103,20 +1099,20 @@ unsafe fn ZDICT_trainBuffer_legacy(
         if divSuftSortResult != 0 {
             result = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
         } else {
-            *suffix.offset(bufferSize as isize) = bufferSize as core::ffi::c_uint;
+            *suffix.add(bufferSize) = bufferSize as core::ffi::c_uint;
             *suffix0.offset(0) = bufferSize as core::ffi::c_uint;
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
-                *reverseSuffix.offset(*suffix.offset(pos as isize) as isize) = pos as u32;
+                *reverseSuffix.offset(*suffix.add(pos) as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
             }
             *filePos.offset(0) = 0;
             pos = 1;
             while pos < nbFiles as size_t {
-                *filePos.offset(pos as isize) = (*filePos.offset(pos.wrapping_sub(1) as isize)
+                *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1))
                     as size_t)
-                    .wrapping_add(*fileSizes.offset(pos.wrapping_sub(1) as isize))
+                    .wrapping_add(*fileSizes.add(pos.wrapping_sub(1)))
                     as u32;
                 pos = pos.wrapping_add(1);
             }
@@ -1194,7 +1190,7 @@ unsafe fn ZDICT_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t
     p = 0;
     while p < length {
         acc = acc.wrapping_mul(prime2);
-        *(buffer as *mut core::ffi::c_uchar).offset(p as isize) = (acc >> 21) as core::ffi::c_uchar;
+        *(buffer as *mut core::ffi::c_uchar).add(p) = (acc >> 21) as core::ffi::c_uchar;
         p = p.wrapping_add(1);
     }
 }
@@ -1487,7 +1483,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     matchLengthCount.as_mut_ptr(),
                     litLengthCount.as_mut_ptr(),
                     repOffset.as_mut_ptr(),
-                    (srcBuffer as *const core::ffi::c_char).offset(pos as isize)
+                    (srcBuffer as *const core::ffi::c_char).add(pos)
                         as *const core::ffi::c_void,
                     *fileSizes.offset(u as isize),
                     notificationLevel,
@@ -1670,7 +1666,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                     fflush(stderr);
                                 }
                             } else {
-                                dstPtr = dstPtr.offset(hhSize as isize);
+                                dstPtr = dstPtr.add(hhSize);
                                 maxDstSize = maxDstSize.wrapping_sub(hhSize);
                                 eSize = eSize.wrapping_add(hhSize);
                                 let ohSize = FSE_writeNCount(
@@ -1692,7 +1688,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                         fflush(stderr);
                                     }
                                 } else {
-                                    dstPtr = dstPtr.offset(ohSize as isize);
+                                    dstPtr = dstPtr.add(ohSize);
                                     maxDstSize = maxDstSize.wrapping_sub(ohSize);
                                     eSize = eSize.wrapping_add(ohSize);
                                     let mhSize = FSE_writeNCount(
@@ -1714,7 +1710,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                             fflush(stderr);
                                         }
                                     } else {
-                                        dstPtr = dstPtr.offset(mhSize as isize);
+                                        dstPtr = dstPtr.add(mhSize);
                                         maxDstSize = maxDstSize.wrapping_sub(mhSize);
                                         eSize = eSize.wrapping_add(mhSize);
                                         let lhSize = FSE_writeNCount(
@@ -1735,7 +1731,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                                 fflush(stderr);
                                             }
                                         } else {
-                                            dstPtr = dstPtr.offset(lhSize as isize);
+                                            dstPtr = dstPtr.add(lhSize);
                                             maxDstSize = maxDstSize.wrapping_sub(lhSize);
                                             eSize = eSize.wrapping_add(lhSize);
                                             if maxDstSize < 12 {
@@ -1855,7 +1851,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         fflush(stderr);
     }
     let eSize = ZDICT_analyzeEntropy(
-        header.as_mut_ptr().offset(hSize as isize) as *mut core::ffi::c_void,
+        header.as_mut_ptr().add(hSize) as *mut core::ffi::c_void,
         (HBUFFSIZE as size_t).wrapping_sub(hSize),
         compressionLevel,
         samplesBuffer,
@@ -1884,8 +1880,8 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         .wrapping_add(paddingSize)
         .wrapping_add(dictContentSize);
     let outDictHeader = dictBuffer as *mut u8;
-    let outDictPadding = outDictHeader.offset(hSize as isize);
-    let outDictContent = outDictPadding.offset(paddingSize as isize);
+    let outDictPadding = outDictHeader.add(hSize);
+    let outDictContent = outDictPadding.add(paddingSize);
     memmove(
         outDictContent as *mut core::ffi::c_void,
         customDictContent,
@@ -1932,14 +1928,13 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         fflush(stderr);
     }
     let eSize = ZDICT_analyzeEntropy(
-        (dictBuffer as *mut core::ffi::c_char).offset(hSize as isize) as *mut core::ffi::c_void,
+        (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(hSize),
         compressionLevel,
         samplesBuffer,
         samplesSizes,
         nbSamples,
-        (dictBuffer as *mut core::ffi::c_char)
-            .offset(dictBufferCapacity as isize)
+        (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
         dictContentSize,
         notificationLevel,
@@ -1950,8 +1945,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     hSize = hSize.wrapping_add(eSize);
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);
     let randomID = ZSTD_XXH64(
-        (dictBuffer as *mut core::ffi::c_char)
-            .offset(dictBufferCapacity as isize)
+        (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
         dictContentSize as usize,
         0,
@@ -1969,9 +1963,8 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     );
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
         memmove(
-            (dictBuffer as *mut core::ffi::c_char).offset(hSize as isize) as *mut core::ffi::c_void,
-            (dictBuffer as *mut core::ffi::c_char)
-                .offset(dictBufferCapacity as isize)
+            (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
+            (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
                 .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
             dictContentSize,
         );
@@ -2197,7 +2190,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     (*dictList).pos = n;
     dictContentSize_0 = currentSize;
     let mut u_0: u32 = 0;
-    let mut ptr = (dictBuffer as *mut u8).offset(maxDictSize as isize);
+    let mut ptr = (dictBuffer as *mut u8).add(maxDictSize);
     u_0 = 1;
     while u_0 < (*dictList).pos {
         let mut l = (*dictList.offset(u_0 as isize)).length;
@@ -2248,7 +2241,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     }
     memcpy(newBuff, samplesBuffer, sBuffSize);
     ZDICT_fillNoise(
-        (newBuff as *mut core::ffi::c_char).offset(sBuffSize as isize) as *mut core::ffi::c_void,
+        (newBuff as *mut core::ffi::c_char).add(sBuffSize) as *mut core::ffi::c_void,
         NOISELENGTH as size_t,
     );
     result = ZDICT_trainFromBuffer_unsafe_legacy(

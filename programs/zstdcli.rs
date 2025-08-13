@@ -292,8 +292,8 @@ unsafe fn exeNameMatch(
     mut test: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     (strncmp(exeName, test, strlen(test)) == 0
-        && (*exeName.offset(strlen(test) as isize) as core::ffi::c_int == '\0' as i32
-            || *exeName.offset(strlen(test) as isize) as core::ffi::c_int == '.' as i32))
+        && (*exeName.add(strlen(test)) as core::ffi::c_int == '\0' as i32
+            || *exeName.add(strlen(test)) as core::ffi::c_int == '.' as i32))
         as core::ffi::c_int
 }
 unsafe fn usage(mut f: *mut FILE, mut programName: *const core::ffi::c_char) {
@@ -931,7 +931,7 @@ unsafe fn longCommandWArg(
     let comSize = strlen(longCommand);
     let result = (strncmp(*stringPtr, longCommand, comSize) == 0) as core::ffi::c_int;
     if result != 0 {
-        *stringPtr = (*stringPtr).offset(comSize as isize);
+        *stringPtr = (*stringPtr).add(comSize);
     }
     result
 }
@@ -2491,7 +2491,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb = argument;
-                                        argument = argument.offset(strlen(__nb) as isize);
+                                        argument = argument.add(strlen(__nb));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2556,7 +2556,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_0 = argument;
-                                        argument = argument.offset(strlen(__nb_0) as isize);
+                                        argument = argument.add(strlen(__nb_0));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2620,7 +2620,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_1 = argument;
-                                        argument = argument.offset(strlen(__nb_1) as isize);
+                                        argument = argument.add(strlen(__nb_1));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2685,7 +2685,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_2 = argument;
-                                        argument = argument.offset(strlen(__nb_2) as isize);
+                                        argument = argument.add(strlen(__nb_2));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2749,7 +2749,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_3 = argument;
-                                        argument = argument.offset(strlen(__nb_3) as isize);
+                                        argument = argument.add(strlen(__nb_3));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2813,7 +2813,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_4 = argument;
-                                        argument = argument.offset(strlen(__nb_4) as isize);
+                                        argument = argument.add(strlen(__nb_4));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2877,7 +2877,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_5 = argument;
-                                        argument = argument.offset(strlen(__nb_5) as isize);
+                                        argument = argument.add(strlen(__nb_5));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -2941,7 +2941,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_6 = argument;
-                                        argument = argument.offset(strlen(__nb_6) as isize);
+                                        argument = argument.add(strlen(__nb_6));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3005,7 +3005,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_7 = argument;
-                                        argument = argument.offset(strlen(__nb_7) as isize);
+                                        argument = argument.add(strlen(__nb_7));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3084,7 +3084,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_8 = argument;
-                                        argument = argument.offset(strlen(__nb_8) as isize);
+                                        argument = argument.add(strlen(__nb_8));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3149,7 +3149,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_9 = argument;
-                                        argument = argument.offset(strlen(__nb_9) as isize);
+                                        argument = argument.add(strlen(__nb_9));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3213,7 +3213,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         __nb_10 = argument;
-                                        argument = argument.offset(strlen(__nb_10) as isize);
+                                        argument = argument.add(strlen(__nb_10));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3277,7 +3277,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         outDirName = argument;
-                                        argument = argument.offset(strlen(outDirName) as isize);
+                                        argument = argument.add(strlen(outDirName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3348,7 +3348,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         threadDefault = argument;
-                                        argument = argument.offset(strlen(threadDefault) as isize);
+                                        argument = argument.add(strlen(threadDefault));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3415,7 +3415,7 @@ unsafe fn main_0(
                                         argument = argument.offset(1);
                                         outMirroredDirName = argument;
                                         argument =
-                                            argument.offset(strlen(outMirroredDirName) as isize);
+                                            argument.add(strlen(outMirroredDirName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3486,7 +3486,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         traceFile = argument;
-                                        argument = argument.offset(strlen(traceFile) as isize);
+                                        argument = argument.add(strlen(traceFile));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3546,7 +3546,7 @@ unsafe fn main_0(
                                         argument = argument.offset(1);
                                         patchFromDictFileName = argument;
                                         argument =
-                                            argument.offset(strlen(patchFromDictFileName) as isize);
+                                            argument.add(strlen(patchFromDictFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3607,7 +3607,7 @@ unsafe fn main_0(
                                         argument = argument.offset(1);
                                         patchFromDictFileName = argument;
                                         argument =
-                                            argument.offset(strlen(patchFromDictFileName) as isize);
+                                            argument.add(strlen(patchFromDictFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3724,7 +3724,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         listName = argument;
-                                        argument = argument.offset(strlen(listName) as isize);
+                                        argument = argument.add(strlen(listName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3836,7 +3836,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         outFileName = argument;
-                                        argument = argument.offset(strlen(outFileName) as isize);
+                                        argument = argument.add(strlen(outFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3896,7 +3896,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         dictFileName = argument;
-                                        argument = argument.offset(strlen(dictFileName) as isize);
+                                        argument = argument.add(strlen(dictFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -4156,7 +4156,7 @@ unsafe fn main_0(
                             break;
                         }
                         let fnt = UTIL_createFileNamesTable_fromFileList(
-                            *((*file_of_names).fileNames).offset(flNb as isize),
+                            *((*file_of_names).fileNames).add(flNb),
                         );
                         if fnt.is_null() {
                             if g_displayLevel >= 1 {
@@ -4164,7 +4164,7 @@ unsafe fn main_0(
                                     stderr,
                                     b"zstd: error reading %s \n\0" as *const u8
                                         as *const core::ffi::c_char,
-                                    *((*file_of_names).fileNames).offset(flNb as isize),
+                                    *((*file_of_names).fileNames).add(flNb),
                                 );
                             }
                             operationResult = 1;
@@ -4683,20 +4683,14 @@ unsafe fn main_0(
                                                             while fileNb < (*filenames).tableSize {
                                                                 if showDefaultCParams != 0 {
                                                                     printDefaultCParams(
-                                                                        *((*filenames).fileNames)
-                                                                            .offset(
-                                                                                fileNb as isize,
-                                                                            ),
+                                                                        *((*filenames).fileNames).add(fileNb),
                                                                         dictFileName,
                                                                         cLevel,
                                                                     );
                                                                 }
                                                                 if g_displayLevel >= 4 {
                                                                     printActualCParams(
-                                                                        *((*filenames).fileNames)
-                                                                            .offset(
-                                                                                fileNb as isize,
-                                                                            ),
+                                                                        *((*filenames).fileNames).add(fileNb),
                                                                         dictFileName,
                                                                         cLevel,
                                                                         &mut compressionParams,

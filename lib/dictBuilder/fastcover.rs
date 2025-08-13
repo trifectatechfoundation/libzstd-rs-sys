@@ -224,11 +224,11 @@ unsafe fn FASTCOVER_selectSegment(
             f,
             d,
         );
-        if *segmentFreqs.offset(idx as isize) as core::ffi::c_int == 0 {
-            activeSegment.score = (activeSegment.score).wrapping_add(*freqs.offset(idx as isize));
+        if *segmentFreqs.add(idx) as core::ffi::c_int == 0 {
+            activeSegment.score = (activeSegment.score).wrapping_add(*freqs.add(idx));
         }
         activeSegment.end = (activeSegment.end).wrapping_add(1);
-        let fresh0 = &mut (*segmentFreqs.offset(idx as isize));
+        let fresh0 = &mut (*segmentFreqs.add(idx));
         *fresh0 = (*fresh0 as core::ffi::c_int + 1) as u16;
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delIndex = FASTCOVER_hashPtrToIndex(
@@ -236,11 +236,11 @@ unsafe fn FASTCOVER_selectSegment(
                 f,
                 d,
             );
-            let fresh1 = &mut (*segmentFreqs.offset(delIndex as isize));
+            let fresh1 = &mut (*segmentFreqs.add(delIndex));
             *fresh1 = (*fresh1 as core::ffi::c_int - 1) as u16;
-            if *segmentFreqs.offset(delIndex as isize) as core::ffi::c_int == 0 {
+            if *segmentFreqs.add(delIndex) as core::ffi::c_int == 0 {
                 activeSegment.score =
-                    (activeSegment.score).wrapping_sub(*freqs.offset(delIndex as isize));
+                    (activeSegment.score).wrapping_sub(*freqs.add(delIndex));
             }
             activeSegment.begin = (activeSegment.begin).wrapping_add(1);
         }
@@ -254,7 +254,7 @@ unsafe fn FASTCOVER_selectSegment(
             f,
             d,
         );
-        let fresh2 = &mut (*segmentFreqs.offset(delIndex_0 as isize));
+        let fresh2 = &mut (*segmentFreqs.add(delIndex_0));
         *fresh2 = (*fresh2 as core::ffi::c_int - 1) as u16;
         activeSegment.begin = (activeSegment.begin).wrapping_add(1);
     }
@@ -266,7 +266,7 @@ unsafe fn FASTCOVER_selectSegment(
             f,
             d,
         );
-        *freqs.offset(i as isize) = 0;
+        *freqs.add(i) = 0;
         pos = pos.wrapping_add(1);
     }
     bestSegment
@@ -317,15 +317,15 @@ unsafe fn FASTCOVER_computeFrequency(mut freqs: *mut u32, mut ctx: *const FASTCO
     let mut i: size_t = 0;
     i = 0;
     while i < (*ctx).nbTrainSamples {
-        let mut start = *((*ctx).offsets).offset(i as isize);
-        let currSampleEnd = *((*ctx).offsets).offset(i.wrapping_add(1) as isize);
+        let mut start = *((*ctx).offsets).add(i);
+        let currSampleEnd = *((*ctx).offsets).add(i.wrapping_add(1));
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
             let dmerIndex = FASTCOVER_hashPtrToIndex(
-                ((*ctx).samples).offset(start as isize) as *const core::ffi::c_void,
+                ((*ctx).samples).add(start) as *const core::ffi::c_void,
                 f,
                 d,
             );
-            let fresh3 = &mut (*freqs.offset(dmerIndex as isize));
+            let fresh3 = &mut (*freqs.add(dmerIndex));
             *fresh3 = (*fresh3).wrapping_add(1);
             start = start.wrapping_add(skip as size_t).wrapping_add(1);
         }
@@ -562,7 +562,7 @@ unsafe fn FASTCOVER_buildDictionary(
             }
             tail = tail.wrapping_sub(segmentSize);
             memcpy(
-                dict.offset(tail as isize) as *mut core::ffi::c_void,
+                dict.add(tail) as *mut core::ffi::c_void,
                 ((*ctx).samples).offset(segment.begin as isize) as *const core::ffi::c_void,
                 segmentSize,
             );
@@ -633,7 +633,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(mut opaque: *mut core::ffi::c_void)
         let nbFinalizeSamples = ((*ctx).nbTrainSamples * (*ctx).accelParams.finalize as size_t
             / 100) as core::ffi::c_uint;
         selection = COVER_selectDict(
-            dict.offset(tail as isize),
+            dict.add(tail),
             dictBufferCapacity,
             dictBufferCapacity.wrapping_sub(tail),
             (*ctx).samples,
@@ -837,7 +837,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let dictionarySize = ZDICT_finalizeDictionary(
         dict as *mut core::ffi::c_void,
         dictBufferCapacity,
-        dict.offset(tail as isize) as *const core::ffi::c_void,
+        dict.add(tail) as *const core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(tail),
         samplesBuffer,
         samplesSizes,
