@@ -226,7 +226,7 @@ unsafe fn ZSTD_storeSeq(
     mut matchLength: size_t,
 ) {
     let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
-    let litEnd = literals.offset(litLength as isize);
+    let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
             (*seqStorePtr).lit as *mut core::ffi::c_void,
@@ -243,7 +243,7 @@ unsafe fn ZSTD_storeSeq(
     } else {
         ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
     }
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).offset(litLength as isize);
+    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 #[inline]
@@ -342,10 +342,10 @@ unsafe fn ZSTD_count_2segments(
         iEnd
     };
     let matchLength = ZSTD_count(ip, match_0, vEnd);
-    if match_0.offset(matchLength as isize) != mEnd {
+    if match_0.add(matchLength) != mEnd {
         return matchLength;
     }
-    matchLength.wrapping_add(ZSTD_count(ip.offset(matchLength as isize), iStart, iEnd))
+    matchLength.wrapping_add(ZSTD_count(ip.add(matchLength), iStart, iEnd))
 }
 static prime3bytes: u32 = 506832829;
 unsafe fn ZSTD_hash3(mut u: u32, mut h: u32, mut s: u32) -> u32 {
@@ -460,7 +460,7 @@ unsafe fn ZSTD_wildcopy(
     let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let oend = op.offset(length as isize);
+    let oend = op.add(length);
     if ovtype as core::ffi::c_uint
         == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
         && diff < WILDCOPY_VECLEN as ptrdiff_t
@@ -604,7 +604,7 @@ unsafe fn sum_u32(mut table: *const core::ffi::c_uint, mut nbElts: size_t) -> u3
     let mut total = 0;
     n = 0;
     while n < nbElts {
-        total = (total as core::ffi::c_uint).wrapping_add(*table.offset(n as isize)) as u32 as u32;
+        total = (total as core::ffi::c_uint).wrapping_add(*table.add(n)) as u32 as u32;
         n = n.wrapping_add(1);
     }
     total
@@ -991,14 +991,14 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
     let hash3 = ZSTD_hash3Ptr(ip as *const core::ffi::c_void, hashLog3);
     while idx < target {
-        *hashTable3.offset(ZSTD_hash3Ptr(
+        *hashTable3.add(ZSTD_hash3Ptr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog3,
-        ) as isize) = idx;
+        )) = idx;
         idx = idx.wrapping_add(1);
     }
     *nextToUpdate3 = target;
-    *hashTable3.offset(hash3 as isize)
+    *hashTable3.add(hash3)
 }
 unsafe fn ZSTD_insertBt1(
     mut ms: *const ZSTD_MatchState_t,
@@ -1015,7 +1015,7 @@ unsafe fn ZSTD_insertBt1(
     let bt = (*ms).chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
     let btMask = (((1) << btLog) - 1) as u32;
-    let mut matchIndex = *hashTable.offset(h as isize);
+    let mut matchIndex = *hashTable.add(h);
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
     let base = (*ms).window.base;
@@ -1037,7 +1037,7 @@ unsafe fn ZSTD_insertBt1(
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
     let mut bestLength = 8;
     let mut nbCompares = (1 as core::ffi::c_uint) << (*cParams).searchLog;
-    *hashTable.offset(h as isize) = curr;
+    *hashTable.add(h) = curr;
     while nbCompares != 0 && matchIndex >= windowLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
         let mut matchLength = if commonLengthSmaller < commonLengthLarger {
@@ -1048,15 +1048,15 @@ unsafe fn ZSTD_insertBt1(
         if extDict == 0 || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
             match_0 = base.offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count(
-                ip.offset(matchLength as isize),
-                match_0.offset(matchLength as isize),
+                ip.add(matchLength),
+                match_0.add(matchLength),
                 iend,
             ));
         } else {
             match_0 = dictBase.offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count_2segments(
-                ip.offset(matchLength as isize),
-                match_0.offset(matchLength as isize),
+                ip.add(matchLength),
+                match_0.add(matchLength),
                 iend,
                 dictEnd,
                 prefixStart,
@@ -1071,11 +1071,11 @@ unsafe fn ZSTD_insertBt1(
                 matchEndIdx = matchIndex.wrapping_add(matchLength as u32);
             }
         }
-        if ip.offset(matchLength as isize) == iend {
+        if ip.add(matchLength) == iend {
             break;
         } else {
-            if (*match_0.offset(matchLength as isize) as core::ffi::c_int)
-                < *ip.offset(matchLength as isize) as core::ffi::c_int
+            if (*match_0.add(matchLength) as core::ffi::c_int)
+                < *ip.add(matchLength) as core::ffi::c_int
             {
                 *smallerPtr = matchIndex;
                 commonLengthSmaller = matchLength;
@@ -1173,7 +1173,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let minMatch = (if mls == 3 { 3 } else { 4 }) as u32;
     let hashTable = (*ms).hashTable;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
-    let mut matchIndex = *hashTable.offset(h as isize);
+    let mut matchIndex = *hashTable.add(h);
     let bt = (*ms).chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1 as core::ffi::c_uint);
     let btMask = ((1 as core::ffi::c_uint) << btLog).wrapping_sub(1);
@@ -1389,7 +1389,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 (*matches.offset(0)).len = mlen as u32;
                 mnum = 1;
                 if (mlen > sufficient_len as size_t) as core::ffi::c_int
-                    | (ip.offset(mlen as isize) == iLimit) as core::ffi::c_int
+                    | (ip.add(mlen) == iLimit) as core::ffi::c_int
                     != 0
                 {
                     (*ms).nextToUpdate = curr.wrapping_add(1);
@@ -1398,7 +1398,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             }
         }
     }
-    *hashTable.offset(h as isize) = curr;
+    *hashTable.add(h) = curr;
     while nbCompares != 0 && matchIndex >= matchLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
         let mut match_2 = core::ptr::null::<u8>();
@@ -1415,15 +1415,15 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             match_2 = base.offset(matchIndex as isize);
             matchIndex >= dictLimit;
             matchLength = matchLength.wrapping_add(ZSTD_count(
-                ip.offset(matchLength as isize),
-                match_2.offset(matchLength as isize),
+                ip.add(matchLength),
+                match_2.add(matchLength),
                 iLimit,
             ));
         } else {
             match_2 = dictBase.offset(matchIndex as isize);
             matchLength = matchLength.wrapping_add(ZSTD_count_2segments(
-                ip.offset(matchLength as isize),
-                match_2.offset(matchLength as isize),
+                ip.add(matchLength),
+                match_2.add(matchLength),
                 iLimit,
                 dictEnd,
                 prefixStart,
@@ -1443,7 +1443,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             (*matches.offset(mnum as isize)).len = matchLength as u32;
             mnum = mnum.wrapping_add(1);
             if (matchLength > ZSTD_OPT_NUM as size_t) as core::ffi::c_int
-                | (ip.offset(matchLength as isize) == iLimit) as core::ffi::c_int
+                | (ip.add(matchLength) == iLimit) as core::ffi::c_int
                 != 0
             {
                 if dictMode as core::ffi::c_uint
@@ -1454,8 +1454,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 break;
             }
         }
-        if (*match_2.offset(matchLength as isize) as core::ffi::c_int)
-            < *ip.offset(matchLength as isize) as core::ffi::c_int
+        if (*match_2.add(matchLength) as core::ffi::c_int)
+            < *ip.add(matchLength) as core::ffi::c_int
         {
             *smallerPtr = matchIndex;
             commonLengthSmaller = matchLength;
@@ -1485,7 +1485,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         && nbCompares != 0
     {
         let dmsH = ZSTD_hashPtr(ip as *const core::ffi::c_void, dmsHashLog, mls);
-        let mut dictMatchIndex = *((*dms).hashTable).offset(dmsH as isize);
+        let mut dictMatchIndex = *((*dms).hashTable).add(dmsH);
         let dmsBt: *const u32 = (*dms).chainTable;
         commonLengthLarger = 0;
         commonLengthSmaller = commonLengthLarger;
@@ -1498,8 +1498,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             };
             let mut match_3 = dmsBase.offset(dictMatchIndex as isize);
             matchLength_0 = matchLength_0.wrapping_add(ZSTD_count_2segments(
-                ip.offset(matchLength_0 as isize),
-                match_3.offset(matchLength_0 as isize),
+                ip.add(matchLength_0),
+                match_3.add(matchLength_0),
                 iLimit,
                 dmsEnd,
                 prefixStart,
@@ -1521,7 +1521,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 (*matches.offset(mnum as isize)).len = matchLength_0 as u32;
                 mnum = mnum.wrapping_add(1);
                 if (matchLength_0 > ZSTD_OPT_NUM as size_t) as core::ffi::c_int
-                    | (ip.offset(matchLength_0 as isize) == iLimit) as core::ffi::c_int
+                    | (ip.add(matchLength_0) == iLimit) as core::ffi::c_int
                     != 0
                 {
                     break;
@@ -1530,8 +1530,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             if dictMatchIndex <= dmsBtLow {
                 break;
             }
-            if (*match_3.offset(matchLength_0 as isize) as core::ffi::c_int)
-                < *ip.offset(matchLength_0 as isize) as core::ffi::c_int
+            if (*match_3.add(matchLength_0) as core::ffi::c_int)
+                < *ip.add(matchLength_0) as core::ffi::c_int
             {
                 commonLengthSmaller = matchLength_0;
                 dictMatchIndex = *nextPtr_0.offset(1);
@@ -2043,7 +2043,7 @@ unsafe fn ZSTD_optLdm_skipRawSeqStoreBytes(
 ) {
     let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let mut currSeq = *((*rawSeqStore).seq).offset((*rawSeqStore).pos as isize);
+        let mut currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
@@ -2075,7 +2075,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
         (*optLdm).endPosInBlock = UINT_MAX;
         return;
     }
-    currSeq = *((*optLdm).seqStore.seq).offset((*optLdm).seqStore.pos as isize);
+    currSeq = *((*optLdm).seqStore.seq).add((*optLdm).seqStore.pos);
     currBlockEndPos = currPosInBlock.wrapping_add(blockBytesRemaining);
     literalsBytesRemaining = if (*optLdm).seqStore.posInSequence < currSeq.litLength as size_t {
         (currSeq.litLength).wrapping_sub((*optLdm).seqStore.posInSequence as u32)
@@ -2172,7 +2172,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
-    let iend = istart.offset(srcSize as isize);
+    let iend = istart.add(srcSize);
     let ilimit = iend.offset(-(8));
     let base = (*ms).window.base;
     let prefixStart = base.offset((*ms).window.dictLimit as isize);

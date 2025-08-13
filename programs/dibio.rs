@@ -123,7 +123,7 @@ unsafe fn DiB_loadFiles(
                 break;
             }
             if fread(
-                buff.offset(totalDataLoaded as isize) as *mut core::ffi::c_void,
+                buff.add(totalDataLoaded) as *mut core::ffi::c_void,
                 1,
                 fileDataLoaded,
                 f,
@@ -158,7 +158,7 @@ unsafe fn DiB_loadFiles(
                         break;
                     }
                     if fread(
-                        buff.offset(totalDataLoaded as isize) as *mut core::ffi::c_void,
+                        buff.add(totalDataLoaded) as *mut core::ffi::c_void,
                         1,
                         chunkSize,
                         f,
@@ -264,7 +264,7 @@ unsafe fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) 
     p = 0;
     while p < length {
         acc = acc.wrapping_mul(prime2);
-        *(buffer as *mut core::ffi::c_uchar).offset(p as isize) = (acc >> 21) as core::ffi::c_uchar;
+        *(buffer as *mut core::ffi::c_uchar).add(p) = (acc >> 21) as core::ffi::c_uchar;
         p = p.wrapping_add(1);
     }
 }
@@ -587,7 +587,7 @@ pub unsafe fn DiB_trainFromFiles(
     let mut dictSize = ZSTD_error_GENERIC as core::ffi::c_int as size_t;
     if !params.is_null() {
         DiB_fillNoise(
-            (srcBuffer as *mut core::ffi::c_char).offset(loadedSize as isize)
+            (srcBuffer as *mut core::ffi::c_char).add(loadedSize)
                 as *mut core::ffi::c_void,
             NOISELENGTH as size_t,
         );

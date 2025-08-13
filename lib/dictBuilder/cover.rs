@@ -329,7 +329,7 @@ unsafe fn COVER_lower_bound(
     while count != 0 {
         let mut step = count / 2;
         let mut ptr = first;
-        ptr = ptr.offset(step as isize);
+        ptr = ptr.add(step);
         if *ptr < value {
             ptr = ptr.offset(1);
             first = ptr;
@@ -359,7 +359,7 @@ unsafe fn COVER_groupBy(
     let mut ptr = data as *const u8;
     let mut num = 0;
     while num < count {
-        let mut grpEnd = ptr.offset(size as isize);
+        let mut grpEnd = ptr.add(size);
         num = num.wrapping_add(1);
         while num < count
             && cmp.unwrap_unchecked()(
@@ -368,7 +368,7 @@ unsafe fn COVER_groupBy(
                 grpEnd as *const core::ffi::c_void,
             ) == 0
         {
-            grpEnd = grpEnd.offset(size as isize);
+            grpEnd = grpEnd.add(size);
             num = num.wrapping_add(1);
         }
         grp.unwrap_unchecked()(
@@ -389,7 +389,7 @@ unsafe fn COVER_group(
     let dmerId = grpPtr.offset_from((*ctx).suffix) as core::ffi::c_long as u32;
     let mut freq = 0u32;
     let mut curOffsetPtr: *const size_t = (*ctx).offsets;
-    let mut offsetsEnd: *const size_t = ((*ctx).offsets).offset((*ctx).nbSamples as isize);
+    let mut offsetsEnd: *const size_t = ((*ctx).offsets).add((*ctx).nbSamples);
     let mut curSampleEnd = *((*ctx).offsets).offset(0);
     while grpPtr != grpEnd {
         *((*ctx).dmerAt).offset(*grpPtr as isize) = dmerId;
@@ -844,7 +844,7 @@ unsafe fn COVER_buildDictionary(
             }
             tail = tail.wrapping_sub(segmentSize);
             memcpy(
-                dict.offset(tail as isize) as *mut core::ffi::c_void,
+                dict.add(tail) as *mut core::ffi::c_void,
                 ((*ctx).samples).offset(segment.begin as isize) as *const core::ffi::c_void,
                 segmentSize,
             );
@@ -986,7 +986,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     let dictionarySize = ZDICT_finalizeDictionary(
         dict as *mut core::ffi::c_void,
         dictBufferCapacity,
-        dict.offset(tail as isize) as *const core::ffi::c_void,
+        dict.add(tail) as *const core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(tail),
         samplesBuffer,
         samplesSizes,
@@ -1028,8 +1028,8 @@ pub unsafe fn COVER_checkTotalCompressedSize(
         0
     };
     while i < nbSamples {
-        maxSampleSize = if *samplesSizes.offset(i as isize) > maxSampleSize {
-            *samplesSizes.offset(i as isize)
+        maxSampleSize = if *samplesSizes.add(i) > maxSampleSize {
+            *samplesSizes.add(i)
         } else {
             maxSampleSize
         };
@@ -1055,8 +1055,8 @@ pub unsafe fn COVER_checkTotalCompressedSize(
                 cctx,
                 dst,
                 dstCapacity,
-                samples.offset(*offsets.offset(i as isize) as isize) as *const core::ffi::c_void,
-                *samplesSizes.offset(i as isize),
+                samples.add(*offsets.add(i)) as *const core::ffi::c_void,
+                *samplesSizes.add(i),
                 cdict,
             );
             if ERR_isError(size) != 0 {
@@ -1205,7 +1205,7 @@ pub unsafe fn COVER_selectDict(
 ) -> COVER_dictSelection_t {
     let mut largestDict = 0;
     let mut largestCompressed = 0;
-    let mut customDictContentEnd = customDictContent.offset(dictContentSize as isize);
+    let mut customDictContentEnd = customDictContent.add(dictContentSize);
     let mut largestDictbuffer = malloc(dictBufferCapacity) as *mut u8;
     let mut candidateDictBuffer = malloc(dictBufferCapacity) as *mut u8;
     let mut regressionTolerance =
@@ -1361,7 +1361,7 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut core::ffi::c_void) {
             parameters,
         );
         selection = COVER_selectDict(
-            dict.offset(tail as isize),
+            dict.add(tail),
             dictBufferCapacity,
             dictBufferCapacity.wrapping_sub(tail),
             (*ctx).samples,

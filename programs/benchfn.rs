@@ -125,9 +125,9 @@ pub unsafe fn BMK_benchFunction(
     i = 0;
     while i < p.blockCount {
         memset(
-            *(p.dstBuffers).offset(i as isize),
+            *(p.dstBuffers).add(i),
             0xe5,
-            *(p.dstCapacities).offset(i as isize),
+            *(p.dstCapacities).add(i),
         );
         i = i.wrapping_add(1);
     }

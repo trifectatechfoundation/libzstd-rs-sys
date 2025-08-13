@@ -739,7 +739,7 @@ unsafe fn ZSTD_noCompressBlock(
     }
     MEM_writeLE24(dst, cBlockHeader24);
     libc::memcpy(
-        (dst as *mut u8).offset(ZSTD_blockHeaderSize as isize) as *mut core::ffi::c_void,
+        (dst as *mut u8).add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
         src,
         srcSize as libc::size_t,
     );
@@ -853,7 +853,7 @@ unsafe fn ZSTD_storeSeq(
     mut matchLength: size_t,
 ) {
     let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
-    let litEnd = literals.offset(litLength as isize);
+    let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
             (*seqStorePtr).lit as *mut core::ffi::c_void,
@@ -870,7 +870,7 @@ unsafe fn ZSTD_storeSeq(
     } else {
         ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
     }
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).offset(litLength as isize);
+    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 #[inline]
@@ -908,14 +908,14 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
         if diff != 0 {
             return ZSTD_NbCommonBytes(diff) as size_t;
         }
-        pIn = pIn.offset(::core::mem::size_of::<size_t>() as isize);
-        pMatch = pMatch.offset(::core::mem::size_of::<size_t>() as isize);
+        pIn = pIn.add(::core::mem::size_of::<size_t>());
+        pMatch = pMatch.add(::core::mem::size_of::<size_t>());
         while pIn < pInLoopLimit {
             let diff_0 = MEM_readST(pMatch as *const core::ffi::c_void)
                 ^ MEM_readST(pIn as *const core::ffi::c_void);
             if diff_0 == 0 {
-                pIn = pIn.offset(::core::mem::size_of::<size_t>() as isize);
-                pMatch = pMatch.offset(::core::mem::size_of::<size_t>() as isize);
+                pIn = pIn.add(::core::mem::size_of::<size_t>());
+                pMatch = pMatch.add(::core::mem::size_of::<size_t>());
             } else {
                 pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
                 return pIn.offset_from(pStart) as core::ffi::c_long as size_t;
@@ -1147,13 +1147,13 @@ unsafe fn ZSTD_window_update(
         }
         contiguous = 0;
     }
-    (*window).nextSrc = ip.offset(srcSize as isize);
-    if (ip.offset(srcSize as isize) > ((*window).dictBase).offset((*window).lowLimit as isize))
+    (*window).nextSrc = ip.add(srcSize);
+    if (ip.add(srcSize) > ((*window).dictBase).offset((*window).lowLimit as isize))
         as core::ffi::c_int
         & (ip < ((*window).dictBase).offset((*window).dictLimit as isize)) as core::ffi::c_int
         != 0
     {
-        let highInputIdx = ip.offset(srcSize as isize).offset_from((*window).dictBase)
+        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase)
             as core::ffi::c_long as size_t;
         let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
             (*window).dictLimit
@@ -1415,7 +1415,7 @@ unsafe fn ZSTD_wildcopy(
     let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let oend = op.offset(length as isize);
+    let oend = op.add(length);
     if ovtype as core::ffi::c_uint
         == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
         && diff < WILDCOPY_VECLEN as ptrdiff_t
@@ -1549,7 +1549,7 @@ unsafe fn ZSTD_cwksp_internal_advance_phase(
             let bytesToAlign =
                 ZSTD_cwksp_bytes_to_align_ptr(alloc, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
             let objectEnd =
-                (alloc as *mut u8).offset(bytesToAlign as isize) as *mut core::ffi::c_void;
+                (alloc as *mut u8).add(bytesToAlign) as *mut core::ffi::c_void;
             if objectEnd > (*ws).workspaceEnd {
                 return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
             }
@@ -1641,7 +1641,7 @@ unsafe fn ZSTD_cwksp_reserve_table(
         return NULL as *mut core::ffi::c_void;
     }
     alloc = (*ws).tableEnd;
-    end = (alloc as *mut u8).offset(bytes as isize) as *mut core::ffi::c_void;
+    end = (alloc as *mut u8).add(bytes) as *mut core::ffi::c_void;
     top = (*ws).allocStart;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if end > top {
@@ -1661,7 +1661,7 @@ unsafe fn ZSTD_cwksp_reserve_object(
         ::core::mem::size_of::<*mut core::ffi::c_void>() as size_t,
     );
     let mut alloc = (*ws).objectEnd;
-    let mut end = (alloc as *mut u8).offset(roundedBytes as isize) as *mut core::ffi::c_void;
+    let mut end = (alloc as *mut u8).add(roundedBytes) as *mut core::ffi::c_void;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if (*ws).phase as core::ffi::c_uint
         != ZSTD_cwksp_alloc_objects as core::ffi::c_int as core::ffi::c_uint
@@ -1728,7 +1728,7 @@ unsafe fn ZSTD_cwksp_init(
     mut isStatic: ZSTD_cwksp_static_alloc_e,
 ) {
     (*ws).workspace = start;
-    (*ws).workspaceEnd = (start as *mut u8).offset(size as isize) as *mut core::ffi::c_void;
+    (*ws).workspaceEnd = (start as *mut u8).add(size) as *mut core::ffi::c_void;
     (*ws).objectEnd = (*ws).workspace;
     (*ws).tableValidEnd = (*ws).objectEnd;
     (*ws).initOnceStart = ZSTD_cwksp_initialAllocStart(ws);
@@ -4928,9 +4928,9 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
         let mut i: size_t = 0;
         i = 0;
         while i < tableSize {
-            let taggedIndex = *src.offset(i as isize);
+            let taggedIndex = *src.add(i);
             let index = taggedIndex >> ZSTD_SHORT_CACHE_TAG_BITS;
-            *dst.offset(i as isize) = index;
+            *dst.add(i) = index;
             i = i.wrapping_add(1);
         }
     } else {
@@ -5331,7 +5331,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     if stats.LLtype == set_compressed as core::ffi::c_int as u32 {
         stats.lastCountSize = countSize;
     }
-    op = op.offset(countSize as isize);
+    op = op.add(countSize);
     let mut max_0 = MaxOff as core::ffi::c_uint;
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
@@ -5385,7 +5385,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     if stats.Offtype == set_compressed as core::ffi::c_int as u32 {
         stats.lastCountSize = countSize_0;
     }
-    op = op.offset(countSize_0 as isize);
+    op = op.add(countSize_0);
     let mut max_1 = MaxML as core::ffi::c_uint;
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
@@ -5434,7 +5434,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     if stats.MLtype == set_compressed as core::ffi::c_int as u32 {
         stats.lastCountSize = countSize_1;
     }
-    op = op.offset(countSize_1 as isize);
+    op = op.add(countSize_1);
     stats.size = op.offset_from(ostart) as core::ffi::c_long as size_t;
     stats
 }
@@ -5465,7 +5465,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let llCodeTable: *const u8 = (*seqStorePtr).llCode;
     let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
     let ostart = dst as *mut u8;
-    let oend = ostart.offset(dstCapacity as isize);
+    let oend = ostart.add(dstCapacity);
     let mut op = ostart;
     let mut lastCountSize: size_t = 0;
     let mut longOffsets = 0;
@@ -5498,7 +5498,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    op = op.offset(cSize as isize);
+    op = op.add(cSize);
     if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -5549,7 +5549,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         .wrapping_add(stats.Offtype << 4)
         .wrapping_add(stats.MLtype << 2) as u8;
     lastCountSize = stats.lastCountSize;
-    op = op.offset(stats.size as isize);
+    op = op.add(stats.size);
     longOffsets = stats.longOffsets;
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
@@ -5569,7 +5569,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     if ERR_isError(err_code_1) != 0 {
         return err_code_1;
     }
-    op = op.offset(bitstreamSize as isize);
+    op = op.add(bitstreamSize);
     if lastCountSize != 0 && lastCountSize.wrapping_add(bitstreamSize) < 4 {
         return 0;
     }
@@ -5821,7 +5821,7 @@ unsafe fn ZSTD_storeLastLiterals(
         anchor as *const core::ffi::c_void,
         lastLLSize as libc::size_t,
     );
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).offset(lastLLSize as isize);
+    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(lastLLSize);
 }
 pub unsafe fn ZSTD_resetSeqStore(mut ssPtr: *mut SeqStore_t) {
     (*ssPtr).lit = (*ssPtr).litStart;
@@ -5848,7 +5848,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
         );
         return 1;
     }
-    let lastSeq = *outSeqs.offset(nbExternalSeqs.wrapping_sub(1) as isize);
+    let lastSeq = *outSeqs.add(nbExternalSeqs.wrapping_sub(1));
     if lastSeq.offset == 0 && lastSeq.matchLength == 0 {
         return nbExternalSeqs;
     }
@@ -5856,7 +5856,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
         return -(ZSTD_error_sequenceProducer_failed as core::ffi::c_int) as size_t;
     }
     ptr::write_bytes(
-        &mut *outSeqs.offset(nbExternalSeqs as isize) as *mut ZSTD_Sequence as *mut u8,
+        &mut *outSeqs.add(nbExternalSeqs) as *mut ZSTD_Sequence as *mut u8,
         0,
         ::core::mem::size_of::<ZSTD_Sequence>(),
     );
@@ -5873,8 +5873,8 @@ unsafe fn ZSTD_fastSequenceLengthSum(
     litLenSum = 0;
     i = 0;
     while i < seqBufSize {
-        litLenSum = litLenSum.wrapping_add((*seqBuf.offset(i as isize)).litLength as size_t);
-        matchLenSum = matchLenSum.wrapping_add((*seqBuf.offset(i as isize)).matchLength as size_t);
+        litLenSum = litLenSum.wrapping_add((*seqBuf.add(i)).litLength as size_t);
+        matchLenSum = matchLenSum.wrapping_add((*seqBuf.add(i)).matchLength as size_t);
         i = i.wrapping_add(1);
     }
     litLenSum.wrapping_add(matchLenSum)
@@ -6057,8 +6057,7 @@ unsafe fn ZSTD_buildSeqStore(
             srcSize,
         );
     }
-    let lastLiterals = (src as *const u8)
-        .offset(srcSize as isize)
+    let lastLiterals = (src as *const u8).add(srcSize)
         .offset(-(lastLLSize as isize));
     ZSTD_storeLastLiterals(&mut (*zc).seqStore, lastLiterals, lastLLSize);
     ZSTD_validateSeqStore(&mut (*zc).seqStore, &mut (*zc).appliedParams.cParams);
@@ -6076,7 +6075,7 @@ unsafe fn ZSTD_copyBlockSequences(
     let mut outSeqs = if (*seqCollector).seqIndex == 0 {
         (*seqCollector).seqStart
     } else {
-        ((*seqCollector).seqStart).offset((*seqCollector).seqIndex as isize)
+        ((*seqCollector).seqStart).add((*seqCollector).seqIndex)
     };
     let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0 as size_t;
@@ -6093,31 +6092,31 @@ unsafe fn ZSTD_copyBlockSequences(
     i = 0;
     while i < nbInSequences {
         let mut rawOffset: u32 = 0;
-        (*outSeqs.offset(i as isize)).litLength =
-            (*inSeqs.offset(i as isize)).litLength as core::ffi::c_uint;
-        (*outSeqs.offset(i as isize)).matchLength = ((*inSeqs.offset(i as isize)).mlBase
+        (*outSeqs.add(i)).litLength =
+            (*inSeqs.add(i)).litLength as core::ffi::c_uint;
+        (*outSeqs.add(i)).matchLength = ((*inSeqs.add(i)).mlBase
             as core::ffi::c_int
             + MINMATCH) as core::ffi::c_uint;
-        (*outSeqs.offset(i as isize)).rep = 0;
+        (*outSeqs.add(i)).rep = 0;
         if i == (*seqStore).longLengthPos as size_t {
             if (*seqStore).longLengthType as core::ffi::c_uint
                 == ZSTD_llt_literalLength as core::ffi::c_int as core::ffi::c_uint
             {
-                let fresh4 = &mut (*outSeqs.offset(i as isize)).litLength;
+                let fresh4 = &mut (*outSeqs.add(i)).litLength;
                 *fresh4 = (*fresh4).wrapping_add(0x10000 as core::ffi::c_int as core::ffi::c_uint);
             } else if (*seqStore).longLengthType as core::ffi::c_uint
                 == ZSTD_llt_matchLength as core::ffi::c_int as core::ffi::c_uint
             {
-                let fresh5 = &mut (*outSeqs.offset(i as isize)).matchLength;
+                let fresh5 = &mut (*outSeqs.add(i)).matchLength;
                 *fresh5 = (*fresh5).wrapping_add(0x10000 as core::ffi::c_int as core::ffi::c_uint);
             }
         }
-        if 1 <= (*inSeqs.offset(i as isize)).offBase
-            && (*inSeqs.offset(i as isize)).offBase <= ZSTD_REP_NUM as u32
+        if 1 <= (*inSeqs.add(i)).offBase
+            && (*inSeqs.add(i)).offBase <= ZSTD_REP_NUM as u32
         {
-            let repcode = (*inSeqs.offset(i as isize)).offBase;
-            (*outSeqs.offset(i as isize)).rep = repcode;
-            if (*outSeqs.offset(i as isize)).litLength != 0 {
+            let repcode = (*inSeqs.add(i)).offBase;
+            (*outSeqs.add(i)).rep = repcode;
+            if (*outSeqs.add(i)).litLength != 0 {
                 rawOffset = *(repcodes.rep)
                     .as_mut_ptr()
                     .offset(repcode.wrapping_sub(1) as isize);
@@ -6127,23 +6126,23 @@ unsafe fn ZSTD_copyBlockSequences(
                 rawOffset = *(repcodes.rep).as_mut_ptr().offset(repcode as isize);
             }
         } else {
-            rawOffset = ((*inSeqs.offset(i as isize)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
+            rawOffset = ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
         }
-        (*outSeqs.offset(i as isize)).offset = rawOffset;
+        (*outSeqs.add(i)).offset = rawOffset;
         ZSTD_updateRep(
             (repcodes.rep).as_mut_ptr(),
-            (*inSeqs.offset(i as isize)).offBase,
-            ((*inSeqs.offset(i as isize)).litLength as core::ffi::c_int == 0) as core::ffi::c_int
+            (*inSeqs.add(i)).offBase,
+            ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int
                 as u32,
         );
         nbOutLiterals =
-            nbOutLiterals.wrapping_add((*outSeqs.offset(i as isize)).litLength as size_t);
+            nbOutLiterals.wrapping_add((*outSeqs.add(i)).litLength as size_t);
         i = i.wrapping_add(1);
     }
     let lastLLSize = nbInLiterals.wrapping_sub(nbOutLiterals);
-    (*outSeqs.offset(nbInSequences as isize)).litLength = lastLLSize as u32;
-    (*outSeqs.offset(nbInSequences as isize)).matchLength = 0;
-    (*outSeqs.offset(nbInSequences as isize)).offset = 0;
+    (*outSeqs.add(nbInSequences)).litLength = lastLLSize as u32;
+    (*outSeqs.add(nbInSequences)).matchLength = 0;
+    (*outSeqs.add(nbInSequences)).offset = 0;
     (*seqCollector).seqIndex = ((*seqCollector).seqIndex).wrapping_add(nbOutSequences);
     0
 }
@@ -6210,15 +6209,15 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     let mut in_0 = 0;
     let mut out = 0 as size_t;
     while in_0 < seqsSize {
-        if (*sequences.offset(in_0 as isize)).offset == 0
-            && (*sequences.offset(in_0 as isize)).matchLength == 0
+        if (*sequences.add(in_0)).offset == 0
+            && (*sequences.add(in_0)).matchLength == 0
         {
             if in_0 != seqsSize.wrapping_sub(1) {
-                let fresh6 = &mut (*sequences.offset(in_0.wrapping_add(1) as isize)).litLength;
-                *fresh6 = (*fresh6).wrapping_add((*sequences.offset(in_0 as isize)).litLength);
+                let fresh6 = &mut (*sequences.add(in_0.wrapping_add(1))).litLength;
+                *fresh6 = (*fresh6).wrapping_add((*sequences.add(in_0)).litLength);
             }
         } else {
-            *sequences.offset(out as isize) = *sequences.offset(in_0 as isize);
+            *sequences.add(out) = *sequences.add(in_0);
             out = out.wrapping_add(1);
         }
         in_0 = in_0.wrapping_add(1);
@@ -6238,7 +6237,7 @@ unsafe fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> core::ffi::c_int
         return 1;
     }
     if prefixLength != 0
-        && ZSTD_count(ip.offset(1), ip, ip.offset(prefixLength as isize))
+        && ZSTD_count(ip.offset(1), ip, ip.add(prefixLength))
             != prefixLength.wrapping_sub(1)
     {
         return 0;
@@ -6248,7 +6247,7 @@ unsafe fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> core::ffi::c_int
         let mut u: size_t = 0;
         u = 0;
         while u < unrollSize {
-            if MEM_readST(ip.offset(i as isize).offset(u as isize) as *const core::ffi::c_void)
+            if MEM_readST(ip.add(i).add(u) as *const core::ffi::c_void)
                 != valueST
             {
                 return 0;
@@ -6297,12 +6296,12 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     mut hufFlags: core::ffi::c_int,
 ) -> size_t {
     let wkspStart = workspace as *mut u8;
-    let wkspEnd = wkspStart.offset(wkspSize as isize);
+    let wkspEnd = wkspStart.add(wkspSize);
     let countWkspStart = wkspStart;
     let countWksp = workspace as *mut core::ffi::c_uint;
     let countWkspSize = ((HUF_SYMBOLVALUE_MAX + 1) as size_t)
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t);
-    let nodeWksp = countWkspStart.offset(countWkspSize as isize);
+    let nodeWksp = countWkspStart.add(countWkspSize);
     let nodeWkspSize = wkspEnd.offset_from(nodeWksp) as core::ffi::c_long as size_t;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
     let mut huffLog = LitHufLog as core::ffi::c_uint;
@@ -6451,7 +6450,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as core::ffi::c_long as size_t;
     let ostart = ((*fseMetadata).fseTablesBuffer).as_mut_ptr();
-    let oend = ostart.offset(::core::mem::size_of::<[u8; 133]>() as isize);
+    let oend = ostart.add(::core::mem::size_of::<[u8; 133]>());
     let mut op = ostart;
     let mut countWorkspace = workspace as *mut core::ffi::c_uint;
     let mut entropyWorkspace =
@@ -6610,7 +6609,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut ctp = codeTable;
     let ctStart = ctp;
-    let ctEnd = ctStart.offset(nbSeq as isize);
+    let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
     HIST_countFast_wksp(
@@ -6786,7 +6785,7 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t
     let mut i: size_t = 0;
     i = 0;
     while i < nbSeqs {
-        let seq = *((*seqStore).sequencesStart).offset(i as isize);
+        let seq = *((*seqStore).sequencesStart).add(i);
         literalsBytes = literalsBytes.wrapping_add(seq.litLength as size_t);
         if i == (*seqStore).longLengthPos as size_t
             && (*seqStore).longLengthType as core::ffi::c_uint
@@ -6805,7 +6804,7 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
     let mut i: size_t = 0;
     i = 0;
     while i < nbSeqs {
-        let mut seq = *((*seqStore).sequencesStart).offset(i as isize);
+        let mut seq = *((*seqStore).sequencesStart).add(i);
         matchBytes = matchBytes.wrapping_add((seq.mlBase as core::ffi::c_int + MINMATCH) as size_t);
         if i == (*seqStore).longLengthPos as size_t
             && (*seqStore).longLengthType as core::ffi::c_uint
@@ -6826,9 +6825,8 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
     *resultSeqStore = *originalSeqStore;
     if startIdx > 0 {
         (*resultSeqStore).sequences =
-            ((*originalSeqStore).sequencesStart).offset(startIdx as isize);
-        (*resultSeqStore).litStart = ((*resultSeqStore).litStart)
-            .offset(ZSTD_countSeqStoreLiteralsBytes(resultSeqStore) as isize);
+            ((*originalSeqStore).sequencesStart).add(startIdx);
+        (*resultSeqStore).litStart = ((*resultSeqStore).litStart).add(ZSTD_countSeqStoreLiteralsBytes(resultSeqStore));
     }
     if (*originalSeqStore).longLengthType as core::ffi::c_uint
         != ZSTD_llt_none as core::ffi::c_int as core::ffi::c_uint
@@ -6843,18 +6841,18 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
         }
     }
     (*resultSeqStore).sequencesStart =
-        ((*originalSeqStore).sequencesStart).offset(startIdx as isize);
-    (*resultSeqStore).sequences = ((*originalSeqStore).sequencesStart).offset(endIdx as isize);
+        ((*originalSeqStore).sequencesStart).add(startIdx);
+    (*resultSeqStore).sequences = ((*originalSeqStore).sequencesStart).add(endIdx);
     if endIdx
         != ((*originalSeqStore).sequences).offset_from((*originalSeqStore).sequencesStart)
             as core::ffi::c_long as size_t
     {
         let literalsBytes = ZSTD_countSeqStoreLiteralsBytes(resultSeqStore);
-        (*resultSeqStore).lit = ((*resultSeqStore).litStart).offset(literalsBytes as isize);
+        (*resultSeqStore).lit = ((*resultSeqStore).litStart).add(literalsBytes);
     }
-    (*resultSeqStore).llCode = ((*resultSeqStore).llCode).offset(startIdx as isize);
-    (*resultSeqStore).mlCode = ((*resultSeqStore).mlCode).offset(startIdx as isize);
-    (*resultSeqStore).ofCode = ((*resultSeqStore).ofCode).offset(startIdx as isize);
+    (*resultSeqStore).llCode = ((*resultSeqStore).llCode).add(startIdx);
+    (*resultSeqStore).mlCode = ((*resultSeqStore).mlCode).add(startIdx);
+    (*resultSeqStore).ofCode = ((*resultSeqStore).ofCode).add(startIdx);
 }
 unsafe fn ZSTD_resolveRepcodeToRawOffset(mut rep: *const u32, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
@@ -6937,7 +6935,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         &mut (*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
         &mut (*zc).appliedParams,
-        op.offset(ZSTD_blockHeaderSize as isize) as *mut core::ffi::c_void,
+        op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
         srcSize,
         (*zc).tmpWorkspace,
@@ -7047,7 +7045,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     }
     if estimatedFirstHalfSize.wrapping_add(estimatedSecondHalfSize) < estimatedOriginalSize {
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
-        *((*splits).splitLocations).offset((*splits).idx as isize) = midIdx as u32;
+        *((*splits).splitLocations).add((*splits).idx) = midIdx as u32;
         (*splits).idx = ((*splits).idx).wrapping_add(1);
         (*splits).idx;
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
@@ -7068,7 +7066,7 @@ unsafe fn ZSTD_deriveBlockSplits(
         return 0;
     }
     ZSTD_deriveBlockSplitsHelper(&mut splits, 0, nbSeq as size_t, zc, &mut (*zc).seqStore);
-    *(splits.splitLocations).offset(splits.idx as isize) = nbSeq;
+    *(splits.splitLocations).add(splits.idx) = nbSeq;
     splits.idx
 }
 unsafe fn ZSTD_compressBlock_splitBlock_internal(
@@ -7146,8 +7144,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             ZSTD_deriveSeqStoreChunk(
                 nextSeqStore,
                 &mut (*zc).seqStore,
-                *partitions.offset(i as isize) as size_t,
-                *partitions.offset(i.wrapping_add(1) as isize) as size_t,
+                *partitions.add(i) as size_t,
+                *partitions.add(i.wrapping_add(1)) as size_t,
             );
         }
         cSizeChunk = ZSTD_compressSeqStore_singleBlock(
@@ -7166,8 +7164,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         if ERR_isError(err_code_0) != 0 {
             return err_code_0;
         }
-        ip = ip.offset(srcBytes as isize);
-        op = op.offset(cSizeChunk as isize);
+        ip = ip.add(srcBytes);
+        op = op.add(cSizeChunk);
         dstCapacity = dstCapacity.wrapping_sub(cSizeChunk);
         cSize = cSize.wrapping_add(cSizeChunk);
         *currSeqStore = *nextSeqStore;
@@ -7493,11 +7491,11 @@ unsafe fn ZSTD_compress_frameChunk(
             &mut (*cctx).workspace,
             &mut (*cctx).appliedParams,
             ip as *const core::ffi::c_void,
-            ip.offset(blockSize as isize) as *const core::ffi::c_void,
+            ip.add(blockSize) as *const core::ffi::c_void,
         );
         ZSTD_checkDictValidity(
             &mut (*ms).window,
-            ip.offset(blockSize as isize) as *const core::ffi::c_void,
+            ip.add(blockSize) as *const core::ffi::c_void,
             maxDist,
             &mut (*ms).loadedDictEnd,
             &mut (*ms).dictMatchState,
@@ -7542,7 +7540,7 @@ unsafe fn ZSTD_compress_frameChunk(
         } else {
             cSize = ZSTD_compressBlock_internal(
                 cctx,
-                op.offset(ZSTD_blockHeaderSize as isize) as *mut core::ffi::c_void,
+                op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
                 dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
                 ip as *const core::ffi::c_void,
                 blockSize,
@@ -7579,9 +7577,9 @@ unsafe fn ZSTD_compress_frameChunk(
             }
         }
         savings += blockSize as S64 - cSize as S64;
-        ip = ip.offset(blockSize as isize);
+        ip = ip.add(blockSize);
         remaining = remaining.wrapping_sub(blockSize);
-        op = op.offset(cSize as isize);
+        op = op.add(cSize);
         dstCapacity = dstCapacity.wrapping_sub(cSize);
         (*cctx).isFirstBlock = 0;
     }
@@ -7634,26 +7632,26 @@ unsafe fn ZSTD_writeFrameHeader(
     }
     let fresh7 = pos;
     pos = pos.wrapping_add(1);
-    *op.offset(fresh7 as isize) = frameHeaderDescriptionByte;
+    *op.add(fresh7) = frameHeaderDescriptionByte;
     if singleSegment == 0 {
         let fresh8 = pos;
         pos = pos.wrapping_add(1);
-        *op.offset(fresh8 as isize) = windowLogByte;
+        *op.add(fresh8) = windowLogByte;
     }
     match dictIDSizeCode {
         1 => {
-            *op.offset(pos as isize) = dictID as u8;
+            *op.add(pos) = dictID as u8;
             pos = pos.wrapping_add(1);
         }
         2 => {
             MEM_writeLE16(
-                op.offset(pos as isize) as *mut core::ffi::c_void,
+                op.add(pos) as *mut core::ffi::c_void,
                 dictID as u16,
             );
             pos = pos.wrapping_add(2);
         }
         3 => {
-            MEM_writeLE32(op.offset(pos as isize) as *mut core::ffi::c_void, dictID);
+            MEM_writeLE32(op.add(pos) as *mut core::ffi::c_void, dictID);
             pos = pos.wrapping_add(4);
         }
         0 | _ => {}
@@ -7661,21 +7659,21 @@ unsafe fn ZSTD_writeFrameHeader(
     match fcsCode {
         1 => {
             MEM_writeLE16(
-                op.offset(pos as isize) as *mut core::ffi::c_void,
+                op.add(pos) as *mut core::ffi::c_void,
                 pledgedSrcSize.wrapping_sub(256) as u16,
             );
             pos = pos.wrapping_add(2);
         }
         2 => {
             MEM_writeLE32(
-                op.offset(pos as isize) as *mut core::ffi::c_void,
+                op.add(pos) as *mut core::ffi::c_void,
                 pledgedSrcSize as u32,
             );
             pos = pos.wrapping_add(4);
         }
         3 => {
             MEM_writeLE64(
-                op.offset(pos as isize) as *mut core::ffi::c_void,
+                op.add(pos) as *mut core::ffi::c_void,
                 pledgedSrcSize,
             );
             pos = pos.wrapping_add(8);
@@ -7684,7 +7682,7 @@ unsafe fn ZSTD_writeFrameHeader(
             if singleSegment != 0 {
                 let fresh9 = pos;
                 pos = pos.wrapping_add(1);
-                *op.offset(fresh9 as isize) = pledgedSrcSize as u8;
+                *op.add(fresh9) = pledgedSrcSize as u8;
             }
         }
     }
@@ -7773,7 +7771,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
             return err_code;
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
-        dst = (dst as *mut core::ffi::c_char).offset(fhSize as isize) as *mut core::ffi::c_void;
+        dst = (dst as *mut core::ffi::c_char).add(fhSize) as *mut core::ffi::c_void;
         (*cctx).stage = ZSTDcs_ongoing;
     }
     if srcSize == 0 {
@@ -7794,7 +7792,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
             &mut (*cctx).workspace,
             &mut (*cctx).appliedParams,
             src,
-            (src as *const u8).offset(srcSize as isize) as *const core::ffi::c_void,
+            (src as *const u8).add(srcSize) as *const core::ffi::c_void,
         );
     }
     let cSize = if frame != 0 {
@@ -7884,7 +7882,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     mut tfp: ZSTD_tableFillPurpose_e,
 ) -> size_t {
     let mut ip = src as *const u8;
-    let iend = ip.offset(srcSize as isize);
+    let iend = ip.add(srcSize);
     let loadLdmDict = ((*params).ldmParams.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
         && !ls.is_null()) as core::ffi::c_int;
@@ -8034,7 +8032,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
     let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
     let mut dictPtr = dict as *const u8;
-    let dictEnd = dictPtr.offset(dictSize as isize);
+    let dictEnd = dictPtr.add(dictSize);
     dictPtr = dictPtr.offset(8);
     (*bs).entropy.huf.repeatMode = HUF_repeat_check;
     let mut maxSymbolValue = 255;
@@ -8052,7 +8050,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if ERR_isError(hufHeaderSize) != 0 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dictPtr = dictPtr.offset(hufHeaderSize as isize);
+    dictPtr = dictPtr.add(hufHeaderSize);
     let mut offcodeLog: core::ffi::c_uint = 0;
     let offcodeHeaderSize = FSE_readNCount(
         &mut offcodeNCount,
@@ -8078,7 +8076,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dictPtr = dictPtr.offset(offcodeHeaderSize as isize);
+    dictPtr = dictPtr.add(offcodeHeaderSize);
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
@@ -8111,7 +8109,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         matchlengthMaxValue,
         MaxML as core::ffi::c_uint,
     );
-    dictPtr = dictPtr.offset(matchlengthHeaderSize as isize);
+    dictPtr = dictPtr.add(matchlengthHeaderSize);
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
@@ -8144,7 +8142,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         litlengthMaxValue,
         MaxLL as core::ffi::c_uint,
     );
-    dictPtr = dictPtr.offset(litlengthHeaderSize as isize);
+    dictPtr = dictPtr.add(litlengthHeaderSize);
     if dictPtr.offset(12) > dictEnd {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
@@ -8195,7 +8193,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     mut workspace: *mut core::ffi::c_void,
 ) -> size_t {
     let mut dictPtr = dict as *const u8;
-    let dictEnd = dictPtr.offset(dictSize as isize);
+    let dictEnd = dictPtr.add(dictSize);
     let mut dictID: size_t = 0;
     let mut eSize: size_t = 0;
     dictID = (if (*params).fParams.noDictIDFlag != 0 {
@@ -8208,7 +8206,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    dictPtr = dictPtr.offset(eSize as isize);
+    dictPtr = dictPtr.add(eSize);
     let dictContentSize = dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t;
     let err_code_0 = ZSTD_loadDictionaryContent(
         ms,
@@ -8574,7 +8572,7 @@ unsafe fn ZSTD_writeEpilogue(
             return err_code;
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
-        op = op.offset(fhSize as isize);
+        op = op.add(fhSize);
         (*cctx).stage = ZSTDcs_ongoing;
     }
     if (*cctx).stage as core::ffi::c_uint != ZSTDcs_ending as core::ffi::c_int as core::ffi::c_uint
@@ -8586,7 +8584,7 @@ unsafe fn ZSTD_writeEpilogue(
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.offset(ZSTD_blockHeaderSize as isize);
+        op = op.add(ZSTD_blockHeaderSize);
         dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
     }
     if (*cctx).appliedParams.fParams.checksumFlag != 0 {
@@ -8651,7 +8649,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     }
     endResult = ZSTD_writeEpilogue(
         cctx,
-        (dst as *mut core::ffi::c_char).offset(cSize as isize) as *mut core::ffi::c_void,
+        (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
         dstCapacity.wrapping_sub(cSize),
     );
     let err_code_0 = endResult;
@@ -10249,23 +10247,23 @@ unsafe fn ZSTD_compressStream_generic(
 ) -> size_t {
     let istart = (*input).src as *const core::ffi::c_char;
     let iend = if !istart.is_null() {
-        istart.offset((*input).size as isize)
+        istart.add((*input).size)
     } else {
         istart
     };
     let mut ip = if !istart.is_null() {
-        istart.offset((*input).pos as isize)
+        istart.add((*input).pos)
     } else {
         istart
     };
     let ostart = (*output).dst as *mut core::ffi::c_char;
     let oend = if !ostart.is_null() {
-        ostart.offset((*output).size as isize)
+        ostart.add((*output).size)
     } else {
         ostart
     };
     let mut op = if !ostart.is_null() {
-        ostart.offset((*output).pos as isize)
+        ostart.add((*output).pos)
     } else {
         ostart
     };
@@ -10310,7 +10308,7 @@ unsafe fn ZSTD_compressStream_generic(
                         return err_code;
                     }
                     ip = iend;
-                    op = op.offset(cSize as isize);
+                    op = op.add(cSize);
                     (*zcs).frameEnded = 1;
                     ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
                     someMoreWork = 0;
@@ -10321,7 +10319,7 @@ unsafe fn ZSTD_compressStream_generic(
                     {
                         let toLoad = ((*zcs).inBuffTarget).wrapping_sub((*zcs).inBuffPos);
                         let loaded = ZSTD_limitCopy(
-                            ((*zcs).inBuff).offset((*zcs).inBuffPos as isize)
+                            ((*zcs).inBuff).add((*zcs).inBuffPos)
                                 as *mut core::ffi::c_void,
                             toLoad,
                             ip as *const core::ffi::c_void,
@@ -10329,7 +10327,7 @@ unsafe fn ZSTD_compressStream_generic(
                         );
                         (*zcs).inBuffPos = ((*zcs).inBuffPos).wrapping_add(loaded);
                         if !ip.is_null() {
-                            ip = ip.offset(loaded as isize);
+                            ip = ip.add(loaded);
                         }
                         if flushMode as core::ffi::c_uint
                             == ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
@@ -10404,7 +10402,7 @@ unsafe fn ZSTD_compressStream_generic(
                                         zcs,
                                         cDst,
                                         oSize,
-                                        ((*zcs).inBuff).offset((*zcs).inToCompress as isize)
+                                        ((*zcs).inBuff).add((*zcs).inToCompress)
                                             as *const core::ffi::c_void,
                                         iSize,
                                     )
@@ -10413,7 +10411,7 @@ unsafe fn ZSTD_compressStream_generic(
                                         zcs,
                                         cDst,
                                         oSize,
-                                        ((*zcs).inBuff).offset((*zcs).inToCompress as isize)
+                                        ((*zcs).inBuff).add((*zcs).inToCompress)
                                             as *const core::ffi::c_void,
                                         iSize,
                                     )
@@ -10434,7 +10432,7 @@ unsafe fn ZSTD_compressStream_generic(
                             } else {
                                 let lastBlock_0 = (flushMode as core::ffi::c_uint
                                     == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint
-                                    && ip.offset(iSize as isize) == iend)
+                                    && ip.add(iSize) == iend)
                                     as core::ffi::c_int
                                     as core::ffi::c_uint;
                                 cSize_0 = if lastBlock_0 != 0 {
@@ -10455,7 +10453,7 @@ unsafe fn ZSTD_compressStream_generic(
                                     )
                                 };
                                 if !ip.is_null() {
-                                    ip = ip.offset(iSize as isize);
+                                    ip = ip.add(iSize);
                                 }
                                 let err_code_1 = cSize_0;
                                 if ERR_isError(err_code_1) != 0 {
@@ -10465,7 +10463,7 @@ unsafe fn ZSTD_compressStream_generic(
                                 lastBlock_0 != 0;
                             }
                             if cDst == op as *mut core::ffi::c_void {
-                                op = op.offset(cSize_0 as isize);
+                                op = op.add(cSize_0);
                                 if (*zcs).frameEnded != 0 {
                                     someMoreWork = 0;
                                     ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
@@ -10493,12 +10491,12 @@ unsafe fn ZSTD_compressStream_generic(
             let flushed = ZSTD_limitCopy(
                 op as *mut core::ffi::c_void,
                 oend.offset_from(op) as core::ffi::c_long as size_t,
-                ((*zcs).outBuff).offset((*zcs).outBuffFlushedSize as isize)
+                ((*zcs).outBuff).add((*zcs).outBuffFlushedSize)
                     as *const core::ffi::c_void,
                 toFlush,
             );
             if flushed != 0 {
-                op = op.offset(flushed as isize);
+                op = op.add(flushed);
             }
             (*zcs).outBuffFlushedSize = ((*zcs).outBuffFlushedSize).wrapping_add(flushed);
             if toFlush != flushed {
@@ -10944,7 +10942,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     let mut idx = (*seqPos).idx;
     let startIdx = idx;
     let mut ip = src as *const u8;
-    let iend = ip.offset(blockSize as isize);
+    let iend = ip.add(blockSize);
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut dictSize: u32 = 0;
     if !((*cctx).cdict).is_null() {
@@ -11069,7 +11067,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     let mut dictSize: size_t = 0;
     let istart = src as *const u8;
     let mut ip = istart;
-    let mut iend = istart.offset(blockSize as isize);
+    let mut iend = istart.add(blockSize);
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut bytesAdjustment = 0;
     let mut finalMatchSplit = 0;
@@ -11232,13 +11230,13 @@ unsafe fn blockSize_explicitDelimiter(
     let mut blockSize = 0 as size_t;
     let mut spos = seqPos.idx as size_t;
     while spos < inSeqsSize {
-        end = ((*inSeqs.offset(spos as isize)).offset == 0) as core::ffi::c_int;
+        end = ((*inSeqs.add(spos)).offset == 0) as core::ffi::c_int;
         blockSize = blockSize.wrapping_add(
-            ((*inSeqs.offset(spos as isize)).litLength)
-                .wrapping_add((*inSeqs.offset(spos as isize)).matchLength) as size_t,
+            ((*inSeqs.add(spos)).litLength)
+                .wrapping_add((*inSeqs.add(spos)).matchLength) as size_t,
         );
         if end != 0 {
-            if (*inSeqs.offset(spos as isize)).matchLength != 0 {
+            if (*inSeqs.add(spos)).matchLength != 0 {
                 return -(ZSTD_error_externalSequences_invalid as core::ffi::c_int) as size_t;
             }
             break;
@@ -11308,7 +11306,7 @@ unsafe fn ZSTD_compressSequences_internal(
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         MEM_writeLE32(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.offset(ZSTD_blockHeaderSize as isize);
+        op = op.add(ZSTD_blockHeaderSize);
         dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
         cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
     }
@@ -11360,8 +11358,8 @@ unsafe fn ZSTD_compressSequences_internal(
                 return err_code_1;
             }
             cSize = cSize.wrapping_add(cBlockSize);
-            ip = ip.offset(blockSize as isize);
-            op = op.offset(cBlockSize as isize);
+            ip = ip.add(blockSize);
+            op = op.add(cBlockSize);
             remaining = remaining.wrapping_sub(blockSize);
             dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
         } else {
@@ -11373,7 +11371,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 &mut (*(*cctx).blockState.prevCBlock).entropy,
                 &mut (*(*cctx).blockState.nextCBlock).entropy,
                 &mut (*cctx).appliedParams,
-                op.offset(ZSTD_blockHeaderSize as isize) as *mut core::ffi::c_void,
+                op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
                 dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
                 blockSize,
                 (*cctx).tmpWorkspace,
@@ -11438,8 +11436,8 @@ unsafe fn ZSTD_compressSequences_internal(
             if lastBlock != 0 {
                 break;
             }
-            ip = ip.offset(blockSize as isize);
-            op = op.offset(cBlockSize as isize);
+            ip = ip.add(blockSize);
+            op = op.add(cBlockSize);
             remaining = remaining.wrapping_sub(blockSize);
             dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
             (*cctx).isFirstBlock = 0;
@@ -11470,7 +11468,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
         srcSize as u64,
         (*cctx).dictID,
     );
-    op = op.offset(frameHeaderSize as isize);
+    op = op.add(frameHeaderSize);
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
@@ -11497,7 +11495,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         MEM_writeLE32(
-            (dst as *mut core::ffi::c_char).offset(cSize as isize) as *mut core::ffi::c_void,
+            (dst as *mut core::ffi::c_char).add(cSize) as *mut core::ffi::c_void,
             checksum,
         );
         cSize = cSize.wrapping_add(4);
@@ -11513,19 +11511,19 @@ pub unsafe fn convertSequences_noRepcodes(
     let mut n: size_t = 0;
     n = 0;
     while n < nbSequences {
-        (*dstSeqs.offset(n as isize)).offBase =
-            ((*inSeqs.offset(n as isize)).offset).wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
-        (*dstSeqs.offset(n as isize)).litLength = (*inSeqs.offset(n as isize)).litLength as u16;
-        (*dstSeqs.offset(n as isize)).mlBase = ((*inSeqs.offset(n as isize)).matchLength)
+        (*dstSeqs.add(n)).offBase =
+            ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
+        (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
+        (*dstSeqs.add(n)).mlBase = ((*inSeqs.add(n)).matchLength)
             .wrapping_sub(MINMATCH as core::ffi::c_uint)
             as u16;
-        if ((*inSeqs.offset(n as isize)).matchLength > (65535 + 3) as core::ffi::c_uint)
+        if ((*inSeqs.add(n)).matchLength > (65535 + 3) as core::ffi::c_uint)
             as core::ffi::c_int as core::ffi::c_long
             != 0
         {
             longLen = n.wrapping_add(1);
         }
-        if ((*inSeqs.offset(n as isize)).litLength > 65535) as core::ffi::c_int as core::ffi::c_long
+        if ((*inSeqs.add(n)).litLength > 65535) as core::ffi::c_int as core::ffi::c_long
             != 0
         {
             longLen = n.wrapping_add(nbSequences).wrapping_add(1);
@@ -11556,8 +11554,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
             inSeqs,
             nbSequences.wrapping_sub(1),
         );
-        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart)
-            .offset(nbSequences as isize)
+        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(nbSequences)
             .offset(-(1));
         if longl != 0 {
             if longl <= nbSequences.wrapping_sub(1) {
@@ -11573,11 +11570,11 @@ pub unsafe fn ZSTD_convertBlockSequences(
     } else {
         seqNb = 0;
         while seqNb < nbSequences.wrapping_sub(1) {
-            let litLength = (*inSeqs.offset(seqNb as isize)).litLength;
-            let matchLength = (*inSeqs.offset(seqNb as isize)).matchLength;
+            let litLength = (*inSeqs.add(seqNb)).litLength;
+            let matchLength = (*inSeqs.add(seqNb)).matchLength;
             let ll0 = (litLength == 0) as core::ffi::c_int as u32;
             let offBase = ZSTD_finalizeOffBase(
-                (*inSeqs.offset(seqNb as isize)).offset,
+                (*inSeqs.add(seqNb)).offset,
                 (updatedRepcodes.rep).as_mut_ptr() as *const u32,
                 ll0,
             );
@@ -11637,7 +11634,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
     if nbSeqs > 3 as size_t {
         loop {
             let mut litMatchLength = MEM_read64(
-                &(*seqs.offset(n as isize)).litLength as *const core::ffi::c_uint
+                &(*seqs.add(n)).litLength as *const core::ffi::c_uint
                     as *const core::ffi::c_void,
             );
             litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength);
@@ -11646,7 +11643,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
                 break;
             }
             litMatchLength = MEM_read64(
-                &(*seqs.offset(n.wrapping_add(1) as isize)).litLength as *const core::ffi::c_uint
+                &(*seqs.add(n.wrapping_add(1))).litLength as *const core::ffi::c_uint
                     as *const core::ffi::c_void,
             );
             litMatchSize1 = litMatchSize1.wrapping_add(litMatchLength);
@@ -11656,7 +11653,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
                 break;
             } else {
                 litMatchLength = MEM_read64(
-                    &(*seqs.offset(n.wrapping_add(2) as isize)).litLength
+                    &(*seqs.add(n.wrapping_add(2))).litLength
                         as *const core::ffi::c_uint as *const core::ffi::c_void,
                 );
                 litMatchSize2 = litMatchSize2.wrapping_add(litMatchLength);
@@ -11666,7 +11663,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
                     break;
                 } else {
                     litMatchLength = MEM_read64(
-                        &(*seqs.offset(n.wrapping_add(3) as isize)).litLength
+                        &(*seqs.add(n.wrapping_add(3))).litLength
                             as *const core::ffi::c_uint
                             as *const core::ffi::c_void,
                     );
@@ -11714,7 +11711,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
             _ => {
                 if n < nbSeqs {
                     let mut litMatchLength_0 = MEM_read64(
-                        &(*seqs.offset(n as isize)).litLength as *const core::ffi::c_uint
+                        &(*seqs.add(n)).litLength as *const core::ffi::c_uint
                             as *const core::ffi::c_void,
                     );
                     litMatchSize0 = litMatchSize0.wrapping_add(litMatchLength_0);
@@ -11763,7 +11760,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader24);
-        op = op.offset(ZSTD_blockHeaderSize as isize);
+        op = op.add(ZSTD_blockHeaderSize);
         dstCapacity = dstCapacity.wrapping_sub(ZSTD_blockHeaderSize);
         cSize = cSize.wrapping_add(ZSTD_blockHeaderSize);
     }
@@ -11787,14 +11784,14 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         if ERR_isError(err_code_0) != 0 {
             return err_code_0;
         }
-        inSeqs = inSeqs.offset(block.nbSequences as isize);
+        inSeqs = inSeqs.add(block.nbSequences);
         nbSequences = nbSequences.wrapping_sub(block.nbSequences);
         remaining = remaining.wrapping_sub(block.blockSize);
         if dstCapacity < ZSTD_blockHeaderSize {
             return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
         }
         compressedSeqsSize = ZSTD_entropyCompressSeqStore_internal(
-            op.offset(ZSTD_blockHeaderSize as isize) as *mut core::ffi::c_void,
+            op.add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
             dstCapacity.wrapping_sub(ZSTD_blockHeaderSize),
             literals,
             block.litSize,
@@ -11814,7 +11811,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             compressedSeqsSize = 0;
         }
         litSize = litSize.wrapping_sub(block.litSize);
-        literals = (literals as *const core::ffi::c_char).offset(block.litSize as isize)
+        literals = (literals as *const core::ffi::c_char).add(block.litSize)
             as *const core::ffi::c_void;
         if compressedSeqsSize == 0 {
             return -(ZSTD_error_cannotProduce_uncompressedBlock as core::ffi::c_int) as size_t;
@@ -11839,7 +11836,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             cBlockSize = ZSTD_blockHeaderSize.wrapping_add(compressedSeqsSize);
         }
         cSize = cSize.wrapping_add(cBlockSize);
-        op = op.offset(cBlockSize as isize);
+        op = op.add(cBlockSize);
         dstCapacity = dstCapacity.wrapping_sub(cBlockSize);
         (*cctx).isFirstBlock = 0;
         if lastBlock != 0 {
@@ -11893,7 +11890,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
         decompressedSize as u64,
         (*cctx).dictID,
     );
-    op = op.offset(frameHeaderSize as isize);
+    op = op.add(frameHeaderSize);
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
     let cBlocksSize = ZSTD_compressSequencesAndLiterals_internal(
