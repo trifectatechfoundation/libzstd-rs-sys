@@ -272,31 +272,28 @@ unsafe fn ZSTD_hash4Ptr(mut ptr: *const core::ffi::c_void, mut h: u32) -> size_t
 }
 static prime5bytes: u64 = 889523592379;
 unsafe fn ZSTD_hash5(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    (((u << (64 as core::ffi::c_int - 40 as core::ffi::c_int)) * prime5bytes) ^ s)
-        >> 64u32.wrapping_sub(h)
+    ((((u << (64 - 40)) * prime5bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
 unsafe fn ZSTD_hash5Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash5(MEM_readLE64(p), h, 0)
 }
 static prime6bytes: u64 = 227718039650203;
 unsafe fn ZSTD_hash6(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    (((u << (64 as core::ffi::c_int - 48 as core::ffi::c_int)) * prime6bytes) ^ s)
-        >> 64u32.wrapping_sub(h)
+    ((((u << (64 - 48)) * prime6bytes) ^ s) >> (64u32).wrapping_sub(h)) as size_t
 }
 unsafe fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
 static prime7bytes: u64 = 58295818150454627;
 unsafe fn ZSTD_hash7(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    (((u << (64 as core::ffi::c_int - 56 as core::ffi::c_int)) * prime7bytes) ^ s)
-        >> 64u32.wrapping_sub(h)
+    ((((u << (64 - 56)) * prime7bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
 unsafe fn ZSTD_hash7Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash7(MEM_readLE64(p), h, 0)
 }
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong as u64;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    ((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)
+    (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
 unsafe fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
@@ -448,12 +445,12 @@ unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
 unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val) >> 3
+            ZSTD_countTrailingZeros64(val as u64) >> 3
         } else {
             ZSTD_countTrailingZeros32(val as u32) >> 3
         }
     } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val) >> 3
+        ZSTD_countLeadingZeros64(val as u64) >> 3
     } else {
         ZSTD_countLeadingZeros32(val as u32) >> 3
     }
@@ -953,7 +950,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
         (istart.offset_from(base) as core::ffi::c_long as size_t).wrapping_add(srcSize) as u32;
     if (*ms).prefetchCDictTables != 0 {
         let hashTableBytes = ((1 as core::ffi::c_int as size_t) << (*dictCParams).hashLog)
-            .wrapping_mul(::core::mem::size_of::<u32>() as core::ffi::c_ulong);
+            .wrapping_mul(::core::mem::size_of::<u32>() as size_t);
         let _ptr = dictHashTable as *const core::ffi::c_char;
         let _size = hashTableBytes;
         let mut _pos: size_t = 0;

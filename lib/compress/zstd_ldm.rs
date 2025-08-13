@@ -523,12 +523,12 @@ unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
 unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val) >> 3
+            ZSTD_countTrailingZeros64(val as u64) >> 3
         } else {
             ZSTD_countTrailingZeros32(val as u32) >> 3
         }
     } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val) >> 3
+        ZSTD_countLeadingZeros64(val as u64) >> 3
     } else {
         ZSTD_countLeadingZeros32(val as u32) >> 3
     }
@@ -1066,7 +1066,7 @@ pub unsafe fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_t {
     }) as size_t;
     let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
-        ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as core::ffi::c_ulong),
+        ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as size_t),
     ));
     if params.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint

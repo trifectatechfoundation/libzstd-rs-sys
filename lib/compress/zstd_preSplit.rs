@@ -131,7 +131,8 @@ unsafe fn compareFingerprints(
 ) -> core::ffi::c_int {
     let mut p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
     let mut deviation = fpDistance(ref_0, newfp, hashLog);
-    let mut threshold = p50 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
+    let mut threshold =
+        p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
     (deviation >= threshold) as core::ffi::c_int
 }
 unsafe fn mergeEvents(mut acc: *mut Fingerprint, mut newfp: *const Fingerprint) {

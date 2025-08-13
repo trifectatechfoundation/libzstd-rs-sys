@@ -184,7 +184,7 @@ unsafe fn BIT_initCStream(
     (*bitC).endPtr = ((*bitC).startPtr)
         .offset(dstCapacity as isize)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong {
+    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     0
@@ -278,7 +278,7 @@ unsafe fn ZSTD_NCountCost(
     }
     FSE_writeNCount(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u8; 512]>() as core::ffi::c_ulong,
+        ::core::mem::size_of::<[u8; 512]>() as size_t,
         norm.as_mut_ptr(),
         max,
         tableLog,
@@ -525,7 +525,7 @@ pub unsafe fn ZSTD_buildCTable(
                 max,
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 285]>() as core::ffi::c_ulong,
+                ::core::mem::size_of::<[u32; 285]>() as size_t,
             );
             if ERR_isError(err_code_3) != 0 {
                 return err_code_3;
