@@ -4212,7 +4212,12 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
         ZSTD_estimateCCtxSize_usingCCtxParams(&mut initialParams)
     }
 }
-static mut srcSizeTiers: [core::ffi::c_ulonglong; 4] = [0; 4];
+static srcSizeTiers: [core::ffi::c_ulonglong; 4] = [
+    16 * (1 << 10),
+    128 * (1 << 10),
+    256 * (1 << 10),
+    ZSTD_CONTENTSIZE_UNKNOWN,
+];
 unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
     mut compressionLevel: core::ffi::c_int,
 ) -> size_t {
@@ -4221,7 +4226,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
     while tier < 4 {
         let cParams = ZSTD_getCParams_internal(
             compressionLevel,
-            *srcSizeTiers.as_ptr().offset(tier as isize),
+            srcSizeTiers[tier],
             0,
             ZSTD_cpm_noAttachDict,
         );
@@ -13163,16 +13168,3 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
         (*params).extSeqProdState = NULL as *mut core::ffi::c_void;
     };
 }
-unsafe extern "C" fn run_static_initializers() {
-    srcSizeTiers = [
-        (16 * ((1) << 10)) as core::ffi::c_ulonglong,
-        (128 * ((1) << 10)) as core::ffi::c_ulonglong,
-        (256 * ((1) << 10)) as core::ffi::c_ulonglong,
-        ZSTD_CONTENTSIZE_UNKNOWN,
-    ];
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: unsafe extern "C" fn() = run_static_initializers;

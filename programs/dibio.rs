@@ -36,9 +36,13 @@ pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * ((1) << 10);
 pub const MEMMULT: core::ffi::c_int = 11;
 pub const COVER_MEMMULT: core::ffi::c_int = 9;
 pub const FASTCOVER_MEMMULT: core::ffi::c_int = 1;
-static mut g_maxMemory: size_t = 0;
+static g_maxMemory: usize = if ::core::mem::size_of::<size_t>() == 4 {
+    2usize * (1 << 30) - 64 * (1 << 20)
+} else {
+    (512usize * (1 << 20)) << ::core::mem::size_of::<size_t>()
+};
 pub const NOISELENGTH: core::ffi::c_int = 32;
-static mut g_refreshRate: u64 = 0;
+static g_refreshRate: u64 = SEC_TO_MICRO as PTime / 6;
 static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const DEBUG: core::ffi::c_int = 0;
 unsafe fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
@@ -693,21 +697,3 @@ pub unsafe fn DiB_trainFromFiles(
     free(dictBuffer);
     result
 }
-unsafe extern "C" fn run_static_initializers() {
-    g_maxMemory = if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
-        (2 as core::ffi::c_uint)
-            .wrapping_mul((1 as core::ffi::c_uint) << 30)
-            .wrapping_sub(
-                (64 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as core::ffi::c_uint,
-            ) as size_t
-    } else {
-        ((512 as core::ffi::c_int * ((1 as core::ffi::c_int) << 20)) as size_t)
-            << ::core::mem::size_of::<size_t>() as core::ffi::c_ulong
-    };
-    g_refreshRate = SEC_TO_MICRO as PTime / 6;
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: unsafe extern "C" fn() = run_static_initializers;
