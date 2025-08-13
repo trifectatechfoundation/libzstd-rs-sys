@@ -8,9 +8,9 @@ use core::ptr;
 use libc::size_t;
 
 use crate::lib::common::bitstream::BIT_DStream_t;
-use crate::lib::common::entropy_common::{FSE_readNCount, FSE_readNCount_slice};
+use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::ERR_isError;
-use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE24, MEM_write64};
+use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
