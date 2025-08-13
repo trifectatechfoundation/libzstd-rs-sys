@@ -4415,7 +4415,7 @@ unsafe fn ZSTD_invalidateMatchState(mut ms: *mut ZSTD_MatchState_t) {
 }
 unsafe fn ZSTD_bitmix(mut val: u64, mut len: u64) -> u64 {
     val ^= ZSTD_rotateRight_U64(val, 49) ^ ZSTD_rotateRight_U64(val, 24);
-    val = (val as core::ffi::c_ulonglong).wrapping_mul(0x9fb21c651e98df25 as core::ffi::c_ulonglong);
+    val = val.wrapping_mul(0x9fb21c651e98df25u64);
     val ^= (val >> 35).wrapping_add(len);
     val = val.wrapping_mul(0x9fb21c651e98df25u64);
     val ^ val >> 28
