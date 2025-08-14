@@ -2146,7 +2146,7 @@ impl<'a> Writer<'a> {
     }
 
     #[inline]
-    fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut u8> {
+    pub fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut u8> {
         match self.ptr {
             None => core::ptr::null_mut()..core::ptr::null_mut(),
             Some(ptr) => ptr.as_ptr()..self.end,
