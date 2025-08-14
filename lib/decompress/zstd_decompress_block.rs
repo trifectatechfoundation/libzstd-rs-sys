@@ -2502,14 +2502,6 @@ unsafe fn ZSTD_decompressSequencesLong(
     }
 }
 
-unsafe fn ZSTD_totalHistorySize(
-    curPtr: *mut core::ffi::c_void,
-    virtualStart: *const core::ffi::c_void,
-) -> size_t {
-    (curPtr as *mut core::ffi::c_char).offset_from(virtualStart as *const core::ffi::c_char)
-        as core::ffi::c_long as size_t
-}
-
 unsafe fn ZSTD_getOffsetInfo(
     offTable: *const ZSTD_seqSymbol,
     nbSeq: core::ffi::c_int,
@@ -2613,10 +2605,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     let mut ip = &src[litCSize as usize..];
 
     let blockSizeMax = Ord::min(dstCapacity, dctx.block_size_max() as size_t);
-    let totalHistorySize = ZSTD_totalHistorySize(
-        ZSTD_maybeNullPtrAdd(dst, blockSizeMax as ptrdiff_t),
-        dctx.virtualStart as *const u8 as *const core::ffi::c_void,
-    );
+    let totalHistorySize = dst.wrapping_add(blockSizeMax) as usize - dctx.virtualStart as usize;
     let mut offset = if MEM_32bits() != 0 && totalHistorySize > ZSTD_maxShortOffset() {
         Offset::Long
     } else {
