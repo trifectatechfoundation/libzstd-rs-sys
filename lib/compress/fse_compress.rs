@@ -831,8 +831,8 @@ unsafe fn FSE_compress_usingCTable_generic(
             BIT_flushBits(&mut bitC);
         };
     }
-    FSE_flushCState(&mut bitC, &mut CState2);
-    FSE_flushCState(&mut bitC, &mut CState1);
+    FSE_flushCState(&mut bitC, &CState2);
+    FSE_flushCState(&mut bitC, &CState1);
     BIT_closeCStream(&mut bitC)
 }
 pub unsafe fn FSE_compress_usingCTable(

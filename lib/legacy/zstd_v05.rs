@@ -818,8 +818,8 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
     while !(BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
         > BITv05_DStream_completed as core::ffi::c_int as core::ffi::c_uint
         || op == omax
-        || BITv05_endOfDStream(&mut bitD) != 0
-            && (fast != 0 || FSEv05_endOfDState(&mut state1) != 0))
+        || BITv05_endOfDStream(&bitD) != 0
+            && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
     {
         let fresh5 = op;
         op = op.offset(1);
@@ -831,8 +831,8 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
         if BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
             > BITv05_DStream_completed as core::ffi::c_int as core::ffi::c_uint
             || op == omax
-            || BITv05_endOfDStream(&mut bitD) != 0
-                && (fast != 0 || FSEv05_endOfDState(&mut state2) != 0)
+            || BITv05_endOfDStream(&bitD) != 0
+                && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
         {
             break;
         }
@@ -844,9 +844,9 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
     }
-    if BITv05_endOfDStream(&mut bitD) != 0
-        && FSEv05_endOfDState(&mut state1) != 0
-        && FSEv05_endOfDState(&mut state2) != 0
+    if BITv05_endOfDStream(&bitD) != 0
+        && FSEv05_endOfDState(&state1) != 0
+        && FSEv05_endOfDState(&state2) != 0
     {
         return op.offset_from(ostart) as core::ffi::c_long as size_t;
     }
@@ -1168,7 +1168,7 @@ pub unsafe fn HUFv05_decompress1X2_usingDTable(
         return errorCode;
     }
     HUFv05_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
-    if BITv05_endOfDStream(&mut bitD) == 0 {
+    if BITv05_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -1379,10 +1379,10 @@ pub unsafe fn HUFv05_decompress4X2_usingDTable(
     HUFv05_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv05_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv05_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv05_endOfDStream(&mut bitD1)
-        & BITv05_endOfDStream(&mut bitD2)
-        & BITv05_endOfDStream(&mut bitD3)
-        & BITv05_endOfDStream(&mut bitD4);
+    endSignal = BITv05_endOfDStream(&bitD1)
+        & BITv05_endOfDStream(&bitD2)
+        & BITv05_endOfDStream(&bitD3)
+        & BITv05_endOfDStream(&bitD4);
     if endSignal == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -1765,7 +1765,7 @@ pub unsafe fn HUFv05_decompress1X4_usingDTable(
         return errorCode;
     }
     HUFv05_decodeStreamX4(ostart, &mut bitD, oend, dt, dtLog);
-    if BITv05_endOfDStream(&mut bitD) == 0 {
+    if BITv05_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -2011,10 +2011,10 @@ pub unsafe fn HUFv05_decompress4X4_usingDTable(
     HUFv05_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv05_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv05_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv05_endOfDStream(&mut bitD1)
-        & BITv05_endOfDStream(&mut bitD2)
-        & BITv05_endOfDStream(&mut bitD3)
-        & BITv05_endOfDStream(&mut bitD4);
+    endSignal = BITv05_endOfDStream(&bitD1)
+        & BITv05_endOfDStream(&bitD2)
+        & BITv05_endOfDStream(&bitD3)
+        & BITv05_endOfDStream(&bitD4);
     if endSignal == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }

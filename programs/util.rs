@@ -225,7 +225,7 @@ pub unsafe fn UTIL_isFdRegularFile(mut fd: core::ffi::c_int) -> core::ffi::c_int
             b"\0" as *const u8 as *const core::ffi::c_char,
             &mut statbuf,
         ) != 0
-        && UTIL_isRegularFileStat(&mut statbuf) != 0) as core::ffi::c_int;
+        && UTIL_isRegularFileStat(&statbuf) != 0) as core::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -256,7 +256,7 @@ pub unsafe fn UTIL_isRegularFile(mut infilename: *const core::ffi::c_char) -> co
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isRegularFileStat(&mut statbuf) != 0)
+    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isRegularFileStat(&statbuf) != 0)
         as core::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -507,7 +507,7 @@ pub unsafe fn UTIL_setFDStat(
         g_traceDepth += 1;
     }
     if UTIL_fstat(fd, filename, &mut curStatBuf) == 0
-        || UTIL_isRegularFileStat(&mut curStatBuf) == 0
+        || UTIL_isRegularFileStat(&curStatBuf) == 0
     {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
@@ -533,7 +533,7 @@ pub unsafe fn UTIL_setFDStat(
     res += UTIL_fchmod(
         fd,
         filename,
-        &mut curStatBuf,
+        &curStatBuf,
         (*statbuf).st_mode & 0o777 as core::ffi::c_int as __mode_t,
     );
     if fd >= 0 {
@@ -601,7 +601,7 @@ pub unsafe fn UTIL_isDirectory(mut infilename: *const core::ffi::c_char) -> core
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isDirectoryStat(&mut statbuf) != 0)
+    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isDirectoryStat(&statbuf) != 0)
         as core::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -732,7 +732,7 @@ pub unsafe fn UTIL_isSameFile(
     };
     ret = (UTIL_stat(fName1, &mut file1Stat) != 0
         && UTIL_stat(fName2, &mut file2Stat) != 0
-        && UTIL_isSameFileStat(fName1, fName2, &mut file1Stat, &mut file2Stat) != 0)
+        && UTIL_isSameFileStat(fName1, fName2, &file1Stat, &file2Stat) != 0)
         as core::ffi::c_int;
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -827,7 +827,7 @@ pub unsafe fn UTIL_isFIFO(mut infilename: *const core::ffi::c_char) -> core::ffi
         },
         __glibc_reserved: [0; 3],
     };
-    if UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isFIFOStat(&mut statbuf) != 0 {
+    if UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isFIFOStat(&statbuf) != 0 {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
             fprintf(
@@ -1106,7 +1106,7 @@ pub unsafe fn UTIL_getFileSize(mut infilename: *const core::ffi::c_char) -> u64 
         }
         return UTIL_FILESIZE_UNKNOWN as u64;
     }
-    let size = UTIL_getFileSizeStat(&mut statbuf);
+    let size = UTIL_getFileSizeStat(&statbuf);
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -1373,8 +1373,8 @@ pub unsafe fn UTIL_createFileNamesTable_fromFileList(
     if UTIL_stat(fileList, &mut statbuf) == 0 {
         return NULL_0 as *mut FileNamesTable;
     }
-    if UTIL_isRegularFileStat(&mut statbuf) == 0
-        && UTIL_isFIFOStat(&mut statbuf) == 0
+    if UTIL_isRegularFileStat(&statbuf) == 0
+        && UTIL_isFIFOStat(&statbuf) == 0
         && UTIL_isFileDescriptorPipe(fileList) == 0
     {
         return NULL_0 as *mut FileNamesTable;
@@ -1803,7 +1803,7 @@ unsafe fn getDirMode(mut dirName: *const core::ffi::c_char) -> mode_t {
         );
         return DIR_DEFAULT_MODE as mode_t;
     }
-    if UTIL_isDirectoryStat(&mut st) == 0 {
+    if UTIL_isDirectoryStat(&st) == 0 {
         fprintf(
             stderr,
             b"zstd: expected directory: %s\n\0" as *const u8 as *const core::ffi::c_char,

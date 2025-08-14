@@ -2427,7 +2427,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
             dictBuffer,
             dictBufferSize,
             fileSizes,
-            &mut dictFileName,
+            &dictFileName,
             1,
             displayLevel,
         );

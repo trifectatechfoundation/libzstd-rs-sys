@@ -883,7 +883,7 @@ unsafe fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core::ffi::c_int
         }
         return 0;
     }
-    if UTIL_isRegularFileStat(&mut statbuf) == 0 {
+    if UTIL_isRegularFileStat(&statbuf) == 0 {
         if g_display_prefs.displayLevel >= 2 {
             fprintf(
                 stderr,
@@ -2187,7 +2187,7 @@ unsafe fn FIO_createCResources(
     }
     FIO_getDictFileStat(dictFileName, &mut ress.dictFileStat);
     if (*prefs).patchFromMode != 0 {
-        let dictSize = UTIL_getFileSizeStat(&mut ress.dictFileStat);
+        let dictSize = UTIL_getFileSizeStat(&ress.dictFileStat);
         let ssSize = (*prefs).streamSrcSize as core::ffi::c_ulonglong;
         useMMap |= (dictSize > (*prefs).memLimit as u64) as core::ffi::c_int;
         FIO_adjustParamsForPatchFromMode(
@@ -3804,7 +3804,7 @@ unsafe fn FIO_compressLzmaFrame(
             }
             exit(81);
         }
-        ret = lzma_alone_encoder(&mut strm, &mut opt_lzma);
+        ret = lzma_alone_encoder(&mut strm, &opt_lzma);
         if ret as core::ffi::c_uint != LZMA_OK as core::ffi::c_int as core::ffi::c_uint {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -4668,7 +4668,7 @@ unsafe fn FIO_compressFilename_internal(
     match (*prefs).compressionType as core::ffi::c_uint {
         1 => {
             compressedfilesize = FIO_compressGzFrame(
-                &mut ress,
+                &ress,
                 srcFileName,
                 fileSize,
                 compressionLevel,
@@ -4723,7 +4723,7 @@ unsafe fn FIO_compressFilename_internal(
             compressedfilesize = FIO_compressZstdFrame(
                 fCtx,
                 prefs,
-                &mut ress,
+                &ress,
                 srcFileName,
                 fileSize,
                 compressionLevel,
@@ -5057,7 +5057,7 @@ unsafe fn FIO_compressFilename_srcFile(
     }
     if strcmp(srcFileName, stdinmark.as_ptr()) != 0 && UTIL_stat(srcFileName, &mut srcFileStat) != 0
     {
-        if UTIL_isDirectoryStat(&mut srcFileStat) != 0 {
+        if UTIL_isDirectoryStat(&srcFileStat) != 0 {
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
                     stderr,
@@ -5072,8 +5072,8 @@ unsafe fn FIO_compressFilename_srcFile(
             && UTIL_isSameFileStat(
                 srcFileName,
                 ress.dictFileName,
-                &mut srcFileStat,
-                &mut ress.dictFileStat,
+                &srcFileStat,
+                &ress.dictFileStat,
             ) != 0
         {
             if g_display_prefs.displayLevel >= 1 {
@@ -5104,7 +5104,7 @@ unsafe fn FIO_compressFilename_srcFile(
         return 1;
     }
     if strcmp(srcFileName, stdinmark.as_ptr()) != 0 {
-        fileSize = UTIL_getFileSizeStat(&mut srcFileStat);
+        fileSize = UTIL_getFileSizeStat(&srcFileStat);
     }
     if fileSize != UTIL_FILESIZE_UNKNOWN as u64 && fileSize < (ZSTD_BLOCKSIZE_MAX * 3) as u64 {
         AIO_ReadPool_setAsync(ress.readCtx, 0);
@@ -5120,7 +5120,7 @@ unsafe fn FIO_compressFilename_srcFile(
         ress,
         dstFileName,
         srcFileName,
-        &mut srcFileStat,
+        &srcFileStat,
         compressionLevel,
     );
     AIO_ReadPool_closeFile(ress.readCtx);
@@ -5681,7 +5681,7 @@ unsafe fn FIO_createDResources(
     );
     FIO_getDictFileStat(dictFileName, &mut statbuf);
     if (*prefs).patchFromMode != 0 {
-        let dictSize = UTIL_getFileSizeStat(&mut statbuf);
+        let dictSize = UTIL_getFileSizeStat(&statbuf);
         useMMap |= (dictSize > (*prefs).memLimit as u64) as core::ffi::c_int;
         FIO_adjustMemLimitForPatchFromMode(prefs, dictSize as core::ffi::c_ulonglong, 0);
     }
@@ -6720,7 +6720,7 @@ unsafe fn FIO_decompressSrcFile(
         return 1;
     }
     if strcmp(srcFileName, stdinmark.as_ptr()) != 0 {
-        fileSize = UTIL_getFileSizeStat(&mut srcFileStat);
+        fileSize = UTIL_getFileSizeStat(&srcFileStat);
     }
     if fileSize != UTIL_FILESIZE_UNKNOWN as u64 && fileSize < (ZSTD_BLOCKSIZE_MAX * 3) as u64 {
         AIO_ReadPool_setAsync(ress.readCtx, 0);
@@ -6736,7 +6736,7 @@ unsafe fn FIO_decompressSrcFile(
         ress,
         dstFileName,
         srcFileName,
-        &mut srcFileStat,
+        &srcFileStat,
     );
     AIO_ReadPool_setFile(ress.readCtx, NULL as *mut FILE);
     if fclose(srcFile) != 0 {
@@ -7406,7 +7406,7 @@ unsafe fn getFileInfo_fileConfirmed(
         }
         return info_file_error;
     }
-    (*info).compressedSize = UTIL_getFileSizeStat(&mut srcFileStat);
+    (*info).compressedSize = UTIL_getFileSizeStat(&srcFileStat);
     status = FIO_analyzeFrames(info, srcFile);
     fclose(srcFile);
     (*info).nbFiles = 1;
@@ -7646,7 +7646,7 @@ unsafe fn FIO_listFile(
         }
         0 | _ => {}
     }
-    displayInfo(inFileName, &mut info, displayLevel);
+    displayInfo(inFileName, &info, displayLevel);
     *total = FIO_addFInfo(*total, info);
     assert!(
         error as core::ffi::c_uint == info_success as core::ffi::c_int as core::ffi::c_uint
