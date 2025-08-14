@@ -297,13 +297,15 @@ pub unsafe fn ZSTD_getcBlockSize(
 
 unsafe fn ZSTD_allocateLiteralsBuffer(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut u8,
-    dstCapacity: usize,
+    mut dst: Writer<'_>,
     litSize: usize,
     streaming: StreamingOperation,
     expectedWriteSize: usize,
     split_immediately: bool,
 ) {
+    let dstCapacity = dst.capacity();
+    let dst = dst.as_mut_ptr();
+
     let blockSizeMax = dctx.block_size_max();
     if streaming == StreamingOperation::NotStreaming
         && dstCapacity
@@ -354,12 +356,9 @@ const ZSTD_LITBUFFEREXTRASIZE: usize = {
 unsafe fn ZSTD_decodeLiteralsBlock(
     dctx: &mut ZSTD_DCtx,
     src: &[u8],
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dst: Writer<'_>,
     streaming: StreamingOperation,
 ) -> size_t {
-    let dstCapacity = dstCapacity;
-
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if src.len() < MIN_CBLOCK_SIZE {
@@ -395,20 +394,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+            let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
 
-            ZSTD_allocateLiteralsBuffer(
-                dctx,
-                dst as *mut u8,
-                dstCapacity,
-                litSize,
-                streaming,
-                expectedWriteSize,
-                true,
-            );
+            ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
 
             if lhSize + litSize + WILDCOPY_OVERLENGTH > src.len() {
                 if litSize.wrapping_add(lhSize) > src.len() {
@@ -470,20 +461,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
             }
 
-            let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+            let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
                 return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
             }
 
-            ZSTD_allocateLiteralsBuffer(
-                dctx,
-                dst as *mut u8,
-                dstCapacity,
-                litSize,
-                streaming,
-                expectedWriteSize,
-                true,
-            );
+            ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
 
             if dctx.litBufferLocation == LitLocation::ZSTD_split {
                 ptr::write_bytes(
@@ -546,20 +529,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
 
-    let expectedWriteSize = Ord::min(dstCapacity, blockSizeMax);
+    let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
     if expectedWriteSize < litSize {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
 
-    ZSTD_allocateLiteralsBuffer(
-        dctx,
-        dst as *mut u8,
-        dstCapacity,
-        litSize,
-        streaming,
-        expectedWriteSize,
-        false,
-    );
+    ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, false);
 
     if dctx.ddictIsCold != 0 && litSize > 768 {
         let _ptr = dctx.HUFptr as *const core::ffi::c_char;
@@ -652,15 +627,12 @@ pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
         core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
+    // NOTE: already handles the `dst.is_null()` case.
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+
     dctx.isFrameDecompression = 0;
 
-    ZSTD_decodeLiteralsBlock(
-        dctx,
-        src,
-        dst,
-        dstCapacity,
-        StreamingOperation::NotStreaming,
-    )
+    ZSTD_decodeLiteralsBlock(dctx, src, dst, StreamingOperation::NotStreaming)
 }
 
 const fn sequence_symbol(
@@ -2583,13 +2555,15 @@ pub unsafe fn ZSTD_decompressBlock_internal(
         core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
-    ZSTD_decompressBlock_internal_help(dctx, dst, dstCapacity, src, streaming)
+    // NOTE: already handles the `dst.is_null()` case.
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+
+    ZSTD_decompressBlock_internal_help(dctx, dst, src, streaming)
 }
 
 unsafe fn ZSTD_decompressBlock_internal_help(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    mut dst: Writer<'_>,
     src: &[u8],
     streaming: StreamingOperation,
 ) -> size_t {
@@ -2597,15 +2571,16 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
     }
 
-    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst, dstCapacity, streaming);
+    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming);
     if ERR_isError(litCSize) != 0 {
         return litCSize;
     }
 
     let mut ip = &src[litCSize as usize..];
 
-    let blockSizeMax = Ord::min(dstCapacity, dctx.block_size_max() as size_t);
-    let totalHistorySize = dst.wrapping_add(blockSizeMax) as usize - dctx.virtualStart as usize;
+    let blockSizeMax = Ord::min(dst.capacity(), dctx.block_size_max());
+    let totalHistorySize =
+        dst.as_mut_ptr().wrapping_add(blockSizeMax) as usize - dctx.virtualStart as usize;
     let mut offset = if MEM_32bits() != 0 && totalHistorySize > ZSTD_maxShortOffset() {
         Offset::Long
     } else {
@@ -2618,13 +2593,12 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return seqHSize;
     }
     ip = &ip[seqHSize as usize..];
-    if (dst.is_null() || dstCapacity == 0) && nbSeq > 0 {
+    if dst.is_empty() && nbSeq > 0 {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
     if MEM_64bits() != 0
         && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
-        && (-(1 as core::ffi::c_int) as size_t).wrapping_sub(dst as size_t)
-            < ((1 as core::ffi::c_int) << 20) as size_t
+        && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -2640,14 +2614,37 @@ unsafe fn ZSTD_decompressBlock_internal_help(
             use_prefetch_decoder = info.longOffsetShare >= minShare;
         }
     }
+
     dctx.ddictIsCold = 0;
+
     if use_prefetch_decoder {
-        return ZSTD_decompressSequencesLong(dctx, dst, dstCapacity, ip, nbSeq, offset);
+        return ZSTD_decompressSequencesLong(
+            dctx,
+            dst.as_mut_ptr().cast(),
+            dst.capacity(),
+            ip,
+            nbSeq,
+            offset,
+        );
     }
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, dstCapacity, ip, nbSeq, offset)
+        ZSTD_decompressSequencesSplitLitBuffer(
+            dctx,
+            dst.as_mut_ptr().cast(),
+            dst.capacity(),
+            ip,
+            nbSeq,
+            offset,
+        )
     } else {
-        ZSTD_decompressSequences(dctx, dst, dstCapacity, ip, nbSeq, offset)
+        ZSTD_decompressSequences(
+            dctx,
+            dst.as_mut_ptr().cast(),
+            dst.capacity(),
+            ip,
+            nbSeq,
+            offset,
+        )
     }
 }
 
