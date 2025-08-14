@@ -135,20 +135,7 @@ impl TryFrom<u8> for SymbolEncodingType_e {
 }
 
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
-#[inline]
-unsafe fn ZSTD_wrappedPtrAdd(
-    mut ptr: *const core::ffi::c_void,
-    mut add: ptrdiff_t,
-) -> *const core::ffi::c_void {
-    (ptr as *const core::ffi::c_char).offset(add as isize) as *const core::ffi::c_void
-}
-#[inline]
-unsafe fn ZSTD_wrappedPtrSub(
-    mut ptr: *const core::ffi::c_void,
-    mut sub: ptrdiff_t,
-) -> *const core::ffi::c_void {
-    (ptr as *const core::ffi::c_char).offset(-(sub as isize)) as *const core::ffi::c_void
-}
+
 #[inline]
 unsafe fn ZSTD_maybeNullPtrAdd(
     mut ptr: *mut core::ffi::c_void,
@@ -2077,26 +2064,60 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
 }
 
 #[inline(always)]
+fn prefetch_l1<T>(ptr: *const T) {
+    if cfg!(feature = "no-prefetch") {
+        return;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        use core::arch::x86_64;
+        unsafe { x86_64::_mm_prefetch(ptr as *const i8, x86_64::_MM_HINT_T0) };
+        return;
+    }
+
+    #[cfg(target_arch = "x86")]
+    if cfg!(target_feature(enable = "sse2")) {
+        use core::arch::x86;
+        unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T0) };
+        return;
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        use core::arch::aarch64;
+        // emits `prfm pldl1keep`
+        unsafe {
+            aarch64::_prefetch(
+                ptr as *const i8,
+                aarch64::_PREFETCH_READ,
+                aarch64::_PREFETCH_LOCALITY3,
+            )
+        };
+        return;
+    }
+}
+
+#[inline(always)]
 unsafe fn ZSTD_prefetchMatch(
     mut prefetchPos: size_t,
     sequence: seq_t,
     prefixStart: *const u8,
     dictEnd: *const u8,
 ) -> size_t {
-    prefetchPos = prefetchPos.wrapping_add(sequence.litLength);
-    let matchBase = if sequence.offset > prefetchPos {
+    let matchBase = if sequence.offset > prefetchPos.wrapping_add(sequence.litLength) {
         dictEnd
     } else {
         prefixStart
     };
-    let match_0 = ZSTD_wrappedPtrSub(
-        ZSTD_wrappedPtrAdd(
-            matchBase as *const core::ffi::c_void,
-            prefetchPos as ptrdiff_t,
-        ),
-        sequence.offset as ptrdiff_t,
-    ) as *const u8;
-    ZSTD_wrappedPtrAdd(match_0 as *const core::ffi::c_void, 64);
+
+    let match_ = matchBase
+        .wrapping_add(prefetchPos)
+        .wrapping_sub(sequence.offset);
+
+    prefetch_l1(match_);
+    prefetch_l1(match_.wrapping_add(64));
+
     prefetchPos.wrapping_add(sequence.matchLength)
 }
 
@@ -2121,11 +2142,6 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     let dictStart = dctx.virtualStart as *const u8;
     let dictEnd = dctx.dictEnd as *const u8;
     if nbSeq != 0 {
-        let mut sequences: [seq_t; 8] = [seq_t {
-            litLength: 0,
-            matchLength: 0,
-            offset: 0,
-        }; 8];
         let seqAdvance = if nbSeq < 8 { nbSeq } else { 8 };
         let mut seqState = seqState_t {
             DStream: BIT_DStream_t {
@@ -2149,24 +2165,32 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             },
             prevOffset: [0; 3],
         };
-        let mut seqNb: core::ffi::c_int = 0;
-        let mut prefetchPos = op.offset_from(prefixStart) as core::ffi::c_long as size_t;
         dctx.fseEntropy = 1;
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
             Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
         };
+
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
-        seqNb = 0;
+
+        let mut prefetchPos = op.offset_from(prefixStart) as usize;
+        let mut sequences: [seq_t; 8] = [seq_t {
+            litLength: 0,
+            matchLength: 0,
+            offset: 0,
+        }; 8];
+
+        let mut seqNb = 0;
         while seqNb < seqAdvance {
             let sequence = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence, prefixStart, dictEnd);
-            *sequences.as_mut_ptr().offset(seqNb as isize) = sequence;
+            sequences[seqNb as usize] = sequence;
             seqNb += 1;
         }
+
         while seqNb < nbSeq {
             let mut sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             if dctx.litBufferLocation == LitLocation::ZSTD_split
