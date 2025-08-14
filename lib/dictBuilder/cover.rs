@@ -976,7 +976,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         fflush(stderr);
     }
     let tail = COVER_buildDictionary(
-        &mut ctx,
+        &ctx,
         ctx.freqs,
         &mut activeDmers,
         dictBuffer,

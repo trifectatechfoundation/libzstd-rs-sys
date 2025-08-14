@@ -2236,7 +2236,7 @@ unsafe fn ZSTD_buildSeqTable<const N: usize>(
             }
             ZSTD_buildFSETable(
                 DTableSpace,
-                &mut norm[..=max as usize],
+                &norm[..=max as usize],
                 baseValue,
                 nbAdditionalBits,
                 tableLog,

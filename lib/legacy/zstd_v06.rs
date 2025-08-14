@@ -1292,7 +1292,7 @@ pub unsafe fn HUFv06_decompress1X2_usingDTable(
         return errorCode;
     }
     HUFv06_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
-    if BITv06_endOfDStream(&mut bitD) == 0 {
+    if BITv06_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -1502,10 +1502,10 @@ pub unsafe fn HUFv06_decompress4X2_usingDTable(
     HUFv06_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv06_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv06_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv06_endOfDStream(&mut bitD1)
-        & BITv06_endOfDStream(&mut bitD2)
-        & BITv06_endOfDStream(&mut bitD3)
-        & BITv06_endOfDStream(&mut bitD4);
+    endSignal = BITv06_endOfDStream(&bitD1)
+        & BITv06_endOfDStream(&bitD2)
+        & BITv06_endOfDStream(&bitD3)
+        & BITv06_endOfDStream(&bitD4);
     if endSignal == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -1887,7 +1887,7 @@ pub unsafe fn HUFv06_decompress1X4_usingDTable(
         return errorCode;
     }
     HUFv06_decodeStreamX4(ostart, &mut bitD, oend, dt, dtLog);
-    if BITv06_endOfDStream(&mut bitD) == 0 {
+    if BITv06_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -2133,10 +2133,10 @@ pub unsafe fn HUFv06_decompress4X4_usingDTable(
     HUFv06_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv06_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv06_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv06_endOfDStream(&mut bitD1)
-        & BITv06_endOfDStream(&mut bitD2)
-        & BITv06_endOfDStream(&mut bitD3)
-        & BITv06_endOfDStream(&mut bitD4);
+    endSignal = BITv06_endOfDStream(&bitD1)
+        & BITv06_endOfDStream(&bitD2)
+        & BITv06_endOfDStream(&bitD3)
+        & BITv06_endOfDStream(&bitD4);
     if endSignal == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -3103,9 +3103,9 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
     ip.offset_from(istart) as core::ffi::c_long as size_t
 }
 unsafe fn ZSTDv06_decodeSequence(mut seq: *mut seq_t, mut seqState: *mut seqState_t) {
-    let llCode = FSEv06_peekSymbol(&mut (*seqState).stateLL) as u32;
-    let mlCode = FSEv06_peekSymbol(&mut (*seqState).stateML) as u32;
-    let ofCode = FSEv06_peekSymbol(&mut (*seqState).stateOffb) as u32;
+    let llCode = FSEv06_peekSymbol(&(*seqState).stateLL) as u32;
+    let mlCode = FSEv06_peekSymbol(&(*seqState).stateML) as u32;
+    let ofCode = FSEv06_peekSymbol(&(*seqState).stateOffb) as u32;
     let llBits = *LL_bits.as_ptr().offset(llCode as isize);
     let mlBits = *ML_bits.as_ptr().offset(mlCode as isize);
     let ofBits = ofCode;

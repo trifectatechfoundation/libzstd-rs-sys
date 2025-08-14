@@ -825,7 +825,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let mut segmentFreqs =
         calloc(1 << parameters.f, ::core::mem::size_of::<u16>() as size_t) as *mut u16;
     let tail = FASTCOVER_buildDictionary(
-        &mut ctx,
+        &ctx,
         ctx.freqs,
         dictBuffer,
         dictBufferCapacity,

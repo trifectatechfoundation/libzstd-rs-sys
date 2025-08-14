@@ -4288,14 +4288,14 @@ unsafe fn main_0(
                                         i = 0;
                                         while (i as size_t) < (*filenames).tableSize {
                                             operationResult = BMK_benchFilesAdvanced(
-                                                &mut *((*filenames).fileNames).offset(i as isize),
+                                                &*((*filenames).fileNames).offset(i as isize),
                                                 1,
                                                 dictFileName,
                                                 cLevel,
                                                 cLevelLast,
-                                                &mut compressionParams,
+                                                &compressionParams,
                                                 g_displayLevel,
-                                                &mut benchParams,
+                                                &benchParams,
                                             );
                                             i = i.wrapping_add(1);
                                         }
@@ -4306,9 +4306,9 @@ unsafe fn main_0(
                                             dictFileName,
                                             cLevel,
                                             cLevelLast,
-                                            &mut compressionParams,
+                                            &compressionParams,
                                             g_displayLevel,
-                                            &mut benchParams,
+                                            &benchParams,
                                         );
                                     }
                                 } else {
@@ -4316,9 +4316,9 @@ unsafe fn main_0(
                                         compressibility,
                                         cLevel,
                                         cLevelLast,
-                                        &mut compressionParams,
+                                        &compressionParams,
                                         g_displayLevel,
-                                        &mut benchParams,
+                                        &benchParams,
                                     );
                                 }
                             }
@@ -4693,7 +4693,7 @@ unsafe fn main_0(
                                                                         *((*filenames).fileNames).add(fileNb),
                                                                         dictFileName,
                                                                         cLevel,
-                                                                        &mut compressionParams,
+                                                                        &compressionParams,
                                                                     );
                                                                 }
                                                                 fileNb = fileNb.wrapping_add(1);

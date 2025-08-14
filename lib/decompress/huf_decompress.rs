@@ -1145,8 +1145,8 @@ pub fn HUF_readDTableX2_wksp(
     HUF_fillDTableX2(
         dt,
         maxTableLog,
-        &mut wksp.sortedSymbol,
-        &mut wksp.rankStart0,
+        &wksp.sortedSymbol,
+        &wksp.rankStart0,
         &mut wksp.rankVal,
         maxW,
         tableLog.wrapping_add(1),

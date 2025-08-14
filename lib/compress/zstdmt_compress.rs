@@ -999,7 +999,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.ldmParams.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
     {
-        ZSTD_ldm_adjustParameters(&mut params.ldmParams, &mut params.cParams);
+        ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
     } else {
         ptr::write_bytes(
             &mut params.ldmParams as *mut ldmParams_t as *mut u8,
@@ -1063,7 +1063,7 @@ unsafe fn ZSTDMT_serialState_reset(
                 &mut (*serialState).ldmState,
                 dict as *const u8,
                 dictEnd,
-                &mut params.ldmParams,
+                &params.ldmParams,
             );
             (*serialState).ldmState.loadedDictEnd = if params.forceWindow != 0 {
                 0
@@ -1136,7 +1136,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
             error = ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
                 seqStore,
-                &mut (*serialState).params.ldmParams,
+                &(*serialState).params.ldmParams,
                 src.start,
                 src.size,
             );
@@ -1242,7 +1242,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut core::ffi::c
                             ZSTD_dct_auto,
                             ZSTD_dtlm_fast,
                             (*job).cdict,
-                            &mut jobParams,
+                            &jobParams,
                             (*job).fullFrameSize,
                         );
                         if ERR_isError(initError) != 0 {
@@ -1297,7 +1297,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut core::ffi::c
                                         ZSTD_dct_rawContent,
                                         ZSTD_dtlm_fast,
                                         NULL_0 as *const ZSTD_CDict,
-                                        &mut jobParams,
+                                        &jobParams,
                                         pledgedSrcSize as core::ffi::c_ulonglong,
                                     );
                                     if ERR_isError(initError_0) != 0 {
@@ -1318,7 +1318,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut core::ffi::c
                             ZSTDMT_serialState_applySequences(
                                 (*job).serial,
                                 cctx,
-                                &mut rawSeqStore,
+                                &rawSeqStore,
                             );
                             if (*job).firstJob == 0 {
                                 let hSize = ZSTD_compressContinue_public(
@@ -1963,10 +1963,10 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
         (*mtctx).cdictLocal = NULL_0 as *mut ZSTD_CDict;
         (*mtctx).cdict = cdict;
     }
-    (*mtctx).targetPrefixSize = ZSTDMT_computeOverlapSize(&mut params);
+    (*mtctx).targetPrefixSize = ZSTDMT_computeOverlapSize(&params);
     (*mtctx).targetSectionSize = params.jobSize;
     if (*mtctx).targetSectionSize == 0 {
-        (*mtctx).targetSectionSize = ((1) << ZSTDMT_computeTargetJobLog(&mut params)) as size_t;
+        (*mtctx).targetSectionSize = ((1) << ZSTDMT_computeTargetJobLog(&params)) as size_t;
     }
     if params.rsyncable != 0 {
         let jobSizeKB = ((*mtctx).targetSectionSize >> 10) as u32;

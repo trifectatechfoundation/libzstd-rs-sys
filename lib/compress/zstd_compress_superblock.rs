@@ -1168,7 +1168,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             llCodePtr,
             mlCodePtr,
             nbSeqs,
-            &mut (*nextCBlock).entropy,
+            &(*nextCBlock).entropy,
             entropyMetadata,
             workspace,
             wkspSize,
@@ -1213,7 +1213,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             let mut litSize = countLiterals(seqStorePtr, sp, seqCount);
             let decompressedSize = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount, litSize, 0);
             let cSize = ZSTD_compressSubBlock(
-                &mut (*nextCBlock).entropy,
+                &(*nextCBlock).entropy,
                 entropyMetadata,
                 sp,
                 seqCount,
@@ -1261,7 +1261,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut seqCount_0 = send.offset_from(sp) as core::ffi::c_long as size_t;
     let decompressedSize_0 = ZSTD_seqDecompressedSize(seqStorePtr, sp, seqCount_0, litSize_0, 1);
     let cSize_0 = ZSTD_compressSubBlock(
-        &mut (*nextCBlock).entropy,
+        &(*nextCBlock).entropy,
         entropyMetadata,
         sp,
         seqCount_0,
@@ -1375,10 +1375,10 @@ pub unsafe fn ZSTD_compressSuperBlock(
         },
     };
     let err_code = ZSTD_buildBlockEntropyStats(
-        &mut (*zc).seqStore,
-        &mut (*(*zc).blockState.prevCBlock).entropy,
+        &(*zc).seqStore,
+        &(*(*zc).blockState.prevCBlock).entropy,
         &mut (*(*zc).blockState.nextCBlock).entropy,
-        &mut (*zc).appliedParams,
+        &(*zc).appliedParams,
         &mut entropyMetadata,
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
@@ -1387,11 +1387,11 @@ pub unsafe fn ZSTD_compressSuperBlock(
         return err_code;
     }
     ZSTD_compressSubBlock_multi(
-        &mut (*zc).seqStore,
+        &(*zc).seqStore,
         (*zc).blockState.prevCBlock,
         (*zc).blockState.nextCBlock,
-        &mut entropyMetadata,
-        &mut (*zc).appliedParams,
+        &entropyMetadata,
+        &(*zc).appliedParams,
         dst,
         dstCapacity,
         src,
