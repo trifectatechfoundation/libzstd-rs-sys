@@ -252,7 +252,8 @@ unsafe fn BITv05_initDStream(
     if srcSize >= ::core::mem::size_of::<size_t>() as size_t {
         let mut contain32: u32 = 0;
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
-        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char).add(srcSize)
+        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
+            .add(srcSize)
             .offset(-(::core::mem::size_of::<size_t>() as isize));
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
         contain32 = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1)) as u32;
@@ -818,8 +819,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
     while !(BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
         > BITv05_DStream_completed as core::ffi::c_int as core::ffi::c_uint
         || op == omax
-        || BITv05_endOfDStream(&bitD) != 0
-            && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
+        || BITv05_endOfDStream(&bitD) != 0 && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
     {
         let fresh5 = op;
         op = op.offset(1);
@@ -831,8 +831,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
         if BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
             > BITv05_DStream_completed as core::ffi::c_int as core::ffi::c_uint
             || op == omax
-            || BITv05_endOfDStream(&bitD) != 0
-                && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
+            || BITv05_endOfDStream(&bitD) != 0 && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
         {
             break;
         }
@@ -2672,8 +2671,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize;
             ptr::write_bytes(
-                ((*dctx).litBuffer)
-                    .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2711,8 +2709,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
             ptr::write_bytes(
-                ((*dctx).litBuffer)
-                    .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2754,8 +2751,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
                 ptr::write_bytes(
-                    ((*dctx).litBuffer)
-                        .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
@@ -3757,8 +3753,7 @@ unsafe fn ZSTDv05_loadEntropy(
     if FSEv05_isError(errorCode) != 0 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dict = (dict as *const core::ffi::c_char).add(offcodeHeaderSize)
-        as *const core::ffi::c_void;
+    dict = (dict as *const core::ffi::c_char).add(offcodeHeaderSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(offcodeHeaderSize);
     matchlengthHeaderSize = FSEv05_readNCount(
         matchlengthNCount.as_mut_ptr(),
@@ -3782,8 +3777,8 @@ unsafe fn ZSTDv05_loadEntropy(
     if FSEv05_isError(errorCode) != 0 {
         return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
     }
-    dict = (dict as *const core::ffi::c_char).add(matchlengthHeaderSize)
-        as *const core::ffi::c_void;
+    dict =
+        (dict as *const core::ffi::c_char).add(matchlengthHeaderSize) as *const core::ffi::c_void;
     dictSize = dictSize.wrapping_sub(matchlengthHeaderSize);
     litlengthHeaderSize = FSEv05_readNCount(
         litlengthNCount.as_mut_ptr(),
@@ -3937,8 +3932,7 @@ pub unsafe extern "C" fn ZBUFFv05_decompressContinue(
                 }
                 if headerSize != 0 {
                     memcpy(
-                        ((*zbc).headerBuffer)
-                            .as_mut_ptr().add((*zbc).hPos)
+                        ((*zbc).headerBuffer).as_mut_ptr().add((*zbc).hPos)
                             as *mut core::ffi::c_void,
                         src,
                         *srcSizePtr,
@@ -3953,8 +3947,7 @@ pub unsafe extern "C" fn ZBUFFv05_decompressContinue(
             }
             2 => {
                 let mut headerSize_0 = ZBUFFv05_limitCopy(
-                    ((*zbc).headerBuffer)
-                        .as_mut_ptr().add((*zbc).hPos) as *mut core::ffi::c_void,
+                    ((*zbc).headerBuffer).as_mut_ptr().add((*zbc).hPos) as *mut core::ffi::c_void,
                     (ZSTDv05_frameHeaderSize_max_0 as size_t).wrapping_sub((*zbc).hPos),
                     src,
                     *srcSizePtr,

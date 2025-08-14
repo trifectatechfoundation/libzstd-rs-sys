@@ -821,27 +821,37 @@ unsafe fn ZSTD_ldm_gear_reset(
     let mut hash = (*state).rolling;
     let mut n = 0 as size_t;
     while n.wrapping_add(3) < minMatchLength {
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
     }
     while n < minMatchLength {
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
     }
 }
@@ -864,9 +874,11 @@ unsafe fn ZSTD_ldm_gear_feed(
             current_block = 5689316957504528238;
             break;
         }
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -876,9 +888,11 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -888,9 +902,11 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -900,9 +916,11 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-            (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-        ));
+        hash = (hash << 1).wrapping_add(
+            *ZSTD_ldm_gearTab
+                .as_ptr()
+                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
+        );
         n = n.wrapping_add(1);
         if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
             continue;
@@ -926,8 +944,7 @@ unsafe fn ZSTD_ldm_gear_feed(
                     continue;
                 }
                 hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-                    (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int)
-                        as isize,
+                    (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
                 ));
                 n = n.wrapping_add(1);
                 if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
@@ -1115,8 +1132,7 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     let mut matchLength = 0 as size_t;
     while pIn > pAnchor
         && pMatch > pMatchBase
-        && *pIn.offset(-1_isize) as core::ffi::c_int
-            == *pMatch.offset(-1_isize) as core::ffi::c_int
+        && *pIn.offset(-1_isize) as core::ffi::c_int == *pMatch.offset(-1_isize) as core::ffi::c_int
     {
         pIn = pIn.offset(-1);
         pMatch = pMatch.offset(-1);
@@ -1201,10 +1217,9 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         );
         n = 0;
         while n < numSplits {
-            if ip.add(*splits.offset(n as isize))
-                >= istart.offset(minMatchLength as isize)
-            {
-                let split = ip.add(*splits.offset(n as isize))
+            if ip.add(*splits.offset(n as isize)) >= istart.offset(minMatchLength as isize) {
+                let split = ip
+                    .add(*splits.offset(n as isize))
                     .offset(-(minMatchLength as isize));
                 let xxhash = ZSTD_XXH64(
                     split as *const core::ffi::c_void,
@@ -1302,7 +1317,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         );
         n = 0;
         while n < numSplits {
-            let split = ip.add(*splits.offset(n as isize))
+            let split = ip
+                .add(*splits.offset(n as isize))
                 .offset(-(minMatchLength as isize));
             let xxhash = ZSTD_XXH64(
                 split as *const core::ffi::c_void,

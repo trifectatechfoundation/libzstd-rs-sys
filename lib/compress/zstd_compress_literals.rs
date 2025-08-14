@@ -171,7 +171,7 @@ pub unsafe fn ZSTD_compressLiterals(
     mut bmi2: core::ffi::c_int,
 ) -> size_t {
     let lhSize = (3
-        + (srcSize >= (((1) << 10)) as size_t) as core::ffi::c_int
+        + (srcSize >= ((1) << 10) as size_t) as core::ffi::c_int
         + (srcSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
     let ostart = dst as *mut u8;
     let mut singleStream = (srcSize < 256) as core::ffi::c_int as u32;

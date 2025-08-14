@@ -182,7 +182,8 @@ unsafe fn BIT_initCStream(
     (*bitC).bitPos = 0;
     (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
     (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr).add(dstCapacity)
+    (*bitC).endPtr = ((*bitC).startPtr)
+        .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -492,8 +493,7 @@ pub unsafe fn ZSTD_buildCTable(
             let mut nbSeq_1 = nbSeq;
             let tableLog = FSE_optimalTableLog(FSELog, nbSeq, max);
             if *count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize) > 1 {
-                let fresh0 = &mut (*count
-                    .offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize));
+                let fresh0 = &mut (*count.offset(*codeTable.add(nbSeq.wrapping_sub(1)) as isize));
                 *fresh0 = (*fresh0).wrapping_sub(1);
                 nbSeq_1 = nbSeq_1.wrapping_sub(1);
             }
@@ -596,8 +596,7 @@ unsafe fn ZSTD_encodeSequences_body(
         (*sequences.add(nbSeq.wrapping_sub(1))).litLength as BitContainerType,
         *LL_bits
             .as_ptr()
-            .offset(*llCodeTable.add(nbSeq.wrapping_sub(1)) as isize)
-            as core::ffi::c_uint,
+            .offset(*llCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
     );
     if MEM_32bits() != 0 {
         BIT_flushBits(&mut blockStream);
@@ -607,8 +606,7 @@ unsafe fn ZSTD_encodeSequences_body(
         (*sequences.add(nbSeq.wrapping_sub(1))).mlBase as BitContainerType,
         *ML_bits
             .as_ptr()
-            .offset(*mlCodeTable.add(nbSeq.wrapping_sub(1)) as isize)
-            as core::ffi::c_uint,
+            .offset(*mlCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
     );
     if MEM_32bits() != 0 {
         BIT_flushBits(&mut blockStream);
@@ -632,8 +630,7 @@ unsafe fn ZSTD_encodeSequences_body(
         }
         BIT_addBits(
             &mut blockStream,
-            ((*sequences.add(nbSeq.wrapping_sub(1))).offBase >> extraBits)
-                as BitContainerType,
+            ((*sequences.add(nbSeq.wrapping_sub(1))).offBase >> extraBits) as BitContainerType,
             ofBits.wrapping_sub(extraBits),
         );
     } else {

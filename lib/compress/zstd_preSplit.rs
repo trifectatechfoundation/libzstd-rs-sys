@@ -150,9 +150,8 @@ unsafe fn flushEvents(mut fpstats: *mut FPStats) {
     let mut n: size_t = 0;
     n = 0;
     while n < HASHTABLESIZE as size_t {
-        *((*fpstats).pastEvents.events)
-            .as_mut_ptr().add(n) = *((*fpstats).newEvents.events)
-            .as_mut_ptr().add(n);
+        *((*fpstats).pastEvents.events).as_mut_ptr().add(n) =
+            *((*fpstats).newEvents.events).as_mut_ptr().add(n);
         n = n.wrapping_add(1);
     }
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
@@ -255,7 +254,8 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     );
     HIST_add(
         ((*fpstats).newEvents.events).as_mut_ptr(),
-        (blockStart as *const core::ffi::c_char).add(blockSize)
+        (blockStart as *const core::ffi::c_char)
+            .add(blockSize)
             .offset(-(SEGMENT_SIZE as isize)) as *const core::ffi::c_void,
         SEGMENT_SIZE as size_t,
     );
@@ -266,7 +266,8 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     }
     HIST_add(
         ((*middleEvents).events).as_mut_ptr(),
-        (blockStart as *const core::ffi::c_char).add(blockSize / 2)
+        (blockStart as *const core::ffi::c_char)
+            .add(blockSize / 2)
             .offset(-((SEGMENT_SIZE / 2) as isize)) as *const core::ffi::c_void,
         SEGMENT_SIZE as size_t,
     );
