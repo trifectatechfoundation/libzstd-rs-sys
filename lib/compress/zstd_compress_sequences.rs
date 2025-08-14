@@ -724,9 +724,9 @@ unsafe fn ZSTD_encodeSequences_body(
         BIT_flushBits(&mut blockStream);
         n = n.wrapping_sub(1);
     }
-    FSE_flushCState(&mut blockStream, &mut stateMatchLength);
-    FSE_flushCState(&mut blockStream, &mut stateOffsetBits);
-    FSE_flushCState(&mut blockStream, &mut stateLitLength);
+    FSE_flushCState(&mut blockStream, &stateMatchLength);
+    FSE_flushCState(&mut blockStream, &stateOffsetBits);
+    FSE_flushCState(&mut blockStream, &stateLitLength);
     let streamSize = BIT_closeCStream(&mut blockStream);
     if streamSize == 0 {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;

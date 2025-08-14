@@ -2258,7 +2258,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         &mut entropy.OFTable,
-        &mut offcodeNCount[..=offcodeMaxValue as usize],
+        &offcodeNCount[..=offcodeMaxValue as usize],
         &OF_base,
         &OF_bits,
         offcodeLog,
@@ -2287,7 +2287,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         &mut entropy.MLTable,
-        &mut matchlengthNCount[..=matchlengthMaxValue as usize],
+        &matchlengthNCount[..=matchlengthMaxValue as usize],
         &ML_base,
         &ML_bits,
         matchlengthLog,
@@ -2316,7 +2316,7 @@ pub unsafe fn ZSTD_loadDEntropy(
     }
     ZSTD_buildFSETable(
         &mut entropy.LLTable,
-        &mut litlengthNCount[..=litlengthMaxValue as usize],
+        &litlengthNCount[..=litlengthMaxValue as usize],
         &LL_base,
         &LL_bits,
         litlengthLog,

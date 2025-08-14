@@ -1476,7 +1476,7 @@ unsafe fn ZDICT_analyzeEntropy(
             while u < nbFiles {
                 ZDICT_countEStats(
                     esr,
-                    &mut params,
+                    &params,
                     countLit.as_mut_ptr(),
                     offcodeCount.as_mut_ptr(),
                     matchLengthCount.as_mut_ptr(),

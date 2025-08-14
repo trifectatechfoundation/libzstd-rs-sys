@@ -2286,7 +2286,7 @@ unsafe fn sssort(
                 || (0)
                     < ss_compare(
                         T,
-                        &mut *PAi.as_mut_ptr().offset(0),
+                        &*PAi.as_mut_ptr().offset(0),
                         PA.offset(*a as isize),
                         depth,
                     ))

@@ -1178,7 +1178,7 @@ unsafe fn HUFv07_decompress1X2_usingDTable_internal(
         return errorCode;
     }
     HUFv07_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
-    if BITv07_endOfDStream(&mut bitD) == 0 {
+    if BITv07_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -1410,10 +1410,10 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     HUFv07_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv07_endOfDStream(&mut bitD1)
-        & BITv07_endOfDStream(&mut bitD2)
-        & BITv07_endOfDStream(&mut bitD3)
-        & BITv07_endOfDStream(&mut bitD4);
+    endSignal = BITv07_endOfDStream(&bitD1)
+        & BITv07_endOfDStream(&bitD2)
+        & BITv07_endOfDStream(&bitD3)
+        & BITv07_endOfDStream(&bitD4);
     if endSignal == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -1825,7 +1825,7 @@ unsafe fn HUFv07_decompress1X4_usingDTable_internal(
     let dt = dtPtr as *const HUFv07_DEltX4;
     let dtd = HUFv07_getDTableDesc(DTable);
     HUFv07_decodeStreamX4(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
-    if BITv07_endOfDStream(&mut bitD) == 0 {
+    if BITv07_endOfDStream(&bitD) == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     dstSize
@@ -2092,10 +2092,10 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     HUFv07_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
-    let endCheck = BITv07_endOfDStream(&mut bitD1)
-        & BITv07_endOfDStream(&mut bitD2)
-        & BITv07_endOfDStream(&mut bitD3)
-        & BITv07_endOfDStream(&mut bitD4);
+    let endCheck = BITv07_endOfDStream(&bitD1)
+        & BITv07_endOfDStream(&bitD2)
+        & BITv07_endOfDStream(&bitD3)
+        & BITv07_endOfDStream(&bitD4);
     if endCheck == 0 {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
@@ -3509,9 +3509,9 @@ unsafe fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> seq_t {
         matchLength: 0,
         offset: 0,
     };
-    let llCode = FSEv07_peekSymbol(&mut (*seqState).stateLL) as u32;
-    let mlCode = FSEv07_peekSymbol(&mut (*seqState).stateML) as u32;
-    let ofCode = FSEv07_peekSymbol(&mut (*seqState).stateOffb) as u32;
+    let llCode = FSEv07_peekSymbol(&(*seqState).stateLL) as u32;
+    let mlCode = FSEv07_peekSymbol(&(*seqState).stateML) as u32;
+    let ofCode = FSEv07_peekSymbol(&(*seqState).stateOffb) as u32;
     let llBits = *LL_bits.as_ptr().offset(llCode as isize);
     let mlBits = *ML_bits.as_ptr().offset(mlCode as isize);
     let ofBits = ofCode;
