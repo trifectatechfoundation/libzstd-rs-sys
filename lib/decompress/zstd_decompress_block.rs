@@ -3048,7 +3048,8 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             let oneSeqSize = ZSTD_execSequenceSplitLitBuffer(
                 op,
                 oend,
-                litPtr.add(sequence.litLength)
+                litPtr
+                    .add(sequence.litLength)
                     .offset(-(WILDCOPY_OVERLENGTH as isize)),
                 sequence,
                 &mut litPtr,
@@ -3396,10 +3397,12 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         while seqNb < nbSeq {
             let mut sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             if dctx.litBufferLocation == LitLocation::ZSTD_split
-                && litPtr.add((*sequences
+                && litPtr.add(
+                    (*sequences
                         .as_mut_ptr()
                         .offset(((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as isize))
-                    .litLength) > dctx.litBufferEnd
+                    .litLength,
+                ) > dctx.litBufferEnd
             {
                 let leftoverLit =
                     (dctx.litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
@@ -3443,10 +3446,13 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     ZSTD_execSequenceSplitLitBuffer(
                         op,
                         oend,
-                        litPtr.add((*sequences
+                        litPtr
+                            .add(
+                                (*sequences
                                     .as_mut_ptr()
                                     .offset(((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as isize))
-                                .litLength)
+                                .litLength,
+                            )
                             .offset(-(WILDCOPY_OVERLENGTH as isize)),
                         *sequences
                             .as_mut_ptr()
@@ -3526,7 +3532,8 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     ZSTD_execSequenceSplitLitBuffer(
                         op,
                         oend,
-                        litPtr.add((*sequence_1).litLength)
+                        litPtr
+                            .add((*sequence_1).litLength)
                             .offset(-(WILDCOPY_OVERLENGTH as isize)),
                         *sequence_1,
                         &mut litPtr,
@@ -3879,8 +3886,7 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    (*dctx).previousDstEnd =
-        (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
     dSize
 }
 

@@ -620,8 +620,8 @@ unsafe fn ZSTD_window_update(
         & (ip < ((*window).dictBase).offset((*window).dictLimit as isize)) as core::ffi::c_int
         != 0
     {
-        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase)
-            as core::ffi::c_long as size_t;
+        let highInputIdx =
+            ip.add(srcSize).offset_from((*window).dictBase) as core::ffi::c_long as size_t;
         let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
             (*window).dictLimit
         } else {
@@ -1315,11 +1315,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(mut jobDescription: *mut core::ffi::c
                     match current_block {
                         17100290475540901977 => {}
                         _ => {
-                            ZSTDMT_serialState_applySequences(
-                                (*job).serial,
-                                cctx,
-                                &rawSeqStore,
-                            );
+                            ZSTDMT_serialState_applySequences((*job).serial, cctx, &rawSeqStore);
                             if (*job).firstJob == 0 {
                                 let hSize = ZSTD_compressContinue_public(
                                     cctx,
@@ -2132,8 +2128,7 @@ unsafe fn ZSTDMT_createCompressionJob(
                 (*mtctx).targetPrefixSize
             };
             (*mtctx).inBuff.prefix.start =
-                src.add(srcSize)
-                    .offset(-(newPrefixSize as isize)) as *const core::ffi::c_void;
+                src.add(srcSize).offset(-(newPrefixSize as isize)) as *const core::ffi::c_void;
             (*mtctx).inBuff.prefix.size = newPrefixSize;
         } else {
             (*mtctx).inBuff.prefix = kNullRange;
@@ -2200,7 +2195,8 @@ unsafe fn ZSTDMT_flushProduced(
     {
         let checksum = ZSTD_XXH64_digest(&mut (*mtctx).serial.xxhState) as u32;
         MEM_writeLE32(
-            ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start as *mut core::ffi::c_char).add((*((*mtctx).jobs).offset(wJobID as isize)).cSize)
+            ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start as *mut core::ffi::c_char)
+                .add((*((*mtctx).jobs).offset(wJobID as isize)).cSize)
                 as *mut core::ffi::c_void,
             checksum,
         );
@@ -2222,7 +2218,8 @@ unsafe fn ZSTDMT_flushProduced(
                 ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
                     as *mut core::ffi::c_void,
                 ((*((*mtctx).jobs).offset(wJobID as isize)).dstBuff.start
-                    as *const core::ffi::c_char).add((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
+                    as *const core::ffi::c_char)
+                    .add((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
                     as *const core::ffi::c_void,
                 toFlush as libc::size_t,
             );
@@ -2362,8 +2359,8 @@ unsafe fn ZSTDMT_tryGetInputRange(mut mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_i
         (*mtctx).inBuff.prefix.start = start as *const core::ffi::c_void;
         (*mtctx).roundBuff.pos = prefixSize;
     }
-    buffer.start = ((*mtctx).roundBuff.buffer).add((*mtctx).roundBuff.pos)
-        as *mut core::ffi::c_void;
+    buffer.start =
+        ((*mtctx).roundBuff.buffer).add((*mtctx).roundBuff.pos) as *mut core::ffi::c_void;
     buffer.capacity = spaceNeeded;
     if ZSTDMT_isOverlapped(buffer, inUse) != 0 {
         return 0;
@@ -2415,7 +2412,8 @@ unsafe fn findSynchronizationPoint(
             hash =
                 ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
         } else {
-            prev = ((*mtctx).inBuff.buffer.start as *const u8).add((*mtctx).inBuff.filled)
+            prev = ((*mtctx).inBuff.buffer.start as *const u8)
+                .add((*mtctx).inBuff.filled)
                 .offset(-(RSYNC_LENGTH as isize));
             hash = ZSTD_rollingHash_compute(
                 prev.add(pos) as *const core::ffi::c_void,
@@ -2425,7 +2423,8 @@ unsafe fn findSynchronizationPoint(
         }
     } else {
         pos = 0;
-        prev = ((*mtctx).inBuff.buffer.start as *const u8).add((*mtctx).inBuff.filled)
+        prev = ((*mtctx).inBuff.buffer.start as *const u8)
+            .add((*mtctx).inBuff.filled)
             .offset(-(RSYNC_LENGTH as isize));
         hash = ZSTD_rollingHash_compute(prev as *const core::ffi::c_void, RSYNC_LENGTH as size_t);
         if hash & hitMask == hitMask {

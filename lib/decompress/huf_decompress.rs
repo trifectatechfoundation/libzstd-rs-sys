@@ -1196,10 +1196,7 @@ fn HUF_decodeLastSymbolX2(
         DStream.skip_bits(u32::from(nbBits));
     } else if (DStream.bitsConsumed as usize) < BitContainerType::BITS as usize {
         DStream.skip_bits(u32::from(nbBits));
-        DStream.bitsConsumed = Ord::min(
-            DStream.bitsConsumed,
-            BitContainerType::BITS,
-        );
+        DStream.bitsConsumed = Ord::min(DStream.bitsConsumed, BitContainerType::BITS);
     }
 }
 

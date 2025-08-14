@@ -487,9 +487,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
             if i == 0 {
                 ZSTD_writeTaggedIndex(hashSmall, smHashAndTag, curr.wrapping_add(i));
             }
-            if i == 0
-                || *hashLarge.add(lgHashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS) == 0
-            {
+            if i == 0 || *hashLarge.add(lgHashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS) == 0 {
                 ZSTD_writeTaggedIndex(hashLarge, lgHashAndTag, curr.wrapping_add(i));
             }
             if dtlm as core::ffi::c_uint == ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint
@@ -785,8 +783,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                                 ip.offset(-(2)) as *const core::ffi::c_void,
                                 hBitsL,
                                 8,
-                            )) =
-                                ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
+                            )) = ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
                             *hashSmall.add(ZSTD_hashPtr(
                                 base.offset(indexToInsert as isize) as *const core::ffi::c_void,
                                 hBitsS,
@@ -796,8 +793,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                                 ip.offset(-(1)) as *const core::ffi::c_void,
                                 hBitsS,
                                 mls,
-                            )) =
-                                ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
+                            )) = ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
                             while ip <= ilimit
                                 && (offset_2 > 0) as core::ffi::c_int
                                     & (MEM_read32(ip as *const core::ffi::c_void)
@@ -929,8 +925,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls);
         let dictHashAndTagL = ZSTD_hashPtr(ip as *const core::ffi::c_void, dictHBitsL, 8);
         let dictHashAndTagS = ZSTD_hashPtr(ip as *const core::ffi::c_void, dictHBitsS, mls);
-        let dictMatchIndexAndTagL =
-            *dictHashLong.add(dictHashAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS);
+        let dictMatchIndexAndTagL = *dictHashLong.add(dictHashAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS);
         let dictMatchIndexAndTagS =
             *dictHashSmall.add(dictHashAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS);
         let dictTagsMatchL =
@@ -1078,7 +1073,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                     8,
                                 );
                                 let matchIndexL3 = *hashLong.add(hl3);
-                                let dictMatchIndexAndTagL3 = *dictHashLong.add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
+                                let dictMatchIndexAndTagL3 = *dictHashLong
+                                    .add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
                                 let dictTagsMatchL3 = ZSTD_comparePackedTags(
                                     dictMatchIndexAndTagL3 as size_t,
                                     dictHashAndTagL3,
@@ -1220,13 +1216,21 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 hBitsL,
                 8,
             )) = indexToInsert;
-            *hashLong.add(ZSTD_hashPtr(ip.offset(-(2)) as *const core::ffi::c_void, hBitsL, 8)) = ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
+            *hashLong.add(ZSTD_hashPtr(
+                ip.offset(-(2)) as *const core::ffi::c_void,
+                hBitsL,
+                8,
+            )) = ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
             *hashSmall.add(ZSTD_hashPtr(
                 base.offset(indexToInsert as isize) as *const core::ffi::c_void,
                 hBitsS,
                 mls,
             )) = indexToInsert;
-            *hashSmall.add(ZSTD_hashPtr(ip.offset(-(1)) as *const core::ffi::c_void, hBitsS, mls)) = ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
+            *hashSmall.add(ZSTD_hashPtr(
+                ip.offset(-(1)) as *const core::ffi::c_void,
+                hBitsS,
+                mls,
+            )) = ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
             while ip <= ilimit {
                 let current2 = ip.offset_from(base) as core::ffi::c_long as u32;
                 let repIndex2 = current2.wrapping_sub(offset_2);
@@ -1267,8 +1271,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 );
                 *hashSmall.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls)) =
                     current2;
-                *hashLong.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8)) =
-                    current2;
+                *hashLong.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8)) = current2;
                 ip = ip.add(repLength2);
                 anchor = ip;
             }
@@ -1622,13 +1625,21 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                 hBitsL,
                 8,
             )) = indexToInsert;
-            *hashLong.add(ZSTD_hashPtr(ip.offset(-(2)) as *const core::ffi::c_void, hBitsL, 8)) = ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
+            *hashLong.add(ZSTD_hashPtr(
+                ip.offset(-(2)) as *const core::ffi::c_void,
+                hBitsL,
+                8,
+            )) = ip.offset(-(2)).offset_from(base) as core::ffi::c_long as u32;
             *hashSmall.add(ZSTD_hashPtr(
                 base.offset(indexToInsert as isize) as *const core::ffi::c_void,
                 hBitsS,
                 mls,
             )) = indexToInsert;
-            *hashSmall.add(ZSTD_hashPtr(ip.offset(-(1)) as *const core::ffi::c_void, hBitsS, mls)) = ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
+            *hashSmall.add(ZSTD_hashPtr(
+                ip.offset(-(1)) as *const core::ffi::c_void,
+                hBitsS,
+                mls,
+            )) = ip.offset(-(1)).offset_from(base) as core::ffi::c_long as u32;
             while ip <= ilimit {
                 let current2 = ip.offset_from(base) as core::ffi::c_long as u32;
                 let repIndex2 = current2.wrapping_sub(offset_2);
@@ -1669,8 +1680,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                 );
                 *hashSmall.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls)) =
                     current2;
-                *hashLong.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8)) =
-                    current2;
+                *hashLong.add(ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8)) = current2;
                 ip = ip.add(repLength2);
                 anchor = ip;
             }

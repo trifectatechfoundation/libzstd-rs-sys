@@ -1062,7 +1062,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     while ddsAttempt < bucketSize.wrapping_sub(1) {
         ddsAttempt = ddsAttempt.wrapping_add(1);
     }
-    let chainPackedPointer = *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
+    let chainPackedPointer =
+        *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
     let chainIndex = chainPackedPointer >> 8;
     ((*dms).chainTable).offset(chainIndex as isize);
     ddsAttempt = 0;
@@ -1097,7 +1098,8 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         }
         ddsAttempt = ddsAttempt.wrapping_add(1);
     }
-    let chainPackedPointer_0 = *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
+    let chainPackedPointer_0 =
+        *((*dms).hashTable).add(ddsIdx.wrapping_add(bucketSize as size_t).wrapping_sub(1));
     let mut chainIndex_0 = chainPackedPointer_0 >> 8;
     let chainLength = chainPackedPointer_0 & 0xff as core::ffi::c_int as u32;
     let chainAttempts = nbAttempts.wrapping_sub(ddsAttempt);

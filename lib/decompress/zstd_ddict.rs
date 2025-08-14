@@ -75,8 +75,8 @@ pub unsafe fn ZSTD_copyDDictParameters(mut dctx: *mut ZSTD_DCtx, mut ddict: *con
     (*dctx).dictID = (*ddict).dictID;
     (*dctx).prefixStart = (*ddict).dictContent;
     (*dctx).virtualStart = (*ddict).dictContent;
-    (*dctx).dictEnd = ((*ddict).dictContent as *const u8).add((*ddict).dictSize)
-        as *const core::ffi::c_void;
+    (*dctx).dictEnd =
+        ((*ddict).dictContent as *const u8).add((*ddict).dictSize) as *const core::ffi::c_void;
     (*dctx).previousDstEnd = (*dctx).dictEnd;
     if (*ddict).entropyPresent != 0 {
         (*dctx).litEntropy = 1;
