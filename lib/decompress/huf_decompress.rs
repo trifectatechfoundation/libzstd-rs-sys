@@ -1,4 +1,5 @@
-use core::ptr;
+use core::ptr::{self, NonNull};
+use std::ops::Bound;
 
 use libc::size_t;
 
@@ -1410,13 +1411,13 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     // Check for corruption.
     // NOTE: these conditions do in fact trigger for invalid input. That is why currently
     // `Writer::write_symbol_x2` does not assert that it is in-bounds.
-    if op1.ptr > op1.end {
+    if op1.ptr.unwrap().as_ptr() > op1.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    if op2.ptr > op2.end {
+    if op2.ptr.unwrap().as_ptr() > op2.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
-    if op3.ptr > op3.end {
+    if op3.ptr.unwrap().as_ptr() > op3.end {
         return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
     }
     // NOTE: op4 is already verified within main loop.
@@ -2088,7 +2089,7 @@ pub unsafe fn HUF_decompress4X_hufOnly_wksp(
 
 #[derive(Debug)]
 pub struct Writer<'a> {
-    ptr: *mut u8,
+    ptr: Option<NonNull<u8>>,
     end: *mut u8,
     _marker: core::marker::PhantomData<&'a mut [u8]>,
 }
@@ -2099,66 +2100,100 @@ impl<'a> Writer<'a> {
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
     pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
-        let ptr = if ptr.is_null() {
-            assert_eq!(len, 0);
-            core::ptr::dangling_mut()
-        } else {
-            ptr
-        };
+        let ptr = NonNull::new(ptr);
 
-        assert!(!ptr.is_null());
+        if ptr.is_none() {
+            assert_eq!(len, 0);
+        }
 
         Self {
             ptr,
-            end: unsafe { ptr.add(len) },
+            end: match ptr {
+                None => core::ptr::null_mut(),
+                Some(ptr) => unsafe { ptr.as_ptr().add(len) },
+            },
             _marker: core::marker::PhantomData,
         }
     }
 
     #[inline]
-    fn capacity(&self) -> usize {
-        unsafe { self.end.offset_from_unsigned(self.ptr) }
+    pub fn capacity(&self) -> usize {
+        match self.ptr {
+            None => 0,
+            Some(ptr) => unsafe { self.end.offset_from_unsigned(ptr.as_ptr()) },
+        }
     }
 
     #[inline]
-    fn is_empty(&self) -> bool {
-        self.ptr == self.end
+    pub fn is_null(&self) -> bool {
+        self.ptr.is_none()
     }
 
     #[inline]
-    fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.ptr
+    pub fn is_empty(&self) -> bool {
+        match self.ptr {
+            None => true,
+            Some(ptr) => ptr.as_ptr() == self.end,
+        }
+    }
+
+    #[inline]
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        match self.ptr {
+            None => core::ptr::null_mut(),
+            Some(ptr) => ptr.as_ptr(),
+        }
     }
 
     #[inline]
     fn as_mut_ptr_range(&mut self) -> core::ops::Range<*mut u8> {
-        self.ptr..self.end
+        match self.ptr {
+            None => core::ptr::null_mut()..core::ptr::null_mut(),
+            Some(ptr) => ptr.as_ptr()..self.end,
+        }
     }
 
-    fn subslice<R: core::ops::RangeBounds<usize>>(&mut self, range: R) -> Self {
-        let ptr = match range.start_bound() {
-            std::ops::Bound::Included(&count) => self.ptr.wrapping_add(count),
-            std::ops::Bound::Excluded(_) => unreachable!("I think?"),
-            std::ops::Bound::Unbounded => self.ptr,
+    pub fn subslice<R: core::ops::RangeBounds<usize>>(&mut self, range: R) -> Self {
+        let Some(ptr) = self.ptr else {
+            match (range.start_bound(), range.end_bound()) {
+                (Bound::Unbounded, Bound::Unbounded)
+                | (
+                    Bound::Included(&0),
+                    Bound::Included(&0) | Bound::Excluded(&1) | Bound::Unbounded,
+                ) => {
+                    return Self {
+                        ptr: self.ptr,
+                        end: self.end,
+                        _marker: self._marker,
+                    };
+                }
+                _ => panic!("out of bounds"),
+            }
         };
 
-        if ptr > self.end {
+        let new_ptr = match range.start_bound() {
+            Bound::Included(&count) => ptr.as_ptr().wrapping_add(count),
+            Bound::Excluded(_) => unreachable!("I think?"),
+            Bound::Unbounded => ptr.as_ptr(),
+        };
+
+        if new_ptr > self.end {
             panic!("out of bounds");
         }
 
-        let end = match range.end_bound() {
-            std::ops::Bound::Included(&count) => self.ptr.wrapping_add(count + 1),
-            std::ops::Bound::Excluded(&count) => self.ptr.wrapping_add(count),
-            std::ops::Bound::Unbounded => self.end,
+        let new_end = match range.end_bound() {
+            Bound::Included(&count) => ptr.as_ptr().wrapping_add(count + 1),
+            Bound::Excluded(&count) => ptr.as_ptr().wrapping_add(count),
+            Bound::Unbounded => self.end,
         };
 
-        if ptr > self.end {
+        if new_end > self.end {
             panic!("out of bounds");
         }
 
         Self {
-            ptr,
-            end,
+            ptr: NonNull::new(new_ptr),
+            end: new_end,
             _marker: core::marker::PhantomData,
         }
     }
@@ -2169,6 +2204,10 @@ impl<'a> Writer<'a> {
         let range = self.as_mut_ptr_range();
         let remainder = capacity - 3 * segment_size;
 
+        if (range.end as usize - range.start as usize) < 6 {
+            panic!("length must be at least six when splitting into 4 streams");
+        };
+
         unsafe {
             let w1 = Self::from_raw_parts(range.start, segment_size);
             let w2 = Self::from_raw_parts(range.start.add(segment_size), segment_size);
@@ -2176,7 +2215,7 @@ impl<'a> Writer<'a> {
             let w4 = Self::from_raw_parts(range.start.add(3 * segment_size), remainder);
 
             // If the capacity is 6, `6.div_ceil(4)` is 2, but 4 * 2 > 6.
-            if !range.contains(&w4.ptr) {
+            if !range.contains(&w4.ptr.unwrap().as_ptr()) {
                 return None;
             }
 
@@ -2190,29 +2229,37 @@ impl<'a> Writer<'a> {
     }
 
     fn write_u8(&mut self, byte: u8) {
-        if self.ptr >= self.end {
+        let Some(ptr) = self.ptr else {
+            panic!("write out of bounds");
+        };
+
+        if ptr.as_ptr() >= self.end {
             panic!("write out of bounds");
         }
 
         // SAFETY: `ptr < end` and we're allowed to write to this memory.
-        unsafe { self.ptr.write(byte) }
+        unsafe { ptr.as_ptr().write(byte) }
 
         // SAFETY: `ptr..end` is a contiguous allocation.
-        self.ptr = unsafe { self.ptr.add(1) }
+        self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(1)) }
     }
 
     fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
+
+        let Some(ptr) = self.ptr else {
+            panic!("write out of bounds");
+        };
 
         // we can't actually assert this, an earlier reader may write into the next.
         // that then returns an error. We should return a result here later.
         // assert!( self.ptr.wrapping_add(length as usize) <= self.end, "write out of bounds {:?} {length}", self.as_mut_ptr_range());
 
         // SAFETY: `ptr < end` and we're allowed to write to this memory.
-        unsafe { self.ptr.cast::<u16>().write_unaligned(value) }
+        unsafe { ptr.as_ptr().cast::<u16>().write_unaligned(value) }
 
         // SAFETY: `ptr..end` is a contiguous allocation.
-        self.ptr = unsafe { self.ptr.add(length as usize) }
+        self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(length as usize)) }
     }
 }
 
