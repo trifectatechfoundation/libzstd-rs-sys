@@ -585,30 +585,23 @@ unsafe fn ZDICT_analyzePos(
     );
     *doneMarks.add(pos) = 1;
     if MEM_read16(b.add(pos).offset(0) as *const core::ffi::c_void) as core::ffi::c_int
-        == MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void)
-            as core::ffi::c_int
-        || MEM_read16(b.add(pos).offset(1) as *const core::ffi::c_void)
-            as core::ffi::c_int
-            == MEM_read16(b.add(pos).offset(3) as *const core::ffi::c_void)
-                as core::ffi::c_int
-        || MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void)
-            as core::ffi::c_int
-            == MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void)
-                as core::ffi::c_int
+        == MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void) as core::ffi::c_int
+        || MEM_read16(b.add(pos).offset(1) as *const core::ffi::c_void) as core::ffi::c_int
+            == MEM_read16(b.add(pos).offset(3) as *const core::ffi::c_void) as core::ffi::c_int
+        || MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void) as core::ffi::c_int
+            == MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void) as core::ffi::c_int
     {
         let pattern16 = MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void);
         let mut u: u32 = 0;
         let mut patternEnd = 6u32;
-        while MEM_read16(
-            b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void
-        ) as core::ffi::c_int
+        while MEM_read16(b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void)
+            as core::ffi::c_int
             == pattern16 as core::ffi::c_int
         {
             patternEnd = patternEnd.wrapping_add(2);
         }
         if *b.add(pos.wrapping_add(patternEnd as size_t)) as core::ffi::c_int
-            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1))
-                as core::ffi::c_int
+            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1)) as core::ffi::c_int
         {
             patternEnd = patternEnd.wrapping_add(1);
         }
@@ -760,9 +753,8 @@ unsafe fn ZDICT_analyzePos(
         0,
         ::core::mem::size_of::<[u32; 64]>(),
     );
-    *cumulLength
-        .as_mut_ptr().add(maxLength.wrapping_sub(1)) = *lengthList
-        .as_mut_ptr().add(maxLength.wrapping_sub(1));
+    *cumulLength.as_mut_ptr().add(maxLength.wrapping_sub(1)) =
+        *lengthList.as_mut_ptr().add(maxLength.wrapping_sub(1));
     i = maxLength.wrapping_sub(2) as core::ffi::c_int;
     while i >= 0 {
         *cumulLength.as_mut_ptr().offset(i as isize) =
@@ -854,9 +846,7 @@ unsafe fn isIncluded(
     let mut u: size_t = 0;
     u = 0;
     while u < length {
-        if *ip.add(u) as core::ffi::c_int
-            != *into.add(u) as core::ffi::c_int
-        {
+        if *ip.add(u) as core::ffi::c_int != *into.add(u) as core::ffi::c_int {
             break;
         }
         u = u.wrapping_add(1);
@@ -1109,8 +1099,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             *filePos.offset(0) = 0;
             pos = 1;
             while pos < nbFiles as size_t {
-                *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1))
-                    as size_t)
+                *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1)) as size_t)
                     .wrapping_add(*fileSizes.add(pos.wrapping_sub(1)))
                     as u32;
                 pos = pos.wrapping_add(1);
@@ -1482,8 +1471,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     matchLengthCount.as_mut_ptr(),
                     litLengthCount.as_mut_ptr(),
                     repOffset.as_mut_ptr(),
-                    (srcBuffer as *const core::ffi::c_char).add(pos)
-                        as *const core::ffi::c_void,
+                    (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
                     *fileSizes.offset(u as isize),
                     notificationLevel,
                 );
@@ -1930,7 +1918,8 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         samplesBuffer,
         samplesSizes,
         nbSamples,
-        (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
+        (dictBuffer as *mut core::ffi::c_char)
+            .add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
         dictContentSize,
         notificationLevel,
@@ -1941,7 +1930,8 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     hSize = hSize.wrapping_add(eSize);
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);
     let randomID = ZSTD_XXH64(
-        (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
+        (dictBuffer as *mut core::ffi::c_char)
+            .add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
         dictContentSize,
         0,
@@ -1960,7 +1950,8 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
         memmove(
             (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
-            (dictBuffer as *mut core::ffi::c_char).add(dictBufferCapacity)
+            (dictBuffer as *mut core::ffi::c_char)
+                .add(dictBufferCapacity)
                 .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
             dictContentSize,
         );

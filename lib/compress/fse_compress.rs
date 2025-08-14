@@ -53,7 +53,8 @@ unsafe fn BIT_initCStream(
     (*bitC).bitPos = 0;
     (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
     (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr).add(dstCapacity)
+    (*bitC).endPtr = ((*bitC).startPtr)
+        .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -266,8 +267,7 @@ pub unsafe fn FSE_buildCTable_wksp(
             u_0 = 0;
             while u_0 < unroll {
                 let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
-                *tableSymbol.add(uPosition) =
-                    *spread.add(s_0.wrapping_add(u_0));
+                *tableSymbol.add(uPosition) = *spread.add(s_0.wrapping_add(u_0));
                 u_0 = u_0.wrapping_add(1);
             }
             position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
@@ -403,8 +403,7 @@ unsafe fn FSE_writeNCount_generic(
             }
             while symbol >= start.wrapping_add(3) {
                 start = start.wrapping_add(3);
-                bitStream =
-                    (bitStream as core::ffi::c_uint).wrapping_add((3) << bitCount);
+                bitStream = (bitStream as core::ffi::c_uint).wrapping_add((3) << bitCount);
                 bitCount += 2;
             }
             bitStream = (bitStream as core::ffi::c_uint)

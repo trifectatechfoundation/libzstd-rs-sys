@@ -239,8 +239,7 @@ unsafe fn FASTCOVER_selectSegment(
             let fresh1 = &mut (*segmentFreqs.add(delIndex));
             *fresh1 = (*fresh1 as core::ffi::c_int - 1) as u16;
             if *segmentFreqs.add(delIndex) as core::ffi::c_int == 0 {
-                activeSegment.score =
-                    (activeSegment.score).wrapping_sub(*freqs.add(delIndex));
+                activeSegment.score = (activeSegment.score).wrapping_sub(*freqs.add(delIndex));
             }
             activeSegment.begin = (activeSegment.begin).wrapping_add(1);
         }

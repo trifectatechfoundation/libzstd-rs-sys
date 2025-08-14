@@ -238,7 +238,8 @@ unsafe fn BITv07_initDStream(
     }
     if srcSize >= ::core::mem::size_of::<size_t>() as size_t {
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
-        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char).add(srcSize)
+        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
+            .add(srcSize)
             .offset(-(::core::mem::size_of::<size_t>() as isize));
         (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
@@ -3053,8 +3054,7 @@ pub unsafe extern "C" fn ZSTDv07_getFrameParams(
                 + 256) as u64;
         }
         2 => {
-            frameContentSize =
-                MEM_readLE32(ip.add(pos) as *const core::ffi::c_void) as u64;
+            frameContentSize = MEM_readLE32(ip.add(pos) as *const core::ffi::c_void) as u64;
         }
         3 => {
             frameContentSize = MEM_readLE64(ip.add(pos) as *const core::ffi::c_void);
@@ -3232,8 +3232,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             (*dctx).litSize = litSize;
             (*dctx).litEntropy = 1;
             ptr::write_bytes(
-                ((*dctx).litBuffer)
-                    .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -3270,8 +3269,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
             ptr::write_bytes(
-                ((*dctx).litBuffer)
-                    .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -3313,8 +3311,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
                 ptr::write_bytes(
-                    ((*dctx).litBuffer)
-                        .as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
@@ -3545,8 +3542,7 @@ unsafe fn ZSTDv07_decodeSequence(mut seqState: *mut seqState_t) -> seq_t {
             offset = (1 as size_t).wrapping_sub(offset);
         }
         if offset != 0 {
-            let temp = *((*seqState).prevOffset)
-                .as_mut_ptr().add(offset);
+            let temp = *((*seqState).prevOffset).as_mut_ptr().add(offset);
             if offset != 1 {
                 *((*seqState).prevOffset).as_mut_ptr().offset(2) =
                     *((*seqState).prevOffset).as_mut_ptr().offset(1);
@@ -3876,8 +3872,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressBlock(
     let mut dSize: size_t = 0;
     ZSTDv07_checkContinuity(dctx, dst);
     dSize = ZSTDv07_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize);
-    (*dctx).previousDstEnd =
-        (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
     dSize
 }
 #[export_name = crate::prefix!(ZSTDv07_insertBlock)]
@@ -3887,8 +3882,8 @@ pub unsafe extern "C" fn ZSTDv07_insertBlock(
     mut blockSize: size_t,
 ) -> size_t {
     ZSTDv07_checkContinuity(dctx, blockStart);
-    (*dctx).previousDstEnd = (blockStart as *const core::ffi::c_char).add(blockSize)
-        as *const core::ffi::c_void;
+    (*dctx).previousDstEnd =
+        (blockStart as *const core::ffi::c_char).add(blockSize) as *const core::ffi::c_void;
     blockSize
 }
 unsafe fn ZSTDv07_generateNxBytes(
@@ -4271,8 +4266,8 @@ pub unsafe extern "C" fn ZSTDv07_decompressContinue(
         4 => {
             memcpy(
                 ((*dctx).headerBuffer)
-                    .as_mut_ptr().add(ZSTDv07_frameHeaderSize_min)
-                    as *mut core::ffi::c_void,
+                    .as_mut_ptr()
+                    .add(ZSTDv07_frameHeaderSize_min) as *mut core::ffi::c_void,
                 src,
                 (*dctx).expected,
             );
@@ -4292,7 +4287,8 @@ pub unsafe extern "C" fn ZSTDv07_decompressContinue(
     let mut result: size_t = 0;
     memcpy(
         ((*dctx).headerBuffer)
-            .as_mut_ptr().add(ZSTDv07_frameHeaderSize_min) as *mut core::ffi::c_void,
+            .as_mut_ptr()
+            .add(ZSTDv07_frameHeaderSize_min) as *mut core::ffi::c_void,
         src,
         (*dctx).expected,
     );
@@ -4684,8 +4680,7 @@ pub unsafe fn ZBUFFv07_decompressContinue(
                     if toLoad > iend.offset_from(ip) as core::ffi::c_long as size_t {
                         if !ip.is_null() {
                             memcpy(
-                                ((*zbd).headerBuffer)
-                                    .as_mut_ptr().add((*zbd).lhSize)
+                                ((*zbd).headerBuffer).as_mut_ptr().add((*zbd).lhSize)
                                     as *mut core::ffi::c_void,
                                 ip as *const core::ffi::c_void,
                                 iend.offset_from(ip) as size_t,
@@ -4699,8 +4694,7 @@ pub unsafe fn ZBUFFv07_decompressContinue(
                             .wrapping_add(ZSTDv07_blockHeaderSize);
                     }
                     memcpy(
-                        ((*zbd).headerBuffer)
-                            .as_mut_ptr().add((*zbd).lhSize)
+                        ((*zbd).headerBuffer).as_mut_ptr().add((*zbd).lhSize)
                             as *mut core::ffi::c_void,
                         ip as *const core::ffi::c_void,
                         toLoad,

@@ -43,8 +43,7 @@ fn FSE_readNCount_body(
         let mut buffer = [0u8; 8];
         buffer[..hbSize].copy_from_slice(headerBuffer);
 
-        let countSize =
-            FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &buffer)?;
+        let countSize = FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &buffer)?;
 
         if countSize > hbSize as size_t {
             return Err(Error::corruption_detected);

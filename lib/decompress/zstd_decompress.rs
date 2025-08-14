@@ -429,9 +429,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
         }
     }
 
-    if ERR_isError(frameSizeInfo.compressedSize) == 0
-        && frameSizeInfo.compressedSize > src.len()
-    {
+    if ERR_isError(frameSizeInfo.compressedSize) == 0 && frameSizeInfo.compressedSize > src.len() {
         frameSizeInfo.compressedSize = -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
         frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
     }
@@ -1034,16 +1032,18 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: Format) -> size_t {
     let minInputSize = ZSTD_startingInputLength(format);
     if src.len() < minInputSize as usize {
-        if !src.is_empty() && format != Format::ZSTD_f_zstd1_magicless
-            && src != &ZSTD_MAGICNUMBER.to_le_bytes()[..src.len()] {
-                let mut hbuf = ZSTD_MAGIC_SKIPPABLE_START.to_le_bytes();
-                hbuf[..src.len()].copy_from_slice(src);
-                if u32::from_le_bytes(hbuf) & ZSTD_MAGIC_SKIPPABLE_MASK
-                    != ZSTD_MAGIC_SKIPPABLE_START as u32
-                {
-                    return -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t;
-                }
+        if !src.is_empty()
+            && format != Format::ZSTD_f_zstd1_magicless
+            && src != &ZSTD_MAGICNUMBER.to_le_bytes()[..src.len()]
+        {
+            let mut hbuf = ZSTD_MAGIC_SKIPPABLE_START.to_le_bytes();
+            hbuf[..src.len()].copy_from_slice(src);
+            if u32::from_le_bytes(hbuf) & ZSTD_MAGIC_SKIPPABLE_MASK
+                != ZSTD_MAGIC_SKIPPABLE_START as u32
+            {
+                return -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t;
             }
+        }
         return minInputSize;
     }
 
@@ -1330,8 +1330,7 @@ unsafe fn ZSTD_decodeFrameHeader(
     if (*dctx).validateChecksum != 0 {
         ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
     }
-    (*dctx).processedCSize =
-        ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64;
+    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64;
     0
 }
 
@@ -1543,8 +1542,8 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
     mut blockSize: size_t,
 ) -> size_t {
     ZSTD_checkContinuity(dctx, blockStart, blockSize);
-    (*dctx).previousDstEnd = (blockStart as *const core::ffi::c_char).add(blockSize)
-        as *const core::ffi::c_void;
+    (*dctx).previousDstEnd =
+        (blockStart as *const core::ffi::c_char).add(blockSize) as *const core::ffi::c_void;
     blockSize
 }
 unsafe fn ZSTD_copyRawBlock(
@@ -1836,8 +1835,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                     if ERR_isError(err_code) != 0 {
                         return err_code;
                     }
-                    src = (src as *const u8).add(skippableSize)
-                        as *const core::ffi::c_void;
+                    src = (src as *const u8).add(skippableSize) as *const core::ffi::c_void;
                     srcSize = srcSize.wrapping_sub(skippableSize);
                     continue;
                 }
@@ -2025,7 +2023,8 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         1 => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
-                    .as_mut_ptr().add(((*dctx).headerSize).wrapping_sub(srcSize))
+                    .as_mut_ptr()
+                    .add(((*dctx).headerSize).wrapping_sub(srcSize))
                     as *mut core::ffi::c_void,
                 src,
                 srcSize as libc::size_t,
@@ -2166,7 +2165,8 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         6 => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
-                    .as_mut_ptr().add((8 as size_t).wrapping_sub(srcSize))
+                    .as_mut_ptr()
+                    .add((8 as size_t).wrapping_sub(srcSize))
                     as *mut core::ffi::c_void,
                 src,
                 srcSize as libc::size_t,
@@ -3282,8 +3282,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if toLoad > remainingInput {
                     if remainingInput > 0 {
                         libc::memcpy(
-                            ((*zds).headerBuffer)
-                                .as_mut_ptr().add((*zds).lhSize)
+                            ((*zds).headerBuffer).as_mut_ptr().add((*zds).lhSize)
                                 as *mut core::ffi::c_void,
                             ip as *const core::ffi::c_void,
                             remainingInput as libc::size_t,
@@ -3319,9 +3318,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     .wrapping_add(ZSTD_blockHeaderSize);
                 }
                 libc::memcpy(
-                    ((*zds).headerBuffer)
-                        .as_mut_ptr().add((*zds).lhSize)
-                        as *mut core::ffi::c_void,
+                    ((*zds).headerBuffer).as_mut_ptr().add((*zds).lhSize) as *mut core::ffi::c_void,
                     ip as *const core::ffi::c_void,
                     toLoad as libc::size_t,
                 );

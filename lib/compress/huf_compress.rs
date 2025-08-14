@@ -306,7 +306,8 @@ pub unsafe fn HUF_writeCTable_wksp(
     n = 0;
     while n < maxSymbolValue {
         *((*wksp).huffWeight).as_mut_ptr().offset(n as isize) = *((*wksp).bitsToWeight)
-            .as_mut_ptr().add(HUF_getNbBits(*ct.offset(n as isize)));
+            .as_mut_ptr()
+            .add(HUF_getNbBits(*ct.offset(n as isize)));
         n = n.wrapping_add(1);
     }
     if maxDstSize < 1 {
@@ -422,7 +423,8 @@ pub unsafe fn HUF_readCTable(
     n_1 = 0;
     while n_1 < nbSymbols {
         let fresh0 = &mut (*nbPerRank
-            .as_mut_ptr().add(HUF_getNbBits(*ct.offset(n_1 as isize))));
+            .as_mut_ptr()
+            .add(HUF_getNbBits(*ct.offset(n_1 as isize))));
         *fresh0 = (*fresh0).wrapping_add(1);
         n_1 = n_1.wrapping_add(1);
     }
@@ -444,7 +446,8 @@ pub unsafe fn HUF_readCTable(
     n_3 = 0;
     while n_3 < nbSymbols {
         let fresh1 = &mut (*valPerRank
-            .as_mut_ptr().add(HUF_getNbBits(*ct.offset(n_3 as isize))));
+            .as_mut_ptr()
+            .add(HUF_getNbBits(*ct.offset(n_3 as isize))));
         let fresh2 = *fresh1;
         *fresh1 = (*fresh1).wrapping_add(1);
         HUF_setValue(ct.offset(n_3 as isize), fresh2 as size_t);
@@ -822,7 +825,8 @@ unsafe fn HUF_buildCTableFromTree(
     n = 0;
     while n < alphabetSize {
         let fresh19 = &mut (*valPerRank
-            .as_mut_ptr().add(HUF_getNbBits(*ct.offset(n as isize))));
+            .as_mut_ptr()
+            .add(HUF_getNbBits(*ct.offset(n as isize))));
         let fresh20 = *fresh19;
         *fresh19 = (*fresh19).wrapping_add(1);
         HUF_setValue(ct.offset(n as isize), fresh20 as size_t);
@@ -924,7 +928,8 @@ unsafe fn HUF_initCStream(
     ptr::write_bytes(bitC as *mut u8, 0, ::core::mem::size_of::<HUF_CStream_t>());
     (*bitC).startPtr = startPtr as *mut u8;
     (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr).add(dstCapacity)
+    (*bitC).endPtr = ((*bitC).startPtr)
+        .add(dstCapacity)
         .offset(-(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<size_t>() as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;

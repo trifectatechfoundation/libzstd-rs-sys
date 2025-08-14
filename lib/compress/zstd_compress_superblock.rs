@@ -372,42 +372,8 @@ static LL_bits: [u8; 36] = [
     12, 13, 14, 15, 16,
 ];
 static LL_defaultNorm: [i16; 36] = [
-    4,
-    3,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    3,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
+    4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
+    -1, -1, -1, -1,
 ];
 pub const LL_DEFAULTNORMLOG: core::ffi::c_int = 6;
 static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
@@ -416,92 +382,13 @@ static ML_bits: [u8; 53] = [
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
 static ML_defaultNorm: [i16; 53] = [
-    1,
-    4,
-    3,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
+    1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1,
 ];
 pub const ML_DEFAULTNORMLOG: core::ffi::c_int = 6;
 static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
 static OF_defaultNorm: [i16; 29] = [
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
+    1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
@@ -521,7 +408,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> size_t {
     let header = (if writeEntropy != 0 { 200 } else { 0 }) as size_t;
     let lhSize = (3
-        + (litSize >= ((((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int
+        + (litSize >= (((1) << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
         + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
         as size_t;
     let ostart = dst as *mut u8;
@@ -605,7 +492,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
     if lhSize
-        < (3 + (cLitSize >= (((1) << 10)) as size_t) as core::ffi::c_int
+        < (3 + (cLitSize >= ((1) << 10) as size_t) as core::ffi::c_int
             + (cLitSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t
     {
         return ZSTD_noCompressLiterals(
@@ -1074,9 +961,8 @@ unsafe fn countLiterals(
     let mut total = 0 as size_t;
     n = 0;
     while n < seqCount {
-        total = total.wrapping_add(
-            (ZSTD_getSequenceLength(seqStore, sp.add(n))).litLength as size_t,
-        );
+        total =
+            total.wrapping_add((ZSTD_getSequenceLength(seqStore, sp.add(n))).litLength as size_t);
         n = n.wrapping_add(1);
     }
     total
@@ -1109,8 +995,7 @@ unsafe fn sizeBlockSequences(
         budget = budget.wrapping_add(currentCost);
         inSize = inSize.wrapping_add(
             ((*sp.add(n)).litLength as core::ffi::c_int
-                + ((*sp.add(n)).mlBase as core::ffi::c_int + MINMATCH))
-                as size_t,
+                + ((*sp.add(n)).mlBase as core::ffi::c_int + MINMATCH)) as size_t,
         );
         if budget > targetBudget && budget < inSize * BYTESCALE as size_t {
             break;
