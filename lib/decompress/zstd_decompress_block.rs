@@ -977,7 +977,7 @@ pub fn ZSTD_buildFSETable<const N: usize>(
     }
 }
 
-unsafe fn ZSTD_buildSeqTable<const N: usize>(
+fn ZSTD_buildSeqTable<const N: usize>(
     DTableSpace: &mut SymbolTable<N>,
     DTablePtr: &mut *const ZSTD_seqSymbol,
     type_0: SymbolEncodingType_e,
@@ -1057,7 +1057,7 @@ unsafe fn ZSTD_buildSeqTable<const N: usize>(
     }
 }
 
-unsafe fn ZSTD_decodeSeqHeaders(
+fn ZSTD_decodeSeqHeaders(
     dctx: &mut ZSTD_DCtx,
     nbSeqPtr: &mut core::ffi::c_int,
     src: &[u8],
