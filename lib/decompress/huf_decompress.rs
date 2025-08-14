@@ -146,11 +146,10 @@ pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
 unsafe fn HUF_initFastDStream(mut ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7);
-    let bitsConsumed = (if lastByte as core::ffi::c_int != 0 {
-        (8 as core::ffi::c_uint).wrapping_sub(lastByte.ilog2())
-    } else {
-        0
-    }) as size_t;
+    let bitsConsumed = match lastByte.checked_ilog2() {
+        Some(v) => 8 - v,
+        None => 0,
+    };
     let value = MEM_readLEST(ip as *const core::ffi::c_void) | 1;
     value << bitsConsumed
 }
