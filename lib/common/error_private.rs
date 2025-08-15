@@ -47,9 +47,16 @@ impl Error {
     pub fn to_error_code(self) -> size_t {
         -(self as core::ffi::c_int) as size_t
     }
+
+    pub fn from_error_code(code: size_t) -> Option<Self> {
+        if ERR_isError(code) == 0 {
+            return None;
+        }
+
+        Self::try_from(code.wrapping_neg() as u32).ok()
+    }
 }
 
-#[cfg(test)]
 impl TryFrom<u32> for Error {
     type Error = ();
 
