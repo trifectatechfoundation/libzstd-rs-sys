@@ -874,7 +874,7 @@ unsafe fn COVER_buildDictionary(
     }
     tail
 }
-#[export_name = crate::prefix!(ZDICT_trainFromBuffer_cover)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -1388,7 +1388,7 @@ unsafe extern "C" fn COVER_tryParameters(mut opaque: *mut core::ffi::c_void) {
     COVER_dictSelectionFree(selection);
     free(freqs as *mut core::ffi::c_void);
 }
-#[export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,

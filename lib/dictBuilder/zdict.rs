@@ -488,15 +488,15 @@ unsafe fn ZDICT_printHex(mut ptr: *const core::ffi::c_void, mut length: size_t) 
         u = u.wrapping_add(1);
     }
 }
-#[export_name = crate::prefix!(ZDICT_isError)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
 pub unsafe extern "C" fn ZDICT_isError(mut errorCode: size_t) -> core::ffi::c_uint {
     ERR_isError(errorCode)
 }
-#[export_name = crate::prefix!(ZDICT_getErrorName)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getErrorName))]
 pub unsafe extern "C" fn ZDICT_getErrorName(mut errorCode: size_t) -> *const core::ffi::c_char {
     ERR_getErrorName(errorCode)
 }
-#[export_name = crate::prefix!(ZDICT_getDictID)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictID))]
 pub unsafe extern "C" fn ZDICT_getDictID(
     mut dictBuffer: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -509,7 +509,7 @@ pub unsafe extern "C" fn ZDICT_getDictID(
     }
     MEM_readLE32((dictBuffer as *const core::ffi::c_char).offset(4) as *const core::ffi::c_void)
 }
-#[export_name = crate::prefix!(ZDICT_getDictHeaderSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictHeaderSize))]
 pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     mut dictBuffer: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -1775,7 +1775,7 @@ unsafe fn ZDICT_maxRep(mut reps: *const u32) -> u32 {
     }
     maxRep
 }
-#[export_name = crate::prefix!(ZDICT_finalizeDictionary)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_finalizeDictionary))]
 pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2207,7 +2207,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     free(dictList as *mut core::ffi::c_void);
     dictSize
 }
-#[export_name = crate::prefix!(ZDICT_trainFromBuffer_legacy)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_legacy))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2242,7 +2242,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     free(newBuff);
     result
 }
-#[export_name = crate::prefix!(ZDICT_trainFromBuffer)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictBufferCapacity: size_t,
@@ -2283,7 +2283,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
         &mut params,
     )
 }
-#[export_name = crate::prefix!(ZDICT_addEntropyTablesFromBuffer)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_addEntropyTablesFromBuffer))]
 pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     mut dictBuffer: *mut core::ffi::c_void,
     mut dictContentSize: size_t,

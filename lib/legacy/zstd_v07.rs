@@ -2632,11 +2632,11 @@ pub unsafe fn HUFv07_decompress1X_DCtx(
         HUFv07_decompress1X2_DCtx(dctx, dst, dstSize, cSrc, cSrcSize)
     }
 }
-#[export_name = crate::prefix!(ZSTDv07_isError)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_isError))]
 pub unsafe extern "C" fn ZSTDv07_isError_0(mut code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
-#[export_name = crate::prefix!(ZSTDv07_getErrorName)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_getErrorName))]
 pub unsafe extern "C" fn ZSTDv07_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
     ERR_getErrorName(code)
 }
@@ -2860,15 +2860,15 @@ unsafe extern "C" fn ZSTDv07_copy4(
 ) {
     memcpy(dst, src, 4);
 }
-#[export_name = crate::prefix!(ZSTDv07_sizeofDCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_sizeofDCtx))]
 pub unsafe extern "C" fn ZSTDv07_sizeofDCtx(mut dctx: *const ZSTDv07_DCtx) -> size_t {
     ::core::mem::size_of::<ZSTDv07_DCtx>() as size_t
 }
-#[export_name = crate::prefix!(ZSTDv07_estimateDCtxSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_estimateDCtxSize))]
 pub unsafe extern "C" fn ZSTDv07_estimateDCtxSize() -> size_t {
     ::core::mem::size_of::<ZSTDv07_DCtx>() as size_t
 }
-#[export_name = crate::prefix!(ZSTDv07_decompressBegin)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressBegin))]
 pub unsafe extern "C" fn ZSTDv07_decompressBegin(mut dctx: *mut ZSTDv07_DCtx) -> size_t {
     (*dctx).expected = ZSTDv07_frameHeaderSize_min;
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
@@ -2889,7 +2889,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressBegin(mut dctx: *mut ZSTDv07_DCtx) ->
     }
     0
 }
-#[export_name = crate::prefix!(ZSTDv07_createDCtx_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_createDCtx_advanced))]
 pub unsafe extern "C" fn ZSTDv07_createDCtx_advanced(
     mut customMem: ZSTDv07_customMem,
 ) -> *mut ZSTDv07_DCtx {
@@ -2915,11 +2915,11 @@ pub unsafe extern "C" fn ZSTDv07_createDCtx_advanced(
     ZSTDv07_decompressBegin(dctx);
     dctx
 }
-#[export_name = crate::prefix!(ZSTDv07_createDCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_createDCtx))]
 pub unsafe extern "C" fn ZSTDv07_createDCtx() -> *mut ZSTDv07_DCtx {
     ZSTDv07_createDCtx_advanced(defaultCustomMem)
 }
-#[export_name = crate::prefix!(ZSTDv07_freeDCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_freeDCtx))]
 pub unsafe extern "C" fn ZSTDv07_freeDCtx(mut dctx: *mut ZSTDv07_DCtx) -> size_t {
     if dctx.is_null() {
         return 0;
@@ -2930,7 +2930,7 @@ pub unsafe extern "C" fn ZSTDv07_freeDCtx(mut dctx: *mut ZSTDv07_DCtx) -> size_t
     );
     0
 }
-#[export_name = crate::prefix!(ZSTDv07_copyDCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_copyDCtx))]
 pub unsafe extern "C" fn ZSTDv07_copyDCtx(
     mut dstDCtx: *mut ZSTDv07_DCtx,
     mut srcDCtx: *const ZSTDv07_DCtx,
@@ -2964,7 +2964,7 @@ unsafe fn ZSTDv07_frameHeaderSize(
                 as core::ffi::c_int as size_t,
         )
 }
-#[export_name = crate::prefix!(ZSTDv07_getFrameParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_getFrameParams))]
 pub unsafe extern "C" fn ZSTDv07_getFrameParams(
     mut fparamsPtr: *mut ZSTDv07_frameParams,
     mut src: *const core::ffi::c_void,
@@ -3077,7 +3077,7 @@ pub unsafe extern "C" fn ZSTDv07_getFrameParams(
     (*fparamsPtr).checksumFlag = checksumFlag;
     0
 }
-#[export_name = crate::prefix!(ZSTDv07_getDecompressedSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_getDecompressedSize))]
 pub unsafe extern "C" fn ZSTDv07_getDecompressedSize(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
@@ -3861,7 +3861,7 @@ unsafe fn ZSTDv07_decompressBlock_internal(
         srcSize,
     )
 }
-#[export_name = crate::prefix!(ZSTDv07_decompressBlock)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressBlock))]
 pub unsafe extern "C" fn ZSTDv07_decompressBlock(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dst: *mut core::ffi::c_void,
@@ -3875,7 +3875,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressBlock(
     (*dctx).previousDstEnd = (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
     dSize
 }
-#[export_name = crate::prefix!(ZSTDv07_insertBlock)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_insertBlock))]
 pub unsafe extern "C" fn ZSTDv07_insertBlock(
     mut dctx: *mut ZSTDv07_DCtx,
     mut blockStart: *const core::ffi::c_void,
@@ -4014,7 +4014,7 @@ unsafe fn ZSTDv07_decompress_usingPreparedDCtx(
     ZSTDv07_checkContinuity(dctx, dst);
     ZSTDv07_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
 }
-#[export_name = crate::prefix!(ZSTDv07_decompress_usingDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompress_usingDict))]
 pub unsafe extern "C" fn ZSTDv07_decompress_usingDict(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dst: *mut core::ffi::c_void,
@@ -4028,7 +4028,7 @@ pub unsafe extern "C" fn ZSTDv07_decompress_usingDict(
     ZSTDv07_checkContinuity(dctx, dst);
     ZSTDv07_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
 }
-#[export_name = crate::prefix!(ZSTDv07_decompressDCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressDCtx))]
 pub unsafe extern "C" fn ZSTDv07_decompressDCtx(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dst: *mut core::ffi::c_void,
@@ -4046,7 +4046,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressDCtx(
         0,
     )
 }
-#[export_name = crate::prefix!(ZSTDv07_decompress)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompress))]
 pub unsafe extern "C" fn ZSTDv07_decompress(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -4070,7 +4070,7 @@ unsafe fn ZSTD_errorFrameSizeInfoLegacy(
     *cSize = ret;
     *dBound = ZSTD_CONTENTSIZE_ERROR;
 }
-#[export_name = crate::prefix!(ZSTDv07_findFrameSizeInfoLegacy)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_findFrameSizeInfoLegacy))]
 pub unsafe extern "C" fn ZSTDv07_findFrameSizeInfoLegacy(
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
@@ -4147,16 +4147,16 @@ pub unsafe extern "C" fn ZSTDv07_findFrameSizeInfoLegacy(
     *cSize = ip.offset_from(src as *const u8) as core::ffi::c_long as size_t;
     *dBound = (nbBlocks * ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as size_t) as core::ffi::c_ulonglong;
 }
-#[export_name = crate::prefix!(ZSTDv07_nextSrcSizeToDecompress)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_nextSrcSizeToDecompress))]
 pub unsafe extern "C" fn ZSTDv07_nextSrcSizeToDecompress(mut dctx: *mut ZSTDv07_DCtx) -> size_t {
     (*dctx).expected
 }
-#[export_name = crate::prefix!(ZSTDv07_isSkipFrame)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_isSkipFrame))]
 pub unsafe extern "C" fn ZSTDv07_isSkipFrame(mut dctx: *mut ZSTDv07_DCtx) -> core::ffi::c_int {
     ((*dctx).stage as core::ffi::c_uint
         == ZSTDds_skipFrame as core::ffi::c_int as core::ffi::c_uint) as core::ffi::c_int
 }
-#[export_name = crate::prefix!(ZSTDv07_decompressContinue)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressContinue))]
 pub unsafe extern "C" fn ZSTDv07_decompressContinue(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dst: *mut core::ffi::c_void,
@@ -4463,7 +4463,7 @@ unsafe fn ZSTDv07_decompress_insertDictionary(
     dictSize = dictSize.wrapping_sub(eSize);
     ZSTDv07_refDictContent(dctx, dict, dictSize)
 }
-#[export_name = crate::prefix!(ZSTDv07_decompressBegin_usingDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressBegin_usingDict))]
 pub unsafe extern "C" fn ZSTDv07_decompressBegin_usingDict(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dict: *const core::ffi::c_void,
@@ -4523,7 +4523,7 @@ unsafe fn ZSTDv07_createDDict_advanced(
     (*ddict).refContext = dctx;
     ddict
 }
-#[export_name = crate::prefix!(ZSTDv07_createDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_createDDict))]
 pub unsafe extern "C" fn ZSTDv07_createDDict(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -4541,7 +4541,7 @@ pub unsafe extern "C" fn ZSTDv07_createDDict(
     };
     ZSTDv07_createDDict_advanced(dict, dictSize, allocator)
 }
-#[export_name = crate::prefix!(ZSTDv07_freeDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_freeDDict))]
 pub unsafe extern "C" fn ZSTDv07_freeDDict(mut ddict: *mut ZSTDv07_DDict) -> size_t {
     let cFree: ZSTDv07_freeFunction = (*(*ddict).refContext).customMem.customFree;
     let opaque = (*(*ddict).refContext).customMem.opaque;
@@ -4550,7 +4550,7 @@ pub unsafe extern "C" fn ZSTDv07_freeDDict(mut ddict: *mut ZSTDv07_DDict) -> siz
     cFree.unwrap_unchecked()(opaque, ddict as *mut core::ffi::c_void);
     0
 }
-#[export_name = crate::prefix!(ZSTDv07_decompress_usingDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompress_usingDDict))]
 pub unsafe extern "C" fn ZSTDv07_decompress_usingDDict(
     mut dctx: *mut ZSTDv07_DCtx,
     mut dst: *mut core::ffi::c_void,
