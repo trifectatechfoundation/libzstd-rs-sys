@@ -1980,20 +1980,16 @@ unsafe fn ZSTD_decompressSequences_body(
             prevOffset: [0; 3],
         };
         dctx.fseEntropy = 1;
-        let mut i: u32 = 0;
-        i = 0;
-        while i < ZSTD_REP_NUM as u32 {
-            *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
-                *(dctx.entropy.rep).as_mut_ptr().offset(i as isize) as size_t;
-            i = i.wrapping_add(1);
-        }
+        seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
             Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
         };
+
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
+
         if !cfg!(miri) {
             asm!(".p2align 6", options(preserves_flags, att_syntax));
             asm!("nop", options(preserves_flags, att_syntax));
@@ -2001,7 +1997,8 @@ unsafe fn ZSTD_decompressSequences_body(
             asm!("nop", options(preserves_flags, att_syntax));
             asm!(".p2align 3", options(preserves_flags, att_syntax));
         }
-        while nbSeq != 0 {
+
+        for nbSeq in (1..=nbSeq).rev() {
             let sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
             let oneSeqSize = ZSTD_execSequence(
                 op,
@@ -2013,25 +2010,26 @@ unsafe fn ZSTD_decompressSequences_body(
                 vBase,
                 dictEnd,
             );
+
             if ERR_isError(oneSeqSize) as core::ffi::c_long != 0 {
                 return oneSeqSize;
             }
+
             op = op.add(oneSeqSize);
-            nbSeq -= 1;
         }
+
         if !seqState.DStream.is_empty() {
             return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
         }
 
-        for i_0 in 0..ZSTD_REP_NUM {
-            *(dctx.entropy.rep).as_mut_ptr().offset(i_0 as isize) =
-                *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
-        }
+        dctx.entropy.rep = seqState.prevOffset.map(|v| v as u32);
     }
+
     let lastLLSize = litEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize > oend.offset_from(op) as core::ffi::c_long as size_t {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
+
     if !op.is_null() {
         libc::memcpy(
             op as *mut core::ffi::c_void,
@@ -2040,6 +2038,7 @@ unsafe fn ZSTD_decompressSequences_body(
         );
         op = op.add(lastLLSize);
     }
+
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
 
