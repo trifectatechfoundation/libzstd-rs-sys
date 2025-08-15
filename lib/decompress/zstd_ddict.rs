@@ -1,6 +1,6 @@
 use libc::{free, malloc, size_t};
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
@@ -108,7 +108,7 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
         if dictContentType as core::ffi::c_uint
             == ZSTD_dct_fullDict as core::ffi::c_int as core::ffi::c_uint
         {
-            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
+            return Error::dictionary_corrupted.to_error_code();
         }
         return 0;
     }
@@ -117,7 +117,7 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
         if dictContentType as core::ffi::c_uint
             == ZSTD_dct_fullDict as core::ffi::c_int as core::ffi::c_uint
         {
-            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
+            return Error::dictionary_corrupted.to_error_code();
         }
         return 0;
     }
@@ -131,7 +131,7 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
         (*ddict).dictSize,
     )) != 0
     {
-        return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
+        return Error::dictionary_corrupted.to_error_code();
     }
     (*ddict).entropyPresent = 1;
     0
@@ -158,7 +158,7 @@ unsafe fn ZSTD_initDDict_internal(
         (*ddict).dictBuffer = internalBuffer;
         (*ddict).dictContent = internalBuffer;
         if internalBuffer.is_null() {
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::dictionary_corrupted.to_error_code();
         }
         libc::memcpy(internalBuffer, dict, dictSize as libc::size_t);
     }

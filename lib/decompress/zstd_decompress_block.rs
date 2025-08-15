@@ -9,7 +9,7 @@ use libc::size_t;
 
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
@@ -266,7 +266,7 @@ pub unsafe fn ZSTD_getcBlockSize(
     bpPtr: &mut blockProperties_t,
 ) -> size_t {
     if srcSize < ZSTD_blockHeaderSize {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     let cBlockHeader = MEM_readLE24(src);
     let cSize = cBlockHeader >> 3;
@@ -277,7 +277,7 @@ pub unsafe fn ZSTD_getcBlockSize(
         return 1;
     }
     if bpPtr.blockType == BlockType::Reserved {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     cSize as size_t
 }
@@ -349,7 +349,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if src.len() < MIN_CBLOCK_SIZE {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
@@ -358,7 +358,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     match litEncType {
         SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
-            return -(ZSTD_error_dictionary_corrupted as core::ffi::c_int) as size_t;
+            return Error::dictionary_corrupted.to_error_code();
         }
         SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
@@ -366,7 +366,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 1 => (2usize, (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize),
                 3 => {
                     let [a, b, c, ..] = *src else {
-                        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                        return Error::corruption_detected.to_error_code();
                     };
 
                     (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
@@ -375,22 +375,22 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             };
 
             if litSize > 0 && dst.is_null() {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
             if litSize > blockSizeMax {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             }
 
             let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
 
             ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
 
             if lhSize + litSize + WILDCOPY_OVERLENGTH > src.len() {
                 if litSize.wrapping_add(lhSize) > src.len() {
-                    return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                    return Error::corruption_detected.to_error_code();
                 }
                 if dctx.litBufferLocation == LitLocation::ZSTD_split {
                     libc::memcpy(
@@ -426,14 +426,14 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
                 1 => {
                     let [a, b, _, ..] = *src else {
-                        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                        return Error::corruption_detected.to_error_code();
                     };
 
                     (2usize, (u16::from_le_bytes([a, b]) >> 4) as usize)
                 }
                 3 => {
                     let [a, b, c, _, ..] = *src else {
-                        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                        return Error::corruption_detected.to_error_code();
                     };
 
                     (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
@@ -442,15 +442,15 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             };
 
             if litSize > 0 && dst.is_null() {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
             if litSize > blockSizeMax {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             }
 
             let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
 
             ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
@@ -472,7 +472,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     }
 
     let [a, b, c, d, size_correction, ..] = *src else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     };
     let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
@@ -504,21 +504,21 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     };
 
     if litSize > 0 && dst.is_null() {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if litSize > blockSizeMax {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     if !singleStream && litSize < 6 {
-        return -(ZSTD_error_literals_headerWrong as core::ffi::c_int) as size_t;
+        return Error::literals_headerWrong.to_error_code();
     }
     if litCSize.wrapping_add(lhSize) > src.len() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
     if expectedWriteSize < litSize {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
 
     ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, false);
@@ -583,7 +583,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     }
 
     if ERR_isError(hufSuccess) != 0 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     dctx.litPtr = dctx.litBuffer;
@@ -605,7 +605,7 @@ pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
     mut dstCapacity: size_t,
 ) -> size_t {
     let Some(dctx) = dctx.as_mut() else {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     };
 
     let src = if src.is_null() {
@@ -955,11 +955,11 @@ fn ZSTD_buildSeqTable<const N: usize>(
     match type_0 {
         SymbolEncodingType_e::set_rle => {
             let [symbol, ..] = *src else {
-                return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+                return Error::srcSize_wrong.to_error_code();
             };
 
             if u32::from(symbol) > max {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             }
 
             let baseline = baseValue[usize::from(symbol)];
@@ -975,7 +975,7 @@ fn ZSTD_buildSeqTable<const N: usize>(
         }
         SymbolEncodingType_e::set_repeat => {
             if flagRepeatTable == 0 {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             }
             if ddictIsCold != 0 && nbSeq > 24 {
                 let pStart = *DTablePtr as *const core::ffi::c_void;
@@ -996,10 +996,10 @@ fn ZSTD_buildSeqTable<const N: usize>(
             let mut norm: [i16; 53] = [0; 53];
             let Ok(headerSize) = FSE_readNCount_slice(&mut norm, &mut max, &mut tableLog, src)
             else {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             };
             if tableLog > maxLog {
-                return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+                return Error::corruption_detected.to_error_code();
             }
             ZSTD_buildFSETable(
                 DTableSpace,
@@ -1023,20 +1023,20 @@ fn ZSTD_decodeSeqHeaders(
 ) -> size_t {
     let mut ip = 0;
     let [nbSeq, ..] = *src else {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     };
     let mut nbSeq = i32::from(nbSeq);
     ip += 1;
     if nbSeq > 0x7f {
         if nbSeq == 0xff {
             let [_, a, b, ..] = *src else {
-                return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+                return Error::srcSize_wrong.to_error_code();
             };
             nbSeq = i32::from(u16::from_le_bytes([a, b])) + LONGNBSEQ;
             ip += 2;
         } else {
             if ip >= src.len() {
-                return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+                return Error::srcSize_wrong.to_error_code();
             }
             nbSeq = ((nbSeq - 0x80) << 8) + i32::from(src[ip]);
             ip += 1;
@@ -1045,7 +1045,7 @@ fn ZSTD_decodeSeqHeaders(
     *nbSeqPtr = nbSeq;
     if nbSeq == 0 {
         if ip != src.len() {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         return ip as size_t;
     }
@@ -1054,12 +1054,12 @@ fn ZSTD_decodeSeqHeaders(
 
     // Minimum possible size: 1 byte for symbol encoding types.
     if ip + 1 > src.len() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     // The last field, Reserved, must be all-zeroes.
     if src[ip] & 0b11 != 0 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let byte = src[ip];
@@ -1087,7 +1087,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2 != 0,
     );
     if ERR_isError(llhSize) != 0 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     ip += llhSize as usize;
@@ -1108,7 +1108,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2 != 0,
     );
     if ERR_isError(ofhSize) != 0 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     ip += ofhSize as usize;
@@ -1129,7 +1129,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2 != 0,
     );
     if ERR_isError(mlhSize) != 0 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     ip += mlhSize as usize;
@@ -1265,17 +1265,17 @@ unsafe fn ZSTD_execSequenceEnd(
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     if sequenceLength > oend.offset_from(op) as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if sequence.litLength > litLimit.offset_from(*litPtr) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     ZSTD_safecopy(op, oend_w, *litPtr, sequence.litLength, ZSTD_no_overlap);
     op = oLitEnd;
     *litPtr = iLitEnd;
     if sequence.offset > oLitEnd.offset_from(prefixStart) as core::ffi::c_long as size_t {
         if sequence.offset > oLitEnd.offset_from(virtualStart) as core::ffi::c_long as size_t {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0) as core::ffi::c_long as isize));
         if match_0.add(sequence.matchLength) <= dictEnd {
@@ -1322,20 +1322,20 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.offset(-(sequence.offset as isize));
     if sequenceLength > oend.offset_from(op) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if sequence.litLength > litLimit.offset_from(*litPtr) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     if op > *litPtr as *mut u8 && op < (*litPtr).add(sequence.litLength) as *mut u8 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     ZSTD_safecopyDstBeforeSrc(op, *litPtr, sequence.litLength);
     op = oLitEnd;
     *litPtr = iLitEnd;
     if sequence.offset > oLitEnd.offset_from(prefixStart) as core::ffi::c_long as size_t {
         if sequence.offset > oLitEnd.offset_from(virtualStart) as core::ffi::c_long as size_t {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0) as core::ffi::c_long as isize));
         if match_0.add(sequence.matchLength) <= dictEnd {
@@ -1420,7 +1420,7 @@ unsafe fn ZSTD_execSequence(
             as core::ffi::c_int as core::ffi::c_long
             != 0
         {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
@@ -1516,7 +1516,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             as core::ffi::c_int as core::ffi::c_long
             != 0
         {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
@@ -1794,7 +1794,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
-            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+            Err(_) => return Error::corruption_detected.to_error_code(),
         };
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
@@ -1838,7 +1838,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 (dctx.litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
             if leftoverLit != 0 {
                 if leftoverLit > oend.offset_from(op) as core::ffi::c_long as size_t {
-                    return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                    return Error::dstSize_tooSmall.to_error_code();
                 }
                 ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
                 sequence.litLength = (sequence.litLength).wrapping_sub(leftoverLit);
@@ -1889,10 +1889,10 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             }
         }
         if nbSeq != 0 {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
         if !seqState.DStream.is_empty() {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
 
         for i_0 in 0..ZSTD_REP_NUM {
@@ -1904,7 +1904,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
         let lastLLSize = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
         if lastLLSize > oend.offset_from(op) as core::ffi::c_long as size_t {
-            return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+            return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
             libc::memmove(
@@ -1921,7 +1921,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
     let lastLLSize_0 = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize_0 > oend.offset_from(op) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
 
     if !op.is_null() {
@@ -1983,7 +1983,7 @@ unsafe fn ZSTD_decompressSequences_body(
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
-            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+            Err(_) => return Error::corruption_detected.to_error_code(),
         };
 
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
@@ -2019,7 +2019,7 @@ unsafe fn ZSTD_decompressSequences_body(
         }
 
         if !seqState.DStream.is_empty() {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
 
         dctx.entropy.rep = seqState.prevOffset.map(|v| v as u32);
@@ -2027,7 +2027,7 @@ unsafe fn ZSTD_decompressSequences_body(
 
     let lastLLSize = litEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize > oend.offset_from(op) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
 
     if !op.is_null() {
@@ -2170,7 +2170,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
         seqState.DStream = match BIT_DStream_t::new(seq) {
             Ok(v) => v,
-            Err(_) => return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t,
+            Err(_) => return Error::corruption_detected.to_error_code(),
         };
 
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
@@ -2197,7 +2197,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     (dctx.litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
                 if leftoverLit != 0 {
                     if leftoverLit > oend.offset_from(op) as core::ffi::c_long as size_t {
-                        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                        return Error::dstSize_tooSmall.to_error_code();
                     }
                     ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
                     sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength += 1;
@@ -2261,7 +2261,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         }
 
         if !seqState.DStream.is_empty() {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
 
         for seqNb in seqAdvance..nbSeq {
@@ -2273,7 +2273,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     (dctx.litBufferEnd).offset_from(litPtr) as core::ffi::c_long as size_t;
                 if leftoverLit_0 != 0 {
                     if leftoverLit_0 > oend.offset_from(op) as core::ffi::c_long as size_t {
-                        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                        return Error::dstSize_tooSmall.to_error_code();
                     }
                     ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit_0);
                     (*sequence).litLength = ((*sequence).litLength).wrapping_sub(leftoverLit_0);
@@ -2336,7 +2336,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
         let lastLLSize = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
         if lastLLSize > oend.offset_from(op) as core::ffi::c_long as size_t {
-            return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+            return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
             libc::memmove(
@@ -2352,7 +2352,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
 
     let lastLLSize_0 = litBufferEnd.offset_from(litPtr) as core::ffi::c_long as size_t;
     if lastLLSize_0 > oend.offset_from(op) as core::ffi::c_long as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
 
     if !op.is_null() {
@@ -2526,11 +2526,11 @@ pub unsafe fn ZSTD_decompressBlock_internal(
     streaming: streaming_operation,
 ) -> size_t {
     let Some(dctx) = dctx.as_mut() else {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     };
 
     let Ok(streaming) = StreamingOperation::try_from(streaming) else {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     };
 
     let src = if src.is_null() {
@@ -2552,7 +2552,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     streaming: StreamingOperation,
 ) -> size_t {
     if src.len() > dctx.block_size_max() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming);
@@ -2578,13 +2578,13 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
     ip = &ip[seqHSize as usize..];
     if dst.is_empty() && nbSeq > 0 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if MEM_64bits() != 0
         && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
         && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if offset == Offset::Long
         || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
