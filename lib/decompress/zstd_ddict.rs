@@ -175,24 +175,25 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     dictContentType: ZSTD_dictContentType_e,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_DDict {
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
-        return NULL as *mut ZSTD_DDict;
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
+        return core::ptr::null_mut();
     }
-    let ddict = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DDict>() as size_t, customMem)
-        as *mut ZSTD_DDict;
+
+    let ddict = ZSTD_customMalloc(size_of::<ZSTD_DDict>(), customMem) as *mut ZSTD_DDict;
+
     if ddict.is_null() {
-        return NULL as *mut ZSTD_DDict;
+        return core::ptr::null_mut();
     }
+
     (*ddict).cMem = customMem;
     let initResult =
         ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType);
+
     if ERR_isError(initResult) != 0 {
         ZSTD_freeDDict(ddict);
-        return NULL as *mut ZSTD_DDict;
+        return core::ptr::null_mut();
     }
+
     ddict
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict))]
@@ -256,12 +257,15 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
         },
     );
     let ddict = sBuffer as *mut ZSTD_DDict;
-    if sBuffer as size_t & 7 != 0 {
-        return NULL as *const ZSTD_DDict;
+
+    if sBuffer as usize & 0b111 != 0 {
+        return core::ptr::null_mut();
     }
+
     if sBufferSize < neededSpace {
-        return NULL as *const ZSTD_DDict;
+        return core::ptr::null_mut();
     }
+
     if dictLoadMethod as core::ffi::c_uint
         == ZSTD_dlm_byCopy as core::ffi::c_int as core::ffi::c_uint
     {
@@ -272,16 +276,13 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
         );
         dict = ddict.offset(1) as *const core::ffi::c_void;
     }
-    if ERR_isError(ZSTD_initDDict_internal(
-        ddict,
-        dict,
-        dictSize,
-        ZSTD_dlm_byRef,
-        dictContentType,
-    )) != 0
-    {
-        return NULL as *const ZSTD_DDict;
+
+    let ret = ZSTD_initDDict_internal(ddict, dict, dictSize, ZSTD_dlm_byRef, dictContentType);
+
+    if ERR_isError(ret) != 0 {
+        return core::ptr::null_mut();
     }
+
     ddict
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDDict))]
