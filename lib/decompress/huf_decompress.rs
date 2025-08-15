@@ -5,8 +5,7 @@ use libc::size_t;
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
-use crate::lib::common::error_private::ERR_isError;
-use crate::lib::common::fse_decompress::Error;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_isLittleEndian, MEM_read64, MEM_readLEST, MEM_write16};
 use crate::lib::decompress::Workspace;
 use crate::lib::zstd::*;
@@ -366,7 +365,7 @@ pub fn HUF_readDTableX1_wksp(
         targetTableLog,
     );
     if tableLog > (dtd.maxTableLog as core::ffi::c_int + 1) as u32 {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     dtd.tableType = 0;
     dtd.tableLog = tableLog as u8;
@@ -505,7 +504,7 @@ fn HUF_decompress1X1_usingDTable_internal_body(
     HUF_decodeStreamX1(dst.subslice(..), &mut bitD, dt, dtLog);
 
     if !bitD.is_empty() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     dst.capacity() as size_t
@@ -519,11 +518,11 @@ fn HUF_decompress4X1_usingDTable_internal_body(
 ) -> size_t {
     // strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     };
 
     if dst.capacity() < 6 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
@@ -531,7 +530,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     let length3 = usize::from(u16::from_le_bytes([b4, b5]));
 
     if 6 + length1 + length2 + length3 > src.len() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let istart1 = &src[6..][..length1];
@@ -540,7 +539,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     let istart4 = &src[6 + length1 + length2 + length3..];
 
     let Some((mut w1, mut w2, mut w3, mut w4)) = dst.quarter() else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     };
 
     let mut end_signal = true;
@@ -606,7 +605,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     HUF_decodeStreamX1(w4, &mut bitD4, dt, dtLog);
 
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     dst.capacity() as size_t
@@ -804,7 +803,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         );
 
         if op.add(length as usize) != segmentEnd {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
     }
 
@@ -878,7 +877,7 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
         return hSize;
     }
     if hSize as usize >= src.len() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     HUF_decompress4X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
@@ -1066,7 +1065,7 @@ pub fn HUF_readDTableX2_wksp(
     let rankStart = &mut wksp.rankStart0[1..];
 
     if maxTableLog > HUF_TABLELOG_MAX as u32 {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
 
     iSize = HUF_readStats_wksp(
@@ -1083,7 +1082,7 @@ pub fn HUF_readDTableX2_wksp(
         return iSize;
     }
     if tableLog > maxTableLog {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     if tableLog <= HUF_DECODER_FAST_TABLELOG as u32
         && maxTableLog > HUF_DECODER_FAST_TABLELOG as u32
@@ -1289,7 +1288,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_body(
     let dtd = DTable.description;
     HUF_decodeStreamX2(dst.subslice(..), &mut bitD, dt, dtd.tableLog as u32);
     if !bitD.is_empty() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     dst.capacity() as size_t
@@ -1303,12 +1302,12 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
 ) -> size_t {
     // Strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     };
 
     // Stream 4-way split would not work.
     if dst.capacity() < 6 {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let length1 = usize::from(u16::from_le_bytes([b0, b1]));
@@ -1316,7 +1315,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let length3 = usize::from(u16::from_le_bytes([b4, b5]));
 
     if 6 + length1 + length2 + length3 > src.len() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let istart1 = &src[6..][..length1];
@@ -1325,7 +1324,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let istart4 = &src[6 + length1 + length2 + length3..];
 
     let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     };
 
     let mut end_signal = true;
@@ -1333,7 +1332,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     let dtLog = DTable.description.tableLog as u32;
 
     if op4.is_empty() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     let mut bitD1 = match BIT_DStream_t::new(istart1) {
@@ -1412,13 +1411,13 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     // NOTE: these conditions do in fact trigger for invalid input. That is why currently
     // `Writer::write_symbol_x2` does not assert that it is in-bounds.
     if op1.ptr.unwrap().as_ptr() > op1.end {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     if op2.ptr.unwrap().as_ptr() > op2.end {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     if op3.ptr.unwrap().as_ptr() > op3.end {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     // NOTE: op4 is already verified within main loop.
 
@@ -1430,7 +1429,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
 
     // Check.
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     // The decoded size.
@@ -1641,7 +1640,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         );
 
         if op.add(length as usize) != segmentEnd {
-            return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+            return Error::corruption_detected.to_error_code();
         }
     }
 
@@ -1714,7 +1713,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
         return hSize;
     }
     if hSize as usize >= src.len() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     HUF_decompress1X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
@@ -1732,7 +1731,7 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
         return hSize;
     }
     if hSize as usize >= src.len() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     HUF_decompress4X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
@@ -2003,10 +2002,10 @@ pub unsafe fn HUF_decompress1X_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     if dst.capacity() == 0 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if src.len() > dst.capacity() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
     if src.len() == dst.capacity() {
         ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), dst.capacity());
@@ -2048,7 +2047,7 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
         return hSize;
     }
     if hSize as usize >= src.len() {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
 
     HUF_decompress1X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
@@ -2075,10 +2074,10 @@ pub unsafe fn HUF_decompress4X_hufOnly_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     if dst.is_empty() {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if src.is_empty() {
-        return -(ZSTD_error_corruption_detected as core::ffi::c_int) as size_t;
+        return Error::corruption_detected.to_error_code();
     }
 
     match HUF_selectDecoder(dst.capacity(), src.len()) {

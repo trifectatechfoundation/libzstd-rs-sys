@@ -9,8 +9,9 @@ pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed = 1;
 use libc::size_t;
 
+use crate::lib::common::error_private::Error;
 use crate::lib::common::fse_decompress::{
-    Error, FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
+    FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };
 pub const FSE_VERSION_MAJOR: core::ffi::c_int = 0;
 pub const FSE_VERSION_MINOR: core::ffi::c_int = 9;
