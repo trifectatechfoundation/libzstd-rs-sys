@@ -170,7 +170,7 @@ unsafe fn ZSTD_initDDict_internal(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_createDDict_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_advanced))]
 pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -198,7 +198,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
     ddict
 }
-#[export_name = crate::prefix!(ZSTD_createDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict))]
 pub unsafe extern "C" fn ZSTD_createDDict(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -216,7 +216,7 @@ pub unsafe extern "C" fn ZSTD_createDDict(
     };
     ZSTD_createDDict_advanced(dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto, allocator)
 }
-#[export_name = crate::prefix!(ZSTD_createDDict_byReference)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
     mut dictBuffer: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -240,7 +240,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
         allocator,
     )
 }
-#[export_name = crate::prefix!(ZSTD_initStaticDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDDict))]
 pub unsafe extern "C" fn ZSTD_initStaticDDict(
     mut sBuffer: *mut core::ffi::c_void,
     mut sBufferSize: size_t,
@@ -287,7 +287,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     }
     ddict
 }
-#[export_name = crate::prefix!(ZSTD_freeDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDDict))]
 pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0;
@@ -297,7 +297,7 @@ pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
     ZSTD_customFree(ddict as *mut core::ffi::c_void, cMem);
     0
 }
-#[export_name = crate::prefix!(ZSTD_estimateDDictSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDDictSize))]
 pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     mut dictSize: size_t,
     mut dictLoadMethod: ZSTD_dictLoadMethod_e,
@@ -312,7 +312,7 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
         },
     )
 }
-#[export_name = crate::prefix!(ZSTD_sizeof_DDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
 pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0;
@@ -325,7 +325,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
         },
     )
 }
-#[export_name = crate::prefix!(ZSTD_getDictID_fromDDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromDDict))]
 pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(
     mut ddict: *const ZSTD_DDict,
 ) -> core::ffi::c_uint {

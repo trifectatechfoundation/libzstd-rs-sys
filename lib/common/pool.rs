@@ -107,7 +107,7 @@ unsafe fn POOL_thread(mut opaque: *mut core::ffi::c_void) -> *mut core::ffi::c_v
         pthread_mutex_unlock(&mut (*ctx).queueMutex);
     }
 }
-#[export_name = crate::prefix!(ZSTD_createThreadPool)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createThreadPool))]
 pub unsafe extern "C" fn ZSTD_createThreadPool(mut numThreads: size_t) -> *mut ZSTD_threadPool {
     POOL_create(numThreads, 0)
 }
@@ -222,7 +222,7 @@ pub unsafe fn POOL_joinJobs(mut ctx: *mut POOL_ctx) {
     }
     pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
-#[export_name = crate::prefix!(ZSTD_freeThreadPool)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeThreadPool))]
 pub unsafe extern "C" fn ZSTD_freeThreadPool(mut pool: *mut ZSTD_threadPool) {
     POOL_free(pool);
 }

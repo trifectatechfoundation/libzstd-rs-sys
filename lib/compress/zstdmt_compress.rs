@@ -1618,7 +1618,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     }
     mtctx
 }
-#[export_name = crate::prefix!(ZSTDMT_createCCtx_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTDMT_createCCtx_advanced(
     mut nbWorkers: core::ffi::c_uint,
     mut cMem: ZSTD_customMem,
@@ -1666,7 +1666,7 @@ unsafe fn ZSTDMT_waitForAllJobsCompleted(mut mtctx: *mut ZSTDMT_CCtx) {
         (*mtctx).doneJobID;
     }
 }
-#[export_name = crate::prefix!(ZSTDMT_freeCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_freeCCtx))]
 pub unsafe extern "C" fn ZSTDMT_freeCCtx(mut mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
@@ -1694,7 +1694,7 @@ pub unsafe extern "C" fn ZSTDMT_freeCCtx(mut mtctx: *mut ZSTDMT_CCtx) -> size_t 
     ZSTD_customFree(mtctx as *mut core::ffi::c_void, (*mtctx).cMem);
     0
 }
-#[export_name = crate::prefix!(ZSTDMT_sizeof_CCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_sizeof_CCtx))]
 pub unsafe extern "C" fn ZSTDMT_sizeof_CCtx(mut mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
@@ -1739,7 +1739,7 @@ unsafe fn ZSTDMT_resize(mut mtctx: *mut ZSTDMT_CCtx, mut nbWorkers: core::ffi::c
     ZSTDMT_CCtxParam_setNbWorkers(&mut (*mtctx).params, nbWorkers);
     0
 }
-#[export_name = crate::prefix!(ZSTDMT_updateCParams_whileCompressing)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_updateCParams_whileCompressing))]
 pub unsafe extern "C" fn ZSTDMT_updateCParams_whileCompressing(
     mut mtctx: *mut ZSTDMT_CCtx,
     mut cctxParams: *const ZSTD_CCtx_params,
@@ -1756,7 +1756,7 @@ pub unsafe extern "C" fn ZSTDMT_updateCParams_whileCompressing(
     cParams.windowLog = saved_wlog;
     (*mtctx).params.cParams = cParams;
 }
-#[export_name = crate::prefix!(ZSTDMT_getFrameProgression)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_getFrameProgression))]
 pub unsafe extern "C" fn ZSTDMT_getFrameProgression(
     mut mtctx: *mut ZSTDMT_CCtx,
 ) -> ZSTD_frameProgression {
@@ -1806,7 +1806,7 @@ pub unsafe extern "C" fn ZSTDMT_getFrameProgression(
     }
     fps
 }
-#[export_name = crate::prefix!(ZSTDMT_toFlushNow)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_toFlushNow))]
 pub unsafe extern "C" fn ZSTDMT_toFlushNow(mut mtctx: *mut ZSTDMT_CCtx) -> size_t {
     let mut toFlush: size_t = 0;
     let jobID = (*mtctx).doneJobID;
@@ -1902,7 +1902,7 @@ unsafe fn ZSTDMT_computeOverlapSize(mut params: *const ZSTD_CCtx_params) -> size
         (1) << ovLog
     }
 }
-#[export_name = crate::prefix!(ZSTDMT_initCStream_internal)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_initCStream_internal))]
 pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
     mut mtctx: *mut ZSTDMT_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -2451,7 +2451,7 @@ unsafe fn findSynchronizationPoint(
     }
     syncPoint
 }
-#[export_name = crate::prefix!(ZSTDMT_nextInputSizeHint)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_nextInputSizeHint))]
 pub unsafe extern "C" fn ZSTDMT_nextInputSizeHint(mut mtctx: *const ZSTDMT_CCtx) -> size_t {
     let mut hintInSize = ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled);
     if hintInSize == 0 {
@@ -2459,7 +2459,7 @@ pub unsafe extern "C" fn ZSTDMT_nextInputSizeHint(mut mtctx: *const ZSTDMT_CCtx)
     }
     hintInSize
 }
-#[export_name = crate::prefix!(ZSTDMT_compressStream_generic)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_compressStream_generic))]
 pub unsafe extern "C" fn ZSTDMT_compressStream_generic(
     mut mtctx: *mut ZSTDMT_CCtx,
     mut output: *mut ZSTD_outBuffer,
