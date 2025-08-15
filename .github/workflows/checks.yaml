@@ -67,7 +67,7 @@ jobs:
           tool: cargo-llvm-cov,cargo-nextest
       - name: cargo llvm-cov nextest
         if: matrix.os != 'windows-2022'
-        run: cargo llvm-cov nextest --target ${{matrix.target}} ${{ matrix.features }} --lcov --output-path lcov.info --ignore-filename-regex "test-"
+        run: cargo llvm-cov nextest --target ${{matrix.target}} ${{ matrix.features }} --lcov --output-path lcov.info --ignore-filename-regex "test-" --workspace
         env:
           RUST_BACKTRACE: 1
           RUSTFLAGS: "-Awarnings"

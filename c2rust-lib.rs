@@ -9,7 +9,6 @@
 #![feature(linkage)]
 #[macro_use]
 extern crate c2rust_bitfields;
-extern crate libc;
 pub mod lib {
     pub mod common {
         pub mod bitstream;
@@ -53,6 +52,20 @@ pub mod lib {
     } // mod legacy
     pub mod zstd;
 } // mod lib
+
+pub use crate::lib::zstd::{ZSTD_inBuffer, ZSTD_outBuffer};
+
+pub use crate::lib::decompress::{
+    zstd_ddict::{ZSTD_DDict, ZSTD_createDDict, ZSTD_getDictID_fromDDict},
+    zstd_decompress::{
+        ZSTD_DCtx_refDDict, ZSTD_createDCtx, ZSTD_decompressBegin_usingDDict,
+        ZSTD_decompressBegin_usingDict, ZSTD_decompressStream, ZSTD_freeDCtx,
+        ZSTD_getDictID_fromDict, ZSTD_getFrameContentSize, ZSTD_CONTENTSIZE_ERROR,
+        ZSTD_CONTENTSIZE_UNKNOWN,
+    },
+};
+
+pub use crate::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 
 #[cfg(feature = "semver-prefix")]
 macro_rules! prefix {
