@@ -1,6 +1,6 @@
 use libc::size_t;
 
-use crate::lib::common::fse_decompress::Error;
+use crate::lib::common::error_private::Error;
 
 pub type BitContainerType = usize;
 
