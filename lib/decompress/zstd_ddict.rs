@@ -297,19 +297,15 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDDictSize))]
-pub extern "C" fn ZSTD_estimateDDictSize(
-    dictSize: size_t,
-    dictLoadMethod: ZSTD_dictLoadMethod_e,
+pub const extern "C" fn ZSTD_estimateDDictSize(
+    dict_size: size_t,
+    dict_load_method: ZSTD_dictLoadMethod_e,
 ) -> size_t {
-    (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
-        if dictLoadMethod as core::ffi::c_uint
-            == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
-        {
-            0
-        } else {
-            dictSize
-        },
-    )
+    if dict_load_method == ZSTD_dlm_byRef as ZSTD_dictLoadMethod_e {
+        size_of::<ZSTD_DDict>()
+    } else {
+        size_of::<ZSTD_DDict>() + dict_size
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
