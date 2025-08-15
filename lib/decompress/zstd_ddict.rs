@@ -109,15 +109,21 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
         return 0;
     }
 
-    if (*ddict).dictSize < 8 {
+    let dict = if (*ddict).dictContent.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts((*ddict).dictContent.cast::<u8>(), (*ddict).dictSize)
+    };
+
+    let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
             return Error::dictionary_corrupted.to_error_code();
         }
 
         return 0;
-    }
+    };
 
-    let magic = MEM_readLE32((*ddict).dictContent);
+    let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
             return Error::dictionary_corrupted.to_error_code();
@@ -126,13 +132,9 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
         return 0;
     }
 
-    (*ddict).dictID = MEM_readLE32(((*ddict).dictContent).byte_add(ZSTD_FRAMEIDSIZE));
+    (*ddict).dictID = u32::from_le_bytes(*dict_id);
 
-    let ret = ZSTD_loadDEntropy(
-        &mut (*ddict).entropy,
-        (*ddict).dictContent,
-        (*ddict).dictSize,
-    );
+    let ret = ZSTD_loadDEntropy(&mut (*ddict).entropy, dict.as_ptr().cast(), dict.len());
 
     if ERR_isError(ret) != 0 {
         return Error::dictionary_corrupted.to_error_code();
