@@ -295,8 +295,9 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
     ZSTD_customFree(ddict as *mut core::ffi::c_void, cMem);
     0
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDDictSize))]
-pub unsafe extern "C" fn ZSTD_estimateDDictSize(
+pub extern "C" fn ZSTD_estimateDDictSize(
     dictSize: size_t,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
@@ -310,6 +311,7 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
         },
     )
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
 pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {
@@ -329,4 +331,21 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> c
         return 0;
     }
     (*ddict).dictID
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_estimate_ddict_size() {
+        assert_eq!(
+            ZSTD_estimateDDictSize(1234, ZSTD_dlm_byCopy),
+            size_of::<ZSTD_DDict>() + 1234
+        );
+        assert_eq!(
+            ZSTD_estimateDDictSize(1234, ZSTD_dlm_byRef),
+            size_of::<ZSTD_DDict>()
+        );
+    }
 }
