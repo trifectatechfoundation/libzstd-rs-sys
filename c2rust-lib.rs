@@ -59,13 +59,21 @@ pub use crate::lib::decompress::{
     zstd_ddict::{ZSTD_DDict, ZSTD_createDDict, ZSTD_getDictID_fromDDict},
     zstd_decompress::{
         ZSTD_DCtx_refDDict, ZSTD_createDCtx, ZSTD_decompressBegin_usingDDict,
-        ZSTD_decompressBegin_usingDict, ZSTD_decompressStream, ZSTD_freeDCtx,
-        ZSTD_getDictID_fromDict, ZSTD_getFrameContentSize, ZSTD_CONTENTSIZE_ERROR,
+        ZSTD_decompressBegin_usingDict, ZSTD_decompressStream, ZSTD_decompress_usingDict,
+        ZSTD_freeDCtx, ZSTD_getDictID_fromDict, ZSTD_getFrameContentSize, ZSTD_CONTENTSIZE_ERROR,
         ZSTD_CONTENTSIZE_UNKNOWN,
     },
 };
 
 pub use crate::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
+
+pub use crate::lib::dictBuilder::zdict::{
+    ZDICT_getErrorName, ZDICT_isError, ZDICT_trainFromBuffer,
+};
+
+pub use crate::lib::compress::zstd_compress::{
+    ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_freeCCtx,
+};
 
 #[cfg(feature = "semver-prefix")]
 macro_rules! prefix {

@@ -99,7 +99,7 @@ unsafe fn ZSTD_hash6Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
 }
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463;
 unsafe fn ZSTD_hash8(mut u: u64, mut h: u32, mut s: u64) -> size_t {
-    (((u * prime8bytes) ^ s) >> 64u32.wrapping_sub(h)) as size_t
+    (((u.wrapping_mul(prime8bytes)) ^ s) >> 64u32.wrapping_sub(h)) as size_t
 }
 unsafe fn ZSTD_hash8Ptr(mut p: *const core::ffi::c_void, mut h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
