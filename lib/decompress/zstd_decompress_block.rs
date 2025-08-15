@@ -2662,7 +2662,7 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     dSize
 }
 
-#[export_name = crate::prefix!(ZSTD_decompressBlock)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBlock))]
 pub unsafe extern "C" fn ZSTD_decompressBlock(
     dctx: *mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,

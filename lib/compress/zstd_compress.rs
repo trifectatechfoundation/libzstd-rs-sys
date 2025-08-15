@@ -2193,7 +2193,7 @@ pub const ZSTD_COMPRESSBLOCK_BTULTRA2: unsafe fn(
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
 pub const NULL: core::ffi::c_int = 0;
-#[export_name = crate::prefix!(ZSTD_compressBound)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBound))]
 pub unsafe extern "C" fn ZSTD_compressBound(mut srcSize: size_t) -> size_t {
     let r = if srcSize as core::ffi::c_ulonglong
         >= (if ::core::mem::size_of::<size_t>() == 8 {
@@ -2216,7 +2216,7 @@ pub unsafe extern "C" fn ZSTD_compressBound(mut srcSize: size_t) -> size_t {
     }
     r
 }
-#[export_name = crate::prefix!(ZSTD_createCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx))]
 pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
     ZSTD_createCCtx_advanced(ZSTD_defaultCMem)
 }
@@ -2226,7 +2226,7 @@ unsafe fn ZSTD_initCCtx(mut cctx: *mut ZSTD_CCtx, mut memManager: ZSTD_customMem
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2();
     let err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
 }
-#[export_name = crate::prefix!(ZSTD_createCCtx_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(mut customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
     if (customMem.customAlloc).is_none() as core::ffi::c_int
         ^ (customMem.customFree).is_none() as core::ffi::c_int
@@ -2242,7 +2242,7 @@ pub unsafe extern "C" fn ZSTD_createCCtx_advanced(mut customMem: ZSTD_customMem)
     ZSTD_initCCtx(cctx, customMem);
     cctx
 }
-#[export_name = crate::prefix!(ZSTD_initStaticCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCCtx))]
 pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     mut workspace: *mut core::ffi::c_void,
     mut workspaceSize: size_t,
@@ -2366,7 +2366,7 @@ unsafe fn ZSTD_freeCCtxContent(mut cctx: *mut ZSTD_CCtx) {
     (*cctx).mtctx = NULL as *mut ZSTDMT_CCtx;
     ZSTD_cwksp_free(&mut (*cctx).workspace, (*cctx).customMem);
 }
-#[export_name = crate::prefix!(ZSTD_freeCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCCtx))]
 pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
         return 0;
@@ -2385,7 +2385,7 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
 unsafe fn ZSTD_sizeof_mtctx(mut cctx: *const ZSTD_CCtx) -> size_t {
     ZSTDMT_sizeof_CCtx((*cctx).mtctx)
 }
-#[export_name = crate::prefix!(ZSTD_sizeof_CCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CCtx))]
 pub unsafe extern "C" fn ZSTD_sizeof_CCtx(mut cctx: *const ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
         return 0;
@@ -2399,7 +2399,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_CCtx(mut cctx: *const ZSTD_CCtx) -> size_t 
     .wrapping_add(ZSTD_sizeof_localDict((*cctx).localDict))
     .wrapping_add(ZSTD_sizeof_mtctx(cctx))
 }
-#[export_name = crate::prefix!(ZSTD_sizeof_CStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CStream))]
 pub unsafe extern "C" fn ZSTD_sizeof_CStream(mut zcs: *const ZSTD_CStream) -> size_t {
     ZSTD_sizeof_CCtx(zcs)
 }
@@ -2606,11 +2606,11 @@ unsafe fn ZSTD_createCCtxParams_advanced(mut customMem: ZSTD_customMem) -> *mut 
     (*params).customMem = customMem;
     params
 }
-#[export_name = crate::prefix!(ZSTD_createCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtxParams))]
 pub unsafe extern "C" fn ZSTD_createCCtxParams() -> *mut ZSTD_CCtx_params {
     ZSTD_createCCtxParams_advanced(ZSTD_defaultCMem)
 }
-#[export_name = crate::prefix!(ZSTD_freeCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCCtxParams))]
 pub unsafe extern "C" fn ZSTD_freeCCtxParams(mut params: *mut ZSTD_CCtx_params) -> size_t {
     if params.is_null() {
         return 0;
@@ -2618,11 +2618,11 @@ pub unsafe extern "C" fn ZSTD_freeCCtxParams(mut params: *mut ZSTD_CCtx_params) 
     ZSTD_customFree(params as *mut core::ffi::c_void, (*params).customMem);
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_reset)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_reset))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_reset(mut params: *mut ZSTD_CCtx_params) -> size_t {
     ZSTD_CCtxParams_init(params, ZSTD_CLEVEL_DEFAULT)
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_init)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_init(
     mut cctxParams: *mut ZSTD_CCtx_params,
     mut compressionLevel: core::ffi::c_int,
@@ -2667,7 +2667,7 @@ unsafe fn ZSTD_CCtxParams_init_internal(
         compressionLevel,
     );
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     mut cctxParams: *mut ZSTD_CCtx_params,
     mut params: ZSTD_parameters,
@@ -2690,7 +2690,7 @@ unsafe fn ZSTD_CCtxParams_setZstdParams(
     (*cctxParams).fParams = (*params).fParams;
     (*cctxParams).compressionLevel = ZSTD_NO_CLEVEL;
 }
-#[export_name = crate::prefix!(ZSTD_cParam_getBounds)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
 pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZSTD_bounds {
     let mut bounds = {
         ZSTD_bounds {
@@ -2970,7 +2970,7 @@ unsafe fn ZSTD_isUpdateAuthorized(mut param: ZSTD_cParameter) -> core::ffi::c_in
         | 1013 | 1014 | 1015 | 1016 | _ => 0,
     }
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setParameter)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParameter))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
     mut cctx: *mut ZSTD_CCtx,
     mut param: ZSTD_cParameter,
@@ -2998,7 +2998,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
     }
     ZSTD_CCtxParams_setParameter(&mut (*cctx).requestedParams, param, value)
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_setParameter)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_setParameter))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
     mut CCtxParams: *mut ZSTD_CCtx_params,
     mut param: ZSTD_cParameter,
@@ -3287,7 +3287,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         _ => -(ZSTD_error_parameter_unsupported as core::ffi::c_int) as size_t,
     }
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_getParameter)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_getParameter))]
 pub unsafe extern "C" fn ZSTD_CCtx_getParameter(
     mut cctx: *const ZSTD_CCtx,
     mut param: ZSTD_cParameter,
@@ -3295,7 +3295,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_getParameter(
 ) -> size_t {
     ZSTD_CCtxParams_getParameter(&(*cctx).requestedParams, param, value)
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_getParameter)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_getParameter))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
     mut CCtxParams: *const ZSTD_CCtx_params,
     mut param: ZSTD_cParameter,
@@ -3423,7 +3423,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setParametersUsingCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParametersUsingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
     mut cctx: *mut ZSTD_CCtx,
     mut params: *const ZSTD_CCtx_params,
@@ -3439,7 +3439,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
     (*cctx).requestedParams = *params;
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setCParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
     mut cctx: *mut ZSTD_CCtx,
     mut cparams: ZSTD_compressionParameters,
@@ -3494,7 +3494,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setFParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setFParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     mut cctx: *mut ZSTD_CCtx,
     mut fparams: ZSTD_frameParameters,
@@ -3525,7 +3525,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParams(
     mut cctx: *mut ZSTD_CCtx,
     mut params: ZSTD_parameters,
@@ -3544,7 +3544,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize))]
 pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
     mut cctx: *mut ZSTD_CCtx,
     mut pledgedSrcSize: core::ffi::c_ulonglong,
@@ -3579,7 +3579,7 @@ unsafe fn ZSTD_initLocalDict(mut cctx: *mut ZSTD_CCtx) -> size_t {
     (*cctx).cdict = (*dl).cdict;
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -3617,7 +3617,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
     (*cctx).localDict.dictContentType = dictContentType;
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_byReference)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_byReference))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_byReference(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -3625,7 +3625,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_byReference(
 ) -> size_t {
     ZSTD_CCtx_loadDictionary_advanced(cctx, dict, dictSize, ZSTD_dlm_byRef, ZSTD_dct_auto)
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_loadDictionary)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -3633,7 +3633,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary(
 ) -> size_t {
     ZSTD_CCtx_loadDictionary_advanced(cctx, dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto)
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_refCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refCDict))]
 pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
     mut cctx: *mut ZSTD_CCtx,
     mut cdict: *const ZSTD_CDict,
@@ -3647,7 +3647,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
     (*cctx).cdict = cdict;
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_refThreadPool)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refThreadPool))]
 pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
     mut cctx: *mut ZSTD_CCtx,
     mut pool: *mut ZSTD_threadPool,
@@ -3660,7 +3660,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
     (*cctx).pool = pool;
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_refPrefix)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refPrefix))]
 pub unsafe extern "C" fn ZSTD_CCtx_refPrefix(
     mut cctx: *mut ZSTD_CCtx,
     mut prefix: *const core::ffi::c_void,
@@ -3668,7 +3668,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refPrefix(
 ) -> size_t {
     ZSTD_CCtx_refPrefix_advanced(cctx, prefix, prefixSize, ZSTD_dct_rawContent)
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_refPrefix_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refPrefix_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
     mut cctx: *mut ZSTD_CCtx,
     mut prefix: *const core::ffi::c_void,
@@ -3688,7 +3688,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_CCtx_reset)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_reset))]
 pub unsafe extern "C" fn ZSTD_CCtx_reset(
     mut cctx: *mut ZSTD_CCtx,
     mut reset: ZSTD_ResetDirective,
@@ -3715,7 +3715,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_checkCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_checkCParams))]
 pub unsafe extern "C" fn ZSTD_checkCParams(mut cParams: ZSTD_compressionParameters) -> size_t {
     if ZSTD_cParam_withinBounds(ZSTD_c_windowLog, cParams.windowLog as core::ffi::c_int) == 0 {
         return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
@@ -3789,7 +3789,7 @@ unsafe fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_com
     }
     cParams
 }
-#[export_name = crate::prefix!(ZSTD_cycleLog)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cycleLog))]
 pub unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
     let btScale = (strat >= ZSTD_btlazy2) as u32;
     hashLog.wrapping_sub(btScale)
@@ -3905,7 +3905,7 @@ unsafe fn ZSTD_adjustCParams_internal(
     }
     cPar
 }
-#[export_name = crate::prefix!(ZSTD_adjustCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_adjustCParams))]
 pub unsafe extern "C" fn ZSTD_adjustCParams(
     mut cPar: ZSTD_compressionParameters,
     mut srcSize: core::ffi::c_ulonglong,
@@ -3943,7 +3943,7 @@ unsafe fn ZSTD_overrideCParams(
         (*cParams).strategy = (*overrides).strategy;
     }
 }
-#[export_name = crate::prefix!(ZSTD_getCParamsFromCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCCtxParams))]
 pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
     mut CCtxParams: *const ZSTD_CCtx_params,
     mut srcSizeHint: u64,
@@ -4162,7 +4162,7 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         .wrapping_add(bufferSpace)
         .wrapping_add(externalSeqSpace)
 }
-#[export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
     mut params: *const ZSTD_CCtx_params,
 ) -> size_t {
@@ -4184,7 +4184,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
         (*params).maxBlockSize,
     )
 }
-#[export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCParams))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
     mut cParams: ZSTD_compressionParameters,
 ) -> size_t {
@@ -4232,7 +4232,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
     }
     largestSize
 }
-#[export_name = crate::prefix!(ZSTD_estimateCCtxSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: core::ffi::c_int) -> size_t {
     let mut level: core::ffi::c_int = 0;
     let mut memBudget = 0;
@@ -4250,7 +4250,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: core::ffi::
     }
     memBudget
 }
-#[export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCCtxParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     mut params: *const ZSTD_CCtx_params,
 ) -> size_t {
@@ -4292,7 +4292,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
         (*params).maxBlockSize,
     )
 }
-#[export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCParams))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
     mut cParams: ZSTD_compressionParameters,
 ) -> size_t {
@@ -4322,7 +4322,7 @@ unsafe fn ZSTD_estimateCStreamSize_internal(mut compressionLevel: core::ffi::c_i
     );
     ZSTD_estimateCStreamSize_usingCParams(cParams)
 }
-#[export_name = crate::prefix!(ZSTD_estimateCStreamSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize(
     mut compressionLevel: core::ffi::c_int,
 ) -> size_t {
@@ -4342,7 +4342,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize(
     }
     memBudget
 }
-#[export_name = crate::prefix!(ZSTD_getFrameProgression)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getFrameProgression))]
 pub unsafe extern "C" fn ZSTD_getFrameProgression(
     mut cctx: *const ZSTD_CCtx,
 ) -> ZSTD_frameProgression {
@@ -4371,7 +4371,7 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(
     fp.nbActiveWorkers = 0;
     fp
 }
-#[export_name = crate::prefix!(ZSTD_toFlushNow)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_toFlushNow))]
 pub unsafe extern "C" fn ZSTD_toFlushNow(mut cctx: *mut ZSTD_CCtx) -> size_t {
     if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_toFlushNow((*cctx).mtctx);
@@ -5089,7 +5089,7 @@ unsafe fn ZSTD_copyCCtx_internal(
     );
     0
 }
-#[export_name = crate::prefix!(ZSTD_copyCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyCCtx))]
 pub unsafe extern "C" fn ZSTD_copyCCtx(
     mut dstCCtx: *mut ZSTD_CCtx,
     mut srcCCtx: *const ZSTD_CCtx,
@@ -6112,13 +6112,13 @@ unsafe fn ZSTD_copyBlockSequences(
     (*seqCollector).seqIndex = ((*seqCollector).seqIndex).wrapping_add(nbOutSequences);
     0
 }
-#[export_name = crate::prefix!(ZSTD_sequenceBound)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sequenceBound))]
 pub unsafe extern "C" fn ZSTD_sequenceBound(mut srcSize: size_t) -> size_t {
     let maxNbSeq = (srcSize / ZSTD_MINMATCH_MIN as size_t).wrapping_add(1);
     let maxNbDelims = (srcSize / ZSTD_BLOCKSIZE_MAX_MIN as size_t).wrapping_add(1);
     maxNbSeq.wrapping_add(maxNbDelims)
 }
-#[export_name = crate::prefix!(ZSTD_generateSequences)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_generateSequences))]
 pub unsafe extern "C" fn ZSTD_generateSequences(
     mut zc: *mut ZSTD_CCtx,
     mut outSeqs: *mut ZSTD_Sequence,
@@ -6167,7 +6167,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     }
     (*zc).seqCollector.seqIndex
 }
-#[export_name = crate::prefix!(ZSTD_mergeBlockDelimiters)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_mergeBlockDelimiters))]
 pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     mut sequences: *mut ZSTD_Sequence,
     mut seqsSize: size_t,
@@ -7639,7 +7639,7 @@ unsafe fn ZSTD_writeFrameHeader(
     }
     pos
 }
-#[export_name = crate::prefix!(ZSTD_writeSkippableFrame)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_writeSkippableFrame))]
 pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -7766,7 +7766,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
     }
     cSize.wrapping_add(fhSize)
 }
-#[export_name = crate::prefix!(ZSTD_compressContinue_public)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue_public))]
 pub unsafe extern "C" fn ZSTD_compressContinue_public(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -7776,7 +7776,7 @@ pub unsafe extern "C" fn ZSTD_compressContinue_public(
 ) -> size_t {
     ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 0)
 }
-#[export_name = crate::prefix!(ZSTD_compressContinue)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue))]
 pub unsafe extern "C" fn ZSTD_compressContinue(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -7794,11 +7794,11 @@ unsafe fn ZSTD_getBlockSize_deprecated(mut cctx: *const ZSTD_CCtx) -> size_t {
         (1) << cParams.windowLog
     }
 }
-#[export_name = crate::prefix!(ZSTD_getBlockSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getBlockSize))]
 pub unsafe extern "C" fn ZSTD_getBlockSize(mut cctx: *const ZSTD_CCtx) -> size_t {
     ZSTD_getBlockSize_deprecated(cctx)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock_deprecated)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -7812,7 +7812,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     }
     ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 0, 0)
 }
-#[export_name = crate::prefix!(ZSTD_compressBlock)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock))]
 pub unsafe extern "C" fn ZSTD_compressBlock(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8321,7 +8321,7 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
         ZSTDb_not_buffered,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_advanced))]
 pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -8484,7 +8484,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         ZSTDb_not_buffered,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin_usingDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
     mut cctx: *mut ZSTD_CCtx,
     mut dict: *const core::ffi::c_void,
@@ -8493,7 +8493,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
 ) -> size_t {
     ZSTD_compressBegin_usingDict_deprecated(cctx, dict, dictSize, compressionLevel)
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin))]
 pub unsafe extern "C" fn ZSTD_compressBegin(
     mut cctx: *mut ZSTD_CCtx,
     mut compressionLevel: core::ffi::c_int,
@@ -8584,7 +8584,7 @@ pub unsafe fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSize: size_t) 
     }
     (*cctx).traceCtx = 0;
 }
-#[export_name = crate::prefix!(ZSTD_compressEnd_public)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd_public))]
 pub unsafe extern "C" fn ZSTD_compressEnd_public(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8615,7 +8615,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     ZSTD_CCtx_trace(cctx, endResult);
     cSize.wrapping_add(endResult)
 }
-#[export_name = crate::prefix!(ZSTD_compressEnd)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd))]
 pub unsafe extern "C" fn ZSTD_compressEnd(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8625,7 +8625,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd(
 ) -> size_t {
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
-#[export_name = crate::prefix!(ZSTD_compress_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_advanced(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8678,7 +8678,7 @@ pub unsafe fn ZSTD_compress_advanced_internal(
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
-#[export_name = crate::prefix!(ZSTD_compress_usingDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingDict))]
 pub unsafe extern "C" fn ZSTD_compress_usingDict(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8715,7 +8715,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
         &(*cctx).simpleApiParams,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressCCtx)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressCCtx))]
 pub unsafe extern "C" fn ZSTD_compressCCtx(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -8735,7 +8735,7 @@ pub unsafe extern "C" fn ZSTD_compressCCtx(
         compressionLevel,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compress)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress))]
 pub unsafe extern "C" fn ZSTD_compress(
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
@@ -9190,7 +9190,7 @@ pub unsafe extern "C" fn ZSTD_compress(
     ZSTD_freeCCtxContent(&mut ctxBody);
     result
 }
-#[export_name = crate::prefix!(ZSTD_estimateCDictSize_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize_advanced))]
 pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
     mut dictSize: size_t,
     mut cParams: ZSTD_compressionParameters,
@@ -9217,7 +9217,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
             },
         )
 }
-#[export_name = crate::prefix!(ZSTD_estimateCDictSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize))]
 pub unsafe extern "C" fn ZSTD_estimateCDictSize(
     mut dictSize: size_t,
     mut compressionLevel: core::ffi::c_int,
@@ -9230,7 +9230,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize(
     );
     ZSTD_estimateCDictSize_advanced(dictSize, cParams, ZSTD_dlm_byCopy)
 }
-#[export_name = crate::prefix!(ZSTD_sizeof_CDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CDict))]
 pub unsafe extern "C" fn ZSTD_sizeof_CDict(mut cdict: *const ZSTD_CDict) -> size_t {
     if cdict.is_null() {
         return 0;
@@ -9374,7 +9374,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     (*cdict).useRowMatchFinder = useRowMatchFinder;
     cdict
 }
-#[export_name = crate::prefix!(ZSTD_createCDict_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_createCDict_advanced(
     mut dictBuffer: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -9455,7 +9455,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         customMem,
     )
 }
-#[export_name = crate::prefix!(ZSTD_createCDict_advanced2)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_advanced2))]
 pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -9527,7 +9527,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     }
     cdict
 }
-#[export_name = crate::prefix!(ZSTD_createCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict))]
 pub unsafe extern "C" fn ZSTD_createCDict(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -9556,7 +9556,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
     }
     cdict
 }
-#[export_name = crate::prefix!(ZSTD_createCDict_byReference)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createCDict_byReference(
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
@@ -9585,7 +9585,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
     }
     cdict
 }
-#[export_name = crate::prefix!(ZSTD_freeCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCDict))]
 pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
     if cdict.is_null() {
         return 0;
@@ -9599,7 +9599,7 @@ pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initStaticCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCDict))]
 pub unsafe extern "C" fn ZSTD_initStaticCDict(
     mut workspace: *mut core::ffi::c_void,
     mut workspaceSize: size_t,
@@ -9726,13 +9726,13 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
     }
     cdict
 }
-#[export_name = crate::prefix!(ZSTD_getCParamsFromCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCDict))]
 pub unsafe extern "C" fn ZSTD_getCParamsFromCDict(
     mut cdict: *const ZSTD_CDict,
 ) -> ZSTD_compressionParameters {
     (*cdict).matchState.cParams
 }
-#[export_name = crate::prefix!(ZSTD_getDictID_fromCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromCDict))]
 pub unsafe extern "C" fn ZSTD_getDictID_fromCDict(
     mut cdict: *const ZSTD_CDict,
 ) -> core::ffi::c_uint {
@@ -9868,7 +9868,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         ZSTDb_not_buffered,
     )
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
     cctx: *mut ZSTD_CCtx,
     cdict: *const ZSTD_CDict,
@@ -9877,7 +9877,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
 ) -> size_t {
     ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, pledgedSrcSize)
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_deprecated)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
     mut cctx: *mut ZSTD_CCtx,
     mut cdict: *const ZSTD_CDict,
@@ -9891,7 +9891,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
     };
     ZSTD_compressBegin_usingCDict_internal(cctx, cdict, fParams, ZSTD_CONTENTSIZE_UNKNOWN)
 }
-#[export_name = crate::prefix!(ZSTD_compressBegin_usingCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict(
     mut cctx: *mut ZSTD_CCtx,
     mut cdict: *const ZSTD_CDict,
@@ -9918,7 +9918,7 @@ unsafe fn ZSTD_compress_usingCDict_internal(
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
-#[export_name = crate::prefix!(ZSTD_compress_usingCDict_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_usingCDict_advanced(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -9930,7 +9930,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict_advanced(
 ) -> size_t {
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
 }
-#[export_name = crate::prefix!(ZSTD_compress_usingCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingCDict))]
 pub unsafe extern "C" fn ZSTD_compress_usingCDict(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -9948,32 +9948,32 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict(
     };
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
 }
-#[export_name = crate::prefix!(ZSTD_createCStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCStream))]
 pub unsafe extern "C" fn ZSTD_createCStream() -> *mut ZSTD_CStream {
     ZSTD_createCStream_advanced(ZSTD_defaultCMem)
 }
-#[export_name = crate::prefix!(ZSTD_initStaticCStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCStream))]
 pub unsafe extern "C" fn ZSTD_initStaticCStream(
     mut workspace: *mut core::ffi::c_void,
     mut workspaceSize: size_t,
 ) -> *mut ZSTD_CStream {
     ZSTD_initStaticCCtx(workspace, workspaceSize)
 }
-#[export_name = crate::prefix!(ZSTD_createCStream_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCStream_advanced))]
 pub unsafe extern "C" fn ZSTD_createCStream_advanced(
     mut customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CStream {
     ZSTD_createCCtx_advanced(customMem)
 }
-#[export_name = crate::prefix!(ZSTD_freeCStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCStream))]
 pub unsafe extern "C" fn ZSTD_freeCStream(mut zcs: *mut ZSTD_CStream) -> size_t {
     ZSTD_freeCCtx(zcs)
 }
-#[export_name = crate::prefix!(ZSTD_CStreamInSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CStreamInSize))]
 pub unsafe extern "C" fn ZSTD_CStreamInSize() -> size_t {
     ZSTD_BLOCKSIZE_MAX as size_t
 }
-#[export_name = crate::prefix!(ZSTD_CStreamOutSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CStreamOutSize))]
 pub unsafe extern "C" fn ZSTD_CStreamOutSize() -> size_t {
     (ZSTD_compressBound(ZSTD_BLOCKSIZE_MAX as size_t))
         .wrapping_add(ZSTD_blockHeaderSize)
@@ -9990,7 +9990,7 @@ unsafe fn ZSTD_getCParamMode(
         ZSTD_cpm_noAttachDict
     }
 }
-#[export_name = crate::prefix!(ZSTD_resetCStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetCStream))]
 pub unsafe extern "C" fn ZSTD_resetCStream(
     mut zcs: *mut ZSTD_CStream,
     mut pss: core::ffi::c_ulonglong,
@@ -10040,7 +10040,7 @@ pub unsafe fn ZSTD_initCStream_internal(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream_usingCDict_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     mut zcs: *mut ZSTD_CStream,
     mut cdict: *const ZSTD_CDict,
@@ -10062,7 +10062,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream_usingCDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     mut zcs: *mut ZSTD_CStream,
     mut cdict: *const ZSTD_CDict,
@@ -10077,7 +10077,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream_advanced)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     mut zcs: *mut ZSTD_CStream,
     mut dict: *const core::ffi::c_void,
@@ -10109,7 +10109,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream_usingDict)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     mut zcs: *mut ZSTD_CStream,
     mut dict: *const core::ffi::c_void,
@@ -10130,7 +10130,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream_srcSize)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_srcSize))]
 pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     mut zcs: *mut ZSTD_CStream,
     mut compressionLevel: core::ffi::c_int,
@@ -10159,7 +10159,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_initCStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream))]
 pub unsafe extern "C" fn ZSTD_initCStream(
     mut zcs: *mut ZSTD_CStream,
     mut compressionLevel: core::ffi::c_int,
@@ -10475,7 +10475,7 @@ unsafe fn ZSTD_nextInputSizeHint_MTorST(mut cctx: *const ZSTD_CCtx) -> size_t {
     }
     ZSTD_nextInputSizeHint(cctx)
 }
-#[export_name = crate::prefix!(ZSTD_compressStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream))]
 pub unsafe extern "C" fn ZSTD_compressStream(
     mut zcs: *mut ZSTD_CStream,
     mut output: *mut ZSTD_outBuffer,
@@ -10658,7 +10658,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
     }
     0
 }
-#[export_name = crate::prefix!(ZSTD_compressStream2)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream2))]
 pub unsafe extern "C" fn ZSTD_compressStream2(
     mut cctx: *mut ZSTD_CCtx,
     mut output: *mut ZSTD_outBuffer,
@@ -10769,7 +10769,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
     ZSTD_setBufferExpectations(cctx, output, input);
     ((*cctx).outBuffContentSize).wrapping_sub((*cctx).outBuffFlushedSize)
 }
-#[export_name = crate::prefix!(ZSTD_compressStream2_simpleArgs)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream2_simpleArgs))]
 pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -10801,7 +10801,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
     *srcPos = input.pos;
     cErr
 }
-#[export_name = crate::prefix!(ZSTD_compress2)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress2))]
 pub unsafe extern "C" fn ZSTD_compress2(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -11391,7 +11391,7 @@ unsafe fn ZSTD_compressSequences_internal(
     }
     cSize
 }
-#[export_name = crate::prefix!(ZSTD_compressSequences)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequences))]
 pub unsafe extern "C" fn ZSTD_compressSequences(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -11793,7 +11793,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     }
     cSize
 }
-#[export_name = crate::prefix!(ZSTD_compressSequencesAndLiterals)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequencesAndLiterals))]
 pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     mut cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
@@ -11870,7 +11870,7 @@ unsafe fn inBuffer_forEndFlush(mut zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
         nullInput
     }
 }
-#[export_name = crate::prefix!(ZSTD_flushStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_flushStream))]
 pub unsafe extern "C" fn ZSTD_flushStream(
     mut zcs: *mut ZSTD_CStream,
     mut output: *mut ZSTD_outBuffer,
@@ -11879,7 +11879,7 @@ pub unsafe extern "C" fn ZSTD_flushStream(
     input.size = input.pos;
     ZSTD_compressStream2(zcs, output, &mut input, ZSTD_e_flush)
 }
-#[export_name = crate::prefix!(ZSTD_endStream)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_endStream))]
 pub unsafe extern "C" fn ZSTD_endStream(
     mut zcs: *mut ZSTD_CStream,
     mut output: *mut ZSTD_outBuffer,
@@ -11911,7 +11911,7 @@ pub unsafe extern "C" fn ZSTD_endStream(
 pub const fn ZSTD_maxCLevel() -> core::ffi::c_int {
     ZSTD_MAX_CLEVEL
 }
-#[export_name = crate::prefix!(ZSTD_defaultCLevel)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_defaultCLevel))]
 pub unsafe extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
@@ -11953,7 +11953,7 @@ unsafe fn ZSTD_getCParamRowSize(
             .wrapping_add(addedSize)
     }
 }
-#[export_name = crate::prefix!(ZSTD_getCParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParams))]
 pub unsafe extern "C" fn ZSTD_getCParams(
     mut compressionLevel: core::ffi::c_int,
     mut srcSizeHint: core::ffi::c_ulonglong,
@@ -11964,7 +11964,7 @@ pub unsafe extern "C" fn ZSTD_getCParams(
     }
     ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, ZSTD_cpm_unknown)
 }
-#[export_name = crate::prefix!(ZSTD_getParams)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getParams))]
 pub unsafe extern "C" fn ZSTD_getParams(
     mut compressionLevel: core::ffi::c_int,
     mut srcSizeHint: core::ffi::c_ulonglong,
@@ -13079,7 +13079,7 @@ unsafe fn ZSTD_getParams_internal(
     params.fParams.contentSizeFlag = 1;
     params
 }
-#[export_name = crate::prefix!(ZSTD_registerSequenceProducer)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_registerSequenceProducer))]
 pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
     mut zc: *mut ZSTD_CCtx,
     mut extSeqProdState: *mut core::ffi::c_void,
@@ -13091,7 +13091,7 @@ pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
         extSeqProdFunc,
     );
 }
-#[export_name = crate::prefix!(ZSTD_CCtxParams_registerSequenceProducer)]
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_registerSequenceProducer))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
     mut params: *mut ZSTD_CCtx_params,
     mut extSeqProdState: *mut core::ffi::c_void,
