@@ -189,8 +189,6 @@ pub struct SerialState {
     pub ldmWindowCond: pthread_cond_t,
     pub ldmWindow: ZSTD_window_t,
 }
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
 pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;

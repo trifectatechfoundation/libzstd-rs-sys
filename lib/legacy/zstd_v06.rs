@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{free, malloc, memcpy, memmove, memset, size_t};
+use libc::{free, malloc, memcpy, memmove, memset, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
@@ -8,7 +8,6 @@ use crate::lib::common::mem::{
 };
 use crate::lib::zstd::*;
 
-pub type ptrdiff_t = core::ffi::c_long;
 pub type ZSTDv06_DCtx = ZSTDv06_DCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -3274,7 +3273,7 @@ unsafe fn ZSTDv06_execSequence(
             ZSTDv06_wildcopy(
                 op as *mut core::ffi::c_void,
                 match_0 as *const core::ffi::c_void,
-                oend_8.offset_from(op) as core::ffi::c_long,
+                oend_8.offset_from(op) as ptrdiff_t,
             );
             match_0 = match_0.offset(oend_8.offset_from(op) as core::ffi::c_long as isize);
             op = oend_8;

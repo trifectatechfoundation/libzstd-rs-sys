@@ -27,8 +27,6 @@ pub struct ZSTD_DDict {
     entropyPresent: u32,
     cMem: ZSTD_customMem,
 }
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
 pub type ZSTD_dictContentType_e = core::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;

@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{free, malloc, memcpy, memmove, memset, size_t};
+use libc::{free, malloc, memcpy, memmove, memset, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError};
 use crate::lib::common::mem::{
@@ -12,8 +12,6 @@ use crate::lib::common::xxhash::{
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::zstd::*;
 
-pub type ptrdiff_t = core::ffi::c_long;
-pub type XXH64_hash_t = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv07_frameParams {
@@ -135,7 +133,6 @@ pub struct FSEv07_DTableHeader {
     pub tableLog: u16,
     pub fastMode: u16,
 }
-pub type S16 = i16;
 pub const lbt_rle: litBlockType_t = 3;
 pub const lbt_raw: litBlockType_t = 2;
 #[derive(Copy, Clone)]
@@ -726,7 +723,7 @@ pub unsafe fn FSEv07_buildDTable(
     };
     DTableH.tableLog = tableLog as u16;
     DTableH.fastMode = 1;
-    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as S16;
+    let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
     let mut s: u32 = 0;
     s = 0;
     while s < maxSV1 {
@@ -2684,7 +2681,7 @@ static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-static LL_defaultNorm: [S16; 36] = [
+static LL_defaultNorm: [i16; 36] = [
     4,
     3,
     2,
@@ -2717,17 +2714,17 @@ static LL_defaultNorm: [S16; 36] = [
     1,
     1,
     1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
 static LL_defaultNormLog: u32 = 6;
 static ML_bits: [u32; 53] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-static ML_defaultNorm: [S16; 53] = [
+static ML_defaultNorm: [i16; 53] = [
     1,
     4,
     3,
@@ -2774,16 +2771,16 @@ static ML_defaultNorm: [S16; 53] = [
     1,
     1,
     1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
 static ML_defaultNormLog: u32 = 6;
-static OF_defaultNorm: [S16; 29] = [
+static OF_defaultNorm: [i16; 29] = [
     1,
     1,
     1,
@@ -2808,11 +2805,11 @@ static OF_defaultNorm: [S16; 29] = [
     1,
     1,
     1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
+    -(1) as i16,
 ];
 static OF_defaultNormLog: u32 = 5;
 unsafe fn ZSTDv07_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
@@ -3357,7 +3354,7 @@ unsafe extern "C" fn ZSTDv07_buildSeqTable(
     maxLog: u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    defaultNorm: *const S16,
+    defaultNorm: *const i16,
     defaultLog: u32,
     flagRepeatTable: u32,
 ) -> size_t {
@@ -3384,7 +3381,7 @@ unsafe extern "C" fn ZSTDv07_buildSeqTable(
         }
         3 | _ => {
             let mut tableLog: u32 = 0;
-            let mut norm: [S16; 53] = [0; 53];
+            let mut norm: [i16; 53] = [0; 53];
             let headerSize =
                 FSEv07_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize);
             if ERR_isError(headerSize) != 0 {
@@ -3673,7 +3670,7 @@ unsafe fn ZSTDv07_execSequence(
             ZSTDv07_wildcopy(
                 op as *mut core::ffi::c_void,
                 match_0 as *const core::ffi::c_void,
-                oend_w.offset_from(op) as core::ffi::c_long,
+                oend_w.offset_from(op) as ptrdiff_t,
             );
             match_0 = match_0.offset(oend_w.offset_from(op) as core::ffi::c_long as isize);
             op = oend_w;
