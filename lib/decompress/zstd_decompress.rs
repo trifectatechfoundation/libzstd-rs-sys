@@ -1885,7 +1885,7 @@ unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
 ) -> size_t {
     if !matches!(
         (*dctx).stage,
-        DecompressStage::ZSTDds_decompressBlock | DecompressStage::ZSTDds_decompressLastBlock
+        DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock
     ) {
         return (*dctx).expected;
     }
@@ -1911,7 +1911,7 @@ pub unsafe extern "C" fn ZSTD_nextInputType(dctx: *mut ZSTD_DCtx) -> ZSTD_nextIn
 }
 
 unsafe fn ZSTD_isSkipFrame(dctx: *mut ZSTD_DCtx) -> core::ffi::c_int {
-    matches!((*dctx).stage, DecompressStage::ZSTDds_skipFrame) as core::ffi::c_int
+    matches!((*dctx).stage, DecompressStage::SkipFrame) as core::ffi::c_int
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressContinue))]
@@ -1928,7 +1928,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
     (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(srcSize) as u64;
     match (*dctx).stage {
-        DecompressStage::ZSTDds_getFrameHeaderSize => {
+        DecompressStage::GetFrameHeaderSize => {
             if (*dctx).format == Format::ZSTD_f_zstd1
                 && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
@@ -1939,7 +1939,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                     srcSize as libc::size_t,
                 );
                 (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(srcSize);
-                (*dctx).stage = DecompressStage::ZSTDds_decodeSkippableHeader;
+                (*dctx).stage = DecompressStage::DecodeSkippableHeader;
                 return 0;
             }
             let src_slice = core::slice::from_raw_parts(src.cast(), srcSize);
@@ -1953,10 +1953,10 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 srcSize as libc::size_t,
             );
             (*dctx).expected = ((*dctx).headerSize).wrapping_sub(srcSize);
-            (*dctx).stage = DecompressStage::ZSTDds_decodeFrameHeader;
+            (*dctx).stage = DecompressStage::DecodeFrameHeader;
             0
         }
-        DecompressStage::ZSTDds_decodeFrameHeader => {
+        DecompressStage::DecodeFrameHeader => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
                     .as_mut_ptr()
@@ -1974,10 +1974,10 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 return err_code;
             }
             (*dctx).expected = ZSTD_blockHeaderSize;
-            (*dctx).stage = DecompressStage::ZSTDds_decodeBlockHeader;
+            (*dctx).stage = DecompressStage::DecodeBlockHeader;
             0
         }
-        DecompressStage::ZSTDds_decodeBlockHeader => {
+        DecompressStage::DecodeBlockHeader => {
             let mut bp = blockProperties_t {
                 blockType: BlockType::Raw,
                 lastBlock: 0,
@@ -1995,27 +1995,27 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             (*dctx).rleSize = bp.origSize as size_t;
             if cBlockSize != 0 {
                 (*dctx).stage = match bp.lastBlock {
-                    0 => DecompressStage::ZSTDds_decompressBlock,
-                    _ => DecompressStage::ZSTDds_decompressLastBlock,
+                    0 => DecompressStage::DecompressBlock,
+                    _ => DecompressStage::DecompressLastBlock,
                 };
                 return 0;
             }
             if bp.lastBlock != 0 {
                 if (*dctx).fParams.checksumFlag != 0 {
                     (*dctx).expected = 4;
-                    (*dctx).stage = DecompressStage::ZSTDds_checkChecksum;
+                    (*dctx).stage = DecompressStage::CheckChecksum;
                 } else {
                     (*dctx).expected = 0;
-                    (*dctx).stage = DecompressStage::ZSTDds_getFrameHeaderSize;
+                    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
                 }
             } else {
                 (*dctx).expected = ZSTD_blockHeaderSize;
-                (*dctx).stage = DecompressStage::ZSTDds_decodeBlockHeader;
+                (*dctx).stage = DecompressStage::DecodeBlockHeader;
             }
             0
         }
 
-        DecompressStage::ZSTDds_decompressBlock | DecompressStage::ZSTDds_decompressLastBlock => {
+        DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
             let mut rSize: size_t = 0;
             match (*dctx).bType {
                 BlockType::Compressed => {
@@ -2062,7 +2062,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             if (*dctx).expected > 0 {
                 return rSize;
             }
-            if (*dctx).stage == DecompressStage::ZSTDds_decompressLastBlock {
+            if (*dctx).stage == DecompressStage::DecompressLastBlock {
                 if (*dctx).fParams.frameContentSize != (0 as core::ffi::c_ulonglong).wrapping_sub(1)
                     && (*dctx).decodedSize as core::ffi::c_ulonglong
                         != (*dctx).fParams.frameContentSize
@@ -2071,19 +2071,19 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 }
                 if (*dctx).fParams.checksumFlag != 0 {
                     (*dctx).expected = 4;
-                    (*dctx).stage = DecompressStage::ZSTDds_checkChecksum;
+                    (*dctx).stage = DecompressStage::CheckChecksum;
                 } else {
                     ZSTD_DCtx_trace_end(dctx, (*dctx).decodedSize, (*dctx).processedCSize, 1);
                     (*dctx).expected = 0;
-                    (*dctx).stage = DecompressStage::ZSTDds_getFrameHeaderSize;
+                    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
                 }
             } else {
-                (*dctx).stage = DecompressStage::ZSTDds_decodeBlockHeader;
+                (*dctx).stage = DecompressStage::DecodeBlockHeader;
                 (*dctx).expected = ZSTD_blockHeaderSize;
             }
             rSize
         }
-        DecompressStage::ZSTDds_checkChecksum => {
+        DecompressStage::CheckChecksum => {
             if (*dctx).validateChecksum != 0 {
                 let h32 = ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32;
                 let check32 = MEM_readLE32(src);
@@ -2093,10 +2093,10 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             }
             ZSTD_DCtx_trace_end(dctx, (*dctx).decodedSize, (*dctx).processedCSize, 1);
             (*dctx).expected = 0;
-            (*dctx).stage = DecompressStage::ZSTDds_getFrameHeaderSize;
+            (*dctx).stage = DecompressStage::GetFrameHeaderSize;
             0
         }
-        DecompressStage::ZSTDds_decodeSkippableHeader => {
+        DecompressStage::DecodeSkippableHeader => {
             libc::memcpy(
                 ((*dctx).headerBuffer)
                     .as_mut_ptr()
@@ -2110,12 +2110,12 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                     .as_mut_ptr()
                     .offset(ZSTD_FRAMEIDSIZE as isize) as *const core::ffi::c_void,
             ) as size_t;
-            (*dctx).stage = DecompressStage::ZSTDds_skipFrame;
+            (*dctx).stage = DecompressStage::SkipFrame;
             0
         }
-        DecompressStage::ZSTDds_skipFrame => {
+        DecompressStage::SkipFrame => {
             (*dctx).expected = 0;
-            (*dctx).stage = DecompressStage::ZSTDds_getFrameHeaderSize;
+            (*dctx).stage = DecompressStage::GetFrameHeaderSize;
             0
         }
     }
@@ -2282,7 +2282,7 @@ unsafe fn ZSTD_decompress_insertDictionary(dctx: *mut ZSTD_DCtx, dict: &[u8]) ->
 pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
     (*dctx).traceCtx = ZSTD_trace_decompress_begin.map_or(0, |f| f(dctx));
     (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
-    (*dctx).stage = DecompressStage::ZSTDds_getFrameHeaderSize;
+    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
     (*dctx).processedCSize = 0;
     (*dctx).decodedSize = 0;
     (*dctx).previousDstEnd = core::ptr::null();
@@ -3317,7 +3317,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                                     .offset(ZSTD_FRAMEIDSIZE as isize)
                                     as *const core::ffi::c_void,
                             ) as size_t;
-                            (*zds).stage = DecompressStage::ZSTDds_skipFrame;
+                            (*zds).stage = DecompressStage::SkipFrame;
                         } else {
                             let err_code_3 = ZSTD_decodeFrameHeader(
                                 zds,
@@ -3328,7 +3328,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                                 return err_code_3;
                             }
                             (*zds).expected = ZSTD_blockHeaderSize;
-                            (*zds).stage = DecompressStage::ZSTDds_decodeBlockHeader;
+                            (*zds).stage = DecompressStage::DecodeBlockHeader;
                         }
                         (*zds).fParams.windowSize =
                             if (*zds).fParams.windowSize > ((1) << 10) as core::ffi::c_ulonglong {
