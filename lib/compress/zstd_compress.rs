@@ -1880,20 +1880,30 @@ unsafe fn ZSTD_cpuid() -> ZSTD_cpuid_t {
     let mut f7c = 0;
     let mut n: u32 = 0;
     asm!(
-        "cpuid", inlateout("ax") 0 => n, out("ecx") _, out("edx") _,
+        "cpuid",
+        inlateout("ax") 0 => n,
+        out("ecx") _,
+        out("edx") _,
         options(preserves_flags, pure, readonly, att_syntax)
     );
     if n >= 1 {
         asm!(
-            "cpuid", inlateout("ax") 1 => _, lateout("cx") f1c,
-            lateout("dx") f1d, options(preserves_flags, pure, readonly, att_syntax)
+            "cpuid",
+            inlateout("ax") 1 => _,
+            lateout("cx") f1c,
+            lateout("dx") f1d,
+            options(preserves_flags, pure, readonly, att_syntax)
         );
     }
     if n >= 7 {
         asm!(
-            "cpuid\nmov {restmp0:x}, %bx", restmp0 = lateout(reg) f7b, inlateout("ax") 7
-            as core::ffi::c_int => _, inlateout("cx") 0 => f7c,
-            out("edx") _, options(preserves_flags, pure, readonly, att_syntax)
+            "cpuid
+            mov {restmp0:x}, %bx",
+            restmp0 = lateout(reg) f7b,
+            inlateout("ax") 7 => _,
+            inlateout("cx") 0 => f7c,
+            out("edx") _,
+            options(preserves_flags, pure, readonly, att_syntax)
         );
     }
     let mut cpuid = ZSTD_cpuid_t {
