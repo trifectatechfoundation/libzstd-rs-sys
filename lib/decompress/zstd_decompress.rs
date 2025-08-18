@@ -18,14 +18,13 @@ use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
     DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp,
 };
-use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
+use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
     getc_block_size, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
     ZSTD_getcBlockSize,
 };
-use crate::lib::decompress::BlockType;
 use crate::lib::decompress::{
-    blockProperties_t, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read,
+    blockProperties_t, zdss_flush, zdss_init, zdss_load, zdss_loadHeader, zdss_read, BlockType,
     DecompressStage, LL_base, ML_base, OF_base, OF_bits, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader,
     ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t,
     ZSTD_forceIgnoreChecksum_e, ZSTD_frame, ZSTD_skippableFrame, ZSTD_use_indefinitely,
@@ -62,9 +61,6 @@ use crate::lib::decompress::zstd_ddict::{
 };
 
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
-pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
-pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -724,7 +720,7 @@ unsafe fn ZSTD_DCtx_resetParameters(dctx: *mut ZSTD_DCtx) {
     (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
     (*dctx).outBufferMode = ZSTD_bm_buffered;
     (*dctx).forceIgnoreChecksum = ZSTD_d_validateChecksum;
-    (*dctx).refMultipleDDicts = ZSTD_rmd_refSingleDDict;
+    (*dctx).refMultipleDDicts = MultipleDDicts::Single;
     (*dctx).disableHufAsm = 0;
     (*dctx).maxBlockSizeParam = 0;
 }
@@ -1270,10 +1266,7 @@ unsafe fn ZSTD_decodeFrameHeader(
     if result > 0 {
         return Error::srcSize_wrong.to_error_code();
     }
-    if (*dctx).refMultipleDDicts as core::ffi::c_uint
-        == ZSTD_rmd_refMultipleDDicts as core::ffi::c_int as core::ffi::c_uint
-        && !((*dctx).ddictSet).is_null()
-    {
+    if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple && !((*dctx).ddictSet).is_null() {
         ZSTD_DCtx_selectFrameDDict(dctx);
     }
     if (*dctx).fParams.dictID != 0 && (*dctx).dictID != (*dctx).fParams.dictID {
@@ -2575,9 +2568,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
     if !ddict.is_null() {
         (*dctx).ddict = ddict;
         (*dctx).dictUses = ZSTD_use_indefinitely;
-        if (*dctx).refMultipleDDicts as core::ffi::c_uint
-            == ZSTD_rmd_refMultipleDDicts as core::ffi::c_int as core::ffi::c_uint
-        {
+        if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
             if ((*dctx).ddictSet).is_null() {
                 (*dctx).ddictSet = ZSTD_createDDictHashSet((*dctx).customMem);
                 if ((*dctx).ddictSet).is_null() {
@@ -2660,8 +2651,8 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
             return bounds;
         }
         1003 => {
-            bounds.lowerBound = ZSTD_rmd_refSingleDDict as core::ffi::c_int;
-            bounds.upperBound = ZSTD_rmd_refMultipleDDicts as core::ffi::c_int;
+            bounds.lowerBound = MultipleDDicts::Single as core::ffi::c_int;
+            bounds.upperBound = MultipleDDicts::Multiple as core::ffi::c_int;
             return bounds;
         }
         1004 => {
@@ -2781,13 +2772,13 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0;
         }
         1003 => {
-            if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam4, value) == 0 {
+            let Ok(value) = MultipleDDicts::try_from(value as u32) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
+            };
             if (*dctx).staticSize != 0 {
                 return Error::parameter_unsupported.to_error_code();
             }
-            (*dctx).refMultipleDDicts = value as ZSTD_refMultipleDDicts_e;
+            (*dctx).refMultipleDDicts = value;
             return 0;
         }
         1004 => {
@@ -3138,7 +3129,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 (*zds).lhSize,
                 (*zds).format as _,
             );
-            if (*zds).refMultipleDDicts as core::ffi::c_uint != 0 && !((*zds).ddictSet).is_null() {
+            if (*zds).refMultipleDDicts != MultipleDDicts::Single && !((*zds).ddictSet).is_null() {
                 ZSTD_DCtx_selectFrameDDict(zds);
             }
             if ERR_isError(hSize) != 0 {
