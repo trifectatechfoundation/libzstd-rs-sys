@@ -4,7 +4,7 @@ use crate::lib::common::xxhash::XXH64_state_t;
 
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
-use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet, ZSTD_refMultipleDDicts_e};
+use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::FseWorkspace;
 use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
@@ -258,7 +258,7 @@ pub struct ZSTD_DCtx_s {
     pub ddictIsCold: core::ffi::c_int,
     pub dictUses: ZSTD_dictUses_e,
     pub ddictSet: *mut ZSTD_DDictHashSet,
-    pub refMultipleDDicts: ZSTD_refMultipleDDicts_e,
+    pub refMultipleDDicts: MultipleDDicts,
     pub disableHufAsm: core::ffi::c_int,
     pub maxBlockSizeParam: core::ffi::c_int,
     pub streamStage: ZSTD_dStreamStage,
