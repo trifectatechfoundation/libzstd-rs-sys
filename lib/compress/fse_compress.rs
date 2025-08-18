@@ -663,7 +663,7 @@ pub unsafe fn FSE_normalizeCount(
     let lowProbCount = (if useLowProbCount != 0 { -(1) } else { 1 }) as core::ffi::c_short;
     let scale = (62 as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
     let step = (1 << 62) / total as u32 as u64;
-    let vStep = (1 << scale.wrapping_sub(20)) as u64;
+    let vStep = 1u64.wrapping_shl(scale.wrapping_sub(20) as u32);
     let mut stillToDistribute = (1) << tableLog;
     let mut s: core::ffi::c_uint = 0;
     let mut largest = 0;
