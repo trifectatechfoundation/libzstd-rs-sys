@@ -94,7 +94,5 @@ macro_rules! prefix {
     };
 }
 
-use libc::size_t;
-
 #[cfg(feature = "export-symbols")]
 pub(crate) use prefix;

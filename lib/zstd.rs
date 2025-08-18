@@ -1,4 +1,4 @@
-use crate::size_t;
+use libc::size_t;
 
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 
