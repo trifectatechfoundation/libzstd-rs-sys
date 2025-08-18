@@ -1,8 +1,9 @@
 use core::ffi::c_char;
 use std::ffi::c_uint;
 
+use libc::size_t;
+
 use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
-use crate::size_t;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
