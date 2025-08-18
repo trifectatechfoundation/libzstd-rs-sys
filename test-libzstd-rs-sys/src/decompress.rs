@@ -146,8 +146,156 @@ mod fastest_wasm_zlib {
     }
 }
 
-#[test]
+macro_rules! decompress_continue {
+    ($compressed:expr, $dict:expr) => {{
+        use core::ffi::c_void;
+        use std::ffi::CStr;
 
+        unsafe {
+            let dctx = ZSTD_createDCtx();
+            if dctx.is_null() {
+                panic!("Failed to create DCtx");
+            }
+
+            let init_res = if let Some(dict) = $dict {
+                ZSTD_decompressBegin_usingDict(dctx, dict.as_ptr() as *const c_void, dict.len())
+            } else {
+                ZSTD_decompressBegin(dctx)
+            };
+
+            if ZSTD_isError(init_res) != 0 {
+                let err = ZSTD_getErrorName(init_res);
+                panic!(
+                    "Failed to begin decompression: {}",
+                    CStr::from_ptr(err).to_string_lossy()
+                );
+            }
+
+            let size =
+                ZSTD_getFrameContentSize($compressed.as_ptr() as *const c_void, $compressed.len());
+
+            if size == ZSTD_CONTENTSIZE_UNKNOWN as _ {
+                panic!("ZSTD_CONTENTSIZE_UNKNOWN");
+            }
+            if size == ZSTD_CONTENTSIZE_ERROR as _ {
+                panic!("ZSTD_CONTENTSIZE_ERROR");
+            }
+
+            let mut output_buf = vec![0u8; size as usize];
+            let mut out_pos = 0;
+
+            let mut in_pos = 0;
+            while in_pos < $compressed.len() {
+                // how many bytes does the decoder expect next?
+                let needed = ZSTD_nextSrcSizeToDecompress(dctx);
+
+                if needed == 0 {
+                    break; // done
+                }
+                if in_pos + needed > $compressed.len() {
+                    panic!("Truncated input, expected {} more bytes", needed);
+                }
+
+                let chunk = &$compressed[in_pos..in_pos + needed];
+
+                let decompressed = ZSTD_decompressContinue(
+                    dctx,
+                    output_buf[out_pos..].as_mut_ptr() as *mut c_void,
+                    (output_buf.len() - out_pos) as usize,
+                    chunk.as_ptr() as *const c_void,
+                    needed,
+                );
+
+                if ZSTD_isError(decompressed) != 0 {
+                    let err = ZSTD_getErrorName(decompressed);
+                    panic!(
+                        "ZSTD_decompressContinue failed: {}",
+                        CStr::from_ptr(err).to_string_lossy()
+                    );
+                }
+
+                out_pos += decompressed;
+                in_pos += needed;
+            }
+
+            ZSTD_freeDCtx(dctx);
+
+            output_buf.truncate(out_pos);
+            output_buf
+        }
+    }};
+}
+
+fn decompress_continue_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use zstd_sys::*;
+
+    decompress_continue!(compressed, dict)
+}
+
+fn decompress_continue_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use libzstd_rs::*;
+
+    decompress_continue!(compressed, dict)
+}
+
+mod fastest_wasm_zlib_continue {
+    use super::*;
+
+    const DECOMPRESSED: &[u8] = include_bytes!("../test-data/The fastest WASM zlib.md");
+
+    #[track_caller]
+    fn helper(compressed: &[u8]) {
+        let c = decompress_continue_c(compressed, None);
+        assert_eq!(DECOMPRESSED, c);
+
+        let rs = decompress_continue_rs(compressed, None);
+
+        assert_eq!(c, rs);
+    }
+
+    #[test]
+    fn zstd_1() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-1.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long27_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-long27-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long_ultra_22() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-ultra-22.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_custom_dict() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
+        const COMPRESSED: &[u8] =
+            include_bytes!("../test-data/The fastest WASM zlib.md.zstd-custom-dict.zst");
+
+        let c = decompress_stream_c(COMPRESSED, Some(DICT));
+        assert_eq!(DECOMPRESSED, c);
+
+        let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        assert_eq!(c, rs);
+    }
+}
+
+#[test]
 fn decompress_using_dict() {
     use std::ffi::c_void;
 
