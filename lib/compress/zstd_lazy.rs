@@ -104,7 +104,9 @@ use libc::size_t;
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };
-use crate::lib::common::zstd_internal::{ZSTD_copy16, ZSTD_wildcopy, WILDCOPY_OVERLENGTH};
+use crate::lib::common::zstd_internal::{
+    ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
+};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
@@ -381,8 +383,6 @@ unsafe fn ZSTD_getLowestPrefixIndex(
 unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
-pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
-pub const MINMATCH: core::ffi::c_int = 3;
 #[inline]
 unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint

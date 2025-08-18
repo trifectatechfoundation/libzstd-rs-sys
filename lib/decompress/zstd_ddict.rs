@@ -45,7 +45,6 @@ pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = DictLoadMethod::ByRef as _;
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTD_FRAMEIDSIZE: usize = 4;
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
     size: size_t,
