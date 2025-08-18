@@ -43,8 +43,8 @@ pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_FRAMEIDSIZE: core::ffi::c_int = 4;
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
-    mut size: size_t,
-    mut customMem: ZSTD_customMem,
+    size: size_t,
+    customMem: ZSTD_customMem,
 ) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
@@ -52,10 +52,7 @@ unsafe extern "C" fn ZSTD_customMalloc(
     malloc(size)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_customFree(
-    mut ptr: *mut core::ffi::c_void,
-    mut customMem: ZSTD_customMem,
-) {
+unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
     if !ptr.is_null() {
         if (customMem.customFree).is_some() {
             (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
@@ -65,13 +62,13 @@ unsafe extern "C" fn ZSTD_customFree(
     }
 }
 pub const NULL: core::ffi::c_int = 0;
-pub unsafe fn ZSTD_DDict_dictContent(mut ddict: *const ZSTD_DDict) -> *const core::ffi::c_void {
+pub unsafe fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const core::ffi::c_void {
     (*ddict).dictContent
 }
-pub unsafe fn ZSTD_DDict_dictSize(mut ddict: *const ZSTD_DDict) -> size_t {
+pub unsafe fn ZSTD_DDict_dictSize(ddict: *const ZSTD_DDict) -> size_t {
     (*ddict).dictSize
 }
-pub unsafe fn ZSTD_copyDDictParameters(mut dctx: *mut ZSTD_DCtx, mut ddict: *const ZSTD_DDict) {
+pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: *const ZSTD_DDict) {
     (*dctx).dictID = (*ddict).dictID;
     (*dctx).prefixStart = (*ddict).dictContent;
     (*dctx).virtualStart = (*ddict).dictContent;
@@ -94,8 +91,8 @@ pub unsafe fn ZSTD_copyDDictParameters(mut dctx: *mut ZSTD_DCtx, mut ddict: *con
     };
 }
 unsafe fn ZSTD_loadEntropy_intoDDict(
-    mut ddict: *mut ZSTD_DDict,
-    mut dictContentType: ZSTD_dictContentType_e,
+    ddict: *mut ZSTD_DDict,
+    dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
     (*ddict).dictID = 0;
     (*ddict).entropyPresent = 0;
@@ -137,11 +134,11 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
     0
 }
 unsafe fn ZSTD_initDDict_internal(
-    mut ddict: *mut ZSTD_DDict,
-    mut dict: *const core::ffi::c_void,
+    ddict: *mut ZSTD_DDict,
+    dict: *const core::ffi::c_void,
     mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
     if dictLoadMethod as core::ffi::c_uint
         == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
@@ -172,11 +169,11 @@ unsafe fn ZSTD_initDDict_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_advanced))]
 pub unsafe extern "C" fn ZSTD_createDDict_advanced(
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut customMem: ZSTD_customMem,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
+    customMem: ZSTD_customMem,
 ) -> *mut ZSTD_DDict {
     if (customMem.customAlloc).is_none() as core::ffi::c_int
         ^ (customMem.customFree).is_none() as core::ffi::c_int
@@ -200,8 +197,8 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict))]
 pub unsafe extern "C" fn ZSTD_createDDict(
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
         ZSTD_customMem {
@@ -218,8 +215,8 @@ pub unsafe extern "C" fn ZSTD_createDDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
-    mut dictBuffer: *const core::ffi::c_void,
-    mut dictSize: size_t,
+    dictBuffer: *const core::ffi::c_void,
+    dictSize: size_t,
 ) -> *mut ZSTD_DDict {
     let allocator = {
         ZSTD_customMem {
@@ -242,12 +239,12 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDDict))]
 pub unsafe extern "C" fn ZSTD_initStaticDDict(
-    mut sBuffer: *mut core::ffi::c_void,
-    mut sBufferSize: size_t,
+    sBuffer: *mut core::ffi::c_void,
+    sBufferSize: size_t,
     mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
 ) -> *const ZSTD_DDict {
     let neededSpace = (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
         if dictLoadMethod as core::ffi::c_uint
@@ -288,7 +285,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     ddict
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDDict))]
-pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
+pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0;
     }
@@ -299,8 +296,8 @@ pub unsafe extern "C" fn ZSTD_freeDDict(mut ddict: *mut ZSTD_DDict) -> size_t {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDDictSize))]
 pub unsafe extern "C" fn ZSTD_estimateDDictSize(
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
     (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
         if dictLoadMethod as core::ffi::c_uint
@@ -313,7 +310,7 @@ pub unsafe extern "C" fn ZSTD_estimateDDictSize(
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
-pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size_t {
+pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0;
     }
@@ -326,9 +323,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(mut ddict: *const ZSTD_DDict) -> size
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromDDict))]
-pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(
-    mut ddict: *const ZSTD_DDict,
-) -> core::ffi::c_uint {
+pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> core::ffi::c_uint {
     if ddict.is_null() {
         return 0;
     }

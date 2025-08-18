@@ -12,13 +12,13 @@ pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
 pub const HIST_WKSP_SIZE: size_t = (HIST_WKSP_SIZE_U32 as size_t)
     .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t);
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
-pub unsafe fn HIST_isError(mut code: size_t) -> core::ffi::c_uint {
+pub unsafe fn HIST_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
 pub unsafe fn HIST_add(
-    mut count: *mut core::ffi::c_uint,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    count: *mut core::ffi::c_uint,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) {
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
@@ -30,10 +30,10 @@ pub unsafe fn HIST_add(
     }
 }
 pub unsafe fn HIST_count_simple(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> core::ffi::c_uint {
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
@@ -71,11 +71,11 @@ pub unsafe fn HIST_count_simple(
     largestCount
 }
 unsafe fn HIST_count_parallel_wksp(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut source: *const core::ffi::c_void,
-    mut sourceSize: size_t,
-    mut check: HIST_checkInput_e,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
+    check: HIST_checkInput_e,
     workSpace: *mut u32,
 ) -> size_t {
     let mut ip = source as *const u8;
@@ -184,12 +184,12 @@ unsafe fn HIST_count_parallel_wksp(
     max as size_t
 }
 pub unsafe fn HIST_countFast_wksp(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut source: *const core::ffi::c_void,
-    mut sourceSize: size_t,
-    mut workSpace: *mut core::ffi::c_void,
-    mut workSpaceSize: size_t,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
+    workSpace: *mut core::ffi::c_void,
+    workSpaceSize: size_t,
 ) -> size_t {
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
         return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
@@ -210,12 +210,12 @@ pub unsafe fn HIST_countFast_wksp(
     )
 }
 pub unsafe fn HIST_count_wksp(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut source: *const core::ffi::c_void,
-    mut sourceSize: size_t,
-    mut workSpace: *mut core::ffi::c_void,
-    mut workSpaceSize: size_t,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
+    workSpace: *mut core::ffi::c_void,
+    workSpaceSize: size_t,
 ) -> size_t {
     if workSpace as size_t & 3 != 0 {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
@@ -244,10 +244,10 @@ pub unsafe fn HIST_count_wksp(
     )
 }
 pub unsafe fn HIST_countFast(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut source: *const core::ffi::c_void,
-    mut sourceSize: size_t,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    source: *const core::ffi::c_void,
+    sourceSize: size_t,
 ) -> size_t {
     let mut tmpCounters: [core::ffi::c_uint; 1024] = [0; 1024];
     HIST_countFast_wksp(
@@ -260,10 +260,10 @@ pub unsafe fn HIST_countFast(
     )
 }
 pub unsafe fn HIST_count(
-    mut count: *mut core::ffi::c_uint,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    count: *mut core::ffi::c_uint,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let mut tmpCounters: [core::ffi::c_uint; 1024] = [0; 1024];
     HIST_count_wksp(

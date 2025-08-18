@@ -68,7 +68,7 @@ const fn get_middle_bits(
 }
 
 impl BIT_DStream_t {
-    pub fn new(mut srcBuffer: &[u8]) -> Result<Self, Error> {
+    pub fn new(srcBuffer: &[u8]) -> Result<Self, Error> {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
@@ -172,7 +172,7 @@ impl BIT_DStream_t {
     }
 
     #[inline(always)]
-    pub const fn skip_bits(&mut self, mut nbBits: u32) {
+    pub const fn skip_bits(&mut self, nbBits: u32) {
         self.bitsConsumed += nbBits;
     }
 

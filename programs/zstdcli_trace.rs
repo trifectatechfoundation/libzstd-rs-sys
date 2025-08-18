@@ -58,7 +58,7 @@ static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
-pub unsafe fn TRACE_enable(mut filename: *const core::ffi::c_char) {
+pub unsafe fn TRACE_enable(filename: *const core::ffi::c_char) {
     let writeHeader = (UTIL_isRegularFile(filename) == 0) as core::ffi::c_int;
     if !g_traceFile.is_null() {
         fclose(g_traceFile);
@@ -79,11 +79,7 @@ pub unsafe fn TRACE_finish() {
     }
     g_traceFile = NULL as *mut FILE;
 }
-unsafe fn TRACE_log(
-    mut method: *const core::ffi::c_char,
-    mut duration: PTime,
-    mut trace: *const ZSTD_Trace,
-) {
+unsafe fn TRACE_log(method: *const core::ffi::c_char, duration: PTime, trace: *const ZSTD_Trace) {
     let mut level = 0;
     let mut workers = 0;
     let ratio = (*trace).uncompressedSize as core::ffi::c_double
@@ -124,10 +120,7 @@ pub unsafe extern "C" fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> Z
     UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_trace_compress_end(
-    mut ctx: ZSTD_TraceCtx,
-    mut trace: *const ZSTD_Trace,
-) {
+pub unsafe extern "C" fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace) {
     let beginNanos = ctx as PTime;
     let endNanos = UTIL_clockSpanNano(g_enableTime);
     let durationNanos = if endNanos > beginNanos {
@@ -149,10 +142,7 @@ pub unsafe extern "C" fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) ->
     UTIL_clockSpanNano(g_enableTime) as ZSTD_TraceCtx
 }
 #[no_mangle]
-pub unsafe extern "C" fn ZSTD_trace_decompress_end(
-    mut ctx: ZSTD_TraceCtx,
-    mut trace: *const ZSTD_Trace,
-) {
+pub unsafe extern "C" fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace) {
     let beginNanos = ctx as PTime;
     let endNanos = UTIL_clockSpanNano(g_enableTime);
     let durationNanos = if endNanos > beginNanos {

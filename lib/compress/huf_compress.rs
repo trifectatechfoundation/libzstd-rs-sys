@@ -95,11 +95,11 @@ pub union C2RustUnnamed_1 {
     pub hist_wksp: [u32; 1024],
 }
 #[inline]
-const fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+const fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-const fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
+const fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 pub const HUF_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
@@ -110,9 +110,9 @@ pub const HUF_CTABLEBOUND: core::ffi::c_int = 129;
 pub const NULL: core::ffi::c_int = 0;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe fn HUF_alignUpWorkspace(
-    mut workspace: *mut core::ffi::c_void,
-    mut workspaceSizePtr: *mut size_t,
-    mut align: size_t,
+    workspace: *mut core::ffi::c_void,
+    workspaceSizePtr: *mut size_t,
+    align: size_t,
 ) -> *mut core::ffi::c_void {
     let mask = align.wrapping_sub(1);
     let rem = workspace as size_t & mask;
@@ -128,11 +128,11 @@ unsafe fn HUF_alignUpWorkspace(
 }
 pub const MAX_FSE_TABLELOG_FOR_HUFF_HEADER: core::ffi::c_int = 6;
 unsafe fn HUF_compressWeights(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut weightTable: *const core::ffi::c_void,
-    mut wtSize: size_t,
-    mut workspace: *mut core::ffi::c_void,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    weightTable: *const core::ffi::c_void,
+    wtSize: size_t,
+    workspace: *mut core::ffi::c_void,
     mut workspaceSize: size_t,
 ) -> size_t {
     let ostart = dst as *mut u8;
@@ -140,7 +140,7 @@ unsafe fn HUF_compressWeights(
     let oend = ostart.add(dstSize);
     let mut maxSymbolValue = HUF_TABLELOG_MAX as core::ffi::c_uint;
     let mut tableLog = MAX_FSE_TABLELOG_FOR_HUFF_HEADER as u32;
-    let mut wksp = HUF_alignUpWorkspace(
+    let wksp = HUF_alignUpWorkspace(
         workspace,
         &mut workspaceSize,
         ::core::mem::align_of::<u32>() as size_t,
@@ -213,22 +213,22 @@ unsafe fn HUF_compressWeights(
     op = op.add(cSize);
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-fn HUF_getNbBits(mut elt: HUF_CElt) -> size_t {
+fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
     elt & 0xff as core::ffi::c_int as HUF_CElt
 }
-fn HUF_getNbBitsFast(mut elt: HUF_CElt) -> size_t {
+fn HUF_getNbBitsFast(elt: HUF_CElt) -> size_t {
     elt
 }
-fn HUF_getValue(mut elt: HUF_CElt) -> size_t {
+fn HUF_getValue(elt: HUF_CElt) -> size_t {
     elt & !(0xff as core::ffi::c_int as size_t)
 }
-fn HUF_getValueFast(mut elt: HUF_CElt) -> size_t {
+fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
     elt
 }
-unsafe fn HUF_setNbBits(mut elt: *mut HUF_CElt, mut nbBits: size_t) {
+unsafe fn HUF_setNbBits(elt: *mut HUF_CElt, nbBits: size_t) {
     *elt = nbBits;
 }
-unsafe fn HUF_setValue(mut elt: *mut HUF_CElt, mut value: size_t) {
+unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
         *elt |= value
@@ -237,7 +237,7 @@ unsafe fn HUF_setValue(mut elt: *mut HUF_CElt, mut value: size_t) {
                 .wrapping_sub(nbBits);
     }
 }
-pub unsafe fn HUF_readCTableHeader(mut ctable: *const HUF_CElt) -> HUF_CTableHeader {
+pub unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTableHeader {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
         maxSymbolValue: 0,
@@ -250,11 +250,7 @@ pub unsafe fn HUF_readCTableHeader(mut ctable: *const HUF_CElt) -> HUF_CTableHea
     );
     header
 }
-unsafe fn HUF_writeCTableHeader(
-    mut ctable: *mut HUF_CElt,
-    mut tableLog: u32,
-    mut maxSymbolValue: u32,
-) {
+unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolValue: u32) {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
         maxSymbolValue: 0,
@@ -274,18 +270,18 @@ unsafe fn HUF_writeCTableHeader(
     );
 }
 pub unsafe fn HUF_writeCTable_wksp(
-    mut dst: *mut core::ffi::c_void,
-    mut maxDstSize: size_t,
-    mut CTable: *const HUF_CElt,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut huffLog: core::ffi::c_uint,
-    mut workspace: *mut core::ffi::c_void,
+    dst: *mut core::ffi::c_void,
+    maxDstSize: size_t,
+    CTable: *const HUF_CElt,
+    maxSymbolValue: core::ffi::c_uint,
+    huffLog: core::ffi::c_uint,
+    workspace: *mut core::ffi::c_void,
     mut workspaceSize: size_t,
 ) -> size_t {
     let ct = CTable.offset(1);
-    let mut op = dst as *mut u8;
+    let op = dst as *mut u8;
     let mut n: u32 = 0;
-    let mut wksp = HUF_alignUpWorkspace(
+    let wksp = HUF_alignUpWorkspace(
         workspace,
         &mut workspaceSize,
         ::core::mem::align_of::<u32>() as size_t,
@@ -362,11 +358,11 @@ pub unsafe fn HUF_writeCTable_wksp(
 }
 
 pub unsafe fn HUF_readCTable(
-    mut CTable: *mut HUF_CElt,
-    mut maxSymbolValuePtr: *mut core::ffi::c_uint,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut hasZeroWeights: *mut core::ffi::c_uint,
+    CTable: *mut HUF_CElt,
+    maxSymbolValuePtr: *mut core::ffi::c_uint,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    hasZeroWeights: *mut core::ffi::c_uint,
 ) -> size_t {
     let src = core::slice::from_raw_parts(src.cast(), srcSize);
 
@@ -400,7 +396,7 @@ pub unsafe fn HUF_readCTable(
     let mut nextRankStart = 0u32;
     n = 1;
     while n <= tableLog {
-        let mut curr = nextRankStart;
+        let curr = nextRankStart;
         nextRankStart = nextRankStart
             .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
         *rankVal.as_mut_ptr().offset(n as isize) = curr;
@@ -455,18 +451,14 @@ pub unsafe fn HUF_readCTable(
     }
     readSize
 }
-pub unsafe fn HUF_getNbBitsFromCTable(mut CTable: *const HUF_CElt, mut symbolValue: u32) -> u32 {
+pub unsafe fn HUF_getNbBitsFromCTable(CTable: *const HUF_CElt, symbolValue: u32) -> u32 {
     let ct = CTable.offset(1);
     if symbolValue > (HUF_readCTableHeader(CTable)).maxSymbolValue as u32 {
         return 0;
     }
     HUF_getNbBits(*ct.offset(symbolValue as isize)) as u32
 }
-unsafe fn HUF_setMaxHeight(
-    mut huffNode: *mut nodeElt,
-    mut lastNonNull: u32,
-    mut targetNbBits: u32,
-) -> u32 {
+unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBits: u32) -> u32 {
     let largestBits = (*huffNode.offset(lastNonNull as isize)).nbBits as u32;
     if largestBits <= targetNbBits {
         return largestBits;
@@ -591,7 +583,7 @@ unsafe fn HUF_getIndex(count: u32) -> u32 {
         (ZSTD_highbit32(count)).wrapping_add(RANK_POSITION_LOG_BUCKETS_BEGIN as core::ffi::c_uint)
     }
 }
-unsafe fn HUF_swapNodes(mut a: *mut nodeElt, mut b: *mut nodeElt) {
+unsafe fn HUF_swapNodes(a: *mut nodeElt, b: *mut nodeElt) {
     core::ptr::swap(a, b);
 }
 #[inline(always)]
@@ -616,7 +608,7 @@ unsafe fn HUF_insertionSort(
     }
 }
 unsafe fn HUF_quickSortPartition(
-    mut arr: *mut nodeElt,
+    arr: *mut nodeElt,
     low: core::ffi::c_int,
     high: core::ffi::c_int,
 ) -> core::ffi::c_int {
@@ -637,7 +629,7 @@ unsafe fn HUF_quickSortPartition(
     i + 1
 }
 unsafe fn HUF_simpleQuickSort(
-    mut arr: *mut nodeElt,
+    arr: *mut nodeElt,
     mut low: core::ffi::c_int,
     mut high: core::ffi::c_int,
 ) {
@@ -658,10 +650,10 @@ unsafe fn HUF_simpleQuickSort(
     }
 }
 unsafe fn HUF_sort(
-    mut huffNode: *mut nodeElt,
-    mut count: *const core::ffi::c_uint,
+    huffNode: *mut nodeElt,
+    count: *const core::ffi::c_uint,
     maxSymbolValue: u32,
-    mut rankPosition: *mut rankPos,
+    rankPosition: *mut rankPos,
 ) {
     let mut n: u32 = 0;
     let maxSymbolValue1 = maxSymbolValue.wrapping_add(1);
@@ -672,7 +664,7 @@ unsafe fn HUF_sort(
     );
     n = 0;
     while n < maxSymbolValue1 {
-        let mut lowerRank = HUF_getIndex(*count.offset(n as isize));
+        let lowerRank = HUF_getIndex(*count.offset(n as isize));
         let fresh8 = &mut (*rankPosition.offset(lowerRank as isize)).base;
         *fresh8 = (*fresh8).wrapping_add(1);
         n = n.wrapping_add(1);
@@ -710,7 +702,7 @@ unsafe fn HUF_sort(
     }
 }
 pub const STARTNODE: core::ffi::c_int = HUF_SYMBOLVALUE_MAX + 1;
-unsafe fn HUF_buildTree(mut huffNode: *mut nodeElt, mut maxSymbolValue: u32) -> core::ffi::c_int {
+unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> core::ffi::c_int {
     let huffNode0 = huffNode.offset(-(1));
     let mut nonNullRank: core::ffi::c_int = 0;
     let mut lowS: core::ffi::c_int = 0;
@@ -786,11 +778,11 @@ unsafe fn HUF_buildTree(mut huffNode: *mut nodeElt, mut maxSymbolValue: u32) -> 
     nonNullRank
 }
 unsafe fn HUF_buildCTableFromTree(
-    mut CTable: *mut HUF_CElt,
-    mut huffNode: *const nodeElt,
-    mut nonNullRank: core::ffi::c_int,
-    mut maxSymbolValue: u32,
-    mut maxNbBits: u32,
+    CTable: *mut HUF_CElt,
+    huffNode: *const nodeElt,
+    nonNullRank: core::ffi::c_int,
+    maxSymbolValue: u32,
+    maxNbBits: u32,
 ) {
     let ct = CTable.offset(1);
     let mut n: core::ffi::c_int = 0;
@@ -835,11 +827,11 @@ unsafe fn HUF_buildCTableFromTree(
     HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
 }
 pub unsafe fn HUF_buildCTable_wksp(
-    mut CTable: *mut HUF_CElt,
-    mut count: *const core::ffi::c_uint,
-    mut maxSymbolValue: u32,
+    CTable: *mut HUF_CElt,
+    count: *const core::ffi::c_uint,
+    maxSymbolValue: u32,
     mut maxNbBits: u32,
-    mut workSpace: *mut core::ffi::c_void,
+    workSpace: *mut core::ffi::c_void,
     mut wkspSize: size_t,
 ) -> size_t {
     let wksp_tables = HUF_alignUpWorkspace(
@@ -879,11 +871,11 @@ pub unsafe fn HUF_buildCTable_wksp(
     maxNbBits as size_t
 }
 pub unsafe fn HUF_estimateCompressedSize(
-    mut CTable: *const HUF_CElt,
-    mut count: *const core::ffi::c_uint,
-    mut maxSymbolValue: core::ffi::c_uint,
+    CTable: *const HUF_CElt,
+    count: *const core::ffi::c_uint,
+    maxSymbolValue: core::ffi::c_uint,
 ) -> size_t {
-    let mut ct = CTable.offset(1);
+    let ct = CTable.offset(1);
     let mut nbBits = 0 as size_t;
     let mut s: core::ffi::c_int = 0;
     s = 0;
@@ -896,12 +888,12 @@ pub unsafe fn HUF_estimateCompressedSize(
     nbBits >> 3
 }
 pub unsafe fn HUF_validateCTable(
-    mut CTable: *const HUF_CElt,
-    mut count: *const core::ffi::c_uint,
-    mut maxSymbolValue: core::ffi::c_uint,
+    CTable: *const HUF_CElt,
+    count: *const core::ffi::c_uint,
+    maxSymbolValue: core::ffi::c_uint,
 ) -> core::ffi::c_int {
-    let mut header = HUF_readCTableHeader(CTable);
-    let mut ct = CTable.offset(1);
+    let header = HUF_readCTableHeader(CTable);
+    let ct = CTable.offset(1);
     let mut bad = 0;
     let mut s: core::ffi::c_int = 0;
     if (header.maxSymbolValue as core::ffi::c_uint) < maxSymbolValue {
@@ -915,15 +907,15 @@ pub unsafe fn HUF_validateCTable(
     }
     (bad == 0) as core::ffi::c_int
 }
-pub fn HUF_compressBound(mut size: size_t) -> size_t {
+pub fn HUF_compressBound(size: size_t) -> size_t {
     (HUF_CTABLEBOUND as size_t).wrapping_add(size.wrapping_add(size >> 8).wrapping_add(8))
 }
 pub const HUF_BITS_IN_CONTAINER: size_t =
     (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8);
 unsafe fn HUF_initCStream(
-    mut bitC: *mut HUF_CStream_t,
-    mut startPtr: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
+    bitC: *mut HUF_CStream_t,
+    startPtr: *mut core::ffi::c_void,
+    dstCapacity: size_t,
 ) -> size_t {
     ptr::write_bytes(bitC as *mut u8, 0, ::core::mem::size_of::<HUF_CStream_t>());
     (*bitC).startPtr = startPtr as *mut u8;
@@ -938,10 +930,10 @@ unsafe fn HUF_initCStream(
 }
 #[inline(always)]
 unsafe fn HUF_addBits(
-    mut bitC: *mut HUF_CStream_t,
-    mut elt: HUF_CElt,
-    mut idx: core::ffi::c_int,
-    mut kFast: core::ffi::c_int,
+    bitC: *mut HUF_CStream_t,
+    elt: HUF_CElt,
+    idx: core::ffi::c_int,
+    kFast: core::ffi::c_int,
 ) {
     *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) >>= HUF_getNbBits(elt);
     *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) |= if kFast != 0 {
@@ -953,12 +945,12 @@ unsafe fn HUF_addBits(
     *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
 }
 #[inline(always)]
-unsafe fn HUF_zeroIndex1(mut bitC: *mut HUF_CStream_t) {
+unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
     *((*bitC).bitContainer).as_mut_ptr().offset(1) = 0;
     *((*bitC).bitPos).as_mut_ptr().offset(1) = 0;
 }
 #[inline(always)]
-unsafe fn HUF_mergeIndex1(mut bitC: *mut HUF_CStream_t) {
+unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
     *((*bitC).bitContainer).as_mut_ptr().offset(0) >>=
         *((*bitC).bitPos).as_mut_ptr().offset(1) & 0xff as core::ffi::c_int as size_t;
     *((*bitC).bitContainer).as_mut_ptr().offset(0) |=
@@ -967,7 +959,7 @@ unsafe fn HUF_mergeIndex1(mut bitC: *mut HUF_CStream_t) {
     *fresh22 = (*fresh22).wrapping_add(*((*bitC).bitPos).as_mut_ptr().offset(1));
 }
 #[inline(always)]
-unsafe fn HUF_flushBits(mut bitC: *mut HUF_CStream_t, mut kFast: core::ffi::c_int) {
+unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: core::ffi::c_int) {
     let nbBits = *((*bitC).bitPos).as_mut_ptr().offset(0) & 0xff as core::ffi::c_int as size_t;
     let nbBytes = nbBits >> 3;
     let bitContainer = *((*bitC).bitContainer).as_mut_ptr().offset(0)
@@ -985,7 +977,7 @@ unsafe fn HUF_endMark() -> HUF_CElt {
     HUF_setValue(&mut endMark, 1);
     endMark
 }
-unsafe fn HUF_closeCStream(mut bitC: *mut HUF_CStream_t) -> size_t {
+unsafe fn HUF_closeCStream(bitC: *mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), 0, 0);
     HUF_flushBits(bitC, 0);
     let nbBits = *((*bitC).bitPos).as_mut_ptr().offset(0) & 0xff as core::ffi::c_int as size_t;
@@ -997,23 +989,23 @@ unsafe fn HUF_closeCStream(mut bitC: *mut HUF_CStream_t) -> size_t {
 }
 #[inline(always)]
 unsafe fn HUF_encodeSymbol(
-    mut bitCPtr: *mut HUF_CStream_t,
-    mut symbol: u32,
-    mut CTable: *const HUF_CElt,
-    mut idx: core::ffi::c_int,
-    mut fast: core::ffi::c_int,
+    bitCPtr: *mut HUF_CStream_t,
+    symbol: u32,
+    CTable: *const HUF_CElt,
+    idx: core::ffi::c_int,
+    fast: core::ffi::c_int,
 ) {
     HUF_addBits(bitCPtr, *CTable.offset(symbol as isize), idx, fast);
 }
 #[inline(always)]
 unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
-    mut bitC: *mut HUF_CStream_t,
-    mut ip: *const u8,
-    mut srcSize: size_t,
-    mut ct: *const HUF_CElt,
-    mut kUnroll: core::ffi::c_int,
-    mut kFastFlush: core::ffi::c_int,
-    mut kLastFast: core::ffi::c_int,
+    bitC: *mut HUF_CStream_t,
+    ip: *const u8,
+    srcSize: size_t,
+    ct: *const HUF_CElt,
+    kUnroll: core::ffi::c_int,
+    kFastFlush: core::ffi::c_int,
+    kLastFast: core::ffi::c_int,
 ) {
     let mut n = srcSize as core::ffi::c_int;
     let mut rem = n % kUnroll;
@@ -1081,20 +1073,20 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
         n -= 2 * kUnroll;
     }
 }
-fn HUF_tightCompressBound(mut srcSize: size_t, mut tableLog: size_t) -> size_t {
+fn HUF_tightCompressBound(srcSize: size_t, tableLog: size_t) -> size_t {
     ((srcSize * tableLog) >> 3).wrapping_add(8)
 }
 #[inline(always)]
 unsafe fn HUF_compress1X_usingCTable_internal_body(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
 ) -> size_t {
     let tableLog = (HUF_readCTableHeader(CTable)).tableLog as u32;
-    let mut ct = CTable.offset(1);
-    let mut ip = src as *const u8;
+    let ct = CTable.offset(1);
+    let ip = src as *const u8;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut bitC = HUF_CStream_t {
@@ -1107,7 +1099,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     if dstSize < 8 {
         return 0;
     }
-    let mut op = ostart;
+    let op = ostart;
     let initErr = HUF_initCStream(
         &mut bitC,
         op as *mut core::ffi::c_void,
@@ -1163,29 +1155,29 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     HUF_closeCStream(&mut bitC)
 }
 unsafe fn HUF_compress1X_usingCTable_internal_bmi2(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
 ) -> size_t {
     HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 unsafe fn HUF_compress1X_usingCTable_internal_default(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
 ) -> size_t {
     HUF_compress1X_usingCTable_internal_body(dst, dstSize, src, srcSize, CTable)
 }
 unsafe fn HUF_compress1X_usingCTable_internal(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
     flags: core::ffi::c_int,
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
@@ -1194,22 +1186,22 @@ unsafe fn HUF_compress1X_usingCTable_internal(
     HUF_compress1X_usingCTable_internal_default(dst, dstSize, src, srcSize, CTable)
 }
 pub unsafe fn HUF_compress1X_usingCTable(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
-    mut flags: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
+    flags: core::ffi::c_int,
 ) -> size_t {
     HUF_compress1X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
 unsafe fn HUF_compress4X_usingCTable_internal(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
-    mut flags: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
+    flags: core::ffi::c_int,
 ) -> size_t {
     let segmentSize = srcSize.wrapping_add(3) / 4;
     let mut ip = src as *const u8;
@@ -1293,12 +1285,12 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
 pub unsafe fn HUF_compress4X_usingCTable(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut CTable: *const HUF_CElt,
-    mut flags: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    CTable: *const HUF_CElt,
+    flags: core::ffi::c_int,
 ) -> size_t {
     HUF_compress4X_usingCTable_internal(dst, dstSize, src, srcSize, CTable, flags)
 }
@@ -1306,10 +1298,10 @@ unsafe fn HUF_compressCTable_internal(
     ostart: *mut u8,
     mut op: *mut u8,
     oend: *mut u8,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut nbStreams: HUF_nbStreams_e,
-    mut CTable: *const HUF_CElt,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    nbStreams: HUF_nbStreams_e,
+    CTable: *const HUF_CElt,
     flags: core::ffi::c_int,
 ) -> size_t {
     let cSize = if nbStreams as core::ffi::c_uint
@@ -1348,8 +1340,8 @@ unsafe fn HUF_compressCTable_internal(
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: core::ffi::c_int = 4096;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: core::ffi::c_int = 10;
 pub unsafe fn HUF_cardinality(
-    mut count: *const core::ffi::c_uint,
-    mut maxSymbolValue: core::ffi::c_uint,
+    count: *const core::ffi::c_uint,
+    maxSymbolValue: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
     let mut cardinality = 0 as core::ffi::c_uint;
     let mut i: core::ffi::c_uint = 0;
@@ -1362,26 +1354,25 @@ pub unsafe fn HUF_cardinality(
     }
     cardinality
 }
-pub fn HUF_minTableLog(mut symbolCardinality: core::ffi::c_uint) -> core::ffi::c_uint {
+pub fn HUF_minTableLog(symbolCardinality: core::ffi::c_uint) -> core::ffi::c_uint {
     (ZSTD_highbit32(symbolCardinality)).wrapping_add(1)
 }
 pub unsafe fn HUF_optimalTableLog(
-    mut maxTableLog: core::ffi::c_uint,
-    mut srcSize: size_t,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut workSpace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut table: *mut HUF_CElt,
-    mut count: *const core::ffi::c_uint,
-    mut flags: core::ffi::c_int,
+    maxTableLog: core::ffi::c_uint,
+    srcSize: size_t,
+    maxSymbolValue: core::ffi::c_uint,
+    workSpace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    table: *mut HUF_CElt,
+    count: *const core::ffi::c_uint,
+    flags: core::ffi::c_int,
 ) -> core::ffi::c_uint {
     if flags & HUF_flags_optimalDepth as core::ffi::c_int == 0 {
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
-    let mut dst = (workSpace as *mut u8)
+    let dst = (workSpace as *mut u8)
         .offset(::core::mem::size_of::<HUF_WriteCTableWksp>() as core::ffi::c_ulong as isize);
-    let mut dstSize =
-        wkspSize.wrapping_sub(::core::mem::size_of::<HUF_WriteCTableWksp>() as size_t);
+    let dstSize = wkspSize.wrapping_sub(::core::mem::size_of::<HUF_WriteCTableWksp>() as size_t);
     let mut hSize: size_t = 0;
     let mut newSize: size_t = 0;
     let symbolCardinality = HUF_cardinality(count, maxSymbolValue);
@@ -1391,7 +1382,7 @@ pub unsafe fn HUF_optimalTableLog(
     let mut optLogGuess: core::ffi::c_uint = 0;
     optLogGuess = minTableLog;
     while optLogGuess <= maxTableLog {
-        let mut maxBits = HUF_buildCTable_wksp(
+        let maxBits = HUF_buildCTable_wksp(
             table,
             count,
             maxSymbolValue,
@@ -1429,18 +1420,18 @@ pub unsafe fn HUF_optimalTableLog(
     optLog
 }
 unsafe fn HUF_compress_internal(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
     mut maxSymbolValue: core::ffi::c_uint,
     mut huffLog: core::ffi::c_uint,
-    mut nbStreams: HUF_nbStreams_e,
-    mut workSpace: *mut core::ffi::c_void,
+    nbStreams: HUF_nbStreams_e,
+    workSpace: *mut core::ffi::c_void,
     mut wkspSize: size_t,
-    mut oldHufTable: *mut HUF_CElt,
-    mut repeat: *mut HUF_repeat,
-    mut flags: core::ffi::c_int,
+    oldHufTable: *mut HUF_CElt,
+    repeat: *mut HUF_repeat,
+    flags: core::ffi::c_int,
 ) -> size_t {
     let table = HUF_alignUpWorkspace(
         workSpace,
@@ -1644,17 +1635,17 @@ unsafe fn HUF_compress_internal(
     )
 }
 pub unsafe extern "C" fn HUF_compress1X_repeat(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut huffLog: core::ffi::c_uint,
-    mut workSpace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut hufTable: *mut HUF_CElt,
-    mut repeat: *mut HUF_repeat,
-    mut flags: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    maxSymbolValue: core::ffi::c_uint,
+    huffLog: core::ffi::c_uint,
+    workSpace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    hufTable: *mut HUF_CElt,
+    repeat: *mut HUF_repeat,
+    flags: core::ffi::c_int,
 ) -> size_t {
     HUF_compress_internal(
         dst,
@@ -1672,17 +1663,17 @@ pub unsafe extern "C" fn HUF_compress1X_repeat(
     )
 }
 pub unsafe extern "C" fn HUF_compress4X_repeat(
-    mut dst: *mut core::ffi::c_void,
-    mut dstSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut huffLog: core::ffi::c_uint,
-    mut workSpace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut hufTable: *mut HUF_CElt,
-    mut repeat: *mut HUF_repeat,
-    mut flags: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    maxSymbolValue: core::ffi::c_uint,
+    huffLog: core::ffi::c_uint,
+    workSpace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    hufTable: *mut HUF_CElt,
+    repeat: *mut HUF_repeat,
+    flags: core::ffi::c_int,
 ) -> size_t {
     HUF_compress_internal(
         dst,

@@ -288,15 +288,15 @@ unsafe fn checkLibVersion() {
     }
 }
 unsafe fn exeNameMatch(
-    mut exeName: *const core::ffi::c_char,
-    mut test: *const core::ffi::c_char,
+    exeName: *const core::ffi::c_char,
+    test: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     (strncmp(exeName, test, strlen(test)) == 0
         && (*exeName.add(strlen(test)) as core::ffi::c_int == '\0' as i32
             || *exeName.add(strlen(test)) as core::ffi::c_int == '.' as i32))
         as core::ffi::c_int
 }
-unsafe fn usage(mut f: *mut FILE, mut programName: *const core::ffi::c_char) {
+unsafe fn usage(f: *mut FILE, programName: *const core::ffi::c_char) {
     fprintf(
         f,
         b"Compress or decompress the INPUT file(s); reads from STDIN if INPUT is `-` or not provided.\n\n\0"
@@ -396,7 +396,7 @@ unsafe fn usage(mut f: *mut FILE, mut programName: *const core::ffi::c_char) {
     );
     fprintf(f, b"\n\0" as *const u8 as *const core::ffi::c_char);
 }
-unsafe fn usageAdvanced(mut programName: *const core::ffi::c_char) {
+unsafe fn usageAdvanced(programName: *const core::ffi::c_char) {
     fprintf(
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
@@ -765,10 +765,7 @@ unsafe fn usageAdvanced(mut programName: *const core::ffi::c_char) {
             as *const core::ffi::c_char,
     );
 }
-unsafe fn badUsage(
-    mut programName: *const core::ffi::c_char,
-    mut parameter: *const core::ffi::c_char,
-) {
+unsafe fn badUsage(programName: *const core::ffi::c_char, parameter: *const core::ffi::c_char) {
     if g_displayLevel >= 1 {
         fprintf(
             stderr,
@@ -787,7 +784,7 @@ unsafe fn waitEnter() {
     );
     getchar();
 }
-unsafe fn lastNameFromPath(mut path: *const core::ffi::c_char) -> *const core::ffi::c_char {
+unsafe fn lastNameFromPath(path: *const core::ffi::c_char) -> *const core::ffi::c_char {
     let mut name = path;
     if !(strrchr(name, '/' as i32)).is_null() {
         name = (strrchr(name, '/' as i32)).offset(1);
@@ -797,7 +794,7 @@ unsafe fn lastNameFromPath(mut path: *const core::ffi::c_char) -> *const core::f
     }
     name
 }
-unsafe fn errorOut(mut msg: *const core::ffi::c_char) {
+unsafe fn errorOut(msg: *const core::ffi::c_char) {
     if g_displayLevel >= 1 {
         fprintf(
             stderr,
@@ -808,15 +805,15 @@ unsafe fn errorOut(mut msg: *const core::ffi::c_char) {
     exit(1);
 }
 unsafe fn readU32FromCharChecked(
-    mut stringPtr: *mut *const core::ffi::c_char,
-    mut value: *mut core::ffi::c_uint,
+    stringPtr: *mut *const core::ffi::c_char,
+    value: *mut core::ffi::c_uint,
 ) -> core::ffi::c_int {
     let mut result = 0;
     while **stringPtr as core::ffi::c_int >= '0' as i32
         && **stringPtr as core::ffi::c_int <= '9' as i32
     {
         let max = (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(10);
-        let mut last = result;
+        let last = result;
         if result > max {
             return 1;
         }
@@ -853,14 +850,14 @@ unsafe fn readU32FromCharChecked(
     *value = result;
     0
 }
-unsafe fn readU32FromChar(mut stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_uint {
+unsafe fn readU32FromChar(stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_uint {
     let mut result: core::ffi::c_uint = 0;
     if readU32FromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(c"error: numeric value overflows 32-bit unsigned int".as_ptr());
     }
     result
 }
-unsafe fn readIntFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_int {
+unsafe fn readIntFromChar(stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_int {
     let mut sign = 1;
     let mut result: core::ffi::c_uint = 0;
     if **stringPtr as core::ffi::c_int == '-' as i32 {
@@ -873,15 +870,15 @@ unsafe fn readIntFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> core:
     result as core::ffi::c_int * sign
 }
 unsafe fn readSizeTFromCharChecked(
-    mut stringPtr: *mut *const core::ffi::c_char,
-    mut value: *mut size_t,
+    stringPtr: *mut *const core::ffi::c_char,
+    value: *mut size_t,
 ) -> core::ffi::c_int {
     let mut result = 0;
     while **stringPtr as core::ffi::c_int >= '0' as i32
         && **stringPtr as core::ffi::c_int <= '9' as i32
     {
         let max = -(1 as core::ffi::c_int) as size_t / 10;
-        let mut last = result;
+        let last = result;
         if result > max {
             return 1;
         }
@@ -917,7 +914,7 @@ unsafe fn readSizeTFromCharChecked(
     *value = result;
     0
 }
-unsafe fn readSizeTFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> size_t {
+unsafe fn readSizeTFromChar(stringPtr: *mut *const core::ffi::c_char) -> size_t {
     let mut result: size_t = 0;
     if readSizeTFromCharChecked(stringPtr, &mut result) != 0 {
         errorOut(c"error: numeric value overflows size_t".as_ptr());
@@ -925,8 +922,8 @@ unsafe fn readSizeTFromChar(mut stringPtr: *mut *const core::ffi::c_char) -> siz
     result
 }
 unsafe fn longCommandWArg(
-    mut stringPtr: *mut *const core::ffi::c_char,
-    mut longCommand: *const core::ffi::c_char,
+    stringPtr: *mut *const core::ffi::c_char,
+    longCommand: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let comSize = strlen(longCommand);
     let result = (strncmp(*stringPtr, longCommand, comSize) == 0) as core::ffi::c_int;
@@ -938,7 +935,7 @@ unsafe fn longCommandWArg(
 static mut kDefaultRegression: core::ffi::c_uint = 1;
 unsafe fn parseCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
-    mut params: *mut ZDICT_cover_params_t,
+    params: *mut ZDICT_cover_params_t,
 ) -> core::ffi::c_uint {
     ptr::write_bytes(
         params as *mut u8,
@@ -981,7 +978,7 @@ unsafe fn parseCoverParameters(
             b"split=\0" as *const u8 as *const core::ffi::c_char,
         ) != 0
         {
-            let mut splitPercentage = readU32FromChar(&mut stringPtr);
+            let splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as core::ffi::c_double / 100.0f64;
             if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
                 break;
@@ -1025,7 +1022,7 @@ unsafe fn parseCoverParameters(
 }
 unsafe fn parseFastCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
-    mut params: *mut ZDICT_fastCover_params_t,
+    params: *mut ZDICT_fastCover_params_t,
 ) -> core::ffi::c_uint {
     ptr::write_bytes(
         params as *mut u8,
@@ -1088,7 +1085,7 @@ unsafe fn parseFastCoverParameters(
             b"split=\0" as *const u8 as *const core::ffi::c_char,
         ) != 0
         {
-            let mut splitPercentage = readU32FromChar(&mut stringPtr);
+            let splitPercentage = readU32FromChar(&mut stringPtr);
             (*params).splitPoint = splitPercentage as core::ffi::c_double / 100.0f64;
             if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
                 break;
@@ -1134,7 +1131,7 @@ unsafe fn parseFastCoverParameters(
 }
 unsafe fn parseLegacyParameters(
     mut stringPtr: *const core::ffi::c_char,
-    mut selectivity: *mut core::ffi::c_uint,
+    selectivity: *mut core::ffi::c_uint,
 ) -> core::ffi::c_uint {
     if longCommandWArg(
         &mut stringPtr,
@@ -1220,8 +1217,8 @@ unsafe fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
 }
 unsafe fn parseAdaptParameters(
     mut stringPtr: *const core::ffi::c_char,
-    mut adaptMinPtr: *mut core::ffi::c_int,
-    mut adaptMaxPtr: *mut core::ffi::c_int,
+    adaptMinPtr: *mut core::ffi::c_int,
+    adaptMaxPtr: *mut core::ffi::c_int,
 ) -> core::ffi::c_uint {
     loop {
         if longCommandWArg(
@@ -1270,7 +1267,7 @@ unsafe fn parseAdaptParameters(
 }
 unsafe fn parseCompressionParameters(
     mut stringPtr: *const core::ffi::c_char,
-    mut params: *mut ZSTD_compressionParameters,
+    params: *mut ZSTD_compressionParameters,
 ) -> core::ffi::c_uint {
     loop {
         if longCommandWArg(
@@ -1456,7 +1453,7 @@ unsafe fn parseCompressionParameters(
     }
     1
 }
-unsafe fn setMaxCompression(mut params: *mut ZSTD_compressionParameters) {
+unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     (*params).windowLog = (if ::core::mem::size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
@@ -1600,11 +1597,11 @@ static ZSTD_strategyMap: [&CStr; ZSTD_NB_STRATEGIES + 1] = [
     c"ZSTD_btultra2",
 ];
 unsafe fn printDefaultCParams(
-    mut filename: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
-    mut cLevel: core::ffi::c_int,
+    filename: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
+    cLevel: core::ffi::c_int,
 ) {
-    let mut fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
+    let fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
         UTIL_getFileSize(dictFileName) as size_t
     } else {
@@ -1666,12 +1663,12 @@ unsafe fn printDefaultCParams(
     );
 }
 unsafe fn printActualCParams(
-    mut filename: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
-    mut cLevel: core::ffi::c_int,
-    mut cParams: *const ZSTD_compressionParameters,
+    filename: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
+    cLevel: core::ffi::c_int,
+    cParams: *const ZSTD_compressionParameters,
 ) {
-    let mut fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
+    let fileSize = UTIL_getFileSize(filename) as core::ffi::c_ulonglong;
     let dictSize = if !dictFileName.is_null() {
         UTIL_getFileSize(dictFileName) as size_t
     } else {
@@ -1830,8 +1827,8 @@ unsafe fn init_nbWorkers() -> core::ffi::c_uint {
 pub const MINCLEVEL: core::ffi::c_int = ZSTD_minCLevel();
 pub const MAXCLEVEL: core::ffi::c_int = ZSTD_maxCLevel();
 unsafe fn main_0(
-    mut argCount: core::ffi::c_int,
-    mut argv: *mut *const core::ffi::c_char,
+    argCount: core::ffi::c_int,
+    argv: *mut *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut current_block: u64;
     let mut argNb: core::ffi::c_int = 0;
@@ -1882,7 +1879,7 @@ unsafe fn main_0(
     let mut recursive = 0;
     let mut memLimit = 0;
     let mut filenames = UTIL_allocateFileNamesTable(argCount as size_t);
-    let mut file_of_names = UTIL_allocateFileNamesTable(argCount as size_t);
+    let file_of_names = UTIL_allocateFileNamesTable(argCount as size_t);
     let mut programName = *argv.offset(0);
     let mut outFileName = NULL as *const core::ffi::c_char;
     let mut outDirName = NULL as *const core::ffi::c_char;
@@ -4666,7 +4663,7 @@ unsafe fn main_0(
                                                         if adaptMax < cLevel {
                                                             cLevel = adaptMax;
                                                         }
-                                                        let mut strategyBounds =
+                                                        let strategyBounds =
                                                             ZSTD_cParam_getBounds(ZSTD_c_strategy);
                                                         assert!(
                                                             ZSTD_NB_STRATEGIES as core::ffi::c_int
