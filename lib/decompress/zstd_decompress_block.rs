@@ -269,16 +269,16 @@ pub unsafe fn ZSTD_getcBlockSize(
     }
     let cBlockHeader = MEM_readLE24(src);
     let cSize = cBlockHeader >> 3;
+
     bpPtr.lastBlock = cBlockHeader & 1;
     bpPtr.blockType = BlockType::from(cBlockHeader >> 1 & 0b11);
     bpPtr.origSize = cSize;
-    if bpPtr.blockType == BlockType::Rle {
-        return 1;
+
+    match bpPtr.blockType {
+        BlockType::Raw | BlockType::Compressed => cSize as size_t,
+        BlockType::Rle => 1,
+        BlockType::Reserved => Error::corruption_detected.to_error_code(),
     }
-    if bpPtr.blockType == BlockType::Reserved {
-        return Error::corruption_detected.to_error_code();
-    }
-    cSize as size_t
 }
 
 unsafe fn ZSTD_allocateLiteralsBuffer(

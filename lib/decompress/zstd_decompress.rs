@@ -1606,9 +1606,8 @@ unsafe fn ZSTD_decompressFrame(
     dstCapacity: size_t,
     srcPtr: &mut &[u8],
 ) -> size_t {
-    let mut remainingSrcSize = srcPtr.len();
-    let istart = srcPtr.as_ptr();
-    let mut ip = srcPtr;
+    let ilen = srcPtr.len();
+    let ip = srcPtr;
     let ostart = dst as *mut u8;
     let oend = if dstCapacity != 0 {
         ostart.add(dstCapacity)
@@ -1616,13 +1615,12 @@ unsafe fn ZSTD_decompressFrame(
         ostart
     };
     let mut op = ostart;
-    if remainingSrcSize
-        < ((if (*dctx).format == Format::ZSTD_f_zstd1 {
-            6
-        } else {
-            2
-        }) as size_t)
-            .wrapping_add(ZSTD_blockHeaderSize)
+    if ip.len()
+        < (match (*dctx).format {
+            Format::ZSTD_f_zstd1 => 6usize,
+            Format::ZSTD_f_zstd1_magicless => 2,
+        })
+        .wrapping_add(ZSTD_blockHeaderSize)
     {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -1630,7 +1628,7 @@ unsafe fn ZSTD_decompressFrame(
     if ERR_isError(frameHeaderSize) != 0 {
         return frameHeaderSize;
     }
-    if remainingSrcSize < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
+    if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
     let err_code = ZSTD_decodeFrameHeader(dctx, ip.as_ptr().cast(), frameHeaderSize);
@@ -1638,7 +1636,6 @@ unsafe fn ZSTD_decompressFrame(
         return err_code;
     }
     *ip = &ip[frameHeaderSize..];
-    remainingSrcSize = remainingSrcSize.wrapping_sub(frameHeaderSize);
     if (*dctx).maxBlockSizeParam != 0 {
         (*dctx).fParams.blockSizeMax =
             if (*dctx).fParams.blockSizeMax < (*dctx).maxBlockSizeParam as core::ffi::c_uint {
@@ -1660,8 +1657,7 @@ unsafe fn ZSTD_decompressFrame(
             return cBlockSize;
         }
         *ip = &ip[ZSTD_blockHeaderSize..];
-        remainingSrcSize = remainingSrcSize.wrapping_sub(ZSTD_blockHeaderSize);
-        if cBlockSize > remainingSrcSize {
+        if cBlockSize > ip.len() {
             return Error::srcSize_wrong.to_error_code();
         }
         if ip.as_ptr() >= op as *const u8 && ip.as_ptr() < oBlockEnd as *const u8 {
@@ -1713,7 +1709,6 @@ unsafe fn ZSTD_decompressFrame(
             op = op.add(decodedSize);
         }
         *ip = &ip[cBlockSize..];
-        remainingSrcSize = remainingSrcSize.wrapping_sub(cBlockSize);
         if blockProperties.lastBlock != 0 {
             break;
         }
@@ -1725,26 +1720,26 @@ unsafe fn ZSTD_decompressFrame(
         return Error::corruption_detected.to_error_code();
     }
     if (*dctx).fParams.checksumFlag != 0 {
-        if remainingSrcSize < 4 {
+        let [a, b, c, d, ..] = **ip else {
             return Error::checksum_wrong.to_error_code();
-        }
-        if (*dctx).forceIgnoreChecksum as u64 == 0 {
-            let checkCalc = ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32;
-            let mut checkRead: u32 = 0;
-            checkRead = MEM_readLE32(ip.as_ptr() as *const core::ffi::c_void);
-            if checkRead != checkCalc {
+        };
+
+        if (*dctx).forceIgnoreChecksum == 0 {
+            if u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32 {
                 return Error::checksum_wrong.to_error_code();
             }
         }
+
         *ip = &ip[4..];
-        remainingSrcSize = remainingSrcSize.wrapping_sub(4);
     }
+
     ZSTD_DCtx_trace_end(
         dctx,
         op.offset_from(ostart) as core::ffi::c_long as u64,
-        ip.as_ptr().offset_from(istart) as core::ffi::c_long as u64,
+        (ilen - ip.len()) as u64,
         0,
     );
+
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
 
