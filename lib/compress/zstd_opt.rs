@@ -122,14 +122,12 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::zstd::*;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-static mut kNullRawSeqStore: RawSeqStore_t = {
-    RawSeqStore_t {
-        seq: NULL as *mut rawSeq,
-        pos: 0,
-        posInSequence: 0,
-        size: 0,
-        capacity: 0,
-    }
+static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
+    seq: core::ptr::null_mut(),
+    pos: 0,
+    posInSequence: 0,
+    size: 0,
+    capacity: 0,
 };
 #[inline]
 unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
@@ -481,7 +479,6 @@ unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
 unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const NULL: core::ffi::c_int = 0;
 pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
     .wrapping_mul(2)
     .wrapping_add(1);
@@ -1125,28 +1122,28 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     {
         (*ms).dictMatchState
     } else {
-        NULL as *const ZSTD_MatchState_t
+        core::ptr::null()
     };
     let dmsCParams = if dictMode as core::ffi::c_uint
         == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint
     {
         &(*dms).cParams
     } else {
-        NULL as *const ZSTD_compressionParameters
+        core::ptr::null()
     };
     let dmsBase = if dictMode as core::ffi::c_uint
         == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint
     {
         (*dms).window.base
     } else {
-        NULL as *const u8
+        core::ptr::null()
     };
     let dmsEnd = if dictMode as core::ffi::c_uint
         == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint
     {
         (*dms).window.nextSrc
     } else {
-        NULL as *const u8
+        core::ptr::null()
     };
     let dmsHighLimit = if dictMode as core::ffi::c_uint
         == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint

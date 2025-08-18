@@ -439,7 +439,6 @@ unsafe fn ZSTD_rotateRight_U16(value: u16, mut count: u32) -> u16 {
 }
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
-pub const NULL: core::ffi::c_int = 0;
 pub const kLazySkippingStep: core::ffi::c_int = 8;
 unsafe fn ZSTD_updateDUBT(ms: *mut ZSTD_MatchState_t, ip: *const u8, iend: *const u8, mls: u32) {
     let cParams: *const ZSTD_compressionParameters = &mut (*ms).cParams;
@@ -1567,8 +1566,8 @@ unsafe fn ZSTD_RowFindBestMatch(
     let mut ddsIdx = 0;
     let mut ddsExtraAttempts = 0;
     let mut dmsTag = 0;
-    let mut dmsRow = NULL as *mut u32;
-    let mut dmsTagRow = NULL as *mut u8;
+    let mut dmsRow = core::ptr::null_mut();
+    let mut dmsTagRow = core::ptr::null_mut();
     if dictMode as core::ffi::c_uint
         == ZSTD_dedicatedDictSearch as core::ffi::c_int as core::ffi::c_uint
     {
@@ -2710,17 +2709,17 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let dictBase = if isDxS != 0 {
         (*dms).window.base
     } else {
-        NULL as *const u8
+        core::ptr::null()
     };
     let dictLowest = if isDxS != 0 {
         dictBase.offset(dictLowestIndex as isize)
     } else {
-        NULL as *const u8
+        core::ptr::null()
     };
     let dictEnd = if isDxS != 0 {
         (*dms).window.nextSrc
     } else {
-        NULL as *const u8
+        core::ptr::null()
     };
     let dictIndexDelta = if isDxS != 0 {
         prefixLowestIndex.wrapping_sub(dictEnd.offset_from(dictBase) as core::ffi::c_long as u32)

@@ -362,7 +362,6 @@ static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
-pub const NULL: core::ffi::c_int = 0;
 unsafe fn ZSTD_compressSubBlock_literal(
     hufTable: *const HUF_CElt,
     hufMetadata: *const ZSTD_hufCTablesMetadata_t,
@@ -814,7 +813,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
         MaxOff as core::ffi::c_uint,
         nbSeq,
         ((*fseTables).offcodeCTable).as_ptr(),
-        NULL as *const u8,
+        core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
         DefaultMaxOff as u32,

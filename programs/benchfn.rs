@@ -67,7 +67,6 @@ pub const __ASSERT_FUNCTION: [core::ffi::c_char; 75] = unsafe {
         b"BMK_runOutcome_t BMK_benchTimedFn(BMK_timedFnState_t *, BMK_benchParams_t)\0",
     )
 };
-pub const NULL: core::ffi::c_int = 0;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub unsafe fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> core::ffi::c_int {
@@ -171,10 +170,9 @@ pub unsafe fn BMK_createTimedFnState(
     total_ms: core::ffi::c_uint,
     run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
-    let r =
-        malloc(::core::mem::size_of::<BMK_timedFnState_t>() as size_t) as *mut BMK_timedFnState_t;
+    let r = malloc(::core::mem::size_of::<BMK_timedFnState_t>()) as *mut BMK_timedFnState_t;
     if r.is_null() {
-        return NULL as *mut BMK_timedFnState_t;
+        return core::ptr::null_mut();
     }
     BMK_resetTimedFnState(r, total_ms, run_ms);
     r
@@ -191,13 +189,13 @@ pub unsafe fn BMK_initStatic_timedFnState(
     let tfs_alignment = 8;
     let r = buffer as *mut BMK_timedFnState_t;
     if buffer.is_null() {
-        return NULL as *mut BMK_timedFnState_t;
+        return core::ptr::null_mut();
     }
-    if size < ::core::mem::size_of::<BMK_timedFnState_s>() as size_t {
-        return NULL as *mut BMK_timedFnState_t;
+    if size < ::core::mem::size_of::<BMK_timedFnState_s>() {
+        return core::ptr::null_mut();
     }
     if !(buffer as size_t).is_multiple_of(tfs_alignment) {
-        return NULL as *mut BMK_timedFnState_t;
+        return core::ptr::null_mut();
     }
     BMK_resetTimedFnState(r, total_ms, run_ms);
     r

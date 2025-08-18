@@ -107,7 +107,6 @@ pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
 pub const HUF_TABLELOG_DEFAULT: core::ffi::c_int = 11;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_CTABLEBOUND: core::ffi::c_int = 129;
-pub const NULL: core::ffi::c_int = 0;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe fn HUF_alignUpWorkspace(
     workspace: *mut core::ffi::c_void,
@@ -123,7 +122,7 @@ unsafe fn HUF_alignUpWorkspace(
         aligned as *mut core::ffi::c_void
     } else {
         *workspaceSizePtr = 0;
-        NULL as *mut core::ffi::c_void
+        core::ptr::null_mut()
     }
 }
 pub const MAX_FSE_TABLELOG_FOR_HUFF_HEADER: core::ffi::c_int = 6;

@@ -10,7 +10,7 @@ use libc::{
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE64;
-use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
+use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
     ZSTD_createCDict, ZSTD_freeCCtx, ZSTD_freeCDict,
@@ -135,7 +135,6 @@ unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
 }
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
-pub const NULL: core::ffi::c_int = 0;
 pub const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 pub const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
@@ -221,7 +220,7 @@ unsafe fn COVER_map_destroy(map: *mut COVER_map_t) {
     if !((*map).data).is_null() {
         free((*map).data as *mut core::ffi::c_void);
     }
-    (*map).data = NULL as *mut COVER_map_pair_t;
+    (*map).data = core::ptr::null_mut();
     (*map).size = 0;
 }
 pub unsafe fn COVER_sum(samplesSizes: *const size_t, nbSamples: core::ffi::c_uint) -> size_t {
@@ -499,19 +498,19 @@ unsafe fn COVER_ctx_destroy(ctx: *mut COVER_ctx_t) {
     }
     if !((*ctx).suffix).is_null() {
         free((*ctx).suffix as *mut core::ffi::c_void);
-        (*ctx).suffix = NULL as *mut u32;
+        (*ctx).suffix = core::ptr::null_mut();
     }
     if !((*ctx).freqs).is_null() {
         free((*ctx).freqs as *mut core::ffi::c_void);
-        (*ctx).freqs = NULL as *mut u32;
+        (*ctx).freqs = core::ptr::null_mut();
     }
     if !((*ctx).dmerAt).is_null() {
         free((*ctx).dmerAt as *mut core::ffi::c_void);
-        (*ctx).dmerAt = NULL as *mut u32;
+        (*ctx).dmerAt = core::ptr::null_mut();
     }
     if !((*ctx).offsets).is_null() {
         free((*ctx).offsets as *mut core::ffi::c_void);
-        (*ctx).offsets = NULL as *mut size_t;
+        (*ctx).offsets = core::ptr::null_mut();
     }
 }
 unsafe fn COVER_ctx_init(
@@ -651,7 +650,7 @@ unsafe fn COVER_ctx_init(
         COVER_ctx_destroy(ctx);
         return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     }
-    (*ctx).freqs = NULL as *mut u32;
+    (*ctx).freqs = core::ptr::null_mut();
     (*ctx).d = d;
     let mut i: u32 = 0;
     *((*ctx).offsets).offset(0) = 0;
@@ -717,7 +716,7 @@ unsafe fn COVER_ctx_init(
         ),
     );
     (*ctx).freqs = (*ctx).suffix;
-    (*ctx).suffix = NULL as *mut u32;
+    (*ctx).suffix = core::ptr::null_mut();
     0
 }
 pub unsafe fn COVER_warnOnSmallCorpus(
@@ -1078,7 +1077,7 @@ pub unsafe fn COVER_best_init(best: *mut COVER_best_t) {
     pthread_mutex_init(&mut (*best).mutex, core::ptr::null::<pthread_mutexattr_t>());
     pthread_cond_init(&mut (*best).cond, core::ptr::null::<pthread_condattr_t>());
     (*best).liveJobs = 0;
-    (*best).dict = NULL as *mut core::ffi::c_void;
+    (*best).dict = core::ptr::null_mut();
     (*best).dictSize = 0;
     (*best).compressedSize = -(1 as core::ffi::c_int) as size_t;
     ptr::write_bytes(
@@ -1171,7 +1170,7 @@ unsafe fn setDictSelection(buf: *mut u8, s: size_t, csz: size_t) -> COVER_dictSe
     ds
 }
 pub unsafe fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
-    setDictSelection(NULL as *mut u8, 0, error)
+    setDictSelection(core::ptr::null_mut(), 0, error)
 }
 pub unsafe fn COVER_dictSelectionIsError(selection: COVER_dictSelection_t) -> core::ffi::c_uint {
     (ERR_isError(selection.totalCompressedSize) != 0 || (selection.dictContent).is_null())
@@ -1456,7 +1455,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         },
         compressedSize: 0,
     };
-    let mut pool = NULL as *mut POOL_ctx;
+    let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut lastUpdateTime = 0;
     if splitPoint <= 0.0 || splitPoint > 1.0 {

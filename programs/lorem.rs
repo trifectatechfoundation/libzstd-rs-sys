@@ -11,7 +11,6 @@ extern "C" {
     fn memset(_: *mut core::ffi::c_void, _: core::ffi::c_int, _: size_t) -> *mut core::ffi::c_void;
     fn strlen(_: *const core::ffi::c_char) -> size_t;
 }
-pub const NULL: core::ffi::c_int = 0;
 static kWords: [&CStr; 255] = [
     c"lorem",
     c"ipsum",
@@ -325,7 +324,7 @@ unsafe fn init_word_distrib(
         w = w.wrapping_add(1);
     }
 }
-static mut g_ptr: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
+static mut g_ptr: *mut core::ffi::c_char = core::ptr::null_mut();
 static mut g_nbChars: size_t = 0;
 static mut g_maxChars: size_t = 10000000;
 static mut g_randRoot: core::ffi::c_uint = 0;
@@ -486,7 +485,7 @@ pub unsafe fn LOREM_genBlock(
             break;
         }
     }
-    g_ptr = NULL as *mut core::ffi::c_char;
+    g_ptr = core::ptr::null_mut();
     g_nbChars
 }
 pub unsafe fn LOREM_genBuffer(

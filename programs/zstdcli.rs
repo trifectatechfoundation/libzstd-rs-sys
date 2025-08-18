@@ -215,7 +215,6 @@ pub const ZSTD_EXTENSION: [core::ffi::c_char; 5] =
     unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".zst\0") };
 pub const LZ4_EXTENSION: [core::ffi::c_char; 5] =
     unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".lz4\0") };
-pub const NULL: core::ffi::c_int = 0;
 pub const ZSTDCLI_CLEVEL_DEFAULT: core::ffi::c_int = 3;
 pub const ZSTDCLI_CLEVEL_MAX: core::ffi::c_int = 19;
 pub const ZSTD_ZSTDMT: [core::ffi::c_char; 7] =
@@ -1881,11 +1880,11 @@ unsafe fn main_0(
     let mut filenames = UTIL_allocateFileNamesTable(argCount as size_t);
     let file_of_names = UTIL_allocateFileNamesTable(argCount as size_t);
     let mut programName = *argv.offset(0);
-    let mut outFileName = NULL as *const core::ffi::c_char;
-    let mut outDirName = NULL as *const core::ffi::c_char;
-    let mut outMirroredDirName = NULL as *const core::ffi::c_char;
-    let mut dictFileName = NULL as *const core::ffi::c_char;
-    let mut patchFromDictFileName = NULL as *const core::ffi::c_char;
+    let mut outFileName = core::ptr::null();
+    let mut outDirName = core::ptr::null();
+    let mut outMirroredDirName = core::ptr::null();
+    let mut dictFileName = core::ptr::null();
+    let mut patchFromDictFileName = core::ptr::null();
     let mut suffix = ZSTD_EXTENSION.as_ptr();
     let mut maxDictSize = g_defaultMaxDictSize;
     let mut dictID = 0;
@@ -3341,7 +3340,7 @@ unsafe fn main_0(
                                     b"--auto-threads\0" as *const u8 as *const core::ffi::c_char,
                                 ) != 0
                                 {
-                                    let mut threadDefault = NULL as *const core::ffi::c_char;
+                                    let mut threadDefault = core::ptr::null();
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         threadDefault = argument;
@@ -4340,9 +4339,9 @@ unsafe fn main_0(
                                     (*filenames).fileNames,
                                     (*filenames).tableSize as core::ffi::c_int,
                                     chunkSize,
-                                    NULL as *mut ZDICT_legacy_params_t,
+                                    core::ptr::null_mut(),
                                     &mut coverParams,
-                                    NULL as *mut ZDICT_fastCover_params_t,
+                                    core::ptr::null_mut(),
                                     optimize,
                                     memLimit,
                                 );
@@ -4359,8 +4358,8 @@ unsafe fn main_0(
                                     (*filenames).fileNames,
                                     (*filenames).tableSize as core::ffi::c_int,
                                     chunkSize,
-                                    NULL as *mut ZDICT_legacy_params_t,
-                                    NULL as *mut ZDICT_cover_params_t,
+                                    core::ptr::null_mut(),
+                                    core::ptr::null_mut(),
                                     &mut fastCoverParams,
                                     optimize_0,
                                     memLimit,
@@ -4388,8 +4387,8 @@ unsafe fn main_0(
                                     (*filenames).tableSize as core::ffi::c_int,
                                     chunkSize,
                                     &mut dictParams,
-                                    NULL as *mut ZDICT_cover_params_t,
-                                    NULL as *mut ZDICT_fastCover_params_t,
+                                    core::ptr::null_mut(),
+                                    core::ptr::null_mut(),
                                     0,
                                     memLimit,
                                 );
@@ -4565,8 +4564,7 @@ unsafe fn main_0(
                                                     );
                                                     FIO_setPatchFromMode(
                                                         prefs,
-                                                        (patchFromDictFileName
-                                                            != NULL as *const core::ffi::c_char)
+                                                        (!patchFromDictFileName.is_null())
                                                             as core::ffi::c_int,
                                                     );
                                                     FIO_setMMapDict(prefs, mmapDict);

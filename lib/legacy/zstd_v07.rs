@@ -206,7 +206,6 @@ pub type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 pub type decompressionAlgo =
     Option<unsafe fn(*mut core::ffi::c_void, size_t, *const core::ffi::c_void, size_t) -> size_t>;
 pub const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb527 as core::ffi::c_uint;
-pub const NULL: core::ffi::c_int = 0;
 pub const ZSTDv07_MAGIC_SKIPPABLE_START: core::ffi::c_uint = 0x184d2a50 as core::ffi::c_uint;
 pub const ZSTDv07_WINDOWLOG_MAX_32: core::ffi::c_int = 25;
 pub const ZSTDv07_WINDOWLOG_MAX_64: core::ffi::c_int = 27;
@@ -2843,7 +2842,7 @@ static mut defaultCustomMem: ZSTDv07_customMem = ZSTDv07_customMem {
         ZSTDv07_defaultFreeFunction
             as unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> (),
     ),
-    opaque: NULL as *mut core::ffi::c_void,
+    opaque: core::ptr::null_mut(),
 };
 pub const ZSTDv07_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const FSEv07_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
@@ -2863,10 +2862,10 @@ pub unsafe extern "C" fn ZSTDv07_estimateDCtxSize() -> size_t {
 pub unsafe extern "C" fn ZSTDv07_decompressBegin(dctx: *mut ZSTDv07_DCtx) -> size_t {
     (*dctx).expected = ZSTDv07_frameHeaderSize_min;
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
-    (*dctx).previousDstEnd = NULL as *const core::ffi::c_void;
-    (*dctx).base = NULL as *const core::ffi::c_void;
-    (*dctx).vBase = NULL as *const core::ffi::c_void;
-    (*dctx).dictEnd = NULL as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = core::ptr::null();
+    (*dctx).base = core::ptr::null();
+    (*dctx).vBase = core::ptr::null();
+    (*dctx).dictEnd = core::ptr::null();
     *((*dctx).hufTable).as_mut_ptr().offset(0) =
         (12 * 0x1000001 as core::ffi::c_int) as HUFv07_DTable;
     (*dctx).fseEntropy = 0;
@@ -2889,14 +2888,14 @@ pub unsafe extern "C" fn ZSTDv07_createDCtx_advanced(
         customMem = defaultCustomMem;
     }
     if (customMem.customAlloc).is_none() || (customMem.customFree).is_none() {
-        return NULL as *mut ZSTDv07_DCtx;
+        return core::ptr::null_mut();
     }
     dctx = (customMem.customAlloc).unwrap_unchecked()(
         customMem.opaque,
         ::core::mem::size_of::<ZSTDv07_DCtx>() as size_t,
     ) as *mut ZSTDv07_DCtx;
     if dctx.is_null() {
-        return NULL as *mut ZSTDv07_DCtx;
+        return core::ptr::null_mut();
     }
     memcpy(
         &mut (*dctx).customMem as *mut ZSTDv07_customMem as *mut core::ffi::c_void,
@@ -4024,15 +4023,7 @@ pub unsafe extern "C" fn ZSTDv07_decompressDCtx(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTDv07_decompress_usingDict(
-        dctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        NULL as *const core::ffi::c_void,
-        0,
-    )
+    ZSTDv07_decompress_usingDict(dctx, dst, dstCapacity, src, srcSize, core::ptr::null(), 0)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompress))]
 pub unsafe extern "C" fn ZSTDv07_decompress(
@@ -4478,7 +4469,7 @@ unsafe fn ZSTDv07_createDDict_advanced(
         customMem = defaultCustomMem;
     }
     if (customMem.customAlloc).is_none() || (customMem.customFree).is_none() {
-        return NULL as *mut ZSTDv07_DDict;
+        return core::ptr::null_mut();
     }
     let ddict = (customMem.customAlloc).unwrap_unchecked()(
         customMem.opaque,
@@ -4493,7 +4484,7 @@ unsafe fn ZSTDv07_createDDict_advanced(
             ddict as *mut core::ffi::c_void,
         );
         (customMem.customFree).unwrap_unchecked()(customMem.opaque, dctx as *mut core::ffi::c_void);
-        return NULL as *mut ZSTDv07_DDict;
+        return core::ptr::null_mut();
     }
     memcpy(dictContent, dict, dictSize);
     let errorCode = ZSTDv07_decompressBegin_usingDict(dctx, dictContent, dictSize);
@@ -4504,7 +4495,7 @@ unsafe fn ZSTDv07_createDDict_advanced(
             ddict as *mut core::ffi::c_void,
         );
         (customMem.customFree).unwrap_unchecked()(customMem.opaque, dctx as *mut core::ffi::c_void);
-        return NULL as *mut ZSTDv07_DDict;
+        return core::ptr::null_mut();
     }
     (*ddict).dict = dictContent;
     (*ddict).dictSize = dictSize;
@@ -4516,16 +4507,10 @@ pub unsafe extern "C" fn ZSTDv07_createDDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> *mut ZSTDv07_DDict {
-    let allocator = {
-        ZSTDv07_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTDv07_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTDv07_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut core::ffi::c_void,
-        }
+    let allocator = ZSTDv07_customMem {
+        customAlloc: None,
+        customFree: None,
+        opaque: core::ptr::null_mut(),
     };
     ZSTDv07_createDDict_advanced(dict, dictSize, allocator)
 }
@@ -4558,14 +4543,14 @@ pub unsafe fn ZBUFFv07_createDCtx_advanced(mut customMem: ZSTDv07_customMem) -> 
         customMem = defaultCustomMem;
     }
     if (customMem.customAlloc).is_none() || (customMem.customFree).is_none() {
-        return NULL as *mut ZBUFFv07_DCtx;
+        return core::ptr::null_mut();
     }
     zbd = (customMem.customAlloc).unwrap_unchecked()(
         customMem.opaque,
         ::core::mem::size_of::<ZBUFFv07_DCtx>() as size_t,
     ) as *mut ZBUFFv07_DCtx;
     if zbd.is_null() {
-        return NULL as *mut ZBUFFv07_DCtx;
+        return core::ptr::null_mut();
     }
     ptr::write_bytes(zbd as *mut u8, 0, ::core::mem::size_of::<ZBUFFv07_DCtx>());
     memcpy(
@@ -4576,7 +4561,7 @@ pub unsafe fn ZBUFFv07_createDCtx_advanced(mut customMem: ZSTDv07_customMem) -> 
     (*zbd).zd = ZSTDv07_createDCtx_advanced(customMem);
     if ((*zbd).zd).is_null() {
         ZBUFFv07_freeDCtx(zbd);
-        return NULL as *mut ZBUFFv07_DCtx;
+        return core::ptr::null_mut();
     }
     (*zbd).stage = ZBUFFds_init;
     zbd
@@ -4617,7 +4602,7 @@ pub unsafe fn ZBUFFv07_decompressInitDictionary(
     ZSTDv07_decompressBegin_usingDict((*zbd).zd, dict, dictSize)
 }
 pub unsafe fn ZBUFFv07_decompressInit(zbd: *mut ZBUFFv07_DCtx) -> size_t {
-    ZBUFFv07_decompressInitDictionary(zbd, NULL as *const core::ffi::c_void, 0)
+    ZBUFFv07_decompressInitDictionary(zbd, core::ptr::null(), 0)
 }
 #[inline]
 unsafe fn ZBUFFv07_limitCopy(
@@ -4694,7 +4679,7 @@ pub unsafe fn ZBUFFv07_decompressContinue(
                     let h1Size = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
                     let h1Result = ZSTDv07_decompressContinue(
                         (*zbd).zd,
-                        NULL as *mut core::ffi::c_void,
+                        core::ptr::null_mut(),
                         0,
                         ((*zbd).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
                         h1Size,
@@ -4706,7 +4691,7 @@ pub unsafe fn ZBUFFv07_decompressContinue(
                         let h2Size = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
                         let h2Result = ZSTDv07_decompressContinue(
                             (*zbd).zd,
-                            NULL as *mut core::ffi::c_void,
+                            core::ptr::null_mut(),
                             0,
                             ((*zbd).headerBuffer).as_mut_ptr().add(h1Size)
                                 as *const core::ffi::c_void,

@@ -6,7 +6,6 @@ extern "C" {
     static mut stdout: *mut FILE;
 }
 type fixedPoint_24_8 = u32;
-pub const NULL: core::ffi::c_int = 0;
 pub const LTLOG: core::ffi::c_int = 13;
 pub const LTSIZE: core::ffi::c_int = (1) << LTLOG;
 pub const LTMASK: core::ffi::c_int = LTSIZE - 1;

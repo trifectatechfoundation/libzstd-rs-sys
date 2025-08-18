@@ -52,8 +52,7 @@ pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
 pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
 pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-pub const NULL: core::ffi::c_int = 0;
-static mut g_traceFile: *mut FILE = NULL as *mut FILE;
+static mut g_traceFile: *mut FILE = core::ptr::null_mut();
 static mut g_enableTime: UTIL_time_t = UTIL_time_t { t: 0 };
 
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
@@ -77,7 +76,7 @@ pub unsafe fn TRACE_finish() {
     if !g_traceFile.is_null() {
         fclose(g_traceFile);
     }
-    g_traceFile = NULL as *mut FILE;
+    g_traceFile = core::ptr::null_mut();
 }
 unsafe fn TRACE_log(method: *const core::ffi::c_char, duration: PTime, trace: *const ZSTD_Trace) {
     let mut level = 0;
