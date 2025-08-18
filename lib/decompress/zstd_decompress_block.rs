@@ -8,7 +8,9 @@ use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::common::zstd_internal::{
-    ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN,
+    LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
+    MaxSeq, OffFSELog, ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
+    ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
@@ -169,27 +171,9 @@ unsafe fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
 }
 
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const MaxOff: core::ffi::c_int = 31;
-pub const MLFSELog: core::ffi::c_int = 9;
-pub const LLFSELog: core::ffi::c_int = 9;
-pub const OffFSELog: core::ffi::c_int = 8;
-static LL_bits: [u8; 36] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
-    12, 13, 14, 15, 16,
-];
-static ML_bits: [u8; 53] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-];
-pub const LL_DEFAULTNORMLOG: u32 = 6;
-pub const ML_DEFAULTNORMLOG: u32 = 6;
-pub const OF_DEFAULTNORMLOG: u32 = 5;
 pub const NULL: core::ffi::c_int = 0;
 unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 4);
@@ -846,21 +830,6 @@ fn ZSTD_buildFSETable_body_bmi2<const N: usize>(
         wksp,
     );
 }
-
-const fn const_max(a: usize, b: usize) -> usize {
-    if a > b {
-        a
-    } else {
-        b
-    }
-}
-
-const MaxSeq: usize = const_max(MaxLL as usize, MaxML as usize); /* Assumption : MaxOff < MaxLL,MaxML */
-
-const MaxFSELog: usize = const_max(
-    const_max(MLFSELog as usize, LLFSELog as usize),
-    OffFSELog as usize,
-);
 
 #[derive(Copy, Clone)]
 #[repr(C, align(4))]
@@ -1578,13 +1547,9 @@ unsafe fn ZSTD_decodeSequence(
     let mlnbBits = (*mlDInfo).nbBits as u32;
     let ofnbBits = (*ofDInfo).nbBits as u32;
 
-    const MaxMLBits: u8 = 16;
-    const MaxLLBits: u8 = 16;
-    const MaxOff: u8 = 31; // NOTE: different for the legacy versions
-
     assert!(llBits <= MaxLLBits);
     assert!(mlBits <= MaxMLBits);
-    assert!(ofBits <= MaxOff);
+    assert!(ofBits as core::ffi::c_int <= MaxOff);
 
     let mut offset: size_t = 0;
     if ofBits > 1 {

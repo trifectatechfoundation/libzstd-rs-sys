@@ -3,6 +3,11 @@ use libc::size_t;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::pool::POOL_ctx;
+use crate::lib::common::zstd_internal::{
+    bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
+    ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
+    MINMATCH, ZSTD_REP_NUM,
+};
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
     HUF_compress1X_usingCTable, HUF_compress4X_usingCTable, HUF_estimateCompressedSize,
@@ -263,8 +268,6 @@ pub struct ZSTD_SequenceLength {
     pub litLength: u32,
     pub matchLength: u32,
 }
-pub const bt_raw: C2RustUnnamed_1 = 0;
-pub const bt_compressed: C2RustUnnamed_1 = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -278,9 +281,6 @@ pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
 pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub type C2RustUnnamed_1 = core::ffi::c_uint;
-pub const bt_reserved: C2RustUnnamed_1 = 3;
-pub const bt_rle: C2RustUnnamed_1 = 1;
 pub const ZSTD_TARGETCBLOCKSIZE_MIN: core::ffi::c_int = 1340;
 #[inline]
 unsafe fn ZSTD_getSequenceLength(
@@ -357,40 +357,9 @@ unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
     };
 }
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-pub const MINMATCH: core::ffi::c_int = 3;
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const DefaultMaxOff: core::ffi::c_int = 28;
-pub const MaxOff: core::ffi::c_int = 31;
-static LL_bits: [u8; 36] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
-    12, 13, 14, 15, 16,
-];
-static LL_defaultNorm: [i16; 36] = [
-    4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
-    -1, -1, -1, -1,
-];
-pub const LL_DEFAULTNORMLOG: core::ffi::c_int = 6;
-static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
-static ML_bits: [u8; 53] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-];
-static ML_defaultNorm: [i16; 53] = [
-    1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1,
-];
-pub const ML_DEFAULTNORMLOG: core::ffi::c_int = 6;
-static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
-static OF_defaultNorm: [i16; 29] = [
-    1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
-];
-pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
-static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const NULL: core::ffi::c_int = 0;

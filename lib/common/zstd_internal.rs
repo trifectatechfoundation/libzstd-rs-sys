@@ -5,6 +5,75 @@ use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 
 use libc::size_t;
 
+const fn const_max(a: usize, b: usize) -> usize {
+    if a > b {
+        a
+    } else {
+        b
+    }
+}
+
+pub const ZSTD_OPT_NUM: core::ffi::c_int = 1 << 12;
+
+pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
+pub static repStartValue: [u32; 3] = [1, 4, 8];
+
+pub const ZSTD_FRAMEIDSIZE: usize = 4;
+
+pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
+pub static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+pub type blockType_e = core::ffi::c_uint;
+pub const bt_raw: blockType_e = 0;
+pub const bt_rle: blockType_e = 1;
+pub const bt_compressed: blockType_e = 2;
+pub const bt_reserved: blockType_e = 3;
+
+pub const MINMATCH: core::ffi::c_int = 3;
+
+pub const Litbits: core::ffi::c_int = 8;
+pub const LitHufLog: core::ffi::c_int = 11;
+pub const MaxLit: core::ffi::c_int = ((1) << Litbits) - 1;
+pub const MaxML: core::ffi::c_int = 52;
+pub const MaxLL: core::ffi::c_int = 35;
+pub const DefaultMaxOff: core::ffi::c_int = 28;
+pub const MaxOff: core::ffi::c_int = 31;
+pub const MaxSeq: usize = const_max(MaxLL as usize, MaxML as usize); /* Assumption : MaxOff < MaxLL,MaxML */
+pub const MLFSELog: core::ffi::c_int = 9;
+pub const LLFSELog: core::ffi::c_int = 9;
+pub const OffFSELog: core::ffi::c_int = 8;
+pub const MaxFSELog: usize = const_max(
+    const_max(MLFSELog as usize, LLFSELog as usize),
+    OffFSELog as usize,
+);
+pub const MaxMLBits: u8 = 16;
+pub const MaxLLBits: u8 = 16;
+
+pub static LL_bits: [u8; 36] = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
+    12, 13, 14, 15, 16,
+];
+pub static LL_defaultNorm: [i16; 36] = [
+    4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
+    -1, -1, -1, -1,
+];
+pub const LL_DEFAULTNORMLOG: u32 = 6;
+pub static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG;
+pub static ML_bits: [u8; 53] = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+];
+pub static ML_defaultNorm: [i16; 53] = [
+    1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1,
+];
+pub const ML_DEFAULTNORMLOG: u32 = 6;
+pub static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG;
+pub static OF_defaultNorm: [i16; 29] = [
+    1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
+];
+pub const OF_DEFAULTNORMLOG: u32 = 5;
+pub static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
+
 pub unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
