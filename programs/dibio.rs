@@ -45,7 +45,7 @@ pub const NOISELENGTH: core::ffi::c_int = 32;
 static g_refreshRate: u64 = SEC_TO_MICRO as PTime / 6;
 static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
 pub const DEBUG: core::ffi::c_int = 0;
-unsafe fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
+unsafe fn DiB_getFileSize(fileName: *const core::ffi::c_char) -> i64 {
     let fileSize = UTIL_getFileSize(fileName);
     if fileSize == UTIL_FILESIZE_UNKNOWN as u64 {
         -1_i64
@@ -54,14 +54,14 @@ unsafe fn DiB_getFileSize(mut fileName: *const core::ffi::c_char) -> i64 {
     }
 }
 unsafe fn DiB_loadFiles(
-    mut buffer: *mut core::ffi::c_void,
-    mut bufferSizePtr: *mut size_t,
-    mut sampleSizes: *mut size_t,
-    mut sstSize: core::ffi::c_int,
-    mut fileNamesTable: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_int,
-    mut targetChunkSize: size_t,
-    mut displayLevel: core::ffi::c_int,
+    buffer: *mut core::ffi::c_void,
+    bufferSizePtr: *mut size_t,
+    sampleSizes: *mut size_t,
+    sstSize: core::ffi::c_int,
+    fileNamesTable: *mut *const core::ffi::c_char,
+    nbFiles: core::ffi::c_int,
+    targetChunkSize: size_t,
+    displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let buff = buffer as *mut core::ffi::c_char;
     let mut totalDataLoaded = 0 as size_t;
@@ -211,7 +211,7 @@ unsafe fn DiB_loadFiles(
     *bufferSizePtr = totalDataLoaded;
     nbSamplesLoaded
 }
-unsafe fn DiB_rand(mut src: *mut u32) -> u32 {
+unsafe fn DiB_rand(src: *mut u32) -> u32 {
     static prime1: u32 = 2654435761;
     static prime2: u32 = 2246822519;
     let mut rand32 = *src;
@@ -221,10 +221,7 @@ unsafe fn DiB_rand(mut src: *mut u32) -> u32 {
     *src = rand32;
     rand32 >> 5
 }
-unsafe fn DiB_shuffle(
-    mut fileNamesTable: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_uint,
-) {
+unsafe fn DiB_shuffle(fileNamesTable: *mut *const core::ffi::c_char, nbFiles: core::ffi::c_uint) {
     let mut seed = 0xfd2fb528 as core::ffi::c_uint;
     let mut i: core::ffi::c_uint = 0;
     if nbFiles == 0 {
@@ -256,7 +253,7 @@ unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
     free(testmem);
     requiredMem as size_t
 }
-unsafe fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) {
+unsafe fn DiB_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
     let prime1 = 2654435761 as core::ffi::c_uint;
     let prime2 = 2246822519 as core::ffi::c_uint;
     let mut acc = prime1;
@@ -269,9 +266,9 @@ unsafe fn DiB_fillNoise(mut buffer: *mut core::ffi::c_void, mut length: size_t) 
     }
 }
 unsafe fn DiB_saveDict(
-    mut dictFileName: *const core::ffi::c_char,
-    mut buff: *const core::ffi::c_void,
-    mut buffSize: size_t,
+    dictFileName: *const core::ffi::c_char,
+    buff: *const core::ffi::c_void,
+    buffSize: size_t,
 ) {
     let f = fopen(
         dictFileName,
@@ -323,10 +320,10 @@ unsafe fn DiB_saveDict(
     }
 }
 unsafe fn DiB_fileStats(
-    mut fileNamesTable: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_int,
-    mut chunkSize: size_t,
-    mut displayLevel: core::ffi::c_int,
+    fileNamesTable: *mut *const core::ffi::c_char,
+    nbFiles: core::ffi::c_int,
+    chunkSize: size_t,
+    displayLevel: core::ffi::c_int,
 ) -> fileStats {
     let mut fs = fileStats {
         totalSizeToLoad: 0,
@@ -391,16 +388,16 @@ unsafe fn DiB_fileStats(
     fs
 }
 pub unsafe fn DiB_trainFromFiles(
-    mut dictFileName: *const core::ffi::c_char,
-    mut maxDictSize: size_t,
-    mut fileNamesTable: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_int,
-    mut chunkSize: size_t,
-    mut params: *mut ZDICT_legacy_params_t,
-    mut coverParams: *mut ZDICT_cover_params_t,
-    mut fastCoverParams: *mut ZDICT_fastCover_params_t,
-    mut optimize: core::ffi::c_int,
-    mut memLimit: core::ffi::c_uint,
+    dictFileName: *const core::ffi::c_char,
+    maxDictSize: size_t,
+    fileNamesTable: *mut *const core::ffi::c_char,
+    nbFiles: core::ffi::c_int,
+    chunkSize: size_t,
+    params: *mut ZDICT_legacy_params_t,
+    coverParams: *mut ZDICT_cover_params_t,
+    fastCoverParams: *mut ZDICT_fastCover_params_t,
+    optimize: core::ffi::c_int,
+    memLimit: core::ffi::c_uint,
 ) -> core::ffi::c_int {
     let mut fs = fileStats {
         totalSizeToLoad: 0,
@@ -608,7 +605,7 @@ pub unsafe fn DiB_trainFromFiles(
                 coverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
-                let mut splitPercentage = ((*coverParams).splitPoint * 100.0) as core::ffi::c_uint;
+                let splitPercentage = ((*coverParams).splitPoint * 100.0) as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(
                         stderr,
@@ -642,7 +639,7 @@ pub unsafe fn DiB_trainFromFiles(
                 fastCoverParams,
             );
             if ZDICT_isError(dictSize) == 0 {
-                let mut splitPercentage_0 =
+                let splitPercentage_0 =
                     ((*fastCoverParams).splitPoint * 100.0) as core::ffi::c_uint;
                 if displayLevel >= 2 {
                     fprintf(

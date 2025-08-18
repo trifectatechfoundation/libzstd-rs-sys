@@ -435,7 +435,7 @@ pub const DEFAULT_FILE_PERMISSIONS: core::ffi::c_int =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 pub const TEMPORARY_FILE_PERMISSIONS: core::ffi::c_int = S_IRUSR | S_IWUSR;
 static mut g_artefact: *const core::ffi::c_char = NULL as *const core::ffi::c_char;
-unsafe extern "C" fn INThandler(mut sig: core::ffi::c_int) {
+unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
     assert!(sig == SIGINT);
     signal(
         sig,
@@ -448,7 +448,7 @@ unsafe extern "C" fn INThandler(mut sig: core::ffi::c_int) {
     fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
     exit(2);
 }
-unsafe fn addHandler(mut dstFileName: *const core::ffi::c_char) {
+unsafe fn addHandler(dstFileName: *const core::ffi::c_char) {
     if UTIL_isRegularFile(dstFileName) != 0 {
         g_artefact = dstFileName;
         signal(
@@ -469,10 +469,10 @@ unsafe fn clearHandler() {
     g_artefact = NULL as *const core::ffi::c_char;
 }
 pub unsafe fn FIO_addAbortHandler() {}
-unsafe fn FIO_shouldDisplayFileSummary(mut fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
+unsafe fn FIO_shouldDisplayFileSummary(fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
     ((*fCtx).nbFilesTotal <= 1 || g_display_prefs.displayLevel >= 3) as core::ffi::c_int
 }
-unsafe fn FIO_shouldDisplayMultipleFileSummary(mut fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
+unsafe fn FIO_shouldDisplayMultipleFileSummary(fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
     let shouldDisplay =
         ((*fCtx).nbFilesProcessed >= 1 && (*fCtx).nbFilesTotal > 1) as core::ffi::c_int;
     assert!(
@@ -595,52 +595,52 @@ pub unsafe fn FIO_freePreferences(prefs: *mut FIO_prefs_t) {
 pub unsafe fn FIO_freeContext(fCtx: *mut FIO_ctx_t) {
     free(fCtx as *mut core::ffi::c_void);
 }
-pub unsafe fn FIO_setNotificationLevel(mut level: core::ffi::c_int) {
+pub unsafe fn FIO_setNotificationLevel(level: core::ffi::c_int) {
     g_display_prefs.displayLevel = level;
 }
-pub unsafe fn FIO_setProgressSetting(mut setting: FIO_progressSetting_e) {
+pub unsafe fn FIO_setProgressSetting(setting: FIO_progressSetting_e) {
     g_display_prefs.progressSetting = setting;
 }
 pub unsafe fn FIO_setCompressionType(
     prefs: *mut FIO_prefs_t,
-    mut compressionType: FIO_compressionType_t,
+    compressionType: FIO_compressionType_t,
 ) {
     (*prefs).compressionType = compressionType;
 }
 pub unsafe fn FIO_overwriteMode(prefs: *mut FIO_prefs_t) {
     (*prefs).overwrite = 1;
 }
-pub unsafe fn FIO_setSparseWrite(prefs: *mut FIO_prefs_t, mut sparse: core::ffi::c_int) {
+pub unsafe fn FIO_setSparseWrite(prefs: *mut FIO_prefs_t, sparse: core::ffi::c_int) {
     (*prefs).sparseFileSupport = sparse;
 }
-pub unsafe fn FIO_setDictIDFlag(prefs: *mut FIO_prefs_t, mut dictIDFlag: core::ffi::c_int) {
+pub unsafe fn FIO_setDictIDFlag(prefs: *mut FIO_prefs_t, dictIDFlag: core::ffi::c_int) {
     (*prefs).dictIDFlag = dictIDFlag;
 }
-pub unsafe fn FIO_setChecksumFlag(prefs: *mut FIO_prefs_t, mut checksumFlag: core::ffi::c_int) {
+pub unsafe fn FIO_setChecksumFlag(prefs: *mut FIO_prefs_t, checksumFlag: core::ffi::c_int) {
     (*prefs).checksumFlag = checksumFlag;
 }
-pub unsafe fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, mut flag: core::ffi::c_int) {
+pub unsafe fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, flag: core::ffi::c_int) {
     (*prefs).removeSrcFile = (flag != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, mut memLimit: core::ffi::c_uint) {
+pub unsafe fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, memLimit: core::ffi::c_uint) {
     (*prefs).memLimit = memLimit;
 }
-pub unsafe fn FIO_setNbWorkers(prefs: *mut FIO_prefs_t, mut nbWorkers: core::ffi::c_int) {
+pub unsafe fn FIO_setNbWorkers(prefs: *mut FIO_prefs_t, nbWorkers: core::ffi::c_int) {
     (*prefs).nbWorkers = nbWorkers;
 }
 pub unsafe fn FIO_setExcludeCompressedFile(
     prefs: *mut FIO_prefs_t,
-    mut excludeCompressedFiles: core::ffi::c_int,
+    excludeCompressedFiles: core::ffi::c_int,
 ) {
     (*prefs).excludeCompressedFiles = excludeCompressedFiles;
 }
 pub unsafe fn FIO_setAllowBlockDevices(
     prefs: *mut FIO_prefs_t,
-    mut allowBlockDevices: core::ffi::c_int,
+    allowBlockDevices: core::ffi::c_int,
 ) {
     (*prefs).allowBlockDevices = allowBlockDevices;
 }
-pub unsafe fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: core::ffi::c_int) {
+pub unsafe fn FIO_setJobSize(prefs: *mut FIO_prefs_t, jobSize: core::ffi::c_int) {
     if jobSize != 0 && (*prefs).nbWorkers == 0 && g_display_prefs.displayLevel >= 2 {
         fprintf(
             stderr,
@@ -650,7 +650,7 @@ pub unsafe fn FIO_setJobSize(prefs: *mut FIO_prefs_t, mut jobSize: core::ffi::c_
     }
     (*prefs).jobSize = jobSize;
 }
-pub unsafe fn FIO_setOverlapLog(prefs: *mut FIO_prefs_t, mut overlapLog: core::ffi::c_int) {
+pub unsafe fn FIO_setOverlapLog(prefs: *mut FIO_prefs_t, overlapLog: core::ffi::c_int) {
     if overlapLog != 0 && (*prefs).nbWorkers == 0 && g_display_prefs.displayLevel >= 2 {
         fprintf(
             stderr,
@@ -660,7 +660,7 @@ pub unsafe fn FIO_setOverlapLog(prefs: *mut FIO_prefs_t, mut overlapLog: core::f
     }
     (*prefs).overlapLog = overlapLog;
 }
-pub unsafe fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, mut adapt: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, adapt: core::ffi::c_int) {
     if adapt > 0 && (*prefs).nbWorkers == 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -696,11 +696,11 @@ pub unsafe fn FIO_setAdaptiveMode(prefs: *mut FIO_prefs_t, mut adapt: core::ffi:
 }
 pub unsafe fn FIO_setUseRowMatchFinder(
     prefs: *mut FIO_prefs_t,
-    mut useRowMatchFinder: core::ffi::c_int,
+    useRowMatchFinder: core::ffi::c_int,
 ) {
     (*prefs).useRowMatchFinder = useRowMatchFinder;
 }
-pub unsafe fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, mut rsyncable: core::ffi::c_int) {
+pub unsafe fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, rsyncable: core::ffi::c_int) {
     if rsyncable > 0 && (*prefs).nbWorkers == 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -734,69 +734,66 @@ pub unsafe fn FIO_setRsyncable(prefs: *mut FIO_prefs_t, mut rsyncable: core::ffi
     }
     (*prefs).rsyncable = rsyncable;
 }
-pub unsafe fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, mut streamSrcSize: size_t) {
+pub unsafe fn FIO_setStreamSrcSize(prefs: *mut FIO_prefs_t, streamSrcSize: size_t) {
     (*prefs).streamSrcSize = streamSrcSize;
 }
-pub unsafe fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, mut targetCBlockSize: size_t) {
+pub unsafe fn FIO_setTargetCBlockSize(prefs: *mut FIO_prefs_t, targetCBlockSize: size_t) {
     (*prefs).targetCBlockSize = targetCBlockSize;
 }
-pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, mut srcSizeHint: size_t) {
+pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: size_t) {
     (*prefs).srcSizeHint = (if (2147483647) < srcSizeHint {
         2147483647
     } else {
         srcSizeHint
     }) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setTestMode(prefs: *mut FIO_prefs_t, mut testMode: core::ffi::c_int) {
+pub unsafe fn FIO_setTestMode(prefs: *mut FIO_prefs_t, testMode: core::ffi::c_int) {
     (*prefs).testMode = (testMode != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mut mode: ZSTD_ParamSwitch_e) {
+pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mode: ZSTD_ParamSwitch_e) {
     (*prefs).literalCompressionMode = mode;
 }
-pub unsafe fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, mut minCLevel: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptMin(prefs: *mut FIO_prefs_t, minCLevel: core::ffi::c_int) {
     assert!(minCLevel >= ZSTD_minCLevel());
     (*prefs).minAdaptLevel = minCLevel;
 }
-pub unsafe fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, mut maxCLevel: core::ffi::c_int) {
+pub unsafe fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, maxCLevel: core::ffi::c_int) {
     (*prefs).maxAdaptLevel = maxCLevel;
 }
-pub unsafe fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, mut ldmFlag: core::ffi::c_uint) {
+pub unsafe fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, ldmFlag: core::ffi::c_uint) {
     (*prefs).ldmFlag = (ldmFlag > 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setLdmHashLog(prefs: *mut FIO_prefs_t, mut ldmHashLog: core::ffi::c_int) {
+pub unsafe fn FIO_setLdmHashLog(prefs: *mut FIO_prefs_t, ldmHashLog: core::ffi::c_int) {
     (*prefs).ldmHashLog = ldmHashLog;
 }
-pub unsafe fn FIO_setLdmMinMatch(prefs: *mut FIO_prefs_t, mut ldmMinMatch: core::ffi::c_int) {
+pub unsafe fn FIO_setLdmMinMatch(prefs: *mut FIO_prefs_t, ldmMinMatch: core::ffi::c_int) {
     (*prefs).ldmMinMatch = ldmMinMatch;
 }
-pub unsafe fn FIO_setLdmBucketSizeLog(
-    prefs: *mut FIO_prefs_t,
-    mut ldmBucketSizeLog: core::ffi::c_int,
-) {
+pub unsafe fn FIO_setLdmBucketSizeLog(prefs: *mut FIO_prefs_t, ldmBucketSizeLog: core::ffi::c_int) {
     (*prefs).ldmBucketSizeLog = ldmBucketSizeLog;
 }
-pub unsafe fn FIO_setLdmHashRateLog(prefs: *mut FIO_prefs_t, mut ldmHashRateLog: core::ffi::c_int) {
+pub unsafe fn FIO_setLdmHashRateLog(prefs: *mut FIO_prefs_t, ldmHashRateLog: core::ffi::c_int) {
     (*prefs).ldmHashRateLog = ldmHashRateLog;
 }
-pub unsafe fn FIO_setPatchFromMode(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setPatchFromMode(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).patchFromMode = (value != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setContentSize(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setContentSize(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).contentSize = (value != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).asyncIO = value;
 }
-pub unsafe fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).passThrough = (value != 0) as core::ffi::c_int;
 }
-pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, mut value: ZSTD_ParamSwitch_e) {
+pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, value: ZSTD_ParamSwitch_e) {
     (*prefs).mmapDict = value;
 }
-pub unsafe fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setHasStdoutOutput(fCtx: *mut FIO_ctx_t, value: core::ffi::c_int) {
     (*fCtx).hasStdoutOutput = value;
 }
-pub unsafe fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_int) {
+pub unsafe fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, value: core::ffi::c_int) {
     (*fCtx).nbFilesTotal = value;
 }
 pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const FileNamesTable) {
@@ -809,7 +806,7 @@ pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const
         i = i.wrapping_add(1);
     }
 }
-unsafe fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core::ffi::c_int {
+unsafe fn FIO_removeFile(path: *const core::ffi::c_char) -> core::ffi::c_int {
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -862,10 +859,10 @@ unsafe fn FIO_removeFile(mut path: *const core::ffi::c_char) -> core::ffi::c_int
 }
 unsafe fn FIO_openSrcFile(
     prefs: *const FIO_prefs_t,
-    mut srcFileName: *const core::ffi::c_char,
-    mut statbuf: *mut stat_t,
+    srcFileName: *const core::ffi::c_char,
+    statbuf: *mut stat_t,
 ) -> *mut FILE {
-    let mut allowBlockDevices = if !prefs.is_null() {
+    let allowBlockDevices = if !prefs.is_null() {
         (*prefs).allowBlockDevices
     } else {
         0
@@ -923,10 +920,10 @@ unsafe fn FIO_openSrcFile(
     f
 }
 unsafe fn FIO_openDstFile(
-    mut fCtx: *mut FIO_ctx_t,
+    fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut srcFileName: *const core::ffi::c_char,
-    mut dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    dstFileName: *const core::ffi::c_char,
     mode: core::ffi::c_int,
 ) -> *mut FILE {
     if (*prefs).testMode != 0 {
@@ -1078,10 +1075,7 @@ unsafe fn FIO_openDstFile(
     }
     f
 }
-unsafe fn FIO_getDictFileStat(
-    mut fileName: *const core::ffi::c_char,
-    mut dictFileStat: *mut stat_t,
-) {
+unsafe fn FIO_getDictFileStat(fileName: *const core::ffi::c_char, dictFileStat: *mut stat_t) {
     assert!(!dictFileStat.is_null());
     if fileName.is_null() {
         return;
@@ -1151,14 +1145,14 @@ unsafe fn FIO_getDictFileStat(
     }
 }
 unsafe fn FIO_setDictBufferMalloc(
-    mut dict: *mut FIO_Dict_t,
-    mut fileName: *const core::ffi::c_char,
+    dict: *mut FIO_Dict_t,
+    fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    mut dictFileStat: *mut stat_t,
+    dictFileStat: *mut stat_t,
 ) -> size_t {
     let mut fileHandle = core::ptr::null_mut::<FILE>();
     let mut fileSize: size_t = 0;
-    let mut bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
+    let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
     assert!(!bufferPtr.is_null());
     assert!(!dictFileStat.is_null());
     *bufferPtr = NULL as *mut core::ffi::c_void;
@@ -1314,20 +1308,20 @@ unsafe fn FIO_setDictBufferMalloc(
 }
 pub const PROT_READ: core::ffi::c_int = 0x1 as core::ffi::c_int;
 pub const MAP_PRIVATE: core::ffi::c_int = 0x2 as core::ffi::c_int;
-unsafe fn FIO_munmap(mut dict: *mut FIO_Dict_t) {
+unsafe fn FIO_munmap(dict: *mut FIO_Dict_t) {
     munmap((*dict).dictBuffer, (*dict).dictBufferSize);
     (*dict).dictBuffer = NULL as *mut core::ffi::c_void;
     (*dict).dictBufferSize = 0;
 }
 unsafe fn FIO_setDictBufferMMap(
-    mut dict: *mut FIO_Dict_t,
-    mut fileName: *const core::ffi::c_char,
+    dict: *mut FIO_Dict_t,
+    fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    mut dictFileStat: *mut stat_t,
+    dictFileStat: *mut stat_t,
 ) -> size_t {
     let mut fileHandle: core::ffi::c_int = 0;
     let mut fileSize: u64 = 0;
-    let mut bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
+    let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
     assert!(!bufferPtr.is_null());
     assert!(!dictFileStat.is_null());
     *bufferPtr = NULL as *mut core::ffi::c_void;
@@ -1455,7 +1449,7 @@ unsafe fn FIO_setDictBufferMMap(
     close(fileHandle);
     fileSize as size_t
 }
-unsafe fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
+unsafe fn FIO_freeDict(dict: *mut FIO_Dict_t) {
     if (*dict).dictBufferType as core::ffi::c_uint
         == FIO_mallocDict as core::ffi::c_int as core::ffi::c_uint
     {
@@ -1471,11 +1465,11 @@ unsafe fn FIO_freeDict(mut dict: *mut FIO_Dict_t) {
     };
 }
 unsafe fn FIO_initDict(
-    mut dict: *mut FIO_Dict_t,
-    mut fileName: *const core::ffi::c_char,
+    dict: *mut FIO_Dict_t,
+    fileName: *const core::ffi::c_char,
     prefs: *mut FIO_prefs_t,
-    mut dictFileStat: *mut stat_t,
-    mut dictBufferType: FIO_dictBufferType_t,
+    dictFileStat: *mut stat_t,
+    dictBufferType: FIO_dictBufferType_t,
 ) {
     (*dict).dictBufferType = dictBufferType;
     if (*dict).dictBufferType as core::ffi::c_uint
@@ -1491,8 +1485,8 @@ unsafe fn FIO_initDict(
     };
 }
 pub unsafe fn FIO_checkFilenameCollisions(
-    mut filenameTable: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_uint,
+    filenameTable: *mut *const core::ffi::c_char,
+    nbFiles: core::ffi::c_uint,
 ) -> core::ffi::c_int {
     let mut filenameTableSorted = core::ptr::null_mut::<*const core::ffi::c_char>();
     let mut prevElem = core::ptr::null::<core::ffi::c_char>();
@@ -1556,18 +1550,18 @@ pub unsafe fn FIO_checkFilenameCollisions(
     0
 }
 unsafe fn extractFilename(
-    mut path: *const core::ffi::c_char,
-    mut separator: core::ffi::c_char,
+    path: *const core::ffi::c_char,
+    separator: core::ffi::c_char,
 ) -> *const core::ffi::c_char {
-    let mut search: *const core::ffi::c_char = strrchr(path, separator as core::ffi::c_int);
+    let search: *const core::ffi::c_char = strrchr(path, separator as core::ffi::c_int);
     if search.is_null() {
         return path;
     }
     search.offset(1)
 }
 unsafe fn FIO_createFilename_fromOutDir(
-    mut path: *const core::ffi::c_char,
-    mut outDirName: *const core::ffi::c_char,
+    path: *const core::ffi::c_char,
+    outDirName: *const core::ffi::c_char,
     suffixLen: size_t,
 ) -> *mut core::ffi::c_char {
     let mut filenameStart = core::ptr::null::<core::ffi::c_char>();
@@ -1657,7 +1651,7 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
     dictSize: core::ffi::c_ulonglong,
     maxSrcFileSize: core::ffi::c_ulonglong,
 ) {
-    let mut maxSize = if (*prefs).memLimit as core::ffi::c_ulonglong
+    let maxSize = if (*prefs).memLimit as core::ffi::c_ulonglong
         > (if dictSize > maxSrcFileSize {
             dictSize
         } else {
@@ -1744,10 +1738,10 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
     FIO_setMemLimit(prefs, maxSize as core::ffi::c_uint);
 }
 unsafe fn FIO_multiFilesConcatWarning(
-    mut fCtx: *const FIO_ctx_t,
-    mut prefs: *mut FIO_prefs_t,
-    mut outFileName: *const core::ffi::c_char,
-    mut displayLevelCutoff: core::ffi::c_int,
+    fCtx: *const FIO_ctx_t,
+    prefs: *mut FIO_prefs_t,
+    outFileName: *const core::ffi::c_char,
+    displayLevelCutoff: core::ffi::c_int,
 ) -> core::ffi::c_int {
     if (*fCtx).hasStdoutOutput != 0 && (*prefs).removeSrcFile != 0 {
         if g_display_prefs.displayLevel >= 1 {
@@ -1883,11 +1877,7 @@ unsafe fn FIO_multiFilesConcatWarning(
         (*fCtx).hasStdinInput,
     )
 }
-unsafe fn setInBuffer(
-    mut buf: *const core::ffi::c_void,
-    mut s: size_t,
-    mut pos: size_t,
-) -> ZSTD_inBuffer {
+unsafe fn setInBuffer(buf: *const core::ffi::c_void, s: size_t, pos: size_t) -> ZSTD_inBuffer {
     let mut i = ZSTD_inBuffer_s {
         src: core::ptr::null::<core::ffi::c_void>(),
         size: 0,
@@ -1898,11 +1888,7 @@ unsafe fn setInBuffer(
     i.pos = pos;
     i
 }
-unsafe fn setOutBuffer(
-    mut buf: *mut core::ffi::c_void,
-    mut s: size_t,
-    mut pos: size_t,
-) -> ZSTD_outBuffer {
+unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, s: size_t, pos: size_t) -> ZSTD_outBuffer {
     let mut o = ZSTD_outBuffer_s {
         dst: core::ptr::null_mut::<core::ffi::c_void>(),
         size: 0,
@@ -1913,17 +1899,17 @@ unsafe fn setOutBuffer(
     o.pos = pos;
     o
 }
-unsafe fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
+unsafe fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
     let btScale = (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
 unsafe fn FIO_adjustParamsForPatchFromMode(
     prefs: *mut FIO_prefs_t,
-    mut comprParams: *mut ZSTD_compressionParameters,
+    comprParams: *mut ZSTD_compressionParameters,
     dictSize: core::ffi::c_ulonglong,
     maxSrcFileSize: core::ffi::c_ulonglong,
-    mut cLevel: core::ffi::c_int,
+    cLevel: core::ffi::c_int,
 ) {
     let fileWindowLog = (FIO_highbit64(maxSrcFileSize)).wrapping_add(1);
     let cParams = ZSTD_getCParams(
@@ -2055,15 +2041,15 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
 }
 unsafe fn FIO_createCResources(
     prefs: *mut FIO_prefs_t,
-    mut dictFileName: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
     maxSrcFileSize: core::ffi::c_ulonglong,
-    mut cLevel: core::ffi::c_int,
+    cLevel: core::ffi::c_int,
     mut comprParams: ZSTD_compressionParameters,
 ) -> cRess_t {
     let mut useMMap = ((*prefs).mmapDict as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
-    let mut forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
+    let forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
         == ZSTD_ps_disable as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
     let mut dictBufferType = FIO_mallocDict;
@@ -3401,11 +3387,11 @@ unsafe fn FIO_freeCResources(ress: *mut cRess_t) {
     ZSTD_freeCStream((*ress).cctx);
 }
 unsafe fn FIO_compressGzFrame(
-    mut ress: *const cRess_t,
-    mut srcFileName: *const core::ffi::c_char,
+    ress: *const cRess_t,
+    srcFileName: *const core::ffi::c_char,
     srcFileSize: u64,
     mut compressionLevel: core::ffi::c_int,
-    mut readsize: *mut u64,
+    readsize: *mut u64,
 ) -> core::ffi::c_ulonglong {
     let mut inFileSize = 0 as core::ffi::c_ulonglong;
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
@@ -3669,12 +3655,12 @@ unsafe fn FIO_compressGzFrame(
     outFileSize
 }
 unsafe fn FIO_compressLzmaFrame(
-    mut ress: *mut cRess_t,
-    mut srcFileName: *const core::ffi::c_char,
+    ress: *mut cRess_t,
+    srcFileName: *const core::ffi::c_char,
     srcFileSize: u64,
     mut compressionLevel: core::ffi::c_int,
-    mut readsize: *mut u64,
-    mut plain_lzma: core::ffi::c_int,
+    readsize: *mut u64,
+    plain_lzma: core::ffi::c_int,
 ) -> core::ffi::c_ulonglong {
     let mut inFileSize = 0 as core::ffi::c_ulonglong;
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
@@ -3957,11 +3943,11 @@ unsafe fn FIO_compressLzmaFrame(
 unsafe fn FIO_compressZstdFrame(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut ressPtr: *const cRess_t,
-    mut srcFileName: *const core::ffi::c_char,
-    mut fileSize: u64,
+    ressPtr: *const cRess_t,
+    srcFileName: *const core::ffi::c_char,
+    fileSize: u64,
     mut compressionLevel: core::ffi::c_int,
-    mut readsize: *mut u64,
+    readsize: *mut u64,
 ) -> core::ffi::c_ulonglong {
     let ress = *ressPtr;
     let mut writeJob = AIO_WritePool_acquireJob((*ressPtr).writeCtx);
@@ -4269,9 +4255,8 @@ unsafe fn FIO_compressZstdFrame(
                 let zfp = ZSTD_getFrameProgression(ress.cctx);
                 lastAdaptTime = UTIL_getTime();
                 if zfp.currentJobID > 1 {
-                    let mut newlyProduced =
-                        (zfp.produced).wrapping_sub(previous_zfp_update.produced);
-                    let mut newlyFlushed = (zfp.flushed).wrapping_sub(previous_zfp_update.flushed);
+                    let newlyProduced = (zfp.produced).wrapping_sub(previous_zfp_update.produced);
+                    let newlyFlushed = (zfp.flushed).wrapping_sub(previous_zfp_update.flushed);
                     assert!(zfp.produced >= previous_zfp_update.produced);
                     assert!((*prefs).nbWorkers >= 1);
                     if zfp.consumed == previous_zfp_update.consumed && zfp.nbActiveWorkers == 0 {
@@ -4324,13 +4309,13 @@ unsafe fn FIO_compressZstdFrame(
                         } else if speedChange as core::ffi::c_uint
                             == noChange as core::ffi::c_int as core::ffi::c_uint
                         {
-                            let mut newlyIngested =
+                            let newlyIngested =
                                 (zfp.ingested).wrapping_sub(previous_zfp_correction.ingested);
-                            let mut newlyConsumed =
+                            let newlyConsumed =
                                 (zfp.consumed).wrapping_sub(previous_zfp_correction.consumed);
-                            let mut newlyProduced_0 =
+                            let newlyProduced_0 =
                                 (zfp.produced).wrapping_sub(previous_zfp_correction.produced);
-                            let mut newlyFlushed_0 =
+                            let newlyFlushed_0 =
                                 (zfp.flushed).wrapping_sub(previous_zfp_correction.flushed);
                             previous_zfp_correction = zfp;
                             assert!(inputPresented > 0);
@@ -4481,9 +4466,9 @@ unsafe fn FIO_compressZstdFrame(
                     }
                 } else {
                     if (*fCtx).nbFilesTotal > 1 {
-                        let mut srcFileNameSize = strlen(srcFileName);
+                        let srcFileNameSize = strlen(srcFileName);
                         if srcFileNameSize > 18 {
-                            let mut truncatedSrcFileName =
+                            let truncatedSrcFileName =
                                 srcFileName.add(srcFileNameSize).offset(-(15));
                             if g_display_prefs.progressSetting as core::ffi::c_uint
                                 != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
@@ -4611,9 +4596,9 @@ unsafe fn FIO_compressFilename_internal(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
     mut ress: cRess_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut compressionLevel: core::ffi::c_int,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    compressionLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let timeStart = UTIL_getTime();
     let cpuStart = clock();
@@ -4711,8 +4696,8 @@ unsafe fn FIO_compressFilename_internal(
         );
     }
     if FIO_shouldDisplayFileSummary(fCtx) != 0 {
-        let mut hr_isize = UTIL_makeHumanReadableSize(readsize);
-        let mut hr_osize = UTIL_makeHumanReadableSize(compressedfilesize);
+        let hr_isize = UTIL_makeHumanReadableSize(readsize);
+        let hr_osize = UTIL_makeHumanReadableSize(compressedfilesize);
         if readsize == 0 {
             if (g_display_prefs.displayLevel >= 2
                 || g_display_prefs.progressSetting as core::ffi::c_uint
@@ -4775,11 +4760,11 @@ unsafe fn FIO_compressFilename_internal(
 unsafe fn FIO_compressFilename_dstFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut ress: cRess_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut srcFileStat: *const stat_t,
-    mut compressionLevel: core::ffi::c_int,
+    ress: cRess_t,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    srcFileStat: *const stat_t,
+    compressionLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut closeDstFile = 0;
     let mut result: core::ffi::c_int = 0;
@@ -4804,7 +4789,7 @@ unsafe fn FIO_compressFilename_dstFile(
                 dstFileName,
             );
         }
-        let mut dstFile = FIO_openDstFile(
+        let dstFile = FIO_openDstFile(
             fCtx,
             prefs,
             srcFileName,
@@ -4977,10 +4962,10 @@ static compressedFileExtensions: [&CStr; 113] = [
 unsafe fn FIO_compressFilename_srcFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut ress: cRess_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut compressionLevel: core::ffi::c_int,
+    ress: cRess_t,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    compressionLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut result: core::ffi::c_int = 0;
     let mut srcFile = core::ptr::null_mut::<FILE>();
@@ -5124,7 +5109,7 @@ unsafe fn FIO_compressFilename_srcFile(
     }
     result
 }
-pub unsafe fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
+pub unsafe fn FIO_displayCompressionParameters(prefs: *const FIO_prefs_t) {
     static formatOptions: [&CStr; 5] = [
         ZSTD_EXTENSION,
         GZ_EXTENSION,
@@ -5253,11 +5238,11 @@ pub unsafe fn FIO_displayCompressionParameters(mut prefs: *const FIO_prefs_t) {
 pub unsafe fn FIO_compressFilename(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
-    mut compressionLevel: core::ffi::c_int,
-    mut comprParams: ZSTD_compressionParameters,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
+    compressionLevel: core::ffi::c_int,
+    comprParams: ZSTD_compressionParameters,
 ) -> core::ffi::c_int {
     let mut ress = FIO_createCResources(
         prefs,
@@ -5278,9 +5263,9 @@ pub unsafe fn FIO_compressFilename(
     result
 }
 unsafe fn FIO_determineCompressedName(
-    mut srcFileName: *const core::ffi::c_char,
-    mut outDirName: *const core::ffi::c_char,
-    mut suffix: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    outDirName: *const core::ffi::c_char,
+    suffix: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     static mut dfnbCapacity: size_t = 0;
     static mut dstFileNameBuffer: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
@@ -5354,8 +5339,8 @@ unsafe fn FIO_determineCompressedName(
     dstFileNameBuffer
 }
 unsafe fn FIO_getLargestFileSize(
-    mut inFileNames: *mut *const core::ffi::c_char,
-    mut nbFiles: core::ffi::c_uint,
+    inFileNames: *mut *const core::ffi::c_char,
+    nbFiles: core::ffi::c_uint,
 ) -> core::ffi::c_ulonglong {
     let mut i: size_t = 0;
     let mut fileSize: core::ffi::c_ulonglong = 0;
@@ -5375,14 +5360,14 @@ unsafe fn FIO_getLargestFileSize(
 pub unsafe fn FIO_compressMultipleFilenames(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut inFileNamesTable: *mut *const core::ffi::c_char,
-    mut outMirroredRootDirName: *const core::ffi::c_char,
-    mut outDirName: *const core::ffi::c_char,
-    mut outFileName: *const core::ffi::c_char,
-    mut suffix: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
-    mut compressionLevel: core::ffi::c_int,
-    mut comprParams: ZSTD_compressionParameters,
+    inFileNamesTable: *mut *const core::ffi::c_char,
+    outMirroredRootDirName: *const core::ffi::c_char,
+    outDirName: *const core::ffi::c_char,
+    outFileName: *const core::ffi::c_char,
+    suffix: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
+    compressionLevel: core::ffi::c_int,
+    comprParams: ZSTD_compressionParameters,
 ) -> core::ffi::c_int {
     let mut status: core::ffi::c_int = 0;
     let mut error = 0;
@@ -5476,7 +5461,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
             let srcFileName = *inFileNamesTable.offset((*fCtx).currFileIdx as isize);
             let mut dstFileName = NULL as *const core::ffi::c_char;
             if !outMirroredRootDirName.is_null() {
-                let mut validMirroredDirName =
+                let validMirroredDirName =
                     UTIL_createMirroredDestDirName(srcFileName, outMirroredRootDirName);
                 if !validMirroredDirName.is_null() {
                     dstFileName =
@@ -5527,8 +5512,8 @@ pub unsafe fn FIO_compressMultipleFilenames(
         }
     }
     if FIO_shouldDisplayMultipleFileSummary(fCtx) != 0 {
-        let mut hr_isize = UTIL_makeHumanReadableSize((*fCtx).totalBytesInput as u64);
-        let mut hr_osize = UTIL_makeHumanReadableSize((*fCtx).totalBytesOutput as u64);
+        let hr_isize = UTIL_makeHumanReadableSize((*fCtx).totalBytesInput as u64);
+        let hr_osize = UTIL_makeHumanReadableSize((*fCtx).totalBytesOutput as u64);
         if g_display_prefs.progressSetting as core::ffi::c_uint
             != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
             && (g_display_prefs.displayLevel >= 2
@@ -5588,12 +5573,12 @@ pub unsafe fn FIO_compressMultipleFilenames(
 }
 unsafe fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
-    mut dictFileName: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
 ) -> dRess_t {
     let mut useMMap = ((*prefs).mmapDict as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
-    let mut forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
+    let forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
         == ZSTD_ps_disable as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
     let mut statbuf = stat {
@@ -5766,7 +5751,7 @@ unsafe fn FIO_createDResources(
         }
         exit(11);
     }
-    let mut dictBufferType = (if useMMap != 0 && forceNoUseMMap == 0 {
+    let dictBufferType = (if useMMap != 0 && forceNoUseMMap == 0 {
         FIO_mmapDict as core::ffi::c_int
     } else {
         FIO_mallocDict as core::ffi::c_int
@@ -5957,7 +5942,7 @@ unsafe fn FIO_freeDResources(mut ress: dRess_t) {
     AIO_WritePool_free(ress.writeCtx);
     AIO_ReadPool_free(ress.readCtx);
 }
-unsafe fn FIO_passThrough(mut ress: *mut dRess_t) -> core::ffi::c_int {
+unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
     let blockSize = if (if ((64 * ((1) << 10)) as size_t) < ZSTD_DStreamInSize() {
         (64 * ((1) << 10)) as size_t
     } else {
@@ -5999,9 +5984,9 @@ unsafe fn FIO_passThrough(mut ress: *mut dRess_t) -> core::ffi::c_int {
 }
 unsafe fn FIO_zstdErrorHelp(
     prefs: *const FIO_prefs_t,
-    mut ress: *const dRess_t,
+    ress: *const dRess_t,
     mut err: size_t,
-    mut srcFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
 ) {
     let mut header = ZSTD_FrameHeader {
         frameContentSize: 0,
@@ -6082,10 +6067,10 @@ unsafe fn FIO_zstdErrorHelp(
 pub const FIO_ERROR_FRAME_DECODING: core::ffi::c_int = -(2);
 unsafe fn FIO_decompressZstdFrame(
     fCtx: *mut FIO_ctx_t,
-    mut ress: *mut dRess_t,
+    ress: *mut dRess_t,
     prefs: *const FIO_prefs_t,
-    mut srcFileName: *const core::ffi::c_char,
-    mut alreadyDecoded: u64,
+    srcFileName: *const core::ffi::c_char,
+    alreadyDecoded: u64,
 ) -> core::ffi::c_ulonglong {
     let mut frameSize = 0;
     let mut srcFName20 = srcFileName;
@@ -6204,8 +6189,8 @@ unsafe fn FIO_decompressZstdFrame(
     frameSize as core::ffi::c_ulonglong
 }
 unsafe fn FIO_decompressGzFrame(
-    mut ress: *mut dRess_t,
-    mut srcFileName: *const core::ffi::c_char,
+    ress: *mut dRess_t,
+    srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_ulonglong {
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = z_stream_s {
@@ -6315,9 +6300,9 @@ unsafe fn FIO_decompressGzFrame(
     }
 }
 unsafe fn FIO_decompressLzmaFrame(
-    mut ress: *mut dRess_t,
-    mut srcFileName: *const core::ffi::c_char,
-    mut plain_lzma: core::ffi::c_int,
+    ress: *mut dRess_t,
+    srcFileName: *const core::ffi::c_char,
+    plain_lzma: core::ffi::c_int,
 ) -> core::ffi::c_ulonglong {
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = {
@@ -6441,8 +6426,8 @@ unsafe fn FIO_decompressFrames(
     fCtx: *mut FIO_ctx_t,
     mut ress: dRess_t,
     prefs: *const FIO_prefs_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut readSomething = 0;
     let mut filesize = 0 as core::ffi::c_ulonglong;
@@ -6576,10 +6561,10 @@ unsafe fn FIO_decompressFrames(
 unsafe fn FIO_decompressDstFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut ress: dRess_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut srcFileStat: *const stat_t,
+    ress: dRess_t,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    srcFileStat: *const stat_t,
 ) -> core::ffi::c_int {
     let mut result: core::ffi::c_int = 0;
     let mut releaseDstFile = 0;
@@ -6633,9 +6618,9 @@ unsafe fn FIO_decompressDstFile(
 unsafe fn FIO_decompressSrcFile(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut ress: dRess_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
+    ress: dRess_t,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut srcFile = core::ptr::null_mut::<FILE>();
     let mut srcFileStat = stat {
@@ -6723,9 +6708,9 @@ unsafe fn FIO_decompressSrcFile(
 pub unsafe fn FIO_decompressFilename(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut dstFileName: *const core::ffi::c_char,
-    mut srcFileName: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
+    dstFileName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let ress = FIO_createDResources(prefs, dictFileName);
     let decodingError = FIO_decompressSrcFile(fCtx, prefs, ress, dstFileName, srcFileName);
@@ -6744,8 +6729,8 @@ static suffixList: [&CStr; 8] = [
 ];
 static suffixListStr: &CStr = c".zst/.tzst/.gz/.tgz/.lzma/.xz/.txz";
 unsafe fn FIO_determineDstName(
-    mut srcFileName: *const core::ffi::c_char,
-    mut outDirName: *const core::ffi::c_char,
+    srcFileName: *const core::ffi::c_char,
+    outDirName: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     static mut dfnbCapacity: size_t = 0;
     static mut dstFileNameBuffer: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
@@ -6856,22 +6841,22 @@ unsafe fn FIO_determineDstName(
 pub unsafe fn FIO_decompressMultipleFilenames(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
-    mut srcNamesTable: *mut *const core::ffi::c_char,
-    mut outMirroredRootDirName: *const core::ffi::c_char,
-    mut outDirName: *const core::ffi::c_char,
-    mut outFileName: *const core::ffi::c_char,
-    mut dictFileName: *const core::ffi::c_char,
+    srcNamesTable: *mut *const core::ffi::c_char,
+    outMirroredRootDirName: *const core::ffi::c_char,
+    outDirName: *const core::ffi::c_char,
+    outFileName: *const core::ffi::c_char,
+    dictFileName: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let mut status: core::ffi::c_int = 0;
     let mut error = 0;
-    let mut ress = FIO_createDResources(prefs, dictFileName);
+    let ress = FIO_createDResources(prefs, dictFileName);
     if !outFileName.is_null() {
         if FIO_multiFilesConcatWarning(fCtx, prefs, outFileName, 1) != 0 {
             FIO_freeDResources(ress);
             return 1;
         }
         if (*prefs).testMode == 0 {
-            let mut dstFile = FIO_openDstFile(
+            let dstFile = FIO_openDstFile(
                 fCtx,
                 prefs,
                 NULL as *const core::ffi::c_char,
@@ -6972,7 +6957,7 @@ pub unsafe fn FIO_decompressMultipleFilenames(
             let srcFileName = *srcNamesTable.offset((*fCtx).currFileIdx as isize);
             let mut dstFileName = NULL as *const core::ffi::c_char;
             if !outMirroredRootDirName.is_null() {
-                let mut validMirroredDirName =
+                let validMirroredDirName =
                     UTIL_createMirroredDestDirName(srcFileName, outMirroredRootDirName);
                 if !validMirroredDirName.is_null() {
                     dstFileName = FIO_determineDstName(srcFileName, validMirroredDirName);
@@ -7037,7 +7022,7 @@ pub unsafe fn FIO_decompressMultipleFilenames(
     FIO_freeDResources(ress);
     error
 }
-unsafe fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
+unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoError {
     loop {
         let mut headerBuffer: [u8; 18] = [0; 18];
         let numBytesRead = fread(
@@ -7058,8 +7043,8 @@ unsafe fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> In
                 && (*info).compressedSize > 0
                 && (*info).compressedSize != UTIL_FILESIZE_UNKNOWN as u64
             {
-                let mut file_position = ftell(srcFile) as core::ffi::c_ulonglong;
-                let mut file_size = (*info).compressedSize as core::ffi::c_ulonglong;
+                let file_position = ftell(srcFile) as core::ffi::c_ulonglong;
+                let file_size = (*info).compressedSize as core::ffi::c_ulonglong;
                 if file_position != file_size {
                     if g_display_prefs.displayLevel >= 1 {
                         fprintf(
@@ -7313,8 +7298,8 @@ unsafe fn FIO_analyzeFrames(mut info: *mut fileInfo_t, srcFile: *mut FILE) -> In
     info_success
 }
 unsafe fn getFileInfo_fileConfirmed(
-    mut info: *mut fileInfo_t,
-    mut inFileName: *const core::ffi::c_char,
+    info: *mut fileInfo_t,
+    inFileName: *const core::ffi::c_char,
 ) -> InfoError {
     let mut status = info_success;
     let mut srcFileStat = stat {
@@ -7363,10 +7348,7 @@ unsafe fn getFileInfo_fileConfirmed(
     (*info).nbFiles = 1;
     status
 }
-unsafe fn getFileInfo(
-    mut info: *mut fileInfo_t,
-    mut srcFileName: *const core::ffi::c_char,
-) -> InfoError {
+unsafe fn getFileInfo(info: *mut fileInfo_t, srcFileName: *const core::ffi::c_char) -> InfoError {
     if UTIL_isRegularFile(srcFileName) == 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -7383,9 +7365,9 @@ unsafe fn getFileInfo(
     getFileInfo_fileConfirmed(info, srcFileName)
 }
 unsafe fn displayInfo(
-    mut inFileName: *const core::ffi::c_char,
-    mut info: *const fileInfo_t,
-    mut displayLevel: core::ffi::c_int,
+    inFileName: *const core::ffi::c_char,
+    info: *const fileInfo_t,
+    displayLevel: core::ffi::c_int,
 ) {
     let window_hrs = UTIL_makeHumanReadableSize((*info).windowSize);
     let compressed_hrs = UTIL_makeHumanReadableSize((*info).compressedSize);
@@ -7507,7 +7489,7 @@ unsafe fn displayInfo(
         fprintf(stdout, b"\n\0" as *const u8 as *const core::ffi::c_char);
     };
 }
-unsafe fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> fileInfo_t {
+unsafe fn FIO_addFInfo(fi1: fileInfo_t, fi2: fileInfo_t) -> fileInfo_t {
     let mut total = fileInfo_t {
         decompressedSize: 0,
         compressedSize: 0,
@@ -7535,9 +7517,9 @@ unsafe fn FIO_addFInfo(mut fi1: fileInfo_t, mut fi2: fileInfo_t) -> fileInfo_t {
     total
 }
 unsafe fn FIO_listFile(
-    mut total: *mut fileInfo_t,
-    mut inFileName: *const core::ffi::c_char,
-    mut displayLevel: core::ffi::c_int,
+    total: *mut fileInfo_t,
+    inFileName: *const core::ffi::c_char,
+    displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut info = fileInfo_t {
         decompressedSize: 0,
@@ -7607,9 +7589,9 @@ unsafe fn FIO_listFile(
     error as core::ffi::c_int
 }
 pub unsafe fn FIO_listMultipleFiles(
-    mut numFiles: core::ffi::c_uint,
-    mut filenameTable: *mut *const core::ffi::c_char,
-    mut displayLevel: core::ffi::c_int,
+    numFiles: core::ffi::c_uint,
+    filenameTable: *mut *const core::ffi::c_char,
+    displayLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut u: core::ffi::c_uint = 0;
     u = 0;

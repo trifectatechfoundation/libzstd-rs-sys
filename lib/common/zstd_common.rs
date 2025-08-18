@@ -20,19 +20,19 @@ pub unsafe extern "C" fn ZSTD_versionString() -> *const core::ffi::c_char {
     b"1.5.8\0" as *const u8 as *const core::ffi::c_char
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_isError))]
-pub unsafe extern "C" fn ZSTD_isError(mut code: size_t) -> core::ffi::c_uint {
+pub unsafe extern "C" fn ZSTD_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getErrorName))]
-pub unsafe extern "C" fn ZSTD_getErrorName(mut code: size_t) -> *const core::ffi::c_char {
+pub unsafe extern "C" fn ZSTD_getErrorName(code: size_t) -> *const core::ffi::c_char {
     ERR_getErrorName(code)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getErrorCode))]
-pub unsafe extern "C" fn ZSTD_getErrorCode(mut code: size_t) -> ZSTD_ErrorCode {
+pub unsafe extern "C" fn ZSTD_getErrorCode(code: size_t) -> ZSTD_ErrorCode {
     ERR_getErrorCode(code)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getErrorString))]
-pub unsafe extern "C" fn ZSTD_getErrorString(mut code: ZSTD_ErrorCode) -> *const core::ffi::c_char {
+pub unsafe extern "C" fn ZSTD_getErrorString(code: ZSTD_ErrorCode) -> *const core::ffi::c_char {
     ERR_getErrorString(code)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_isDeterministicBuild))]

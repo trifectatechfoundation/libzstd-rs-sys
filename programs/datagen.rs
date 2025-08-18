@@ -10,7 +10,7 @@ pub const NULL: core::ffi::c_int = 0;
 pub const LTLOG: core::ffi::c_int = 13;
 pub const LTSIZE: core::ffi::c_int = (1) << LTLOG;
 pub const LTMASK: core::ffi::c_int = LTSIZE - 1;
-unsafe fn RDG_rand(mut src: *mut u32) -> u32 {
+unsafe fn RDG_rand(src: *mut u32) -> u32 {
     static prime1: u32 = 2654435761;
     static prime2: u32 = 2246822519;
     let mut rand32 = *src;
@@ -20,7 +20,7 @@ unsafe fn RDG_rand(mut src: *mut u32) -> u32 {
     *src = rand32;
     rand32 >> 5
 }
-unsafe fn RDG_fillLiteralDistrib(mut ldt: *mut u8, mut ld: fixedPoint_24_8) {
+unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, mut ld: fixedPoint_24_8) {
     let firstChar = (if ld as core::ffi::c_double <= 0.0f64 {
         0
     } else {
@@ -59,14 +59,14 @@ unsafe fn RDG_fillLiteralDistrib(mut ldt: *mut u8, mut ld: fixedPoint_24_8) {
         }
     }
 }
-unsafe fn RDG_genChar(mut seed: *mut u32, mut ldt: *const u8) -> u8 {
+unsafe fn RDG_genChar(seed: *mut u32, ldt: *const u8) -> u8 {
     let id = RDG_rand(seed) & LTMASK as u32;
     *ldt.offset(id as isize)
 }
-unsafe fn RDG_rand15Bits(mut seedPtr: *mut u32) -> u32 {
+unsafe fn RDG_rand15Bits(seedPtr: *mut u32) -> u32 {
     RDG_rand(seedPtr) & 0x7fff as core::ffi::c_int as u32
 }
-unsafe fn RDG_randLength(mut seedPtr: *mut u32) -> u32 {
+unsafe fn RDG_randLength(seedPtr: *mut u32) -> u32 {
     if RDG_rand(seedPtr) & 7 != 0 {
         return RDG_rand(seedPtr) & 0xf as core::ffi::c_int as u32;
     }
@@ -74,12 +74,12 @@ unsafe fn RDG_randLength(mut seedPtr: *mut u32) -> u32 {
         .wrapping_add(0xf as core::ffi::c_int as u32)
 }
 unsafe fn RDG_genBlock(
-    mut buffer: *mut core::ffi::c_void,
-    mut buffSize: size_t,
-    mut prefixSize: size_t,
-    mut matchProba: core::ffi::c_double,
-    mut ldt: *const u8,
-    mut seedPtr: *mut u32,
+    buffer: *mut core::ffi::c_void,
+    buffSize: size_t,
+    prefixSize: size_t,
+    matchProba: core::ffi::c_double,
+    ldt: *const u8,
+    seedPtr: *mut u32,
 ) {
     let buffPtr = buffer as *mut u8;
     let matchProba32 = (32768.0f64 * matchProba) as u32;
@@ -149,11 +149,11 @@ unsafe fn RDG_genBlock(
     }
 }
 pub unsafe fn RDG_genBuffer(
-    mut buffer: *mut core::ffi::c_void,
-    mut size: size_t,
-    mut matchProba: core::ffi::c_double,
+    buffer: *mut core::ffi::c_void,
+    size: size_t,
+    matchProba: core::ffi::c_double,
     mut litProba: core::ffi::c_double,
-    mut seed: core::ffi::c_uint,
+    seed: core::ffi::c_uint,
 ) {
     let mut seed32 = seed;
     let mut ldt: [u8; 8192] = [0; 8192];
@@ -172,10 +172,10 @@ pub unsafe fn RDG_genBuffer(
     RDG_genBlock(buffer, size, 0, matchProba, ldt.as_mut_ptr(), &mut seed32);
 }
 pub unsafe fn RDG_genStdout(
-    mut size: core::ffi::c_ulonglong,
-    mut matchProba: core::ffi::c_double,
+    size: core::ffi::c_ulonglong,
+    matchProba: core::ffi::c_double,
     mut litProba: core::ffi::c_double,
-    mut seed: core::ffi::c_uint,
+    seed: core::ffi::c_uint,
 ) {
     let mut seed32 = seed;
     let stdBlockSize = (128 * ((1) << 10)) as size_t;

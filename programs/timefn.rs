@@ -20,20 +20,17 @@ pub unsafe fn UTIL_getTime() -> UTIL_time_t {
         .wrapping_add(time.tv_nsec as PTime as core::ffi::c_ulonglong) as PTime;
     r
 }
-pub unsafe fn UTIL_getSpanTimeNano(
-    mut clockStart: UTIL_time_t,
-    mut clockEnd: UTIL_time_t,
-) -> PTime {
+pub unsafe fn UTIL_getSpanTimeNano(clockStart: UTIL_time_t, clockEnd: UTIL_time_t) -> PTime {
     (clockEnd.t).wrapping_sub(clockStart.t)
 }
-pub unsafe fn UTIL_getSpanTimeMicro(mut begin: UTIL_time_t, mut end: UTIL_time_t) -> PTime {
+pub unsafe fn UTIL_getSpanTimeMicro(begin: UTIL_time_t, end: UTIL_time_t) -> PTime {
     (UTIL_getSpanTimeNano(begin, end) as core::ffi::c_ulonglong).wrapping_div(1000) as PTime
 }
-pub unsafe fn UTIL_clockSpanMicro(mut clockStart: UTIL_time_t) -> PTime {
+pub unsafe fn UTIL_clockSpanMicro(clockStart: UTIL_time_t) -> PTime {
     let clockEnd = UTIL_getTime();
     UTIL_getSpanTimeMicro(clockStart, clockEnd)
 }
-pub unsafe fn UTIL_clockSpanNano(mut clockStart: UTIL_time_t) -> PTime {
+pub unsafe fn UTIL_clockSpanNano(clockStart: UTIL_time_t) -> PTime {
     let clockEnd = UTIL_getTime();
     UTIL_getSpanTimeNano(clockStart, clockEnd)
 }
