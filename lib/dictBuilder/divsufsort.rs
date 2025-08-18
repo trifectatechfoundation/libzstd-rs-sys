@@ -42,7 +42,6 @@ pub struct C2RustUnnamed_1 {
     pub c: *mut core::ffi::c_int,
     pub d: core::ffi::c_int,
 }
-pub const NULL: core::ffi::c_int = 0;
 pub const ALPHABET_SIZE: core::ffi::c_int = 256;
 pub const BUCKET_A_SIZE: core::ffi::c_int = 256;
 pub const BUCKET_B_SIZE: core::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
@@ -4320,7 +4319,7 @@ unsafe fn construct_SA(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut core::ffi::c_int;
+            k = core::ptr::null_mut();
             c2 = -(1);
             while i <= j {
                 s = *j;
@@ -4530,7 +4529,7 @@ unsafe fn construct_BWT(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut core::ffi::c_int;
+            k = core::ptr::null_mut();
             c2 = -(1);
             while i <= j {
                 s = *j;
@@ -4740,7 +4739,7 @@ unsafe fn construct_BWT_indexes(
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
                 .offset(-(1));
-            k = NULL as *mut core::ffi::c_int;
+            k = core::ptr::null_mut();
             c2 = -(1);
             while i <= j {
                 s = *j;

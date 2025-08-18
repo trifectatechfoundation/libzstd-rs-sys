@@ -31,7 +31,6 @@ pub struct fileStats {
 }
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 pub const SEC_TO_MICRO: core::ffi::c_int = 1000000;
-pub const NULL: core::ffi::c_int = 0;
 pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * ((1) << 10);
 pub const MEMMULT: core::ffi::c_int = 11;
 pub const COVER_MEMMULT: core::ffi::c_int = 9;
@@ -67,7 +66,7 @@ unsafe fn DiB_loadFiles(
     let mut totalDataLoaded = 0 as size_t;
     let mut nbSamplesLoaded = 0 as core::ffi::c_int;
     let mut fileIndex = 0 as core::ffi::c_int;
-    let mut f = NULL as *mut FILE;
+    let mut f = core::ptr::null_mut();
     while nbSamplesLoaded < sstSize && fileIndex < nbFiles {
         let mut fileDataLoaded: size_t = 0;
         let fileSize = DiB_getFileSize(*fileNamesTable.offset(fileIndex as isize));
@@ -186,7 +185,7 @@ unsafe fn DiB_loadFiles(
             }
             fileIndex += 1;
             fclose(f);
-            f = NULL as *mut FILE;
+            f = core::ptr::null_mut();
         }
     }
     if !f.is_null() {
@@ -240,7 +239,7 @@ unsafe fn DiB_shuffle(fileNamesTable: *mut *const core::ffi::c_char, nbFiles: co
 }
 unsafe fn DiB_findMaxMem(mut requiredMem: core::ffi::c_ulonglong) -> size_t {
     let step = (8 * ((1) << 20)) as size_t;
-    let mut testmem = NULL as *mut core::ffi::c_void;
+    let mut testmem = core::ptr::null_mut::<core::ffi::c_void>();
     requiredMem = (requiredMem >> 23).wrapping_add(1) << 23;
     requiredMem = requiredMem.wrapping_add(step as core::ffi::c_ulonglong);
     if requiredMem > g_maxMemory as core::ffi::c_ulonglong {

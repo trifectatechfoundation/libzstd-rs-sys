@@ -169,7 +169,6 @@ pub const ZBUFFds_loadHeader: ZBUFFv06_dStage = 1;
 pub const ZBUFFds_init: ZBUFFv06_dStage = 0;
 pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 pub const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb526 as core::ffi::c_uint;
-pub const NULL: core::ffi::c_int = 0;
 pub const ZSTDv06_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 13;
 static ZSTDv06_frameHeaderSize_min: size_t = 5;
 static ZSTDv06_frameHeaderSize_max: size_t = ZSTDv06_FRAMEHEADERSIZE_MAX as size_t;
@@ -2379,29 +2378,27 @@ pub unsafe fn HUFv06_decompress(
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
 ) -> size_t {
-    static decompress: [decompressionAlgo; 3] = unsafe {
-        [
-            Some(
-                HUFv06_decompress4X2
-                    as unsafe fn(
-                        *mut core::ffi::c_void,
-                        size_t,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(
-                HUFv06_decompress4X4
-                    as unsafe fn(
-                        *mut core::ffi::c_void,
-                        size_t,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            ::core::mem::transmute::<libc::intptr_t, decompressionAlgo>(NULL as libc::intptr_t),
-        ]
-    };
+    static decompress: [decompressionAlgo; 3] = [
+        Some(
+            HUFv06_decompress4X2
+                as unsafe fn(
+                    *mut core::ffi::c_void,
+                    size_t,
+                    *const core::ffi::c_void,
+                    size_t,
+                ) -> size_t,
+        ),
+        Some(
+            HUFv06_decompress4X4
+                as unsafe fn(
+                    *mut core::ffi::c_void,
+                    size_t,
+                    *const core::ffi::c_void,
+                    size_t,
+                ) -> size_t,
+        ),
+        None,
+    ];
     let mut Dtime: [u32; 3] = [0; 3];
     if dstSize == 0 {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -2475,10 +2472,10 @@ pub unsafe extern "C" fn ZSTDv06_sizeofDCtx() -> size_t {
 pub unsafe extern "C" fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> size_t {
     (*dctx).expected = ZSTDv06_frameHeaderSize_min;
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
-    (*dctx).previousDstEnd = NULL as *const core::ffi::c_void;
-    (*dctx).base = NULL as *const core::ffi::c_void;
-    (*dctx).vBase = NULL as *const core::ffi::c_void;
-    (*dctx).dictEnd = NULL as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = core::ptr::null();
+    (*dctx).base = core::ptr::null();
+    (*dctx).vBase = core::ptr::null();
+    (*dctx).dictEnd = core::ptr::null();
     *((*dctx).hufTableX4).as_mut_ptr().offset(0) =
         ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
     (*dctx).flagRepeatTable = 0;
@@ -2488,7 +2485,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> siz
 pub unsafe extern "C" fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx {
     let dctx = malloc(::core::mem::size_of::<ZSTDv06_DCtx>() as size_t) as *mut ZSTDv06_DCtx;
     if dctx.is_null() {
-        return NULL as *mut ZSTDv06_DCtx;
+        return core::ptr::null_mut();
     }
     ZSTDv06_decompressBegin(dctx);
     dctx
@@ -3591,15 +3588,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressDCtx(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTDv06_decompress_usingDict(
-        dctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        NULL as *const core::ffi::c_void,
-        0,
-    )
+    ZSTDv06_decompress_usingDict(dctx, dst, dstCapacity, src, srcSize, core::ptr::null(), 0)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompress))]
 pub unsafe extern "C" fn ZSTDv06_decompress(
@@ -3959,13 +3948,13 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin_usingDict(
 pub unsafe fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
     let zbd = malloc(::core::mem::size_of::<ZBUFFv06_DCtx>() as size_t) as *mut ZBUFFv06_DCtx;
     if zbd.is_null() {
-        return NULL as *mut ZBUFFv06_DCtx;
+        return core::ptr::null_mut();
     }
     ptr::write_bytes(zbd as *mut u8, 0, ::core::mem::size_of::<ZBUFFv06_DCtx>());
     (*zbd).zd = ZSTDv06_createDCtx();
     if ((*zbd).zd).is_null() {
         ZBUFFv06_freeDCtx(zbd);
-        return NULL as *mut ZBUFFv06_DCtx;
+        return core::ptr::null_mut();
     }
     (*zbd).stage = ZBUFFds_init;
     zbd
@@ -3993,7 +3982,7 @@ pub unsafe fn ZBUFFv06_decompressInitDictionary(
     ZSTDv06_decompressBegin_usingDict((*zbd).zd, dict, dictSize)
 }
 pub unsafe fn ZBUFFv06_decompressInit(zbd: *mut ZBUFFv06_DCtx) -> size_t {
-    ZBUFFv06_decompressInitDictionary(zbd, NULL as *const core::ffi::c_void, 0)
+    ZBUFFv06_decompressInitDictionary(zbd, core::ptr::null(), 0)
 }
 #[inline]
 unsafe fn ZBUFFv06_limitCopy(
@@ -4070,7 +4059,7 @@ pub unsafe fn ZBUFFv06_decompressContinue(
                     let h1Size = ZSTDv06_nextSrcSizeToDecompress((*zbd).zd);
                     let h1Result = ZSTDv06_decompressContinue(
                         (*zbd).zd,
-                        NULL as *mut core::ffi::c_void,
+                        core::ptr::null_mut(),
                         0,
                         ((*zbd).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
                         h1Size,
@@ -4082,7 +4071,7 @@ pub unsafe fn ZBUFFv06_decompressContinue(
                         let h2Size = ZSTDv06_nextSrcSizeToDecompress((*zbd).zd);
                         let h2Result = ZSTDv06_decompressContinue(
                             (*zbd).zd,
-                            NULL as *mut core::ffi::c_void,
+                            core::ptr::null_mut(),
                             0,
                             ((*zbd).headerBuffer).as_mut_ptr().add(h1Size)
                                 as *const core::ffi::c_void,

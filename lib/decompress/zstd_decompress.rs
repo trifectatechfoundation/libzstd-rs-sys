@@ -147,11 +147,6 @@ pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-static mut ZSTD_defaultCMem: ZSTD_customMem = ZSTD_customMem {
-    customAlloc: None,
-    customFree: None,
-    opaque: core::ptr::null_mut(),
-};
 pub const ZSTD_d_format: core::ffi::c_int = 1000;
 pub const ZSTD_d_stableOutBuffer: core::ffi::c_int = 1001;
 pub const ZSTD_d_forceIgnoreChecksum: core::ffi::c_int = 1002;

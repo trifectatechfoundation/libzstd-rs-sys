@@ -441,25 +441,11 @@ pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
-    {
-        ZSTD_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut core::ffi::c_void,
-        }
-    }
-};
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
 pub const ZDICT_CONTENTSIZE_MIN: core::ffi::c_int = 128;
-pub const NULL: core::ffi::c_int = 0;
 pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 pub const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;
@@ -1350,12 +1336,10 @@ unsafe fn ZDICT_analyzeEntropy(
         offset: 0,
         count: 0,
     }; 4];
-    let mut esr = {
-        EStats_ress_t {
-            dict: NULL as *mut ZSTD_CDict,
-            zc: NULL as *mut ZSTD_CCtx,
-            workPlace: NULL as *mut core::ffi::c_void,
-        }
+    let mut esr = EStats_ress_t {
+        dict: core::ptr::null_mut(),
+        zc: core::ptr::null_mut(),
+        workPlace: core::ptr::null_mut(),
     };
     let mut params = ZSTD_parameters {
         cParams: ZSTD_compressionParameters {

@@ -65,7 +65,6 @@ unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZST
         }
     }
 }
-pub const NULL: core::ffi::c_int = 0;
 pub unsafe fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const core::ffi::c_void {
     (*ddict).dictContent
 }
@@ -212,16 +211,10 @@ pub unsafe extern "C" fn ZSTD_createDDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> *mut ZSTD_DDict {
-    let allocator = {
-        ZSTD_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut core::ffi::c_void,
-        }
+    let allocator = ZSTD_customMem {
+        customAlloc: None,
+        customFree: None,
+        opaque: core::ptr::null_mut(),
     };
     ZSTD_createDDict_advanced(dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto, allocator)
 }
@@ -232,13 +225,9 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
 ) -> *mut ZSTD_DDict {
     let allocator = {
         ZSTD_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut core::ffi::c_void,
+            customAlloc: None,
+            customFree: None,
+            opaque: core::ptr::null_mut(),
         }
     };
     ZSTD_createDDict_advanced(
