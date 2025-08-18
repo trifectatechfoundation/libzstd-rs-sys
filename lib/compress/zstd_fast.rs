@@ -108,8 +108,12 @@ unsafe fn ZSTD_selectAddr(
     backup: *const u8,
 ) -> *const u8 {
     asm!(
-        "cmp {1}, {2}\ncmova {3}, {0}\n", inlateout(reg) candidate, inlateout(reg) index
-        => _, inlateout(reg) lowLimit => _, inlateout(reg) backup => _,
+        "cmp {1:e}, {2:e}
+        cmova {3}, {0}",
+        inlateout(reg) candidate,
+        inlateout(reg) index => _,
+        inlateout(reg) lowLimit => _,
+        inlateout(reg) backup => _,
         options(preserves_flags, pure, readonly, att_syntax)
     );
     candidate
