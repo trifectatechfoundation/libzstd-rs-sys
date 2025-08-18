@@ -4,6 +4,7 @@ use libc::{
     __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
     memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
+use libzstd_rs::lib::common::xxhash::ZSTD_XXH64;
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_compress2,
@@ -77,16 +78,6 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-type XXH32_hash_t = u32;
-type xxh_u32 = XXH32_hash_t;
-type XXH_alignment = core::ffi::c_uint;
-pub const XXH_unaligned: XXH_alignment = 1;
-pub const XXH_aligned: XXH_alignment = 0;
-type xxh_u8 = u8;
-type xxh_unalign32 = xxh_u32;
-type XXH64_hash_t = u64;
-type xxh_u64 = XXH64_hash_t;
-type xxh_unalign64 = xxh_u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchResult_t {
@@ -146,207 +137,6 @@ pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-pub const XXH_FORCE_ALIGN_CHECK: core::ffi::c_int = 0;
-unsafe fn XXH_read32(ptr: *const core::ffi::c_void) -> xxh_u32 {
-    *(ptr as *const xxh_unalign32)
-}
-pub const XXH_CPU_LITTLE_ENDIAN: core::ffi::c_int = 1;
-unsafe fn XXH_swap32(x: xxh_u32) -> xxh_u32 {
-    x << 24 & 0xff000000 as core::ffi::c_uint
-        | x << 8 & 0xff0000 as core::ffi::c_int as xxh_u32
-        | x >> 8 & 0xff00 as core::ffi::c_int as xxh_u32
-        | x >> 24 & 0xff as core::ffi::c_int as xxh_u32
-}
-#[inline(always)]
-unsafe fn XXH_readLE32(ptr: *const core::ffi::c_void) -> xxh_u32 {
-    if XXH_CPU_LITTLE_ENDIAN != 0 {
-        XXH_read32(ptr)
-    } else {
-        XXH_swap32(XXH_read32(ptr))
-    }
-}
-#[inline(always)]
-unsafe fn XXH_readLE32_align(ptr: *const core::ffi::c_void, align: XXH_alignment) -> xxh_u32 {
-    if align as core::ffi::c_uint == XXH_unaligned as core::ffi::c_int as core::ffi::c_uint {
-        XXH_readLE32(ptr)
-    } else if XXH_CPU_LITTLE_ENDIAN != 0 {
-        *(ptr as *const xxh_u32)
-    } else {
-        XXH_swap32(*(ptr as *const xxh_u32))
-    }
-}
-unsafe fn XXH_read64(ptr: *const core::ffi::c_void) -> xxh_u64 {
-    *(ptr as *const xxh_unalign64)
-}
-unsafe fn XXH_swap64(x: xxh_u64) -> xxh_u64 {
-    ((x << 56) as core::ffi::c_ulonglong & 0xff00000000000000 as core::ffi::c_ulonglong
-        | (x << 40) as core::ffi::c_ulonglong & 0xff000000000000 as core::ffi::c_ulonglong
-        | (x << 24) as core::ffi::c_ulonglong & 0xff0000000000 as core::ffi::c_ulonglong
-        | (x << 8) as core::ffi::c_ulonglong & 0xff00000000 as core::ffi::c_ulonglong
-        | (x >> 8) as core::ffi::c_ulonglong & 0xff000000 as core::ffi::c_ulonglong
-        | (x >> 24) as core::ffi::c_ulonglong & 0xff0000 as core::ffi::c_ulonglong
-        | (x >> 40) as core::ffi::c_ulonglong & 0xff00 as core::ffi::c_ulonglong
-        | (x >> 56) as core::ffi::c_ulonglong & 0xff as core::ffi::c_ulonglong) as xxh_u64
-}
-#[inline(always)]
-unsafe fn XXH_readLE64(ptr: *const core::ffi::c_void) -> xxh_u64 {
-    if XXH_CPU_LITTLE_ENDIAN != 0 {
-        XXH_read64(ptr)
-    } else {
-        XXH_swap64(XXH_read64(ptr))
-    }
-}
-#[inline(always)]
-unsafe fn XXH_readLE64_align(ptr: *const core::ffi::c_void, align: XXH_alignment) -> xxh_u64 {
-    if align as core::ffi::c_uint == XXH_unaligned as core::ffi::c_int as core::ffi::c_uint {
-        XXH_readLE64(ptr)
-    } else if XXH_CPU_LITTLE_ENDIAN != 0 {
-        *(ptr as *const xxh_u64)
-    } else {
-        XXH_swap64(*(ptr as *const xxh_u64))
-    }
-}
-pub const XXH_PRIME64_1: core::ffi::c_ulonglong = 0x9e3779b185ebca87 as core::ffi::c_ulonglong;
-pub const XXH_PRIME64_2: core::ffi::c_ulonglong = 0xc2b2ae3d27d4eb4f as core::ffi::c_ulonglong;
-pub const XXH_PRIME64_3: core::ffi::c_ulonglong = 0x165667b19e3779f9 as core::ffi::c_ulonglong;
-pub const XXH_PRIME64_4: core::ffi::c_ulonglong = 0x85ebca77c2b2ae63 as core::ffi::c_ulonglong;
-pub const XXH_PRIME64_5: core::ffi::c_ulonglong = 0x27d4eb2f165667c5 as core::ffi::c_ulonglong;
-unsafe fn XXH64_round(mut acc: xxh_u64, input: xxh_u64) -> xxh_u64 {
-    acc = (acc as core::ffi::c_ulonglong)
-        .wrapping_add((input as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2))
-        as xxh_u64 as xxh_u64;
-    acc = acc.rotate_left(31);
-    acc = (acc as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64 as xxh_u64;
-    acc
-}
-unsafe fn XXH64_mergeRound(mut acc: xxh_u64, mut val: xxh_u64) -> xxh_u64 {
-    val = XXH64_round(0, val);
-    acc ^= val;
-    acc = (acc as core::ffi::c_ulonglong)
-        .wrapping_mul(XXH_PRIME64_1)
-        .wrapping_add(XXH_PRIME64_4) as xxh_u64;
-    acc
-}
-unsafe fn XXH64_avalanche(mut hash: xxh_u64) -> xxh_u64 {
-    hash ^= hash >> 33;
-    hash = (hash as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_2) as xxh_u64 as xxh_u64;
-    hash ^= hash >> 29;
-    hash = (hash as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_3) as xxh_u64 as xxh_u64;
-    hash ^= hash >> 32;
-    hash
-}
-unsafe fn XXH64_finalize(
-    mut hash: xxh_u64,
-    mut ptr: *const xxh_u8,
-    mut len: size_t,
-    align: XXH_alignment,
-) -> xxh_u64 {
-    if ptr.is_null() {
-        ::core::hint::assert_unchecked(len == 0);
-    }
-    len &= 31;
-    while len >= 8 {
-        let k1 = XXH64_round(
-            0,
-            XXH_readLE64_align(ptr as *const core::ffi::c_void, align),
-        );
-        ptr = ptr.offset(8);
-        hash ^= k1;
-        hash = (hash.rotate_left(27) as core::ffi::c_ulonglong)
-            .wrapping_mul(XXH_PRIME64_1)
-            .wrapping_add(XXH_PRIME64_4) as xxh_u64;
-        len = len.wrapping_sub(8);
-    }
-    if len >= 4 {
-        hash = (hash as core::ffi::c_ulonglong
-            ^ (XXH_readLE32_align(ptr as *const core::ffi::c_void, align) as xxh_u64
-                as core::ffi::c_ulonglong)
-                .wrapping_mul(XXH_PRIME64_1)) as xxh_u64;
-        ptr = ptr.offset(4);
-        hash = (hash.rotate_left(23) as core::ffi::c_ulonglong)
-            .wrapping_mul(XXH_PRIME64_2)
-            .wrapping_add(XXH_PRIME64_3) as xxh_u64;
-        len = len.wrapping_sub(4);
-    }
-    while len > 0 {
-        let fresh0 = ptr;
-        ptr = ptr.offset(1);
-        hash = (hash as core::ffi::c_ulonglong
-            ^ (*fresh0 as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_5))
-            as xxh_u64;
-        hash =
-            (hash.rotate_left(11) as core::ffi::c_ulonglong).wrapping_mul(XXH_PRIME64_1) as xxh_u64;
-        len = len.wrapping_sub(1);
-    }
-    XXH64_avalanche(hash)
-}
-#[inline(always)]
-unsafe fn XXH64_endian_align(
-    mut input: *const xxh_u8,
-    len: size_t,
-    seed: xxh_u64,
-    align: XXH_alignment,
-) -> xxh_u64 {
-    let mut h64: xxh_u64 = 0;
-    if input.is_null() {
-        ::core::hint::assert_unchecked(len == 0);
-    }
-    if len >= 32 {
-        let bEnd = input.add(len);
-        let limit = bEnd.offset(-(31));
-        let mut v1 = (seed as core::ffi::c_ulonglong)
-            .wrapping_add(XXH_PRIME64_1)
-            .wrapping_add(XXH_PRIME64_2) as xxh_u64;
-        let mut v2 = (seed as core::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_2) as xxh_u64;
-        let mut v3 = seed.wrapping_add(0);
-        let mut v4 = (seed as core::ffi::c_ulonglong).wrapping_sub(XXH_PRIME64_1) as xxh_u64;
-        loop {
-            v1 = XXH64_round(
-                v1,
-                XXH_readLE64_align(input as *const core::ffi::c_void, align),
-            );
-            input = input.offset(8);
-            v2 = XXH64_round(
-                v2,
-                XXH_readLE64_align(input as *const core::ffi::c_void, align),
-            );
-            input = input.offset(8);
-            v3 = XXH64_round(
-                v3,
-                XXH_readLE64_align(input as *const core::ffi::c_void, align),
-            );
-            input = input.offset(8);
-            v4 = XXH64_round(
-                v4,
-                XXH_readLE64_align(input as *const core::ffi::c_void, align),
-            );
-            input = input.offset(8);
-            if input >= limit {
-                break;
-            }
-        }
-        h64 = (v1.rotate_left(1))
-            .wrapping_add(v2.rotate_left(7))
-            .wrapping_add(v3.rotate_left(12))
-            .wrapping_add(v4.rotate_left(18));
-        h64 = XXH64_mergeRound(h64, v1);
-        h64 = XXH64_mergeRound(h64, v2);
-        h64 = XXH64_mergeRound(h64, v3);
-        h64 = XXH64_mergeRound(h64, v4);
-    } else {
-        h64 = (seed as core::ffi::c_ulonglong).wrapping_add(XXH_PRIME64_5) as xxh_u64;
-    }
-    h64 = h64.wrapping_add(len as xxh_u64);
-    XXH64_finalize(h64, input, len, align)
-}
-#[inline]
-unsafe fn XXH_INLINE_XXH64(
-    input: *const core::ffi::c_void,
-    len: size_t,
-    seed: XXH64_hash_t,
-) -> XXH64_hash_t {
-    XXH64_endian_align(input as *const xxh_u8, len, seed, XXH_unaligned)
-}
 pub const MB_UNIT: core::ffi::c_int = 1000000;
 pub const NULL: core::ffi::c_int = 0;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
@@ -1312,7 +1102,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     {
         0
     } else {
-        XXH_INLINE_XXH64(srcBuffer, srcSize, 0)
+        ZSTD_XXH64(srcBuffer, srcSize, 0)
     };
     let mut marks: [*const core::ffi::c_char; 4] = [
         b" |\0" as *const u8 as *const core::ffi::c_char,
@@ -1589,7 +1379,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         markNb = markNb.wrapping_add(1) % NB_MARKS as u32;
     }
     let resultBuffer = *resultBufferPtr as *const u8;
-    let crcCheck = XXH_INLINE_XXH64(resultBuffer as *const core::ffi::c_void, srcSize, 0);
+    let crcCheck = ZSTD_XXH64(resultBuffer as *const core::ffi::c_void, srcSize, 0);
     if (*adv).mode as core::ffi::c_uint == BMK_both as core::ffi::c_int as core::ffi::c_uint
         && crcOrig != crcCheck
     {
