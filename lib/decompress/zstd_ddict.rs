@@ -6,9 +6,25 @@ use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_entropyDTables_t};
 use crate::lib::zstd::*;
 
-pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
-pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
-pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MultipleDDicts {
+    Single = 0,
+    Multiple = 1,
+}
+
+impl TryFrom<u32> for MultipleDDicts {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Single),
+            1 => Ok(Self::Multiple),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_DDictHashSet {
