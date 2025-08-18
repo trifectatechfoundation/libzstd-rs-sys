@@ -217,7 +217,6 @@ unsafe fn ZSTD_customFree(mut ptr: *mut core::ffi::c_void, mut customMem: ZSTD_c
     }
 }
 
-const ZSTDv01_magicNumber: u32 = 0xFD2FB51E;
 const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 
 const ZSTDv02_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB522;

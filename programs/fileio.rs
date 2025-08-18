@@ -252,37 +252,13 @@ struct lzma_allocator {
 }
 const LZMA_STREAM_END: lzma_ret = 1;
 type lzma_ret = core::ffi::c_uint;
-const LZMA_RET_INTERNAL8: lzma_ret = 108;
-const LZMA_RET_INTERNAL7: lzma_ret = 107;
-const LZMA_RET_INTERNAL6: lzma_ret = 106;
-const LZMA_RET_INTERNAL5: lzma_ret = 105;
-const LZMA_RET_INTERNAL4: lzma_ret = 104;
-const LZMA_RET_INTERNAL3: lzma_ret = 103;
-const LZMA_RET_INTERNAL2: lzma_ret = 102;
-const LZMA_RET_INTERNAL1: lzma_ret = 101;
-const LZMA_SEEK_NEEDED: lzma_ret = 12;
-const LZMA_PROG_ERROR: lzma_ret = 11;
 const LZMA_BUF_ERROR: lzma_ret = 10;
-const LZMA_DATA_ERROR: lzma_ret = 9;
-const LZMA_OPTIONS_ERROR: lzma_ret = 8;
-const LZMA_FORMAT_ERROR: lzma_ret = 7;
-const LZMA_MEMLIMIT_ERROR: lzma_ret = 6;
-const LZMA_MEM_ERROR: lzma_ret = 5;
-const LZMA_GET_CHECK: lzma_ret = 4;
-const LZMA_UNSUPPORTED_CHECK: lzma_ret = 3;
-const LZMA_NO_CHECK: lzma_ret = 2;
 const LZMA_OK: lzma_ret = 0;
 type lzma_action = core::ffi::c_uint;
 const LZMA_FINISH: lzma_action = 3;
-const LZMA_FULL_BARRIER: lzma_action = 4;
-const LZMA_FULL_FLUSH: lzma_action = 2;
-const LZMA_SYNC_FLUSH: lzma_action = 1;
 const LZMA_RUN: lzma_action = 0;
 type lzma_check = core::ffi::c_uint;
-const LZMA_CHECK_SHA256: lzma_check = 10;
 const LZMA_CHECK_CRC64: lzma_check = 4;
-const LZMA_CHECK_CRC32: lzma_check = 1;
-const LZMA_CHECK_NONE: lzma_check = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct lzma_options_lzma {
@@ -312,14 +288,7 @@ struct lzma_options_lzma {
     reserved_ptr2: *mut core::ffi::c_void,
 }
 type lzma_match_finder = core::ffi::c_uint;
-const LZMA_MF_BT4: lzma_match_finder = 20;
-const LZMA_MF_BT3: lzma_match_finder = 19;
-const LZMA_MF_BT2: lzma_match_finder = 18;
-const LZMA_MF_HC4: lzma_match_finder = 4;
-const LZMA_MF_HC3: lzma_match_finder = 3;
 type lzma_mode = core::ffi::c_uint;
-const LZMA_MODE_NORMAL: lzma_mode = 2;
-const LZMA_MODE_FAST: lzma_mode = 1;
 type lzma_bool = core::ffi::c_uchar;
 type z_stream = z_stream_s;
 #[derive(Copy, Clone)]
@@ -450,7 +419,6 @@ const SIG_DFL: core::ffi::c_int = 0;
 const SIG_IGN: core::ffi::c_int = 1;
 const SIGINT: core::ffi::c_int = 2;
 const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
-const LONG_TELL: unsafe extern "C" fn(*mut FILE) -> core::ffi::c_long = ftell;
 const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
 pub unsafe fn FIO_zlibVersion() -> *const core::ffi::c_char {
     zlibVersion()
