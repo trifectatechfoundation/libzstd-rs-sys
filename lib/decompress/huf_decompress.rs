@@ -6,9 +6,8 @@ use libc::size_t;
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::{MEM_isLittleEndian, MEM_read64, MEM_readLEST, MEM_write16};
+use crate::lib::common::mem::{MEM_read64, MEM_readLEST, MEM_write16};
 use crate::lib::decompress::Workspace;
-use crate::lib::zstd::*;
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
