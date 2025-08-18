@@ -1,8 +1,4 @@
 use core::arch::asm;
-#[cfg(target_arch = "x86")]
-use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
@@ -454,9 +450,6 @@ pub struct ZSTD_SequencePosition {
     pub posInSequence: u32,
     pub posInSrc: size_t,
 }
-pub type ZSTD_overlap_e = core::ffi::c_uint;
-pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
-pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
 pub type S64 = i64;
 pub const bt_compressed: C2RustUnnamed_1 = 2;
 pub const bt_rle: C2RustUnnamed_1 = 1;
@@ -849,7 +842,7 @@ unsafe fn ZSTD_storeSeq(
     offBase: u32,
     matchLength: size_t,
 ) {
-    let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
+    let litLimit_w = litLimit.sub(WILDCOPY_OVERLENGTH);
     let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
@@ -1187,6 +1180,10 @@ use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
+use crate::lib::common::zstd_internal::{
+    ZSTD_copy16, ZSTD_limitCopy, ZSTD_no_overlap, ZSTD_wildcopy, WILDCOPY_OVERLENGTH,
+    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+};
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
 };
@@ -1402,76 +1399,6 @@ static OF_defaultNorm: [S16; 29] = [
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
-unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    libc::memcpy(dst, src, 8);
-}
-unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
-}
-pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
-pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
-#[inline(always)]
-unsafe fn ZSTD_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
-    length: size_t,
-    ovtype: ZSTD_overlap_e,
-) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
-    let oend = op.add(length);
-    if ovtype as core::ffi::c_uint
-        == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
-        && diff < WILDCOPY_VECLEN as ptrdiff_t
-    {
-        loop {
-            ZSTD_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(8);
-            ip = ip.offset(8);
-            if op >= oend {
-                break;
-            }
-        }
-    } else {
-        ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-        if 16 >= length {
-            return;
-        }
-        op = op.offset(16);
-        ip = ip.offset(16);
-        loop {
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            if op >= oend {
-                break;
-            }
-        }
-    };
-}
-#[inline]
-unsafe fn ZSTD_limitCopy(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    let length = if dstCapacity < srcSize {
-        dstCapacity
-    } else {
-        srcSize
-    };
-    if length > 0 {
-        libc::memcpy(dst, src, length as libc::size_t);
-    }
-    length
-}
-pub const ZSTD_WORKSPACETOOLARGE_FACTOR: core::ffi::c_int = 3;
-pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: core::ffi::c_int = 128;
 #[inline]
 unsafe fn ZSTD_cpuSupportsBmi2() -> core::ffi::c_int {
     let cpuid = ZSTD_cpuid();
@@ -4090,16 +4017,15 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         windowSize
     };
     let maxNbSeq = ZSTD_maxNbSeq(blockSize, (*cParams).minMatch, useSequenceProducer);
-    let tokenSpace =
-        (ZSTD_cwksp_alloc_size((WILDCOPY_OVERLENGTH as size_t).wrapping_add(blockSize)))
-            .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
-                maxNbSeq.wrapping_mul(::core::mem::size_of::<SeqDef>() as size_t),
-            ))
-            .wrapping_add(
-                3 * ZSTD_cwksp_alloc_size(
-                    maxNbSeq.wrapping_mul(::core::mem::size_of::<u8>() as size_t),
-                ),
-            );
+    let tokenSpace = (ZSTD_cwksp_alloc_size(WILDCOPY_OVERLENGTH.wrapping_add(blockSize)))
+        .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
+            maxNbSeq.wrapping_mul(::core::mem::size_of::<SeqDef>() as size_t),
+        ))
+        .wrapping_add(
+            3 * ZSTD_cwksp_alloc_size(
+                maxNbSeq.wrapping_mul(::core::mem::size_of::<u8>() as size_t),
+            ),
+        );
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
         if ((((8) << 10) + 512) as size_t).wrapping_add(
             (::core::mem::size_of::<core::ffi::c_uint>() as size_t)
@@ -4760,7 +4686,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         ) as *mut ZSTD_Sequence;
     }
     (*zc).seqStore.litStart =
-        ZSTD_cwksp_reserve_buffer(ws, blockSize.wrapping_add(WILDCOPY_OVERLENGTH as size_t));
+        ZSTD_cwksp_reserve_buffer(ws, blockSize.wrapping_add(WILDCOPY_OVERLENGTH));
     (*zc).seqStore.maxNbLit = blockSize;
     (*zc).bufferedPolicy = zbuff;
     (*zc).inBuffSize = buffInSize;

@@ -9,6 +9,9 @@ use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
+use crate::lib::common::zstd_internal::{
+    ZSTD_limitCopy, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+};
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
     DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp,
@@ -156,25 +159,6 @@ static ML_bits: [u8; 53] = [
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
 pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
-#[inline]
-unsafe fn ZSTD_limitCopy(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    let length = if dstCapacity < srcSize {
-        dstCapacity
-    } else {
-        srcSize
-    };
-    if length > 0 {
-        libc::memcpy(dst, src, length as libc::size_t);
-    }
-    length
-}
-pub const ZSTD_WORKSPACETOOLARGE_FACTOR: core::ffi::c_int = 3;
-pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: core::ffi::c_int = 128;
 
 #[inline]
 unsafe fn ZSTD_cpuSupportsBmi2() -> bool {

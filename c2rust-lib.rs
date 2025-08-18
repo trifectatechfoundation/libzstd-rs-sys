@@ -18,6 +18,7 @@ pub mod lib {
         pub mod pool;
         pub mod xxhash;
         pub mod zstd_common;
+        pub mod zstd_internal;
         pub mod zstd_trace;
     } // mod common
     pub mod compress {
