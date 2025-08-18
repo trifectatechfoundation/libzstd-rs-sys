@@ -1875,10 +1875,12 @@ pub unsafe extern "C" fn ZSTD_decompress(
     ZSTD_freeDCtx(dctx);
     regenSize
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_nextSrcSizeToDecompress))]
 pub unsafe extern "C" fn ZSTD_nextSrcSizeToDecompress(dctx: *mut ZSTD_DCtx) -> size_t {
     (*dctx).expected
 }
+
 unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
     dctx: *mut ZSTD_DCtx,
     inputSize: size_t,
@@ -1889,20 +1891,8 @@ unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
     ) {
         return (*dctx).expected;
     }
-    if (*dctx).bType != BlockType::Raw {
-        return (*dctx).expected;
-    }
-    if 1 > (if inputSize < (*dctx).expected {
-        inputSize
-    } else {
-        (*dctx).expected
-    }) {
-        1
-    } else if inputSize < (*dctx).expected {
-        inputSize
-    } else {
-        (*dctx).expected
-    }
+
+    Ord::clamp(1, inputSize, (*dctx).expected)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_nextInputType))]
