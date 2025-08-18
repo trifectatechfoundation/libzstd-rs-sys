@@ -73,7 +73,7 @@ pub use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_freeCCtx,
 };
 
-#[cfg(feature = "semver-prefix")]
+#[cfg(all(feature = "export-symbols", feature = "semver-prefix"))]
 macro_rules! prefix {
     ($name:expr) => {
         concat!(
@@ -87,7 +87,7 @@ macro_rules! prefix {
     };
 }
 
-#[cfg(not(feature = "semver-prefix"))]
+#[cfg(all(feature = "export-symbols", not(feature = "semver-prefix")))]
 macro_rules! prefix {
     ($name:expr) => {
         stringify!($name)
@@ -95,4 +95,6 @@ macro_rules! prefix {
 }
 
 use libc::size_t;
+
+#[cfg(feature = "export-symbols")]
 pub(crate) use prefix;
