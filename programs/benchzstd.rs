@@ -77,16 +77,16 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-pub type XXH32_hash_t = u32;
-pub type xxh_u32 = XXH32_hash_t;
-pub type XXH_alignment = core::ffi::c_uint;
+type XXH32_hash_t = u32;
+type xxh_u32 = XXH32_hash_t;
+type XXH_alignment = core::ffi::c_uint;
 pub const XXH_unaligned: XXH_alignment = 1;
 pub const XXH_aligned: XXH_alignment = 0;
-pub type xxh_u8 = u8;
-pub type xxh_unalign32 = xxh_u32;
-pub type XXH64_hash_t = u64;
-pub type xxh_u64 = XXH64_hash_t;
-pub type xxh_unalign64 = xxh_u64;
+type xxh_u8 = u8;
+type xxh_unalign32 = xxh_u32;
+type XXH64_hash_t = u64;
+type xxh_u64 = XXH64_hash_t;
+type xxh_unalign64 = xxh_u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchResult_t {

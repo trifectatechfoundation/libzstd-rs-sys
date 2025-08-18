@@ -5,7 +5,7 @@ use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
-use libc::size_t;
+use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
@@ -21,7 +21,6 @@ use crate::lib::decompress::{
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
 
-pub type ptrdiff_t = core::ffi::c_long;
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
 pub const BIT_DStream_completed: BIT_DStream_status = 2;
@@ -37,7 +36,6 @@ pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
-pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XXH64_state_s {
@@ -48,8 +46,8 @@ pub struct XXH64_state_s {
     pub reserved32: XXH32_hash_t,
     pub reserved64: XXH64_hash_t,
 }
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
+type XXH64_hash_t = u64;
+type XXH32_hash_t = u32;
 
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
@@ -208,7 +206,7 @@ unsafe fn ZSTD_wildcopy(
     length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
@@ -1211,9 +1209,9 @@ unsafe fn ZSTD_safecopy(
     }
 }
 unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
-    let diff = op.offset_from(ip) as core::ffi::c_long;
+    let diff = op.offset_from(ip) as ptrdiff_t;
     let oend = op.add(length);
-    if length < 8 || diff > -(8) as ptrdiff_t {
+    if length < 8 || diff > -8 as ptrdiff_t {
         while op < oend {
             let fresh9 = ip;
             ip = ip.offset(1);

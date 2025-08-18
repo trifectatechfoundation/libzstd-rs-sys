@@ -27,19 +27,18 @@ extern "C" {
         __compar: __compar_fn_t,
     );
 }
-pub type __dev_t = core::ffi::c_ulong;
-pub type __uid_t = core::ffi::c_uint;
-pub type __gid_t = core::ffi::c_uint;
-pub type __ino_t = core::ffi::c_ulong;
-pub type __mode_t = core::ffi::c_uint;
-pub type __nlink_t = core::ffi::c_ulong;
-pub type __off_t = core::ffi::c_long;
-pub type __off64_t = core::ffi::c_long;
-pub type __time_t = core::ffi::c_long;
-pub type __blksize_t = core::ffi::c_long;
-pub type __blkcnt_t = core::ffi::c_long;
-pub type __syscall_slong_t = core::ffi::c_long;
-pub type ptrdiff_t = core::ffi::c_long;
+type __dev_t = core::ffi::c_ulong;
+type __uid_t = core::ffi::c_uint;
+type __gid_t = core::ffi::c_uint;
+type __ino_t = core::ffi::c_ulong;
+type __mode_t = core::ffi::c_uint;
+type __nlink_t = core::ffi::c_ulong;
+type __off_t = core::ffi::c_long;
+type __off64_t = core::ffi::c_long;
+type __time_t = core::ffi::c_long;
+type __blksize_t = core::ffi::c_long;
+type __blkcnt_t = core::ffi::c_long;
+type __syscall_slong_t = core::ffi::c_long;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct stat {
@@ -59,7 +58,7 @@ pub struct stat {
     pub st_ctim: timespec,
     pub __glibc_reserved: [__syscall_slong_t; 3],
 }
-pub type __compar_fn_t = Option<
+type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
 pub type stat_t = stat;

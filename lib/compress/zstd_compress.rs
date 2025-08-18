@@ -5,7 +5,6 @@ use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
-pub type ptrdiff_t = core::ffi::c_long;
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -350,8 +349,6 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 pub type ZSTD_threadPool = POOL_ctx;
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1178,7 +1175,7 @@ unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> core::ffi::c_in
     ((*params).extSeqProdFunc).is_some() as core::ffi::c_int
 }
 
-use libc::{calloc, free, malloc, size_t};
+use libc::{calloc, free, malloc, ptrdiff_t, size_t};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::ERR_isError;
@@ -1420,7 +1417,7 @@ unsafe fn ZSTD_wildcopy(
     length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);

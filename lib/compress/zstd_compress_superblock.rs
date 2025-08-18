@@ -173,7 +173,6 @@ pub struct SeqCollector {
     pub maxSequences: size_t,
 }
 pub type ZSTD_threadPool = POOL_ctx;
-pub type XXH64_state_t = XXH64_state_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XXH64_state_s {
@@ -184,8 +183,8 @@ pub struct XXH64_state_s {
     pub reserved32: XXH32_hash_t,
     pub reserved64: XXH64_hash_t,
 }
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
+type XXH64_hash_t = u64;
+type XXH32_hash_t = u32;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cwksp {
