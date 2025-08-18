@@ -1769,6 +1769,7 @@ unsafe fn ZSTD_decompressFrame(
     *srcSizePtr = remainingSrcSize;
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
+
 unsafe fn ZSTD_decompressMultiFrame(
     dctx: *mut ZSTD_DCtx,
     mut dst: *mut core::ffi::c_void,
@@ -1777,11 +1778,11 @@ unsafe fn ZSTD_decompressMultiFrame(
     mut srcSize: size_t,
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
-    ddict: *const ZSTD_DDict,
+    ddict: Option<&ZSTD_DDict>,
 ) -> size_t {
     let dststart = dst;
     let mut moreThan1Frame = 0;
-    if !ddict.is_null() {
+    if let Some(ddict) = ddict {
         dict = ZSTD_DDict_dictContent(ddict);
         dictSize = ZSTD_DDict_dictSize(ddict);
     }
@@ -1828,7 +1829,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                     continue;
                 }
             }
-            if !ddict.is_null() {
+            if let Some(ddict) = ddict {
                 let err_code_0 = ZSTD_decompressBegin_usingDDict(dctx, ddict);
                 if ERR_isError(err_code_0) != 0 {
                     return err_code_0;
@@ -1859,6 +1860,7 @@ unsafe fn ZSTD_decompressMultiFrame(
     }
     (dst as *mut u8).offset_from(dststart as *mut u8) as core::ffi::c_long as size_t
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDict))]
 pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     dctx: *mut ZSTD_DCtx,
@@ -1869,17 +1871,9 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    ZSTD_decompressMultiFrame(
-        dctx,
-        dst,
-        dstCapacity,
-        src,
-        srcSize,
-        dict,
-        dictSize,
-        core::ptr::null(),
-    )
+    ZSTD_decompressMultiFrame(dctx, dst, dstCapacity, src, srcSize, dict, dictSize, None)
 }
+
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
     match (*dctx).dictUses as core::ffi::c_int {
         -1 => (*dctx).ddict,
@@ -2462,7 +2456,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
         srcSize,
         core::ptr::null(),
         0,
-        ddict,
+        ddict.as_ref(),
     )
 }
 
