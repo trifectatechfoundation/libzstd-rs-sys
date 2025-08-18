@@ -2,7 +2,7 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 #![feature(likely_unlikely)]
 #![feature(linkage)]
 #[macro_use]
