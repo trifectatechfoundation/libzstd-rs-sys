@@ -97,11 +97,7 @@ unsafe fn RDG_genBlock(
             );
             return;
         }
-        memset(
-            buffPtr.add(pos) as *mut core::ffi::c_void,
-            0,
-            size0,
-        );
+        memset(buffPtr.add(pos) as *mut core::ffi::c_void, 0, size0);
         pos = pos.wrapping_add(size0);
         *buffPtr.add(pos.wrapping_sub(1)) = RDG_genChar(seedPtr, ldt);
     }
