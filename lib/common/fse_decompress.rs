@@ -41,7 +41,7 @@ struct FSE_DState_t<'a> {
 }
 
 impl<'a> FSE_DState_t<'a> {
-    fn new(mut bitD: &mut BIT_DStream_t, mut dt: &'a DTable) -> Self {
+    fn new(bitD: &mut BIT_DStream_t, dt: &'a DTable) -> Self {
         let state = bitD.read_bits(dt.header.tableLog as core::ffi::c_uint);
         let _ = bitD.reload();
         let table = &dt.elements;
@@ -83,10 +83,10 @@ const FSE_MAX_SYMBOL_VALUE: i32 = 255;
 const FSE_MAX_TABLELOG: i32 = FSE_MAX_MEMORY_USAGE - 2;
 
 fn FSE_buildDTable_internal(
-    mut dt: &mut DTable,
-    mut normalizedCounter: &[core::ffi::c_short; 256],
-    mut maxSymbolValue: core::ffi::c_uint,
-    mut tableLog: core::ffi::c_uint,
+    dt: &mut DTable,
+    normalizedCounter: &[core::ffi::c_short; 256],
+    maxSymbolValue: core::ffi::c_uint,
+    tableLog: core::ffi::c_uint,
 ) -> Result<(), Error> {
     let wkspSize = dt.elements[(1 << tableLog)..].len() * 4;
     let (header, elements, symbols, spread) = dt.destructure_mut(maxSymbolValue, tableLog);
@@ -212,8 +212,8 @@ fn FSE_buildDTable_internal(
 #[inline(always)]
 fn FSE_decompress_usingDTable_generic(
     dst: &mut [u8],
-    mut cSrc: &[u8],
-    mut dt: &DTable,
+    cSrc: &[u8],
+    dt: &DTable,
     fast: bool,
 ) -> Result<usize, Error> {
     enum Mode {
@@ -329,11 +329,11 @@ fn FSE_decompress_usingDTable_generic(
 
 #[inline(always)]
 fn FSE_decompress_wksp_body(
-    mut dst: &mut [u8],
-    mut cSrc: &[u8],
-    mut maxLog: core::ffi::c_uint,
+    dst: &mut [u8],
+    cSrc: &[u8],
+    maxLog: core::ffi::c_uint,
     workspace: &mut Workspace,
-    mut bmi2: core::ffi::c_int,
+    bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     let mut wkspSize = size_of::<Workspace>() as size_t;
 

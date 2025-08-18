@@ -308,7 +308,7 @@ static lg_table: [core::ffi::c_int; 256] = [
     7,
 ];
 #[inline]
-unsafe fn ss_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn ss_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
     if n & 0xff00 as core::ffi::c_int != 0 {
         8 + *lg_table
             .as_ptr()
@@ -336,7 +336,7 @@ static sqq_table: [core::ffi::c_int; 256] = [
     255,
 ];
 #[inline]
-unsafe fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn ss_isqrt(x: core::ffi::c_int) -> core::ffi::c_int {
     let mut y: core::ffi::c_int = 0;
     let mut e: core::ffi::c_int = 0;
     if x >= SS_BLOCKSIZE * SS_BLOCKSIZE {
@@ -380,10 +380,10 @@ unsafe fn ss_isqrt(mut x: core::ffi::c_int) -> core::ffi::c_int {
 }
 #[inline]
 unsafe fn ss_compare(
-    mut T: *const core::ffi::c_uchar,
-    mut p1: *const core::ffi::c_int,
-    mut p2: *const core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    p1: *const core::ffi::c_int,
+    p2: *const core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut U1 = core::ptr::null::<core::ffi::c_uchar>();
     let mut U2 = core::ptr::null::<core::ffi::c_uchar>();
@@ -410,11 +410,11 @@ unsafe fn ss_compare(
     }
 }
 unsafe fn ss_insertionsort(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut i = core::ptr::null_mut::<core::ffi::c_int>();
     let mut j = core::ptr::null_mut::<core::ffi::c_int>();
@@ -449,11 +449,11 @@ unsafe fn ss_insertionsort(
 }
 #[inline]
 unsafe fn ss_fixdown(
-    mut Td: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
+    Td: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
     mut i: core::ffi::c_int,
-    mut size: core::ffi::c_int,
+    size: core::ffi::c_int,
 ) {
     let mut j: core::ffi::c_int = 0;
     let mut k: core::ffi::c_int = 0;
@@ -486,10 +486,10 @@ unsafe fn ss_fixdown(
     *SA.offset(i as isize) = v;
 }
 unsafe fn ss_heapsort(
-    mut Td: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
-    mut size: core::ffi::c_int,
+    Td: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
+    size: core::ffi::c_int,
 ) {
     let mut i: core::ffi::c_int = 0;
     let mut m: core::ffi::c_int = 0;
@@ -528,11 +528,11 @@ unsafe fn ss_heapsort(
 }
 #[inline]
 unsafe fn ss_median3(
-    mut Td: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    Td: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
-    mut v3: *mut core::ffi::c_int,
+    v3: *mut core::ffi::c_int,
 ) -> *mut core::ffi::c_int {
     let mut t = core::ptr::null_mut::<core::ffi::c_int>();
     if *Td.offset(*PA.offset(*v1 as isize) as isize) as core::ffi::c_int
@@ -557,8 +557,8 @@ unsafe fn ss_median3(
 }
 #[inline]
 unsafe fn ss_median5(
-    mut Td: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    Td: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
     mut v3: *mut core::ffi::c_int,
@@ -616,8 +616,8 @@ unsafe fn ss_median5(
 }
 #[inline]
 unsafe fn ss_pivot(
-    mut Td: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    Td: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
 ) -> *mut core::ffi::c_int {
@@ -667,10 +667,10 @@ unsafe fn ss_pivot(
 }
 #[inline]
 unsafe fn ss_partition(
-    mut PA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    PA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) -> *mut core::ffi::c_int {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
@@ -704,8 +704,8 @@ unsafe fn ss_partition(
     a
 }
 unsafe fn ss_mintrosort(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
     mut depth: core::ffi::c_int,
@@ -1372,7 +1372,7 @@ unsafe fn ss_blockswap(
 #[inline]
 unsafe fn ss_rotate(
     mut first: *mut core::ffi::c_int,
-    mut middle: *mut core::ffi::c_int,
+    middle: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
 ) {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
@@ -1438,12 +1438,12 @@ unsafe fn ss_rotate(
     }
 }
 unsafe fn ss_inplacemerge(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
     mut middle: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut p = core::ptr::null::<core::ffi::c_int>();
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
@@ -1508,13 +1508,13 @@ unsafe fn ss_inplacemerge(
     }
 }
 unsafe fn ss_mergeforward(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut middle: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut buf: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    middle: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    buf: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
@@ -1622,13 +1622,13 @@ unsafe fn ss_mergeforward(
     }
 }
 unsafe fn ss_mergebackward(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut middle: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut buf: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    middle: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    buf: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut p1 = core::ptr::null::<core::ffi::c_int>();
     let mut p2 = core::ptr::null::<core::ffi::c_int>();
@@ -1813,14 +1813,14 @@ unsafe fn ss_mergebackward(
     }
 }
 unsafe fn ss_swapmerge(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut middle: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
-    mut buf: *mut core::ffi::c_int,
-    mut bufsize: core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    buf: *mut core::ffi::c_int,
+    bufsize: core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut stack: [C2RustUnnamed_1; 32] = [C2RustUnnamed_1 {
         a: core::ptr::null_mut::<core::ffi::c_int>(),
@@ -2181,15 +2181,15 @@ unsafe fn ss_swapmerge(
     }
 }
 unsafe fn sssort(
-    mut T: *const core::ffi::c_uchar,
-    mut PA: *const core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    PA: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
     mut buf: *mut core::ffi::c_int,
     mut bufsize: core::ffi::c_int,
-    mut depth: core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut lastsuffix: core::ffi::c_int,
+    depth: core::ffi::c_int,
+    n: core::ffi::c_int,
+    lastsuffix: core::ffi::c_int,
 ) {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
@@ -2298,7 +2298,7 @@ unsafe fn sssort(
     }
 }
 #[inline]
-unsafe fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn tr_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
     if n as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
         if n as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
             24 + *lg_table
@@ -2320,9 +2320,9 @@ unsafe fn tr_ilg(mut n: core::ffi::c_int) -> core::ffi::c_int {
     }
 }
 unsafe fn tr_insertionsort(
-    mut ISAd: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
 ) {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
@@ -2357,10 +2357,10 @@ unsafe fn tr_insertionsort(
 }
 #[inline]
 unsafe fn tr_fixdown(
-    mut ISAd: *const core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
     mut i: core::ffi::c_int,
-    mut size: core::ffi::c_int,
+    size: core::ffi::c_int,
 ) {
     let mut j: core::ffi::c_int = 0;
     let mut k: core::ffi::c_int = 0;
@@ -2393,9 +2393,9 @@ unsafe fn tr_fixdown(
     *SA.offset(i as isize) = v;
 }
 unsafe fn tr_heapsort(
-    mut ISAd: *const core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
-    mut size: core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
+    size: core::ffi::c_int,
 ) {
     let mut i: core::ffi::c_int = 0;
     let mut m: core::ffi::c_int = 0;
@@ -2433,10 +2433,10 @@ unsafe fn tr_heapsort(
 }
 #[inline]
 unsafe fn tr_median3(
-    mut ISAd: *const core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
-    mut v3: *mut core::ffi::c_int,
+    v3: *mut core::ffi::c_int,
 ) -> *mut core::ffi::c_int {
     let mut t = core::ptr::null_mut::<core::ffi::c_int>();
     if *ISAd.offset(*v1 as isize) > *ISAd.offset(*v2 as isize) {
@@ -2455,7 +2455,7 @@ unsafe fn tr_median3(
 }
 #[inline]
 unsafe fn tr_median5(
-    mut ISAd: *const core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
     mut v1: *mut core::ffi::c_int,
     mut v2: *mut core::ffi::c_int,
     mut v3: *mut core::ffi::c_int,
@@ -2501,7 +2501,7 @@ unsafe fn tr_median5(
 }
 #[inline]
 unsafe fn tr_pivot(
-    mut ISAd: *const core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
 ) -> *mut core::ffi::c_int {
@@ -2547,19 +2547,16 @@ unsafe fn tr_pivot(
 }
 #[inline]
 unsafe fn trbudget_init(
-    mut budget: *mut trbudget_t,
-    mut chance: core::ffi::c_int,
-    mut incval: core::ffi::c_int,
+    budget: *mut trbudget_t,
+    chance: core::ffi::c_int,
+    incval: core::ffi::c_int,
 ) {
     (*budget).chance = chance;
     (*budget).incval = incval;
     (*budget).remain = (*budget).incval;
 }
 #[inline]
-unsafe fn trbudget_check(
-    mut budget: *mut trbudget_t,
-    mut size: core::ffi::c_int,
-) -> core::ffi::c_int {
+unsafe fn trbudget_check(budget: *mut trbudget_t, size: core::ffi::c_int) -> core::ffi::c_int {
     if size <= (*budget).remain {
         (*budget).remain -= size;
         return 1;
@@ -2574,13 +2571,13 @@ unsafe fn trbudget_check(
 }
 #[inline]
 unsafe fn tr_partition(
-    mut ISAd: *const core::ffi::c_int,
+    ISAd: *const core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
-    mut middle: *mut core::ffi::c_int,
+    middle: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
-    mut pa: *mut *mut core::ffi::c_int,
-    mut pb: *mut *mut core::ffi::c_int,
-    mut v: core::ffi::c_int,
+    pa: *mut *mut core::ffi::c_int,
+    pb: *mut *mut core::ffi::c_int,
+    v: core::ffi::c_int,
 ) {
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
@@ -2721,13 +2718,13 @@ unsafe fn tr_partition(
     *pb = last;
 }
 unsafe fn tr_copy(
-    mut ISA: *mut core::ffi::c_int,
-    mut SA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut a: *mut core::ffi::c_int,
-    mut b: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    ISA: *mut core::ffi::c_int,
+    SA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    a: *mut core::ffi::c_int,
+    b: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut c = core::ptr::null_mut::<core::ffi::c_int>();
     let mut d = core::ptr::null_mut::<core::ffi::c_int>();
@@ -2760,13 +2757,13 @@ unsafe fn tr_copy(
     }
 }
 unsafe fn tr_partialcopy(
-    mut ISA: *mut core::ffi::c_int,
-    mut SA: *const core::ffi::c_int,
-    mut first: *mut core::ffi::c_int,
-    mut a: *mut core::ffi::c_int,
-    mut b: *mut core::ffi::c_int,
-    mut last: *mut core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    ISA: *mut core::ffi::c_int,
+    SA: *const core::ffi::c_int,
+    first: *mut core::ffi::c_int,
+    a: *mut core::ffi::c_int,
+    b: *mut core::ffi::c_int,
+    last: *mut core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut c = core::ptr::null_mut::<core::ffi::c_int>();
     let mut d = core::ptr::null_mut::<core::ffi::c_int>();
@@ -2827,12 +2824,12 @@ unsafe fn tr_partialcopy(
     }
 }
 unsafe fn tr_introsort(
-    mut ISA: *mut core::ffi::c_int,
+    ISA: *mut core::ffi::c_int,
     mut ISAd: *const core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
     mut first: *mut core::ffi::c_int,
     mut last: *mut core::ffi::c_int,
-    mut budget: *mut trbudget_t,
+    budget: *mut trbudget_t,
 ) {
     let mut stack: [C2RustUnnamed; 64] = [C2RustUnnamed {
         a: core::ptr::null::<core::ffi::c_int>(),
@@ -2847,7 +2844,7 @@ unsafe fn tr_introsort(
     let mut t: core::ffi::c_int = 0;
     let mut v: core::ffi::c_int = 0;
     let mut x = 0;
-    let mut incr = ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int;
+    let incr = ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int;
     let mut limit: core::ffi::c_int = 0;
     let mut next: core::ffi::c_int = 0;
     let mut ssize: core::ffi::c_int = 0;
@@ -4031,10 +4028,10 @@ unsafe fn tr_introsort(
     }
 }
 unsafe fn trsort(
-    mut ISA: *mut core::ffi::c_int,
-    mut SA: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut depth: core::ffi::c_int,
+    ISA: *mut core::ffi::c_int,
+    SA: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    depth: core::ffi::c_int,
 ) {
     let mut ISAd = core::ptr::null_mut::<core::ffi::c_int>();
     let mut first = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4092,12 +4089,12 @@ unsafe fn trsort(
     }
 }
 unsafe fn sort_typeBstar(
-    mut T: *const core::ffi::c_uchar,
-    mut SA: *mut core::ffi::c_int,
-    mut bucket_A: *mut core::ffi::c_int,
-    mut bucket_B: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut openMP: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    SA: *mut core::ffi::c_int,
+    bucket_A: *mut core::ffi::c_int,
+    bucket_B: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    openMP: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut PAb = core::ptr::null_mut::<core::ffi::c_int>();
     let mut ISAb = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4302,12 +4299,12 @@ unsafe fn sort_typeBstar(
     m
 }
 unsafe fn construct_SA(
-    mut T: *const core::ffi::c_uchar,
-    mut SA: *mut core::ffi::c_int,
-    mut bucket_A: *mut core::ffi::c_int,
-    mut bucket_B: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut m: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    SA: *mut core::ffi::c_int,
+    bucket_A: *mut core::ffi::c_int,
+    bucket_B: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    m: core::ffi::c_int,
 ) {
     let mut i = core::ptr::null_mut::<core::ffi::c_int>();
     let mut j = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4511,12 +4508,12 @@ unsafe fn construct_SA(
     }
 }
 unsafe fn construct_BWT(
-    mut T: *const core::ffi::c_uchar,
-    mut SA: *mut core::ffi::c_int,
-    mut bucket_A: *mut core::ffi::c_int,
-    mut bucket_B: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut m: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    SA: *mut core::ffi::c_int,
+    bucket_A: *mut core::ffi::c_int,
+    bucket_B: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    m: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut i = core::ptr::null_mut::<core::ffi::c_int>();
     let mut j = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4711,14 +4708,14 @@ unsafe fn construct_BWT(
     orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
 unsafe fn construct_BWT_indexes(
-    mut T: *const core::ffi::c_uchar,
-    mut SA: *mut core::ffi::c_int,
-    mut bucket_A: *mut core::ffi::c_int,
-    mut bucket_B: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut m: core::ffi::c_int,
-    mut num_indexes: *mut core::ffi::c_uchar,
-    mut indexes: *mut core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    SA: *mut core::ffi::c_int,
+    bucket_A: *mut core::ffi::c_int,
+    bucket_B: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    m: core::ffi::c_int,
+    num_indexes: *mut core::ffi::c_uchar,
+    indexes: *mut core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut i = core::ptr::null_mut::<core::ffi::c_int>();
     let mut j = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4942,10 +4939,10 @@ unsafe fn construct_BWT_indexes(
     orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
 }
 pub unsafe fn divsufsort(
-    mut T: *const core::ffi::c_uchar,
-    mut SA: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut openMP: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    SA: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    openMP: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut bucket_A = core::ptr::null_mut::<core::ffi::c_int>();
     let mut bucket_B = core::ptr::null_mut::<core::ffi::c_int>();
@@ -4982,13 +4979,13 @@ pub unsafe fn divsufsort(
     err
 }
 pub unsafe fn divbwt(
-    mut T: *const core::ffi::c_uchar,
-    mut U: *mut core::ffi::c_uchar,
-    mut A: *mut core::ffi::c_int,
-    mut n: core::ffi::c_int,
-    mut num_indexes: *mut core::ffi::c_uchar,
-    mut indexes: *mut core::ffi::c_int,
-    mut openMP: core::ffi::c_int,
+    T: *const core::ffi::c_uchar,
+    U: *mut core::ffi::c_uchar,
+    A: *mut core::ffi::c_int,
+    n: core::ffi::c_int,
+    num_indexes: *mut core::ffi::c_uchar,
+    indexes: *mut core::ffi::c_int,
+    openMP: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut B = core::ptr::null_mut::<core::ffi::c_int>();
     let mut bucket_A = core::ptr::null_mut::<core::ffi::c_int>();

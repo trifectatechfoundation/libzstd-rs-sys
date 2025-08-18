@@ -157,7 +157,7 @@ unsafe fn ZSTD_safecopyLiterals(
     mut op: *mut u8,
     mut ip: *const u8,
     iend: *const u8,
-    mut ilimit_w: *const u8,
+    ilimit_w: *const u8,
 ) {
     if ip <= ilimit_w {
         ZSTD_wildcopy(
@@ -179,10 +179,10 @@ unsafe fn ZSTD_safecopyLiterals(
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeqOnly(
-    mut seqStorePtr: *mut SeqStore_t,
-    mut litLength: size_t,
-    mut offBase: u32,
-    mut matchLength: size_t,
+    seqStorePtr: *mut SeqStore_t,
+    litLength: size_t,
+    offBase: u32,
+    matchLength: size_t,
 ) {
     if (litLength > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long
         != 0
@@ -208,12 +208,12 @@ unsafe fn ZSTD_storeSeqOnly(
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
-    mut seqStorePtr: *mut SeqStore_t,
-    mut litLength: size_t,
-    mut literals: *const u8,
-    mut litLimit: *const u8,
-    mut offBase: u32,
-    mut matchLength: size_t,
+    seqStorePtr: *mut SeqStore_t,
+    litLength: size_t,
+    literals: *const u8,
+    litLimit: *const u8,
+    offBase: u32,
+    matchLength: size_t,
 ) {
     let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
     let litEnd = literals.add(litLength);
@@ -285,11 +285,11 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
 }
 #[inline]
 unsafe fn ZSTD_count_2segments(
-    mut ip: *const u8,
-    mut match_0: *const u8,
-    mut iEnd: *const u8,
-    mut mEnd: *const u8,
-    mut iStart: *const u8,
+    ip: *const u8,
+    match_0: *const u8,
+    iEnd: *const u8,
+    mEnd: *const u8,
+    iStart: *const u8,
 ) -> size_t {
     let vEnd = if ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd {
         ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize)
@@ -307,7 +307,7 @@ unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
     (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
 }
 #[inline]
-unsafe fn ZSTD_matchState_dictMode(mut ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
+unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
     (if ZSTD_window_hasExtDict((*ms).window) != 0 {
         ZSTD_extDict as core::ffi::c_int
     } else if !((*ms).dictMatchState).is_null() {
@@ -324,10 +324,10 @@ pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
 #[inline]
 unsafe fn ZSTD_window_canOverflowCorrect(
     window: ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut loadedDictEnd: u32,
-    mut src: *const core::ffi::c_void,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
@@ -352,11 +352,11 @@ unsafe fn ZSTD_window_canOverflowCorrect(
 #[inline]
 unsafe fn ZSTD_window_needOverflowCorrection(
     window: ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut loadedDictEnd: u32,
-    mut src: *const core::ffi::c_void,
-    mut srcEnd: *const core::ffi::c_void,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
+    srcEnd: *const core::ffi::c_void,
 ) -> u32 {
     let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
@@ -375,10 +375,10 @@ unsafe fn ZSTD_window_needOverflowCorrection(
 }
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
-    mut window: *mut ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut src: *const core::ffi::c_void,
+    window: *mut ZSTD_window_t,
+    cycleLog: u32,
+    maxDist: u32,
+    src: *const core::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let cycleMask = cycleSize.wrapping_sub(1);
@@ -423,11 +423,11 @@ unsafe fn ZSTD_window_correctOverflow(
 }
 #[inline]
 unsafe fn ZSTD_window_enforceMaxDist(
-    mut window: *mut ZSTD_window_t,
-    mut blockEnd: *const core::ffi::c_void,
-    mut maxDist: u32,
-    mut loadedDictEndPtr: *mut u32,
-    mut dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
+    window: *mut ZSTD_window_t,
+    blockEnd: *const core::ffi::c_void,
+    maxDist: u32,
+    loadedDictEndPtr: *mut u32,
+    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
         (blockEnd as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
@@ -455,22 +455,22 @@ unsafe fn ZSTD_window_enforceMaxDist(
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const MINMATCH: core::ffi::c_int = 3;
-unsafe fn ZSTD_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
-unsafe fn ZSTD_copy16(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
 pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
 unsafe fn ZSTD_wildcopy(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-    mut length: size_t,
+    dst: *mut core::ffi::c_void,
+    src: *const core::ffi::c_void,
+    length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
@@ -507,30 +507,30 @@ unsafe fn ZSTD_wildcopy(
     };
 }
 #[inline]
-unsafe fn ZSTD_cwksp_alloc_size(mut size: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
         return 0;
     }
     size
 }
 #[inline]
-unsafe fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
+unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
             ZSTD_countTrailingZeros64(val as u64) >> 3
@@ -803,16 +803,13 @@ static ZSTD_ldm_gearTab: [u64; 256] = [
 ];
 pub const NULL: core::ffi::c_int = 0;
 pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
-unsafe fn ZSTD_ldm_gear_init(
-    mut state: *mut ldmRollingHashState_t,
-    mut params: *const ldmParams_t,
-) {
-    let mut maxBitsInMask = if (*params).minMatchLength < 64 {
+unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const ldmParams_t) {
+    let maxBitsInMask = if (*params).minMatchLength < 64 {
         (*params).minMatchLength
     } else {
         64
     };
-    let mut hashRateLog = (*params).hashRateLog;
+    let hashRateLog = (*params).hashRateLog;
     (*state).rolling = !0u32 as u64;
     if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
         (*state).stopMask =
@@ -822,9 +819,9 @@ unsafe fn ZSTD_ldm_gear_init(
     };
 }
 unsafe fn ZSTD_ldm_gear_reset(
-    mut state: *mut ldmRollingHashState_t,
-    mut data: *const u8,
-    mut minMatchLength: size_t,
+    state: *mut ldmRollingHashState_t,
+    data: *const u8,
+    minMatchLength: size_t,
 ) {
     let mut hash = (*state).rolling;
     let mut n = 0 as size_t;
@@ -864,11 +861,11 @@ unsafe fn ZSTD_ldm_gear_reset(
     }
 }
 unsafe fn ZSTD_ldm_gear_feed(
-    mut state: *mut ldmRollingHashState_t,
-    mut data: *const u8,
-    mut size: size_t,
-    mut splits: *mut size_t,
-    mut numSplits: *mut core::ffi::c_uint,
+    state: *mut ldmRollingHashState_t,
+    data: *const u8,
+    size: size_t,
+    splits: *mut size_t,
+    numSplits: *mut core::ffi::c_uint,
 ) -> size_t {
     let mut current_block: u64;
     let mut n: size_t = 0;
@@ -972,8 +969,8 @@ unsafe fn ZSTD_ldm_gear_feed(
     n
 }
 pub unsafe fn ZSTD_ldm_adjustParameters(
-    mut params: *mut ldmParams_t,
-    mut cParams: *const ZSTD_compressionParameters,
+    params: *mut ldmParams_t,
+    cParams: *const ZSTD_compressionParameters,
 ) {
     (*params).windowLog = (*cParams).windowLog;
     if (*params).hashRateLog == 0 {
@@ -1084,7 +1081,7 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         (*params).hashLog
     };
 }
-pub unsafe fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_t {
+pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as size_t) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
         params.bucketSizeLog
@@ -1103,7 +1100,7 @@ pub unsafe fn ZSTD_ldm_getTableSize(mut params: ldmParams_t) -> size_t {
         0
     }
 }
-pub unsafe fn ZSTD_ldm_getMaxNbSeq(mut params: ldmParams_t, mut maxChunkSize: size_t) -> size_t {
+pub unsafe fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
     if params.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
     {
@@ -1113,14 +1110,14 @@ pub unsafe fn ZSTD_ldm_getMaxNbSeq(mut params: ldmParams_t, mut maxChunkSize: si
     }
 }
 unsafe fn ZSTD_ldm_getBucket(
-    mut ldmState: *const ldmState_t,
-    mut hash: size_t,
+    ldmState: *const ldmState_t,
+    hash: size_t,
     bucketSizeLog: u32,
 ) -> *mut ldmEntry_t {
     ((*ldmState).hashTable).add(hash << bucketSizeLog)
 }
 unsafe fn ZSTD_ldm_insertEntry(
-    mut ldmState: *mut ldmState_t,
+    ldmState: *mut ldmState_t,
     hash: size_t,
     entry: ldmEntry_t,
     bucketSizeLog: u32,
@@ -1133,9 +1130,9 @@ unsafe fn ZSTD_ldm_insertEntry(
 }
 unsafe fn ZSTD_ldm_countBackwardsMatch(
     mut pIn: *const u8,
-    mut pAnchor: *const u8,
+    pAnchor: *const u8,
     mut pMatch: *const u8,
-    mut pMatchBase: *const u8,
+    pMatchBase: *const u8,
 ) -> size_t {
     let mut matchLength = 0 as size_t;
     while pIn > pAnchor
@@ -1149,12 +1146,12 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     matchLength
 }
 unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
-    mut pIn: *const u8,
-    mut pAnchor: *const u8,
-    mut pMatch: *const u8,
-    mut pMatchBase: *const u8,
-    mut pExtDictStart: *const u8,
-    mut pExtDictEnd: *const u8,
+    pIn: *const u8,
+    pAnchor: *const u8,
+    pMatch: *const u8,
+    pMatchBase: *const u8,
+    pExtDictStart: *const u8,
+    pExtDictEnd: *const u8,
 ) -> size_t {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(pIn, pAnchor, pMatch, pMatchBase);
     if pMatch.offset(-(matchLength as isize)) != pMatchBase || pMatchBase == pExtDictStart {
@@ -1169,8 +1166,8 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     matchLength
 }
 unsafe fn ZSTD_ldm_fillFastTables(
-    mut ms: *mut ZSTD_MatchState_t,
-    mut end: *const core::ffi::c_void,
+    ms: *mut ZSTD_MatchState_t,
+    end: *const core::ffi::c_void,
 ) -> size_t {
     let iend = end as *const u8;
     match (*ms).cParams.strategy as core::ffi::c_uint {
@@ -1195,10 +1192,10 @@ unsafe fn ZSTD_ldm_fillFastTables(
     0
 }
 pub unsafe fn ZSTD_ldm_fillHashTable(
-    mut ldmState: *mut ldmState_t,
+    ldmState: *mut ldmState_t,
     mut ip: *const u8,
-    mut iend: *const u8,
-    mut params: *const ldmParams_t,
+    iend: *const u8,
+    params: *const ldmParams_t,
 ) {
     let minMatchLength = (*params).minMatchLength;
     let bucketSizeLog = (*params).bucketSizeLog;
@@ -1248,7 +1245,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         ip = ip.add(hashed);
     }
 }
-unsafe fn ZSTD_ldm_limitTableUpdate(mut ms: *mut ZSTD_MatchState_t, mut anchor: *const u8) {
+unsafe fn ZSTD_ldm_limitTableUpdate(ms: *mut ZSTD_MatchState_t, anchor: *const u8) {
     let curr = anchor.offset_from((*ms).window.base) as core::ffi::c_long as u32;
     if curr > ((*ms).nextToUpdate).wrapping_add(1024) {
         (*ms).nextToUpdate = curr.wrapping_sub(
@@ -1261,11 +1258,11 @@ unsafe fn ZSTD_ldm_limitTableUpdate(mut ms: *mut ZSTD_MatchState_t, mut anchor: 
     }
 }
 unsafe fn ZSTD_ldm_generateSequences_internal(
-    mut ldmState: *mut ldmState_t,
-    mut rawSeqStore: *mut RawSeqStore_t,
-    mut params: *const ldmParams_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    ldmState: *mut ldmState_t,
+    rawSeqStore: *mut RawSeqStore_t,
+    params: *const ldmParams_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let extDict = ZSTD_window_hasExtDict((*ldmState).window) as core::ffi::c_int;
     let minMatchLength = (*params).minMatchLength;
@@ -1500,11 +1497,11 @@ unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: 
     }
 }
 pub unsafe fn ZSTD_ldm_generateSequences(
-    mut ldmState: *mut ldmState_t,
-    mut sequences: *mut RawSeqStore_t,
-    mut params: *const ldmParams_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    ldmState: *mut ldmState_t,
+    sequences: *mut RawSeqStore_t,
+    params: *const ldmParams_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let maxDist = (1) << (*params).windowLog;
     let istart = src as *const u8;
@@ -1574,12 +1571,12 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     0
 }
 pub unsafe fn ZSTD_ldm_skipSequences(
-    mut rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: *mut RawSeqStore_t,
     mut srcSize: size_t,
     minMatch: u32,
 ) {
     while srcSize > 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let mut seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
+        let seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if srcSize <= (*seq).litLength as size_t {
             (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
             return;
@@ -1605,7 +1602,7 @@ pub unsafe fn ZSTD_ldm_skipSequences(
     }
 }
 unsafe fn maybeSplitSequence(
-    mut rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: *mut RawSeqStore_t,
     remaining: u32,
     minMatch: u32,
 ) -> rawSeq {
@@ -1626,13 +1623,10 @@ unsafe fn maybeSplitSequence(
     ZSTD_ldm_skipSequences(rawSeqStore, remaining as size_t, minMatch);
     sequence
 }
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(
-    mut rawSeqStore: *mut RawSeqStore_t,
-    mut nbBytes: size_t,
-) {
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: size_t) {
     let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let mut currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
+        let currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
@@ -1647,13 +1641,13 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(
     }
 }
 pub unsafe fn ZSTD_ldm_blockCompress(
-    mut rawSeqStore: *mut RawSeqStore_t,
-    mut ms: *mut ZSTD_MatchState_t,
-    mut seqStore: *mut SeqStore_t,
-    mut rep: *mut u32,
-    mut useRowMatchFinder: ZSTD_ParamSwitch_e,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    rawSeqStore: *mut RawSeqStore_t,
+    ms: *mut ZSTD_MatchState_t,
+    seqStore: *mut SeqStore_t,
+    rep: *mut u32,
+    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let cParams: *const ZSTD_compressionParameters = &mut (*ms).cParams;
     let minMatch = (*cParams).minMatch;

@@ -39,7 +39,7 @@ pub type huf_compress_f = Option<
     ) -> size_t,
 >;
 #[inline]
-unsafe fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
+unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
             strat.wrapping_sub(1)
@@ -52,10 +52,10 @@ pub const LitHufLog: core::ffi::c_int = 11;
 pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 pub unsafe fn ZSTD_noCompressLiterals(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let flSize =
@@ -91,10 +91,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
     );
     srcSize.wrapping_add(flSize as size_t)
 }
-unsafe fn allBytesIdentical(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-) -> core::ffi::c_int {
+unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> core::ffi::c_int {
     let b = *(src as *const u8).offset(0);
     let mut p: size_t = 0;
     p = 1;
@@ -107,10 +104,10 @@ unsafe fn allBytesIdentical(
     1
 }
 pub unsafe fn ZSTD_compressRleLiteralsBlock(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let ostart = dst as *mut u8;
     let flSize =
@@ -139,10 +136,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     *ostart.offset(flSize as isize) = *(src as *const u8);
     flSize.wrapping_add(1) as size_t
 }
-unsafe fn ZSTD_minLiteralsToCompress(
-    mut strategy: ZSTD_strategy,
-    mut huf_repeat: HUF_repeat,
-) -> size_t {
+unsafe fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -> size_t {
     let shift = if (9 - strategy as core::ffi::c_int) < 3 {
         9 - strategy as core::ffi::c_int
     } else {
@@ -157,18 +151,18 @@ unsafe fn ZSTD_minLiteralsToCompress(
     }
 }
 pub unsafe fn ZSTD_compressLiterals(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut entropyWorkspace: *mut core::ffi::c_void,
-    mut entropyWorkspaceSize: size_t,
-    mut prevHuf: *const ZSTD_hufCTables_t,
-    mut nextHuf: *mut ZSTD_hufCTables_t,
-    mut strategy: ZSTD_strategy,
-    mut disableLiteralCompression: core::ffi::c_int,
-    mut suspectUncompressible: core::ffi::c_int,
-    mut bmi2: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    entropyWorkspace: *mut core::ffi::c_void,
+    entropyWorkspaceSize: size_t,
+    prevHuf: *const ZSTD_hufCTables_t,
+    nextHuf: *mut ZSTD_hufCTables_t,
+    strategy: ZSTD_strategy,
+    disableLiteralCompression: core::ffi::c_int,
+    suspectUncompressible: core::ffi::c_int,
+    bmi2: core::ffi::c_int,
 ) -> size_t {
     let lhSize = (3
         + (srcSize >= ((1) << 10) as size_t) as core::ffi::c_int

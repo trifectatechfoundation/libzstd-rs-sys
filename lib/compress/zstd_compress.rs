@@ -676,7 +676,7 @@ pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: core::ffi::c_int = 196;
 #[inline]
-unsafe fn ZSTD_LLcode(mut litLength: u32) -> u32 {
+unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
     static LL_Code: [u8; 64] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
         20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
@@ -690,7 +690,7 @@ unsafe fn ZSTD_LLcode(mut litLength: u32) -> u32 {
     }
 }
 #[inline]
-unsafe fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
+unsafe fn ZSTD_MLcode(mlBase: u32) -> u32 {
     static ML_Code: [u8; 128] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
@@ -708,8 +708,8 @@ unsafe fn ZSTD_MLcode(mut mlBase: u32) -> u32 {
 }
 #[inline]
 unsafe fn ZSTD_cParam_withinBounds(
-    mut cParam: ZSTD_cParameter,
-    mut value: core::ffi::c_int,
+    cParam: ZSTD_cParameter,
+    value: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let bounds = ZSTD_cParam_getBounds(cParam);
     if ERR_isError(bounds.error) != 0 {
@@ -725,11 +725,11 @@ unsafe fn ZSTD_cParam_withinBounds(
 }
 #[inline]
 unsafe fn ZSTD_noCompressBlock(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut lastBlock: u32,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    lastBlock: u32,
 ) -> size_t {
     let cBlockHeader24 = lastBlock
         .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
@@ -747,11 +747,11 @@ unsafe fn ZSTD_noCompressBlock(
 }
 #[inline]
 unsafe fn ZSTD_rleCompressBlock(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: u8,
-    mut srcSize: size_t,
-    mut lastBlock: u32,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: u8,
+    srcSize: size_t,
+    lastBlock: u32,
 ) -> size_t {
     let op = dst as *mut u8;
     let cBlockHeader = lastBlock
@@ -765,7 +765,7 @@ unsafe fn ZSTD_rleCompressBlock(
     4
 }
 #[inline]
-unsafe fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t {
+unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
             strat.wrapping_sub(1)
@@ -776,7 +776,7 @@ unsafe fn ZSTD_minGain(mut srcSize: size_t, mut strat: ZSTD_strategy) -> size_t 
 }
 #[inline]
 unsafe fn ZSTD_literalsCompressionIsDisabled(
-    mut cctxParams: *const ZSTD_CCtx_params,
+    cctxParams: *const ZSTD_CCtx_params,
 ) -> core::ffi::c_int {
     match (*cctxParams).literalCompressionMode as core::ffi::c_uint {
         1 => 0,
@@ -792,7 +792,7 @@ unsafe fn ZSTD_safecopyLiterals(
     mut op: *mut u8,
     mut ip: *const u8,
     iend: *const u8,
-    mut ilimit_w: *const u8,
+    ilimit_w: *const u8,
 ) {
     if ip <= ilimit_w {
         ZSTD_wildcopy(
@@ -816,10 +816,10 @@ pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;
 pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
 #[inline(always)]
 unsafe fn ZSTD_storeSeqOnly(
-    mut seqStorePtr: *mut SeqStore_t,
-    mut litLength: size_t,
-    mut offBase: u32,
-    mut matchLength: size_t,
+    seqStorePtr: *mut SeqStore_t,
+    litLength: size_t,
+    offBase: u32,
+    matchLength: size_t,
 ) {
     if (litLength > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long
         != 0
@@ -845,12 +845,12 @@ unsafe fn ZSTD_storeSeqOnly(
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
-    mut seqStorePtr: *mut SeqStore_t,
-    mut litLength: size_t,
-    mut literals: *const u8,
-    mut litLimit: *const u8,
-    mut offBase: u32,
-    mut matchLength: size_t,
+    seqStorePtr: *mut SeqStore_t,
+    litLength: size_t,
+    literals: *const u8,
+    litLimit: *const u8,
+    offBase: u32,
+    matchLength: size_t,
 ) {
     let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
     let litEnd = literals.add(litLength);
@@ -874,7 +874,7 @@ unsafe fn ZSTD_storeSeq(
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 #[inline]
-unsafe fn ZSTD_updateRep(mut rep: *mut u32, offBase: u32, ll0: u32) {
+unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
         *rep.offset(2) = *rep.offset(1);
         *rep.offset(1) = *rep.offset(0);
@@ -943,7 +943,7 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
     pIn.offset_from(pStart) as core::ffi::c_long as size_t
 }
 #[inline]
-unsafe fn ZSTD_window_clear(mut window: *mut ZSTD_window_t) {
+unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
     let endT = ((*window).nextSrc).offset_from((*window).base) as core::ffi::c_long as size_t;
     let end = endT as u32;
     (*window).lowLimit = end;
@@ -954,7 +954,7 @@ unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
     (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
 }
 #[inline]
-unsafe fn ZSTD_matchState_dictMode(mut ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
+unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
     (if ZSTD_window_hasExtDict((*ms).window) != 0 {
         ZSTD_extDict as core::ffi::c_int
     } else if !((*ms).dictMatchState).is_null() {
@@ -971,10 +971,10 @@ pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
 #[inline]
 unsafe fn ZSTD_window_canOverflowCorrect(
     window: ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut loadedDictEnd: u32,
-    mut src: *const core::ffi::c_void,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
@@ -999,11 +999,11 @@ unsafe fn ZSTD_window_canOverflowCorrect(
 #[inline]
 unsafe fn ZSTD_window_needOverflowCorrection(
     window: ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut loadedDictEnd: u32,
-    mut src: *const core::ffi::c_void,
-    mut srcEnd: *const core::ffi::c_void,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
+    srcEnd: *const core::ffi::c_void,
 ) -> u32 {
     let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
@@ -1022,10 +1022,10 @@ unsafe fn ZSTD_window_needOverflowCorrection(
 }
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
-    mut window: *mut ZSTD_window_t,
-    mut cycleLog: u32,
-    mut maxDist: u32,
-    mut src: *const core::ffi::c_void,
+    window: *mut ZSTD_window_t,
+    cycleLog: u32,
+    maxDist: u32,
+    src: *const core::ffi::c_void,
 ) -> u32 {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let cycleMask = cycleSize.wrapping_sub(1);
@@ -1070,11 +1070,11 @@ unsafe fn ZSTD_window_correctOverflow(
 }
 #[inline]
 unsafe fn ZSTD_window_enforceMaxDist(
-    mut window: *mut ZSTD_window_t,
-    mut blockEnd: *const core::ffi::c_void,
-    mut maxDist: u32,
-    mut loadedDictEndPtr: *mut u32,
-    mut dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
+    window: *mut ZSTD_window_t,
+    blockEnd: *const core::ffi::c_void,
+    maxDist: u32,
+    loadedDictEndPtr: *mut u32,
+    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
         (blockEnd as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
@@ -1101,11 +1101,11 @@ unsafe fn ZSTD_window_enforceMaxDist(
 }
 #[inline]
 unsafe fn ZSTD_checkDictValidity(
-    mut window: *const ZSTD_window_t,
-    mut blockEnd: *const core::ffi::c_void,
-    mut maxDist: u32,
-    mut loadedDictEndPtr: *mut u32,
-    mut dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
+    window: *const ZSTD_window_t,
+    blockEnd: *const core::ffi::c_void,
+    maxDist: u32,
+    loadedDictEndPtr: *mut u32,
+    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
         (blockEnd as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
@@ -1118,7 +1118,7 @@ unsafe fn ZSTD_checkDictValidity(
     };
 }
 #[inline]
-unsafe fn ZSTD_window_init(mut window: *mut ZSTD_window_t) {
+unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
     ptr::write_bytes(
         window as *mut u8,
         0,
@@ -1133,10 +1133,10 @@ unsafe fn ZSTD_window_init(mut window: *mut ZSTD_window_t) {
 }
 #[inline]
 unsafe fn ZSTD_window_update(
-    mut window: *mut ZSTD_window_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut forceNonContiguous: core::ffi::c_int,
+    window: *mut ZSTD_window_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    forceNonContiguous: core::ffi::c_int,
 ) -> u32 {
     let ip = src as *const u8;
     let mut contiguous = 1;
@@ -1174,7 +1174,7 @@ unsafe fn ZSTD_window_update(
 }
 pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 #[inline]
-unsafe fn ZSTD_hasExtSeqProd(mut params: *const ZSTD_CCtx_params) -> core::ffi::c_int {
+unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> core::ffi::c_int {
     ((*params).extSeqProdFunc).is_some() as core::ffi::c_int
 }
 
@@ -1405,22 +1405,22 @@ static OF_defaultNorm: [S16; 29] = [
 ];
 pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
 static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
-unsafe fn ZSTD_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
-unsafe fn ZSTD_copy16(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
 pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
 unsafe fn ZSTD_wildcopy(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-    mut length: size_t,
+    dst: *mut core::ffi::c_void,
+    src: *const core::ffi::c_void,
+    length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
@@ -1458,10 +1458,10 @@ unsafe fn ZSTD_wildcopy(
 }
 #[inline]
 unsafe fn ZSTD_limitCopy(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let length = if dstCapacity < srcSize {
         dstCapacity
@@ -1477,30 +1477,30 @@ pub const ZSTD_WORKSPACETOOLARGE_FACTOR: core::ffi::c_int = 3;
 pub const ZSTD_WORKSPACETOOLARGE_MAXDURATION: core::ffi::c_int = 128;
 #[inline]
 unsafe fn ZSTD_cpuSupportsBmi2() -> core::ffi::c_int {
-    let mut cpuid = ZSTD_cpuid();
+    let cpuid = ZSTD_cpuid();
     (ZSTD_cpuid_bmi1(cpuid) != 0 && ZSTD_cpuid_bmi2(cpuid) != 0) as core::ffi::c_int
 }
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 #[inline]
-unsafe fn ZSTD_cwksp_assert_internal_consistency(mut ws: *mut ZSTD_cwksp) {}
+unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: *mut ZSTD_cwksp) {}
 #[inline]
-unsafe fn ZSTD_cwksp_align(mut size: size_t, mut align: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_align(size: size_t, align: size_t) -> size_t {
     let mask = align.wrapping_sub(1);
     size.wrapping_add(mask) & !mask
 }
 #[inline]
-unsafe fn ZSTD_cwksp_alloc_size(mut size: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
         return 0;
     }
     size
 }
 #[inline]
-unsafe fn ZSTD_cwksp_aligned_alloc_size(mut size: size_t, mut alignment: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_aligned_alloc_size(size: size_t, alignment: size_t) -> size_t {
     ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(size, alignment))
 }
 #[inline]
-unsafe fn ZSTD_cwksp_aligned64_alloc_size(mut size: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_aligned64_alloc_size(size: size_t) -> size_t {
     ZSTD_cwksp_aligned_alloc_size(size, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t)
 }
 #[inline]
@@ -1508,23 +1508,20 @@ unsafe fn ZSTD_cwksp_slack_space_required() -> size_t {
     (ZSTD_CWKSP_ALIGNMENT_BYTES * 2) as size_t
 }
 #[inline]
-unsafe fn ZSTD_cwksp_bytes_to_align_ptr(
-    mut ptr: *mut core::ffi::c_void,
-    alignBytes: size_t,
-) -> size_t {
+unsafe fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: size_t) -> size_t {
     let alignBytesMask = alignBytes.wrapping_sub(1);
 
     alignBytes.wrapping_sub(ptr as size_t & alignBytesMask) & alignBytesMask
 }
 #[inline]
-unsafe fn ZSTD_cwksp_initialAllocStart(mut ws: *mut ZSTD_cwksp) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_cwksp_initialAllocStart(ws: *mut ZSTD_cwksp) -> *mut core::ffi::c_void {
     let mut endPtr = (*ws).workspaceEnd as *mut core::ffi::c_char;
     endPtr = endPtr.offset(-((endPtr as size_t % ZSTD_CWKSP_ALIGNMENT_BYTES as size_t) as isize));
     endPtr as *mut core::ffi::c_void
 }
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
-    mut ws: *mut ZSTD_cwksp,
+    ws: *mut ZSTD_cwksp,
     bytes: size_t,
 ) -> *mut core::ffi::c_void {
     let alloc = ((*ws).allocStart as *mut u8).offset(-(bytes as isize)) as *mut core::ffi::c_void;
@@ -1542,8 +1539,8 @@ unsafe fn ZSTD_cwksp_reserve_internal_buffer_space(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_internal_advance_phase(
-    mut ws: *mut ZSTD_cwksp,
-    mut phase: ZSTD_cwksp_alloc_phase_e,
+    ws: *mut ZSTD_cwksp,
+    phase: ZSTD_cwksp_alloc_phase_e,
 ) -> size_t {
     if phase as core::ffi::c_uint > (*ws).phase as core::ffi::c_uint {
         if ((*ws).phase as core::ffi::c_uint)
@@ -1573,8 +1570,8 @@ unsafe fn ZSTD_cwksp_internal_advance_phase(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_owns_buffer(
-    mut ws: *const ZSTD_cwksp,
-    mut ptr: *const core::ffi::c_void,
+    ws: *const ZSTD_cwksp,
+    ptr: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
     (!ptr.is_null()
         && (*ws).workspace <= ptr as *mut core::ffi::c_void
@@ -1582,9 +1579,9 @@ unsafe fn ZSTD_cwksp_owns_buffer(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_internal(
-    mut ws: *mut ZSTD_cwksp,
-    mut bytes: size_t,
-    mut phase: ZSTD_cwksp_alloc_phase_e,
+    ws: *mut ZSTD_cwksp,
+    bytes: size_t,
+    phase: ZSTD_cwksp_alloc_phase_e,
 ) -> *mut core::ffi::c_void {
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) != 0 || bytes == 0 {
@@ -1594,16 +1591,16 @@ unsafe fn ZSTD_cwksp_reserve_internal(
     alloc
 }
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_buffer(mut ws: *mut ZSTD_cwksp, mut bytes: size_t) -> *mut u8 {
+unsafe fn ZSTD_cwksp_reserve_buffer(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut u8 {
     ZSTD_cwksp_reserve_internal(ws, bytes, ZSTD_cwksp_alloc_buffers) as *mut u8
 }
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
-    mut ws: *mut ZSTD_cwksp,
-    mut bytes: size_t,
+    ws: *mut ZSTD_cwksp,
+    bytes: size_t,
 ) -> *mut core::ffi::c_void {
     let alignedBytes = ZSTD_cwksp_align(bytes, ZSTD_CWKSP_ALIGNMENT_BYTES as size_t);
-    let mut ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, ZSTD_cwksp_alloc_aligned_init_once);
+    let ptr = ZSTD_cwksp_reserve_internal(ws, alignedBytes, ZSTD_cwksp_alloc_aligned_init_once);
     if !ptr.is_null() && ptr < (*ws).initOnceStart {
         ptr::write_bytes(
             ptr as *mut u8,
@@ -1624,8 +1621,8 @@ unsafe fn ZSTD_cwksp_reserve_aligned_init_once(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_reserve_aligned64(
-    mut ws: *mut ZSTD_cwksp,
-    mut bytes: size_t,
+    ws: *mut ZSTD_cwksp,
+    bytes: size_t,
 ) -> *mut core::ffi::c_void {
     ZSTD_cwksp_reserve_internal(
         ws,
@@ -1634,10 +1631,7 @@ unsafe fn ZSTD_cwksp_reserve_aligned64(
     )
 }
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_table(
-    mut ws: *mut ZSTD_cwksp,
-    mut bytes: size_t,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let phase = ZSTD_cwksp_alloc_aligned_init_once;
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
     let mut end = core::ptr::null_mut::<core::ffi::c_void>();
@@ -1659,16 +1653,13 @@ unsafe fn ZSTD_cwksp_reserve_table(
     alloc
 }
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_object(
-    mut ws: *mut ZSTD_cwksp,
-    mut bytes: size_t,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_cwksp_reserve_object(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut core::ffi::c_void {
     let roundedBytes = ZSTD_cwksp_align(
         bytes,
         ::core::mem::size_of::<*mut core::ffi::c_void>() as size_t,
     );
-    let mut alloc = (*ws).objectEnd;
-    let mut end = (alloc as *mut u8).add(roundedBytes) as *mut core::ffi::c_void;
+    let alloc = (*ws).objectEnd;
+    let end = (alloc as *mut u8).add(roundedBytes) as *mut core::ffi::c_void;
     ZSTD_cwksp_assert_internal_consistency(ws);
     if (*ws).phase as core::ffi::c_uint
         != ZSTD_cwksp_alloc_objects as core::ffi::c_int as core::ffi::c_uint
@@ -1683,19 +1674,19 @@ unsafe fn ZSTD_cwksp_reserve_object(
     alloc
 }
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_dirty(mut ws: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_mark_tables_dirty(ws: *mut ZSTD_cwksp) {
     (*ws).tableValidEnd = (*ws).objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_mark_tables_clean(mut ws: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_mark_tables_clean(ws: *mut ZSTD_cwksp) {
     if (*ws).tableValidEnd < (*ws).tableEnd {
         (*ws).tableValidEnd = (*ws).tableEnd;
     }
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_clean_tables(mut ws: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_clean_tables(ws: *mut ZSTD_cwksp) {
     if (*ws).tableValidEnd < (*ws).tableEnd {
         ptr::write_bytes(
             (*ws).tableValidEnd,
@@ -1706,12 +1697,12 @@ unsafe fn ZSTD_cwksp_clean_tables(mut ws: *mut ZSTD_cwksp) {
     ZSTD_cwksp_mark_tables_clean(ws);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_clear_tables(mut ws: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_clear_tables(ws: *mut ZSTD_cwksp) {
     (*ws).tableEnd = (*ws).objectEnd;
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_clear(mut ws: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_clear(ws: *mut ZSTD_cwksp) {
     (*ws).tableEnd = (*ws).objectEnd;
     (*ws).allocStart = ZSTD_cwksp_initialAllocStart(ws);
     (*ws).allocFailed = 0;
@@ -1723,16 +1714,16 @@ unsafe fn ZSTD_cwksp_clear(mut ws: *mut ZSTD_cwksp) {
     ZSTD_cwksp_assert_internal_consistency(ws);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_sizeof(mut ws: *const ZSTD_cwksp) -> size_t {
+unsafe fn ZSTD_cwksp_sizeof(ws: *const ZSTD_cwksp) -> size_t {
     ((*ws).workspaceEnd as *mut u8).offset_from((*ws).workspace as *mut u8) as core::ffi::c_long
         as size_t
 }
 #[inline]
 unsafe fn ZSTD_cwksp_init(
-    mut ws: *mut ZSTD_cwksp,
-    mut start: *mut core::ffi::c_void,
-    mut size: size_t,
-    mut isStatic: ZSTD_cwksp_static_alloc_e,
+    ws: *mut ZSTD_cwksp,
+    start: *mut core::ffi::c_void,
+    size: size_t,
+    isStatic: ZSTD_cwksp_static_alloc_e,
 ) {
     (*ws).workspace = start;
     (*ws).workspaceEnd = (start as *mut u8).add(size) as *mut core::ffi::c_void;
@@ -1747,11 +1738,11 @@ unsafe fn ZSTD_cwksp_init(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_create(
-    mut ws: *mut ZSTD_cwksp,
-    mut size: size_t,
-    mut customMem: ZSTD_customMem,
+    ws: *mut ZSTD_cwksp,
+    size: size_t,
+    customMem: ZSTD_customMem,
 ) -> size_t {
-    let mut workspace = ZSTD_customMalloc(size, customMem);
+    let workspace = ZSTD_customMalloc(size, customMem);
     if workspace.is_null() {
         return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     }
@@ -1759,36 +1750,36 @@ unsafe fn ZSTD_cwksp_create(
     0
 }
 #[inline]
-unsafe fn ZSTD_cwksp_free(mut ws: *mut ZSTD_cwksp, mut customMem: ZSTD_customMem) {
-    let mut ptr = (*ws).workspace;
+unsafe fn ZSTD_cwksp_free(ws: *mut ZSTD_cwksp, customMem: ZSTD_customMem) {
+    let ptr = (*ws).workspace;
     ptr::write_bytes(ws as *mut u8, 0, ::core::mem::size_of::<ZSTD_cwksp>());
     ZSTD_customFree(ptr, customMem);
 }
 #[inline]
-unsafe fn ZSTD_cwksp_move(mut dst: *mut ZSTD_cwksp, mut src: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_move(dst: *mut ZSTD_cwksp, src: *mut ZSTD_cwksp) {
     *dst = *src;
     ptr::write_bytes(src as *mut u8, 0, ::core::mem::size_of::<ZSTD_cwksp>());
 }
 #[inline]
-unsafe fn ZSTD_cwksp_reserve_failed(mut ws: *const ZSTD_cwksp) -> core::ffi::c_int {
+unsafe fn ZSTD_cwksp_reserve_failed(ws: *const ZSTD_cwksp) -> core::ffi::c_int {
     (*ws).allocFailed as core::ffi::c_int
 }
 #[inline]
-unsafe fn ZSTD_cwksp_available_space(mut ws: *mut ZSTD_cwksp) -> size_t {
+unsafe fn ZSTD_cwksp_available_space(ws: *mut ZSTD_cwksp) -> size_t {
     ((*ws).allocStart as *mut u8).offset_from((*ws).tableEnd as *mut u8) as core::ffi::c_long
         as size_t
 }
 #[inline]
 unsafe fn ZSTD_cwksp_check_available(
-    mut ws: *mut ZSTD_cwksp,
-    mut additionalNeededSpace: size_t,
+    ws: *mut ZSTD_cwksp,
+    additionalNeededSpace: size_t,
 ) -> core::ffi::c_int {
     (ZSTD_cwksp_available_space(ws) >= additionalNeededSpace) as core::ffi::c_int
 }
 #[inline]
 unsafe fn ZSTD_cwksp_check_too_large(
-    mut ws: *mut ZSTD_cwksp,
-    mut additionalNeededSpace: size_t,
+    ws: *mut ZSTD_cwksp,
+    additionalNeededSpace: size_t,
 ) -> core::ffi::c_int {
     ZSTD_cwksp_check_available(
         ws,
@@ -1797,18 +1788,15 @@ unsafe fn ZSTD_cwksp_check_too_large(
 }
 #[inline]
 unsafe fn ZSTD_cwksp_check_wasteful(
-    mut ws: *mut ZSTD_cwksp,
-    mut additionalNeededSpace: size_t,
+    ws: *mut ZSTD_cwksp,
+    additionalNeededSpace: size_t,
 ) -> core::ffi::c_int {
     (ZSTD_cwksp_check_too_large(ws, additionalNeededSpace) != 0
         && (*ws).workspaceOversizedDuration > ZSTD_WORKSPACETOOLARGE_MAXDURATION)
         as core::ffi::c_int
 }
 #[inline]
-unsafe fn ZSTD_cwksp_bump_oversized_duration(
-    mut ws: *mut ZSTD_cwksp,
-    mut additionalNeededSpace: size_t,
-) {
+unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) {
     if ZSTD_cwksp_check_too_large(ws, additionalNeededSpace) != 0 {
         (*ws).workspaceOversizedDuration += 1;
         (*ws).workspaceOversizedDuration;
@@ -1821,20 +1809,14 @@ pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 #[inline]
-unsafe fn ZSTD_customMalloc(
-    mut size: size_t,
-    mut customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
     }
     malloc(size)
 }
 #[inline]
-unsafe fn ZSTD_customCalloc(
-    mut size: size_t,
-    mut customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_customCalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
         ptr::write_bytes(ptr, 0, size);
@@ -1843,7 +1825,7 @@ unsafe fn ZSTD_customCalloc(
     calloc(1, size)
 }
 #[inline]
-unsafe fn ZSTD_customFree(mut ptr: *mut core::ffi::c_void, mut customMem: ZSTD_customMem) {
+unsafe fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
     if !ptr.is_null() {
         if (customMem.customFree).is_some() {
             (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
@@ -1853,23 +1835,23 @@ unsafe fn ZSTD_customFree(mut ptr: *mut core::ffi::c_void, mut customMem: ZSTD_c
     }
 }
 #[inline]
-unsafe fn ZSTD_countTrailingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countLeadingZeros32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countTrailingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_countLeadingZeros64(mut val: u64) -> core::ffi::c_uint {
+unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
     (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
 }
 #[inline]
-unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
+unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
     if MEM_isLittleEndian() != 0 {
         if MEM_64bits() != 0 {
             ZSTD_countTrailingZeros64(val as u64) >> 3
@@ -1883,7 +1865,7 @@ unsafe fn ZSTD_NbCommonBytes(mut val: size_t) -> core::ffi::c_uint {
     }
 }
 #[inline]
-unsafe fn ZSTD_highbit32(mut val: u32) -> core::ffi::c_uint {
+unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
 #[inline]
@@ -2202,7 +2184,7 @@ pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
 pub const NULL: core::ffi::c_int = 0;
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBound))]
-pub unsafe extern "C" fn ZSTD_compressBound(mut srcSize: size_t) -> size_t {
+pub unsafe extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
     let r = if srcSize as core::ffi::c_ulonglong
         >= (if ::core::mem::size_of::<size_t>() == 8 {
             0xff00ff00ff00ff00 as core::ffi::c_ulonglong
@@ -2228,14 +2210,14 @@ pub unsafe extern "C" fn ZSTD_compressBound(mut srcSize: size_t) -> size_t {
 pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
     ZSTD_createCCtx_advanced(ZSTD_defaultCMem)
 }
-unsafe fn ZSTD_initCCtx(mut cctx: *mut ZSTD_CCtx, mut memManager: ZSTD_customMem) {
+unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, ::core::mem::size_of::<ZSTD_CCtx>());
     (*cctx).customMem = memManager;
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2();
     let err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
-pub unsafe extern "C" fn ZSTD_createCCtx_advanced(mut customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
+pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
     if (customMem.customAlloc).is_none() as core::ffi::c_int
         ^ (customMem.customFree).is_none() as core::ffi::c_int
         != 0
@@ -2252,8 +2234,8 @@ pub unsafe extern "C" fn ZSTD_createCCtx_advanced(mut customMem: ZSTD_customMem)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCCtx))]
 pub unsafe extern "C" fn ZSTD_initStaticCCtx(
-    mut workspace: *mut core::ffi::c_void,
-    mut workspaceSize: size_t,
+    workspace: *mut core::ffi::c_void,
+    workspaceSize: size_t,
 ) -> *mut ZSTD_CCtx {
     let mut ws = ZSTD_cwksp {
         workspace: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -2344,7 +2326,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     (*cctx).bmi2 = ZSTD_cpuid_bmi2(ZSTD_cpuid());
     cctx
 }
-unsafe fn ZSTD_clearAllDicts(mut cctx: *mut ZSTD_CCtx) {
+unsafe fn ZSTD_clearAllDicts(cctx: *mut ZSTD_CCtx) {
     ZSTD_customFree((*cctx).localDict.dictBuffer, (*cctx).customMem);
     ZSTD_freeCDict((*cctx).localDict.cdict);
     ptr::write_bytes(
@@ -2359,7 +2341,7 @@ unsafe fn ZSTD_clearAllDicts(mut cctx: *mut ZSTD_CCtx) {
     );
     (*cctx).cdict = NULL as *const ZSTD_CDict;
 }
-unsafe fn ZSTD_sizeof_localDict(mut dict: ZSTD_localDict) -> size_t {
+unsafe fn ZSTD_sizeof_localDict(dict: ZSTD_localDict) -> size_t {
     let bufferSize = if !(dict.dictBuffer).is_null() {
         dict.dictSize
     } else {
@@ -2368,21 +2350,21 @@ unsafe fn ZSTD_sizeof_localDict(mut dict: ZSTD_localDict) -> size_t {
     let cdictSize = ZSTD_sizeof_CDict(dict.cdict);
     bufferSize.wrapping_add(cdictSize)
 }
-unsafe fn ZSTD_freeCCtxContent(mut cctx: *mut ZSTD_CCtx) {
+unsafe fn ZSTD_freeCCtxContent(cctx: *mut ZSTD_CCtx) {
     ZSTD_clearAllDicts(cctx);
     ZSTDMT_freeCCtx((*cctx).mtctx);
     (*cctx).mtctx = NULL as *mut ZSTDMT_CCtx;
     ZSTD_cwksp_free(&mut (*cctx).workspace, (*cctx).customMem);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCCtx))]
-pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
+pub unsafe extern "C" fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
         return 0;
     }
     if (*cctx).staticSize != 0 {
         return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
     }
-    let mut cctxInWorkspace =
+    let cctxInWorkspace =
         ZSTD_cwksp_owns_buffer(&(*cctx).workspace, cctx as *const core::ffi::c_void);
     ZSTD_freeCCtxContent(cctx);
     if cctxInWorkspace == 0 {
@@ -2390,11 +2372,11 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(mut cctx: *mut ZSTD_CCtx) -> size_t {
     }
     0
 }
-unsafe fn ZSTD_sizeof_mtctx(mut cctx: *const ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_sizeof_mtctx(cctx: *const ZSTD_CCtx) -> size_t {
     ZSTDMT_sizeof_CCtx((*cctx).mtctx)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CCtx))]
-pub unsafe extern "C" fn ZSTD_sizeof_CCtx(mut cctx: *const ZSTD_CCtx) -> size_t {
+pub unsafe extern "C" fn ZSTD_sizeof_CCtx(cctx: *const ZSTD_CCtx) -> size_t {
     if cctx.is_null() {
         return 0;
     }
@@ -2408,10 +2390,10 @@ pub unsafe extern "C" fn ZSTD_sizeof_CCtx(mut cctx: *const ZSTD_CCtx) -> size_t 
     .wrapping_add(ZSTD_sizeof_mtctx(cctx))
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CStream))]
-pub unsafe extern "C" fn ZSTD_sizeof_CStream(mut zcs: *const ZSTD_CStream) -> size_t {
+pub unsafe extern "C" fn ZSTD_sizeof_CStream(zcs: *const ZSTD_CStream) -> size_t {
     ZSTD_sizeof_CCtx(zcs)
 }
-pub unsafe fn ZSTD_getSeqStore(mut ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
+pub unsafe fn ZSTD_getSeqStore(ctx: *const ZSTD_CCtx) -> *const SeqStore_t {
     &(*ctx).seqStore
 }
 unsafe fn ZSTD_rowMatchFinderSupported(strategy: ZSTD_strategy) -> core::ffi::c_int {
@@ -2445,7 +2427,7 @@ unsafe fn ZSTD_resolveRowMatchFinderMode(
     mode
 }
 unsafe fn ZSTD_resolveBlockSplitterMode(
-    mut mode: ZSTD_ParamSwitch_e,
+    mode: ZSTD_ParamSwitch_e,
     cParams: *const ZSTD_compressionParameters,
 ) -> ZSTD_ParamSwitch_e {
     if mode as core::ffi::c_uint != ZSTD_ps_auto as core::ffi::c_int as core::ffi::c_uint {
@@ -2470,7 +2452,7 @@ unsafe fn ZSTD_allocateChainTable(
             && ZSTD_rowMatchFinderUsed(strategy, useRowMatchFinder) == 0) as core::ffi::c_int
 }
 unsafe fn ZSTD_resolveEnableLdm(
-    mut mode: ZSTD_ParamSwitch_e,
+    mode: ZSTD_ParamSwitch_e,
     cParams: *const ZSTD_compressionParameters,
 ) -> ZSTD_ParamSwitch_e {
     if mode as core::ffi::c_uint != ZSTD_ps_auto as core::ffi::c_int as core::ffi::c_uint {
@@ -2485,10 +2467,10 @@ unsafe fn ZSTD_resolveEnableLdm(
         ZSTD_ps_disable as core::ffi::c_int
     }) as ZSTD_ParamSwitch_e
 }
-unsafe fn ZSTD_resolveExternalSequenceValidation(mut mode: core::ffi::c_int) -> core::ffi::c_int {
+unsafe fn ZSTD_resolveExternalSequenceValidation(mode: core::ffi::c_int) -> core::ffi::c_int {
     mode
 }
-unsafe fn ZSTD_resolveMaxBlockSize(mut maxBlockSize: size_t) -> size_t {
+unsafe fn ZSTD_resolveMaxBlockSize(maxBlockSize: size_t) -> size_t {
     if maxBlockSize == 0 {
         ZSTD_BLOCKSIZE_MAX as size_t
     } else {
@@ -2496,8 +2478,8 @@ unsafe fn ZSTD_resolveMaxBlockSize(mut maxBlockSize: size_t) -> size_t {
     }
 }
 unsafe fn ZSTD_resolveExternalRepcodeSearch(
-    mut value: ZSTD_ParamSwitch_e,
-    mut cLevel: core::ffi::c_int,
+    value: ZSTD_ParamSwitch_e,
+    cLevel: core::ffi::c_int,
 ) -> ZSTD_ParamSwitch_e {
     if value as core::ffi::c_uint != ZSTD_ps_auto as core::ffi::c_int as core::ffi::c_uint {
         return value;
@@ -2515,9 +2497,7 @@ unsafe fn ZSTD_CDictIndicesAreTagged(
         || (*cParams).strategy as core::ffi::c_uint
             == ZSTD_dfast as core::ffi::c_int as core::ffi::c_uint) as core::ffi::c_int
 }
-unsafe fn ZSTD_makeCCtxParamsFromCParams(
-    mut cParams: ZSTD_compressionParameters,
-) -> ZSTD_CCtx_params {
+unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) -> ZSTD_CCtx_params {
     let mut cctxParams = ZSTD_CCtx_params_s {
         format: Format::ZSTD_f_zstd1,
         cParams: ZSTD_compressionParameters {
@@ -2595,7 +2575,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(
     );
     cctxParams
 }
-unsafe fn ZSTD_createCCtxParams_advanced(mut customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
+unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
     let mut params = core::ptr::null_mut::<ZSTD_CCtx_params>();
     if (customMem.customAlloc).is_none() as core::ffi::c_int
         ^ (customMem.customFree).is_none() as core::ffi::c_int
@@ -2619,7 +2599,7 @@ pub unsafe extern "C" fn ZSTD_createCCtxParams() -> *mut ZSTD_CCtx_params {
     ZSTD_createCCtxParams_advanced(ZSTD_defaultCMem)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCCtxParams))]
-pub unsafe extern "C" fn ZSTD_freeCCtxParams(mut params: *mut ZSTD_CCtx_params) -> size_t {
+pub unsafe extern "C" fn ZSTD_freeCCtxParams(params: *mut ZSTD_CCtx_params) -> size_t {
     if params.is_null() {
         return 0;
     }
@@ -2627,13 +2607,13 @@ pub unsafe extern "C" fn ZSTD_freeCCtxParams(mut params: *mut ZSTD_CCtx_params) 
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_reset))]
-pub unsafe extern "C" fn ZSTD_CCtxParams_reset(mut params: *mut ZSTD_CCtx_params) -> size_t {
+pub unsafe extern "C" fn ZSTD_CCtxParams_reset(params: *mut ZSTD_CCtx_params) -> size_t {
     ZSTD_CCtxParams_init(params, ZSTD_CLEVEL_DEFAULT)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_init(
-    mut cctxParams: *mut ZSTD_CCtx_params,
-    mut compressionLevel: core::ffi::c_int,
+    cctxParams: *mut ZSTD_CCtx_params,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     if cctxParams.is_null() {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
@@ -2649,9 +2629,9 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init(
 }
 pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
 unsafe fn ZSTD_CCtxParams_init_internal(
-    mut cctxParams: *mut ZSTD_CCtx_params,
-    mut params: *const ZSTD_parameters,
-    mut compressionLevel: core::ffi::c_int,
+    cctxParams: *mut ZSTD_CCtx_params,
+    params: *const ZSTD_parameters,
+    compressionLevel: core::ffi::c_int,
 ) {
     ptr::write_bytes(
         cctxParams as *mut u8,
@@ -2677,8 +2657,8 @@ unsafe fn ZSTD_CCtxParams_init_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_init_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
-    mut cctxParams: *mut ZSTD_CCtx_params,
-    mut params: ZSTD_parameters,
+    cctxParams: *mut ZSTD_CCtx_params,
+    params: ZSTD_parameters,
 ) -> size_t {
     if cctxParams.is_null() {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
@@ -2691,15 +2671,15 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
     0
 }
 unsafe fn ZSTD_CCtxParams_setZstdParams(
-    mut cctxParams: *mut ZSTD_CCtx_params,
-    mut params: *const ZSTD_parameters,
+    cctxParams: *mut ZSTD_CCtx_params,
+    params: *const ZSTD_parameters,
 ) {
     (*cctxParams).cParams = (*params).cParams;
     (*cctxParams).fParams = (*params).fParams;
     (*cctxParams).compressionLevel = ZSTD_NO_CLEVEL;
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
-pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZSTD_bounds {
+pub unsafe extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
     let mut bounds = {
         ZSTD_bounds {
             error: 0,
@@ -2954,10 +2934,7 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(mut param: ZSTD_cParameter) -> ZS
         }
     }
 }
-unsafe fn ZSTD_cParam_clampBounds(
-    mut cParam: ZSTD_cParameter,
-    mut value: *mut core::ffi::c_int,
-) -> size_t {
+unsafe fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: *mut core::ffi::c_int) -> size_t {
     let bounds = ZSTD_cParam_getBounds(cParam);
     if ERR_isError(bounds.error) != 0 {
         return bounds.error;
@@ -2970,7 +2947,7 @@ unsafe fn ZSTD_cParam_clampBounds(
     }
     0
 }
-unsafe fn ZSTD_isUpdateAuthorized(mut param: ZSTD_cParameter) -> core::ffi::c_int {
+unsafe fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> core::ffi::c_int {
     match param as core::ffi::c_uint {
         100 | 102 | 103 | 104 | 105 | 106 | 107 | 1017 => 1,
         10 | 101 | 200 | 201 | 202 | 1000 | 400 | 401 | 402 | 500 | 1005 | 160 | 161 | 162
@@ -2980,9 +2957,9 @@ unsafe fn ZSTD_isUpdateAuthorized(mut param: ZSTD_cParameter) -> core::ffi::c_in
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParameter))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
-    mut cctx: *mut ZSTD_CCtx,
-    mut param: ZSTD_cParameter,
-    mut value: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    param: ZSTD_cParameter,
+    value: core::ffi::c_int,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3008,8 +2985,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParameter(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_setParameter))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
-    mut CCtxParams: *mut ZSTD_CCtx_params,
-    mut param: ZSTD_cParameter,
+    CCtxParams: *mut ZSTD_CCtx_params,
+    param: ZSTD_cParameter,
     mut value: core::ffi::c_int,
 ) -> size_t {
     match param as core::ffi::c_uint {
@@ -3297,17 +3274,17 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_getParameter))]
 pub unsafe extern "C" fn ZSTD_CCtx_getParameter(
-    mut cctx: *const ZSTD_CCtx,
-    mut param: ZSTD_cParameter,
-    mut value: *mut core::ffi::c_int,
+    cctx: *const ZSTD_CCtx,
+    param: ZSTD_cParameter,
+    value: *mut core::ffi::c_int,
 ) -> size_t {
     ZSTD_CCtxParams_getParameter(&(*cctx).requestedParams, param, value)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_getParameter))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
-    mut CCtxParams: *const ZSTD_CCtx_params,
-    mut param: ZSTD_cParameter,
-    mut value: *mut core::ffi::c_int,
+    CCtxParams: *const ZSTD_CCtx_params,
+    param: ZSTD_cParameter,
+    value: *mut core::ffi::c_int,
 ) -> size_t {
     match param as core::ffi::c_uint {
         10 => {
@@ -3433,8 +3410,8 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParametersUsingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
-    mut cctx: *mut ZSTD_CCtx,
-    mut params: *const ZSTD_CCtx_params,
+    cctx: *mut ZSTD_CCtx,
+    params: *const ZSTD_CCtx_params,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3449,8 +3426,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParametersUsingCCtxParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setCParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cparams: ZSTD_compressionParameters,
+    cctx: *mut ZSTD_CCtx,
+    cparams: ZSTD_compressionParameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(cparams);
     if ERR_isError(err_code) != 0 {
@@ -3504,8 +3481,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setFParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
-    mut cctx: *mut ZSTD_CCtx,
-    mut fparams: ZSTD_frameParameters,
+    cctx: *mut ZSTD_CCtx,
+    fparams: ZSTD_frameParameters,
 ) -> size_t {
     let err_code = ZSTD_CCtx_setParameter(
         cctx,
@@ -3535,8 +3512,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParams))]
 pub unsafe extern "C" fn ZSTD_CCtx_setParams(
-    mut cctx: *mut ZSTD_CCtx,
-    mut params: ZSTD_parameters,
+    cctx: *mut ZSTD_CCtx,
+    params: ZSTD_parameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(params.cParams);
     if ERR_isError(err_code) != 0 {
@@ -3554,8 +3531,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setPledgedSrcSize))]
 pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
-    mut cctx: *mut ZSTD_CCtx,
-    mut pledgedSrcSize: core::ffi::c_ulonglong,
+    cctx: *mut ZSTD_CCtx,
+    pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3565,7 +3542,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setPledgedSrcSize(
     (*cctx).pledgedSrcSizePlusOne = pledgedSrcSize.wrapping_add(1);
     0
 }
-unsafe fn ZSTD_initLocalDict(mut cctx: *mut ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_initLocalDict(cctx: *mut ZSTD_CCtx) -> size_t {
     let dl: *mut ZSTD_localDict = &mut (*cctx).localDict;
     if ((*dl).dict).is_null() {
         return 0;
@@ -3589,11 +3566,11 @@ unsafe fn ZSTD_initLocalDict(mut cctx: *mut ZSTD_CCtx) -> size_t {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3627,24 +3604,24 @@ pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary_byReference))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary_byReference(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
 ) -> size_t {
     ZSTD_CCtx_loadDictionary_advanced(cctx, dict, dictSize, ZSTD_dlm_byRef, ZSTD_dct_auto)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_loadDictionary))]
 pub unsafe extern "C" fn ZSTD_CCtx_loadDictionary(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
 ) -> size_t {
     ZSTD_CCtx_loadDictionary_advanced(cctx, dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refCDict))]
 pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3657,8 +3634,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_refCDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refThreadPool))]
 pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
-    mut cctx: *mut ZSTD_CCtx,
-    mut pool: *mut ZSTD_threadPool,
+    cctx: *mut ZSTD_CCtx,
+    pool: *mut ZSTD_threadPool,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3670,18 +3647,18 @@ pub unsafe extern "C" fn ZSTD_CCtx_refThreadPool(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refPrefix))]
 pub unsafe extern "C" fn ZSTD_CCtx_refPrefix(
-    mut cctx: *mut ZSTD_CCtx,
-    mut prefix: *const core::ffi::c_void,
-    mut prefixSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    prefix: *const core::ffi::c_void,
+    prefixSize: size_t,
 ) -> size_t {
     ZSTD_CCtx_refPrefix_advanced(cctx, prefix, prefixSize, ZSTD_dct_rawContent)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_refPrefix_advanced))]
 pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
-    mut cctx: *mut ZSTD_CCtx,
-    mut prefix: *const core::ffi::c_void,
-    mut prefixSize: size_t,
-    mut dictContentType: ZSTD_dictContentType_e,
+    cctx: *mut ZSTD_CCtx,
+    prefix: *const core::ffi::c_void,
+    prefixSize: size_t,
+    dictContentType: ZSTD_dictContentType_e,
 ) -> size_t {
     if (*cctx).streamStage as core::ffi::c_uint
         != zcss_init as core::ffi::c_int as core::ffi::c_uint
@@ -3698,8 +3675,8 @@ pub unsafe extern "C" fn ZSTD_CCtx_refPrefix_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_reset))]
 pub unsafe extern "C" fn ZSTD_CCtx_reset(
-    mut cctx: *mut ZSTD_CCtx,
-    mut reset: ZSTD_ResetDirective,
+    cctx: *mut ZSTD_CCtx,
+    reset: ZSTD_ResetDirective,
 ) -> size_t {
     if reset as core::ffi::c_uint
         == ZSTD_reset_session_only as core::ffi::c_int as core::ffi::c_uint
@@ -3724,7 +3701,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_checkCParams))]
-pub unsafe extern "C" fn ZSTD_checkCParams(mut cParams: ZSTD_compressionParameters) -> size_t {
+pub unsafe extern "C" fn ZSTD_checkCParams(cParams: ZSTD_compressionParameters) -> size_t {
     if ZSTD_cParam_withinBounds(ZSTD_c_windowLog, cParams.windowLog as core::ffi::c_int) == 0 {
         return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
     }
@@ -3798,11 +3775,11 @@ unsafe fn ZSTD_clampCParams(mut cParams: ZSTD_compressionParameters) -> ZSTD_com
     cParams
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cycleLog))]
-pub unsafe extern "C" fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
+pub unsafe extern "C" fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
     let btScale = (strat >= ZSTD_btlazy2) as u32;
     hashLog.wrapping_sub(btScale)
 }
-unsafe fn ZSTD_dictAndWindowLog(mut windowLog: u32, mut srcSize: u64, mut dictSize: u64) -> u32 {
+unsafe fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
     let maxWindowSize = ((1 as core::ffi::c_ulonglong)
         << (if ::core::mem::size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
@@ -3830,7 +3807,7 @@ unsafe fn ZSTD_adjustCParams_internal(
     mut cPar: ZSTD_compressionParameters,
     mut srcSize: core::ffi::c_ulonglong,
     mut dictSize: size_t,
-    mut mode: ZSTD_CParamMode_e,
+    mode: ZSTD_CParamMode_e,
     mut useRowMatchFinder: ZSTD_ParamSwitch_e,
 ) -> ZSTD_compressionParameters {
     let minSrcSize = 513;
@@ -3917,7 +3894,7 @@ unsafe fn ZSTD_adjustCParams_internal(
 pub unsafe extern "C" fn ZSTD_adjustCParams(
     mut cPar: ZSTD_compressionParameters,
     mut srcSize: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
+    dictSize: size_t,
 ) -> ZSTD_compressionParameters {
     cPar = ZSTD_clampCParams(cPar);
     if srcSize == 0 {
@@ -3926,8 +3903,8 @@ pub unsafe extern "C" fn ZSTD_adjustCParams(
     ZSTD_adjustCParams_internal(cPar, srcSize, dictSize, ZSTD_cpm_unknown, ZSTD_ps_auto)
 }
 unsafe fn ZSTD_overrideCParams(
-    mut cParams: *mut ZSTD_compressionParameters,
-    mut overrides: *const ZSTD_compressionParameters,
+    cParams: *mut ZSTD_compressionParameters,
+    overrides: *const ZSTD_compressionParameters,
 ) {
     if (*overrides).windowLog != 0 {
         (*cParams).windowLog = (*overrides).windowLog;
@@ -3953,10 +3930,10 @@ unsafe fn ZSTD_overrideCParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCCtxParams))]
 pub unsafe extern "C" fn ZSTD_getCParamsFromCCtxParams(
-    mut CCtxParams: *const ZSTD_CCtx_params,
+    CCtxParams: *const ZSTD_CCtx_params,
     mut srcSizeHint: u64,
-    mut dictSize: size_t,
-    mut mode: ZSTD_CParamMode_e,
+    dictSize: size_t,
+    mode: ZSTD_CParamMode_e,
 ) -> ZSTD_compressionParameters {
     let mut cParams = ZSTD_compressionParameters {
         windowLog: 0,
@@ -4066,9 +4043,9 @@ unsafe fn ZSTD_sizeof_matchState(
         .wrapping_add(lazyAdditionalSpace)
 }
 unsafe fn ZSTD_maxNbSeq(
-    mut blockSize: size_t,
-    mut minMatch: core::ffi::c_uint,
-    mut useSequenceProducer: core::ffi::c_int,
+    blockSize: size_t,
+    minMatch: core::ffi::c_uint,
+    useSequenceProducer: core::ffi::c_int,
 ) -> size_t {
     let divider = (if minMatch == 3 || useSequenceProducer != 0 {
         3
@@ -4078,15 +4055,15 @@ unsafe fn ZSTD_maxNbSeq(
     blockSize / divider as size_t
 }
 unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
-    mut cParams: *const ZSTD_compressionParameters,
-    mut ldmParams: *const ldmParams_t,
+    cParams: *const ZSTD_compressionParameters,
+    ldmParams: *const ldmParams_t,
     isStatic: core::ffi::c_int,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     buffInSize: size_t,
     buffOutSize: size_t,
     pledgedSrcSize: u64,
-    mut useSequenceProducer: core::ffi::c_int,
-    mut maxBlockSize: size_t,
+    useSequenceProducer: core::ffi::c_int,
+    maxBlockSize: size_t,
 ) -> size_t {
     let windowSize = (if 1
         > (if (1) << (*cParams).windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
@@ -4172,7 +4149,7 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
-    mut params: *const ZSTD_CCtx_params,
+    params: *const ZSTD_CCtx_params,
 ) -> size_t {
     let cParams =
         ZSTD_getCParamsFromCCtxParams(params, ZSTD_CONTENTSIZE_UNKNOWN, 0, ZSTD_cpm_noAttachDict);
@@ -4194,7 +4171,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCCtxParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize_usingCParams))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
-    mut cParams: ZSTD_compressionParameters,
+    cParams: ZSTD_compressionParameters,
 ) -> size_t {
     let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) != 0 {
@@ -4219,9 +4196,7 @@ static srcSizeTiers: [core::ffi::c_ulonglong; 4] = [
     256 * (1 << 10),
     ZSTD_CONTENTSIZE_UNKNOWN,
 ];
-unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
-    mut compressionLevel: core::ffi::c_int,
-) -> size_t {
+unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi::c_int) -> size_t {
     let mut tier = 0;
     let mut largestSize = 0;
     while tier < 4 {
@@ -4241,7 +4216,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(
     largestSize
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize))]
-pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: core::ffi::c_int) -> size_t {
+pub unsafe extern "C" fn ZSTD_estimateCCtxSize(compressionLevel: core::ffi::c_int) -> size_t {
     let mut level: core::ffi::c_int = 0;
     let mut memBudget = 0;
     level = if compressionLevel < 1 {
@@ -4260,7 +4235,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize(mut compressionLevel: core::ffi::
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCCtxParams))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
-    mut params: *const ZSTD_CCtx_params,
+    params: *const ZSTD_CCtx_params,
 ) -> size_t {
     if (*params).nbWorkers > 0 {
         return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
@@ -4302,7 +4277,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize_usingCParams))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
-    mut cParams: ZSTD_compressionParameters,
+    cParams: ZSTD_compressionParameters,
 ) -> size_t {
     let mut initialParams = ZSTD_makeCCtxParamsFromCParams(cParams);
     if ZSTD_rowMatchFinderSupported(cParams.strategy) != 0 {
@@ -4321,7 +4296,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
         ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams)
     }
 }
-unsafe fn ZSTD_estimateCStreamSize_internal(mut compressionLevel: core::ffi::c_int) -> size_t {
+unsafe fn ZSTD_estimateCStreamSize_internal(compressionLevel: core::ffi::c_int) -> size_t {
     let cParams = ZSTD_getCParams_internal(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
@@ -4331,9 +4306,7 @@ unsafe fn ZSTD_estimateCStreamSize_internal(mut compressionLevel: core::ffi::c_i
     ZSTD_estimateCStreamSize_usingCParams(cParams)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize))]
-pub unsafe extern "C" fn ZSTD_estimateCStreamSize(
-    mut compressionLevel: core::ffi::c_int,
-) -> size_t {
+pub unsafe extern "C" fn ZSTD_estimateCStreamSize(compressionLevel: core::ffi::c_int) -> size_t {
     let mut level: core::ffi::c_int = 0;
     let mut memBudget = 0;
     level = if compressionLevel < 1 {
@@ -4351,9 +4324,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize(
     memBudget
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getFrameProgression))]
-pub unsafe extern "C" fn ZSTD_getFrameProgression(
-    mut cctx: *const ZSTD_CCtx,
-) -> ZSTD_frameProgression {
+pub unsafe extern "C" fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZSTD_frameProgression {
     if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_getFrameProgression((*cctx).mtctx);
     }
@@ -4380,18 +4351,18 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(
     fp
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_toFlushNow))]
-pub unsafe extern "C" fn ZSTD_toFlushNow(mut cctx: *mut ZSTD_CCtx) -> size_t {
+pub unsafe extern "C" fn ZSTD_toFlushNow(cctx: *mut ZSTD_CCtx) -> size_t {
     if (*cctx).appliedParams.nbWorkers > 0 {
         return ZSTDMT_toFlushNow((*cctx).mtctx);
     }
     0
 }
 unsafe fn ZSTD_assertEqualCParams(
-    mut cParams1: ZSTD_compressionParameters,
-    mut cParams2: ZSTD_compressionParameters,
+    cParams1: ZSTD_compressionParameters,
+    cParams2: ZSTD_compressionParameters,
 ) {
 }
-pub unsafe fn ZSTD_reset_compressedBlockState(mut bs: *mut ZSTD_compressedBlockState_t) {
+pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState_t) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < ZSTD_REP_NUM {
@@ -4403,27 +4374,27 @@ pub unsafe fn ZSTD_reset_compressedBlockState(mut bs: *mut ZSTD_compressedBlockS
     (*bs).entropy.fse.matchlength_repeatMode = FSE_repeat_none;
     (*bs).entropy.fse.litlength_repeatMode = FSE_repeat_none;
 }
-unsafe fn ZSTD_invalidateMatchState(mut ms: *mut ZSTD_MatchState_t) {
+unsafe fn ZSTD_invalidateMatchState(ms: *mut ZSTD_MatchState_t) {
     ZSTD_window_clear(&mut (*ms).window);
     (*ms).nextToUpdate = (*ms).window.dictLimit;
     (*ms).loadedDictEnd = 0;
     (*ms).opt.litLengthSum = 0;
     (*ms).dictMatchState = NULL as *const ZSTD_MatchState_t;
 }
-unsafe fn ZSTD_bitmix(mut val: u64, mut len: u64) -> u64 {
+unsafe fn ZSTD_bitmix(mut val: u64, len: u64) -> u64 {
     val ^= ZSTD_rotateRight_U64(val, 49) ^ ZSTD_rotateRight_U64(val, 24);
     val = val.wrapping_mul(0x9fb21c651e98df25u64);
     val ^= (val >> 35).wrapping_add(len);
     val = val.wrapping_mul(0x9fb21c651e98df25u64);
     val ^ val >> 28
 }
-unsafe fn ZSTD_advanceHashSalt(mut ms: *mut ZSTD_MatchState_t) {
+unsafe fn ZSTD_advanceHashSalt(ms: *mut ZSTD_MatchState_t) {
     (*ms).hashSalt = ZSTD_bitmix((*ms).hashSalt, 8) ^ ZSTD_bitmix((*ms).hashSaltEntropy as u64, 4);
 }
 unsafe fn ZSTD_reset_matchState(
-    mut ms: *mut ZSTD_MatchState_t,
-    mut ws: *mut ZSTD_cwksp,
-    mut cParams: *const ZSTD_compressionParameters,
+    ms: *mut ZSTD_MatchState_t,
+    ws: *mut ZSTD_cwksp,
+    cParams: *const ZSTD_compressionParameters,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     crp: ZSTD_compResetPolicy_e,
     forceResetIndex: ZSTD_indexResetPolicy_e,
@@ -4556,7 +4527,7 @@ unsafe fn ZSTD_reset_matchState(
     0
 }
 pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * ((1) << 20);
-unsafe fn ZSTD_indexTooCloseToMax(mut w: ZSTD_window_t) -> core::ffi::c_int {
+unsafe fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> core::ffi::c_int {
     ((w.nextSrc).offset_from(w.base) as core::ffi::c_long as size_t
         > (if MEM_64bits() != 0 {
             (3500 as core::ffi::c_uint)
@@ -4579,7 +4550,7 @@ unsafe fn ZSTD_dictTooBig(loadedDictSize: size_t) -> core::ffi::c_int {
         }) as size_t) as core::ffi::c_int
 }
 unsafe fn ZSTD_resetCCtx_internal(
-    mut zc: *mut ZSTD_CCtx,
+    zc: *mut ZSTD_CCtx,
     mut params: *const ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     loadedDictSize: size_t,
@@ -4663,8 +4634,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     }
     let workspaceTooSmall = (ZSTD_cwksp_sizeof(ws) < neededSpace) as core::ffi::c_int;
     let workspaceWasteful = ZSTD_cwksp_check_wasteful(ws, neededSpace);
-    let mut resizeWorkspace =
-        (workspaceTooSmall != 0 || workspaceWasteful != 0) as core::ffi::c_int;
+    let resizeWorkspace = (workspaceTooSmall != 0 || workspaceWasteful != 0) as core::ffi::c_int;
     if resizeWorkspace != 0 {
         if (*zc).staticSize != 0 {
             return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
@@ -4815,7 +4785,7 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).initialized = 1;
     0
 }
-pub unsafe fn ZSTD_invalidateRepCodes(mut cctx: *mut ZSTD_CCtx) {
+pub unsafe fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < ZSTD_REP_NUM {
@@ -4838,11 +4808,11 @@ static attachDictSizeCutoffs: [size_t; 10] = [
     (8 * ((1) << 10)) as size_t,
 ];
 unsafe fn ZSTD_shouldAttachDict(
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: u64,
 ) -> core::ffi::c_int {
-    let mut cutoff = *attachDictSizeCutoffs
+    let cutoff = *attachDictSizeCutoffs
         .as_ptr()
         .offset((*cdict).matchState.cParams.strategy as isize);
     let dedicatedDictSearch = (*cdict).matchState.dedicatedDictSearch;
@@ -4856,11 +4826,11 @@ unsafe fn ZSTD_shouldAttachDict(
             && (*params).forceWindow == 0) as core::ffi::c_int
 }
 unsafe fn ZSTD_resetCCtx_byAttachingCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
-    mut zbuff: ZSTD_buffered_policy_e,
+    pledgedSrcSize: u64,
+    zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
     let mut adjusted_cdict_cParams = (*cdict).matchState.cParams;
     let windowLog = params.cParams.windowLog;
@@ -4904,10 +4874,10 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     0
 }
 unsafe fn ZSTD_copyCDictTableIntoCCtx(
-    mut dst: *mut u32,
-    mut src: *const u32,
-    mut tableSize: size_t,
-    mut cParams: *const ZSTD_compressionParameters,
+    dst: *mut u32,
+    src: *const u32,
+    tableSize: size_t,
+    cParams: *const ZSTD_compressionParameters,
 ) {
     if ZSTD_CDictIndicesAreTagged(cParams) != 0 {
         let mut i: size_t = 0;
@@ -4927,13 +4897,13 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
     };
 }
 unsafe fn ZSTD_resetCCtx_byCopyingCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
     mut params: ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
-    mut zbuff: ZSTD_buffered_policy_e,
+    pledgedSrcSize: u64,
+    zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
-    let mut cdict_cParams: *const ZSTD_compressionParameters = &(*cdict).matchState.cParams;
+    let cdict_cParams: *const ZSTD_compressionParameters = &(*cdict).matchState.cParams;
     let windowLog = params.cParams.windowLog;
     params.cParams = *cdict_cParams;
     params.cParams.windowLog = windowLog;
@@ -4991,8 +4961,8 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
         h3Size.wrapping_mul(::core::mem::size_of::<u32>() as size_t),
     );
     ZSTD_cwksp_mark_tables_clean(&mut (*cctx).workspace);
-    let mut srcMatchState: *const ZSTD_MatchState_t = &(*cdict).matchState;
-    let mut dstMatchState: *mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
+    let srcMatchState: *const ZSTD_MatchState_t = &(*cdict).matchState;
+    let dstMatchState: *mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
     (*dstMatchState).window = (*srcMatchState).window;
     (*dstMatchState).nextToUpdate = (*srcMatchState).nextToUpdate;
     (*dstMatchState).loadedDictEnd = (*srcMatchState).loadedDictEnd;
@@ -5006,11 +4976,11 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     0
 }
 unsafe fn ZSTD_resetCCtx_usingCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
-    mut zbuff: ZSTD_buffered_policy_e,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: u64,
+    zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
     if ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) != 0 {
         ZSTD_resetCCtx_byAttachingCDict(cctx, cdict, *params, pledgedSrcSize, zbuff)
@@ -5019,11 +4989,11 @@ unsafe fn ZSTD_resetCCtx_usingCDict(
     }
 }
 unsafe fn ZSTD_copyCCtx_internal(
-    mut dstCCtx: *mut ZSTD_CCtx,
-    mut srcCCtx: *const ZSTD_CCtx,
-    mut fParams: ZSTD_frameParameters,
-    mut pledgedSrcSize: u64,
-    mut zbuff: ZSTD_buffered_policy_e,
+    dstCCtx: *mut ZSTD_CCtx,
+    srcCCtx: *const ZSTD_CCtx,
+    fParams: ZSTD_frameParameters,
+    pledgedSrcSize: u64,
+    zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
     if (*srcCCtx).stage as core::ffi::c_uint != ZSTDcs_init as core::ffi::c_int as core::ffi::c_uint
     {
@@ -5083,8 +5053,8 @@ unsafe fn ZSTD_copyCCtx_internal(
         h3Size.wrapping_mul(::core::mem::size_of::<u32>() as size_t) as libc::size_t,
     );
     ZSTD_cwksp_mark_tables_clean(&mut (*dstCCtx).workspace);
-    let mut srcMatchState: *const ZSTD_MatchState_t = &(*srcCCtx).blockState.matchState;
-    let mut dstMatchState: *mut ZSTD_MatchState_t = &mut (*dstCCtx).blockState.matchState;
+    let srcMatchState: *const ZSTD_MatchState_t = &(*srcCCtx).blockState.matchState;
+    let dstMatchState: *mut ZSTD_MatchState_t = &mut (*dstCCtx).blockState.matchState;
     (*dstMatchState).window = (*srcMatchState).window;
     (*dstMatchState).nextToUpdate = (*srcMatchState).nextToUpdate;
     (*dstMatchState).loadedDictEnd = (*srcMatchState).loadedDictEnd;
@@ -5099,8 +5069,8 @@ unsafe fn ZSTD_copyCCtx_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyCCtx))]
 pub unsafe extern "C" fn ZSTD_copyCCtx(
-    mut dstCCtx: *mut ZSTD_CCtx,
-    mut srcCCtx: *const ZSTD_CCtx,
+    dstCCtx: *mut ZSTD_CCtx,
+    srcCCtx: *const ZSTD_CCtx,
     mut pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let mut fParams = {
@@ -5157,8 +5127,8 @@ unsafe fn ZSTD_reduceTable_btlazy2(table: *mut u32, size: u32, reducerValue: u32
     ZSTD_reduceTable_internal(table, size, reducerValue, 1);
 }
 unsafe fn ZSTD_reduceIndex(
-    mut ms: *mut ZSTD_MatchState_t,
-    mut params: *const ZSTD_CCtx_params,
+    ms: *mut ZSTD_MatchState_t,
+    params: *const ZSTD_CCtx_params,
     reducerValue: u32,
 ) {
     let hSize = (1) << (*params).cParams.hashLog;
@@ -5183,7 +5153,7 @@ unsafe fn ZSTD_reduceIndex(
         ZSTD_reduceTable((*ms).hashTable3, h3Size, reducerValue);
     }
 }
-pub unsafe fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> core::ffi::c_int {
+pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_int {
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let llCodeTable = (*seqStorePtr).llCode;
     let ofCodeTable = (*seqStorePtr).ofCode;
@@ -5224,31 +5194,31 @@ pub unsafe fn ZSTD_seqToCodes(mut seqStorePtr: *const SeqStore_t) -> core::ffi::
     }
     longOffsets
 }
-unsafe fn ZSTD_useTargetCBlockSize(mut cctxParams: *const ZSTD_CCtx_params) -> core::ffi::c_int {
+unsafe fn ZSTD_useTargetCBlockSize(cctxParams: *const ZSTD_CCtx_params) -> core::ffi::c_int {
     ((*cctxParams).targetCBlockSize != 0) as core::ffi::c_int
 }
-unsafe fn ZSTD_blockSplitterEnabled(mut cctxParams: *mut ZSTD_CCtx_params) -> core::ffi::c_int {
+unsafe fn ZSTD_blockSplitterEnabled(cctxParams: *mut ZSTD_CCtx_params) -> core::ffi::c_int {
     ((*cctxParams).postBlockSplitter as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint) as core::ffi::c_int
 }
 unsafe fn ZSTD_buildSequencesStatistics(
-    mut seqStorePtr: *const SeqStore_t,
-    mut nbSeq: size_t,
-    mut prevEntropy: *const ZSTD_fseCTables_t,
-    mut nextEntropy: *mut ZSTD_fseCTables_t,
-    mut dst: *mut u8,
+    seqStorePtr: *const SeqStore_t,
+    nbSeq: size_t,
+    prevEntropy: *const ZSTD_fseCTables_t,
+    nextEntropy: *mut ZSTD_fseCTables_t,
+    dst: *mut u8,
     dstEnd: *const u8,
-    mut strategy: ZSTD_strategy,
-    mut countWorkspace: *mut core::ffi::c_uint,
-    mut entropyWorkspace: *mut core::ffi::c_void,
-    mut entropyWkspSize: size_t,
+    strategy: ZSTD_strategy,
+    countWorkspace: *mut core::ffi::c_uint,
+    entropyWorkspace: *mut core::ffi::c_void,
+    entropyWkspSize: size_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
     let ostart = dst;
     let oend = dstEnd;
     let mut op = ostart;
-    let mut CTable_LitLength = ((*nextEntropy).litlengthCTable).as_mut_ptr();
-    let mut CTable_OffsetBits = ((*nextEntropy).offcodeCTable).as_mut_ptr();
-    let mut CTable_MatchLength = ((*nextEntropy).matchlengthCTable).as_mut_ptr();
+    let CTable_LitLength = ((*nextEntropy).litlengthCTable).as_mut_ptr();
+    let CTable_OffsetBits = ((*nextEntropy).offcodeCTable).as_mut_ptr();
+    let CTable_MatchLength = ((*nextEntropy).matchlengthCTable).as_mut_ptr();
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
     let llCodeTable: *const u8 = (*seqStorePtr).llCode;
     let mlCodeTable: *const u8 = (*seqStorePtr).mlCode;
@@ -5420,23 +5390,23 @@ unsafe fn ZSTD_buildSequencesStatistics(
 pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: core::ffi::c_int = 20;
 #[inline]
 unsafe fn ZSTD_entropyCompressSeqStore_internal(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut literals: *const core::ffi::c_void,
-    mut litSize: size_t,
-    mut seqStorePtr: *const SeqStore_t,
-    mut prevEntropy: *const ZSTD_entropyCTables_t,
-    mut nextEntropy: *mut ZSTD_entropyCTables_t,
-    mut cctxParams: *const ZSTD_CCtx_params,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    literals: *const core::ffi::c_void,
+    litSize: size_t,
+    seqStorePtr: *const SeqStore_t,
+    prevEntropy: *const ZSTD_entropyCTables_t,
+    nextEntropy: *mut ZSTD_entropyCTables_t,
+    cctxParams: *const ZSTD_CCtx_params,
     mut entropyWorkspace: *mut core::ffi::c_void,
     mut entropyWkspSize: size_t,
     bmi2: core::ffi::c_int,
 ) -> size_t {
     let strategy = (*cctxParams).cParams.strategy;
-    let mut count = entropyWorkspace as *mut core::ffi::c_uint;
-    let mut CTable_LitLength = ((*nextEntropy).fse.litlengthCTable).as_mut_ptr();
-    let mut CTable_OffsetBits = ((*nextEntropy).fse.offcodeCTable).as_mut_ptr();
-    let mut CTable_MatchLength = ((*nextEntropy).fse.matchlengthCTable).as_mut_ptr();
+    let count = entropyWorkspace as *mut core::ffi::c_uint;
+    let CTable_LitLength = ((*nextEntropy).fse.litlengthCTable).as_mut_ptr();
+    let CTable_OffsetBits = ((*nextEntropy).fse.offcodeCTable).as_mut_ptr();
+    let CTable_MatchLength = ((*nextEntropy).fse.matchlengthCTable).as_mut_ptr();
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as core::ffi::c_long as size_t;
@@ -5555,18 +5525,18 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
 unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut literals: *const core::ffi::c_void,
-    mut litSize: size_t,
-    mut blockSize: size_t,
-    mut seqStorePtr: *const SeqStore_t,
-    mut prevEntropy: *const ZSTD_entropyCTables_t,
-    mut nextEntropy: *mut ZSTD_entropyCTables_t,
-    mut cctxParams: *const ZSTD_CCtx_params,
-    mut entropyWorkspace: *mut core::ffi::c_void,
-    mut entropyWkspSize: size_t,
-    mut bmi2: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    literals: *const core::ffi::c_void,
+    litSize: size_t,
+    blockSize: size_t,
+    seqStorePtr: *const SeqStore_t,
+    prevEntropy: *const ZSTD_entropyCTables_t,
+    nextEntropy: *mut ZSTD_entropyCTables_t,
+    cctxParams: *const ZSTD_CCtx_params,
+    entropyWorkspace: *mut core::ffi::c_void,
+    entropyWkspSize: size_t,
+    bmi2: core::ffi::c_int,
 ) -> size_t {
     let cSize = ZSTD_entropyCompressSeqStore_internal(
         dst,
@@ -5601,16 +5571,16 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     cSize
 }
 unsafe fn ZSTD_entropyCompressSeqStore(
-    mut seqStorePtr: *const SeqStore_t,
-    mut prevEntropy: *const ZSTD_entropyCTables_t,
-    mut nextEntropy: *mut ZSTD_entropyCTables_t,
-    mut cctxParams: *const ZSTD_CCtx_params,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut srcSize: size_t,
-    mut entropyWorkspace: *mut core::ffi::c_void,
-    mut entropyWkspSize: size_t,
-    mut bmi2: core::ffi::c_int,
+    seqStorePtr: *const SeqStore_t,
+    prevEntropy: *const ZSTD_entropyCTables_t,
+    nextEntropy: *mut ZSTD_entropyCTables_t,
+    cctxParams: *const ZSTD_CCtx_params,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    srcSize: size_t,
+    entropyWorkspace: *mut core::ffi::c_void,
+    entropyWkspSize: size_t,
+    bmi2: core::ffi::c_int,
 ) -> size_t {
     ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         dst,
@@ -5628,9 +5598,9 @@ unsafe fn ZSTD_entropyCompressSeqStore(
     )
 }
 pub unsafe fn ZSTD_selectBlockCompressor(
-    mut strat: ZSTD_strategy,
-    mut useRowMatchFinder: ZSTD_ParamSwitch_e,
-    mut dictMode: ZSTD_dictMode_e,
+    strat: ZSTD_strategy,
+    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    dictMode: ZSTD_dictMode_e,
 ) -> ZSTD_BlockCompressor_f {
     static blockCompressor: [[ZSTD_BlockCompressor_f; 10]; 4] = unsafe {
         [
@@ -5791,9 +5761,9 @@ pub unsafe fn ZSTD_selectBlockCompressor(
     selectedCompressor
 }
 unsafe fn ZSTD_storeLastLiterals(
-    mut seqStorePtr: *mut SeqStore_t,
-    mut anchor: *const u8,
-    mut lastLLSize: size_t,
+    seqStorePtr: *mut SeqStore_t,
+    anchor: *const u8,
+    lastLLSize: size_t,
 ) {
     libc::memcpy(
         (*seqStorePtr).lit as *mut core::ffi::c_void,
@@ -5802,16 +5772,16 @@ unsafe fn ZSTD_storeLastLiterals(
     );
     (*seqStorePtr).lit = ((*seqStorePtr).lit).add(lastLLSize);
 }
-pub unsafe fn ZSTD_resetSeqStore(mut ssPtr: *mut SeqStore_t) {
+pub unsafe fn ZSTD_resetSeqStore(ssPtr: *mut SeqStore_t) {
     (*ssPtr).lit = (*ssPtr).litStart;
     (*ssPtr).sequences = (*ssPtr).sequencesStart;
     (*ssPtr).longLengthType = ZSTD_llt_none;
 }
 unsafe fn ZSTD_postProcessSequenceProducerResult(
-    mut outSeqs: *mut ZSTD_Sequence,
-    mut nbExternalSeqs: size_t,
-    mut outSeqsCapacity: size_t,
-    mut srcSize: size_t,
+    outSeqs: *mut ZSTD_Sequence,
+    nbExternalSeqs: size_t,
+    outSeqsCapacity: size_t,
+    srcSize: size_t,
 ) -> size_t {
     if nbExternalSeqs > outSeqsCapacity {
         return -(ZSTD_error_sequenceProducer_failed as core::ffi::c_int) as size_t;
@@ -5841,10 +5811,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
     );
     nbExternalSeqs.wrapping_add(1)
 }
-unsafe fn ZSTD_fastSequenceLengthSum(
-    mut seqBuf: *const ZSTD_Sequence,
-    mut seqBufSize: size_t,
-) -> size_t {
+unsafe fn ZSTD_fastSequenceLengthSum(seqBuf: *const ZSTD_Sequence, seqBufSize: size_t) -> size_t {
     let mut matchLenSum: size_t = 0;
     let mut litLenSum: size_t = 0;
     let mut i: size_t = 0;
@@ -5859,14 +5826,14 @@ unsafe fn ZSTD_fastSequenceLengthSum(
     litLenSum.wrapping_add(matchLenSum)
 }
 unsafe fn ZSTD_validateSeqStore(
-    mut seqStore: *const SeqStore_t,
-    mut cParams: *const ZSTD_compressionParameters,
+    seqStore: *const SeqStore_t,
+    cParams: *const ZSTD_compressionParameters,
 ) {
 }
 unsafe fn ZSTD_buildSeqStore(
-    mut zc: *mut ZSTD_CCtx,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    zc: *mut ZSTD_CCtx,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let ms: *mut ZSTD_MatchState_t = &mut (*zc).blockState.matchState;
     ZSTD_assertEqualCParams((*zc).appliedParams.cParams, (*ms).cParams);
@@ -6044,15 +6011,15 @@ unsafe fn ZSTD_buildSeqStore(
     ZSTDbss_compress as core::ffi::c_int as size_t
 }
 unsafe fn ZSTD_copyBlockSequences(
-    mut seqCollector: *mut SeqCollector,
-    mut seqStore: *const SeqStore_t,
-    mut prevRepcodes: *const u32,
+    seqCollector: *mut SeqCollector,
+    seqStore: *const SeqStore_t,
+    prevRepcodes: *const u32,
 ) -> size_t {
-    let mut inSeqs: *const SeqDef = (*seqStore).sequencesStart;
+    let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
     let nbInSequences = ((*seqStore).sequences).offset_from(inSeqs) as core::ffi::c_long as size_t;
     let nbInLiterals =
         ((*seqStore).lit).offset_from((*seqStore).litStart) as core::ffi::c_long as size_t;
-    let mut outSeqs = if (*seqCollector).seqIndex == 0 {
+    let outSeqs = if (*seqCollector).seqIndex == 0 {
         (*seqCollector).seqStart
     } else {
         ((*seqCollector).seqStart).add((*seqCollector).seqIndex)
@@ -6121,18 +6088,18 @@ unsafe fn ZSTD_copyBlockSequences(
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sequenceBound))]
-pub unsafe extern "C" fn ZSTD_sequenceBound(mut srcSize: size_t) -> size_t {
+pub unsafe extern "C" fn ZSTD_sequenceBound(srcSize: size_t) -> size_t {
     let maxNbSeq = (srcSize / ZSTD_MINMATCH_MIN as size_t).wrapping_add(1);
     let maxNbDelims = (srcSize / ZSTD_BLOCKSIZE_MAX_MIN as size_t).wrapping_add(1);
     maxNbSeq.wrapping_add(maxNbDelims)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_generateSequences))]
 pub unsafe extern "C" fn ZSTD_generateSequences(
-    mut zc: *mut ZSTD_CCtx,
-    mut outSeqs: *mut ZSTD_Sequence,
-    mut outSeqsSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    zc: *mut ZSTD_CCtx,
+    outSeqs: *mut ZSTD_Sequence,
+    outSeqsSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let dstCapacity = ZSTD_compressBound(srcSize);
     let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
@@ -6177,8 +6144,8 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_mergeBlockDelimiters))]
 pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
-    mut sequences: *mut ZSTD_Sequence,
-    mut seqsSize: size_t,
+    sequences: *mut ZSTD_Sequence,
+    seqsSize: size_t,
 ) -> size_t {
     let mut in_0 = 0;
     let mut out = 0 as size_t;
@@ -6196,8 +6163,8 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     }
     out
 }
-unsafe fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> core::ffi::c_int {
-    let mut ip = src;
+unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> core::ffi::c_int {
+    let ip = src;
     let value = *ip.offset(0);
     let valueST = (value as u64 as core::ffi::c_ulonglong)
         .wrapping_mul(0x101010101010101 as core::ffi::c_ulonglong) as size_t;
@@ -6227,7 +6194,7 @@ unsafe fn ZSTD_isRLE(mut src: *const u8, mut length: size_t) -> core::ffi::c_int
     }
     1
 }
-unsafe fn ZSTD_maybeRLE(mut seqStore: *const SeqStore_t) -> core::ffi::c_int {
+unsafe fn ZSTD_maybeRLE(seqStore: *const SeqStore_t) -> core::ffi::c_int {
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart)
         as core::ffi::c_long as size_t;
     let nbLits = ((*seqStore).lit).offset_from((*seqStore).litStart) as core::ffi::c_long as size_t;
@@ -6237,10 +6204,10 @@ unsafe fn ZSTD_blockState_confirmRepcodesAndEntropyTables(bs: *mut ZSTD_blockSta
     core::mem::swap(&mut (*bs).prevCBlock, &mut (*bs).nextCBlock);
 }
 unsafe fn writeBlockHeader(
-    mut op: *mut core::ffi::c_void,
-    mut cSize: size_t,
-    mut blockSize: size_t,
-    mut lastBlock: u32,
+    op: *mut core::ffi::c_void,
+    cSize: size_t,
+    blockSize: size_t,
+    lastBlock: u32,
 ) {
     let cBlockHeader = if cSize == 1 {
         lastBlock
@@ -6255,14 +6222,14 @@ unsafe fn writeBlockHeader(
 }
 unsafe fn ZSTD_buildBlockEntropyStats_literals(
     src: *mut core::ffi::c_void,
-    mut srcSize: size_t,
-    mut prevHuf: *const ZSTD_hufCTables_t,
-    mut nextHuf: *mut ZSTD_hufCTables_t,
-    mut hufMetadata: *mut ZSTD_hufCTablesMetadata_t,
+    srcSize: size_t,
+    prevHuf: *const ZSTD_hufCTables_t,
+    nextHuf: *mut ZSTD_hufCTables_t,
+    hufMetadata: *mut ZSTD_hufCTablesMetadata_t,
     literalsCompressionIsDisabled: core::ffi::c_int,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut hufFlags: core::ffi::c_int,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    hufFlags: core::ffi::c_int,
 ) -> size_t {
     let wkspStart = workspace as *mut u8;
     let wkspEnd = wkspStart.add(wkspSize);
@@ -6389,9 +6356,9 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
 }
 pub const COMPRESS_LITERALS_SIZE_MIN: core::ffi::c_int = 63;
 unsafe fn ZSTD_buildDummySequencesStatistics(
-    mut nextEntropy: *mut ZSTD_fseCTables_t,
+    nextEntropy: *mut ZSTD_fseCTables_t,
 ) -> ZSTD_symbolEncodingTypeStats_t {
-    let mut stats = {
+    let stats = {
         ZSTD_symbolEncodingTypeStats_t {
             LLtype: set_basic as core::ffi::c_int as u32,
             Offtype: set_basic as core::ffi::c_int as u32,
@@ -6407,24 +6374,23 @@ unsafe fn ZSTD_buildDummySequencesStatistics(
     stats
 }
 unsafe fn ZSTD_buildBlockEntropyStats_sequences(
-    mut seqStorePtr: *const SeqStore_t,
-    mut prevEntropy: *const ZSTD_fseCTables_t,
-    mut nextEntropy: *mut ZSTD_fseCTables_t,
-    mut cctxParams: *const ZSTD_CCtx_params,
-    mut fseMetadata: *mut ZSTD_fseCTablesMetadata_t,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    seqStorePtr: *const SeqStore_t,
+    prevEntropy: *const ZSTD_fseCTables_t,
+    nextEntropy: *mut ZSTD_fseCTables_t,
+    cctxParams: *const ZSTD_CCtx_params,
+    fseMetadata: *mut ZSTD_fseCTablesMetadata_t,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) -> size_t {
     let strategy = (*cctxParams).cParams.strategy;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as core::ffi::c_long as size_t;
     let ostart = ((*fseMetadata).fseTablesBuffer).as_mut_ptr();
     let oend = ostart.add(::core::mem::size_of::<[u8; 133]>());
-    let mut op = ostart;
-    let mut countWorkspace = workspace as *mut core::ffi::c_uint;
-    let mut entropyWorkspace =
-        countWorkspace.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize);
-    let mut entropyWorkspaceSize = wkspSize.wrapping_sub(
+    let op = ostart;
+    let countWorkspace = workspace as *mut core::ffi::c_uint;
+    let entropyWorkspace = countWorkspace.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize);
+    let entropyWorkspaceSize = wkspSize.wrapping_sub(
         ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t),
     );
@@ -6463,13 +6429,13 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     stats.size
 }
 pub unsafe fn ZSTD_buildBlockEntropyStats(
-    mut seqStorePtr: *const SeqStore_t,
-    mut prevEntropy: *const ZSTD_entropyCTables_t,
-    mut nextEntropy: *mut ZSTD_entropyCTables_t,
-    mut cctxParams: *const ZSTD_CCtx_params,
-    mut entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    seqStorePtr: *const SeqStore_t,
+    prevEntropy: *const ZSTD_entropyCTables_t,
+    nextEntropy: *mut ZSTD_entropyCTables_t,
+    cctxParams: *const ZSTD_CCtx_params,
+    entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) -> size_t {
     let litSize =
         ((*seqStorePtr).lit).offset_from((*seqStorePtr).litStart) as core::ffi::c_long as size_t;
@@ -6512,20 +6478,20 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
     0
 }
 unsafe fn ZSTD_estimateBlockSize_literal(
-    mut literals: *const u8,
-    mut litSize: size_t,
-    mut huf: *const ZSTD_hufCTables_t,
-    mut hufMetadata: *const ZSTD_hufCTablesMetadata_t,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut writeEntropy: core::ffi::c_int,
+    literals: *const u8,
+    litSize: size_t,
+    huf: *const ZSTD_hufCTables_t,
+    hufMetadata: *const ZSTD_hufCTablesMetadata_t,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    writeEntropy: core::ffi::c_int,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
-    let mut literalSectionHeaderSize =
+    let literalSectionHeaderSize =
         (3 + (litSize >= ((1) << 10) as size_t) as core::ffi::c_int
             + (litSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
-    let mut singleStream = (litSize < 256) as core::ffi::c_int as u32;
+    let singleStream = (litSize < 256) as core::ffi::c_int as u32;
     if (*hufMetadata).hType as core::ffi::c_uint
         == set_basic as core::ffi::c_int as core::ffi::c_uint
     {
@@ -6563,17 +6529,17 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     0
 }
 unsafe fn ZSTD_estimateBlockSize_symbolType(
-    mut type_0: SymbolEncodingType_e,
-    mut codeTable: *const u8,
-    mut nbSeq: size_t,
-    mut maxCode: core::ffi::c_uint,
-    mut fseCTable: *const FSE_CTable,
-    mut additionalBits: *const u8,
-    mut defaultNorm: *const core::ffi::c_short,
-    mut defaultNormLog: u32,
-    mut defaultMax: u32,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
+    type_0: SymbolEncodingType_e,
+    codeTable: *const u8,
+    nbSeq: size_t,
+    maxCode: core::ffi::c_uint,
+    fseCTable: *const FSE_CTable,
+    additionalBits: *const u8,
+    defaultNorm: *const core::ffi::c_short,
+    defaultNormLog: u32,
+    defaultMax: u32,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
     let mut ctp = codeTable;
@@ -6615,17 +6581,17 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     cSymbolTypeSizeEstimateInBits >> 3
 }
 unsafe fn ZSTD_estimateBlockSize_sequences(
-    mut ofCodeTable: *const u8,
-    mut llCodeTable: *const u8,
-    mut mlCodeTable: *const u8,
-    mut nbSeq: size_t,
-    mut fseTables: *const ZSTD_fseCTables_t,
-    mut fseMetadata: *const ZSTD_fseCTablesMetadata_t,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut writeEntropy: core::ffi::c_int,
+    ofCodeTable: *const u8,
+    llCodeTable: *const u8,
+    mlCodeTable: *const u8,
+    nbSeq: size_t,
+    fseTables: *const ZSTD_fseCTables_t,
+    fseMetadata: *const ZSTD_fseCTablesMetadata_t,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    writeEntropy: core::ffi::c_int,
 ) -> size_t {
-    let mut sequencesSectionHeaderSize =
+    let sequencesSectionHeaderSize =
         (1 + 1
             + (nbSeq >= 128) as core::ffi::c_int
             + (nbSeq >= LONGNBSEQ as size_t) as core::ffi::c_int) as size_t;
@@ -6675,18 +6641,18 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     cSeqSizeEstimate.wrapping_add(sequencesSectionHeaderSize)
 }
 unsafe fn ZSTD_estimateBlockSize(
-    mut literals: *const u8,
-    mut litSize: size_t,
-    mut ofCodeTable: *const u8,
-    mut llCodeTable: *const u8,
-    mut mlCodeTable: *const u8,
-    mut nbSeq: size_t,
-    mut entropy: *const ZSTD_entropyCTables_t,
-    mut entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
-    mut workspace: *mut core::ffi::c_void,
-    mut wkspSize: size_t,
-    mut writeLitEntropy: core::ffi::c_int,
-    mut writeSeqEntropy: core::ffi::c_int,
+    literals: *const u8,
+    litSize: size_t,
+    ofCodeTable: *const u8,
+    llCodeTable: *const u8,
+    mlCodeTable: *const u8,
+    nbSeq: size_t,
+    entropy: *const ZSTD_entropyCTables_t,
+    entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
+    workspace: *mut core::ffi::c_void,
+    wkspSize: size_t,
+    writeLitEntropy: core::ffi::c_int,
+    writeSeqEntropy: core::ffi::c_int,
 ) -> size_t {
     let literalsSize = ZSTD_estimateBlockSize_literal(
         literals,
@@ -6713,8 +6679,8 @@ unsafe fn ZSTD_estimateBlockSize(
         .wrapping_add(ZSTD_blockHeaderSize)
 }
 unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
-    mut seqStore: *mut SeqStore_t,
-    mut zc: *mut ZSTD_CCtx,
+    seqStore: *mut SeqStore_t,
+    zc: *mut ZSTD_CCtx,
 ) -> size_t {
     let entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t =
         &mut (*zc).blockSplitCtx.entropyMetadata;
@@ -6773,7 +6739,7 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
     let mut i: size_t = 0;
     i = 0;
     while i < nbSeqs {
-        let mut seq = *((*seqStore).sequencesStart).add(i);
+        let seq = *((*seqStore).sequencesStart).add(i);
         matchBytes = matchBytes.wrapping_add((seq.mlBase as core::ffi::c_int + MINMATCH) as size_t);
         if i == (*seqStore).longLengthPos as size_t
             && (*seqStore).longLengthType as core::ffi::c_uint
@@ -6786,10 +6752,10 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
     matchBytes
 }
 unsafe fn ZSTD_deriveSeqStoreChunk(
-    mut resultSeqStore: *mut SeqStore_t,
-    mut originalSeqStore: *const SeqStore_t,
-    mut startIdx: size_t,
-    mut endIdx: size_t,
+    resultSeqStore: *mut SeqStore_t,
+    originalSeqStore: *const SeqStore_t,
+    startIdx: size_t,
+    endIdx: size_t,
 ) {
     *resultSeqStore = *originalSeqStore;
     if startIdx > 0 {
@@ -6822,7 +6788,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
     (*resultSeqStore).mlCode = ((*resultSeqStore).mlCode).add(startIdx);
     (*resultSeqStore).ofCode = ((*resultSeqStore).ofCode).add(startIdx);
 }
-unsafe fn ZSTD_resolveRepcodeToRawOffset(mut rep: *const u32, offBase: u32, ll0: u32) -> u32 {
+unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: *const u32, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
         return (*rep.offset(0)).wrapping_sub(1);
@@ -6869,20 +6835,20 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
     }
 }
 unsafe fn ZSTD_compressSeqStore_singleBlock(
-    mut zc: *mut ZSTD_CCtx,
+    zc: *mut ZSTD_CCtx,
     seqStore: *const SeqStore_t,
     dRep: *mut Repcodes_t,
     cRep: *mut Repcodes_t,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut lastBlock: u32,
-    mut isPartition: u32,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    lastBlock: u32,
+    isPartition: u32,
 ) -> size_t {
     let rleMaxLength = 25;
-    let mut op = dst as *mut u8;
-    let mut ip = src as *const u8;
+    let op = dst as *mut u8;
+    let ip = src as *const u8;
     let mut cSize: size_t = 0;
     let mut cSeqsSize: size_t = 0;
     let dRepOriginal = *dRep;
@@ -6978,11 +6944,11 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
 }
 pub const MIN_SEQUENCES_BLOCK_SPLITTING: core::ffi::c_int = 300;
 unsafe fn ZSTD_deriveBlockSplitsHelper(
-    mut splits: *mut seqStoreSplits,
-    mut startIdx: size_t,
-    mut endIdx: size_t,
-    mut zc: *mut ZSTD_CCtx,
-    mut origSeqStore: *const SeqStore_t,
+    splits: *mut seqStoreSplits,
+    startIdx: size_t,
+    endIdx: size_t,
+    zc: *mut ZSTD_CCtx,
+    origSeqStore: *const SeqStore_t,
 ) {
     let fullSeqStoreChunk: *mut SeqStore_t = &mut (*zc).blockSplitCtx.fullSeqStoreChunk;
     let firstHalfSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.firstHalfSeqStore;
@@ -6990,7 +6956,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     let mut estimatedOriginalSize: size_t = 0;
     let mut estimatedFirstHalfSize: size_t = 0;
     let mut estimatedSecondHalfSize: size_t = 0;
-    let mut midIdx = startIdx.wrapping_add(endIdx) / 2;
+    let midIdx = startIdx.wrapping_add(endIdx) / 2;
     if endIdx.wrapping_sub(startIdx) < MIN_SEQUENCES_BLOCK_SPLITTING as size_t
         || (*splits).idx >= ZSTD_MAX_NB_BLOCK_SPLITS as size_t
     {
@@ -7019,11 +6985,7 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
     }
 }
-unsafe fn ZSTD_deriveBlockSplits(
-    mut zc: *mut ZSTD_CCtx,
-    mut partitions: *mut u32,
-    mut nbSeq: u32,
-) -> size_t {
+unsafe fn ZSTD_deriveBlockSplits(zc: *mut ZSTD_CCtx, partitions: *mut u32, nbSeq: u32) -> size_t {
     let mut splits = seqStoreSplits {
         splitLocations: core::ptr::null_mut::<u32>(),
         idx: 0,
@@ -7038,13 +7000,13 @@ unsafe fn ZSTD_deriveBlockSplits(
     splits.idx
 }
 unsafe fn ZSTD_compressBlock_splitBlock_internal(
-    mut zc: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    zc: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut blockSize: size_t,
-    mut lastBlock: u32,
-    mut nbSeq: u32,
+    src: *const core::ffi::c_void,
+    blockSize: size_t,
+    lastBlock: u32,
+    nbSeq: u32,
 ) -> size_t {
     let mut cSize = 0 as size_t;
     let mut ip = src as *const u8;
@@ -7073,7 +7035,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         ::core::mem::size_of::<SeqStore_t>(),
     );
     if numSplits == 0 {
-        let mut cSizeSingleBlock = ZSTD_compressSeqStore_singleBlock(
+        let cSizeSingleBlock = ZSTD_compressSeqStore_singleBlock(
             zc,
             &(*zc).seqStore,
             &mut dRep,
@@ -7147,12 +7109,12 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     cSize
 }
 unsafe fn ZSTD_compressBlock_splitBlock(
-    mut zc: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut lastBlock: u32,
+    zc: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    lastBlock: u32,
 ) -> size_t {
     let mut nbSeq: u32 = 0;
     let mut cSize: size_t = 0;
@@ -7201,17 +7163,17 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     cSize
 }
 unsafe fn ZSTD_compressBlock_internal(
-    mut zc: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut frame: u32,
+    zc: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    frame: u32,
 ) -> size_t {
     let rleMaxLength = 25;
     let mut cSize: size_t = 0;
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
+    let ip = src as *const u8;
+    let op = dst as *mut u8;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
     if ERR_isError(err_code) != 0 {
@@ -7273,13 +7235,13 @@ unsafe fn ZSTD_compressBlock_internal(
     cSize
 }
 unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
-    mut zc: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    zc: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
     bss: size_t,
-    mut lastBlock: u32,
+    lastBlock: u32,
 ) -> size_t {
     if bss == ZSTDbss_compress as core::ffi::c_int as size_t {
         if (*zc).isFirstBlock == 0
@@ -7311,12 +7273,12 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
     ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock)
 }
 unsafe fn ZSTD_compressBlock_targetCBlockSize(
-    mut zc: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut lastBlock: u32,
+    zc: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    lastBlock: u32,
 ) -> size_t {
     let mut cSize = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
@@ -7351,11 +7313,11 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     cSize
 }
 unsafe fn ZSTD_overflowCorrectIfNeeded(
-    mut ms: *mut ZSTD_MatchState_t,
-    mut ws: *mut ZSTD_cwksp,
-    mut params: *const ZSTD_CCtx_params,
-    mut ip: *const core::ffi::c_void,
-    mut iend: *const core::ffi::c_void,
+    ms: *mut ZSTD_MatchState_t,
+    ws: *mut ZSTD_cwksp,
+    params: *const ZSTD_CCtx_params,
+    ip: *const core::ffi::c_void,
+    iend: *const core::ffi::c_void,
 ) {
     let cycleLog = ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy);
     let maxDist = (1) << (*params).cParams.windowLog;
@@ -7382,13 +7344,13 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
     }
 }
 unsafe fn ZSTD_optimalBlockSize(
-    mut cctx: *mut ZSTD_CCtx,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut blockSizeMax: size_t,
+    cctx: *mut ZSTD_CCtx,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    blockSizeMax: size_t,
     mut splitLevel: core::ffi::c_int,
-    mut strat: ZSTD_strategy,
-    mut savings: S64,
+    strat: ZSTD_strategy,
+    savings: S64,
 ) -> size_t {
     static splitLevels: [core::ffi::c_int; 10] = [0, 0, 1, 2, 2, 3, 3, 4, 4, 4];
     if srcSize < (128 * ((1) << 10)) as size_t || blockSizeMax < (128 * ((1) << 10)) as size_t {
@@ -7418,14 +7380,14 @@ unsafe fn ZSTD_optimalBlockSize(
     )
 }
 unsafe fn ZSTD_compress_frameChunk(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut lastFrameChunk: u32,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    lastFrameChunk: u32,
 ) -> size_t {
-    let mut blockSizeMax = (*cctx).blockSizeMax;
+    let blockSizeMax = (*cctx).blockSizeMax;
     let mut remaining = srcSize;
     let mut ip = src as *const u8;
     let ostart = dst as *mut u8;
@@ -7557,11 +7519,11 @@ unsafe fn ZSTD_compress_frameChunk(
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
 unsafe fn ZSTD_writeFrameHeader(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
-    mut dictID: u32,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: u64,
+    dictID: u32,
 ) -> size_t {
     let op = dst as *mut u8;
     let dictIDSizeCodeLength = ((dictID > 0) as core::ffi::c_int
@@ -7649,13 +7611,13 @@ unsafe fn ZSTD_writeFrameHeader(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_writeSkippableFrame))]
 pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut magicVariant: core::ffi::c_uint,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    magicVariant: core::ffi::c_uint,
 ) -> size_t {
-    let mut op = dst as *mut u8;
+    let op = dst as *mut u8;
     if dstCapacity < srcSize.wrapping_add(8) {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -7677,10 +7639,7 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     );
     srcSize.wrapping_add(ZSTD_SKIPPABLEHEADERSIZE as size_t)
 }
-pub unsafe fn ZSTD_writeLastEmptyBlock(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-) -> size_t {
+pub unsafe fn ZSTD_writeLastEmptyBlock(dst: *mut core::ffi::c_void, dstCapacity: size_t) -> size_t {
     if dstCapacity < ZSTD_blockHeaderSize {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
     }
@@ -7689,9 +7648,9 @@ pub unsafe fn ZSTD_writeLastEmptyBlock(
     ZSTD_blockHeaderSize
 }
 pub unsafe fn ZSTD_referenceExternalSequences(
-    mut cctx: *mut ZSTD_CCtx,
-    mut seq: *mut rawSeq,
-    mut nbSeq: size_t,
+    cctx: *mut ZSTD_CCtx,
+    seq: *mut rawSeq,
+    nbSeq: size_t,
 ) {
     (*cctx).externSeqStore.seq = seq;
     (*cctx).externSeqStore.size = nbSeq;
@@ -7700,13 +7659,13 @@ pub unsafe fn ZSTD_referenceExternalSequences(
     (*cctx).externSeqStore.posInSequence = 0;
 }
 unsafe extern "C" fn ZSTD_compressContinue_internal(
-    mut cctx: *mut ZSTD_CCtx,
+    cctx: *mut ZSTD_CCtx,
     mut dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut frame: u32,
-    mut lastFrameChunk: u32,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    frame: u32,
+    lastFrameChunk: u32,
 ) -> size_t {
     let ms: *mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
     let mut fhSize = 0;
@@ -7776,25 +7735,25 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue_public))]
 pub unsafe extern "C" fn ZSTD_compressContinue_public(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 0)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue))]
 pub unsafe extern "C" fn ZSTD_compressContinue(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     ZSTD_compressContinue_public(cctx, dst, dstCapacity, src, srcSize)
 }
-unsafe fn ZSTD_getBlockSize_deprecated(mut cctx: *const ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> size_t {
     let cParams = (*cctx).appliedParams.cParams;
     if (*cctx).appliedParams.maxBlockSize < (1) << cParams.windowLog {
         (*cctx).appliedParams.maxBlockSize
@@ -7803,16 +7762,16 @@ unsafe fn ZSTD_getBlockSize_deprecated(mut cctx: *const ZSTD_CCtx) -> size_t {
     }
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getBlockSize))]
-pub unsafe extern "C" fn ZSTD_getBlockSize(mut cctx: *const ZSTD_CCtx) -> size_t {
+pub unsafe extern "C" fn ZSTD_getBlockSize(cctx: *const ZSTD_CCtx) -> size_t {
     ZSTD_getBlockSize_deprecated(cctx)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let blockSizeMax = ZSTD_getBlockSize_deprecated(cctx);
     if srcSize > blockSizeMax {
@@ -7822,23 +7781,23 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock))]
 pub unsafe extern "C" fn ZSTD_compressBlock(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     ZSTD_compressBlock_deprecated(cctx, dst, dstCapacity, src, srcSize)
 }
 unsafe fn ZSTD_loadDictionaryContent(
-    mut ms: *mut ZSTD_MatchState_t,
-    mut ls: *mut ldmState_t,
-    mut ws: *mut ZSTD_cwksp,
-    mut params: *const ZSTD_CCtx_params,
+    ms: *mut ZSTD_MatchState_t,
+    ls: *mut ldmState_t,
+    ws: *mut ZSTD_cwksp,
+    params: *const ZSTD_CCtx_params,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
-    mut dtlm: ZSTD_dictTableLoadMethod_e,
-    mut tfp: ZSTD_tableFillPurpose_e,
+    dtlm: ZSTD_dictTableLoadMethod_e,
+    tfp: ZSTD_tableFillPurpose_e,
 ) -> size_t {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
@@ -7892,7 +7851,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         };
         ZSTD_ldm_fillHashTable(ls, ip, iend, &(*params).ldmParams);
     }
-    let mut maxDictSize_0 = (1)
+    let maxDictSize_0 = (1)
         << (if (if ((*params).cParams.hashLog).wrapping_add(3)
             > ((*params).cParams.chainLog).wrapping_add(1)
         {
@@ -7965,9 +7924,9 @@ unsafe fn ZSTD_loadDictionaryContent(
     0
 }
 unsafe fn ZSTD_dictNCountRepeat(
-    mut normalizedCounter: *mut core::ffi::c_short,
-    mut dictMaxSymbolValue: core::ffi::c_uint,
-    mut maxSymbolValue: core::ffi::c_uint,
+    normalizedCounter: *mut core::ffi::c_short,
+    dictMaxSymbolValue: core::ffi::c_uint,
+    maxSymbolValue: core::ffi::c_uint,
 ) -> FSE_repeat {
     let mut s: u32 = 0;
     if dictMaxSymbolValue < maxSymbolValue {
@@ -7983,10 +7942,10 @@ unsafe fn ZSTD_dictNCountRepeat(
     FSE_repeat_valid
 }
 pub unsafe fn ZSTD_loadCEntropy(
-    mut bs: *mut ZSTD_compressedBlockState_t,
-    mut workspace: *mut core::ffi::c_void,
+    bs: *mut ZSTD_compressedBlockState_t,
+    workspace: *mut core::ffi::c_void,
     dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
+    dictSize: size_t,
 ) -> size_t {
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
     let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
@@ -8141,15 +8100,15 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictPtr.offset_from(dict as *const u8) as core::ffi::c_long as size_t
 }
 unsafe fn ZSTD_loadZstdDictionary(
-    mut bs: *mut ZSTD_compressedBlockState_t,
-    mut ms: *mut ZSTD_MatchState_t,
-    mut ws: *mut ZSTD_cwksp,
-    mut params: *const ZSTD_CCtx_params,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dtlm: ZSTD_dictTableLoadMethod_e,
-    mut tfp: ZSTD_tableFillPurpose_e,
-    mut workspace: *mut core::ffi::c_void,
+    bs: *mut ZSTD_compressedBlockState_t,
+    ms: *mut ZSTD_MatchState_t,
+    ws: *mut ZSTD_cwksp,
+    params: *const ZSTD_CCtx_params,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dtlm: ZSTD_dictTableLoadMethod_e,
+    tfp: ZSTD_tableFillPurpose_e,
+    workspace: *mut core::ffi::c_void,
 ) -> size_t {
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
@@ -8183,17 +8142,17 @@ unsafe fn ZSTD_loadZstdDictionary(
     dictID
 }
 unsafe fn ZSTD_compress_insertDictionary(
-    mut bs: *mut ZSTD_compressedBlockState_t,
-    mut ms: *mut ZSTD_MatchState_t,
-    mut ls: *mut ldmState_t,
-    mut ws: *mut ZSTD_cwksp,
-    mut params: *const ZSTD_CCtx_params,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut dtlm: ZSTD_dictTableLoadMethod_e,
-    mut tfp: ZSTD_tableFillPurpose_e,
-    mut workspace: *mut core::ffi::c_void,
+    bs: *mut ZSTD_compressedBlockState_t,
+    ms: *mut ZSTD_MatchState_t,
+    ls: *mut ldmState_t,
+    ws: *mut ZSTD_cwksp,
+    params: *const ZSTD_CCtx_params,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictContentType: ZSTD_dictContentType_e,
+    dtlm: ZSTD_dictTableLoadMethod_e,
+    tfp: ZSTD_tableFillPurpose_e,
+    workspace: *mut core::ffi::c_void,
 ) -> size_t {
     if dict.is_null() || dictSize < 8 {
         if dictContentType as core::ffi::c_uint
@@ -8226,15 +8185,15 @@ unsafe fn ZSTD_compress_insertDictionary(
 pub const ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF: core::ffi::c_int = 128 * ((1) << 10);
 pub const ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER: core::ffi::c_ulonglong = 6;
 unsafe fn ZSTD_compressBegin_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut dtlm: ZSTD_dictTableLoadMethod_e,
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
-    mut zbuff: ZSTD_buffered_policy_e,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictContentType: ZSTD_dictContentType_e,
+    dtlm: ZSTD_dictTableLoadMethod_e,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: u64,
+    zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
     let dictContentSize = if !cdict.is_null() {
         (*cdict).dictContentSize
@@ -8304,14 +8263,14 @@ unsafe fn ZSTD_compressBegin_internal(
     0
 }
 pub unsafe fn ZSTD_compressBegin_advanced_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut dtlm: ZSTD_dictTableLoadMethod_e,
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: core::ffi::c_ulonglong,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictContentType: ZSTD_dictContentType_e,
+    dtlm: ZSTD_dictTableLoadMethod_e,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_checkCParams((*params).cParams);
     if ERR_isError(err_code) != 0 {
@@ -8331,11 +8290,11 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_advanced))]
 pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut params: ZSTD_parameters,
-    mut pledgedSrcSize: core::ffi::c_ulonglong,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    params: ZSTD_parameters,
+    pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let mut cctxParams = ZSTD_CCtx_params_s {
         format: Format::ZSTD_f_zstd1,
@@ -8405,10 +8364,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     )
 }
 unsafe fn ZSTD_compressBegin_usingDict_deprecated(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let mut cctxParams = ZSTD_CCtx_params_s {
         format: Format::ZSTD_f_zstd1,
@@ -8494,17 +8453,17 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     ZSTD_compressBegin_usingDict_deprecated(cctx, dict, dictSize, compressionLevel)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin))]
 pub unsafe extern "C" fn ZSTD_compressBegin(
-    mut cctx: *mut ZSTD_CCtx,
-    mut compressionLevel: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     ZSTD_compressBegin_usingDict_deprecated(
         cctx,
@@ -8514,8 +8473,8 @@ pub unsafe extern "C" fn ZSTD_compressBegin(
     )
 }
 unsafe fn ZSTD_writeEpilogue(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
 ) -> size_t {
     let ostart = dst as *mut u8;
@@ -8525,7 +8484,7 @@ unsafe fn ZSTD_writeEpilogue(
         return -(ZSTD_error_stage_wrong as core::ffi::c_int) as size_t;
     }
     if (*cctx).stage as core::ffi::c_uint == ZSTDcs_init as core::ffi::c_int as core::ffi::c_uint {
-        let mut fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0);
+        let fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0);
         let err_code = fhSize;
         if ERR_isError(err_code) != 0 {
             return err_code;
@@ -8557,7 +8516,7 @@ unsafe fn ZSTD_writeEpilogue(
     (*cctx).stage = ZSTDcs_created;
     op.offset_from(ostart) as core::ffi::c_long as size_t
 }
-pub unsafe fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSize: size_t) {
+pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
     if (*cctx).traceCtx != 0 && ZSTD_trace_compress_end.is_some() {
         let streaming = ((*cctx).inBuffSize > 0
             || (*cctx).outBuffSize > 0
@@ -8594,11 +8553,11 @@ pub unsafe fn ZSTD_CCtx_trace(mut cctx: *mut ZSTD_CCtx, mut extraCSize: size_t) 
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd_public))]
 pub unsafe extern "C" fn ZSTD_compressEnd_public(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let mut endResult: size_t = 0;
     let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 1);
@@ -8625,24 +8584,24 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd))]
 pub unsafe extern "C" fn ZSTD_compressEnd(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_advanced(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut params: ZSTD_parameters,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    params: ZSTD_parameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(params.cParams);
     if ERR_isError(err_code) != 0 {
@@ -8661,14 +8620,14 @@ pub unsafe extern "C" fn ZSTD_compress_advanced(
     )
 }
 pub unsafe fn ZSTD_compress_advanced_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut params: *const ZSTD_CCtx_params,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    params: *const ZSTD_CCtx_params,
 ) -> size_t {
     let err_code = ZSTD_compressBegin_internal(
         cctx,
@@ -8688,14 +8647,14 @@ pub unsafe fn ZSTD_compress_advanced_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingDict))]
 pub unsafe extern "C" fn ZSTD_compress_usingDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let params = ZSTD_getParams_internal(
         compressionLevel,
@@ -8725,12 +8684,12 @@ pub unsafe extern "C" fn ZSTD_compress_usingDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressCCtx))]
 pub unsafe extern "C" fn ZSTD_compressCCtx(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     ZSTD_compress_usingDict(
         cctx,
@@ -8745,11 +8704,11 @@ pub unsafe extern "C" fn ZSTD_compressCCtx(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress))]
 pub unsafe extern "C" fn ZSTD_compress(
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let mut result: size_t = 0;
     let mut ctxBody = ZSTD_CCtx_s {
@@ -9200,9 +9159,9 @@ pub unsafe extern "C" fn ZSTD_compress(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize_advanced))]
 pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
-    mut dictSize: size_t,
-    mut cParams: ZSTD_compressionParameters,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictSize: size_t,
+    cParams: ZSTD_compressionParameters,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
     (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>() as size_t))
         .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
@@ -9227,8 +9186,8 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCDictSize))]
 pub unsafe extern "C" fn ZSTD_estimateCDictSize(
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let cParams = ZSTD_getCParams_internal(
         compressionLevel,
@@ -9239,7 +9198,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize(
     ZSTD_estimateCDictSize_advanced(dictSize, cParams, ZSTD_dlm_byCopy)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_CDict))]
-pub unsafe extern "C" fn ZSTD_sizeof_CDict(mut cdict: *const ZSTD_CDict) -> size_t {
+pub unsafe extern "C" fn ZSTD_sizeof_CDict(cdict: *const ZSTD_CDict) -> size_t {
     if cdict.is_null() {
         return 0;
     }
@@ -9251,11 +9210,11 @@ pub unsafe extern "C" fn ZSTD_sizeof_CDict(mut cdict: *const ZSTD_CDict) -> size
     .wrapping_add(ZSTD_cwksp_sizeof(&(*cdict).workspace))
 }
 unsafe fn ZSTD_initCDict_internal(
-    mut cdict: *mut ZSTD_CDict,
-    mut dictBuffer: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
+    cdict: *mut ZSTD_CDict,
+    dictBuffer: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
     mut params: ZSTD_CCtx_params,
 ) -> size_t {
     (*cdict).matchState.cParams = params.cParams;
@@ -9267,7 +9226,7 @@ unsafe fn ZSTD_initCDict_internal(
     {
         (*cdict).dictContent = dictBuffer;
     } else {
-        let mut internalBuffer = ZSTD_cwksp_reserve_object(
+        let internalBuffer = ZSTD_cwksp_reserve_object(
             &mut (*cdict).workspace,
             ZSTD_cwksp_align(
                 dictSize,
@@ -9321,12 +9280,12 @@ unsafe fn ZSTD_initCDict_internal(
     0
 }
 unsafe fn ZSTD_createCDict_advanced_internal(
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut cParams: ZSTD_compressionParameters,
-    mut useRowMatchFinder: ZSTD_ParamSwitch_e,
-    mut enableDedicatedDictSearch: core::ffi::c_int,
-    mut customMem: ZSTD_customMem,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    cParams: ZSTD_compressionParameters,
+    useRowMatchFinder: ZSTD_ParamSwitch_e,
+    enableDedicatedDictSearch: core::ffi::c_int,
+    customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     if (customMem.customAlloc).is_none() as core::ffi::c_int
         ^ (customMem.customFree).is_none() as core::ffi::c_int
@@ -9384,12 +9343,12 @@ unsafe fn ZSTD_createCDict_advanced_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_createCDict_advanced(
-    mut dictBuffer: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut cParams: ZSTD_compressionParameters,
-    mut customMem: ZSTD_customMem,
+    dictBuffer: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
+    cParams: ZSTD_compressionParameters,
+    customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let mut cctxParams = ZSTD_CCtx_params_s {
         format: Format::ZSTD_f_zstd1,
@@ -9465,12 +9424,12 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_advanced2))]
 pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut originalCctxParams: *const ZSTD_CCtx_params,
-    mut customMem: ZSTD_customMem,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
+    originalCctxParams: *const ZSTD_CCtx_params,
+    customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let mut cctxParams = *originalCctxParams;
     let mut cParams = ZSTD_compressionParameters {
@@ -9537,11 +9496,11 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict))]
 pub unsafe extern "C" fn ZSTD_createCDict(
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let mut cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_getCParams_internal(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -9566,11 +9525,11 @@ pub unsafe extern "C" fn ZSTD_createCDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createCDict_byReference(
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> *mut ZSTD_CDict {
-    let mut cParams = ZSTD_getCParams_internal(
+    let cParams = ZSTD_getCParams_internal(
         compressionLevel,
         ZSTD_CONTENTSIZE_UNKNOWN,
         dictSize,
@@ -9594,12 +9553,12 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
     cdict
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCDict))]
-pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
+pub unsafe extern "C" fn ZSTD_freeCDict(cdict: *mut ZSTD_CDict) -> size_t {
     if cdict.is_null() {
         return 0;
     }
     let cMem = (*cdict).customMem;
-    let mut cdictInWorkspace =
+    let cdictInWorkspace =
         ZSTD_cwksp_owns_buffer(&(*cdict).workspace, cdict as *const core::ffi::c_void);
     ZSTD_cwksp_free(&mut (*cdict).workspace, cMem);
     if cdictInWorkspace == 0 {
@@ -9609,13 +9568,13 @@ pub unsafe extern "C" fn ZSTD_freeCDict(mut cdict: *mut ZSTD_CDict) -> size_t {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCDict))]
 pub unsafe extern "C" fn ZSTD_initStaticCDict(
-    mut workspace: *mut core::ffi::c_void,
-    mut workspaceSize: size_t,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut dictLoadMethod: ZSTD_dictLoadMethod_e,
-    mut dictContentType: ZSTD_dictContentType_e,
-    mut cParams: ZSTD_compressionParameters,
+    workspace: *mut core::ffi::c_void,
+    workspaceSize: size_t,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    dictLoadMethod: ZSTD_dictLoadMethod_e,
+    dictContentType: ZSTD_dictContentType_e,
+    cParams: ZSTD_compressionParameters,
 ) -> *const ZSTD_CDict {
     let useRowMatchFinder = ZSTD_resolveRowMatchFinderMode(ZSTD_ps_auto, &cParams);
     let matchStateSize = ZSTD_sizeof_matchState(&cParams, useRowMatchFinder, 1, 0);
@@ -9736,14 +9695,12 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParamsFromCDict))]
 pub unsafe extern "C" fn ZSTD_getCParamsFromCDict(
-    mut cdict: *const ZSTD_CDict,
+    cdict: *const ZSTD_CDict,
 ) -> ZSTD_compressionParameters {
     (*cdict).matchState.cParams
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromCDict))]
-pub unsafe extern "C" fn ZSTD_getDictID_fromCDict(
-    mut cdict: *const ZSTD_CDict,
-) -> core::ffi::c_uint {
+pub unsafe extern "C" fn ZSTD_getDictID_fromCDict(cdict: *const ZSTD_CDict) -> core::ffi::c_uint {
     if cdict.is_null() {
         return 0;
     }
@@ -9887,8 +9844,8 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
 ) -> size_t {
     let fParams = {
         ZSTD_frameParameters {
@@ -9901,19 +9858,19 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    cdict: *const ZSTD_CDict,
 ) -> size_t {
     ZSTD_compressBegin_usingCDict_deprecated(cctx, cdict)
 }
 unsafe fn ZSTD_compress_usingCDict_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut cdict: *const ZSTD_CDict,
-    mut fParams: ZSTD_frameParameters,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    cdict: *const ZSTD_CDict,
+    fParams: ZSTD_frameParameters,
 ) -> size_t {
     let err_code = ZSTD_compressBegin_usingCDict_internal(
         cctx,
@@ -9928,24 +9885,24 @@ unsafe fn ZSTD_compress_usingCDict_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_usingCDict_advanced(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut cdict: *const ZSTD_CDict,
-    mut fParams: ZSTD_frameParameters,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    cdict: *const ZSTD_CDict,
+    fParams: ZSTD_frameParameters,
 ) -> size_t {
     ZSTD_compress_usingCDict_internal(cctx, dst, dstCapacity, src, srcSize, cdict, fParams)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingCDict))]
 pub unsafe extern "C" fn ZSTD_compress_usingCDict(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut cdict: *const ZSTD_CDict,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    cdict: *const ZSTD_CDict,
 ) -> size_t {
     let fParams = {
         ZSTD_frameParameters {
@@ -9962,19 +9919,19 @@ pub unsafe extern "C" fn ZSTD_createCStream() -> *mut ZSTD_CStream {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCStream))]
 pub unsafe extern "C" fn ZSTD_initStaticCStream(
-    mut workspace: *mut core::ffi::c_void,
-    mut workspaceSize: size_t,
+    workspace: *mut core::ffi::c_void,
+    workspaceSize: size_t,
 ) -> *mut ZSTD_CStream {
     ZSTD_initStaticCCtx(workspace, workspaceSize)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCStream_advanced))]
 pub unsafe extern "C" fn ZSTD_createCStream_advanced(
-    mut customMem: ZSTD_customMem,
+    customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CStream {
     ZSTD_createCCtx_advanced(customMem)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCStream))]
-pub unsafe extern "C" fn ZSTD_freeCStream(mut zcs: *mut ZSTD_CStream) -> size_t {
+pub unsafe extern "C" fn ZSTD_freeCStream(zcs: *mut ZSTD_CStream) -> size_t {
     ZSTD_freeCCtx(zcs)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CStreamInSize))]
@@ -9988,9 +9945,9 @@ pub unsafe extern "C" fn ZSTD_CStreamOutSize() -> size_t {
         .wrapping_add(4)
 }
 unsafe fn ZSTD_getCParamMode(
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: u64,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: u64,
 ) -> ZSTD_CParamMode_e {
     if !cdict.is_null() && ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) != 0 {
         ZSTD_cpm_attachDict
@@ -10000,8 +9957,8 @@ unsafe fn ZSTD_getCParamMode(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetCStream))]
 pub unsafe extern "C" fn ZSTD_resetCStream(
-    mut zcs: *mut ZSTD_CStream,
-    mut pss: core::ffi::c_ulonglong,
+    zcs: *mut ZSTD_CStream,
+    pss: core::ffi::c_ulonglong,
 ) -> size_t {
     let pledgedSrcSize = if pss == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
@@ -10019,12 +9976,12 @@ pub unsafe extern "C" fn ZSTD_resetCStream(
     0
 }
 pub unsafe fn ZSTD_initCStream_internal(
-    mut zcs: *mut ZSTD_CStream,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut cdict: *const ZSTD_CDict,
-    mut params: *const ZSTD_CCtx_params,
-    mut pledgedSrcSize: core::ffi::c_ulonglong,
+    zcs: *mut ZSTD_CStream,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    cdict: *const ZSTD_CDict,
+    params: *const ZSTD_CCtx_params,
+    pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
     if ERR_isError(err_code) != 0 {
@@ -10050,10 +10007,10 @@ pub unsafe fn ZSTD_initCStream_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
-    mut zcs: *mut ZSTD_CStream,
-    mut cdict: *const ZSTD_CDict,
-    mut fParams: ZSTD_frameParameters,
-    mut pledgedSrcSize: core::ffi::c_ulonglong,
+    zcs: *mut ZSTD_CStream,
+    cdict: *const ZSTD_CDict,
+    fParams: ZSTD_frameParameters,
+    pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
     if ERR_isError(err_code) != 0 {
@@ -10072,8 +10029,8 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
-    mut zcs: *mut ZSTD_CStream,
-    mut cdict: *const ZSTD_CDict,
+    zcs: *mut ZSTD_CStream,
+    cdict: *const ZSTD_CDict,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
     if ERR_isError(err_code) != 0 {
@@ -10087,11 +10044,11 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_advanced(
-    mut zcs: *mut ZSTD_CStream,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut params: ZSTD_parameters,
-    mut pss: core::ffi::c_ulonglong,
+    zcs: *mut ZSTD_CStream,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    params: ZSTD_parameters,
+    pss: core::ffi::c_ulonglong,
 ) -> size_t {
     let pledgedSrcSize = if pss == 0 && params.fParams.contentSizeFlag == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
@@ -10119,10 +10076,10 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
-    mut zcs: *mut ZSTD_CStream,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    mut compressionLevel: core::ffi::c_int,
+    zcs: *mut ZSTD_CStream,
+    dict: *const core::ffi::c_void,
+    dictSize: size_t,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
     if ERR_isError(err_code) != 0 {
@@ -10140,9 +10097,9 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_srcSize))]
 pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
-    mut zcs: *mut ZSTD_CStream,
-    mut compressionLevel: core::ffi::c_int,
-    mut pss: core::ffi::c_ulonglong,
+    zcs: *mut ZSTD_CStream,
+    compressionLevel: core::ffi::c_int,
+    pss: core::ffi::c_ulonglong,
 ) -> size_t {
     let pledgedSrcSize = if pss == 0 {
         ZSTD_CONTENTSIZE_UNKNOWN
@@ -10169,8 +10126,8 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream))]
 pub unsafe extern "C" fn ZSTD_initCStream(
-    mut zcs: *mut ZSTD_CStream,
-    mut compressionLevel: core::ffi::c_int,
+    zcs: *mut ZSTD_CStream,
+    compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
     if ERR_isError(err_code) != 0 {
@@ -10186,7 +10143,7 @@ pub unsafe extern "C" fn ZSTD_initCStream(
     }
     0
 }
-unsafe fn ZSTD_nextInputSizeHint(mut cctx: *const ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_nextInputSizeHint(cctx: *const ZSTD_CCtx) -> size_t {
     if (*cctx).appliedParams.inBufferMode as core::ffi::c_uint
         == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
     {
@@ -10199,9 +10156,9 @@ unsafe fn ZSTD_nextInputSizeHint(mut cctx: *const ZSTD_CCtx) -> size_t {
     hintInSize
 }
 unsafe fn ZSTD_compressStream_generic(
-    mut zcs: *mut ZSTD_CStream,
-    mut output: *mut ZSTD_outBuffer,
-    mut input: *mut ZSTD_inBuffer,
+    zcs: *mut ZSTD_CStream,
+    output: *mut ZSTD_outBuffer,
+    input: *mut ZSTD_inBuffer,
     flushMode: ZSTD_EndDirective,
 ) -> size_t {
     let istart = (*input).src as *const core::ffi::c_char;
@@ -10477,7 +10434,7 @@ unsafe fn ZSTD_compressStream_generic(
     }
     ZSTD_nextInputSizeHint(zcs)
 }
-unsafe fn ZSTD_nextInputSizeHint_MTorST(mut cctx: *const ZSTD_CCtx) -> size_t {
+unsafe fn ZSTD_nextInputSizeHint_MTorST(cctx: *const ZSTD_CCtx) -> size_t {
     if (*cctx).appliedParams.nbWorkers >= 1 {
         return ZSTDMT_nextInputSizeHint((*cctx).mtctx);
     }
@@ -10485,9 +10442,9 @@ unsafe fn ZSTD_nextInputSizeHint_MTorST(mut cctx: *const ZSTD_CCtx) -> size_t {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream))]
 pub unsafe extern "C" fn ZSTD_compressStream(
-    mut zcs: *mut ZSTD_CStream,
-    mut output: *mut ZSTD_outBuffer,
-    mut input: *mut ZSTD_inBuffer,
+    zcs: *mut ZSTD_CStream,
+    output: *mut ZSTD_outBuffer,
+    input: *mut ZSTD_inBuffer,
 ) -> size_t {
     let err_code = ZSTD_compressStream2(zcs, output, input, ZSTD_e_continue);
     if ERR_isError(err_code) != 0 {
@@ -10496,9 +10453,9 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     ZSTD_nextInputSizeHint_MTorST(zcs)
 }
 unsafe fn ZSTD_setBufferExpectations(
-    mut cctx: *mut ZSTD_CCtx,
-    mut output: *const ZSTD_outBuffer,
-    mut input: *const ZSTD_inBuffer,
+    cctx: *mut ZSTD_CCtx,
+    output: *const ZSTD_outBuffer,
+    input: *const ZSTD_inBuffer,
 ) {
     if (*cctx).appliedParams.inBufferMode as core::ffi::c_uint
         == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
@@ -10512,10 +10469,10 @@ unsafe fn ZSTD_setBufferExpectations(
     }
 }
 unsafe fn ZSTD_checkBufferStability(
-    mut cctx: *const ZSTD_CCtx,
-    mut output: *const ZSTD_outBuffer,
-    mut input: *const ZSTD_inBuffer,
-    mut endOp: ZSTD_EndDirective,
+    cctx: *const ZSTD_CCtx,
+    output: *const ZSTD_outBuffer,
+    input: *const ZSTD_inBuffer,
+    endOp: ZSTD_EndDirective,
 ) -> size_t {
     if (*cctx).appliedParams.inBufferMode as core::ffi::c_uint
         == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
@@ -10536,9 +10493,9 @@ unsafe fn ZSTD_checkBufferStability(
     0
 }
 unsafe fn ZSTD_CCtx_init_compressStream2(
-    mut cctx: *mut ZSTD_CCtx,
-    mut endOp: ZSTD_EndDirective,
-    mut inSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    endOp: ZSTD_EndDirective,
+    inSize: size_t,
 ) -> size_t {
     let mut params = (*cctx).requestedParams;
     let prefixDict = (*cctx).prefixDict;
@@ -10668,10 +10625,10 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream2))]
 pub unsafe extern "C" fn ZSTD_compressStream2(
-    mut cctx: *mut ZSTD_CCtx,
-    mut output: *mut ZSTD_outBuffer,
-    mut input: *mut ZSTD_inBuffer,
-    mut endOp: ZSTD_EndDirective,
+    cctx: *mut ZSTD_CCtx,
+    output: *mut ZSTD_outBuffer,
+    input: *mut ZSTD_inBuffer,
+    endOp: ZSTD_EndDirective,
 ) -> size_t {
     if (*output).pos > (*output).size {
         return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
@@ -10779,14 +10736,14 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressStream2_simpleArgs))]
 pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut dstPos: *mut size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut srcPos: *mut size_t,
-    mut endOp: ZSTD_EndDirective,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    dstPos: *mut size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    srcPos: *mut size_t,
+    endOp: ZSTD_EndDirective,
 ) -> size_t {
     let mut output = ZSTD_outBuffer_s {
         dst: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -10811,11 +10768,11 @@ pub unsafe extern "C" fn ZSTD_compressStream2_simpleArgs(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress2))]
 pub unsafe extern "C" fn ZSTD_compress2(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let originalInBufferMode = (*cctx).requestedParams.inBufferMode;
     let originalOutBufferMode = (*cctx).requestedParams.outBufferMode;
@@ -10846,13 +10803,13 @@ pub unsafe extern "C" fn ZSTD_compress2(
     oPos
 }
 unsafe fn ZSTD_validateSequence(
-    mut offBase: u32,
-    mut matchLength: u32,
-    mut minMatch: u32,
-    mut posInSrc: size_t,
-    mut windowLog: u32,
-    mut dictSize: size_t,
-    mut useSequenceProducer: core::ffi::c_int,
+    offBase: u32,
+    matchLength: u32,
+    minMatch: u32,
+    posInSrc: size_t,
+    windowLog: u32,
+    dictSize: size_t,
+    useSequenceProducer: core::ffi::c_int,
 ) -> size_t {
     let windowSize = (1) << windowLog;
     let offsetBound = if posInSrc > windowSize as size_t {
@@ -10873,7 +10830,7 @@ unsafe fn ZSTD_validateSequence(
     }
     0
 }
-unsafe fn ZSTD_finalizeOffBase(mut rawOffset: u32, mut rep: *const u32, mut ll0: u32) -> u32 {
+unsafe fn ZSTD_finalizeOffBase(rawOffset: u32, rep: *const u32, ll0: u32) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
     if ll0 == 0 && rawOffset == *rep.offset(0) {
         offBase = REPCODE1_TO_OFFBASE as u32;
@@ -10887,13 +10844,13 @@ unsafe fn ZSTD_finalizeOffBase(mut rawOffset: u32, mut rep: *const u32, mut ll0:
     offBase
 }
 unsafe fn ZSTD_transferSequences_wBlockDelim(
-    mut cctx: *mut ZSTD_CCtx,
-    mut seqPos: *mut ZSTD_SequencePosition,
+    cctx: *mut ZSTD_CCtx,
+    seqPos: *mut ZSTD_SequencePosition,
     inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut blockSize: size_t,
-    mut externalRepSearch: ZSTD_ParamSwitch_e,
+    inSeqsSize: size_t,
+    src: *const core::ffi::c_void,
+    blockSize: size_t,
+    externalRepSearch: ZSTD_ParamSwitch_e,
 ) -> size_t {
     let mut idx = (*seqPos).idx;
     let startIdx = idx;
@@ -10972,7 +10929,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         && idx != startIdx
     {
         let rep = (updatedRepcodes.rep).as_mut_ptr();
-        let mut lastSeqIdx = idx.wrapping_sub(1);
+        let lastSeqIdx = idx.wrapping_sub(1);
         if lastSeqIdx >= startIdx.wrapping_add(2) {
             *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
             *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
@@ -11009,13 +10966,13 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
     blockSize
 }
 unsafe fn ZSTD_transferSequences_noDelim(
-    mut cctx: *mut ZSTD_CCtx,
-    mut seqPos: *mut ZSTD_SequencePosition,
+    cctx: *mut ZSTD_CCtx,
+    seqPos: *mut ZSTD_SequencePosition,
     inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut blockSize: size_t,
-    mut externalRepSearch: ZSTD_ParamSwitch_e,
+    inSeqsSize: size_t,
+    src: *const core::ffi::c_void,
+    blockSize: size_t,
+    externalRepSearch: ZSTD_ParamSwitch_e,
 ) -> size_t {
     let mut idx = (*seqPos).idx;
     let mut startPosInSequence = (*seqPos).posInSequence;
@@ -11072,7 +11029,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
             if matchLength as size_t > blockSize
                 && firstHalfMatchLength >= (*cctx).appliedParams.cParams.minMatch
             {
-                let mut secondHalfMatchLength = (currSeq.matchLength)
+                let secondHalfMatchLength = (currSeq.matchLength)
                     .wrapping_add(currSeq.litLength)
                     .wrapping_sub(endPosInSequence);
                 if secondHalfMatchLength < (*cctx).appliedParams.cParams.minMatch {
@@ -11146,7 +11103,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
     }
     iend.offset_from(istart) as core::ffi::c_long as size_t
 }
-unsafe fn ZSTD_selectSequenceCopier(mut mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier_f {
+unsafe fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier_f {
     if mode as core::ffi::c_uint
         == ZSTD_sf_explicitBlockDelimiters as core::ffi::c_int as core::ffi::c_uint
     {
@@ -11177,9 +11134,9 @@ unsafe fn ZSTD_selectSequenceCopier(mut mode: ZSTD_SequenceFormat_e) -> ZSTD_Seq
     )
 }
 unsafe fn blockSize_explicitDelimiter(
-    mut inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut seqPos: ZSTD_SequencePosition,
+    inSeqs: *const ZSTD_Sequence,
+    inSeqsSize: size_t,
+    seqPos: ZSTD_SequencePosition,
 ) -> size_t {
     let mut end = 0;
     let mut blockSize = 0 as size_t;
@@ -11204,12 +11161,12 @@ unsafe fn blockSize_explicitDelimiter(
     blockSize
 }
 unsafe fn determine_blockSize(
-    mut mode: ZSTD_SequenceFormat_e,
-    mut blockSize: size_t,
-    mut remaining: size_t,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut seqPos: ZSTD_SequencePosition,
+    mode: ZSTD_SequenceFormat_e,
+    blockSize: size_t,
+    remaining: size_t,
+    inSeqs: *const ZSTD_Sequence,
+    inSeqsSize: size_t,
+    seqPos: ZSTD_SequencePosition,
 ) -> size_t {
     if mode as core::ffi::c_uint
         == ZSTD_sf_noBlockDelimiters as core::ffi::c_int as core::ffi::c_uint
@@ -11234,13 +11191,13 @@ unsafe fn determine_blockSize(
     explicitBlockSize
 }
 unsafe fn ZSTD_compressSequences_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    inSeqs: *const ZSTD_Sequence,
+    inSeqsSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let mut cSize = 0 as size_t;
     let mut remaining = srcSize;
@@ -11401,13 +11358,13 @@ unsafe fn ZSTD_compressSequences_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequences))]
 pub unsafe extern "C" fn ZSTD_compressSequences(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    inSeqs: *const ZSTD_Sequence,
+    inSeqsSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> size_t {
     let mut op = dst as *mut u8;
     let mut cSize = 0 as size_t;
@@ -11457,9 +11414,9 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     cSize
 }
 pub unsafe fn convertSequences_noRepcodes(
-    mut dstSeqs: *mut SeqDef,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut nbSequences: size_t,
+    dstSeqs: *mut SeqDef,
+    inSeqs: *const ZSTD_Sequence,
+    nbSequences: size_t,
 ) -> size_t {
     let mut longLen = 0;
     let mut n: size_t = 0;
@@ -11484,10 +11441,10 @@ pub unsafe fn convertSequences_noRepcodes(
     longLen
 }
 pub unsafe fn ZSTD_convertBlockSequences(
-    mut cctx: *mut ZSTD_CCtx,
+    cctx: *mut ZSTD_CCtx,
     inSeqs: *const ZSTD_Sequence,
-    mut nbSequences: size_t,
-    mut repcodeResolution: core::ffi::c_int,
+    nbSequences: size_t,
+    repcodeResolution: core::ffi::c_int,
 ) -> size_t {
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut seqNb = 0;
@@ -11543,7 +11500,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
     if repcodeResolution == 0 && nbSequences > 1 {
         let rep = (updatedRepcodes.rep).as_mut_ptr();
         if nbSequences >= 4 {
-            let mut lastSeqIdx = (nbSequences as u32).wrapping_sub(2);
+            let lastSeqIdx = (nbSequences as u32).wrapping_sub(2);
             *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
             *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
             *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
@@ -11565,7 +11522,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
     0
 }
 #[inline(always)]
-unsafe fn matchLengthHalfIsZero(mut litMatchLength: u64) -> core::ffi::c_int {
+unsafe fn matchLengthHalfIsZero(litMatchLength: u64) -> core::ffi::c_int {
     if MEM_isLittleEndian() != 0 {
         (litMatchLength as core::ffi::c_ulonglong <= 0xffffffff as core::ffi::c_ulonglong)
             as core::ffi::c_int
@@ -11573,10 +11530,7 @@ unsafe fn matchLengthHalfIsZero(mut litMatchLength: u64) -> core::ffi::c_int {
         (litMatchLength as u32 == 0) as core::ffi::c_int
     }
 }
-pub unsafe fn ZSTD_get1BlockSummary(
-    mut seqs: *const ZSTD_Sequence,
-    mut nbSeqs: size_t,
-) -> BlockSummary {
+pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) -> BlockSummary {
     let mut current_block: u64;
     let mut litMatchSize0 = 0u64;
     let mut litMatchSize1 = 0u64;
@@ -11660,7 +11614,7 @@ pub unsafe fn ZSTD_get1BlockSummary(
             }
             _ => {
                 if n < nbSeqs {
-                    let mut litMatchLength_0 = MEM_read64(
+                    let litMatchLength_0 = MEM_read64(
                         &(*seqs.add(n)).litLength as *const core::ffi::c_uint
                             as *const core::ffi::c_void,
                     );
@@ -11686,14 +11640,14 @@ pub unsafe fn ZSTD_get1BlockSummary(
     }
 }
 unsafe fn ZSTD_compressSequencesAndLiterals_internal(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
     mut inSeqs: *const ZSTD_Sequence,
     mut nbSequences: size_t,
     mut literals: *const core::ffi::c_void,
     mut litSize: size_t,
-    mut srcSize: size_t,
+    srcSize: size_t,
 ) -> size_t {
     let mut remaining = srcSize;
     let mut cSize = 0 as size_t;
@@ -11803,15 +11757,15 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressSequencesAndLiterals))]
 pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
-    mut cctx: *mut ZSTD_CCtx,
-    mut dst: *mut core::ffi::c_void,
+    cctx: *mut ZSTD_CCtx,
+    dst: *mut core::ffi::c_void,
     mut dstCapacity: size_t,
-    mut inSeqs: *const ZSTD_Sequence,
-    mut inSeqsSize: size_t,
-    mut literals: *const core::ffi::c_void,
-    mut litSize: size_t,
-    mut litCapacity: size_t,
-    mut decompressedSize: size_t,
+    inSeqs: *const ZSTD_Sequence,
+    inSeqsSize: size_t,
+    literals: *const core::ffi::c_void,
+    litSize: size_t,
+    litCapacity: size_t,
+    decompressedSize: size_t,
 ) -> size_t {
     let mut op = dst as *mut u8;
     let mut cSize = 0 as size_t;
@@ -11861,7 +11815,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     dstCapacity = dstCapacity.wrapping_sub(cBlocksSize);
     cSize
 }
-unsafe fn inBuffer_forEndFlush(mut zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
+unsafe fn inBuffer_forEndFlush(zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
     let nullInput = {
         ZSTD_inBuffer_s {
             src: NULL as *const core::ffi::c_void,
@@ -11880,8 +11834,8 @@ unsafe fn inBuffer_forEndFlush(mut zcs: *const ZSTD_CStream) -> ZSTD_inBuffer {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_flushStream))]
 pub unsafe extern "C" fn ZSTD_flushStream(
-    mut zcs: *mut ZSTD_CStream,
-    mut output: *mut ZSTD_outBuffer,
+    zcs: *mut ZSTD_CStream,
+    output: *mut ZSTD_outBuffer,
 ) -> size_t {
     let mut input = inBuffer_forEndFlush(zcs);
     input.size = input.pos;
@@ -11889,8 +11843,8 @@ pub unsafe extern "C" fn ZSTD_flushStream(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_endStream))]
 pub unsafe extern "C" fn ZSTD_endStream(
-    mut zcs: *mut ZSTD_CStream,
-    mut output: *mut ZSTD_outBuffer,
+    zcs: *mut ZSTD_CStream,
+    output: *mut ZSTD_outBuffer,
 ) -> size_t {
     let mut input = inBuffer_forEndFlush(zcs);
     let remainingToFlush = ZSTD_compressStream2(zcs, output, &mut input, ZSTD_e_end);
@@ -11924,7 +11878,7 @@ pub unsafe extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
 unsafe fn ZSTD_dedicatedDictSearch_isSupported(
-    mut cParams: *const ZSTD_compressionParameters,
+    cParams: *const ZSTD_compressionParameters,
 ) -> core::ffi::c_int {
     ((*cParams).strategy as core::ffi::c_uint
         >= ZSTD_greedy as core::ffi::c_int as core::ffi::c_uint
@@ -11933,7 +11887,7 @@ unsafe fn ZSTD_dedicatedDictSearch_isSupported(
         && (*cParams).hashLog > (*cParams).chainLog
         && (*cParams).chainLog <= 24) as core::ffi::c_int
 }
-unsafe fn ZSTD_dedicatedDictSearch_revertCParams(mut cParams: *mut ZSTD_compressionParameters) {
+unsafe fn ZSTD_dedicatedDictSearch_revertCParams(cParams: *mut ZSTD_compressionParameters) {
     if let 3..=5 = (*cParams).strategy as core::ffi::c_uint {
         (*cParams).hashLog =
             ((*cParams).hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
@@ -11943,9 +11897,9 @@ unsafe fn ZSTD_dedicatedDictSearch_revertCParams(mut cParams: *mut ZSTD_compress
     };
 }
 unsafe fn ZSTD_getCParamRowSize(
-    mut srcSizeHint: u64,
+    srcSizeHint: u64,
     mut dictSize: size_t,
-    mut mode: ZSTD_CParamMode_e,
+    mode: ZSTD_CParamMode_e,
 ) -> u64 {
     if mode as core::ffi::c_uint == 1 {
         dictSize = 0;
@@ -11963,9 +11917,9 @@ unsafe fn ZSTD_getCParamRowSize(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getCParams))]
 pub unsafe extern "C" fn ZSTD_getCParams(
-    mut compressionLevel: core::ffi::c_int,
+    compressionLevel: core::ffi::c_int,
     mut srcSizeHint: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
+    dictSize: size_t,
 ) -> ZSTD_compressionParameters {
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
@@ -11974,9 +11928,9 @@ pub unsafe extern "C" fn ZSTD_getCParams(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getParams))]
 pub unsafe extern "C" fn ZSTD_getParams(
-    mut compressionLevel: core::ffi::c_int,
+    compressionLevel: core::ffi::c_int,
     mut srcSizeHint: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
+    dictSize: size_t,
 ) -> ZSTD_parameters {
     if srcSizeHint == 0 {
         srcSizeHint = ZSTD_CONTENTSIZE_UNKNOWN;
@@ -13023,10 +12977,10 @@ unsafe fn ZSTD_dedicatedDictSearch_getCParams(
     cParams
 }
 unsafe fn ZSTD_getCParams_internal(
-    mut compressionLevel: core::ffi::c_int,
-    mut srcSizeHint: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
-    mut mode: ZSTD_CParamMode_e,
+    compressionLevel: core::ffi::c_int,
+    srcSizeHint: core::ffi::c_ulonglong,
+    dictSize: size_t,
+    mode: ZSTD_CParamMode_e,
 ) -> ZSTD_compressionParameters {
     let rSize = ZSTD_getCParamRowSize(srcSizeHint, dictSize, mode);
     let tableID = ((rSize <= (256 * ((1) << 10)) as u64) as core::ffi::c_int
@@ -13056,10 +13010,10 @@ unsafe fn ZSTD_getCParams_internal(
     ZSTD_adjustCParams_internal(cp, srcSizeHint, dictSize, mode, ZSTD_ps_auto)
 }
 unsafe fn ZSTD_getParams_internal(
-    mut compressionLevel: core::ffi::c_int,
-    mut srcSizeHint: core::ffi::c_ulonglong,
-    mut dictSize: size_t,
-    mut mode: ZSTD_CParamMode_e,
+    compressionLevel: core::ffi::c_int,
+    srcSizeHint: core::ffi::c_ulonglong,
+    dictSize: size_t,
+    mode: ZSTD_CParamMode_e,
 ) -> ZSTD_parameters {
     let mut params = ZSTD_parameters {
         cParams: ZSTD_compressionParameters {
@@ -13089,9 +13043,9 @@ unsafe fn ZSTD_getParams_internal(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_registerSequenceProducer))]
 pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
-    mut zc: *mut ZSTD_CCtx,
-    mut extSeqProdState: *mut core::ffi::c_void,
-    mut extSeqProdFunc: ZSTD_sequenceProducer_F,
+    zc: *mut ZSTD_CCtx,
+    extSeqProdState: *mut core::ffi::c_void,
+    extSeqProdFunc: ZSTD_sequenceProducer_F,
 ) {
     ZSTD_CCtxParams_registerSequenceProducer(
         &mut (*zc).requestedParams,
@@ -13101,9 +13055,9 @@ pub unsafe extern "C" fn ZSTD_registerSequenceProducer(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_registerSequenceProducer))]
 pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
-    mut params: *mut ZSTD_CCtx_params,
-    mut extSeqProdState: *mut core::ffi::c_void,
-    mut extSeqProdFunc: ZSTD_sequenceProducer_F,
+    params: *mut ZSTD_CCtx_params,
+    extSeqProdState: *mut core::ffi::c_void,
+    extSeqProdFunc: ZSTD_sequenceProducer_F,
 ) {
     if extSeqProdFunc.is_some() {
         (*params).extSeqProdFunc = extSeqProdFunc;

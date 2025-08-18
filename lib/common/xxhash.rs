@@ -40,7 +40,7 @@ const XXH_PRIME64_3: u64 = 0x165667b19e3779f9;
 const XXH_PRIME64_4: u64 = 0x85ebca77c2b2ae63;
 const XXH_PRIME64_5: u64 = 0x27d4eb2f165667c5;
 
-const fn XXH64_round(mut acc: u64, input: u64) -> u64 {
+const fn XXH64_round(acc: u64, input: u64) -> u64 {
     input
         .wrapping_mul(XXH_PRIME64_2)
         .wrapping_add(acc)
@@ -48,7 +48,7 @@ const fn XXH64_round(mut acc: u64, input: u64) -> u64 {
         .wrapping_mul(XXH_PRIME64_1)
 }
 
-const fn XXH64_mergeRound(mut acc: u64, val: u64) -> u64 {
+const fn XXH64_mergeRound(acc: u64, val: u64) -> u64 {
     (acc ^ XXH64_round(0, val))
         .wrapping_mul(XXH_PRIME64_1)
         .wrapping_add(XXH_PRIME64_4)
@@ -90,7 +90,7 @@ fn XXH64_finalize(mut hash: u64, slice: &[u8], _align: Align) -> u64 {
 }
 
 #[inline(always)]
-fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
+fn XXH64_endian_align(input: &[u8], seed: u64, align: Align) -> u64 {
     let mut h64: u64;
 
     let (chunks, remainder) = input.as_chunks::<32>();
@@ -127,11 +127,7 @@ fn XXH64_endian_align(mut input: &[u8], mut seed: u64, align: Align) -> u64 {
     h64 = h64.wrapping_add(input.len() as u64);
     XXH64_finalize(h64, remainder, align)
 }
-pub unsafe fn ZSTD_XXH64(
-    mut input: *const core::ffi::c_void,
-    mut len: usize,
-    mut seed: u64,
-) -> u64 {
+pub unsafe fn ZSTD_XXH64(input: *const core::ffi::c_void, len: usize, seed: u64) -> u64 {
     let slice = if input.is_null() {
         assert_eq!(len, 0);
         &[]
@@ -141,7 +137,7 @@ pub unsafe fn ZSTD_XXH64(
     XXH64_endian_align(slice, seed, Align::Unaligned)
 }
 
-pub fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorcode {
+pub fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) -> XXH_errorcode {
     *state = XXH64_state_t::default();
 
     state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
@@ -153,8 +149,8 @@ pub fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, mut seed: u64) -> XXH_errorco
 
 pub unsafe fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
-    mut input: *const c_void,
-    mut len: usize,
+    input: *const c_void,
+    len: usize,
 ) -> XXH_errorcode {
     if input.is_null() {
         assert_eq!(len, 0);

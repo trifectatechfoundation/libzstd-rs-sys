@@ -70,22 +70,22 @@ pub const __ASSERT_FUNCTION: [core::ffi::c_char; 75] = unsafe {
 pub const NULL: core::ffi::c_int = 0;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
-pub unsafe fn BMK_isSuccessful_runOutcome(mut outcome: BMK_runOutcome_t) -> core::ffi::c_int {
+pub unsafe fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> core::ffi::c_int {
     (outcome.error_tag_never_ever_use_directly == 0) as core::ffi::c_int
 }
-pub unsafe fn BMK_extract_runTime(mut outcome: BMK_runOutcome_t) -> BMK_runTime_t {
+pub unsafe fn BMK_extract_runTime(outcome: BMK_runOutcome_t) -> BMK_runTime_t {
     if outcome.error_tag_never_ever_use_directly != 0 {
         abort();
     }
     outcome.internal_never_ever_use_directly
 }
-pub unsafe fn BMK_extract_errorResult(mut outcome: BMK_runOutcome_t) -> size_t {
+pub unsafe fn BMK_extract_errorResult(outcome: BMK_runOutcome_t) -> size_t {
     if outcome.error_tag_never_ever_use_directly == 0 {
         abort();
     }
     outcome.error_result_never_ever_use_directly
 }
-unsafe fn BMK_runOutcome_error(mut errorResult: size_t) -> BMK_runOutcome_t {
+unsafe fn BMK_runOutcome_error(errorResult: size_t) -> BMK_runOutcome_t {
     let mut b = BMK_runOutcome_t {
         internal_never_ever_use_directly: BMK_runTime_t {
             nanoSecPerRun: 0.,
@@ -103,7 +103,7 @@ unsafe fn BMK_runOutcome_error(mut errorResult: size_t) -> BMK_runOutcome_t {
     b.error_result_never_ever_use_directly = errorResult;
     b
 }
-unsafe fn BMK_setValid_runTime(mut runTime: BMK_runTime_t) -> BMK_runOutcome_t {
+unsafe fn BMK_setValid_runTime(runTime: BMK_runTime_t) -> BMK_runOutcome_t {
     let mut outcome = BMK_runOutcome_t {
         internal_never_ever_use_directly: BMK_runTime_t {
             nanoSecPerRun: 0.,
@@ -117,7 +117,7 @@ unsafe fn BMK_setValid_runTime(mut runTime: BMK_runTime_t) -> BMK_runOutcome_t {
     outcome
 }
 pub unsafe fn BMK_benchFunction(
-    mut p: BMK_benchParams_t,
+    p: BMK_benchParams_t,
     mut nbLoops: core::ffi::c_uint,
 ) -> BMK_runOutcome_t {
     nbLoops = nbLoops.wrapping_add((nbLoops == 0) as core::ffi::c_int as core::ffi::c_uint);
@@ -168,8 +168,8 @@ pub unsafe fn BMK_benchFunction(
     BMK_setValid_runTime(rt)
 }
 pub unsafe fn BMK_createTimedFnState(
-    mut total_ms: core::ffi::c_uint,
-    mut run_ms: core::ffi::c_uint,
+    total_ms: core::ffi::c_uint,
+    run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
     let r =
         malloc(::core::mem::size_of::<BMK_timedFnState_t>() as size_t) as *mut BMK_timedFnState_t;
@@ -179,14 +179,14 @@ pub unsafe fn BMK_createTimedFnState(
     BMK_resetTimedFnState(r, total_ms, run_ms);
     r
 }
-pub unsafe fn BMK_freeTimedFnState(mut state: *mut BMK_timedFnState_t) {
+pub unsafe fn BMK_freeTimedFnState(state: *mut BMK_timedFnState_t) {
     free(state as *mut core::ffi::c_void);
 }
 pub unsafe fn BMK_initStatic_timedFnState(
-    mut buffer: *mut core::ffi::c_void,
-    mut size: size_t,
-    mut total_ms: core::ffi::c_uint,
-    mut run_ms: core::ffi::c_uint,
+    buffer: *mut core::ffi::c_void,
+    size: size_t,
+    total_ms: core::ffi::c_uint,
+    run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
     let tfs_alignment = 8;
     let r = buffer as *mut BMK_timedFnState_t;
@@ -203,7 +203,7 @@ pub unsafe fn BMK_initStatic_timedFnState(
     r
 }
 pub unsafe fn BMK_resetTimedFnState(
-    mut timedFnState: *mut BMK_timedFnState_t,
+    timedFnState: *mut BMK_timedFnState_t,
     mut total_ms: core::ffi::c_uint,
     mut run_ms: core::ffi::c_uint,
 ) {
@@ -229,14 +229,12 @@ pub unsafe fn BMK_resetTimedFnState(
     (*timedFnState).nbLoops = 1;
     (*timedFnState).coolTime = UTIL_getTime();
 }
-pub unsafe fn BMK_isCompleted_TimedFn(
-    mut timedFnState: *const BMK_timedFnState_t,
-) -> core::ffi::c_int {
+pub unsafe fn BMK_isCompleted_TimedFn(timedFnState: *const BMK_timedFnState_t) -> core::ffi::c_int {
     ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as core::ffi::c_int
 }
 pub unsafe fn BMK_benchTimedFn(
-    mut cont: *mut BMK_timedFnState_t,
-    mut p: BMK_benchParams_t,
+    cont: *mut BMK_timedFnState_t,
+    p: BMK_benchParams_t,
 ) -> BMK_runOutcome_t {
     let runBudget_ns = (*cont).runBudget_ns;
     let runTimeMin_ns = runBudget_ns / 2;

@@ -276,10 +276,10 @@ const DISTRIB_MAX_SIZE: core::ffi::c_uint = 650;
 static mut g_distrib: [core::ffi::c_int; DISTRIB_MAX_SIZE as usize] = [0; 650];
 static mut g_distribCount: core::ffi::c_uint = 0;
 unsafe fn countFreqs(
-    mut words: *const &CStr,
-    mut nbWords: size_t,
-    mut weights: *const core::ffi::c_int,
-    mut nbWeights: size_t,
+    words: *const &CStr,
+    nbWords: size_t,
+    weights: *const core::ffi::c_int,
+    nbWeights: size_t,
 ) {
     let mut total = 0 as core::ffi::c_uint;
     let mut w: size_t = 0;
@@ -298,10 +298,10 @@ unsafe fn countFreqs(
     assert!(g_distribCount <= DISTRIB_MAX_SIZE);
 }
 unsafe fn init_word_distrib(
-    mut words: *const &CStr,
-    mut nbWords: size_t,
-    mut weights: *const core::ffi::c_int,
-    mut nbWeights: size_t,
+    words: *const &CStr,
+    nbWords: size_t,
+    weights: *const core::ffi::c_int,
+    nbWeights: size_t,
 ) {
     let mut w: size_t = 0;
     let mut d = 0 as size_t;
@@ -329,7 +329,7 @@ static mut g_ptr: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
 static mut g_nbChars: size_t = 0;
 static mut g_maxChars: size_t = 10000000;
 static mut g_randRoot: core::ffi::c_uint = 0;
-unsafe fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_uint {
+unsafe fn LOREM_rand(range: core::ffi::c_uint) -> core::ffi::c_uint {
     static prime1: core::ffi::c_uint = 2654435761;
     static prime2: core::ffi::c_uint = 2246822519;
     let mut rand32 = g_randRoot;
@@ -341,7 +341,7 @@ unsafe fn LOREM_rand(mut range: core::ffi::c_uint) -> core::ffi::c_uint {
         as core::ffi::c_uint
 }
 unsafe fn writeLastCharacters() {
-    let mut lastChars = g_maxChars.wrapping_sub(g_nbChars);
+    let lastChars = g_maxChars.wrapping_sub(g_nbChars);
     assert!(g_maxChars >= g_nbChars);
     if lastChars == 0 {
         return;
@@ -362,9 +362,9 @@ unsafe fn writeLastCharacters() {
     g_nbChars = g_maxChars;
 }
 unsafe fn generateWord(
-    mut word: *const core::ffi::c_char,
-    mut separator: *const core::ffi::c_char,
-    mut upCase: core::ffi::c_int,
+    word: *const core::ffi::c_char,
+    separator: *const core::ffi::c_char,
+    upCase: core::ffi::c_int,
 ) {
     let len = (strlen(word)).wrapping_add(strlen(separator));
     if g_nbChars.wrapping_add(len) > g_maxChars {
@@ -389,16 +389,16 @@ unsafe fn generateWord(
     );
     g_nbChars = g_nbChars.wrapping_add(strlen(separator)) as size_t as size_t;
 }
-unsafe fn about(mut target: core::ffi::c_uint) -> core::ffi::c_int {
+unsafe fn about(target: core::ffi::c_uint) -> core::ffi::c_int {
     (LOREM_rand(target))
         .wrapping_add(LOREM_rand(target))
         .wrapping_add(1) as core::ffi::c_int
 }
-unsafe fn generateSentence(mut nbWords: core::ffi::c_int) {
-    let mut commaPos = about(9);
-    let mut comma2 = commaPos + about(7);
-    let mut qmark = (LOREM_rand(11) == 7) as core::ffi::c_int;
-    let mut endSep = if qmark != 0 {
+unsafe fn generateSentence(nbWords: core::ffi::c_int) {
+    let commaPos = about(9);
+    let comma2 = commaPos + about(7);
+    let qmark = (LOREM_rand(11) == 7) as core::ffi::c_int;
+    let endSep = if qmark != 0 {
         b"? \0" as *const u8 as *const core::ffi::c_char
     } else {
         b". \0" as *const u8 as *const core::ffi::c_char
@@ -422,11 +422,11 @@ unsafe fn generateSentence(mut nbWords: core::ffi::c_int) {
         i += 1;
     }
 }
-unsafe fn generateParagraph(mut nbSentences: core::ffi::c_int) {
+unsafe fn generateParagraph(nbSentences: core::ffi::c_int) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < nbSentences {
-        let mut wordsPerSentence = about(11);
+        let wordsPerSentence = about(11);
         generateSentence(wordsPerSentence);
         i += 1;
     }
@@ -444,7 +444,7 @@ unsafe fn generateParagraph(mut nbSentences: core::ffi::c_int) {
 unsafe fn generateFirstSentence() {
     let mut i = 0;
     while i < 18 {
-        let mut word = kWords[i].as_ptr();
+        let word = kWords[i].as_ptr();
         let mut separator = b" \0" as *const u8 as *const core::ffi::c_char;
         if i == 4 {
             separator = b", \0" as *const u8 as *const core::ffi::c_char;
@@ -462,11 +462,11 @@ unsafe fn generateFirstSentence() {
     );
 }
 pub unsafe fn LOREM_genBlock(
-    mut buffer: *mut core::ffi::c_void,
-    mut size: size_t,
-    mut seed: core::ffi::c_uint,
-    mut first: core::ffi::c_int,
-    mut fill: core::ffi::c_int,
+    buffer: *mut core::ffi::c_void,
+    size: size_t,
+    seed: core::ffi::c_uint,
+    first: core::ffi::c_int,
+    fill: core::ffi::c_int,
 ) -> size_t {
     g_ptr = buffer as *mut core::ffi::c_char;
     assert!(size < core::ffi::c_int::MAX as size_t);
@@ -480,7 +480,7 @@ pub unsafe fn LOREM_genBlock(
         generateFirstSentence();
     }
     while g_nbChars < g_maxChars {
-        let mut sentencePerParagraph = about(7);
+        let sentencePerParagraph = about(7);
         generateParagraph(sentencePerParagraph);
         if fill == 0 {
             break;
@@ -490,9 +490,9 @@ pub unsafe fn LOREM_genBlock(
     g_nbChars
 }
 pub unsafe fn LOREM_genBuffer(
-    mut buffer: *mut core::ffi::c_void,
-    mut size: size_t,
-    mut seed: core::ffi::c_uint,
+    buffer: *mut core::ffi::c_void,
+    size: size_t,
+    seed: core::ffi::c_uint,
 ) {
     LOREM_genBlock(buffer, size, seed, 1, 1);
 }

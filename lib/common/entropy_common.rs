@@ -23,9 +23,9 @@ pub const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 
 #[inline(always)]
 fn FSE_readNCount_body(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     let hbSize = headerBuffer.len();
@@ -180,28 +180,28 @@ fn FSE_readNCount_body(
 }
 
 fn FSE_readNCount_body_default(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 fn FSE_readNCount_body_bmi2(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
 pub fn FSE_readNCount_bmi2(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-    mut bmi2: core::ffi::c_int,
+    bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
     if bmi2 != 0 {
         FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
@@ -211,11 +211,11 @@ pub fn FSE_readNCount_bmi2(
 }
 
 pub unsafe fn FSE_readNCount(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
-    mut headerBuffer: *const core::ffi::c_void,
-    mut hbSize: size_t,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
+    headerBuffer: *const core::ffi::c_void,
+    hbSize: size_t,
 ) -> size_t {
     let ret = FSE_readNCount_slice(
         normalizedCounter,
@@ -231,9 +231,9 @@ pub unsafe fn FSE_readNCount(
 }
 
 pub fn FSE_readNCount_slice(
-    mut normalizedCounter: &mut [i16],
-    mut maxSVPtr: &mut core::ffi::c_uint,
-    mut tableLogPtr: &mut core::ffi::c_uint,
+    normalizedCounter: &mut [i16],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<size_t, Error> {
     FSE_readNCount_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer, 0)
@@ -291,14 +291,14 @@ pub fn HUF_readStats(
 }
 #[inline(always)]
 fn HUF_readStats_body(
-    mut huffWeight: &mut [u8; 256],
+    huffWeight: &mut [u8; 256],
     hwSize: size_t,
-    mut rankStats: &mut [u32; 13],
-    mut nbSymbolsPtr: &mut u32,
-    mut tableLogPtr: &mut u32,
+    rankStats: &mut [u32; 13],
+    nbSymbolsPtr: &mut u32,
+    tableLogPtr: &mut u32,
     mut ip: &[u8],
     workspace: &mut Workspace,
-    mut bmi2: bool,
+    bmi2: bool,
 ) -> Result<size_t, Error> {
     let srcSize = ip.len() as size_t;
 

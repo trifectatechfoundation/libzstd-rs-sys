@@ -137,8 +137,8 @@ pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 #[inline]
 unsafe fn ZSTD_maybeNullPtrAdd(
-    mut ptr: *mut core::ffi::c_void,
-    mut add: ptrdiff_t,
+    ptr: *mut core::ffi::c_void,
+    add: ptrdiff_t,
 ) -> *mut core::ffi::c_void {
     if add > 0 {
         (ptr as *mut core::ffi::c_char).offset(add as isize) as *mut core::ffi::c_void
@@ -193,22 +193,22 @@ static ML_bits: [u8; 53] = [
 pub const LL_DEFAULTNORMLOG: u32 = 6;
 pub const ML_DEFAULTNORMLOG: u32 = 6;
 pub const OF_DEFAULTNORMLOG: u32 = 5;
-unsafe fn ZSTD_copy8(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 8);
 }
-unsafe fn ZSTD_copy16(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
 }
 pub const WILDCOPY_OVERLENGTH: usize = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 #[inline(always)]
 unsafe fn ZSTD_wildcopy(
-    mut dst: *mut core::ffi::c_void,
-    mut src: *const core::ffi::c_void,
-    mut length: size_t,
+    dst: *mut core::ffi::c_void,
+    src: *const core::ffi::c_void,
+    length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let mut diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
@@ -245,7 +245,7 @@ unsafe fn ZSTD_wildcopy(
     };
 }
 pub const NULL: core::ffi::c_int = 0;
-unsafe fn ZSTD_copy4(mut dst: *mut core::ffi::c_void, mut src: *const core::ffi::c_void) {
+unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 4);
 }
 
@@ -597,11 +597,11 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 }
 
 pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
-    mut dctx: *mut ZSTD_DCtx,
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
+    dctx: *mut ZSTD_DCtx,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
 ) -> size_t {
     let Some(dctx) = dctx.as_mut() else {
         return Error::GENERIC.to_error_code();
@@ -1163,7 +1163,7 @@ unsafe fn ZSTD_safecopy(
     oend_w: *const u8,
     mut ip: *const u8,
     mut length: size_t,
-    mut ovtype: ZSTD_overlap_e,
+    ovtype: ZSTD_overlap_e,
 ) {
     let diff = op.offset_from(ip) as core::ffi::c_long;
     let oend = op.add(length);
@@ -1210,7 +1210,7 @@ unsafe fn ZSTD_safecopy(
         *fresh8 = *fresh7;
     }
 }
-unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, mut length: size_t) {
+unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
     let diff = op.offset_from(ip) as core::ffi::c_long;
     let oend = op.add(length);
     if length < 8 || diff > -(8) as ptrdiff_t {
@@ -1249,7 +1249,7 @@ unsafe fn ZSTD_execSequenceEnd(
     mut op: *mut u8,
     oend: *mut u8,
     mut sequence: seq_t,
-    mut litPtr: *mut *const u8,
+    litPtr: *mut *const u8,
     litLimit: *const u8,
     prefixStart: *const u8,
     virtualStart: *const u8,
@@ -1307,7 +1307,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     oend: *mut u8,
     oend_w: *const u8,
     mut sequence: seq_t,
-    mut litPtr: *mut *const u8,
+    litPtr: *mut *const u8,
     litLimit: *const u8,
     prefixStart: *const u8,
     virtualStart: *const u8,
@@ -1367,7 +1367,7 @@ unsafe fn ZSTD_execSequence(
     mut op: *mut u8,
     oend: *mut u8,
     mut sequence: seq_t,
-    mut litPtr: &mut *const u8,
+    litPtr: &mut *const u8,
     litLimit: *const u8,
     prefixStart: *const u8,
     virtualStart: *const u8,
@@ -1463,7 +1463,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     oend: *mut u8,
     oend_w: *const u8,
     mut sequence: seq_t,
-    mut litPtr: *mut *const u8,
+    litPtr: *mut *const u8,
     litLimit: *const u8,
     prefixStart: *const u8,
     virtualStart: *const u8,
@@ -1559,7 +1559,7 @@ unsafe fn ZSTD_initFseState(
     bitD: &mut BIT_DStream_t,
     dt: *const ZSTD_seqSymbol,
 ) {
-    let mut ptr = dt as *const core::ffi::c_void;
+    let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const ZSTD_seqSymbol_header;
     DStatePtr.state = bitD.read_bits((*DTableH).tableLog) as size_t;
     bitD.reload();
@@ -1586,7 +1586,7 @@ const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
 
 #[inline(always)]
 unsafe fn ZSTD_decodeSequence(
-    mut seqState: &mut seqState_t,
+    seqState: &mut seqState_t,
     longOffsets: Offset,
     is_last_sequence: bool,
 ) -> seq_t {
@@ -1937,7 +1937,7 @@ unsafe fn ZSTD_decompressSequences_body(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     seq: &[u8],
-    mut nbSeq: core::ffi::c_int,
+    nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
@@ -2097,7 +2097,7 @@ fn prefetch_l1<T>(ptr: *const T) {
 
 #[inline(always)]
 unsafe fn ZSTD_prefetchMatch(
-    mut prefetchPos: size_t,
+    prefetchPos: size_t,
     sequence: seq_t,
     prefixStart: *const u8,
     dictEnd: *const u8,
@@ -2183,7 +2183,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         }
 
         for seqNb in seqAdvance..nbSeq {
-            let mut sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
+            let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, seqNb == nbSeq - 1);
             if dctx.litBufferLocation == LitLocation::ZSTD_split
                 && litPtr.add(
                     (sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize]).litLength,
@@ -2261,7 +2261,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         }
 
         for seqNb in nbSeq - seqAdvance..nbSeq {
-            let mut sequence = &mut sequences[(seqNb & STORED_SEQS_MASK) as usize];
+            let sequence = &mut sequences[(seqNb & STORED_SEQS_MASK) as usize];
             if dctx.litBufferLocation == LitLocation::ZSTD_split
                 && litPtr.add((*sequence).litLength) > dctx.litBufferEnd
             {
@@ -2465,9 +2465,9 @@ unsafe fn ZSTD_getOffsetInfo(
         }
     };
     if nbSeq != 0 {
-        let mut ptr = offTable as *const core::ffi::c_void;
+        let ptr = offTable as *const core::ffi::c_void;
         let tableLog = (*(ptr as *const ZSTD_seqSymbol_header).offset(0)).tableLog;
-        let mut table = offTable.offset(1);
+        let table = offTable.offset(1);
         let max = ((1) << tableLog) as u32;
         let mut u: u32 = 0;
         u = 0;
