@@ -2,7 +2,7 @@ use core::ptr;
 
 use libc::{calloc, free, malloc, size_t};
 
-use crate::lib::common::entropy_common::{FSE_readNCount, FSE_readNCount_slice};
+use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::{
