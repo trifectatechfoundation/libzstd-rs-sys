@@ -2647,13 +2647,13 @@ pub unsafe fn ZBUFFv07_getErrorName(mut errorCode: size_t) -> *const core::ffi::
     ERR_getErrorName(errorCode)
 }
 unsafe extern "C" fn ZSTDv07_defaultAllocFunction(
-    mut opaque: *mut core::ffi::c_void,
+    _opaque: *mut core::ffi::c_void,
     mut size: size_t,
 ) -> *mut core::ffi::c_void {
     malloc(size)
 }
 unsafe extern "C" fn ZSTDv07_defaultFreeFunction(
-    mut opaque: *mut core::ffi::c_void,
+    _opaque: *mut core::ffi::c_void,
     mut address: *mut core::ffi::c_void,
 ) {
     free(address);
@@ -2861,12 +2861,12 @@ unsafe extern "C" fn ZSTDv07_copy4(
     memcpy(dst, src, 4);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_sizeofDCtx))]
-pub unsafe extern "C" fn ZSTDv07_sizeofDCtx(mut dctx: *const ZSTDv07_DCtx) -> size_t {
-    ::core::mem::size_of::<ZSTDv07_DCtx>() as size_t
+pub unsafe extern "C" fn ZSTDv07_sizeofDCtx(_dctx: *const ZSTDv07_DCtx) -> size_t {
+    ::core::mem::size_of::<ZSTDv07_DCtx>()
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_estimateDCtxSize))]
 pub unsafe extern "C" fn ZSTDv07_estimateDCtxSize() -> size_t {
-    ::core::mem::size_of::<ZSTDv07_DCtx>() as size_t
+    ::core::mem::size_of::<ZSTDv07_DCtx>()
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv07_decompressBegin))]
 pub unsafe extern "C" fn ZSTDv07_decompressBegin(mut dctx: *mut ZSTDv07_DCtx) -> size_t {
