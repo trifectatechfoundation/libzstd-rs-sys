@@ -79,14 +79,49 @@ impl<const N: usize> SymbolTable<N> {
 pub type HUF_DTable = u32;
 
 pub type ZSTD_dStage = core::ffi::c_uint;
-pub const ZSTDds_skipFrame: ZSTD_dStage = 7;
-pub const ZSTDds_decodeSkippableHeader: ZSTD_dStage = 6;
-pub const ZSTDds_checkChecksum: ZSTD_dStage = 5;
-pub const ZSTDds_decompressLastBlock: ZSTD_dStage = 4;
-pub const ZSTDds_decompressBlock: ZSTD_dStage = 3;
-pub const ZSTDds_decodeBlockHeader: ZSTD_dStage = 2;
-pub const ZSTDds_decodeFrameHeader: ZSTD_dStage = 1;
-pub const ZSTDds_getFrameHeaderSize: ZSTD_dStage = 0;
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecompressStage {
+    ZSTDds_getFrameHeaderSize = 0,
+    ZSTDds_decodeFrameHeader = 1,
+    ZSTDds_decodeBlockHeader = 2,
+    ZSTDds_decompressBlock = 3,
+    ZSTDds_decompressLastBlock = 4,
+    ZSTDds_checkChecksum = 5,
+    ZSTDds_decodeSkippableHeader = 6,
+    ZSTDds_skipFrame = 7,
+}
+
+impl DecompressStage {
+    pub const fn to_next_input_type(self) -> NextInputType {
+        match self {
+            Self::ZSTDds_decodeBlockHeader => NextInputType::ZSTDnit_blockHeader,
+            Self::ZSTDds_decompressBlock => NextInputType::ZSTDnit_block,
+            Self::ZSTDds_decompressLastBlock => NextInputType::ZSTDnit_lastBlock,
+            Self::ZSTDds_checkChecksum => NextInputType::ZSTDnit_checksum,
+            Self::ZSTDds_decodeSkippableHeader | Self::ZSTDds_skipFrame => {
+                NextInputType::ZSTDnit_skippableFrame
+            }
+            Self::ZSTDds_getFrameHeaderSize | Self::ZSTDds_decodeFrameHeader => {
+                NextInputType::ZSTDnit_frameHeader
+            }
+        }
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NextInputType {
+    ZSTDnit_frameHeader = 0,
+    ZSTDnit_blockHeader = 1,
+    ZSTDnit_block = 2,
+    ZSTDnit_lastBlock = 3,
+    ZSTDnit_checksum = 4,
+    ZSTDnit_skippableFrame = 5,
+}
+
+pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 
 pub type ZSTD_dStreamStage = core::ffi::c_uint;
 pub const zdss_flush: ZSTD_dStreamStage = 4;
@@ -126,7 +161,7 @@ pub struct blockProperties_t {
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BlockType {
+pub enum BlockType {
     Raw = 0,
     Rle = 1,
     Compressed = 2,
@@ -206,7 +241,7 @@ pub struct ZSTD_DCtx_s {
     pub processedCSize: u64,
     pub decodedSize: u64,
     pub bType: BlockType,
-    pub stage: ZSTD_dStage,
+    pub stage: DecompressStage,
     pub litEntropy: u32,
     pub fseEntropy: u32,
     pub xxhState: XXH64_state_t,
