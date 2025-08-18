@@ -46,8 +46,6 @@ pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 pub type ZSTD_refMultipleDDicts_e = core::ffi::c_uint;
 pub const ZSTD_rmd_refMultipleDDicts: ZSTD_refMultipleDDicts_e = 1;
 pub const ZSTD_rmd_refSingleDDict: ZSTD_refMultipleDDicts_e = 0;
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -59,7 +57,7 @@ pub struct ZSTD_cpuid_t {
 pub type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
-pub type XXH_errorcode = core::ffi::c_uint;
+type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
 pub type streaming_operation = core::ffi::c_uint;

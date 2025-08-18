@@ -12,7 +12,6 @@ extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
 }
-pub type ptrdiff_t = core::ffi::c_long;
 pub type HUF_DTable = u32;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;
 pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;

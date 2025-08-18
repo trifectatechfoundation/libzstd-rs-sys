@@ -5,7 +5,7 @@ use libc::{exit, free, fwrite, malloc, memcpy, memset, perror, size_t, FILE};
 extern "C" {
     static mut stdout: *mut FILE;
 }
-pub type fixedPoint_24_8 = u32;
+type fixedPoint_24_8 = u32;
 pub const NULL: core::ffi::c_int = 0;
 pub const LTLOG: core::ffi::c_int = 13;
 pub const LTSIZE: core::ffi::c_int = (1) << LTLOG;

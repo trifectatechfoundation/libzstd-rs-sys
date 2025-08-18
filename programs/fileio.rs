@@ -99,10 +99,10 @@ extern "C" {
     fn lzma_stream_decoder(strm: *mut lzma_stream, memlimit: u64, flags: u32) -> lzma_ret;
     fn lzma_alone_decoder(strm: *mut lzma_stream, memlimit: u64) -> lzma_ret;
 }
-pub type __compar_fn_t = Option<
+type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
-pub type __sighandler_t = Option<unsafe extern "C" fn(core::ffi::c_int) -> ()>;
+type __sighandler_t = Option<unsafe extern "C" fn(core::ffi::c_int) -> ()>;
 pub type ZSTD_cParameter = core::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;

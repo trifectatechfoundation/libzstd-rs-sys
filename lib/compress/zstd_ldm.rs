@@ -2,7 +2,6 @@
 use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-pub type ptrdiff_t = core::ffi::c_long;
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -97,7 +96,6 @@ pub struct ldmEntry_t {
     pub offset: u32,
     pub checksum: u32,
 }
-pub type XXH64_hash_t = u64;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmParams_t {
@@ -138,7 +136,7 @@ pub struct ldmRollingHashState_t {
     pub stopMask: u64,
 }
 
-use libc::size_t;
+use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
@@ -470,7 +468,7 @@ unsafe fn ZSTD_wildcopy(
     length: size_t,
     ovtype: ZSTD_overlap_e,
 ) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as core::ffi::c_long;
+    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);

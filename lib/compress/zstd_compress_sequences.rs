@@ -1,5 +1,6 @@
-use libc::size_t;
+use libc::{ptrdiff_t, size_t};
 
+use crate::lib::common::bitstream::BitContainerType;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
@@ -9,7 +10,6 @@ use crate::lib::compress::fse_compress::{
 use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::*;
 
-pub type ptrdiff_t = core::ffi::c_long;
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
@@ -20,7 +20,6 @@ pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;
 pub const FSE_repeat_none: FSE_repeat = 0;
 pub type FSE_CTable = core::ffi::c_uint;
-pub type BitContainerType = size_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BIT_CStream_t {
