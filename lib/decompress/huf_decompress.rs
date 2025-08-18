@@ -277,17 +277,6 @@ unsafe fn init_remaining_dstream(
     })
 }
 
-fn HUF_DEltX1_set4(mut symbol: u8, mut nbBits: u8) -> u64 {
-    let mut D4: u64 = 0;
-    if MEM_isLittleEndian() != 0 {
-        D4 = (((symbol as core::ffi::c_int) << 8) + nbBits as core::ffi::c_int) as u64;
-    } else {
-        D4 = (symbol as core::ffi::c_int + ((nbBits as core::ffi::c_int) << 8)) as u64;
-    }
-    D4 = D4.wrapping_mul(0x1000100010001u64);
-    D4
-}
-
 /// Increase the tableLog to targetTableLog and rescales the stats.
 ///
 /// If tableLog > targetTableLog this is a no-op.
@@ -924,11 +913,6 @@ fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_in
         baseSeq as u32,
         level,
     ))
-}
-
-fn HUF_buildDEltX2U64(symbol: u32, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> u64 {
-    let DElt = HUF_buildDEltX2U32(symbol, nbBits, baseSeq as u32, level);
-    DElt as u64 | (DElt as u64) << 32
 }
 
 fn HUF_fillDTableX2ForWeight(

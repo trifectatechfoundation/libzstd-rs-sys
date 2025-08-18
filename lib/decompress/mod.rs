@@ -168,10 +168,6 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    fn as_mut_ptr(&mut self) -> *mut u32 {
-        self.data.as_mut_ptr()
-    }
-
     fn as_x1_mut(&mut self) -> &mut huf_decompress::HUF_ReadDTableX1_Workspace {
         const { assert!(size_of::<Self>() >= size_of::<huf_decompress::HUF_ReadDTableX1_Workspace>()) }
         const { assert!(align_of::<Self>() >= align_of::<huf_decompress::HUF_ReadDTableX1_Workspace>()) }

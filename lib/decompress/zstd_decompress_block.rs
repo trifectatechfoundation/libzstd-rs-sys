@@ -20,7 +20,6 @@ use crate::lib::decompress::{
     HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
-use crate::lib::zstd::*;
 
 pub type ptrdiff_t = core::ffi::c_long;
 pub type BIT_DStream_status = core::ffi::c_uint;
@@ -895,9 +894,6 @@ const MaxFSELog: usize = const_max(
     const_max(MLFSELog as usize, LLFSELog as usize),
     OffFSELog as usize,
 );
-
-const ZSTD_BUILD_FSE_TABLE_WKSP_SIZE: usize =
-    size_of::<i16>() * (MaxSeq + 1) + (1 << MaxFSELog) + size_of::<u64>();
 
 #[derive(Copy, Clone)]
 #[repr(C, align(4))]
