@@ -1781,11 +1781,13 @@ unsafe fn ZSTD_decompressMultiFrame(
     ddict: Option<&ZSTD_DDict>,
 ) -> size_t {
     let dststart = dst;
-    let mut moreThan1Frame = 0;
+    let mut more_than_one_frame = false;
+
     if let Some(ddict) = ddict {
         dict = ZSTD_DDict_dictContent(ddict);
         dictSize = ZSTD_DDict_dictSize(ddict);
     }
+
     while srcSize >= ZSTD_startingInputLength((*dctx).format) {
         if (*dctx).format == Format::ZSTD_f_zstd1 && ZSTD_isLegacy(src, srcSize) != 0 {
             let mut decodedSize: size_t = 0;
@@ -1842,7 +1844,7 @@ unsafe fn ZSTD_decompressMultiFrame(
             }
             ZSTD_checkContinuity(dctx, dst, dstCapacity);
             let res = ZSTD_decompressFrame(dctx, dst, dstCapacity, &mut src, &mut srcSize);
-            if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && moreThan1Frame == 1 {
+            if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
                 return Error::srcSize_wrong.to_error_code();
             }
             if ERR_isError(res) != 0 {
@@ -1852,12 +1854,14 @@ unsafe fn ZSTD_decompressMultiFrame(
                 dst = (dst as *mut u8).add(res) as *mut core::ffi::c_void;
             }
             dstCapacity = dstCapacity.wrapping_sub(res);
-            moreThan1Frame = 1;
+            more_than_one_frame = true;
         }
     }
+
     if srcSize != 0 {
         return Error::srcSize_wrong.to_error_code();
     }
+
     (dst as *mut u8).offset_from(dststart as *mut u8) as core::ffi::c_long as size_t
 }
 
