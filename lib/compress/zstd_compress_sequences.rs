@@ -3,6 +3,7 @@ use libc::{ptrdiff_t, size_t};
 use crate::lib::common::bitstream::BitContainerType;
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
+use crate::lib::common::zstd_internal::{LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_writeNCount,
@@ -52,17 +53,6 @@ pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
 }
-pub const MLFSELog: core::ffi::c_int = 9;
-pub const LLFSELog: core::ffi::c_int = 9;
-pub const OffFSELog: core::ffi::c_int = 8;
-static LL_bits: [u8; 36] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
-    12, 13, 14, 15, 16,
-];
-static ML_bits: [u8; 53] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-];
 #[inline]
 unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let ptr = ct as *const core::ffi::c_void;

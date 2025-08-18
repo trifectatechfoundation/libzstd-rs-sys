@@ -8,6 +8,9 @@ use crate::lib::common::mem::{
 };
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::ZSTD_XXH64;
+use crate::lib::common::zstd_internal::{
+    repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
+};
 use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
 use crate::lib::compress::zstd_compress::{
@@ -454,13 +457,6 @@ static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
-static repStartValue: [u32; 3] = [1, 4, 8];
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const MLFSELog: core::ffi::c_int = 9;
-pub const LLFSELog: core::ffi::c_int = 9;
-pub const OffFSELog: core::ffi::c_int = 8;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
 pub const ZDICT_CONTENTSIZE_MIN: core::ffi::c_int = 128;
 pub const NULL: core::ffi::c_int = 0;

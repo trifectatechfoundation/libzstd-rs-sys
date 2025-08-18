@@ -451,9 +451,6 @@ pub struct ZSTD_SequencePosition {
     pub posInSrc: size_t,
 }
 pub type S64 = i64;
-pub const bt_compressed: C2RustUnnamed_1 = 2;
-pub const bt_rle: C2RustUnnamed_1 = 1;
-pub const bt_raw: C2RustUnnamed_1 = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seqStoreSplits {
@@ -573,8 +570,6 @@ pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
 pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
 pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
-pub type C2RustUnnamed_1 = core::ffi::c_uint;
-pub const bt_reserved: C2RustUnnamed_1 = 3;
 pub type C2RustUnnamed_2 = core::ffi::c_uint;
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
 pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
@@ -1181,8 +1176,11 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
 use crate::lib::common::zstd_internal::{
-    ZSTD_copy16, ZSTD_limitCopy, ZSTD_no_overlap, ZSTD_wildcopy, WILDCOPY_OVERLENGTH,
-    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
+    LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
+    MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, OffFSELog, ZSTD_copy16,
+    ZSTD_limitCopy, ZSTD_no_overlap, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -1243,162 +1241,11 @@ use crate::lib::compress::zstdmt_compress::{
 };
 use crate::lib::zstd::*;
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTD_OPT_NUM: core::ffi::c_int = (1) << 12;
-pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
-static repStartValue: [u32; 3] = [1, 4, 8];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-pub const MINMATCH: core::ffi::c_int = 3;
-pub const Litbits: core::ffi::c_int = 8;
-pub const LitHufLog: core::ffi::c_int = 11;
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const DefaultMaxOff: core::ffi::c_int = 28;
-pub const MaxOff: core::ffi::c_int = 31;
-pub const MLFSELog: core::ffi::c_int = 9;
-pub const LLFSELog: core::ffi::c_int = 9;
-pub const OffFSELog: core::ffi::c_int = 8;
-static LL_bits: [u8; 36] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
-    12, 13, 14, 15, 16,
-];
-static LL_defaultNorm: [S16; 36] = [
-    4,
-    3,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    3,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-];
-pub const LL_DEFAULTNORMLOG: core::ffi::c_int = 6;
-static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG as u32;
-static ML_bits: [u8; 53] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-];
-static ML_defaultNorm: [S16; 53] = [
-    1,
-    4,
-    3,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-];
-pub const ML_DEFAULTNORMLOG: core::ffi::c_int = 6;
-static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG as u32;
-static OF_defaultNorm: [S16; 29] = [
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    2,
-    2,
-    2,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-    -(1) as S16,
-];
-pub const OF_DEFAULTNORMLOG: core::ffi::c_int = 5;
-static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG as u32;
 #[inline]
 unsafe fn ZSTD_cpuSupportsBmi2() -> core::ffi::c_int {
     let cpuid = ZSTD_cpuid();

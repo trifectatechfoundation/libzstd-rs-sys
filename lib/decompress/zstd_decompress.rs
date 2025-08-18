@@ -10,7 +10,9 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::common::zstd_internal::{
-    ZSTD_limitCopy, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    repStartValue, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize, ZSTD_limitCopy,
+    WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE, ZSTD_WORKSPACETOOLARGE_FACTOR,
+    ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
@@ -37,9 +39,24 @@ use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_trace_decompress_begin, ZSTD_trace_decompress_end,
 };
 
-use crate::lib::legacy::zstd_v05::*;
-use crate::lib::legacy::zstd_v06::*;
-use crate::lib::legacy::zstd_v07::*;
+use crate::lib::legacy::zstd_v05::{
+    ZBUFFv05_DCtx_s, ZBUFFv05_createDCtx, ZBUFFv05_decompressContinue,
+    ZBUFFv05_decompressInitDictionary, ZBUFFv05_freeDCtx, ZSTDv05_createDCtx,
+    ZSTDv05_decompress_usingDict, ZSTDv05_fast, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_freeDCtx,
+    ZSTDv05_getFrameParams, ZSTDv05_parameters,
+};
+use crate::lib::legacy::zstd_v06::{
+    ZBUFFv06_DCtx_s, ZBUFFv06_createDCtx, ZBUFFv06_decompressContinue,
+    ZBUFFv06_decompressInitDictionary, ZBUFFv06_freeDCtx, ZSTDv06_createDCtx,
+    ZSTDv06_decompress_usingDict, ZSTDv06_findFrameSizeInfoLegacy, ZSTDv06_frameParams_s,
+    ZSTDv06_freeDCtx, ZSTDv06_getFrameParams,
+};
+use crate::lib::legacy::zstd_v07::{
+    ZBUFFv07_DCtx_s, ZBUFFv07_createDCtx, ZBUFFv07_decompressContinue,
+    ZBUFFv07_decompressInitDictionary, ZBUFFv07_freeDCtx, ZSTDv07_createDCtx,
+    ZSTDv07_decompress_usingDict, ZSTDv07_findFrameSizeInfoLegacy, ZSTDv07_frameParams,
+    ZSTDv07_freeDCtx, ZSTDv07_getFrameParams,
+};
 
 use crate::lib::decompress::zstd_ddict::{
     ZSTD_DDict_dictContent, ZSTD_DDict_dictSize, ZSTD_copyDDictParameters,
@@ -142,23 +159,7 @@ pub const ZSTD_d_refMultipleDDicts: core::ffi::c_int = 1003;
 pub const ZSTD_d_disableHuffmanAssembly: core::ffi::c_int = 1004;
 pub const ZSTD_d_maxBlockSize: core::ffi::c_int = 1005;
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-static repStartValue: [u32; 3] = [1, 4, 8];
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
-pub const ZSTD_FRAMEIDSIZE: core::ffi::c_int = 4;
-pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const MaxOff: core::ffi::c_int = 31;
-static LL_bits: [u8; 36] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
-    12, 13, 14, 15, 16,
-];
-static ML_bits: [u8; 53] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-];
-pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
 
 #[inline]
 unsafe fn ZSTD_cpuSupportsBmi2() -> bool {
@@ -1017,7 +1018,7 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
 
             let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
             let frameContentSize =
-                u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE as usize..].first_chunk().unwrap());
+                u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap());
 
             *zfhPtr = ZSTD_FrameHeader {
                 frameContentSize: u64::from(frameContentSize),

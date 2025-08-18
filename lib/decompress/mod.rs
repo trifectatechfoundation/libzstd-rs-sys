@@ -116,8 +116,6 @@ pub type ZSTD_FrameType_e = core::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 
-pub type blockType_e = core::ffi::c_uint;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct blockProperties_t {
