@@ -1131,15 +1131,16 @@ unsafe fn ZSTDMT_serialState_genSequences(
         if (*serialState).params.ldmParams.enableLdm as core::ffi::c_uint
             == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
         {
-            let mut error: size_t = 0;
             ZSTD_window_update(&mut (*serialState).ldmState.window, src.start, src.size, 0);
-            error = ZSTD_ldm_generateSequences(
+            let error = ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
                 seqStore,
                 &(*serialState).params.ldmParams,
                 src.start,
                 src.size,
             );
+            // We provide a large enough buffer to never fail.
+            assert!(ZSTD_isError(error) == 0);
             pthread_mutex_lock(&mut (*serialState).ldmWindowMutex);
             (*serialState).ldmWindow = (*serialState).ldmState.window;
             pthread_cond_signal(&mut (*serialState).ldmWindowCond);

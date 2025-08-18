@@ -1006,6 +1006,11 @@ unsafe fn ZSTD_window_needOverflowCorrection(
     mut srcEnd: *const core::ffi::c_void,
 ) -> u32 {
     let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
+    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
+        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) != 0 {
+            return 1;
+        }
+    }
     (curr
         > (if MEM_64bits() != 0 {
             (3500 as core::ffi::c_uint)
@@ -1043,7 +1048,10 @@ unsafe fn ZSTD_window_correctOverflow(
             cycleSize
         });
     let correction = curr.wrapping_sub(newCurrent);
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0;
+    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
+        // Loose bound, should be around 1<<29 (see above)
+        assert!(correction > 1 << 28);
+    }
     (*window).base = ((*window).base).offset(correction as isize);
     (*window).dictBase = ((*window).dictBase).offset(correction as isize);
     if (*window).lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {

@@ -14,5 +14,5 @@ edition.workspace = true
 path = ".."
 features = ["semver-prefix"]
 
-[dependencies] 
+[dependencies]
 zstd-sys = "2.0.15"
