@@ -751,7 +751,8 @@ unsafe fn ZSTD_DCtx_resetParameters(dctx: *mut ZSTD_DCtx) {
     (*dctx).disableHufAsm = 0;
     (*dctx).maxBlockSizeParam = 0;
 }
-unsafe fn ZSTD_initDCtx_internal(dctx: *mut ZSTD_DCtx) {
+
+unsafe fn ZSTD_initDCtx_internal(mut dctx: *mut ZSTD_DCtx) {
     (*dctx).staticSize = 0;
     (*dctx).ddict = core::ptr::null();
     (*dctx).ddictLocal = core::ptr::null_mut();
@@ -771,6 +772,7 @@ unsafe fn ZSTD_initDCtx_internal(dctx: *mut ZSTD_DCtx) {
     (*dctx).ddictSet = core::ptr::null_mut();
     ZSTD_DCtx_resetParameters(dctx);
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDCtx))]
 pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     workspace: *mut core::ffi::c_void,
@@ -788,22 +790,23 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     (*dctx).inBuff = dctx.offset(1) as *mut core::ffi::c_char;
     dctx
 }
+
 unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
+    if (customMem.customAlloc).is_none() ^ (customMem.customFree).is_none() {
         return core::ptr::null_mut();
     }
+
     let dctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>() as size_t, customMem)
         as *mut ZSTD_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }
+
     (*dctx).customMem = customMem;
     ZSTD_initDCtx_internal(dctx);
     dctx
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createDCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
     ZSTD_createDCtx_internal(customMem)
@@ -1795,7 +1798,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                 return decodedSize;
             }
             let expectedSize = ZSTD_getFrameContentSize(src, srcSize);
-            if expectedSize == (0 as core::ffi::c_ulonglong).wrapping_sub(2) {
+            if expectedSize == ZSTD_CONTENTSIZE_ERROR {
                 return Error::corruption_detected.to_error_code();
             }
             if expectedSize != ZSTD_CONTENTSIZE_UNKNOWN
@@ -1836,10 +1839,7 @@ unsafe fn ZSTD_decompressMultiFrame(
             }
             ZSTD_checkContinuity(dctx, dst, dstCapacity);
             let res = ZSTD_decompressFrame(dctx, dst, dstCapacity, &mut src, &mut srcSize);
-            if ZSTD_getErrorCode(res) as core::ffi::c_uint
-                == ZSTD_error_prefix_unknown as core::ffi::c_int as core::ffi::c_uint
-                && moreThan1Frame == 1
-            {
+            if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && moreThan1Frame == 1 {
                 return Error::srcSize_wrong.to_error_code();
             }
             if ERR_isError(res) != 0 {
@@ -1891,6 +1891,7 @@ unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
         }
     }
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressDCtx))]
 pub unsafe extern "C" fn ZSTD_decompressDCtx(
     dctx: *mut ZSTD_DCtx,
@@ -1901,6 +1902,7 @@ pub unsafe extern "C" fn ZSTD_decompressDCtx(
 ) -> size_t {
     ZSTD_decompress_usingDDict(dctx, dst, dstCapacity, src, srcSize, ZSTD_getDDict(dctx))
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress))]
 pub unsafe extern "C" fn ZSTD_decompress(
     dst: *mut core::ffi::c_void,
@@ -2440,6 +2442,7 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromFrame(
     }
     zfp.dictID
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDDict))]
 pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2460,6 +2463,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
         ddict,
     )
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
 pub unsafe extern "C" fn ZSTD_createDStream() -> *mut ZSTD_DStream {
     ZSTD_createDCtx_internal(ZSTD_defaultCMem)
