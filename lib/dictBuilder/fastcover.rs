@@ -7,7 +7,7 @@ use libc::{
 
 use crate::lib::common::error_private::ERR_isError;
 use crate::lib::common::mem::MEM_readLE64;
-use crate::lib::common::pool::{POOL_add, POOL_create, POOL_ctx, POOL_free};
+use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::dictBuilder::cover::{
     COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_s, COVER_best_start,
     COVER_best_t, COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError,
@@ -106,7 +106,6 @@ unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
 }
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
-pub const NULL: core::ffi::c_int = 0;
 pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 pub const FASTCOVER_MAX_F: core::ffi::c_int = 31;
 pub const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
@@ -304,9 +303,9 @@ unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
         return;
     }
     free((*ctx).freqs as *mut core::ffi::c_void);
-    (*ctx).freqs = NULL as *mut u32;
+    (*ctx).freqs = core::ptr::null_mut();
     free((*ctx).offsets as *mut core::ffi::c_void);
-    (*ctx).offsets = NULL as *mut size_t;
+    (*ctx).offsets = core::ptr::null_mut();
 }
 unsafe fn FASTCOVER_computeFrequency(freqs: *mut u32, ctx: *const FASTCOVER_ctx_t) {
     let f = (*ctx).f;
@@ -960,7 +959,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         },
         compressedSize: 0,
     };
-    let mut pool = NULL as *mut POOL_ctx;
+    let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut lastUpdateTime = 0;
     if splitPoint <= 0.0 || splitPoint > 1.0 {

@@ -7,7 +7,7 @@ use libc::{
     pthread_mutex_unlock, pthread_mutexattr_t, pthread_t, size_t,
 };
 
-use crate::lib::zstd::{ZSTD_allocFunction, ZSTD_customMem, ZSTD_freeFunction};
+use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
 extern "C" {
     fn calloc(_: size_t, _: size_t) -> *mut core::ffi::c_void;
@@ -38,19 +38,6 @@ pub struct POOL_job {
 }
 pub type POOL_function = Option<unsafe extern "C" fn(*mut core::ffi::c_void) -> ()>;
 pub type ZSTD_threadPool = POOL_ctx;
-static mut ZSTD_defaultCMem: ZSTD_customMem = unsafe {
-    {
-        ZSTD_customMem {
-            customAlloc: ::core::mem::transmute::<libc::intptr_t, ZSTD_allocFunction>(
-                NULL as libc::intptr_t,
-            ),
-            customFree: ::core::mem::transmute::<libc::intptr_t, ZSTD_freeFunction>(
-                NULL as libc::intptr_t,
-            ),
-            opaque: NULL as *mut core::ffi::c_void,
-        }
-    }
-};
 #[inline]
 unsafe extern "C" fn ZSTD_customCalloc(
     size: size_t,
@@ -73,12 +60,10 @@ unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZST
         }
     }
 }
-pub const NULL: core::ffi::c_int = 0;
-pub const NULL_0: core::ffi::c_int = 0;
 unsafe fn POOL_thread(opaque: *mut core::ffi::c_void) -> *mut core::ffi::c_void {
     let ctx = opaque as *mut POOL_ctx;
     if ctx.is_null() {
-        return NULL_0 as *mut core::ffi::c_void;
+        return core::ptr::null_mut();
     }
     loop {
         pthread_mutex_lock(&mut (*ctx).queueMutex);
@@ -118,16 +103,15 @@ pub unsafe fn POOL_create_advanced(
 ) -> *mut POOL_ctx {
     let mut ctx = core::ptr::null_mut::<POOL_ctx>();
     if numThreads == 0 {
-        return NULL_0 as *mut POOL_ctx;
+        return core::ptr::null_mut();
     }
-    ctx =
-        ZSTD_customCalloc(::core::mem::size_of::<POOL_ctx>() as size_t, customMem) as *mut POOL_ctx;
+    ctx = ZSTD_customCalloc(::core::mem::size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
     if ctx.is_null() {
-        return NULL_0 as *mut POOL_ctx;
+        return core::ptr::null_mut();
     }
     (*ctx).queueSize = queueSize.wrapping_add(1);
     (*ctx).queue = ZSTD_customCalloc(
-        ((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>() as size_t),
+        ((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>()),
         customMem,
     ) as *mut POOL_job;
     (*ctx).queueHead = 0;
@@ -149,7 +133,7 @@ pub unsafe fn POOL_create_advanced(
     );
     if error != 0 {
         POOL_free(ctx);
-        return NULL_0 as *mut POOL_ctx;
+        return core::ptr::null_mut();
     }
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(
@@ -160,7 +144,7 @@ pub unsafe fn POOL_create_advanced(
     (*ctx).customMem = customMem;
     if ((*ctx).threads).is_null() || ((*ctx).queue).is_null() {
         POOL_free(ctx);
-        return NULL_0 as *mut POOL_ctx;
+        return core::ptr::null_mut();
     }
     let mut i: size_t = 0;
     i = 0;
@@ -176,7 +160,7 @@ pub unsafe fn POOL_create_advanced(
         {
             (*ctx).threadCapacity = i;
             POOL_free(ctx);
-            return NULL_0 as *mut POOL_ctx;
+            return core::ptr::null_mut();
         }
         i = i.wrapping_add(1);
     }
@@ -193,10 +177,7 @@ unsafe fn POOL_join(ctx: *mut POOL_ctx) {
     let mut i: size_t = 0;
     i = 0;
     while i < (*ctx).threadCapacity {
-        pthread_join(
-            *((*ctx).threads).add(i),
-            NULL_0 as *mut *mut core::ffi::c_void,
-        );
+        pthread_join(*((*ctx).threads).add(i), core::ptr::null_mut());
         i = i.wrapping_add(1);
     }
 }

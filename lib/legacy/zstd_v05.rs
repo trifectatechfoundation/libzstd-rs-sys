@@ -456,7 +456,6 @@ unsafe fn FSEv05_endOfDState(DStatePtr: *const FSEv05_DState_t) -> core::ffi::c_
 }
 pub const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
 pub const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
-pub const NULL: core::ffi::c_int = 0;
 pub const FSEv05_MAX_TABLELOG: core::ffi::c_int = FSEv05_MAX_MEMORY_USAGE - 2;
 pub const FSEv05_MIN_TABLELOG: core::ffi::c_int = 5;
 pub const FSEv05_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
@@ -2362,29 +2361,27 @@ pub unsafe fn HUFv05_decompress(
     cSrc: *const core::ffi::c_void,
     cSrcSize: size_t,
 ) -> size_t {
-    static decompress: [decompressionAlgo; 3] = unsafe {
-        [
-            Some(
-                HUFv05_decompress4X2
-                    as unsafe fn(
-                        *mut core::ffi::c_void,
-                        size_t,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            Some(
-                HUFv05_decompress4X4
-                    as unsafe fn(
-                        *mut core::ffi::c_void,
-                        size_t,
-                        *const core::ffi::c_void,
-                        size_t,
-                    ) -> size_t,
-            ),
-            ::core::mem::transmute::<libc::intptr_t, decompressionAlgo>(NULL as libc::intptr_t),
-        ]
-    };
+    static decompress: [decompressionAlgo; 3] = [
+        Some(
+            HUFv05_decompress4X2
+                as unsafe fn(
+                    *mut core::ffi::c_void,
+                    size_t,
+                    *const core::ffi::c_void,
+                    size_t,
+                ) -> size_t,
+        ),
+        Some(
+            HUFv05_decompress4X4
+                as unsafe fn(
+                    *mut core::ffi::c_void,
+                    size_t,
+                    *const core::ffi::c_void,
+                    size_t,
+                ) -> size_t,
+        ),
+        None,
+    ];
     let mut Q: u32 = 0;
     let D256 = (dstSize >> 8) as u32;
     let mut Dtime: [u32; 3] = [0; 3];
@@ -2444,10 +2441,10 @@ pub unsafe extern "C" fn ZSTDv05_sizeofDCtx() -> size_t {
 pub unsafe extern "C" fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> size_t {
     (*dctx).expected = ZSTDv05_frameHeaderSize_min;
     (*dctx).stage = ZSTDv05ds_getFrameHeaderSize;
-    (*dctx).previousDstEnd = NULL as *const core::ffi::c_void;
-    (*dctx).base = NULL as *const core::ffi::c_void;
-    (*dctx).vBase = NULL as *const core::ffi::c_void;
-    (*dctx).dictEnd = NULL as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = core::ptr::null();
+    (*dctx).base = core::ptr::null();
+    (*dctx).vBase = core::ptr::null();
+    (*dctx).dictEnd = core::ptr::null();
     *((*dctx).hufTableX4).as_mut_ptr().offset(0) =
         ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
     (*dctx).flagStaticTables = 0;
@@ -2457,7 +2454,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> siz
 pub unsafe extern "C" fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
     let dctx = malloc(::core::mem::size_of::<ZSTDv05_DCtx>() as size_t) as *mut ZSTDv05_DCtx;
     if dctx.is_null() {
-        return NULL as *mut ZSTDv05_DCtx;
+        return core::ptr::null_mut();
     }
     ZSTDv05_decompressBegin(dctx);
     dctx
@@ -3200,7 +3197,7 @@ unsafe fn ZSTDv05_decompressSequences(
     let mut litPtr = (*dctx).litPtr;
     let litEnd = litPtr.add((*dctx).litSize);
     let mut nbSeq = 0;
-    let mut dumps = NULL as *const u8;
+    let mut dumps = core::ptr::null();
     let DTableLL = ((*dctx).LLTable).as_mut_ptr();
     let DTableML = ((*dctx).MLTable).as_mut_ptr();
     let DTableOffb = ((*dctx).OffTable).as_mut_ptr();
@@ -3490,15 +3487,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressDCtx(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTDv05_decompress_usingDict(
-        dctx,
-        dst,
-        maxDstSize,
-        src,
-        srcSize,
-        NULL as *const core::ffi::c_void,
-        0,
-    )
+    ZSTDv05_decompress_usingDict(dctx, dst, maxDstSize, src, srcSize, core::ptr::null(), 0)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv05_decompress))]
 pub unsafe extern "C" fn ZSTDv05_decompress(
@@ -3861,7 +3850,7 @@ pub const ZSTDv05_frameHeaderSize_max_0: core::ffi::c_int = 5;
 pub unsafe extern "C" fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
     let zbc = malloc(::core::mem::size_of::<ZBUFFv05_DCtx>() as size_t) as *mut ZBUFFv05_DCtx;
     if zbc.is_null() {
-        return NULL as *mut ZBUFFv05_DCtx;
+        return core::ptr::null_mut();
     }
     ptr::write_bytes(zbc as *mut u8, 0, ::core::mem::size_of::<ZBUFFv05_DCtx>());
     (*zbc).zc = ZSTDv05_createDCtx();
@@ -3894,7 +3883,7 @@ pub unsafe extern "C" fn ZBUFFv05_decompressInitDictionary(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZBUFFv05_decompressInit))]
 pub unsafe extern "C" fn ZBUFFv05_decompressInit(zbc: *mut ZBUFFv05_DCtx) -> size_t {
-    ZBUFFv05_decompressInitDictionary(zbc, NULL as *const core::ffi::c_void, 0)
+    ZBUFFv05_decompressInitDictionary(zbc, core::ptr::null(), 0)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZBUFFv05_decompressContinue))]
 pub unsafe extern "C" fn ZBUFFv05_decompressContinue(

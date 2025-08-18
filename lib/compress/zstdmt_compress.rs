@@ -505,14 +505,12 @@ pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as
 pub const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
     ZSTD_c_experimentalParam15 as core::ffi::c_int;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
-static mut kNullRawSeqStore: RawSeqStore_t = {
-    RawSeqStore_t {
-        seq: NULL_0 as *mut rawSeq,
-        pos: 0,
-        posInSequence: 0,
-        size: 0,
-        capacity: 0,
-    }
+static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
+    seq: core::ptr::null_mut(),
+    pos: 0,
+    posInSequence: 0,
+    size: 0,
+    capacity: 0,
 };
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
@@ -666,13 +664,9 @@ unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const NULL: core::ffi::c_int = 0;
-pub const NULL_0: core::ffi::c_int = 0;
-static mut g_nullBuffer: Buffer = {
-    buffer_s {
-        start: NULL_0 as *mut core::ffi::c_void,
-        capacity: 0,
-    }
+static mut g_nullBuffer: Buffer = buffer_s {
+    start: core::ptr::null_mut(),
+    capacity: 0,
 };
 unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
     if bufPool.is_null() {
@@ -703,7 +697,7 @@ unsafe fn ZSTDMT_createBufferPool(
     let bufPool = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_bufferPool>() as size_t, cMem)
         as *mut ZSTDMT_bufferPool;
     if bufPool.is_null() {
-        return NULL_0 as *mut ZSTDMT_bufferPool;
+        return core::ptr::null_mut();
     }
     if pthread_mutex_init(
         &mut (*bufPool).poolMutex,
@@ -711,7 +705,7 @@ unsafe fn ZSTDMT_createBufferPool(
     ) != 0
     {
         ZSTD_customFree(bufPool as *mut core::ffi::c_void, cMem);
-        return NULL_0 as *mut ZSTDMT_bufferPool;
+        return core::ptr::null_mut();
     }
     (*bufPool).buffers = ZSTD_customCalloc(
         (maxNbBuffers as usize).wrapping_mul(::core::mem::size_of::<Buffer>()) as size_t,
@@ -719,7 +713,7 @@ unsafe fn ZSTDMT_createBufferPool(
     ) as *mut Buffer;
     if ((*bufPool).buffers).is_null() {
         ZSTDMT_freeBufferPool(bufPool);
-        return NULL_0 as *mut ZSTDMT_bufferPool;
+        return core::ptr::null_mut();
     }
     (*bufPool).bufferSize = (64 * ((1) << 10)) as size_t;
     (*bufPool).totalBuffers = maxNbBuffers;
@@ -755,7 +749,7 @@ unsafe fn ZSTDMT_expandBufferPool(
     maxNbBuffers: core::ffi::c_uint,
 ) -> *mut ZSTDMT_bufferPool {
     if srcBufPool.is_null() {
-        return NULL_0 as *mut ZSTDMT_bufferPool;
+        return core::ptr::null_mut();
     }
     if (*srcBufPool).totalBuffers >= maxNbBuffers {
         return srcBufPool;
@@ -853,7 +847,7 @@ unsafe fn ZSTDMT_createSeqPool(
 ) -> *mut ZSTDMT_seqPool {
     let seqPool = ZSTDMT_createBufferPool(nbWorkers, cMem);
     if seqPool.is_null() {
-        return NULL_0 as *mut ZSTDMT_seqPool;
+        return core::ptr::null_mut();
     }
     ZSTDMT_setNbSeq(seqPool, 0);
     seqPool
@@ -887,7 +881,7 @@ unsafe fn ZSTDMT_createCCtxPool(
     let cctxPool = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_CCtxPool>() as size_t, cMem)
         as *mut ZSTDMT_CCtxPool;
     if cctxPool.is_null() {
-        return NULL_0 as *mut ZSTDMT_CCtxPool;
+        return core::ptr::null_mut();
     }
     if pthread_mutex_init(
         &mut (*cctxPool).poolMutex,
@@ -895,7 +889,7 @@ unsafe fn ZSTDMT_createCCtxPool(
     ) != 0
     {
         ZSTD_customFree(cctxPool as *mut core::ffi::c_void, cMem);
-        return NULL_0 as *mut ZSTDMT_CCtxPool;
+        return core::ptr::null_mut();
     }
     (*cctxPool).totalCCtx = nbWorkers;
     (*cctxPool).cctxs = ZSTD_customCalloc(
@@ -904,14 +898,14 @@ unsafe fn ZSTDMT_createCCtxPool(
     ) as *mut *mut ZSTD_CCtx;
     if ((*cctxPool).cctxs).is_null() {
         ZSTDMT_freeCCtxPool(cctxPool);
-        return NULL_0 as *mut ZSTDMT_CCtxPool;
+        return core::ptr::null_mut();
     }
     (*cctxPool).cMem = cMem;
     let fresh1 = &mut (*((*cctxPool).cctxs).offset(0));
     *fresh1 = ZSTD_createCCtx_advanced(cMem);
     if (*((*cctxPool).cctxs).offset(0)).is_null() {
         ZSTDMT_freeCCtxPool(cctxPool);
-        return NULL_0 as *mut ZSTDMT_CCtxPool;
+        return core::ptr::null_mut();
     }
     (*cctxPool).availCCtx = 1;
     cctxPool
@@ -921,7 +915,7 @@ unsafe fn ZSTDMT_expandCCtxPool(
     nbWorkers: core::ffi::c_int,
 ) -> *mut ZSTDMT_CCtxPool {
     if srcPool.is_null() {
-        return NULL_0 as *mut ZSTDMT_CCtxPool;
+        return core::ptr::null_mut();
     }
     if nbWorkers <= (*srcPool).totalCCtx {
         return srcPool;
@@ -1167,11 +1161,9 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
     }
     pthread_mutex_unlock(&mut (*serialState).mutex);
 }
-static mut kNullRange: Range = {
-    Range {
-        start: NULL_0 as *const core::ffi::c_void,
-        size: 0,
-    }
+static mut kNullRange: Range = Range {
+    start: core::ptr::null(),
+    size: 0,
 };
 unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
     let mut current_block: u64;
@@ -1225,7 +1217,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                     if !((*job).cdict).is_null() {
                         let initError = ZSTD_compressBegin_advanced_internal(
                             cctx,
-                            NULL_0 as *const core::ffi::c_void,
+                            core::ptr::null(),
                             0,
                             ZSTD_dct_auto,
                             ZSTD_dtlm_fast,
@@ -1284,7 +1276,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                         (*job).prefix.size,
                                         ZSTD_dct_rawContent,
                                         ZSTD_dtlm_fast,
-                                        NULL_0 as *const ZSTD_CDict,
+                                        core::ptr::null(),
                                         &jobParams,
                                         pledgedSrcSize as core::ffi::c_ulonglong,
                                     );
@@ -1449,12 +1441,10 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
     pthread_cond_signal(&mut (*job).job_cond);
     pthread_mutex_unlock(&mut (*job).job_mutex);
 }
-static mut kNullRoundBuff: RoundBuff_t = {
-    RoundBuff_t {
-        buffer: NULL_0 as *mut u8,
-        capacity: 0,
-        pos: 0,
-    }
+static mut kNullRoundBuff: RoundBuff_t = RoundBuff_t {
+    buffer: core::ptr::null_mut(),
+    capacity: 0,
+    pos: 0,
 };
 pub const RSYNC_LENGTH: core::ffi::c_int = 32;
 pub const RSYNC_MIN_BLOCK_LOG: core::ffi::c_int = ZSTD_BLOCKSIZELOG_MAX;
@@ -1489,7 +1479,7 @@ unsafe fn ZSTDMT_createJobsTable(
     ) as *mut ZSTDMT_jobDescription;
     let mut initError = 0;
     if jobTable.is_null() {
-        return NULL_0 as *mut ZSTDMT_jobDescription;
+        return core::ptr::null_mut();
     }
     *nbJobsPtr = nbJobs;
     jobNb = 0;
@@ -1506,7 +1496,7 @@ unsafe fn ZSTDMT_createJobsTable(
     }
     if initError != 0 {
         ZSTDMT_freeJobsTable(jobTable, nbJobs, cMem);
-        return NULL_0 as *mut ZSTDMT_jobDescription;
+        return core::ptr::null_mut();
     }
     jobTable
 }
@@ -1543,7 +1533,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     let mut nbJobs = nbWorkers.wrapping_add(2);
     let mut initError: core::ffi::c_int = 0;
     if nbWorkers < 1 {
-        return NULL_0 as *mut ZSTDMT_CCtx;
+        return core::ptr::null_mut();
     }
     nbWorkers = if nbWorkers
         < (if ::core::mem::size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
@@ -1564,12 +1554,12 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
         ^ (cMem.customFree).is_some() as core::ffi::c_int
         != 0
     {
-        return NULL_0 as *mut ZSTDMT_CCtx;
+        return core::ptr::null_mut();
     }
     mtctx = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_CCtx>() as size_t, cMem)
         as *mut ZSTDMT_CCtx;
     if mtctx.is_null() {
-        return NULL_0 as *mut ZSTDMT_CCtx;
+        return core::ptr::null_mut();
     }
     ZSTDMT_CCtxParam_setNbWorkers(&mut (*mtctx).params, nbWorkers);
     (*mtctx).cMem = cMem;
@@ -1602,7 +1592,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
         != 0
     {
         ZSTDMT_freeCCtx(mtctx);
-        return NULL_0 as *mut ZSTDMT_CCtx;
+        return core::ptr::null_mut();
     }
     mtctx
 }
@@ -1941,7 +1931,7 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
             return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
         }
     } else {
-        (*mtctx).cdictLocal = NULL_0 as *mut ZSTD_CDict;
+        (*mtctx).cdictLocal = core::ptr::null_mut();
         (*mtctx).cdict = cdict;
     }
     (*mtctx).targetPrefixSize = ZSTDMT_computeOverlapSize(&params);
@@ -2010,8 +2000,8 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
     (*mtctx).consumed = 0;
     (*mtctx).produced = 0;
     ZSTD_freeCDict((*mtctx).cdictLocal);
-    (*mtctx).cdictLocal = NULL_0 as *mut ZSTD_CDict;
-    (*mtctx).cdict = NULL_0 as *const ZSTD_CDict;
+    (*mtctx).cdictLocal = core::ptr::null_mut();
+    (*mtctx).cdict = core::ptr::null();
     if !dict.is_null() {
         if dictContentType as core::ffi::c_uint
             == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
@@ -2083,7 +2073,7 @@ unsafe fn ZSTDMT_createCompressionJob(
         *fresh5 = if (*mtctx).nextJobID == 0 {
             (*mtctx).cdict
         } else {
-            NULL_0 as *const ZSTD_CDict
+            core::ptr::null()
         };
         (*((*mtctx).jobs).offset(jobID as isize)).fullFrameSize = (*mtctx).frameContentSize;
         (*((*mtctx).jobs).offset(jobID as isize)).dstBuff = g_nullBuffer;

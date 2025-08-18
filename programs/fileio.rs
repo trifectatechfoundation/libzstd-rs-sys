@@ -29,8 +29,8 @@ use crate::fileio_asyncio::{
     AIO_ReadPool_setAsync, AIO_ReadPool_setFile, AIO_WritePool_acquireJob, AIO_WritePool_closeFile,
     AIO_WritePool_create, AIO_WritePool_enqueueAndReacquireWriteJob, AIO_WritePool_free,
     AIO_WritePool_getFile, AIO_WritePool_releaseIoJob, AIO_WritePool_setAsync,
-    AIO_WritePool_setFile, AIO_WritePool_sparseWriteEnd, AIO_supported, FIO_prefs_t, IOJob_t,
-    ReadPoolCtx_t, WritePoolCtx_t,
+    AIO_WritePool_setFile, AIO_WritePool_sparseWriteEnd, AIO_supported, FIO_prefs_t, ReadPoolCtx_t,
+    WritePoolCtx_t,
 };
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 use crate::util::{
@@ -405,11 +405,9 @@ const Z_OK: core::ffi::c_int = 0;
 const Z_STREAM_END: core::ffi::c_int = 1;
 const Z_BUF_ERROR: core::ffi::c_int = -(5);
 const Z_BEST_COMPRESSION: core::ffi::c_int = 9;
-const Z_NULL: core::ffi::c_int = 0;
 const ZSTD_SPARSE_DEFAULT: core::ffi::c_int = 1;
 const __S_IREAD: core::ffi::c_int = 0o400 as core::ffi::c_int;
 const __S_IWRITE: core::ffi::c_int = 0o200 as core::ffi::c_int;
-const NULL: core::ffi::c_int = 0;
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const O_RDONLY: core::ffi::c_int = 0;
 const O_WRONLY: core::ffi::c_int = 0o1 as core::ffi::c_int;
@@ -434,7 +432,7 @@ pub const DICTSIZE_MAX: core::ffi::c_int = 32 * ((1) << 20);
 pub const DEFAULT_FILE_PERMISSIONS: core::ffi::c_int =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 pub const TEMPORARY_FILE_PERMISSIONS: core::ffi::c_int = S_IRUSR | S_IWUSR;
-static mut g_artefact: *const core::ffi::c_char = NULL as *const core::ffi::c_char;
+static mut g_artefact: *const core::ffi::c_char = core::ptr::null();
 unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
     assert!(sig == SIGINT);
     signal(
@@ -456,7 +454,7 @@ unsafe fn addHandler(dstFileName: *const core::ffi::c_char) {
             Some(INThandler as unsafe extern "C" fn(core::ffi::c_int) -> ()),
         );
     } else {
-        g_artefact = NULL as *const core::ffi::c_char;
+        g_artefact = core::ptr::null();
     };
 }
 unsafe fn clearHandler() {
@@ -466,7 +464,7 @@ unsafe fn clearHandler() {
             ::core::mem::transmute::<libc::intptr_t, __sighandler_t>(SIG_DFL as libc::intptr_t),
         );
     }
-    g_artefact = NULL as *const core::ffi::c_char;
+    g_artefact = core::ptr::null();
 }
 pub unsafe fn FIO_addAbortHandler() {}
 unsafe fn FIO_shouldDisplayFileSummary(fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
@@ -888,7 +886,7 @@ unsafe fn FIO_openSrcFile(
                 strerror(*__errno_location()),
             );
         }
-        return NULL as *mut FILE;
+        return core::ptr::null_mut();
     }
     if UTIL_isRegularFileStat(statbuf) == 0
         && UTIL_isFIFOStat(statbuf) == 0
@@ -903,7 +901,7 @@ unsafe fn FIO_openSrcFile(
                 srcFileName,
             );
         }
-        return NULL as *mut FILE;
+        return core::ptr::null_mut();
     }
     let f = fopen(
         srcFileName,
@@ -927,7 +925,7 @@ unsafe fn FIO_openDstFile(
     mode: core::ffi::c_int,
 ) -> *mut FILE {
     if (*prefs).testMode != 0 {
-        return NULL as *mut FILE;
+        return core::ptr::null_mut();
     }
     assert!(!dstFileName.is_null());
     if strcmp(dstFileName, stdoutmark.as_ptr()) == 0 {
@@ -957,7 +955,7 @@ unsafe fn FIO_openDstFile(
                     as *const u8 as *const core::ffi::c_char,
             );
         }
-        return NULL as *mut FILE;
+        return core::ptr::null_mut();
     }
     if UTIL_isRegularFile(dstFileName) != 0 {
         if strcmp(dstFileName, nulmark.as_ptr()) == 0 {
@@ -1002,7 +1000,7 @@ unsafe fn FIO_openDstFile(
                         dstFileName,
                     );
                 }
-                return NULL as *mut FILE;
+                return core::ptr::null_mut();
             }
             fprintf(
                 stderr,
@@ -1016,7 +1014,7 @@ unsafe fn FIO_openDstFile(
                 (*fCtx).hasStdinInput,
             ) != 0
             {
-                return NULL as *mut FILE;
+                return core::ptr::null_mut();
             }
         }
         FIO_removeFile(dstFileName);
@@ -1024,7 +1022,7 @@ unsafe fn FIO_openDstFile(
     let mut isDstRegFile: core::ffi::c_int = 0;
     let openflags = O_WRONLY | O_CREAT | O_TRUNC;
     let fd = open(dstFileName, openflags, mode);
-    let mut f = NULL as *mut FILE;
+    let mut f = core::ptr::null_mut();
     if fd != -(1) {
         f = fdopen(fd, b"wb\0" as *const u8 as *const core::ffi::c_char);
     }
@@ -1059,12 +1057,7 @@ unsafe fn FIO_openDstFile(
                 strerror(*__errno_location()),
             );
         }
-    } else if setvbuf(
-        f,
-        NULL as *mut core::ffi::c_char,
-        _IOFBF,
-        ((1) << 20) as size_t,
-    ) != 0
+    } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, ((1) << 20) as size_t) != 0
         && g_display_prefs.displayLevel >= 2
     {
         fprintf(
@@ -1155,7 +1148,7 @@ unsafe fn FIO_setDictBufferMalloc(
     let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
     assert!(!bufferPtr.is_null());
     assert!(!dictFileStat.is_null());
-    *bufferPtr = NULL as *mut core::ffi::c_void;
+    *bufferPtr = core::ptr::null_mut();
     if fileName.is_null() {
         return 0;
     }
@@ -1310,7 +1303,7 @@ pub const PROT_READ: core::ffi::c_int = 0x1 as core::ffi::c_int;
 pub const MAP_PRIVATE: core::ffi::c_int = 0x2 as core::ffi::c_int;
 unsafe fn FIO_munmap(dict: *mut FIO_Dict_t) {
     munmap((*dict).dictBuffer, (*dict).dictBufferSize);
-    (*dict).dictBuffer = NULL as *mut core::ffi::c_void;
+    (*dict).dictBuffer = core::ptr::null_mut();
     (*dict).dictBufferSize = 0;
 }
 unsafe fn FIO_setDictBufferMMap(
@@ -1324,7 +1317,7 @@ unsafe fn FIO_setDictBufferMMap(
     let bufferPtr: *mut *mut core::ffi::c_void = &mut (*dict).dictBuffer;
     assert!(!bufferPtr.is_null());
     assert!(!dictFileStat.is_null());
-    *bufferPtr = NULL as *mut core::ffi::c_void;
+    *bufferPtr = core::ptr::null_mut();
     if fileName.is_null() {
         return 0;
     }
@@ -1408,7 +1401,7 @@ unsafe fn FIO_setDictBufferMMap(
         exit(34);
     }
     *bufferPtr = mmap(
-        NULL as *mut core::ffi::c_void,
+        core::ptr::null_mut(),
         fileSize as size_t,
         PROT_READ,
         MAP_PRIVATE,
@@ -1454,7 +1447,7 @@ unsafe fn FIO_freeDict(dict: *mut FIO_Dict_t) {
         == FIO_mallocDict as core::ffi::c_int as core::ffi::c_uint
     {
         free((*dict).dictBuffer);
-        (*dict).dictBuffer = NULL as *mut core::ffi::c_void;
+        (*dict).dictBuffer = core::ptr::null_mut();
         (*dict).dictBufferSize = 0;
     } else if (*dict).dictBufferType as core::ffi::c_uint
         == FIO_mmapDict as core::ffi::c_int as core::ffi::c_uint
@@ -3411,13 +3404,13 @@ unsafe fn FIO_compressGzFrame(
         adler: 0,
         reserved: 0,
     };
-    let mut writeJob = NULL as *mut IOJob_t;
+    let mut writeJob = core::ptr::null_mut();
     if compressionLevel > Z_BEST_COMPRESSION {
         compressionLevel = Z_BEST_COMPRESSION;
     }
-    strm.zalloc = ::core::mem::transmute::<libc::intptr_t, alloc_func>(Z_NULL as libc::intptr_t);
-    strm.zfree = ::core::mem::transmute::<libc::intptr_t, free_func>(Z_NULL as libc::intptr_t);
-    strm.opaque = Z_NULL as voidpf;
+    strm.zalloc = None;
+    strm.zfree = None;
+    strm.opaque = core::ptr::null_mut();
     let ret = deflateInit2_(
         &mut strm,
         compressionLevel,
@@ -3666,18 +3659,18 @@ unsafe fn FIO_compressLzmaFrame(
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
-            next_in: NULL as *const u8,
+            next_in: core::ptr::null(),
             avail_in: 0,
             total_in: 0,
-            next_out: NULL as *mut u8,
+            next_out: core::ptr::null_mut(),
             avail_out: 0,
             total_out: 0,
-            allocator: NULL as *const lzma_allocator,
-            internal: NULL as *mut lzma_internal,
-            reserved_ptr1: NULL as *mut core::ffi::c_void,
-            reserved_ptr2: NULL as *mut core::ffi::c_void,
-            reserved_ptr3: NULL as *mut core::ffi::c_void,
-            reserved_ptr4: NULL as *mut core::ffi::c_void,
+            allocator: core::ptr::null(),
+            internal: core::ptr::null_mut(),
+            reserved_ptr1: core::ptr::null_mut(),
+            reserved_ptr2: core::ptr::null_mut(),
+            reserved_ptr3: core::ptr::null_mut(),
+            reserved_ptr4: core::ptr::null_mut(),
             seek_pos: 0,
             reserved_int2: 0,
             reserved_int3: 0,
@@ -3688,7 +3681,7 @@ unsafe fn FIO_compressLzmaFrame(
     };
     let mut action = LZMA_RUN;
     let mut ret = LZMA_OK;
-    let mut writeJob = NULL as *mut IOJob_t;
+    let mut writeJob = core::ptr::null_mut();
     if compressionLevel < 0 {
         compressionLevel = 0;
     }
@@ -5268,8 +5261,8 @@ unsafe fn FIO_determineCompressedName(
     suffix: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     static mut dfnbCapacity: size_t = 0;
-    static mut dstFileNameBuffer: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
-    let mut outDirFilename = NULL as *mut core::ffi::c_char;
+    static mut dstFileNameBuffer: *mut core::ffi::c_char = core::ptr::null_mut();
+    let mut outDirFilename = core::ptr::null_mut();
     let mut sfnSize = strlen(srcFileName);
     let srcSuffixLen = strlen(suffix);
     if strcmp(srcFileName, stdinmark.as_ptr()) == 0 {
@@ -5388,7 +5381,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
         dstFile = FIO_openDstFile(
             fCtx,
             prefs,
-            NULL as *const core::ffi::c_char,
+            core::ptr::null(),
             outFileName,
             DEFAULT_FILE_PERMISSIONS,
         );
@@ -5459,7 +5452,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
         let mut current_block_63: u64;
         while (*fCtx).currFileIdx < (*fCtx).nbFilesTotal {
             let srcFileName = *inFileNamesTable.offset((*fCtx).currFileIdx as isize);
-            let mut dstFileName = NULL as *const core::ffi::c_char;
+            let mut dstFileName = core::ptr::null::<core::ffi::c_char>();
             if !outMirroredRootDirName.is_null() {
                 let validMirroredDirName =
                     UTIL_createMirroredDestDirName(srcFileName, outMirroredRootDirName);
@@ -6211,10 +6204,10 @@ unsafe fn FIO_decompressGzFrame(
     };
     let mut flush = Z_NO_FLUSH;
     let mut decodingError = 0;
-    let mut writeJob = NULL as *mut IOJob_t;
-    strm.zalloc = ::core::mem::transmute::<libc::intptr_t, alloc_func>(Z_NULL as libc::intptr_t);
-    strm.zfree = ::core::mem::transmute::<libc::intptr_t, free_func>(Z_NULL as libc::intptr_t);
-    strm.opaque = Z_NULL as voidpf;
+    let mut writeJob = core::ptr::null_mut();
+    strm.zalloc = None;
+    strm.zfree = None;
+    strm.opaque = core::ptr::null_mut();
     strm.next_in = core::ptr::null_mut::<Bytef>();
     strm.avail_in = 0;
     if inflateInit2_(
@@ -6307,18 +6300,18 @@ unsafe fn FIO_decompressLzmaFrame(
     let mut outFileSize = 0 as core::ffi::c_ulonglong;
     let mut strm = {
         lzma_stream {
-            next_in: NULL as *const u8,
+            next_in: core::ptr::null(),
             avail_in: 0,
             total_in: 0,
-            next_out: NULL as *mut u8,
+            next_out: core::ptr::null_mut(),
             avail_out: 0,
             total_out: 0,
-            allocator: NULL as *const lzma_allocator,
-            internal: NULL as *mut lzma_internal,
-            reserved_ptr1: NULL as *mut core::ffi::c_void,
-            reserved_ptr2: NULL as *mut core::ffi::c_void,
-            reserved_ptr3: NULL as *mut core::ffi::c_void,
-            reserved_ptr4: NULL as *mut core::ffi::c_void,
+            allocator: core::ptr::null(),
+            internal: core::ptr::null_mut(),
+            reserved_ptr1: core::ptr::null_mut(),
+            reserved_ptr2: core::ptr::null_mut(),
+            reserved_ptr3: core::ptr::null_mut(),
+            reserved_ptr4: core::ptr::null_mut(),
             seek_pos: 0,
             reserved_int2: 0,
             reserved_int3: 0,
@@ -6330,7 +6323,7 @@ unsafe fn FIO_decompressLzmaFrame(
     let mut action = LZMA_RUN;
     let mut initRet = LZMA_OK;
     let mut decodingError = 0;
-    let mut writeJob = NULL as *mut IOJob_t;
+    let mut writeJob = core::ptr::null_mut();
     strm.next_in = core::ptr::null::<u8>();
     strm.avail_in = 0;
     if plain_lzma != 0 {
@@ -6677,7 +6670,7 @@ unsafe fn FIO_decompressSrcFile(
     }
     AIO_ReadPool_setFile(ress.readCtx, srcFile);
     result = FIO_decompressDstFile(fCtx, prefs, ress, dstFileName, srcFileName, &srcFileStat);
-    AIO_ReadPool_setFile(ress.readCtx, NULL as *mut FILE);
+    AIO_ReadPool_setFile(ress.readCtx, core::ptr::null_mut());
     if fclose(srcFile) != 0 {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -6733,9 +6726,9 @@ unsafe fn FIO_determineDstName(
     outDirName: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     static mut dfnbCapacity: size_t = 0;
-    static mut dstFileNameBuffer: *mut core::ffi::c_char = NULL as *mut core::ffi::c_char;
+    static mut dstFileNameBuffer: *mut core::ffi::c_char = core::ptr::null_mut();
     let mut dstFileNameEndPos: size_t = 0;
-    let mut outDirFilename = NULL as *mut core::ffi::c_char;
+    let mut outDirFilename = core::ptr::null_mut();
     let mut dstSuffix = b"\0" as *const u8 as *const core::ffi::c_char;
     let mut dstSuffixLen = 0;
     let mut sfnSize = strlen(srcFileName);
@@ -6754,7 +6747,7 @@ unsafe fn FIO_determineDstName(
                 suffixListStr.as_ptr(),
             );
         }
-        return NULL as *const core::ffi::c_char;
+        return core::ptr::null();
     }
     srcSuffixLen = strlen(srcSuffix);
     let matchedSuffix = suffixList
@@ -6770,7 +6763,7 @@ unsafe fn FIO_determineDstName(
                 suffixListStr.as_ptr(),
             );
         }
-        return NULL as *const core::ffi::c_char;
+        return core::ptr::null();
     }
     if *matchedSuffix.unwrap().as_ptr().offset(1) as core::ffi::c_int == 't' as i32 {
         dstSuffix = b".tar\0" as *const u8 as *const core::ffi::c_char;
@@ -6859,7 +6852,7 @@ pub unsafe fn FIO_decompressMultipleFilenames(
             let dstFile = FIO_openDstFile(
                 fCtx,
                 prefs,
-                NULL as *const core::ffi::c_char,
+                core::ptr::null(),
                 outFileName,
                 DEFAULT_FILE_PERMISSIONS,
             );
@@ -6955,7 +6948,7 @@ pub unsafe fn FIO_decompressMultipleFilenames(
         }
         while (*fCtx).currFileIdx < (*fCtx).nbFilesTotal {
             let srcFileName = *srcNamesTable.offset((*fCtx).currFileIdx as isize);
-            let mut dstFileName = NULL as *const core::ffi::c_char;
+            let mut dstFileName = core::ptr::null();
             if !outMirroredRootDirName.is_null() {
                 let validMirroredDirName =
                     UTIL_createMirroredDestDirName(srcFileName, outMirroredRootDirName);
@@ -7328,7 +7321,7 @@ unsafe fn getFileInfo_fileConfirmed(
         },
         __glibc_reserved: [0; 3],
     };
-    let srcFile = FIO_openSrcFile(NULL as *const FIO_prefs_t, inFileName, &mut srcFileStat);
+    let srcFile = FIO_openSrcFile(core::ptr::null(), inFileName, &mut srcFileStat);
     if srcFile.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(

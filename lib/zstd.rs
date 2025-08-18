@@ -132,6 +132,12 @@ pub type ZSTD_bufferMode_e = core::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 
+pub static mut ZSTD_defaultCMem: ZSTD_customMem = ZSTD_customMem {
+    customAlloc: None,
+    customFree: None,
+    opaque: core::ptr::null_mut(),
+};
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameProgression {
