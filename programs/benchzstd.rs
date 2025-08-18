@@ -1654,8 +1654,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).add(u.wrapping_sub(n))
-                            as core::ffi::c_int,
+                        *(srcBuffer as *const u8).add(u.wrapping_sub(n)) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_sub(1);
@@ -1671,8 +1670,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).add(u.wrapping_add(n))
-                            as core::ffi::c_int,
+                        *(srcBuffer as *const u8).add(u.wrapping_add(n)) as core::ffi::c_int,
                     );
                     fflush(NULL as *mut FILE);
                     n = n.wrapping_add(1);

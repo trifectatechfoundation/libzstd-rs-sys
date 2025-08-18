@@ -3414,8 +3414,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         outMirroredDirName = argument;
-                                        argument =
-                                            argument.add(strlen(outMirroredDirName));
+                                        argument = argument.add(strlen(outMirroredDirName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3545,8 +3544,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         patchFromDictFileName = argument;
-                                        argument =
-                                            argument.add(strlen(patchFromDictFileName));
+                                        argument = argument.add(strlen(patchFromDictFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -3606,8 +3604,7 @@ unsafe fn main_0(
                                     if *argument as core::ffi::c_int == '=' as i32 {
                                         argument = argument.offset(1);
                                         patchFromDictFileName = argument;
-                                        argument =
-                                            argument.add(strlen(patchFromDictFileName));
+                                        argument = argument.add(strlen(patchFromDictFileName));
                                     } else {
                                         argNb += 1;
                                         if argNb >= argCount {
@@ -4683,14 +4680,16 @@ unsafe fn main_0(
                                                             while fileNb < (*filenames).tableSize {
                                                                 if showDefaultCParams != 0 {
                                                                     printDefaultCParams(
-                                                                        *((*filenames).fileNames).add(fileNb),
+                                                                        *((*filenames).fileNames)
+                                                                            .add(fileNb),
                                                                         dictFileName,
                                                                         cLevel,
                                                                     );
                                                                 }
                                                                 if g_displayLevel >= 4 {
                                                                     printActualCParams(
-                                                                        *((*filenames).fileNames).add(fileNb),
+                                                                        *((*filenames).fileNames)
+                                                                            .add(fileNb),
                                                                         dictFileName,
                                                                         cLevel,
                                                                         &compressionParams,

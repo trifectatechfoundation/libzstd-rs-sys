@@ -834,11 +834,7 @@ pub unsafe fn FIO_setNbFilesTotal(fCtx: *mut FIO_ctx_t, mut value: core::ffi::c_
 pub unsafe fn FIO_determineHasStdinInput(fCtx: *mut FIO_ctx_t, filenames: *const FileNamesTable) {
     let mut i = 0;
     while i < (*filenames).tableSize {
-        if strcmp(
-            stdinmark.as_ptr(),
-            *((*filenames).fileNames).add(i),
-        ) == 0
-        {
+        if strcmp(stdinmark.as_ptr(), *((*filenames).fileNames).add(i)) == 0 {
             (*fCtx).hasStdinInput = 1;
             return;
         }
@@ -1102,7 +1098,7 @@ unsafe fn FIO_openDstFile(
         f,
         NULL as *mut core::ffi::c_char,
         _IOFBF,
-        (((1) << 20)) as size_t,
+        ((1) << 20) as size_t,
     ) != 0
         && g_display_prefs.displayLevel >= 2
     {
@@ -1950,8 +1946,7 @@ unsafe fn setOutBuffer(
     o
 }
 unsafe fn ZSTD_cycleLog(mut hashLog: u32, mut strat: ZSTD_strategy) -> u32 {
-    let btScale =
-        (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
+    let btScale = (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
@@ -6085,12 +6080,10 @@ unsafe fn FIO_zstdErrorHelp(
             }) as core::ffi::c_uint
         {
             let windowMB = (windowSize >> 20).wrapping_add(
-                (windowSize & ((((1) << 20)) - 1) as core::ffi::c_ulonglong != 0)
-                    as core::ffi::c_int as core::ffi::c_ulonglong,
+                (windowSize & (((1) << 20) - 1) as core::ffi::c_ulonglong != 0) as core::ffi::c_int
+                    as core::ffi::c_ulonglong,
             ) as core::ffi::c_uint;
-            assert!(
-                windowSize < (((1 as core::ffi::c_ulonglong) << 52)) as core::ffi::c_ulonglong
-            );
+            assert!(windowSize < ((1 as core::ffi::c_ulonglong) << 52) as core::ffi::c_ulonglong);
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
                     stderr,
@@ -6730,14 +6723,7 @@ unsafe fn FIO_decompressSrcFile(
         AIO_WritePool_setAsync(ress.writeCtx, 1);
     }
     AIO_ReadPool_setFile(ress.readCtx, srcFile);
-    result = FIO_decompressDstFile(
-        fCtx,
-        prefs,
-        ress,
-        dstFileName,
-        srcFileName,
-        &srcFileStat,
-    );
+    result = FIO_decompressDstFile(fCtx, prefs, ress, dstFileName, srcFileName, &srcFileStat);
     AIO_ReadPool_setFile(ress.readCtx, NULL as *mut FILE);
     if fclose(srcFile) != 0 {
         if g_display_prefs.displayLevel >= 1 {
@@ -6896,10 +6882,7 @@ unsafe fn FIO_determineDstName(
             dstFileNameEndPos,
         );
     }
-    strcpy(
-        dstFileNameBuffer.add(dstFileNameEndPos),
-        dstSuffix,
-    );
+    strcpy(dstFileNameBuffer.add(dstFileNameEndPos), dstSuffix);
     dstFileNameBuffer
 }
 pub unsafe fn FIO_decompressMultipleFilenames(

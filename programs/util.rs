@@ -506,9 +506,7 @@ pub unsafe fn UTIL_setFDStat(
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    if UTIL_fstat(fd, filename, &mut curStatBuf) == 0
-        || UTIL_isRegularFileStat(&curStatBuf) == 0
-    {
+    if UTIL_fstat(fd, filename, &mut curStatBuf) == 0 || UTIL_isRegularFileStat(&curStatBuf) == 0 {
         if g_traceFileStat != 0 {
             g_traceDepth -= 1;
             fprintf(
@@ -1262,7 +1260,7 @@ unsafe fn UTIL_readFileContent(
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
-        if bufSize.wrapping_sub(totalRead) < (((1) << 10)) as size_t {
+        if bufSize.wrapping_sub(totalRead) < ((1) << 10) as size_t {
             if bufSize >= MAX_FILE_OF_FILE_NAMES_SIZE as size_t {
                 free(buf as *mut core::ffi::c_void);
                 return NULL_0 as *mut core::ffi::c_char;
@@ -1482,8 +1480,8 @@ unsafe fn getTotalTableSize(mut table: *mut FileNamesTable) -> size_t {
     let mut totalSize = 0 as size_t;
     fnb = 0;
     while fnb < (*table).tableSize && !(*((*table).fileNames).add(fnb)).is_null() {
-        totalSize = totalSize
-            .wrapping_add((strlen(*((*table).fileNames).add(fnb))).wrapping_add(1));
+        totalSize =
+            totalSize.wrapping_add((strlen(*((*table).fileNames).add(fnb))).wrapping_add(1));
         fnb = fnb.wrapping_add(1);
     }
     totalSize
@@ -1675,9 +1673,7 @@ unsafe fn UTIL_prepareFileList(
                     return 0;
                 }
             } else {
-                if (*bufStart).add(*pos).add(pathLength)
-                    >= *bufEnd
-                {
+                if (*bufStart).add(*pos).add(pathLength) >= *bufEnd {
                     let mut newListSize = (*bufEnd).offset_from(*bufStart) as core::ffi::c_long
                         + LIST_SIZE_INCREASE as core::ffi::c_long;
                     assert!(newListSize >= 0);
@@ -1692,9 +1688,7 @@ unsafe fn UTIL_prepareFileList(
                         return 0;
                     }
                 }
-                if (*bufStart).add(*pos).add(pathLength)
-                    < *bufEnd
-                {
+                if (*bufStart).add(*pos).add(pathLength) < *bufEnd {
                     memcpy(
                         (*bufStart).add(*pos) as *mut core::ffi::c_void,
                         path as *const core::ffi::c_void,
@@ -2199,9 +2193,8 @@ pub unsafe fn UTIL_createExpandedFNT(
             free(fileNamesTable as *mut core::ffi::c_void);
             return NULL_0 as *mut FileNamesTable;
         }
-        pos_0 = pos_0
-            .wrapping_add((strlen(*fileNamesTable.add(ifnNb_0))).wrapping_add(1))
-            as size_t as size_t;
+        pos_0 = pos_0.wrapping_add((strlen(*fileNamesTable.add(ifnNb_0))).wrapping_add(1)) as size_t
+            as size_t;
         ifnNb_0 = ifnNb_0.wrapping_add(1);
     }
     UTIL_assembleFileNamesTable2(fileNamesTable, nbFiles as size_t, fntCapacity, buf)

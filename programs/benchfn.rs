@@ -124,11 +124,7 @@ pub unsafe fn BMK_benchFunction(
     let mut i: size_t = 0;
     i = 0;
     while i < p.blockCount {
-        memset(
-            *(p.dstBuffers).add(i),
-            0xe5,
-            *(p.dstCapacities).add(i),
-        );
+        memset(*(p.dstBuffers).add(i), 0xe5, *(p.dstCapacities).add(i));
         i = i.wrapping_add(1);
     }
     let mut dstSize = 0 as size_t;
