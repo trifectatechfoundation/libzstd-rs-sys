@@ -281,6 +281,27 @@ pub unsafe fn ZSTD_getcBlockSize(
     }
 }
 
+pub fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), Error> {
+    let [a, b, c, ..] = *src else {
+        return Err(Error::srcSize_wrong);
+    };
+
+    let cBlockHeader = u32::from_le_bytes([a, b, c, 0]);
+    let cSize = cBlockHeader >> 3;
+
+    let bp = blockProperties_t {
+        lastBlock: cBlockHeader & 1,
+        blockType: BlockType::from(cBlockHeader >> 1 & 0b11),
+        origSize: cSize,
+    };
+
+    match bp.blockType {
+        BlockType::Raw | BlockType::Compressed => Ok((bp, cSize as size_t)),
+        BlockType::Rle => Ok((bp, 1)),
+        BlockType::Reserved => Err(Error::corruption_detected),
+    }
+}
+
 unsafe fn ZSTD_allocateLiteralsBuffer(
     dctx: &mut ZSTD_DCtx,
     mut dst: Writer<'_>,

@@ -15,7 +15,8 @@ use crate::lib::decompress::huf_decompress::{
 };
 use crate::lib::decompress::zstd_ddict::{ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
-    ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal, ZSTD_getcBlockSize,
+    getc_block_size, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
+    ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::BlockType;
 use crate::lib::decompress::{
@@ -1647,15 +1648,12 @@ unsafe fn ZSTD_decompressFrame(
     loop {
         let mut oBlockEnd = oend;
         let mut decodedSize: size_t = 0;
-        let mut blockProperties = blockProperties_t {
-            blockType: BlockType::Raw,
-            lastBlock: 0,
-            origSize: 0,
+
+        let (blockProperties, cBlockSize) = match getc_block_size(ip) {
+            Ok(ret) => ret,
+            Err(e) => return e.to_error_code(),
         };
-        let cBlockSize = ZSTD_getcBlockSize(ip.as_ptr().cast(), ip.len(), &mut blockProperties);
-        if ERR_isError(cBlockSize) != 0 {
-            return cBlockSize;
-        }
+
         *ip = &ip[ZSTD_blockHeaderSize..];
         if cBlockSize > ip.len() {
             return Error::srcSize_wrong.to_error_code();
