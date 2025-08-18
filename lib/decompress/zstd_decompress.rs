@@ -530,10 +530,10 @@ unsafe fn ZSTD_decompressLegacyStream(
 ) -> size_t {
     static mut x: core::ffi::c_char = 0;
     if ((*output).dst).is_null() {
-        (*output).dst = &mut x as *mut core::ffi::c_char as *mut core::ffi::c_void;
+        (*output).dst = &raw mut x as *mut core::ffi::c_void;
     }
     if ((*input).src).is_null() {
-        (*input).src = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
+        (*input).src = &raw mut x as *const core::ffi::c_void;
     }
     match version {
         5 => {
