@@ -2,7 +2,7 @@ use core::ptr;
 
 use libc::{calloc, free, malloc, size_t};
 
-use crate::lib::common::entropy_common::FSE_readNCount;
+use crate::lib::common::entropy_common::{FSE_readNCount, FSE_readNCount_slice};
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::{
@@ -2195,12 +2195,11 @@ pub unsafe fn ZSTD_loadDEntropy(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let mut dictPtr = dict as *const u8;
-    let dictEnd = dictPtr.add(dictSize);
-    if dictSize <= 8 {
+    let dict = core::slice::from_raw_parts(dict.cast::<u8>(), dictSize);
+
+    let Some((_, mut dictPtr)) = dict.split_at_checked(8) else {
         return Error::dictionary_corrupted.to_error_code();
-    }
-    dictPtr = dictPtr.offset(8);
+    };
 
     const _: () = assert!(
         size_of::<crate::lib::decompress::SymbolTable<512>>()
@@ -2210,32 +2209,29 @@ pub unsafe fn ZSTD_loadDEntropy(
         align_of::<crate::lib::decompress::SymbolTable<512>>()
             >= align_of::<HUF_ReadDTableX2_Workspace>()
     );
+
     let workspace = &mut entropy.LLTable;
     let wksp: &mut HUF_ReadDTableX2_Workspace = unsafe { core::mem::transmute(workspace) };
 
-    let hSize = HUF_readDTableX2_wksp(
-        &mut entropy.hufTable,
-        core::slice::from_raw_parts(dictPtr, dictEnd.offset_from(dictPtr) as usize),
-        wksp,
-        0,
-    );
+    let hSize = HUF_readDTableX2_wksp(&mut entropy.hufTable, dictPtr, wksp, 0);
     if ERR_isError(hSize) != 0 {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(hSize);
+
+    dictPtr = &dictPtr[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
     let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
     let mut offcodeLog: core::ffi::c_uint = 0;
-    let offcodeHeaderSize = FSE_readNCount(
+    let offcodeHeaderSize = FSE_readNCount_slice(
         &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
+        dictPtr,
     );
-    if ERR_isError(offcodeHeaderSize) != 0 {
+
+    let Ok(offcodeHeaderSize) = offcodeHeaderSize else {
         return Error::dictionary_corrupted.to_error_code();
-    }
+    };
     if offcodeMaxValue > 31 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -2251,20 +2247,19 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut entropy.workspace,
         false,
     );
-    dictPtr = dictPtr.add(offcodeHeaderSize);
+    dictPtr = &dictPtr[offcodeHeaderSize..];
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
-    let matchlengthHeaderSize = FSE_readNCount(
+    let matchlengthHeaderSize = FSE_readNCount_slice(
         &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
+        dictPtr,
     );
-    if ERR_isError(matchlengthHeaderSize) != 0 {
+    let Ok(matchlengthHeaderSize) = matchlengthHeaderSize else {
         return Error::dictionary_corrupted.to_error_code();
-    }
+    };
     if matchlengthMaxValue > 52 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -2280,20 +2275,19 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut entropy.workspace,
         false,
     );
-    dictPtr = dictPtr.add(matchlengthHeaderSize);
+    dictPtr = &dictPtr[matchlengthHeaderSize..];
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    let litlengthHeaderSize = FSE_readNCount(
+    let litlengthHeaderSize = FSE_readNCount_slice(
         &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as core::ffi::c_long as size_t,
+        dictPtr,
     );
-    if ERR_isError(litlengthHeaderSize) != 0 {
+    let Ok(litlengthHeaderSize) = litlengthHeaderSize else {
         return Error::dictionary_corrupted.to_error_code();
-    }
+    };
     if litlengthMaxValue > 35 {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -2309,23 +2303,21 @@ pub unsafe fn ZSTD_loadDEntropy(
         &mut entropy.workspace,
         false,
     );
-    dictPtr = dictPtr.add(litlengthHeaderSize);
-    if dictPtr.offset(12) > dictEnd {
+    dictPtr = &dictPtr[litlengthHeaderSize..];
+    let Some((chunk, dict_content)) = dictPtr.split_first_chunk::<12>() else {
         return Error::dictionary_corrupted.to_error_code();
-    }
-    let mut i: core::ffi::c_int = 0;
-    let dictContentSize = dictEnd.offset_from(dictPtr.offset(12)) as core::ffi::c_long as size_t;
-    i = 0;
-    while i < 3 {
-        let rep = MEM_readLE32(dictPtr as *const core::ffi::c_void);
-        dictPtr = dictPtr.offset(4);
-        if rep == 0 || rep as size_t > dictContentSize {
+    };
+
+    let dict_content_size = dict_content.len();
+    for (i, rep) in chunk.as_chunks::<4>().0.iter().enumerate() {
+        let rep = u32::from_le_bytes(*rep);
+        if rep == 0 || rep as size_t > dict_content_size {
             return Error::dictionary_corrupted.to_error_code();
         }
-        *(entropy.rep).as_mut_ptr().offset(i as isize) = rep;
-        i += 1;
+        entropy.rep[i] = rep;
     }
-    dictPtr.offset_from(dict as *const u8) as core::ffi::c_long as size_t
+
+    dict.len() - dict_content_size
 }
 
 unsafe fn ZSTD_decompress_insertDictionary(
