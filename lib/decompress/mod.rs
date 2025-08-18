@@ -83,29 +83,25 @@ pub type ZSTD_dStage = core::ffi::c_uint;
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DecompressStage {
-    ZSTDds_getFrameHeaderSize = 0,
-    ZSTDds_decodeFrameHeader = 1,
-    ZSTDds_decodeBlockHeader = 2,
-    ZSTDds_decompressBlock = 3,
-    ZSTDds_decompressLastBlock = 4,
-    ZSTDds_checkChecksum = 5,
-    ZSTDds_decodeSkippableHeader = 6,
-    ZSTDds_skipFrame = 7,
+    GetFrameHeaderSize = 0,
+    DecodeFrameHeader = 1,
+    DecodeBlockHeader = 2,
+    DecompressBlock = 3,
+    DecompressLastBlock = 4,
+    CheckChecksum = 5,
+    DecodeSkippableHeader = 6,
+    SkipFrame = 7,
 }
 
 impl DecompressStage {
     pub const fn to_next_input_type(self) -> NextInputType {
         match self {
-            Self::ZSTDds_decodeBlockHeader => NextInputType::ZSTDnit_blockHeader,
-            Self::ZSTDds_decompressBlock => NextInputType::ZSTDnit_block,
-            Self::ZSTDds_decompressLastBlock => NextInputType::ZSTDnit_lastBlock,
-            Self::ZSTDds_checkChecksum => NextInputType::ZSTDnit_checksum,
-            Self::ZSTDds_decodeSkippableHeader | Self::ZSTDds_skipFrame => {
-                NextInputType::ZSTDnit_skippableFrame
-            }
-            Self::ZSTDds_getFrameHeaderSize | Self::ZSTDds_decodeFrameHeader => {
-                NextInputType::ZSTDnit_frameHeader
-            }
+            Self::DecodeBlockHeader => NextInputType::BlockHeader,
+            Self::DecompressBlock => NextInputType::Block,
+            Self::DecompressLastBlock => NextInputType::LastBlock,
+            Self::CheckChecksum => NextInputType::Checksum,
+            Self::DecodeSkippableHeader | Self::SkipFrame => NextInputType::SkippableFrame,
+            Self::GetFrameHeaderSize | Self::DecodeFrameHeader => NextInputType::FrameHeader,
         }
     }
 }
@@ -113,12 +109,12 @@ impl DecompressStage {
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NextInputType {
-    ZSTDnit_frameHeader = 0,
-    ZSTDnit_blockHeader = 1,
-    ZSTDnit_block = 2,
-    ZSTDnit_lastBlock = 3,
-    ZSTDnit_checksum = 4,
-    ZSTDnit_skippableFrame = 5,
+    FrameHeader = 0,
+    BlockHeader = 1,
+    Block = 2,
+    LastBlock = 3,
+    Checksum = 4,
+    SkippableFrame = 5,
 }
 
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
