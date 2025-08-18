@@ -1,8 +1,4 @@
 use core::arch::asm;
-#[cfg(target_arch = "x86")]
-use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
 use core::ptr;
 
 use libc::{ptrdiff_t, size_t};
@@ -11,6 +7,9 @@ use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
+use crate::lib::common::zstd_internal::{
+    ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN,
+};
 use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -191,57 +190,6 @@ static ML_bits: [u8; 53] = [
 pub const LL_DEFAULTNORMLOG: u32 = 6;
 pub const ML_DEFAULTNORMLOG: u32 = 6;
 pub const OF_DEFAULTNORMLOG: u32 = 5;
-unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    libc::memcpy(dst, src, 8);
-}
-unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
-}
-pub const WILDCOPY_OVERLENGTH: usize = 32;
-pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
-#[inline(always)]
-unsafe fn ZSTD_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
-    length: size_t,
-    ovtype: ZSTD_overlap_e,
-) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
-    let oend = op.add(length);
-    if ovtype as core::ffi::c_uint
-        == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
-        && diff < WILDCOPY_VECLEN as ptrdiff_t
-    {
-        loop {
-            ZSTD_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(8);
-            ip = ip.offset(8);
-            if op >= oend {
-                break;
-            }
-        }
-    } else {
-        ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-        if 16 >= length {
-            return;
-        }
-        op = op.offset(16);
-        ip = ip.offset(16);
-        loop {
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            if op >= oend {
-                break;
-            }
-        }
-    };
-}
 pub const NULL: core::ffi::c_int = 0;
 unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     libc::memcpy(dst, src, 4);
@@ -597,7 +545,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
         );
         dctx.litBuffer = (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE - WILDCOPY_OVERLENGTH);
-        dctx.litBufferEnd = (dctx.litBufferEnd).offset(-(WILDCOPY_OVERLENGTH as isize));
+        dctx.litBufferEnd = (dctx.litBufferEnd).sub(WILDCOPY_OVERLENGTH);
     }
 
     if ERR_isError(hufSuccess) != 0 {
@@ -1242,18 +1190,15 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         }
         return;
     }
-    if op <= oend.offset(-(WILDCOPY_OVERLENGTH as isize)) && diff < -WILDCOPY_VECLEN as ptrdiff_t {
+    if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -WILDCOPY_VECLEN as ptrdiff_t {
         ZSTD_wildcopy(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
-            oend.offset(-(WILDCOPY_OVERLENGTH as isize)).offset_from(op) as core::ffi::c_long
-                as size_t,
+            oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as core::ffi::c_long as size_t,
             ZSTD_no_overlap,
         );
-        ip = ip.offset(oend.offset(-(WILDCOPY_OVERLENGTH as isize)).offset_from(op)
-            as core::ffi::c_long as isize);
-        op = op.offset(oend.offset(-(WILDCOPY_OVERLENGTH as isize)).offset_from(op)
-            as core::ffi::c_long as isize);
+        ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as core::ffi::c_long as isize);
+        op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as core::ffi::c_long as isize);
     }
     while op < oend {
         let fresh11 = ip;
@@ -2316,9 +2261,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     ZSTD_execSequenceSplitLitBuffer(
                         op,
                         oend,
-                        litPtr
-                            .add((*sequence).litLength)
-                            .offset(-(WILDCOPY_OVERLENGTH as isize)),
+                        litPtr.add((*sequence).litLength).sub(WILDCOPY_OVERLENGTH),
                         *sequence,
                         &mut litPtr,
                         litBufferEnd,

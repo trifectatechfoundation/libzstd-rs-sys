@@ -1,11 +1,9 @@
 use core::arch::asm;
 #[cfg(target_arch = "x86")]
-use core::arch::x86::{
-    __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8, _mm_storeu_si128,
-};
+use core::arch::x86::{__m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8};
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
-    __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8, _mm_storeu_si128,
+    __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8,
 };
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -101,11 +99,12 @@ pub const search_binaryTree: searchMethod_e = 1;
 pub const search_hashChain: searchMethod_e = 0;
 pub type ZSTD_VecMask = u64;
 
-use libc::{ptrdiff_t, size_t};
+use libc::size_t;
 
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };
+use crate::lib::common::zstd_internal::{ZSTD_copy16, ZSTD_wildcopy, WILDCOPY_OVERLENGTH};
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
@@ -174,7 +173,7 @@ unsafe fn ZSTD_storeSeq(
     offBase: u32,
     matchLength: size_t,
 ) {
-    let litLimit_w = litLimit.offset(-(WILDCOPY_OVERLENGTH as isize));
+    let litLimit_w = litLimit.sub(WILDCOPY_OVERLENGTH);
     let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
@@ -384,57 +383,6 @@ unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> cor
 }
 pub const ZSTD_REP_NUM: core::ffi::c_int = 3;
 pub const MINMATCH: core::ffi::c_int = 3;
-unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    libc::memcpy(dst, src, 8);
-}
-unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
-}
-pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 32;
-pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
-#[inline(always)]
-unsafe fn ZSTD_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
-    length: size_t,
-    ovtype: ZSTD_overlap_e,
-) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8) as ptrdiff_t;
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
-    let oend = op.add(length);
-    if ovtype as core::ffi::c_uint
-        == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
-        && diff < WILDCOPY_VECLEN as ptrdiff_t
-    {
-        loop {
-            ZSTD_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(8);
-            ip = ip.offset(8);
-            if op >= oend {
-                break;
-            }
-        }
-    } else {
-        ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-        if 16 >= length {
-            return;
-        }
-        op = op.offset(16);
-        ip = ip.offset(16);
-        loop {
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            if op >= oend {
-                break;
-            }
-        }
-    };
-}
 #[inline]
 unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
