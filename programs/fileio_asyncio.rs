@@ -1148,8 +1148,7 @@ pub unsafe fn AIO_ReadPool_fillBuffer(mut ctx: *mut ReadPoolCtx_t, mut n: size_t
                 <= 2 * (*ctx).base.jobBufferSize
         );
         memcpy(
-            ((*ctx).coalesceBuffer).add((*ctx).srcBufferLoaded)
-                as *mut core::ffi::c_void,
+            ((*ctx).coalesceBuffer).add((*ctx).srcBufferLoaded) as *mut core::ffi::c_void,
             (*job).buffer,
             (*job).usedBufferSize,
         );

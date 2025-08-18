@@ -204,7 +204,7 @@ unsafe fn DiB_loadFiles(
             stderr,
             b"Loaded %d KB total training data, %d nb samples \n\0" as *const u8
                 as *const core::ffi::c_char,
-            (totalDataLoaded / (((1) << 10)) as size_t) as core::ffi::c_int,
+            (totalDataLoaded / ((1) << 10) as size_t) as core::ffi::c_int,
             nbSamplesLoaded,
         );
     }
@@ -365,7 +365,7 @@ unsafe fn DiB_fileStats(
                         b"Sample file '%s' is too large, limiting to %d KB\n\0" as *const u8
                             as *const core::ffi::c_char,
                         *fileNamesTable.offset(n as isize),
-                        128 * ((1) << 10) / (((1) << 10)),
+                        128 * ((1) << 10) / ((1) << 10),
                     );
                 }
             }
@@ -384,7 +384,7 @@ unsafe fn DiB_fileStats(
             b"Found training data %d files, %d KB, %d samples\n\0" as *const u8
                 as *const core::ffi::c_char,
             nbFiles,
-            (fs.totalSizeToLoad / (((1) << 10)) as i64) as core::ffi::c_int,
+            (fs.totalSizeToLoad / ((1) << 10) as i64) as core::ffi::c_int,
             fs.nbSamples,
         );
     }
@@ -569,8 +569,8 @@ pub unsafe fn DiB_trainFromFiles(
             stderr,
             b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
                 as *const core::ffi::c_char,
-            (fs.totalSizeToLoad / (((1) << 20)) as i64) as core::ffi::c_uint,
-            (loadedSize / (((1) << 20)) as size_t) as core::ffi::c_uint,
+            (fs.totalSizeToLoad / ((1) << 20) as i64) as core::ffi::c_uint,
+            (loadedSize / ((1) << 20) as size_t) as core::ffi::c_uint,
         );
     }
     nbSamplesLoaded = DiB_loadFiles(
@@ -586,8 +586,7 @@ pub unsafe fn DiB_trainFromFiles(
     let mut dictSize = ZSTD_error_GENERIC as core::ffi::c_int as size_t;
     if !params.is_null() {
         DiB_fillNoise(
-            (srcBuffer as *mut core::ffi::c_char).add(loadedSize)
-                as *mut core::ffi::c_void,
+            (srcBuffer as *mut core::ffi::c_char).add(loadedSize) as *mut core::ffi::c_void,
             NOISELENGTH as size_t,
         );
         dictSize = ZDICT_trainFromBuffer_legacy(

@@ -379,8 +379,7 @@ unsafe fn generateWord(
     if upCase != 0 {
         static toUp: core::ffi::c_char = ('A' as i32 - 'a' as i32) as core::ffi::c_char;
         *g_ptr.add(g_nbChars) = (*g_ptr.add(g_nbChars) as core::ffi::c_int
-            + toUp as core::ffi::c_int)
-            as core::ffi::c_char;
+            + toUp as core::ffi::c_int) as core::ffi::c_char;
     }
     g_nbChars = g_nbChars.wrapping_add(strlen(word)) as size_t as size_t;
     memcpy(
