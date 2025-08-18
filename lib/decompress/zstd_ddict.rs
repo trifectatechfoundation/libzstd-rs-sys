@@ -134,7 +134,7 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
 
     (*ddict).dictID = u32::from_le_bytes(*dict_id);
 
-    let ret = ZSTD_loadDEntropy(&mut (*ddict).entropy, dict.as_ptr().cast(), dict.len());
+    let ret = ZSTD_loadDEntropy(&mut (*ddict).entropy, dict);
 
     if ERR_isError(ret) != 0 {
         return Error::dictionary_corrupted.to_error_code();
