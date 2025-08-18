@@ -1,7 +1,6 @@
 use libc::{free, malloc, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_entropyDTables_t};
