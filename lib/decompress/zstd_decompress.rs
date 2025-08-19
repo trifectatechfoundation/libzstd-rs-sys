@@ -3014,7 +3014,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         dst
     };
     let mut op = ostart;
-    let mut someMoreWork = 1;
+    let mut some_more_work = true;
     if input.pos > input.size {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -3025,7 +3025,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    while someMoreWork != 0 {
+    while some_more_work {
         let mut current_block_402: u64;
         match (*zds).streamStage {
             StreamStage::Init => {
@@ -3073,7 +3073,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         (*zds).outStart = (*zds).outEnd;
                     }
                 } else {
-                    someMoreWork = 0;
+                    some_more_work = false;
                 }
                 current_block_402 = 7792909578691485565;
             }
@@ -3229,7 +3229,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         };
                         (*zds).expected = 0;
                         (*zds).streamStage = StreamStage::Init;
-                        someMoreWork = 0;
+                        some_more_work = false;
                         current_block_402 = 7792909578691485565;
                     } else {
                         current_block_402 = 8968043056769084000;
@@ -3356,7 +3356,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
             if neededInSize == 0 {
                 (*zds).streamStage = StreamStage::Init;
-                someMoreWork = 0;
+                some_more_work = false;
                 current_block_402 = 7792909578691485565;
             } else if iend.offset_from(ip) as size_t >= neededInSize {
                 let err_code_4 = ZSTD_decompressContinueStream(
@@ -3372,7 +3372,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 ip = ip.add(neededInSize);
                 current_block_402 = 7792909578691485565;
             } else if ip == iend {
-                someMoreWork = 0;
+                some_more_work = false;
                 current_block_402 = 7792909578691485565;
             } else {
                 (*zds).streamStage = StreamStage::Load;
@@ -3406,7 +3406,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 (*zds).inPos = ((*zds).inPos).wrapping_add(loadedSize);
             }
             if loadedSize < toLoad_0 {
-                someMoreWork = 0;
+                some_more_work = false;
             } else {
                 (*zds).inPos = 0;
                 let err_code_5 = ZSTD_decompressContinueStream(
