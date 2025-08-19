@@ -1,8 +1,3 @@
-#[cfg(target_arch = "x86")]
-use core::arch::x86::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::{__m128i, _mm_loadu_si128, _mm_storeu_si128};
-
 use libc::size_t;
 
 const fn const_max(a: usize, b: usize) -> usize {
@@ -73,12 +68,18 @@ pub(crate) static OF_defaultNorm: [i16; 29] = [
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
 pub(crate) static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
 
+pub(crate) unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
+    core::ptr::copy(src, dst, 4)
+}
+
 pub(crate) unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    libc::memcpy(dst, src, 8);
+    core::ptr::copy(src, dst, 8)
 }
+
 pub(crate) unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    _mm_storeu_si128(dst as *mut __m128i, _mm_loadu_si128(src as *const __m128i));
+    core::ptr::copy(src, dst, 16)
 }
+
 pub(crate) const WILDCOPY_OVERLENGTH: usize = 32;
 pub(crate) const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 
