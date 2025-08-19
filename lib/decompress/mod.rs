@@ -6,7 +6,7 @@ use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::FseWorkspace;
-use crate::lib::zstd::{Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
+use crate::lib::zstd::{BufferMode, Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
@@ -277,7 +277,7 @@ pub struct ZSTD_DCtx_s {
     pub legacyVersion: u32,
     pub hostageByte: u32,
     pub noForwardProgress: core::ffi::c_int,
-    pub outBufferMode: ZSTD_bufferMode_e,
+    pub outBufferMode: BufferMode,
     pub expectedOutBuffer: ZSTD_outBuffer,
     pub litBuffer: *mut u8,
     pub litBufferEnd: *const u8,

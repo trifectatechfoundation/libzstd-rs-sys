@@ -24,10 +24,10 @@ use crate::lib::decompress::zstd_decompress_block::{
     ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
-    blockProperties_t, BlockType, DecompressStage, LL_base, ML_base, OF_base, OF_bits, StreamStage,
-    ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum, ZSTD_d_validateChecksum,
-    ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame,
-    ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once,
+    blockProperties_t, BlockType, DecompressStage, LL_base, ML_base, NextInputType, OF_base,
+    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
+    ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e,
+    ZSTD_frame, ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once,
 };
 use crate::lib::zstd::*;
 
@@ -104,11 +104,11 @@ pub const ZSTD_d_experimentalParam2: ZSTD_dParameter = 1001;
 pub const ZSTD_d_experimentalParam1: ZSTD_dParameter = 1000;
 pub const ZSTD_d_windowLogMax: ZSTD_dParameter = 100;
 pub type ZSTD_DStream = ZSTD_DCtx;
-pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 pub const ZSTDnit_skippableFrame: ZSTD_nextInputType_e = 5;
 pub const ZSTDnit_checksum: ZSTD_nextInputType_e = 4;
 pub const ZSTDnit_lastBlock: ZSTD_nextInputType_e = 3;
+pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub const ZSTDnit_blockHeader: ZSTD_nextInputType_e = 1;
 pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
 pub type ZSTD_dictContentType_e = core::ffi::c_uint;
@@ -716,7 +716,7 @@ const fn ZSTD_startingInputLength(format: Format) -> size_t {
 unsafe fn ZSTD_DCtx_resetParameters(dctx: *mut ZSTD_DCtx) {
     (*dctx).format = Format::ZSTD_f_zstd1;
     (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
-    (*dctx).outBufferMode = ZSTD_bm_buffered;
+    (*dctx).outBufferMode = BufferMode::Buffered;
     (*dctx).forceIgnoreChecksum = ZSTD_d_validateChecksum;
     (*dctx).refMultipleDDicts = MultipleDDicts::Single;
     (*dctx).disableHufAsm = 0;
@@ -2621,8 +2621,8 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
             return bounds;
         }
         1001 => {
-            bounds.lowerBound = ZSTD_bm_buffered as core::ffi::c_int;
-            bounds.upperBound = ZSTD_bm_stable as core::ffi::c_int;
+            bounds.lowerBound = BufferMode::Buffered as core::ffi::c_int;
+            bounds.upperBound = BufferMode::Stable as core::ffi::c_int;
             return bounds;
         }
         1002 => {
@@ -2736,10 +2736,10 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0;
         }
         1001 => {
-            if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam2, value) == 0 {
+            let Ok(value) = BufferMode::try_from(value as u32) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
-            (*dctx).outBufferMode = value as ZSTD_bufferMode_e;
+            };
+            (*dctx).outBufferMode = value;
             return 0;
         }
         1002 => {
@@ -2924,9 +2924,7 @@ unsafe fn ZSTD_DCtx_isOversizedTooLong(zds: *mut ZSTD_DStream) -> core::ffi::c_i
 }
 unsafe fn ZSTD_checkOutBuffer(zds: *const ZSTD_DStream, output: *const ZSTD_outBuffer) -> size_t {
     let expect = (*zds).expectedOutBuffer;
-    if (*zds).outBufferMode as core::ffi::c_uint
-        != ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*zds).outBufferMode != BufferMode::Stable {
         return 0;
     }
     if (*zds).streamStage == StreamStage::Init {
@@ -2945,9 +2943,7 @@ unsafe fn ZSTD_decompressContinueStream(
     srcSize: size_t,
 ) -> size_t {
     let isSkipFrame = ZSTD_isSkipFrame(zds);
-    if (*zds).outBufferMode as core::ffi::c_uint
-        == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*zds).outBufferMode == BufferMode::Buffered {
         let dstSize = if isSkipFrame != 0 {
             0
         } else {
@@ -3247,8 +3243,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 match current_block_402 {
                     7792909578691485565 => {}
                     _ => {
-                        if (*zds).outBufferMode as core::ffi::c_uint
-                            == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
+                        if (*zds).outBufferMode == BufferMode::Stable
                             && (*zds).fParams.frameType as core::ffi::c_uint
                                 != ZSTD_skippableFrame as core::ffi::c_int as core::ffi::c_uint
                             && (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
@@ -3310,9 +3305,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         } else {
                             4
                         }) as size_t;
-                        let neededOutBuffSize = if (*zds).outBufferMode as core::ffi::c_uint
-                            == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint
-                        {
+                        let neededOutBuffSize = if (*zds).outBufferMode == BufferMode::Buffered {
                             ZSTD_decodingBufferSize_internal(
                                 (*zds).fParams.windowSize,
                                 (*zds).fParams.frameContentSize,
@@ -3468,8 +3461,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
     nextSrcSizeHint = nextSrcSizeHint.wrapping_add(
         ZSTD_blockHeaderSize
-            * (ZSTD_nextInputType(zds) as core::ffi::c_uint
-                == ZSTDnit_block as core::ffi::c_int as core::ffi::c_uint) as size_t,
+            * ((*zds).stage.to_next_input_type() == NextInputType::Block) as size_t,
     );
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub((*zds).inPos);
     nextSrcSizeHint
