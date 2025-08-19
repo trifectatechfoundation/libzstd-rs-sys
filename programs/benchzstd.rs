@@ -4,6 +4,7 @@ use libc::{
     __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
     memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
+use libzstd_rs::lib::common::error_private::Error;
 use libzstd_rs::lib::common::xxhash::ZSTD_XXH64;
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
@@ -746,7 +747,7 @@ unsafe fn local_defaultDecompress(
     out.pos = 0;
     while moreToFlush != 0 {
         if out.pos == out.size {
-            return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+            return Error::dstSize_tooSmall.to_error_code();
         }
         moreToFlush = ZSTD_decompressStream(dctx, &mut out, &mut in_0);
         if ZSTD_isError(moreToFlush) != 0 {

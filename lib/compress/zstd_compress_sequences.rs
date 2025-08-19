@@ -1,7 +1,7 @@
 use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::bitstream::BitContainerType;
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
 use crate::lib::common::zstd_internal::{LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog};
 use crate::lib::compress::fse_compress::{
@@ -171,7 +171,7 @@ unsafe fn BIT_initCStream(
         .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     0
 }
@@ -309,7 +309,7 @@ pub unsafe fn ZSTD_fseBitCost(
     };
     FSE_initCState(&mut cstate, ctable);
     if ZSTD_getFSEMaxSymbolValue(ctable) < max {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     s = 0;
     while s <= max {
@@ -318,7 +318,7 @@ pub unsafe fn ZSTD_fseBitCost(
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
         if *count.offset(s as isize) != 0 {
             if bitCost >= badCost {
-                return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+                return Error::GENERIC.to_error_code();
             }
             cost = cost.wrapping_add(*count.offset(s as isize) as size_t * bitCost as size_t);
         }
@@ -396,14 +396,14 @@ pub unsafe fn ZSTD_selectEncodingType(
         let basicCost = if isDefaultAllowed as core::ffi::c_uint != 0 {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, count, max)
         } else {
-            -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t
+            Error::GENERIC.to_error_code()
         };
         let repeatCost = if *repeatMode as core::ffi::c_uint
             != FSE_repeat_none as core::ffi::c_int as core::ffi::c_uint
         {
             ZSTD_fseBitCost(prevCTable, count, max)
         } else {
-            -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t
+            Error::GENERIC.to_error_code()
         };
         let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
@@ -446,7 +446,7 @@ pub unsafe fn ZSTD_buildCTable(
                 return err_code;
             }
             if dstCapacity == 0 {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
             *op = *codeTable.offset(0);
             1
@@ -517,7 +517,7 @@ pub unsafe fn ZSTD_buildCTable(
             }
             NCountSize
         }
-        _ => -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t,
+        _ => Error::GENERIC.to_error_code(),
     }
 }
 unsafe fn ZSTD_encodeSequences_body(
@@ -559,7 +559,7 @@ unsafe fn ZSTD_encodeSequences_body(
         stateLog: 0,
     };
     if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) != 0 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     FSE_initCState2(
         &mut stateMatchLength,
@@ -711,7 +711,7 @@ unsafe fn ZSTD_encodeSequences_body(
     FSE_flushCState(&mut blockStream, &stateLitLength);
     let streamSize = BIT_closeCStream(&mut blockStream);
     if streamSize == 0 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     streamSize
 }
