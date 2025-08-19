@@ -15,496 +15,180 @@ use crate::lib::common::pool::{
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
-use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::compress::zstd_compress::{
-    rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
-    ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressBegin_advanced_internal,
-    ZSTD_compressBound, ZSTD_compressContinue_public, ZSTD_compressEnd_public,
-    ZSTD_createCCtx_advanced, ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx,
-    ZSTD_freeCDict, ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_optimal_t,
-    ZSTD_referenceExternalSequences, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t,
-    ZSTD_writeLastEmptyBlock,
+    rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
+    ZSTD_CCtx_trace, ZSTD_CDict, ZSTD_compressBegin_advanced_internal, ZSTD_compressBound,
+    ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
+    ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
+    ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
+    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::*;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_CCtx_s {
-    pub stage: ZSTD_compressionStage_e,
-    pub cParamsChanged: core::ffi::c_int,
-    pub bmi2: core::ffi::c_int,
-    pub requestedParams: ZSTD_CCtx_params,
-    pub appliedParams: ZSTD_CCtx_params,
-    pub simpleApiParams: ZSTD_CCtx_params,
-    pub dictID: u32,
-    pub dictContentSize: size_t,
-    pub workspace: ZSTD_cwksp,
-    pub blockSizeMax: size_t,
-    pub pledgedSrcSizePlusOne: core::ffi::c_ulonglong,
-    pub consumedSrcSize: core::ffi::c_ulonglong,
-    pub producedCSize: core::ffi::c_ulonglong,
-    pub xxhState: XXH64_state_t,
-    pub customMem: ZSTD_customMem,
-    pub pool: *mut ZSTD_threadPool,
-    pub staticSize: size_t,
-    pub seqCollector: SeqCollector,
-    pub isFirstBlock: core::ffi::c_int,
-    pub initialized: core::ffi::c_int,
-    pub seqStore: SeqStore_t,
-    pub ldmState: ldmState_t,
-    pub ldmSequences: *mut rawSeq,
-    pub maxNbLdmSequences: size_t,
-    pub externSeqStore: RawSeqStore_t,
-    pub blockState: ZSTD_blockState_t,
-    pub tmpWorkspace: *mut core::ffi::c_void,
-    pub tmpWkspSize: size_t,
-    pub bufferedPolicy: ZSTD_buffered_policy_e,
-    pub inBuff: *mut core::ffi::c_char,
-    pub inBuffSize: size_t,
-    pub inToCompress: size_t,
-    pub inBuffPos: size_t,
-    pub inBuffTarget: size_t,
-    pub outBuff: *mut core::ffi::c_char,
-    pub outBuffSize: size_t,
-    pub outBuffContentSize: size_t,
-    pub outBuffFlushedSize: size_t,
-    pub streamStage: ZSTD_cStreamStage,
-    pub frameEnded: u32,
-    pub expectedInBuffer: ZSTD_inBuffer,
-    pub stableIn_notConsumed: size_t,
-    pub expectedOutBufferSize: size_t,
-    pub localDict: ZSTD_localDict,
-    pub cdict: *const ZSTD_CDict,
-    pub prefixDict: ZSTD_prefixDict,
-    pub mtctx: *mut ZSTDMT_CCtx,
-    pub traceCtx: ZSTD_TraceCtx,
-    pub blockSplitCtx: ZSTD_blockSplitCtx,
-    pub extSeqBuf: *mut ZSTD_Sequence,
-    pub extSeqBufCapacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_Sequence {
-    pub offset: core::ffi::c_uint,
-    pub litLength: core::ffi::c_uint,
-    pub matchLength: core::ffi::c_uint,
-    pub rep: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_blockSplitCtx {
-    pub fullSeqStoreChunk: SeqStore_t,
-    pub firstHalfSeqStore: SeqStore_t,
-    pub secondHalfSeqStore: SeqStore_t,
-    pub currSeqStore: SeqStore_t,
-    pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; 196],
-    pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyCTablesMetadata_t {
-    pub hufMetadata: ZSTD_hufCTablesMetadata_t,
-    pub fseMetadata: ZSTD_fseCTablesMetadata_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_fseCTablesMetadata_t {
-    pub llType: SymbolEncodingType_e,
-    pub ofType: SymbolEncodingType_e,
-    pub mlType: SymbolEncodingType_e,
-    pub fseTablesBuffer: [u8; 133],
-    pub fseTablesSize: size_t,
-    pub lastCountSize: size_t,
-}
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_hufCTablesMetadata_t {
-    pub hType: SymbolEncodingType_e,
-    pub hufDesBuffer: [u8; 128],
-    pub hufDesSize: size_t,
-}
-pub type ZSTD_longLengthType_e = core::ffi::c_uint;
-pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
-pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
-pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
 pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
 pub struct ZSTDMT_CCtx_s {
-    pub factory: *mut POOL_ctx,
-    pub jobs: *mut ZSTDMT_jobDescription,
-    pub bufPool: *mut ZSTDMT_bufferPool,
-    pub cctxPool: *mut ZSTDMT_CCtxPool,
-    pub seqPool: *mut ZSTDMT_seqPool,
-    pub params: ZSTD_CCtx_params,
-    pub targetSectionSize: size_t,
-    pub targetPrefixSize: size_t,
-    pub jobReady: core::ffi::c_int,
-    pub inBuff: InBuff_t,
-    pub roundBuff: RoundBuff_t,
-    pub serial: SerialState,
-    pub rsync: RSyncState_t,
-    pub jobIDMask: core::ffi::c_uint,
-    pub doneJobID: core::ffi::c_uint,
-    pub nextJobID: core::ffi::c_uint,
-    pub frameEnded: core::ffi::c_uint,
-    pub allJobsCompleted: core::ffi::c_uint,
-    pub frameContentSize: core::ffi::c_ulonglong,
-    pub consumed: core::ffi::c_ulonglong,
-    pub produced: core::ffi::c_ulonglong,
-    pub cMem: ZSTD_customMem,
-    pub cdictLocal: *mut ZSTD_CDict,
-    pub cdict: *const ZSTD_CDict,
+    factory: *mut POOL_ctx,
+    jobs: *mut ZSTDMT_jobDescription,
+    bufPool: *mut ZSTDMT_bufferPool,
+    cctxPool: *mut ZSTDMT_CCtxPool,
+    seqPool: *mut ZSTDMT_seqPool,
+    params: ZSTD_CCtx_params,
+    targetSectionSize: size_t,
+    targetPrefixSize: size_t,
+    jobReady: core::ffi::c_int,
+    inBuff: InBuff_t,
+    roundBuff: RoundBuff_t,
+    serial: SerialState,
+    rsync: RSyncState_t,
+    jobIDMask: core::ffi::c_uint,
+    doneJobID: core::ffi::c_uint,
+    nextJobID: core::ffi::c_uint,
+    frameEnded: core::ffi::c_uint,
+    allJobsCompleted: core::ffi::c_uint,
+    frameContentSize: core::ffi::c_ulonglong,
+    consumed: core::ffi::c_ulonglong,
+    produced: core::ffi::c_ulonglong,
+    cMem: ZSTD_customMem,
+    cdictLocal: *mut ZSTD_CDict,
+    cdict: *const ZSTD_CDict,
     #[bitfield(name = "providedFactory", ty = "core::ffi::c_uint", bits = "0..=0")]
-    pub providedFactory: [u8; 1],
+    providedFactory: [u8; 1],
     #[bitfield(padding)]
-    pub c2rust_padding: [u8; 7],
+    c2rust_padding: [u8; 7],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct RSyncState_t {
-    pub hash: u64,
-    pub hitMask: u64,
-    pub primePower: u64,
+struct RSyncState_t {
+    hash: u64,
+    hitMask: u64,
+    primePower: u64,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct SerialState {
-    pub mutex: pthread_mutex_t,
-    pub cond: pthread_cond_t,
-    pub params: ZSTD_CCtx_params,
-    pub ldmState: ldmState_t,
-    pub xxhState: XXH64_state_t,
-    pub nextJobID: core::ffi::c_uint,
-    pub ldmWindowMutex: pthread_mutex_t,
-    pub ldmWindowCond: pthread_cond_t,
-    pub ldmWindow: ZSTD_window_t,
+struct SerialState {
+    mutex: pthread_mutex_t,
+    cond: pthread_cond_t,
+    params: ZSTD_CCtx_params,
+    ldmState: ldmState_t,
+    xxhState: XXH64_state_t,
+    nextJobID: core::ffi::c_uint,
+    ldmWindowMutex: pthread_mutex_t,
+    ldmWindowCond: pthread_cond_t,
+    ldmWindow: ZSTD_window_t,
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-pub type ZSTD_sequenceProducer_F = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        *mut ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_int,
-        size_t,
-    ) -> size_t,
->;
-pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
-pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
-pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-pub type ZSTD_dictAttachPref_e = core::ffi::c_uint;
-pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
-pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
-pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
-pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
+type ZSTD_ParamSwitch_e = core::ffi::c_uint;
+const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
+const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_frameParameters {
-    pub contentSizeFlag: core::ffi::c_int,
-    pub checksumFlag: core::ffi::c_int,
-    pub noDictIDFlag: core::ffi::c_int,
+struct RoundBuff_t {
+    buffer: *mut u8,
+    capacity: size_t,
+    pos: size_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct RoundBuff_t {
-    pub buffer: *mut u8,
-    pub capacity: size_t,
-    pub pos: size_t,
+struct InBuff_t {
+    prefix: Range,
+    buffer: Buffer,
+    filled: size_t,
+}
+type Buffer = buffer_s;
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct buffer_s {
+    start: *mut core::ffi::c_void,
+    capacity: size_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct InBuff_t {
-    pub prefix: Range,
-    pub buffer: Buffer,
-    pub filled: size_t,
+struct Range {
+    start: *const core::ffi::c_void,
+    size: size_t,
 }
-pub type Buffer = buffer_s;
+type ZSTDMT_seqPool = ZSTDMT_bufferPool;
+type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct buffer_s {
-    pub start: *mut core::ffi::c_void,
-    pub capacity: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct Range {
-    pub start: *const core::ffi::c_void,
-    pub size: size_t,
-}
-pub type ZSTDMT_seqPool = ZSTDMT_bufferPool;
-pub type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTDMT_bufferPool_s {
-    pub poolMutex: pthread_mutex_t,
-    pub bufferSize: size_t,
-    pub totalBuffers: core::ffi::c_uint,
-    pub nbBuffers: core::ffi::c_uint,
-    pub cMem: ZSTD_customMem,
-    pub buffers: *mut Buffer,
+struct ZSTDMT_bufferPool_s {
+    poolMutex: pthread_mutex_t,
+    bufferSize: size_t,
+    totalBuffers: core::ffi::c_uint,
+    nbBuffers: core::ffi::c_uint,
+    cMem: ZSTD_customMem,
+    buffers: *mut Buffer,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTDMT_CCtxPool {
-    pub poolMutex: pthread_mutex_t,
-    pub totalCCtx: core::ffi::c_int,
-    pub availCCtx: core::ffi::c_int,
-    pub cMem: ZSTD_customMem,
-    pub cctxs: *mut *mut ZSTD_CCtx,
+struct ZSTDMT_CCtxPool {
+    poolMutex: pthread_mutex_t,
+    totalCCtx: core::ffi::c_int,
+    availCCtx: core::ffi::c_int,
+    cMem: ZSTD_customMem,
+    cctxs: *mut *mut ZSTD_CCtx,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTDMT_jobDescription {
-    pub consumed: size_t,
-    pub cSize: size_t,
-    pub job_mutex: pthread_mutex_t,
-    pub job_cond: pthread_cond_t,
-    pub cctxPool: *mut ZSTDMT_CCtxPool,
-    pub bufPool: *mut ZSTDMT_bufferPool,
-    pub seqPool: *mut ZSTDMT_seqPool,
-    pub serial: *mut SerialState,
-    pub dstBuff: Buffer,
-    pub prefix: Range,
-    pub src: Range,
-    pub jobID: core::ffi::c_uint,
-    pub firstJob: core::ffi::c_uint,
-    pub lastJob: core::ffi::c_uint,
-    pub params: ZSTD_CCtx_params,
-    pub cdict: *const ZSTD_CDict,
-    pub fullFrameSize: core::ffi::c_ulonglong,
-    pub dstFlushed: size_t,
-    pub frameChecksumNeeded: core::ffi::c_uint,
+struct ZSTDMT_jobDescription {
+    consumed: size_t,
+    cSize: size_t,
+    job_mutex: pthread_mutex_t,
+    job_cond: pthread_cond_t,
+    cctxPool: *mut ZSTDMT_CCtxPool,
+    bufPool: *mut ZSTDMT_bufferPool,
+    seqPool: *mut ZSTDMT_seqPool,
+    serial: *mut SerialState,
+    dstBuff: Buffer,
+    prefix: Range,
+    src: Range,
+    jobID: core::ffi::c_uint,
+    firstJob: core::ffi::c_uint,
+    lastJob: core::ffi::c_uint,
+    params: ZSTD_CCtx_params,
+    cdict: *const ZSTD_CDict,
+    fullFrameSize: core::ffi::c_ulonglong,
+    dstFlushed: size_t,
+    frameChecksumNeeded: core::ffi::c_uint,
 }
-pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
+type ZSTD_dictContentType_e = core::ffi::c_uint;
+const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
+const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
+type ZSTD_threadPool = POOL_ctx;
+type ZSTD_cParameter = core::ffi::c_uint;
+const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
+const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
+const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
+type ZSTD_outBuffer = ZSTD_outBuffer_s;
+type ZSTD_EndDirective = core::ffi::c_uint;
+const ZSTD_e_end: ZSTD_EndDirective = 2;
+const ZSTD_e_flush: ZSTD_EndDirective = 1;
+const ZSTD_e_continue: ZSTD_EndDirective = 0;
+type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
+const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
+const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
+type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
+const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_prefixDict_s {
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
+struct SyncPoint {
+    toLoad: size_t,
+    flush: core::ffi::c_int,
 }
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_localDict {
-    pub dictBuffer: *mut core::ffi::c_void,
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-    pub cdict: *mut ZSTD_CDict,
-}
-pub type ZSTD_cStreamStage = core::ffi::c_uint;
-pub const zcss_flush: ZSTD_cStreamStage = 2;
-pub const zcss_load: ZSTD_cStreamStage = 1;
-pub const zcss_init: ZSTD_cStreamStage = 0;
-pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
-pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
-pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_blockState_t {
-    pub prevCBlock: *mut ZSTD_compressedBlockState_t,
-    pub nextCBlock: *mut ZSTD_compressedBlockState_t,
-    pub matchState: ZSTD_MatchState_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut core::ffi::c_uint,
-    pub litLengthFreq: *mut core::ffi::c_uint,
-    pub matchLengthFreq: *mut core::ffi::c_uint,
-    pub offCodeFreq: *mut core::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyCTables_t {
-    pub huf: ZSTD_hufCTables_t,
-    pub fse: ZSTD_fseCTables_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_fseCTables_t {
-    pub offcodeCTable: [FSE_CTable; 193],
-    pub matchlengthCTable: [FSE_CTable; 363],
-    pub litlengthCTable: [FSE_CTable; 329],
-    pub offcode_repeatMode: FSE_repeat,
-    pub matchlength_repeatMode: FSE_repeat,
-    pub litlength_repeatMode: FSE_repeat,
-}
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; 257],
-    pub repeatMode: HUF_repeat,
-}
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
-pub type HUF_CElt = size_t;
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_compressedBlockState_t {
-    pub entropy: ZSTD_entropyCTables_t,
-    pub rep: [u32; 3],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqCollector {
-    pub collectSequences: core::ffi::c_int,
-    pub seqStart: *mut ZSTD_Sequence,
-    pub seqIndex: size_t,
-    pub maxSequences: size_t,
-}
-pub type ZSTD_threadPool = POOL_ctx;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_cwksp {
-    pub workspace: *mut core::ffi::c_void,
-    pub workspaceEnd: *mut core::ffi::c_void,
-    pub objectEnd: *mut core::ffi::c_void,
-    pub tableEnd: *mut core::ffi::c_void,
-    pub tableValidEnd: *mut core::ffi::c_void,
-    pub allocStart: *mut core::ffi::c_void,
-    pub initOnceStart: *mut core::ffi::c_void,
-    pub allocFailed: u8,
-    pub workspaceOversizedDuration: core::ffi::c_int,
-    pub phase: ZSTD_cwksp_alloc_phase_e,
-    pub isStatic: ZSTD_cwksp_static_alloc_e,
-}
-pub type ZSTD_cwksp_static_alloc_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_static_alloc: ZSTD_cwksp_static_alloc_e = 1;
-pub const ZSTD_cwksp_dynamic_alloc: ZSTD_cwksp_static_alloc_e = 0;
-pub type ZSTD_cwksp_alloc_phase_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
-pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
-pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
-pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
-pub type ZSTD_compressionStage_e = core::ffi::c_uint;
-pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
-pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
-pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
-pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
-pub type ZSTD_cParameter = core::ffi::c_uint;
-pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
-pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
-pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
-pub const ZSTD_c_experimentalParam17: ZSTD_cParameter = 1014;
-pub const ZSTD_c_experimentalParam16: ZSTD_cParameter = 1013;
-pub const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-pub const ZSTD_c_experimentalParam14: ZSTD_cParameter = 1011;
-pub const ZSTD_c_experimentalParam13: ZSTD_cParameter = 1010;
-pub const ZSTD_c_experimentalParam12: ZSTD_cParameter = 1009;
-pub const ZSTD_c_experimentalParam11: ZSTD_cParameter = 1008;
-pub const ZSTD_c_experimentalParam10: ZSTD_cParameter = 1007;
-pub const ZSTD_c_experimentalParam9: ZSTD_cParameter = 1006;
-pub const ZSTD_c_experimentalParam8: ZSTD_cParameter = 1005;
-pub const ZSTD_c_experimentalParam7: ZSTD_cParameter = 1004;
-pub const ZSTD_c_experimentalParam5: ZSTD_cParameter = 1002;
-pub const ZSTD_c_experimentalParam4: ZSTD_cParameter = 1001;
-pub const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-pub const ZSTD_c_experimentalParam2: ZSTD_cParameter = 10;
-pub const ZSTD_c_experimentalParam1: ZSTD_cParameter = 500;
-pub const ZSTD_c_overlapLog: ZSTD_cParameter = 402;
-pub const ZSTD_c_jobSize: ZSTD_cParameter = 401;
-pub const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
-pub const ZSTD_c_dictIDFlag: ZSTD_cParameter = 202;
-pub const ZSTD_c_checksumFlag: ZSTD_cParameter = 201;
-pub const ZSTD_c_contentSizeFlag: ZSTD_cParameter = 200;
-pub const ZSTD_c_ldmHashRateLog: ZSTD_cParameter = 164;
-pub const ZSTD_c_ldmBucketSizeLog: ZSTD_cParameter = 163;
-pub const ZSTD_c_ldmMinMatch: ZSTD_cParameter = 162;
-pub const ZSTD_c_ldmHashLog: ZSTD_cParameter = 161;
-pub const ZSTD_c_enableLongDistanceMatching: ZSTD_cParameter = 160;
-pub const ZSTD_c_targetCBlockSize: ZSTD_cParameter = 130;
-pub const ZSTD_c_strategy: ZSTD_cParameter = 107;
-pub const ZSTD_c_targetLength: ZSTD_cParameter = 106;
-pub const ZSTD_c_minMatch: ZSTD_cParameter = 105;
-pub const ZSTD_c_searchLog: ZSTD_cParameter = 104;
-pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
-pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
-pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
-pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
-pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-pub type ZSTD_EndDirective = core::ffi::c_uint;
-pub const ZSTD_e_end: ZSTD_EndDirective = 2;
-pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
-pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-pub type XXH_errorcode = core::ffi::c_uint;
-pub const XXH_ERROR: XXH_errorcode = 1;
-pub const XXH_OK: XXH_errorcode = 0;
-pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
-pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SyncPoint {
-    pub toLoad: size_t,
-    pub flush: core::ffi::c_int,
-}
-pub type ZSTD_CParamMode_e = core::ffi::c_uint;
-pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
-pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
-pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
-pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
+type ZSTD_CParamMode_e = core::ffi::c_uint;
+const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
+const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
+const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as core::ffi::c_int;
-pub const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
+const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as core::ffi::c_int;
+const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
     ZSTD_c_experimentalParam15 as core::ffi::c_int;
-pub const HASH_READ_SIZE: core::ffi::c_int = 8;
+const HASH_READ_SIZE: core::ffi::c_int = 8;
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,
@@ -512,7 +196,7 @@ static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     size: 0,
     capacity: 0,
 };
-pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
+const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
 unsafe fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     let mut power = 1;
@@ -525,7 +209,7 @@ unsafe fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     }
     power
 }
-pub const ZSTD_ROLL_HASH_CHAR_OFFSET: core::ffi::c_int = 10;
+const ZSTD_ROLL_HASH_CHAR_OFFSET: core::ffi::c_int = 10;
 unsafe fn ZSTD_rollingHash_append(
     mut hash: u64,
     buf: *const core::ffi::c_void,
@@ -620,23 +304,17 @@ unsafe fn ZSTD_window_update(
     }
     contiguous
 }
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
+const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
+const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 #[inline]
-unsafe extern "C" fn ZSTD_customMalloc(
-    size: size_t,
-    customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
     }
     malloc(size)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_customCalloc(
-    size: size_t,
-    customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
+unsafe fn ZSTD_customCalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
     if (customMem.customAlloc).is_some() {
         let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
         ptr::write_bytes(ptr, 0, size);
@@ -645,7 +323,7 @@ unsafe extern "C" fn ZSTD_customCalloc(
     calloc(1, size)
 }
 #[inline]
-unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
+unsafe fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
     if !ptr.is_null() {
         if (customMem.customFree).is_some() {
             (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
@@ -1444,9 +1122,9 @@ static mut kNullRoundBuff: RoundBuff_t = RoundBuff_t {
     capacity: 0,
     pos: 0,
 };
-pub const RSYNC_LENGTH: core::ffi::c_int = 32;
-pub const RSYNC_MIN_BLOCK_LOG: core::ffi::c_int = ZSTD_BLOCKSIZELOG_MAX;
-pub const RSYNC_MIN_BLOCK_SIZE: core::ffi::c_int = (1) << RSYNC_MIN_BLOCK_LOG;
+const RSYNC_LENGTH: core::ffi::c_int = 32;
+const RSYNC_MIN_BLOCK_LOG: core::ffi::c_int = ZSTD_BLOCKSIZELOG_MAX;
+const RSYNC_MIN_BLOCK_SIZE: core::ffi::c_int = (1) << RSYNC_MIN_BLOCK_LOG;
 unsafe fn ZSTDMT_freeJobsTable(
     jobTable: *mut ZSTDMT_jobDescription,
     nbJobs: u32,
@@ -1593,8 +1271,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     }
     mtctx
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_createCCtx_advanced))]
-pub unsafe extern "C" fn ZSTDMT_createCCtx_advanced(
+pub unsafe fn ZSTDMT_createCCtx_advanced(
     nbWorkers: core::ffi::c_uint,
     cMem: ZSTD_customMem,
     pool: *mut ZSTD_threadPool,
@@ -1641,8 +1318,7 @@ unsafe fn ZSTDMT_waitForAllJobsCompleted(mtctx: *mut ZSTDMT_CCtx) {
         (*mtctx).doneJobID;
     }
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_freeCCtx))]
-pub unsafe extern "C" fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
     }
@@ -1669,8 +1345,7 @@ pub unsafe extern "C" fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     ZSTD_customFree(mtctx as *mut core::ffi::c_void, (*mtctx).cMem);
     0
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_sizeof_CCtx))]
-pub unsafe extern "C" fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
     }
@@ -1714,8 +1389,7 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
     ZSTDMT_CCtxParam_setNbWorkers(&mut (*mtctx).params, nbWorkers);
     0
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_updateCParams_whileCompressing))]
-pub unsafe extern "C" fn ZSTDMT_updateCParams_whileCompressing(
+pub unsafe fn ZSTDMT_updateCParams_whileCompressing(
     mtctx: *mut ZSTDMT_CCtx,
     cctxParams: *const ZSTD_CCtx_params,
 ) {
@@ -1731,10 +1405,7 @@ pub unsafe extern "C" fn ZSTDMT_updateCParams_whileCompressing(
     cParams.windowLog = saved_wlog;
     (*mtctx).params.cParams = cParams;
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_getFrameProgression))]
-pub unsafe extern "C" fn ZSTDMT_getFrameProgression(
-    mtctx: *mut ZSTDMT_CCtx,
-) -> ZSTD_frameProgression {
+pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameProgression {
     let mut fps = ZSTD_frameProgression {
         ingested: 0,
         consumed: 0,
@@ -1781,8 +1452,7 @@ pub unsafe extern "C" fn ZSTDMT_getFrameProgression(
     }
     fps
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_toFlushNow))]
-pub unsafe extern "C" fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     let mut toFlush: size_t = 0;
     let jobID = (*mtctx).doneJobID;
     if jobID == (*mtctx).nextJobID {
@@ -1874,8 +1544,7 @@ unsafe fn ZSTDMT_computeOverlapSize(params: *const ZSTD_CCtx_params) -> size_t {
         (1) << ovLog
     }
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_initCStream_internal))]
-pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
+pub unsafe fn ZSTDMT_initCStream_internal(
     mtctx: *mut ZSTDMT_CCtx,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
@@ -2417,16 +2086,14 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     }
     syncPoint
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_nextInputSizeHint))]
-pub unsafe extern "C" fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> size_t {
+pub unsafe fn ZSTDMT_nextInputSizeHint(mtctx: *const ZSTDMT_CCtx) -> size_t {
     let mut hintInSize = ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled);
     if hintInSize == 0 {
         hintInSize = (*mtctx).targetSectionSize;
     }
     hintInSize
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDMT_compressStream_generic))]
-pub unsafe extern "C" fn ZSTDMT_compressStream_generic(
+pub unsafe fn ZSTDMT_compressStream_generic(
     mtctx: *mut ZSTDMT_CCtx,
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
