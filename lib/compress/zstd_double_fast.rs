@@ -844,10 +844,10 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let dictAndPrefixLength = (ip.offset_from(prefixLowest) as core::ffi::c_long
         + dictEnd.offset_from(dictStart) as core::ffi::c_long) as u32;
     if (*ms).prefetchCDictTables != 0 {
-        let hashTableBytes = ((1 as size_t) << (*dictCParams).hashLog)
-            .wrapping_mul(::core::mem::size_of::<u32>() as size_t);
-        let chainTableBytes = ((1 as size_t) << (*dictCParams).chainLog)
-            .wrapping_mul(::core::mem::size_of::<u32>() as size_t);
+        let hashTableBytes =
+            ((1 as size_t) << (*dictCParams).hashLog).wrapping_mul(::core::mem::size_of::<u32>());
+        let chainTableBytes =
+            ((1 as size_t) << (*dictCParams).chainLog).wrapping_mul(::core::mem::size_of::<u32>());
         let _ptr = dictHashLong as *const core::ffi::c_char;
         let _size = hashTableBytes;
         let mut _pos: size_t = 0;

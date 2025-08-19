@@ -137,7 +137,7 @@ pub unsafe fn POOL_create_advanced(
     }
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
+        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>()),
         customMem,
     ) as *mut pthread_t;
     (*ctx).threadCapacity = 0;
@@ -208,11 +208,9 @@ pub unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
     if ctx.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<POOL_ctx>() as size_t)
-        .wrapping_add(((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>() as size_t))
-        .wrapping_add(
-            ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
-        )
+    (::core::mem::size_of::<POOL_ctx>())
+        .wrapping_add(((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>()))
+        .wrapping_add(((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()))
 }
 unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
     if numThreads <= (*ctx).threadCapacity {
@@ -223,7 +221,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
         return 0;
     }
     let threadPool = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t),
+        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>()),
         (*ctx).customMem,
     ) as *mut pthread_t;
     if threadPool.is_null() {
@@ -232,8 +230,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
-        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>() as size_t)
-            as libc::size_t,
+        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()) as libc::size_t,
     );
     ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
     (*ctx).threads = threadPool;

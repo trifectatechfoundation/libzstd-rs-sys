@@ -364,10 +364,10 @@ unsafe fn FASTCOVER_ctx_init(
     };
     (*ctx).displayLevel = displayLevel;
     if totalSamplesSize
-        < (if d as size_t > ::core::mem::size_of::<u64>() as size_t {
+        < (if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>() as size_t
+            ::core::mem::size_of::<u64>()
         })
         || totalSamplesSize
             >= (if ::core::mem::size_of::<size_t>() == 8 {
@@ -441,10 +441,10 @@ unsafe fn FASTCOVER_ctx_init(
     (*ctx).nbTrainSamples = nbTrainSamples as size_t;
     (*ctx).nbTestSamples = nbTestSamples as size_t;
     (*ctx).nbDmers = trainingSamplesSize
-        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() as size_t {
+        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>() as size_t
+            ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
     (*ctx).d = d;
@@ -452,7 +452,7 @@ unsafe fn FASTCOVER_ctx_init(
     (*ctx).accelParams = accelParams;
     (*ctx).offsets = calloc(
         nbSamples.wrapping_add(1) as size_t,
-        ::core::mem::size_of::<size_t>() as size_t,
+        ::core::mem::size_of::<size_t>(),
     ) as *mut size_t;
     if ((*ctx).offsets).is_null() {
         if displayLevel >= 1 {
@@ -474,7 +474,7 @@ unsafe fn FASTCOVER_ctx_init(
         .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
     }
-    (*ctx).freqs = calloc((1) << f, ::core::mem::size_of::<u32>() as size_t) as *mut u32;
+    (*ctx).freqs = calloc((1) << f, ::core::mem::size_of::<u32>()) as *mut u32;
     if ((*ctx).freqs).is_null() {
         if displayLevel >= 1 {
             fprintf(
@@ -595,12 +595,11 @@ unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
-    let segmentFreqs = calloc((1) << (*ctx).f, ::core::mem::size_of::<u16>() as size_t) as *mut u16;
+    let segmentFreqs = calloc((1) << (*ctx).f, ::core::mem::size_of::<u16>()) as *mut u16;
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let freqs =
-        malloc(((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
-            as *mut u32;
+        malloc(((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
     if segmentFreqs.is_null() || dict.is_null() || freqs.is_null() {
         if displayLevel >= 1 {
@@ -615,7 +614,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
         memcpy(
             freqs as *mut core::ffi::c_void,
             (*ctx).freqs as *const core::ffi::c_void,
-            ((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>() as size_t),
+            ((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>()),
         );
         let tail = FASTCOVER_buildDictionary(
             ctx,
@@ -817,8 +816,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         );
         fflush(stderr);
     }
-    let segmentFreqs =
-        calloc(1 << parameters.f, ::core::mem::size_of::<u16>() as size_t) as *mut u16;
+    let segmentFreqs = calloc(1 << parameters.f, ::core::mem::size_of::<u16>()) as *mut u16;
     let tail = FASTCOVER_buildDictionary(
         &ctx,
         ctx.freqs,
@@ -1098,7 +1096,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         }
         k = kMinK;
         while k <= kMaxK {
-            let data = malloc(::core::mem::size_of::<FASTCOVER_tryParameters_data_t>() as size_t)
+            let data = malloc(::core::mem::size_of::<FASTCOVER_tryParameters_data_t>())
                 as *mut FASTCOVER_tryParameters_data_t;
             if displayLevel >= 3 {
                 fprintf(
