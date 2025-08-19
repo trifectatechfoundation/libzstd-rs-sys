@@ -54,7 +54,6 @@ pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_prefixDict_s {
     pub dict: *const core::ffi::c_void,
@@ -65,7 +64,6 @@ pub type ZSTD_dictContentType_e = core::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_localDict {
     pub dictBuffer: *mut core::ffi::c_void,
@@ -75,7 +73,6 @@ pub struct ZSTD_localDict {
     pub cdict: *mut ZSTD_CDict,
 }
 pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_inBuffer_s {
     pub src: *const core::ffi::c_void,
@@ -89,14 +86,12 @@ pub const zcss_init: ZSTD_cStreamStage = 0;
 pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
 pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
 pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_blockState_t {
     pub prevCBlock: *mut ZSTD_compressedBlockState_t,
     pub nextCBlock: *mut ZSTD_compressedBlockState_t,
     pub matchState: ZSTD_MatchState_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
@@ -134,7 +129,6 @@ pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_window_t {
     pub nextSrc: *const u8,
@@ -144,7 +138,6 @@ pub struct ZSTD_window_t {
     pub lowLimit: u32,
     pub nbOverflowCorrections: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
     pub window: ZSTD_window_t,
@@ -154,7 +147,6 @@ pub struct ldmState_t {
     pub splitIndices: [size_t; 64],
     pub matchCandidates: [ldmMatchCandidate_t; 64],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmMatchCandidate_t {
     pub split: *const u8,
@@ -189,7 +181,6 @@ pub struct XXH64_state_s {
 }
 type XXH64_hash_t = u64;
 type XXH32_hash_t = u32;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cwksp {
     pub workspace: *mut core::ffi::c_void,

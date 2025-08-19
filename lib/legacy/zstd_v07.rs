@@ -27,7 +27,6 @@ pub union C2RustUnnamed {
     pub c: [u8; 4],
 }
 pub type ZSTDv07_DCtx = ZSTDv07_DCtx_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv07_DCtx_s {
     pub LLTable: [FSEv07_DTable; 513],
@@ -161,7 +160,6 @@ pub struct sortedSymbol_t {
 }
 pub type C2RustUnnamed_1 = core::ffi::c_uint;
 pub const HUFv07_static_assert_0: C2RustUnnamed_1 = 1;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct algo_time_t {
     pub tableTime: u32,
@@ -170,7 +168,6 @@ pub struct algo_time_t {
 pub const lbt_huffman: litBlockType_t = 0;
 pub type litBlockType_t = core::ffi::c_uint;
 pub type ERR_enum = ZSTD_ErrorCode;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv07_DDict_s {
     pub dict: *mut core::ffi::c_void,
@@ -178,7 +175,6 @@ pub struct ZSTDv07_DDict_s {
     pub refContext: *mut ZSTDv07_DCtx,
 }
 pub type ZSTDv07_DDict = ZSTDv07_DDict_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZBUFFv07_DCtx_s {
     pub zd: *mut ZSTDv07_DCtx,

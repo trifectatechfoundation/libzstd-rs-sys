@@ -12,7 +12,6 @@ use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 extern "C" {
     fn calloc(_: size_t, _: size_t) -> *mut core::ffi::c_void;
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,

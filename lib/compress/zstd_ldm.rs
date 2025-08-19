@@ -2,7 +2,6 @@ pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
@@ -27,13 +26,11 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
     pub fse: ZSTD_fseCTables_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_fseCTables_t {
     pub offcodeCTable: [FSE_CTable; 193],
@@ -48,7 +45,6 @@ pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;
 pub const FSE_repeat_none: FSE_repeat = 0;
 pub type FSE_CTable = core::ffi::c_uint;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
@@ -62,7 +58,6 @@ pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_match_t {
     pub off: u32,
@@ -122,7 +117,6 @@ pub type ZSTD_BlockCompressor_f = Option<
         size_t,
     ) -> size_t,
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmRollingHashState_t {
     pub rolling: u64,

@@ -31,7 +31,6 @@ struct FASTCOVER_accel_t {
     finalize: core::ffi::c_uint,
     skip: core::ffi::c_uint,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct FASTCOVER_ctx_t {
     samples: *const u8,
@@ -47,7 +46,6 @@ struct FASTCOVER_ctx_t {
     accelParams: FASTCOVER_accel_t,
     displayLevel: core::ffi::c_int,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct FASTCOVER_tryParameters_data_t {
     ctx: *const FASTCOVER_ctx_t,
