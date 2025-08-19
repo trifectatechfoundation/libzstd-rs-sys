@@ -1625,7 +1625,7 @@ unsafe fn ZSTD_decompressFrame(
             BlockType::Raw => {
                 decodedSize = ZSTD_copyRawBlock(
                     op as *mut core::ffi::c_void,
-                    oend.offset_from(op) as core::ffi::c_long as size_t,
+                    oend.offset_from(op) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                 );
@@ -1633,7 +1633,7 @@ unsafe fn ZSTD_decompressFrame(
             BlockType::Rle => {
                 decodedSize = ZSTD_setRleBlock(
                     op as *mut core::ffi::c_void,
-                    oBlockEnd.offset_from(op) as core::ffi::c_long as size_t,
+                    oBlockEnd.offset_from(op) as size_t,
                     ip[0],
                     blockProperties.origSize as size_t,
                 );
@@ -1642,7 +1642,7 @@ unsafe fn ZSTD_decompressFrame(
                 decodedSize = ZSTD_decompressBlock_internal(
                     dctx,
                     op as *mut core::ffi::c_void,
-                    oBlockEnd.offset_from(op) as core::ffi::c_long as size_t,
+                    oBlockEnd.offset_from(op) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                     not_streaming,
@@ -1698,7 +1698,7 @@ unsafe fn ZSTD_decompressFrame(
         0,
     );
 
-    op.offset_from(ostart) as core::ffi::c_long as size_t
+    op.offset_from(ostart) as size_t
 }
 
 unsafe fn ZSTD_decompressMultiFrame(
@@ -1797,7 +1797,7 @@ unsafe fn ZSTD_decompressMultiFrame(
         return Error::srcSize_wrong.to_error_code();
     }
 
-    (dst as *mut u8).offset_from(dststart as *mut u8) as core::ffi::c_long as size_t
+    (dst as *mut u8).offset_from(dststart as *mut u8) as size_t
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDict))]
@@ -2993,7 +2993,7 @@ unsafe fn ZSTD_decompressContinueStream(
         let dstSize_0 = if isSkipFrame != 0 {
             0
         } else {
-            oend.offset_from(*op) as core::ffi::c_long as size_t
+            oend.offset_from(*op) as size_t
         };
         let decodedSize_0 =
             ZSTD_decompressContinue(zds, *op as *mut core::ffi::c_void, dstSize_0, src, srcSize);
@@ -3074,7 +3074,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 let toFlushSize = ((*zds).outEnd).wrapping_sub((*zds).outStart);
                 let flushedSize = ZSTD_limitCopy(
                     op as *mut core::ffi::c_void,
-                    oend.offset_from(op) as core::ffi::c_long as size_t,
+                    oend.offset_from(op) as size_t,
                     ((*zds).outBuff).add((*zds).outStart) as *const core::ffi::c_void,
                     toFlushSize,
                 );
@@ -3129,7 +3129,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             if ERR_isError(hSize) != 0 {
                 let legacyVersion = ZSTD_isLegacy(
                     istart as *const core::ffi::c_void,
-                    iend.offset_from(istart) as core::ffi::c_long as size_t,
+                    iend.offset_from(istart) as size_t,
                 );
                 if legacyVersion != 0 {
                     let ddict = ZSTD_getDDict(zds);
@@ -3173,7 +3173,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
             if hSize != 0 {
                 let toLoad = hSize.wrapping_sub((*zds).lhSize);
-                let remainingInput = iend.offset_from(ip) as core::ffi::c_long as size_t;
+                let remainingInput = iend.offset_from(ip) as size_t;
                 if toLoad > remainingInput {
                     if remainingInput > 0 {
                         libc::memcpy(
@@ -3224,7 +3224,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
                     && (*zds).fParams.frameType as core::ffi::c_uint
                         != ZSTD_skippableFrame as core::ffi::c_int as core::ffi::c_uint
-                    && oend.offset_from(op) as core::ffi::c_long as size_t as core::ffi::c_ulonglong
+                    && oend.offset_from(op) as size_t as core::ffi::c_ulonglong
                         >= (*zds).fParams.frameContentSize
                 {
                     let cSize = ZSTD_findFrameCompressedSize_advanced(
@@ -3234,11 +3234,11 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         ),
                         (*zds).format,
                     );
-                    if cSize <= iend.offset_from(istart) as core::ffi::c_long as size_t {
+                    if cSize <= iend.offset_from(istart) as size_t {
                         let decompressedSize = ZSTD_decompress_usingDDict(
                             zds,
                             op as *mut core::ffi::c_void,
-                            oend.offset_from(op) as core::ffi::c_long as size_t,
+                            oend.offset_from(op) as size_t,
                             istart as *const core::ffi::c_void,
                             cSize,
                             ZSTD_getDDict(zds),
@@ -3270,8 +3270,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             && (*zds).fParams.frameType as core::ffi::c_uint
                                 != ZSTD_skippableFrame as core::ffi::c_int as core::ffi::c_uint
                             && (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
-                            && (oend.offset_from(op) as core::ffi::c_long as size_t
-                                as core::ffi::c_ulonglong)
+                            && (oend.offset_from(op) as size_t as core::ffi::c_ulonglong)
                                 < (*zds).fParams.frameContentSize
                         {
                             return Error::dstSize_tooSmall.to_error_code();
@@ -3382,15 +3381,13 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
         }
         if current_block_402 == 7991679940794782184 {
-            let neededInSize = ZSTD_nextSrcSizeToDecompressWithInputSize(
-                zds,
-                iend.offset_from(ip) as core::ffi::c_long as size_t,
-            );
+            let neededInSize =
+                ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
             if neededInSize == 0 {
                 (*zds).streamStage = zdss_init;
                 someMoreWork = 0;
                 current_block_402 = 7792909578691485565;
-            } else if iend.offset_from(ip) as core::ffi::c_long as size_t >= neededInSize {
+            } else if iend.offset_from(ip) as size_t >= neededInSize {
                 let err_code_4 = ZSTD_decompressContinueStream(
                     zds,
                     &mut op,
@@ -3417,10 +3414,10 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             let isSkipFrame = ZSTD_isSkipFrame(zds);
             let mut loadedSize: size_t = 0;
             if isSkipFrame != 0 {
-                loadedSize = if toLoad_0 < iend.offset_from(ip) as core::ffi::c_long as size_t {
+                loadedSize = if toLoad_0 < iend.offset_from(ip) as size_t {
                     toLoad_0
                 } else {
-                    iend.offset_from(ip) as core::ffi::c_long as size_t
+                    iend.offset_from(ip) as size_t
                 };
             } else {
                 if toLoad_0 > ((*zds).inBuffSize).wrapping_sub((*zds).inPos) {
@@ -3430,7 +3427,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     ((*zds).inBuff).add((*zds).inPos) as *mut core::ffi::c_void,
                     toLoad_0,
                     ip as *const core::ffi::c_void,
-                    iend.offset_from(ip) as core::ffi::c_long as size_t,
+                    iend.offset_from(ip) as size_t,
                 );
             }
             if loadedSize != 0 {
@@ -3454,10 +3451,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
         }
     }
-    (*input).pos =
-        ip.offset_from((*input).src as *const core::ffi::c_char) as core::ffi::c_long as size_t;
-    (*output).pos =
-        op.offset_from((*output).dst as *mut core::ffi::c_char) as core::ffi::c_long as size_t;
+    (*input).pos = ip.offset_from((*input).src as *const core::ffi::c_char) as size_t;
+    (*output).pos = op.offset_from((*output).dst as *mut core::ffi::c_char) as size_t;
     (*zds).expectedOutBuffer = *output;
     if ip == istart && op == ostart {
         (*zds).noForwardProgress += 1;

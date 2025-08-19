@@ -562,7 +562,7 @@ unsafe fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primeP
 }
 #[inline]
 unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
-    let endT = ((*window).nextSrc).offset_from((*window).base) as core::ffi::c_long as size_t;
+    let endT = ((*window).nextSrc).offset_from((*window).base) as size_t;
     let end = endT as u32;
     (*window).lowLimit = end;
     (*window).dictLimit = end;
@@ -594,8 +594,7 @@ unsafe fn ZSTD_window_update(
         return contiguous;
     }
     if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous != 0 {
-        let distanceFromBase =
-            ((*window).nextSrc).offset_from((*window).base) as core::ffi::c_long as size_t;
+        let distanceFromBase = ((*window).nextSrc).offset_from((*window).base) as size_t;
         (*window).lowLimit = (*window).dictLimit;
         (*window).dictLimit = distanceFromBase as u32;
         (*window).dictBase = (*window).base;
@@ -611,8 +610,7 @@ unsafe fn ZSTD_window_update(
         & (ip < ((*window).dictBase).offset((*window).dictLimit as isize)) as core::ffi::c_int
         != 0
     {
-        let highInputIdx =
-            ip.add(srcSize).offset_from((*window).dictBase) as core::ffi::c_long as size_t;
+        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as size_t;
         let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
             (*window).dictLimit
         } else {
@@ -1340,7 +1338,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                         let cSize = ZSTD_compressContinue_public(
                                             cctx,
                                             op as *mut core::ffi::c_void,
-                                            oend.offset_from(op) as core::ffi::c_long as size_t,
+                                            oend.offset_from(op) as size_t,
                                             ip as *const core::ffi::c_void,
                                             chunkSize,
                                         );
@@ -2288,8 +2286,8 @@ unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> cor
     extDict.start = (window.dictBase).offset(window.lowLimit as isize) as *const core::ffi::c_void;
     extDict.size = (window.dictLimit).wrapping_sub(window.lowLimit) as size_t;
     prefix.start = (window.base).offset(window.dictLimit as isize) as *const core::ffi::c_void;
-    prefix.size = (window.nextSrc).offset_from((window.base).offset(window.dictLimit as isize))
-        as core::ffi::c_long as size_t;
+    prefix.size =
+        (window.nextSrc).offset_from((window.base).offset(window.dictLimit as isize)) as size_t;
     (ZSTDMT_isOverlapped(buffer, extDict) != 0 || ZSTDMT_isOverlapped(buffer, prefix) != 0)
         as core::ffi::c_int
 }

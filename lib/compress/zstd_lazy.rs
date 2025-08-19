@@ -122,7 +122,7 @@ unsafe fn ZSTD_safecopyLiterals(
         ZSTD_wildcopy(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
-            ilimit_w.offset_from(ip) as core::ffi::c_long as size_t,
+            ilimit_w.offset_from(ip) as size_t,
             ZSTD_no_overlap,
         );
         op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
@@ -219,7 +219,7 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
                     pMatch.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
             } else {
                 pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
-                return pIn.offset_from(pStart) as core::ffi::c_long as size_t;
+                return pIn.offset_from(pStart) as size_t;
             }
         }
     }
@@ -241,7 +241,7 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
         pIn = pIn.offset(1);
     }
-    pIn.offset_from(pStart) as core::ffi::c_long as size_t
+    pIn.offset_from(pStart) as size_t
 }
 #[inline]
 unsafe fn ZSTD_count_2segments(
@@ -2839,9 +2839,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                         offBase = offbaseFound;
                     }
                     if matchLength < 4 {
-                        let step = (ip.offset_from(anchor) as core::ffi::c_long as size_t
-                            >> kSearchStrength)
-                            .wrapping_add(1);
+                        let step =
+                            (ip.offset_from(anchor) as size_t >> kSearchStrength).wrapping_add(1);
                         ip = ip.add(step);
                         (*ms).lazySkipping =
                             (step > kLazySkippingStep as size_t) as core::ffi::c_int;
@@ -3100,7 +3099,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                 }
             }
         }
-        let litLength = start.offset_from(anchor) as core::ffi::c_long as size_t;
+        let litLength = start.offset_from(anchor) as size_t;
         ZSTD_storeSeq(
             seqStore,
             litLength,
@@ -3206,7 +3205,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     } else {
         offsetSaved2
     };
-    iend.offset_from(anchor) as core::ffi::c_long as size_t
+    iend.offset_from(anchor) as size_t
 }
 pub unsafe fn ZSTD_compressBlock_greedy(
     ms: *mut ZSTD_MatchState_t,
@@ -3685,7 +3684,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 offBase = ofbCandidate;
             }
             if matchLength < 4 {
-                let step = ip.offset_from(anchor) as core::ffi::c_long as size_t >> kSearchStrength;
+                let step = ip.offset_from(anchor) as size_t >> kSearchStrength;
                 ip = ip.add(step.wrapping_add(1));
                 (*ms).lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
                 continue;
@@ -3831,7 +3830,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                     }
                 }
                 if offBase > ZSTD_REP_NUM as size_t {
-                    let matchIndex = (start.offset_from(base) as core::ffi::c_long as size_t)
+                    let matchIndex = (start.offset_from(base) as size_t)
                         .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
                         as u32;
                     let mut match_0 = if matchIndex < dictLimit {
@@ -3858,7 +3857,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 }
             }
         }
-        let litLength = start.offset_from(anchor) as core::ffi::c_long as size_t;
+        let litLength = start.offset_from(anchor) as size_t;
         ZSTD_storeSeq(
             seqStore,
             litLength,
@@ -3928,7 +3927,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     }
     *rep.offset(0) = offset_1;
     *rep.offset(1) = offset_2;
-    iend.offset_from(anchor) as core::ffi::c_long as size_t
+    iend.offset_from(anchor) as size_t
 }
 pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     ms: *mut ZSTD_MatchState_t,

@@ -107,7 +107,7 @@ unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as core::ffi::c_long as size_t)
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t)
         .wrapping_add(((*bitC).bitPos > 0) as core::ffi::c_int as size_t)
 }
 pub const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
@@ -454,7 +454,7 @@ unsafe fn FSE_writeNCount_generic(
     *out.offset(0) = bitStream as u8;
     *out.offset(1) = (bitStream >> 8) as u8;
     out = out.offset(((bitCount + 7) / 8) as isize);
-    out.offset_from(ostart) as core::ffi::c_long as size_t
+    out.offset_from(ostart) as size_t
 }
 pub unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
