@@ -10,8 +10,9 @@ use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
-    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
-    ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
+    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_copy4, ZSTD_copy8, ZSTD_wildcopy,
+    LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN,
+    ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -150,9 +151,6 @@ pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    libc::memcpy(dst, src, 4);
-}
 
 impl ZSTD_DCtx {
     fn block_size_max(&self) -> usize {
@@ -1034,28 +1032,33 @@ fn ZSTD_decodeSeqHeaders(
 #[inline(always)]
 unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t) {
     if offset < 8 {
-        static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
-        let sub2 = *dec64table.as_ptr().add(offset);
-        *(*op).offset(0) = *(*ip).offset(0);
-        *(*op).offset(1) = *(*ip).offset(1);
-        *(*op).offset(2) = *(*ip).offset(2);
-        *(*op).offset(3) = *(*ip).offset(3);
-        *ip = (*ip).offset(*dec32table.as_ptr().add(offset) as isize);
+        *(*op).add(0) = *(*ip).add(0);
+        *(*op).add(1) = *(*ip).add(1);
+        *(*op).add(2) = *(*ip).add(2);
+        *(*op).add(3) = *(*ip).add(3);
+
+        static dec32table: [u8; 8] = [0, 1, 2, 1, 4, 4, 4, 4]; // added
+        *ip = (*ip).add(usize::from(dec32table[offset]));
         ZSTD_copy4(
-            (*op).offset(4) as *mut core::ffi::c_void,
+            (*op).add(4) as *mut core::ffi::c_void,
             *ip as *const core::ffi::c_void,
         );
-        *ip = (*ip).offset(-(sub2 as isize));
+
+        static dec64table: [u8; 8] = [8, 8, 8, 7, 8, 9, 10, 11]; // subtracted
+        *ip = (*ip).sub(usize::from(dec64table[offset]));
     } else {
         ZSTD_copy8(
             *op as *mut core::ffi::c_void,
             *ip as *const core::ffi::c_void,
         );
     }
-    *ip = (*ip).offset(8);
-    *op = (*op).offset(8);
+
+    *ip = (*ip).add(8);
+    *op = (*op).add(8);
+
+    assert!(unsafe { (*op).offset_from(*ip) } >= 8);
 }
+
 unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
     oend_w: *const u8,
