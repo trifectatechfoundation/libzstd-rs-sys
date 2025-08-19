@@ -471,7 +471,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     if dctx.ddictIsCold != 0 && litSize > 768 {
         let _ptr = dctx.HUFptr as *const core::ffi::c_char;
-        let _size = ::core::mem::size_of::<[HUF_DTable; 4097]>() as size_t;
+        let _size = ::core::mem::size_of::<[HUF_DTable; 4097]>();
         let mut _pos: size_t = 0;
         _pos = 0;
         while _pos < _size {
@@ -907,7 +907,7 @@ fn ZSTD_buildSeqTable<const N: usize>(
             }
             if ddictIsCold != 0 && nbSeq > 24 {
                 let pStart = *DTablePtr as *const core::ffi::c_void;
-                let pSize = (::core::mem::size_of::<ZSTD_seqSymbol>() as size_t)
+                let pSize = (::core::mem::size_of::<ZSTD_seqSymbol>())
                     .wrapping_mul((1 + ((1) << maxLog)) as size_t);
                 let _ptr = pStart as *const core::ffi::c_char;
                 let _size = pSize;
