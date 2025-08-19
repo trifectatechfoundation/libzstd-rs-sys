@@ -1,5 +1,7 @@
 use std::ffi::CStr;
 
+use crate::assert_eq_rs_c;
+
 macro_rules! decompress_stream {
     ($compressed:expr, $dict:expr) => {
         unsafe {
@@ -421,4 +423,26 @@ fn decompress_using_dict() {
 
         assert_eq!(input_data, String::from_utf8(decompressed).unwrap());
     }
+}
+
+#[test]
+fn test_find_decompressed_size() {
+    let src = include_bytes!("../test-data/The fastest WASM zlib.md.zstd-1.zst");
+    let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(src.as_ptr().cast(), src.len()) });
+    assert_eq!(v, 5929);
+
+    let src = include_bytes!("../test-data/The fastest WASM zlib.md.zstd-19.zst");
+    let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(src.as_ptr().cast(), src.len()) });
+    assert_eq!(v, 5929);
+
+    let src = include_bytes!("../test-data/The fastest WASM zlib.md.zstd-custom-dict.zst");
+    let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(src.as_ptr().cast(), src.len()) });
+    assert_eq!(v, 5929);
+
+    let src = &[0u8];
+    let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(src.as_ptr().cast(), src.len()) });
+    assert_eq!(v, u64::MAX - 1);
+
+    let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(core::ptr::null(), 0) });
+    assert_eq!(v, 0);
 }
