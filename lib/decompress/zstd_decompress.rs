@@ -1868,14 +1868,12 @@ unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
     dctx: *mut ZSTD_DCtx,
     inputSize: size_t,
 ) -> size_t {
-    if !matches!(
-        (*dctx).stage,
-        DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock
-    ) {
-        return (*dctx).expected;
+    match (*dctx).stage {
+        DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
+            Ord::clamp(1, inputSize, (*dctx).expected)
+        }
+        _ => (*dctx).expected,
     }
-
-    Ord::clamp(1, inputSize, (*dctx).expected)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_nextInputType))]
