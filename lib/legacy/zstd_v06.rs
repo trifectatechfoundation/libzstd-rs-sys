@@ -2,149 +2,135 @@ use core::ptr;
 
 use libc::{free, malloc, memcpy, memmove, memset, ptrdiff_t, size_t};
 
-use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
-use crate::lib::zstd::*;
 
-pub type ZSTDv06_DCtx = ZSTDv06_DCtx_s;
 #[repr(C)]
-pub struct ZSTDv06_DCtx_s {
-    pub LLTable: [FSEv06_DTable; 513],
-    pub OffTable: [FSEv06_DTable; 257],
-    pub MLTable: [FSEv06_DTable; 513],
-    pub hufTableX4: [core::ffi::c_uint; 4097],
-    pub previousDstEnd: *const core::ffi::c_void,
-    pub base: *const core::ffi::c_void,
-    pub vBase: *const core::ffi::c_void,
-    pub dictEnd: *const core::ffi::c_void,
-    pub expected: size_t,
-    pub headerSize: size_t,
-    pub fParams: ZSTDv06_frameParams,
-    pub bType: blockType_t,
-    pub stage: ZSTDv06_dStage,
-    pub flagRepeatTable: u32,
-    pub litPtr: *const u8,
-    pub litSize: size_t,
-    pub litBuffer: [u8; 131080],
-    pub headerBuffer: [u8; 13],
+pub(crate) struct ZSTDv06_DCtx {
+    LLTable: [FSEv06_DTable; 513],
+    OffTable: [FSEv06_DTable; 257],
+    MLTable: [FSEv06_DTable; 513],
+    hufTableX4: [core::ffi::c_uint; 4097],
+    previousDstEnd: *const core::ffi::c_void,
+    base: *const core::ffi::c_void,
+    vBase: *const core::ffi::c_void,
+    dictEnd: *const core::ffi::c_void,
+    expected: size_t,
+    headerSize: size_t,
+    fParams: ZSTDv06_frameParams,
+    bType: blockType_t,
+    stage: ZSTDv06_dStage,
+    flagRepeatTable: u32,
+    litPtr: *const u8,
+    litSize: size_t,
+    litBuffer: [u8; 131080],
+    headerBuffer: [u8; 13],
 }
-pub type ZSTDv06_dStage = core::ffi::c_uint;
-pub const ZSTDds_decompressBlock: ZSTDv06_dStage = 3;
-pub const ZSTDds_decodeBlockHeader: ZSTDv06_dStage = 2;
-pub const ZSTDds_decodeFrameHeader: ZSTDv06_dStage = 1;
-pub const ZSTDds_getFrameHeaderSize: ZSTDv06_dStage = 0;
-pub type blockType_t = core::ffi::c_uint;
-pub const bt_end: blockType_t = 3;
-pub const bt_rle: blockType_t = 2;
-pub const bt_raw: blockType_t = 1;
-pub const bt_compressed: blockType_t = 0;
-pub type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
+type ZSTDv06_dStage = core::ffi::c_uint;
+const ZSTDds_decompressBlock: ZSTDv06_dStage = 3;
+const ZSTDds_decodeBlockHeader: ZSTDv06_dStage = 2;
+const ZSTDds_decodeFrameHeader: ZSTDv06_dStage = 1;
+const ZSTDds_getFrameHeaderSize: ZSTDv06_dStage = 0;
+type blockType_t = core::ffi::c_uint;
+const bt_end: blockType_t = 3;
+const bt_rle: blockType_t = 2;
+const bt_compressed: blockType_t = 0;
+type ZSTDv06_frameParams = ZSTDv06_frameParams_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTDv06_frameParams_s {
-    pub frameContentSize: core::ffi::c_ulonglong,
-    pub windowLog: core::ffi::c_uint,
+pub(crate) struct ZSTDv06_frameParams_s {
+    pub(crate) frameContentSize: core::ffi::c_ulonglong,
+    pub(crate) windowLog: core::ffi::c_uint,
 }
-pub type FSEv06_DTable = core::ffi::c_uint;
+type FSEv06_DTable = core::ffi::c_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct blockProperties_t {
-    pub blockType: blockType_t,
-    pub origSize: u32,
+struct blockProperties_t {
+    blockType: blockType_t,
+    origSize: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct seq_t {
-    pub litLength: size_t,
-    pub matchLength: size_t,
-    pub offset: size_t,
+struct seq_t {
+    litLength: size_t,
+    matchLength: size_t,
+    offset: size_t,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct seqState_t {
-    pub DStream: BITv06_DStream_t,
-    pub stateLL: FSEv06_DState_t,
-    pub stateOffb: FSEv06_DState_t,
-    pub stateML: FSEv06_DState_t,
-    pub prevOffset: [size_t; 3],
+struct seqState_t {
+    DStream: BITv06_DStream_t,
+    stateLL: FSEv06_DState_t,
+    stateOffb: FSEv06_DState_t,
+    stateML: FSEv06_DState_t,
+    prevOffset: [size_t; 3],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSEv06_DState_t {
-    pub state: size_t,
-    pub table: *const core::ffi::c_void,
+struct FSEv06_DState_t {
+    state: size_t,
+    table: *const core::ffi::c_void,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct BITv06_DStream_t {
-    pub bitContainer: size_t,
-    pub bitsConsumed: core::ffi::c_uint,
-    pub ptr: *const core::ffi::c_char,
-    pub start: *const core::ffi::c_char,
+struct BITv06_DStream_t {
+    bitContainer: size_t,
+    bitsConsumed: core::ffi::c_uint,
+    ptr: *const core::ffi::c_char,
+    start: *const core::ffi::c_char,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FSEv06_decode_t {
-    pub newState: core::ffi::c_ushort,
-    pub symbol: core::ffi::c_uchar,
-    pub nbBits: core::ffi::c_uchar,
+struct FSEv06_decode_t {
+    newState: core::ffi::c_ushort,
+    symbol: core::ffi::c_uchar,
+    nbBits: core::ffi::c_uchar,
 }
-pub type BITv06_DStream_status = core::ffi::c_uint;
-pub const BITv06_DStream_overflow: BITv06_DStream_status = 3;
-pub const BITv06_DStream_completed: BITv06_DStream_status = 2;
-pub const BITv06_DStream_endOfBuffer: BITv06_DStream_status = 1;
-pub const BITv06_DStream_unfinished: BITv06_DStream_status = 0;
+type BITv06_DStream_status = core::ffi::c_uint;
+const BITv06_DStream_overflow: BITv06_DStream_status = 3;
+const BITv06_DStream_completed: BITv06_DStream_status = 2;
+const BITv06_DStream_endOfBuffer: BITv06_DStream_status = 1;
+const BITv06_DStream_unfinished: BITv06_DStream_status = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed {
-    pub u: u32,
-    pub c: [u8; 4],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FSEv06_DTableHeader {
-    pub tableLog: u16,
-    pub fastMode: u16,
+struct FSEv06_DTableHeader {
+    tableLog: u16,
+    fastMode: u16,
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct HUFv06_DEltX4 {
-    pub sequence: u16,
-    pub nbBits: u8,
-    pub length: u8,
+struct HUFv06_DEltX4 {
+    sequence: u16,
+    nbBits: u8,
+    length: u8,
 }
-pub type decompressionAlgo =
+type decompressionAlgo =
     Option<unsafe fn(*mut core::ffi::c_void, size_t, *const core::ffi::c_void, size_t) -> size_t>;
-pub type rankVal_t = [[u32; 17]; 16];
+type rankVal_t = [[u32; 17]; 16];
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct sortedSymbol_t {
-    pub symbol: u8,
-    pub weight: u8,
+struct sortedSymbol_t {
+    symbol: u8,
+    weight: u8,
 }
-pub type DTable_max_t = [u32; 4097];
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUFv06_static_assert: C2RustUnnamed_0 = 1;
+type DTable_max_t = [u32; 4097];
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct HUFv06_DEltX2 {
-    pub byte: u8,
-    pub nbBits: u8,
+struct HUFv06_DEltX2 {
+    byte: u8,
+    nbBits: u8,
 }
-pub type C2RustUnnamed_1 = core::ffi::c_uint;
-pub const HUFv06_static_assert_0: C2RustUnnamed_1 = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct algo_time_t {
-    pub tableTime: u32,
-    pub decode256Time: u32,
+struct algo_time_t {
+    tableTime: u32,
+    decode256Time: u32,
 }
-pub type ERR_enum = ZSTD_ErrorCode;
 #[repr(C)]
-pub struct ZBUFFv06_DCtx_s {
+pub(crate) struct ZBUFFv06_DCtx_s {
     zd: *mut ZSTDv06_DCtx,
     fParams: ZSTDv06_frameParams,
     stage: ZBUFFv06_dStage,
@@ -159,47 +145,41 @@ pub struct ZBUFFv06_DCtx_s {
     headerBuffer: [u8; 13],
     lhSize: size_t,
 }
-pub type ZBUFFv06_dStage = core::ffi::c_uint;
-pub const ZBUFFds_flush: ZBUFFv06_dStage = 4;
-pub const ZBUFFds_load: ZBUFFv06_dStage = 3;
-pub const ZBUFFds_read: ZBUFFv06_dStage = 2;
-pub const ZBUFFds_loadHeader: ZBUFFv06_dStage = 1;
-pub const ZBUFFds_init: ZBUFFv06_dStage = 0;
-pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
-pub const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb526 as core::ffi::c_uint;
-pub const ZSTDv06_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 13;
+type ZBUFFv06_dStage = core::ffi::c_uint;
+const ZBUFFds_flush: ZBUFFv06_dStage = 4;
+const ZBUFFds_load: ZBUFFv06_dStage = 3;
+const ZBUFFds_read: ZBUFFv06_dStage = 2;
+const ZBUFFds_loadHeader: ZBUFFv06_dStage = 1;
+const ZBUFFds_init: ZBUFFv06_dStage = 0;
+type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
+const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb526 as core::ffi::c_uint;
 static ZSTDv06_frameHeaderSize_min: size_t = 5;
-static ZSTDv06_frameHeaderSize_max: size_t = ZSTDv06_FRAMEHEADERSIZE_MAX as size_t;
-pub const ZSTDv06_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
-pub const ZSTDv06_DICT_MAGIC: core::ffi::c_uint = 0xec30a436 as core::ffi::c_uint;
-pub const ZSTDv06_REP_NUM: core::ffi::c_int = 3;
-pub const ZSTDv06_REP_INIT: core::ffi::c_int = 3;
-pub const ZSTDv06_REP_MOVE: core::ffi::c_int = ZSTDv06_REP_NUM - 1;
-pub const ZSTDv06_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 12;
+const ZSTDv06_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
+const ZSTDv06_DICT_MAGIC: core::ffi::c_uint = 0xec30a436 as core::ffi::c_uint;
+const ZSTDv06_REP_NUM: core::ffi::c_int = 3;
+const ZSTDv06_REP_INIT: core::ffi::c_int = 3;
+const ZSTDv06_REP_MOVE: core::ffi::c_int = ZSTDv06_REP_NUM - 1;
+const ZSTDv06_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 12;
 static ZSTDv06_fcs_fieldSize: [size_t; 4] = [0, 1, 2, 8];
-pub const ZSTDv06_BLOCKHEADERSIZE: core::ffi::c_int = 3;
+const ZSTDv06_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTDv06_blockHeaderSize: size_t = ZSTDv06_BLOCKHEADERSIZE as size_t;
-pub const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
-pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
-pub const ZSTD_HUFFDTABLE_CAPACITY_LOG: core::ffi::c_int = 12;
-pub const IS_HUF: core::ffi::c_int = 0;
-pub const IS_PCH: core::ffi::c_int = 1;
-pub const IS_RAW: core::ffi::c_int = 2;
-pub const IS_RLE: core::ffi::c_int = 3;
-pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-pub const MINMATCH: core::ffi::c_int = 3;
-pub const REPCODE_STARTVALUE: core::ffi::c_int = 1;
-pub const MaxML: core::ffi::c_int = 52;
-pub const MaxLL: core::ffi::c_int = 35;
-pub const MaxOff: core::ffi::c_int = 28;
-pub const MLFSELog: core::ffi::c_int = 9;
-pub const LLFSELog: core::ffi::c_int = 9;
-pub const OffFSELog: core::ffi::c_int = 8;
-pub const FSEv06_ENCODING_RAW: core::ffi::c_int = 0;
-pub const FSEv06_ENCODING_RLE: core::ffi::c_int = 1;
-pub const FSEv06_ENCODING_STATIC: core::ffi::c_int = 2;
-pub const FSEv06_ENCODING_DYNAMIC: core::ffi::c_int = 3;
-pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
+const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
+const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
+const ZSTD_HUFFDTABLE_CAPACITY_LOG: core::ffi::c_int = 12;
+const IS_HUF: core::ffi::c_int = 0;
+const IS_PCH: core::ffi::c_int = 1;
+const IS_RAW: core::ffi::c_int = 2;
+const IS_RLE: core::ffi::c_int = 3;
+const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
+const MINMATCH: core::ffi::c_int = 3;
+const REPCODE_STARTVALUE: core::ffi::c_int = 1;
+const MaxML: core::ffi::c_int = 52;
+const MaxLL: core::ffi::c_int = 35;
+const MaxOff: core::ffi::c_int = 28;
+const MLFSELog: core::ffi::c_int = 9;
+const LLFSELog: core::ffi::c_int = 9;
+const OffFSELog: core::ffi::c_int = 8;
+const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
@@ -226,7 +206,7 @@ static OF_defaultNormLog: u32 = 5;
 unsafe fn ZSTDv06_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 8);
 }
-pub const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
+const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 #[inline]
 unsafe fn ZSTDv06_wildcopy(
     dst: *mut core::ffi::c_void,
@@ -467,17 +447,11 @@ unsafe fn FSEv06_decodeSymbolFast(
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
     symbol
 }
-pub const FSEv06_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
-pub const FSEv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
-pub const FSEv06_MAX_TABLELOG: core::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2;
-pub const FSEv06_MIN_TABLELOG: core::ffi::c_int = 5;
-pub const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
-pub unsafe fn FSEv06_isError_1(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code)
-}
-pub unsafe fn FSEv06_getErrorName(code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorName(code)
-}
+const FSEv06_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
+const FSEv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
+const FSEv06_MAX_TABLELOG: core::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2;
+const FSEv06_MIN_TABLELOG: core::ffi::c_int = 5;
+const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 unsafe fn HUFv06_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
@@ -488,7 +462,7 @@ unsafe fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
         a as core::ffi::c_int
     }) as core::ffi::c_short
 }
-pub unsafe fn FSEv06_readNCount(
+unsafe fn FSEv06_readNCount(
     normalizedCounter: *mut core::ffi::c_short,
     maxSVPtr: *mut core::ffi::c_uint,
     tableLogPtr: *mut core::ffi::c_uint,
@@ -599,18 +573,7 @@ pub unsafe fn FSEv06_readNCount(
     }
     ip.offset_from(istart) as size_t
 }
-pub const FSEv06_isError_0: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub unsafe fn FSEv06_createDTable(mut tableLog: core::ffi::c_uint) -> *mut FSEv06_DTable {
-    if tableLog > FSEv06_TABLELOG_ABSOLUTE_MAX as core::ffi::c_uint {
-        tableLog = FSEv06_TABLELOG_ABSOLUTE_MAX as core::ffi::c_uint;
-    }
-    malloc(((1 + ((1) << tableLog)) as size_t).wrapping_mul(::core::mem::size_of::<u32>()))
-        as *mut FSEv06_DTable
-}
-pub unsafe fn FSEv06_freeDTable(dt: *mut FSEv06_DTable) {
-    free(dt as *mut core::ffi::c_void);
-}
-pub unsafe fn FSEv06_buildDTable(
+unsafe fn FSEv06_buildDTable(
     dt: *mut FSEv06_DTable,
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: core::ffi::c_uint,
@@ -700,7 +663,7 @@ pub unsafe fn FSEv06_buildDTable(
     }
     0
 }
-pub unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) -> size_t {
+unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) -> size_t {
     let ptr = dt as *mut core::ffi::c_void;
     let DTableH = ptr as *mut FSEv06_DTableHeader;
     let dPtr = dt.offset(1) as *mut core::ffi::c_void;
@@ -710,29 +673,6 @@ pub unsafe fn FSEv06_buildDTable_rle(dt: *mut FSEv06_DTable, symbolValue: u8) ->
     (*cell).newState = 0;
     (*cell).symbol = symbolValue;
     (*cell).nbBits = 0;
-    0
-}
-pub unsafe fn FSEv06_buildDTable_raw(dt: *mut FSEv06_DTable, nbBits: core::ffi::c_uint) -> size_t {
-    let ptr = dt as *mut core::ffi::c_void;
-    let DTableH = ptr as *mut FSEv06_DTableHeader;
-    let dPtr = dt.offset(1) as *mut core::ffi::c_void;
-    let dinfo = dPtr as *mut FSEv06_decode_t;
-    let tableSize = ((1) << nbBits) as core::ffi::c_uint;
-    let tableMask = tableSize.wrapping_sub(1);
-    let maxSV1 = tableMask.wrapping_add(1);
-    let mut s: core::ffi::c_uint = 0;
-    if nbBits < 1 {
-        return Error::GENERIC.to_error_code();
-    }
-    (*DTableH).tableLog = nbBits as u16;
-    (*DTableH).fastMode = 1;
-    s = 0;
-    while s < maxSV1 {
-        (*dinfo.offset(s as isize)).newState = 0;
-        (*dinfo.offset(s as isize)).symbol = s as u8;
-        (*dinfo.offset(s as isize)).nbBits = nbBits as u8;
-        s = s.wrapping_add(1);
-    }
     0
 }
 #[inline(always)]
@@ -862,7 +802,7 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
     }
     op.offset_from(ostart) as size_t
 }
-pub unsafe fn FSEv06_decompress_usingDTable(
+unsafe fn FSEv06_decompress_usingDTable(
     dst: *mut core::ffi::c_void,
     originalSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -877,7 +817,7 @@ pub unsafe fn FSEv06_decompress_usingDTable(
     }
     FSEv06_decompress_usingDTable_generic(dst, originalSize, cSrc, cSrcSize, dt, 0)
 }
-pub unsafe fn FSEv06_decompress(
+unsafe fn FSEv06_decompress(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -924,9 +864,9 @@ pub unsafe fn FSEv06_decompress(
         dt.as_mut_ptr(),
     )
 }
-pub const HUFv06_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
-pub const HUFv06_MAX_TABLELOG: core::ffi::c_int = 12;
-pub const HUFv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
+const HUFv06_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
+const HUFv06_MAX_TABLELOG: core::ffi::c_int = 12;
+const HUFv06_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 #[inline]
 unsafe fn HUFv06_readStats(
     huffWeight: *mut u8,
@@ -1028,7 +968,7 @@ unsafe fn HUFv06_readStats(
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
     iSize.wrapping_add(1)
 }
-pub unsafe fn HUFv06_readDTableX2(
+unsafe fn HUFv06_readDTableX2(
     DTable: *mut u16,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1143,7 +1083,7 @@ unsafe fn HUFv06_decodeStreamX2(
     }
     pEnd.offset_from(pStart) as size_t
 }
-pub unsafe fn HUFv06_decompress1X2_usingDTable(
+unsafe fn HUFv06_decompress1X2_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1171,7 +1111,7 @@ pub unsafe fn HUFv06_decompress1X2_usingDTable(
     }
     dstSize
 }
-pub unsafe fn HUFv06_decompress1X2(
+unsafe fn HUFv06_decompress1X2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1196,7 +1136,7 @@ pub unsafe fn HUFv06_decompress1X2(
         DTable.as_mut_ptr(),
     )
 }
-pub unsafe fn HUFv06_decompress4X2_usingDTable(
+unsafe fn HUFv06_decompress4X2_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1385,7 +1325,7 @@ pub unsafe fn HUFv06_decompress4X2_usingDTable(
     }
     dstSize
 }
-pub unsafe fn HUFv06_decompress4X2(
+unsafe fn HUFv06_decompress4X2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1545,7 +1485,7 @@ unsafe fn HUFv06_fillDTableX4(
         s = s.wrapping_add(1);
     }
 }
-pub unsafe fn HUFv06_readDTableX4(
+unsafe fn HUFv06_readDTableX4(
     DTable: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1735,7 +1675,7 @@ unsafe fn HUFv06_decodeStreamX4(
     }
     p.offset_from(pStart) as size_t
 }
-pub unsafe fn HUFv06_decompress1X4_usingDTable(
+unsafe fn HUFv06_decompress1X4_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -1764,32 +1704,7 @@ pub unsafe fn HUFv06_decompress1X4_usingDTable(
     }
     dstSize
 }
-pub unsafe fn HUFv06_decompress1X4(
-    dst: *mut core::ffi::c_void,
-    dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
-    mut cSrcSize: size_t,
-) -> size_t {
-    let mut DTable: [core::ffi::c_uint; 4097] = [12; 4097];
-    let mut ip = cSrc as *const u8;
-    let hSize = HUFv06_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize);
-    if HUFv06_isError(hSize) != 0 {
-        return hSize;
-    }
-    if hSize >= cSrcSize {
-        return Error::srcSize_wrong.to_error_code();
-    }
-    ip = ip.add(hSize);
-    cSrcSize = cSrcSize.wrapping_sub(hSize);
-    HUFv06_decompress1X4_usingDTable(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        DTable.as_mut_ptr(),
-    )
-}
-pub unsafe fn HUFv06_decompress4X4_usingDTable(
+unsafe fn HUFv06_decompress4X4_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2014,7 +1929,7 @@ pub unsafe fn HUFv06_decompress4X4_usingDTable(
     }
     dstSize
 }
-pub unsafe fn HUFv06_decompress4X4(
+unsafe fn HUFv06_decompress4X4(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2361,7 +2276,7 @@ static algoTime: [[algo_time_t; 3]; 16] = [
         },
     ],
 ];
-pub unsafe fn HUFv06_decompress(
+unsafe fn HUFv06_decompress(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     cSrc: *const core::ffi::c_void,
@@ -2431,34 +2346,10 @@ pub unsafe fn HUFv06_decompress(
     }
     (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_isError))]
-pub unsafe extern "C" fn ZSTDv06_isError_0(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code)
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_getErrorName))]
-pub unsafe extern "C" fn ZSTDv06_getErrorName(code: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorName(code)
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZBUFFv06_isError))]
-pub unsafe extern "C" fn ZBUFFv06_isError(errorCode: size_t) -> core::ffi::c_uint {
-    ERR_isError(errorCode)
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZBUFFv06_getErrorName))]
-pub unsafe extern "C" fn ZBUFFv06_getErrorName(errorCode: size_t) -> *const core::ffi::c_char {
-    ERR_getErrorName(errorCode)
-}
-pub const ZSTDv06_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const FSEv06_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const HUFv06_isError_0: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-unsafe extern "C" fn ZSTDv06_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
+unsafe fn ZSTDv06_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 4);
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_sizeofDCtx))]
-pub unsafe extern "C" fn ZSTDv06_sizeofDCtx() -> size_t {
-    ::core::mem::size_of::<ZSTDv06_DCtx>()
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompressBegin))]
-pub unsafe extern "C" fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> size_t {
+unsafe fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> size_t {
     (*dctx).expected = ZSTDv06_frameHeaderSize_min;
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
     (*dctx).previousDstEnd = core::ptr::null();
@@ -2470,8 +2361,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> siz
     (*dctx).flagRepeatTable = 0;
     0
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_createDCtx))]
-pub unsafe extern "C" fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx {
+pub(crate) unsafe fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx {
     let dctx = malloc(::core::mem::size_of::<ZSTDv06_DCtx>()) as *mut ZSTDv06_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
@@ -2479,37 +2369,18 @@ pub unsafe extern "C" fn ZSTDv06_createDCtx() -> *mut ZSTDv06_DCtx {
     ZSTDv06_decompressBegin(dctx);
     dctx
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_freeDCtx))]
-pub unsafe extern "C" fn ZSTDv06_freeDCtx(dctx: *mut ZSTDv06_DCtx) -> size_t {
+pub(crate) unsafe fn ZSTDv06_freeDCtx(dctx: *mut ZSTDv06_DCtx) -> size_t {
     free(dctx as *mut core::ffi::c_void);
     0
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_copyDCtx))]
-pub unsafe extern "C" fn ZSTDv06_copyDCtx(
-    dstDCtx: *mut ZSTDv06_DCtx,
-    srcDCtx: *const ZSTDv06_DCtx,
-) {
-    memcpy(
-        dstDCtx as *mut core::ffi::c_void,
-        srcDCtx as *const core::ffi::c_void,
-        (::core::mem::size_of::<ZSTDv06_DCtx>()).wrapping_sub(
-            ((ZSTDv06_BLOCKSIZE_MAX + WILDCOPY_OVERLENGTH) as size_t)
-                .wrapping_add(ZSTDv06_frameHeaderSize_max),
-        ),
-    );
-}
-unsafe extern "C" fn ZSTDv06_frameHeaderSize(
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+unsafe fn ZSTDv06_frameHeaderSize(src: *const core::ffi::c_void, srcSize: size_t) -> size_t {
     if srcSize < ZSTDv06_frameHeaderSize_min {
         return Error::srcSize_wrong.to_error_code();
     }
     let fcsId = (*(src as *const u8).offset(4) as core::ffi::c_int >> 6) as u32;
     ZSTDv06_frameHeaderSize_min.wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize))
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_getFrameParams))]
-pub unsafe extern "C" fn ZSTDv06_getFrameParams(
+pub(crate) unsafe fn ZSTDv06_getFrameParams(
     fparamsPtr: *mut ZSTDv06_frameParams,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3444,17 +3315,6 @@ unsafe fn ZSTDv06_decompressBlock_internal(
         srcSize,
     )
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompressBlock))]
-pub unsafe extern "C" fn ZSTDv06_decompressBlock(
-    dctx: *mut ZSTDv06_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTDv06_checkContinuity(dctx, dst);
-    ZSTDv06_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize)
-}
 unsafe fn ZSTDv06_decompressFrame(
     dctx: *mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
@@ -3542,21 +3402,7 @@ unsafe fn ZSTDv06_decompressFrame(
     }
     op.offset_from(ostart) as size_t
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompress_usingPreparedDCtx))]
-pub unsafe extern "C" fn ZSTDv06_decompress_usingPreparedDCtx(
-    dctx: *mut ZSTDv06_DCtx,
-    refDCtx: *const ZSTDv06_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTDv06_copyDCtx(dctx, refDCtx);
-    ZSTDv06_checkContinuity(dctx, dst);
-    ZSTDv06_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompress_usingDict))]
-pub unsafe extern "C" fn ZSTDv06_decompress_usingDict(
+pub(crate) unsafe fn ZSTDv06_decompress_usingDict(
     dctx: *mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -3569,32 +3415,6 @@ pub unsafe extern "C" fn ZSTDv06_decompress_usingDict(
     ZSTDv06_checkContinuity(dctx, dst);
     ZSTDv06_decompressFrame(dctx, dst, dstCapacity, src, srcSize)
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompressDCtx))]
-pub unsafe extern "C" fn ZSTDv06_decompressDCtx(
-    dctx: *mut ZSTDv06_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    ZSTDv06_decompress_usingDict(dctx, dst, dstCapacity, src, srcSize, core::ptr::null(), 0)
-}
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompress))]
-pub unsafe extern "C" fn ZSTDv06_decompress(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    let mut regenSize: size_t = 0;
-    let dctx = ZSTDv06_createDCtx();
-    if dctx.is_null() {
-        return Error::memory_allocation.to_error_code();
-    }
-    regenSize = ZSTDv06_decompressDCtx(dctx, dst, dstCapacity, src, srcSize);
-    ZSTDv06_freeDCtx(dctx);
-    regenSize
-}
 unsafe fn ZSTD_errorFrameSizeInfoLegacy(
     cSize: *mut size_t,
     dBound: *mut core::ffi::c_ulonglong,
@@ -3603,8 +3423,7 @@ unsafe fn ZSTD_errorFrameSizeInfoLegacy(
     *cSize = ret;
     *dBound = ZSTD_CONTENTSIZE_ERROR;
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_findFrameSizeInfoLegacy))]
-pub unsafe extern "C" fn ZSTDv06_findFrameSizeInfoLegacy(
+pub(crate) unsafe fn ZSTDv06_findFrameSizeInfoLegacy(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     cSize: *mut size_t,
@@ -3660,12 +3479,10 @@ pub unsafe extern "C" fn ZSTDv06_findFrameSizeInfoLegacy(
     *cSize = ip.offset_from(src as *const u8) as size_t;
     *dBound = (nbBlocks * ZSTDv06_BLOCKSIZE_MAX as size_t) as core::ffi::c_ulonglong;
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_nextSrcSizeToDecompress))]
-pub unsafe extern "C" fn ZSTDv06_nextSrcSizeToDecompress(dctx: *mut ZSTDv06_DCtx) -> size_t {
+unsafe fn ZSTDv06_nextSrcSizeToDecompress(dctx: *mut ZSTDv06_DCtx) -> size_t {
     (*dctx).expected
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompressContinue))]
-pub unsafe extern "C" fn ZSTDv06_decompressContinue(
+unsafe fn ZSTDv06_decompressContinue(
     dctx: *mut ZSTDv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -3904,8 +3721,7 @@ unsafe fn ZSTDv06_decompress_insertDictionary(
     ZSTDv06_refDictContent(dctx, dict, dictSize);
     0
 }
-#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv06_decompressBegin_usingDict))]
-pub unsafe extern "C" fn ZSTDv06_decompressBegin_usingDict(
+unsafe fn ZSTDv06_decompressBegin_usingDict(
     dctx: *mut ZSTDv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
@@ -3922,7 +3738,7 @@ pub unsafe extern "C" fn ZSTDv06_decompressBegin_usingDict(
     }
     0
 }
-pub unsafe fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
+pub(crate) unsafe fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
     let zbd = malloc(::core::mem::size_of::<ZBUFFv06_DCtx>()) as *mut ZBUFFv06_DCtx;
     if zbd.is_null() {
         return core::ptr::null_mut();
@@ -3936,7 +3752,7 @@ pub unsafe fn ZBUFFv06_createDCtx() -> *mut ZBUFFv06_DCtx {
     (*zbd).stage = ZBUFFds_init;
     zbd
 }
-pub unsafe fn ZBUFFv06_freeDCtx(zbd: *mut ZBUFFv06_DCtx) -> size_t {
+pub(crate) unsafe fn ZBUFFv06_freeDCtx(zbd: *mut ZBUFFv06_DCtx) -> size_t {
     if zbd.is_null() {
         return 0;
     }
@@ -3946,7 +3762,7 @@ pub unsafe fn ZBUFFv06_freeDCtx(zbd: *mut ZBUFFv06_DCtx) -> size_t {
     free(zbd as *mut core::ffi::c_void);
     0
 }
-pub unsafe fn ZBUFFv06_decompressInitDictionary(
+pub(crate) unsafe fn ZBUFFv06_decompressInitDictionary(
     zbd: *mut ZBUFFv06_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
@@ -3957,9 +3773,6 @@ pub unsafe fn ZBUFFv06_decompressInitDictionary(
     (*zbd).inPos = (*zbd).outStart;
     (*zbd).lhSize = (*zbd).inPos;
     ZSTDv06_decompressBegin_usingDict((*zbd).zd, dict, dictSize)
-}
-pub unsafe fn ZBUFFv06_decompressInit(zbd: *mut ZBUFFv06_DCtx) -> size_t {
-    ZBUFFv06_decompressInitDictionary(zbd, core::ptr::null(), 0)
 }
 #[inline]
 unsafe fn ZBUFFv06_limitCopy(
@@ -3978,7 +3791,7 @@ unsafe fn ZBUFFv06_limitCopy(
     }
     length
 }
-pub unsafe fn ZBUFFv06_decompressContinue(
+pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     zbd: *mut ZBUFFv06_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacityPtr: *mut size_t,
@@ -4200,10 +4013,4 @@ pub unsafe fn ZBUFFv06_decompressContinue(
     }
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub((*zbd).inPos);
     nextSrcSizeHint
-}
-pub unsafe fn ZBUFFv06_recommendedDInSize() -> size_t {
-    (ZSTDv06_BLOCKSIZE_MAX as size_t).wrapping_add(ZSTDv06_blockHeaderSize)
-}
-pub unsafe fn ZBUFFv06_recommendedDOutSize() -> size_t {
-    ZSTDv06_BLOCKSIZE_MAX as size_t
 }
