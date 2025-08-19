@@ -224,7 +224,7 @@ pub struct ZSTD_DCtx_s {
     LLTptr: *const ZSTD_seqSymbol,
     MLTptr: *const ZSTD_seqSymbol,
     OFTptr: *const ZSTD_seqSymbol,
-    HUFptr: *const HUF_DTable,
+    HUFptr: *const DTable,
     entropy: ZSTD_entropyDTables_t,
     workspace: Workspace,
     previousDstEnd: *const core::ffi::c_void,

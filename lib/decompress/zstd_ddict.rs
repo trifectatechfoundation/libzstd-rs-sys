@@ -98,7 +98,7 @@ pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: *const ZSTD_
         (*dctx).LLTptr = ((*ddict).entropy.LLTable).as_ptr();
         (*dctx).MLTptr = ((*ddict).entropy.MLTable).as_ptr();
         (*dctx).OFTptr = ((*ddict).entropy.OFTable).as_ptr();
-        (*dctx).HUFptr = &raw const (*ddict).entropy.hufTable as *const u32;
+        (*dctx).HUFptr = &raw const (*ddict).entropy.hufTable;
         *((*dctx).entropy.rep).as_mut_ptr().offset(0) = *((*ddict).entropy.rep).as_ptr().offset(0);
         *((*dctx).entropy.rep).as_mut_ptr().offset(1) = *((*ddict).entropy.rep).as_ptr().offset(1);
         *((*dctx).entropy.rep).as_mut_ptr().offset(2) = *((*ddict).entropy.rep).as_ptr().offset(2);

@@ -455,7 +455,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     /* prefetch huffman table if cold */
     if dctx.ddictIsCold != 0 && litSize > 768 {
         // NOTE: the litSize comparison is a heuristic.
-        prefetch_area(dctx.HUFptr, ::core::mem::size_of::<[HUF_DTable; 4097]>());
+        prefetch_val(dctx.HUFptr);
     }
 
     let hufSuccess = if let SymbolEncodingType_e::set_repeat = litEncType {
@@ -463,14 +463,14 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             HUF_decompress1X_usingDTable(
                 Writer::from_raw_parts(dctx.litBuffer, litSize as _),
                 &src[lhSize..][..litCSize],
-                dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
+                dctx.HUFptr.as_ref().unwrap(),
                 flags,
             )
         } else {
             HUF_decompress4X_usingDTable(
                 Writer::from_raw_parts(dctx.litBuffer, litSize as _),
                 &src[lhSize..][..litCSize],
-                dctx.HUFptr.cast::<DTable>().as_ref().unwrap(),
+                dctx.HUFptr.as_ref().unwrap(),
                 flags,
             )
         }
@@ -516,7 +516,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     dctx.litEntropy = 1;
 
     if let SymbolEncodingType_e::set_compressed = litEncType {
-        dctx.HUFptr = &raw const dctx.entropy.hufTable as *const u32;
+        dctx.HUFptr = &raw const dctx.entropy.hufTable;
     }
 
     litCSize.wrapping_add(lhSize)
@@ -2034,6 +2034,11 @@ fn prefetch_area<T>(ptr: *const T, bytes: usize) {
     for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
         prefetch_l2(ptr.wrapping_byte_add(pos));
     }
+}
+
+#[inline(always)]
+fn prefetch_val<T>(ptr: *const T) {
+    prefetch_area(ptr, size_of::<T>())
 }
 
 #[inline(always)]
