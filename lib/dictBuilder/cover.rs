@@ -140,16 +140,16 @@ unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
     memset(
         (*map).data as *mut core::ffi::c_void,
         MAP_EMPTY_VALUE,
-        ((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as size_t),
+        ((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()),
     );
 }
 unsafe fn COVER_map_init(map: *mut COVER_map_t, size: u32) -> core::ffi::c_int {
     (*map).sizeLog = (ZSTD_highbit32(size)).wrapping_add(2);
     (*map).size = (1) << (*map).sizeLog;
     (*map).sizeMask = ((*map).size).wrapping_sub(1);
-    (*map).data = malloc(
-        ((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>() as size_t),
-    ) as *mut COVER_map_pair_t;
+    (*map).data =
+        malloc(((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()))
+            as *mut COVER_map_pair_t;
     if ((*map).data).is_null() {
         (*map).sizeLog = 0;
         (*map).size = 0;
@@ -292,7 +292,7 @@ unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
     qsort_r(
         (*ctx).suffix as *mut core::ffi::c_void,
         (*ctx).suffixSize,
-        ::core::mem::size_of::<u32>() as size_t,
+        ::core::mem::size_of::<u32>(),
         if (*ctx).d <= 8 {
             Some(
                 COVER_strict_cmp8
@@ -545,10 +545,10 @@ unsafe fn COVER_ctx_init(
     };
     (*ctx).displayLevel = displayLevel;
     if totalSamplesSize
-        < (if d as size_t > ::core::mem::size_of::<u64>() as size_t {
+        < (if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>() as size_t
+            ::core::mem::size_of::<u64>()
         })
         || totalSamplesSize
             >= (if ::core::mem::size_of::<size_t>() == 8 {
@@ -622,21 +622,18 @@ unsafe fn COVER_ctx_init(
     (*ctx).nbTrainSamples = nbTrainSamples as size_t;
     (*ctx).nbTestSamples = nbTestSamples as size_t;
     (*ctx).suffixSize = trainingSamplesSize
-        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() as size_t {
+        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>() as size_t
+            ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
     (*ctx).suffix =
-        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
-            as *mut u32;
+        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     (*ctx).dmerAt =
-        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
-            as *mut u32;
+        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     (*ctx).offsets = malloc(
-        (nbSamples.wrapping_add(1) as size_t)
-            .wrapping_mul(::core::mem::size_of::<size_t>() as size_t),
+        (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
     ) as *mut size_t;
     if ((*ctx).suffix).is_null() || ((*ctx).dmerAt).is_null() || ((*ctx).offsets).is_null() {
         if displayLevel >= 1 {
@@ -684,7 +681,7 @@ unsafe fn COVER_ctx_init(
     COVER_groupBy(
         (*ctx).suffix as *const core::ffi::c_void,
         (*ctx).suffixSize,
-        ::core::mem::size_of::<u32>() as size_t,
+        ::core::mem::size_of::<u32>(),
         ctx,
         if (*ctx).d <= 8 {
             Some(
@@ -1308,8 +1305,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     };
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
-    let freqs = malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
-        as *mut u32;
+    let freqs = malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
     if COVER_map_init(
         &mut activeDmers,
@@ -1337,7 +1333,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         memcpy(
             freqs as *mut core::ffi::c_void,
             (*ctx).freqs as *const core::ffi::c_void,
-            ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as size_t),
+            ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>()),
         );
         let tail = COVER_buildDictionary(
             ctx,
@@ -1570,7 +1566,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         }
         k = kMinK;
         while k <= kMaxK {
-            let data = malloc(::core::mem::size_of::<COVER_tryParameters_data_t>() as size_t)
+            let data = malloc(::core::mem::size_of::<COVER_tryParameters_data_t>())
                 as *mut COVER_tryParameters_data_t;
             if displayLevel >= 3 {
                 fprintf(

@@ -248,7 +248,7 @@ unsafe fn BITv05_initDStream(
         );
         return Error::srcSize_wrong.to_error_code();
     }
-    if srcSize >= ::core::mem::size_of::<size_t>() as size_t {
+    if srcSize >= ::core::mem::size_of::<size_t>() {
         let mut contain32: u32 = 0;
         (*bitD).start = srcBuffer as *const core::ffi::c_char;
         (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
@@ -332,9 +332,8 @@ unsafe fn BITv05_initDStream(
             return Error::GENERIC.to_error_code();
         }
         (*bitD).bitsConsumed = (8 as core::ffi::c_uint).wrapping_sub(BITv05_highbit32(contain32_0));
-        (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(
-            (::core::mem::size_of::<size_t>() as size_t).wrapping_sub(srcSize) as u32 * 8,
-        );
+        (*bitD).bitsConsumed = ((*bitD).bitsConsumed)
+            .wrapping_add((::core::mem::size_of::<size_t>()).wrapping_sub(srcSize) as u32 * 8);
     }
     srcSize
 }
@@ -373,8 +372,7 @@ unsafe fn BITv05_readBitsFast(bitD: *mut BITv05_DStream_t, nbBits: core::ffi::c_
 }
 #[inline]
 unsafe fn BITv05_reloadDStream(bitD: *mut BITv05_DStream_t) -> BITv05_DStream_status {
-    if (*bitD).bitsConsumed as size_t > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
-    {
+    if (*bitD).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
         return BITv05_DStream_overflow;
     }
     if (*bitD).ptr >= ((*bitD).start).add(::core::mem::size_of::<size_t>()) {
@@ -384,9 +382,7 @@ unsafe fn BITv05_reloadDStream(bitD: *mut BITv05_DStream_t) -> BITv05_DStream_st
         return BITv05_DStream_unfinished;
     }
     if (*bitD).ptr == (*bitD).start {
-        if ((*bitD).bitsConsumed as size_t)
-            < (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
-        {
+        if ((*bitD).bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
             return BITv05_DStream_endOfBuffer;
         }
         return BITv05_DStream_completed;
@@ -405,9 +401,8 @@ unsafe fn BITv05_reloadDStream(bitD: *mut BITv05_DStream_t) -> BITv05_DStream_st
 #[inline]
 unsafe fn BITv05_endOfDStream(DStream: *const BITv05_DStream_t) -> core::ffi::c_uint {
     ((*DStream).ptr == (*DStream).start
-        && (*DStream).bitsConsumed as size_t
-            == (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)) as core::ffi::c_int
-        as core::ffi::c_uint
+        && (*DStream).bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
+        as core::ffi::c_int as core::ffi::c_uint
 }
 #[inline]
 unsafe fn FSEv05_initDState(
@@ -468,9 +463,8 @@ pub unsafe fn FSEv05_createDTable(mut tableLog: core::ffi::c_uint) -> *mut FSEv0
     if tableLog > FSEv05_TABLELOG_ABSOLUTE_MAX as core::ffi::c_uint {
         tableLog = FSEv05_TABLELOG_ABSOLUTE_MAX as core::ffi::c_uint;
     }
-    malloc(
-        ((1 + ((1) << tableLog)) as size_t).wrapping_mul(::core::mem::size_of::<u32>() as size_t),
-    ) as *mut FSEv05_DTable
+    malloc(((1 + ((1) << tableLog)) as size_t).wrapping_mul(::core::mem::size_of::<u32>()))
+        as *mut FSEv05_DTable
 }
 pub unsafe fn FSEv05_freeDTable(dt: *mut FSEv05_DTable) {
     free(dt as *mut core::ffi::c_void);
@@ -505,8 +499,7 @@ pub unsafe fn FSEv05_buildDTable(
     memset(
         tableDecode as *mut core::ffi::c_void,
         0,
-        (::core::mem::size_of::<u8>() as size_t)
-            .wrapping_mul(maxSymbolValue.wrapping_add(1) as size_t),
+        (::core::mem::size_of::<u8>()).wrapping_mul(maxSymbolValue.wrapping_add(1) as size_t),
     );
     DTableH.tableLog = tableLog as u16;
     s = 0;
@@ -564,7 +557,7 @@ pub unsafe fn FSEv05_buildDTable(
     memcpy(
         dt as *mut core::ffi::c_void,
         &mut DTableH as *mut FSEv05_DTableHeader as *const core::ffi::c_void,
-        ::core::mem::size_of::<FSEv05_DTableHeader>() as size_t,
+        ::core::mem::size_of::<FSEv05_DTableHeader>(),
     );
     0
 }
@@ -771,7 +764,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
+            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
         {
             BITv05_reloadDStream(&mut bitD);
         }
@@ -781,7 +774,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 4 + 7) as size_t
-            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
+            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
             && BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
                 > BITv05_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
         {
@@ -794,7 +787,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
+            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
         {
             BITv05_reloadDStream(&mut bitD);
         }
@@ -976,8 +969,7 @@ unsafe fn HUFv05_readStats(
     memset(
         rankStats as *mut core::ffi::c_void,
         0,
-        ((HUFv05_ABSOLUTEMAX_TABLELOG + 1) as size_t)
-            .wrapping_mul(::core::mem::size_of::<u32>() as size_t),
+        ((HUFv05_ABSOLUTEMAX_TABLELOG + 1) as size_t).wrapping_mul(::core::mem::size_of::<u32>()),
     );
     weightTotal = 0;
     n = 0;
@@ -1423,7 +1415,7 @@ unsafe fn HUFv05_fillDTableX4Level2(
     memcpy(
         rankVal.as_mut_ptr() as *mut core::ffi::c_void,
         rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>() as size_t,
+        ::core::mem::size_of::<[u32; 17]>(),
     );
     if minWeight > 1 {
         let mut i: u32 = 0;
@@ -1485,7 +1477,7 @@ unsafe fn HUFv05_fillDTableX4(
     memcpy(
         rankVal.as_mut_ptr() as *mut core::ffi::c_void,
         rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>() as size_t,
+        ::core::mem::size_of::<[u32; 17]>(),
     );
     s = 0;
     while s < sortedListSize {
@@ -1664,12 +1656,10 @@ unsafe fn HUFv05_decodeLastSymbolX4(
     if (*dt.add(val)).length as core::ffi::c_int == 1 {
         BITv05_skipBits(DStream, (*dt.add(val)).nbBits as u32);
     } else if ((*DStream).bitsConsumed as size_t)
-        < (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
+        < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
     {
         BITv05_skipBits(DStream, (*dt.add(val)).nbBits as u32);
-        if (*DStream).bitsConsumed as size_t
-            > (::core::mem::size_of::<size_t>() as size_t).wrapping_mul(8)
-        {
+        if (*DStream).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
             (*DStream).bitsConsumed =
                 (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
         }
@@ -2435,7 +2425,7 @@ pub unsafe extern "C" fn ZSTDv05_getErrorName(code: size_t) -> *const core::ffi:
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv05_sizeofDCtx))]
 pub unsafe extern "C" fn ZSTDv05_sizeofDCtx() -> size_t {
-    ::core::mem::size_of::<ZSTDv05_DCtx>() as size_t
+    ::core::mem::size_of::<ZSTDv05_DCtx>()
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv05_decompressBegin))]
 pub unsafe extern "C" fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> size_t {
@@ -2452,7 +2442,7 @@ pub unsafe extern "C" fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> siz
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTDv05_createDCtx))]
 pub unsafe extern "C" fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
-    let dctx = malloc(::core::mem::size_of::<ZSTDv05_DCtx>() as size_t) as *mut ZSTDv05_DCtx;
+    let dctx = malloc(::core::mem::size_of::<ZSTDv05_DCtx>()) as *mut ZSTDv05_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }
@@ -2472,7 +2462,7 @@ pub unsafe extern "C" fn ZSTDv05_copyDCtx(
     memcpy(
         dstDCtx as *mut core::ffi::c_void,
         srcDCtx as *const core::ffi::c_void,
-        (::core::mem::size_of::<ZSTDv05_DCtx>() as size_t).wrapping_sub(
+        (::core::mem::size_of::<ZSTDv05_DCtx>()).wrapping_sub(
             (BLOCKSIZE + WILDCOPY_OVERLENGTH + ZSTDv05_frameHeaderSize_max) as size_t,
         ),
     );
@@ -3836,7 +3826,7 @@ unsafe fn ZBUFFv05_limitCopy(
 pub const ZSTDv05_frameHeaderSize_max_0: core::ffi::c_int = 5;
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZBUFFv05_createDCtx))]
 pub unsafe extern "C" fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
-    let zbc = malloc(::core::mem::size_of::<ZBUFFv05_DCtx>() as size_t) as *mut ZBUFFv05_DCtx;
+    let zbc = malloc(::core::mem::size_of::<ZBUFFv05_DCtx>()) as *mut ZBUFFv05_DCtx;
     if zbc.is_null() {
         return core::ptr::null_mut();
     }

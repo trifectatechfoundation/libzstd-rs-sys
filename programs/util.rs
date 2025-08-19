@@ -1295,9 +1295,8 @@ unsafe fn UTIL_createLinePointers(
 ) -> *mut *const core::ffi::c_char {
     let mut lineIndex = 0;
     let mut pos = 0;
-    let bufferPtrs = malloc(
-        numLines.wrapping_mul(::core::mem::size_of::<*mut *const core::ffi::c_char>() as size_t),
-    );
+    let bufferPtrs =
+        malloc(numLines.wrapping_mul(::core::mem::size_of::<*mut *const core::ffi::c_char>()));
     let linePointers = bufferPtrs as *mut *const core::ffi::c_char;
     if bufferPtrs.is_null() {
         return core::ptr::null_mut();
@@ -1392,7 +1391,7 @@ unsafe fn UTIL_assembleFileNamesTable2(
     tableCapacity: size_t,
     buf: *mut core::ffi::c_char,
 ) -> *mut FileNamesTable {
-    let table = malloc(::core::mem::size_of::<FileNamesTable>() as size_t) as *mut FileNamesTable;
+    let table = malloc(::core::mem::size_of::<FileNamesTable>()) as *mut FileNamesTable;
     if table.is_null() {
         if g_utilDisplayLevel >= 1 {
             fprintf(
@@ -1428,9 +1427,8 @@ pub unsafe fn UTIL_freeFileNamesTable(table: *mut FileNamesTable) {
 }
 #[no_mangle]
 pub unsafe fn UTIL_allocateFileNamesTable(tableSize: size_t) -> *mut FileNamesTable {
-    let fnTable = malloc(
-        tableSize.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>() as size_t),
-    ) as *mut *const core::ffi::c_char;
+    let fnTable = malloc(tableSize.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>()))
+        as *mut *const core::ffi::c_char;
     let mut fnt = core::ptr::null_mut::<FileNamesTable>();
     if fnTable.is_null() {
         return core::ptr::null_mut();
@@ -1495,7 +1493,7 @@ pub unsafe fn UTIL_mergeFileNamesTable(
     newTotalTableSize = (getTotalTableSize(table1)).wrapping_add(getTotalTableSize(table2));
     buf = calloc(
         newTotalTableSize,
-        ::core::mem::size_of::<core::ffi::c_char>() as size_t,
+        ::core::mem::size_of::<core::ffi::c_char>(),
     ) as *mut core::ffi::c_char;
     if buf.is_null() {
         if g_utilDisplayLevel >= 1 {
@@ -1513,7 +1511,7 @@ pub unsafe fn UTIL_mergeFileNamesTable(
     (*newTable).tableSize = ((*table1).tableSize).wrapping_add((*table2).tableSize);
     (*newTable).fileNames = calloc(
         (*newTable).tableSize,
-        ::core::mem::size_of::<*const core::ffi::c_char>() as size_t,
+        ::core::mem::size_of::<*const core::ffi::c_char>(),
     ) as *mut *const core::ffi::c_char;
     if ((*newTable).fileNames).is_null() {
         if g_utilDisplayLevel >= 1 {
@@ -1986,9 +1984,9 @@ unsafe fn makeUniqueMirroredDestDirs(
     if nbFile == 0 {
         return;
     }
-    uniqueDirNames = malloc(
-        (nbFile as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_char>() as size_t),
-    ) as *mut *mut core::ffi::c_char;
+    uniqueDirNames =
+        malloc((nbFile as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_char>()))
+            as *mut *mut core::ffi::c_char;
     if uniqueDirNames.is_null() {
         if g_utilDisplayLevel >= 1 {
             fprintf(
@@ -2004,7 +2002,7 @@ unsafe fn makeUniqueMirroredDestDirs(
     qsort(
         srcDirNames as *mut core::ffi::c_void,
         nbFile as size_t,
-        ::core::mem::size_of::<*mut core::ffi::c_char>() as size_t,
+        ::core::mem::size_of::<*mut core::ffi::c_char>(),
         Some(
             compareDir
                 as unsafe extern "C" fn(
@@ -2050,9 +2048,9 @@ pub unsafe fn UTIL_mirrorSourceFilesDirectories(
 ) {
     let mut i = 0;
     let mut validFilenamesNr = 0 as core::ffi::c_uint;
-    let srcFileNames = malloc(
-        (nbFile as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_char>() as size_t),
-    ) as *mut *mut core::ffi::c_char;
+    let srcFileNames =
+        malloc((nbFile as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_char>()))
+            as *mut *mut core::ffi::c_char;
     if srcFileNames.is_null() {
         if g_utilDisplayLevel >= 1 {
             fprintf(
@@ -2155,9 +2153,9 @@ pub unsafe fn UTIL_createExpandedFNT(
     let mut ifnNb_0: size_t = 0;
     let mut pos_0: size_t = 0;
     let fntCapacity = nbFiles.wrapping_add(1) as size_t;
-    let fileNamesTable = malloc(
-        fntCapacity.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>() as size_t),
-    ) as *mut *const core::ffi::c_char;
+    let fileNamesTable =
+        malloc(fntCapacity.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>()))
+            as *mut *const core::ffi::c_char;
     if fileNamesTable.is_null() {
         free(buf as *mut core::ffi::c_void);
         return core::ptr::null_mut();
@@ -2200,7 +2198,7 @@ pub unsafe fn UTIL_createFNT_fromROTable(
     nbFilenames: size_t,
 ) -> *mut FileNamesTable {
     let sizeof_FNTable =
-        nbFilenames.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>() as size_t);
+        nbFilenames.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>());
     let newFNTable = malloc(sizeof_FNTable) as *mut *const core::ffi::c_char;
     if newFNTable.is_null() {
         return core::ptr::null_mut();
