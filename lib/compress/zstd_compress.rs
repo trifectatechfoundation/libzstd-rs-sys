@@ -769,7 +769,7 @@ unsafe fn ZSTD_safecopyLiterals(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
             ilimit_w.offset_from(ip) as size_t,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
         ip = ilimit_w;
@@ -834,7 +834,7 @@ unsafe fn ZSTD_storeSeq(
                 ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
                 literals.offset(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
-                ZSTD_no_overlap,
+                Overlap::NoOverlap,
             );
         }
     } else {
@@ -1161,9 +1161,9 @@ use crate::lib::common::xxhash::{
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
     LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
-    MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, OffFSELog, ZSTD_copy16,
-    ZSTD_limitCopy, ZSTD_no_overlap, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM,
-    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, OffFSELog, Overlap, ZSTD_copy16,
+    ZSTD_limitCopy, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
+    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
