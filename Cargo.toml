@@ -24,7 +24,6 @@ name = "programs"
 path = "programs/main.rs"
 
 [dependencies]
-c2rust-bitfields = "0.3"
 libc = "0.2"
 
 [target.'cfg(target_arch = "x86_64")'.build-dependencies]
