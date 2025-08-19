@@ -35,7 +35,7 @@ pub mod lib {
         pub mod zstd_ldm;
         pub mod zstd_opt;
         pub mod zstd_preSplit;
-        pub mod zstdmt_compress;
+        mod zstdmt_compress;
     } // mod compress
     pub mod decompress;
     pub mod dictBuilder {
