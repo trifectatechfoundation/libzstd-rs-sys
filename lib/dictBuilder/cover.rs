@@ -8,7 +8,7 @@ use libc::{
     PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
 };
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
@@ -16,7 +16,6 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_createCDict, ZSTD_freeCCtx, ZSTD_freeCDict,
 };
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError, ZDICT_params_t};
-use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
@@ -572,7 +571,7 @@ unsafe fn COVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
@@ -584,7 +583,7 @@ unsafe fn COVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
@@ -596,7 +595,7 @@ unsafe fn COVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<COVER_ctx_t>());
     if displayLevel >= 2 {
@@ -648,7 +647,7 @@ unsafe fn COVER_ctx_init(
             fflush(stderr);
         }
         COVER_ctx_destroy(ctx);
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     (*ctx).freqs = core::ptr::null_mut();
     (*ctx).d = d;
@@ -909,7 +908,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
@@ -920,7 +919,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
@@ -932,7 +931,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     let initVal = COVER_ctx_init(
         &mut ctx,
@@ -961,7 +960,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
             fflush(stderr);
         }
         COVER_ctx_destroy(&mut ctx);
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     if displayLevel >= 2 {
         fprintf(
@@ -1010,7 +1009,7 @@ pub unsafe fn COVER_checkTotalCompressedSize(
     dict: *mut u8,
     dictBufferCapacity: size_t,
 ) -> size_t {
-    let mut totalCompressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+    let mut totalCompressedSize = Error::GENERIC.to_error_code();
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
     let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
@@ -1139,7 +1138,7 @@ pub unsafe fn COVER_best_finish(
             }
             (*best).dict = malloc(dictSize);
             if ((*best).dict).is_null() {
-                (*best).compressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+                (*best).compressedSize = Error::GENERIC.to_error_code();
                 (*best).dictSize = 0;
                 pthread_cond_signal(&mut (*best).cond);
                 pthread_mutex_unlock(&mut (*best).mutex);
@@ -1300,7 +1299,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let ctx = (*data).ctx;
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
-    let totalCompressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+    let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut activeDmers = COVER_map_s {
         data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
@@ -1308,8 +1307,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         sizeMask: 0,
     };
     let dict = malloc(dictBufferCapacity) as *mut u8;
-    let mut selection =
-        COVER_dictSelectionError(-(ZSTD_error_GENERIC as core::ffi::c_int) as size_t);
+    let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let freqs = malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
         as *mut u32;
     let displayLevel = (*ctx).displayLevel;
@@ -1466,7 +1464,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if kMinK < kMaxD || kMaxK < kMinK {
         if displayLevel >= 1 {
@@ -1476,7 +1474,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
@@ -1487,7 +1485,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
@@ -1499,12 +1497,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if nbThreads > 1 {
         pool = POOL_create(nbThreads as size_t, 1);
         if pool.is_null() {
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::memory_allocation.to_error_code();
         }
     }
     COVER_best_init(&mut best);
@@ -1594,7 +1592,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 COVER_best_destroy(&mut best);
                 COVER_ctx_destroy(&mut ctx);
                 POOL_free(pool);
-                return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+                return Error::memory_allocation.to_error_code();
             }
             (*data).ctx = &mut ctx;
             (*data).best = &mut best;

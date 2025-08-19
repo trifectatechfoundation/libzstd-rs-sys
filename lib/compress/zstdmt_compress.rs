@@ -7,7 +7,7 @@ use libc::{
     pthread_mutex_unlock, pthread_mutexattr_t, size_t,
 };
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
 use crate::lib::common::pool::{
     POOL_create_advanced, POOL_ctx, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd,
@@ -1175,14 +1175,14 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
     let mut lastCBlockSize = 0;
     if cctx.is_null() {
         pthread_mutex_lock(&mut (*job).job_mutex);
-        (*job).cSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        (*job).cSize = Error::memory_allocation.to_error_code();
         pthread_mutex_unlock(&mut (*job).job_mutex);
     } else {
         if (dstBuff.start).is_null() {
             dstBuff = ZSTDMT_getBuffer((*job).bufPool);
             if (dstBuff.start).is_null() {
                 pthread_mutex_lock(&mut (*job).job_mutex);
-                (*job).cSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+                (*job).cSize = Error::memory_allocation.to_error_code();
                 pthread_mutex_unlock(&mut (*job).job_mutex);
                 current_block = 17100290475540901977;
             } else {
@@ -1200,7 +1200,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                     && (rawSeqStore.seq).is_null()
                 {
                     pthread_mutex_lock(&mut (*job).job_mutex);
-                    (*job).cSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+                    (*job).cSize = Error::memory_allocation.to_error_code();
                     pthread_mutex_unlock(&mut (*job).job_mutex);
                 } else {
                     if (*job).jobID != 0 {
@@ -1511,7 +1511,7 @@ unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> siz
         (*mtctx).jobIDMask = 0;
         (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, (*mtctx).cMem);
         if ((*mtctx).jobs).is_null() {
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::memory_allocation.to_error_code();
         }
         (*mtctx).jobIDMask = nbJobs.wrapping_sub(1);
     }
@@ -1691,7 +1691,7 @@ pub unsafe extern "C" fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
 }
 unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -> size_t {
     if POOL_resize((*mtctx).factory, nbWorkers as size_t) != 0 {
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     let err_code = ZSTDMT_expandJobsTable(mtctx, nbWorkers);
     if ERR_isError(err_code) != 0 {
@@ -1704,15 +1704,15 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
             .wrapping_add(3),
     );
     if ((*mtctx).bufPool).is_null() {
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     (*mtctx).cctxPool = ZSTDMT_expandCCtxPool((*mtctx).cctxPool, nbWorkers as core::ffi::c_int);
     if ((*mtctx).cctxPool).is_null() {
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     (*mtctx).seqPool = ZSTDMT_expandSeqPool((*mtctx).seqPool, nbWorkers);
     if ((*mtctx).seqPool).is_null() {
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     ZSTDMT_CCtxParam_setNbWorkers(&mut (*mtctx).params, nbWorkers);
     0
@@ -1928,7 +1928,7 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
         );
         (*mtctx).cdict = (*mtctx).cdictLocal;
         if ((*mtctx).cdictLocal).is_null() {
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::memory_allocation.to_error_code();
         }
     } else {
         (*mtctx).cdictLocal = core::ptr::null_mut();
@@ -1985,7 +1985,7 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
         (*mtctx).roundBuff.buffer = ZSTD_customMalloc(capacity, (*mtctx).cMem) as *mut u8;
         if ((*mtctx).roundBuff.buffer).is_null() {
             (*mtctx).roundBuff.capacity = 0;
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::memory_allocation.to_error_code();
         }
         (*mtctx).roundBuff.capacity = capacity;
     }
@@ -2019,7 +2019,7 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
             );
             (*mtctx).cdict = (*mtctx).cdictLocal;
             if ((*mtctx).cdictLocal).is_null() {
-                return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+                return Error::memory_allocation.to_error_code();
             }
         }
     } else {
@@ -2035,14 +2035,14 @@ pub unsafe extern "C" fn ZSTDMT_initCStream_internal(
         dictContentType,
     ) != 0
     {
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     0
 }
 unsafe fn ZSTDMT_writeLastEmptyBlock(job: *mut ZSTDMT_jobDescription) {
     (*job).dstBuff = ZSTDMT_getBuffer((*job).bufPool);
     if ((*job).dstBuff.start).is_null() {
-        (*job).cSize = -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        (*job).cSize = Error::memory_allocation.to_error_code();
         return;
     }
     (*job).src = kNullRange;
@@ -2439,7 +2439,7 @@ pub unsafe extern "C" fn ZSTDMT_compressStream_generic(
     if (*mtctx).frameEnded != 0
         && endOp as core::ffi::c_uint == ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
     {
-        return -(ZSTD_error_stage_wrong as core::ffi::c_int) as size_t;
+        return Error::stage_wrong.to_error_code();
     }
     if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
         if ((*mtctx).inBuff.buffer.start).is_null() {

@@ -3,14 +3,13 @@ use core::ptr;
 use libc::size_t;
 
 use crate::lib::common::entropy_common::HUF_readStats;
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp};
-use crate::lib::zstd::*;
 pub type FSE_CTable = core::ffi::c_uint;
 pub type HUF_CElt = size_t;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;
@@ -145,7 +144,7 @@ unsafe fn HUF_compressWeights(
         ::core::mem::align_of::<u32>() as size_t,
     ) as *mut HUF_CompressWeightsWksp;
     if workspaceSize < ::core::mem::size_of::<HUF_CompressWeightsWksp>() as size_t {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if wtSize <= 1 {
         return 0;
@@ -286,10 +285,10 @@ pub unsafe fn HUF_writeCTable_wksp(
         ::core::mem::align_of::<u32>() as size_t,
     ) as *mut HUF_WriteCTableWksp;
     if workspaceSize < ::core::mem::size_of::<HUF_WriteCTableWksp>() as size_t {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX as core::ffi::c_uint {
-        return -(ZSTD_error_maxSymbolValue_tooLarge as core::ffi::c_int) as size_t;
+        return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     *((*wksp).bitsToWeight).as_mut_ptr().offset(0) = 0;
     n = 1;
@@ -306,7 +305,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         n = n.wrapping_add(1);
     }
     if maxDstSize < 1 {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     let hSize = HUF_compressWeights(
         op.offset(1) as *mut core::ffi::c_void,
@@ -327,7 +326,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         return hSize.wrapping_add(1);
     }
     if maxSymbolValue > (256 - 128) as core::ffi::c_uint {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if maxSymbolValue
         .wrapping_add(1)
@@ -335,7 +334,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         .wrapping_add(1) as size_t
         > maxDstSize
     {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     *op.offset(0) = (128 as core::ffi::c_uint).wrapping_add(maxSymbolValue.wrapping_sub(1)) as u8;
     *((*wksp).huffWeight)
@@ -384,10 +383,10 @@ pub unsafe fn HUF_readCTable(
     *hasZeroWeights =
         (*rankVal.as_mut_ptr().offset(0) > 0) as core::ffi::c_int as core::ffi::c_uint;
     if tableLog > HUF_TABLELOG_MAX as u32 {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     if nbSymbols > (*maxSymbolValuePtr).wrapping_add(1) {
-        return -(ZSTD_error_maxSymbolValue_tooSmall as core::ffi::c_int) as size_t;
+        return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = nbSymbols.wrapping_sub(1);
     HUF_writeCTableHeader(CTable, tableLog, *maxSymbolValuePtr);
@@ -842,13 +841,13 @@ pub unsafe fn HUF_buildCTable_wksp(
     let huffNode = huffNode0.offset(1);
     let mut nonNullRank: core::ffi::c_int = 0;
     if wkspSize < ::core::mem::size_of::<HUF_buildCTable_wksp_tables>() as size_t {
-        return -(ZSTD_error_workSpace_tooSmall as core::ffi::c_int) as size_t;
+        return Error::workSpace_tooSmall.to_error_code();
     }
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT as u32;
     }
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX as u32 {
-        return -(ZSTD_error_maxSymbolValue_tooLarge as core::ffi::c_int) as size_t;
+        return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     ptr::write_bytes(
         huffNode0 as *mut u8,
@@ -864,7 +863,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     nonNullRank = HUF_buildTree(huffNode, maxSymbolValue);
     maxNbBits = HUF_setMaxHeight(huffNode, nonNullRank as u32, maxNbBits);
     if maxNbBits > HUF_TABLELOG_MAX as u32 {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     HUF_buildCTableFromTree(CTable, huffNode, nonNullRank, maxSymbolValue, maxNbBits);
     maxNbBits as size_t
@@ -923,7 +922,7 @@ unsafe fn HUF_initCStream(
         .add(dstCapacity)
         .offset(-(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<size_t>() as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     0
 }
@@ -1441,7 +1440,7 @@ unsafe fn HUF_compress_internal(
     let oend = ostart.add(dstSize);
     let mut op = ostart;
     if wkspSize < ::core::mem::size_of::<HUF_compress_tables_t>() as size_t {
-        return -(ZSTD_error_workSpace_tooSmall as core::ffi::c_int) as size_t;
+        return Error::workSpace_tooSmall.to_error_code();
     }
     if srcSize == 0 {
         return 0;
@@ -1450,13 +1449,13 @@ unsafe fn HUF_compress_internal(
         return 0;
     }
     if srcSize > HUF_BLOCKSIZE_MAX as size_t {
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if huffLog > HUF_TABLELOG_MAX as core::ffi::c_uint {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX as core::ffi::c_uint {
-        return -(ZSTD_error_maxSymbolValue_tooLarge as core::ffi::c_int) as size_t;
+        return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     if maxSymbolValue == 0 {
         maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
