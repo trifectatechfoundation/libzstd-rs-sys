@@ -4,8 +4,8 @@ use libc::{
     __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
     memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
+use libzstd_rs::internal::ZSTD_XXH64;
 use libzstd_rs::lib::common::error_private::Error;
-use libzstd_rs::lib::common::xxhash::ZSTD_XXH64;
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_compress2,
