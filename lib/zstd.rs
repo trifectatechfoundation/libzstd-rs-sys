@@ -132,6 +132,25 @@ pub type ZSTD_bufferMode_e = core::ffi::c_uint;
 pub const ZSTD_bm_stable: ZSTD_bufferMode_e = 1;
 pub const ZSTD_bm_buffered: ZSTD_bufferMode_e = 0;
 
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum BufferMode {
+    Buffered,
+    Stable,
+}
+
+impl TryFrom<u32> for BufferMode {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Buffered),
+            1 => Ok(Self::Stable),
+            _ => Err(()),
+        }
+    }
+}
+
 pub static mut ZSTD_defaultCMem: ZSTD_customMem = ZSTD_customMem {
     customAlloc: None,
     customFree: None,
