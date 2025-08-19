@@ -282,10 +282,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         return Error::corruption_detected.to_error_code();
     }
 
-    let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
-
     let blockSizeMax = dctx.block_size_max();
 
+    let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
     match litEncType {
         SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
             return Error::dictionary_corrupted.to_error_code();
@@ -453,14 +452,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, false);
 
+    /* prefetch huffman table if cold */
     if dctx.ddictIsCold != 0 && litSize > 768 {
-        let _ptr = dctx.HUFptr as *const core::ffi::c_char;
-        let _size = ::core::mem::size_of::<[HUF_DTable; 4097]>();
-        let mut _pos: size_t = 0;
-        _pos = 0;
-        while _pos < _size {
-            _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
-        }
+        // NOTE: the litSize comparison is a heuristic.
+        prefetch_area(dctx.HUFptr, ::core::mem::size_of::<[HUF_DTable; 4097]>());
     }
 
     let hufSuccess = if let SymbolEncodingType_e::set_repeat = litEncType {
@@ -1996,6 +1991,48 @@ fn prefetch_l1<T>(ptr: *const T) {
             )
         };
         return;
+    }
+}
+
+#[inline(always)]
+fn prefetch_l2<T>(ptr: *const T) {
+    if cfg!(feature = "no-prefetch") {
+        return;
+    }
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        use core::arch::x86_64;
+        unsafe { x86_64::_mm_prefetch(ptr as *const i8, x86_64::_MM_HINT_T1) };
+        return;
+    }
+
+    #[cfg(target_arch = "x86")]
+    if cfg!(target_feature(enable = "sse2")) {
+        use core::arch::x86;
+        unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T1) };
+        return;
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        use core::arch::aarch64;
+        // emits `prfm pldl1keep`
+        unsafe {
+            aarch64::_prefetch(
+                ptr as *const i8,
+                aarch64::_PREFETCH_READ,
+                aarch64::_PREFETCH_LOCALITY2,
+            )
+        };
+        return;
+    }
+}
+
+#[inline(always)]
+fn prefetch_area<T>(ptr: *const T, bytes: usize) {
+    for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
+        prefetch_l2(ptr.wrapping_byte_add(pos));
     }
 }
 
