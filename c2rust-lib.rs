@@ -59,9 +59,10 @@ pub use crate::lib::decompress::{
     zstd_decompress::{
         ZSTD_DCtx_refDDict, ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_createDCtx,
         ZSTD_decompressBegin, ZSTD_decompressBegin_usingDDict, ZSTD_decompressBegin_usingDict,
-        ZSTD_decompressContinue, ZSTD_decompressStream, ZSTD_decompress_usingDict, ZSTD_freeDCtx,
-        ZSTD_getDictID_fromDict, ZSTD_getFrameContentSize, ZSTD_initDStream_usingDict,
-        ZSTD_nextSrcSizeToDecompress, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
+        ZSTD_decompressContinue, ZSTD_decompressStream, ZSTD_decompress_usingDict,
+        ZSTD_findDecompressedSize, ZSTD_freeDCtx, ZSTD_getDictID_fromDict,
+        ZSTD_getFrameContentSize, ZSTD_initDStream_usingDict, ZSTD_nextSrcSizeToDecompress,
+        ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
     },
 };
 
