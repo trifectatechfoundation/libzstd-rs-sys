@@ -134,7 +134,7 @@ pub struct ldmRollingHashState_t {
 
 use libc::size_t;
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
@@ -1392,7 +1392,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
                     let seq = ((*rawSeqStore).seq).add((*rawSeqStore).size);
                     if (*rawSeqStore).size == (*rawSeqStore).capacity {
-                        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                        return Error::dstSize_tooSmall.to_error_code();
                     }
                     (*seq).litLength = split_0
                         .offset(-(backwardMatchLength as isize))
