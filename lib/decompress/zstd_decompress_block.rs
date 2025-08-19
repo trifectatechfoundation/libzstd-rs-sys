@@ -9,7 +9,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
-    MaxSeq, OffFSELog, ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
+    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
     ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
@@ -97,9 +97,7 @@ pub struct seq_t {
     pub matchLength: size_t,
     pub offset: size_t,
 }
-pub type ZSTD_overlap_e = core::ffi::c_uint;
-pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
-pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_OffsetInfo {
@@ -1095,7 +1093,7 @@ unsafe fn ZSTD_safecopy(
     oend_w: *const u8,
     mut ip: *const u8,
     mut length: size_t,
-    ovtype: ZSTD_overlap_e,
+    ovtype: Overlap,
 ) {
     let diff = op.offset_from(ip) as core::ffi::c_long;
     let oend = op.add(length);
@@ -1109,9 +1107,7 @@ unsafe fn ZSTD_safecopy(
         }
         return;
     }
-    if ovtype as core::ffi::c_uint
-        == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
-    {
+    if ovtype == Overlap::OverlapSrcBeforeDst {
         ZSTD_overlapCopy8(&mut op, &mut ip, diff as size_t);
         length = length.wrapping_sub(8);
     }
@@ -1160,7 +1156,7 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
             oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as size_t,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
         op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
@@ -1195,7 +1191,7 @@ unsafe fn ZSTD_execSequenceEnd(
     if sequence.litLength > litLimit.offset_from(*litPtr) as size_t {
         return Error::corruption_detected.to_error_code();
     }
-    ZSTD_safecopy(op, oend_w, *litPtr, sequence.litLength, ZSTD_no_overlap);
+    ZSTD_safecopy(op, oend_w, *litPtr, sequence.litLength, Overlap::NoOverlap);
     op = oLitEnd;
     *litPtr = iLitEnd;
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
@@ -1226,7 +1222,7 @@ unsafe fn ZSTD_execSequenceEnd(
         oend_w,
         match_0,
         sequence.matchLength,
-        ZSTD_overlap_src_before_dst,
+        Overlap::OverlapSrcBeforeDst,
     );
     sequenceLength
 }
@@ -1286,7 +1282,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
         oend_w,
         match_0,
         sequence.matchLength,
-        ZSTD_overlap_src_before_dst,
+        Overlap::OverlapSrcBeforeDst,
     );
     sequenceLength
 }
@@ -1334,7 +1330,7 @@ unsafe fn ZSTD_execSequence(
             op.offset(16) as *mut core::ffi::c_void,
             (*litPtr).offset(16) as *const core::ffi::c_void,
             (sequence.litLength).wrapping_sub(16),
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
     }
     op = oLitEnd;
@@ -1370,7 +1366,7 @@ unsafe fn ZSTD_execSequence(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
             sequence.matchLength,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         return sequenceLength;
     }
@@ -1380,7 +1376,7 @@ unsafe fn ZSTD_execSequence(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
             (sequence.matchLength).wrapping_sub(8),
-            ZSTD_overlap_src_before_dst,
+            Overlap::OverlapSrcBeforeDst,
         );
     }
     sequenceLength
@@ -1429,7 +1425,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             op.offset(16) as *mut core::ffi::c_void,
             (*litPtr).offset(16) as *const core::ffi::c_void,
             (sequence.litLength).wrapping_sub(16),
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
     }
     op = oLitEnd;
@@ -1465,7 +1461,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
             sequence.matchLength,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         return sequenceLength;
     }
@@ -1475,7 +1471,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
             (sequence.matchLength).wrapping_sub(8),
-            ZSTD_overlap_src_before_dst,
+            Overlap::OverlapSrcBeforeDst,
         );
     }
     sequenceLength
