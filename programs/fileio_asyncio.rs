@@ -313,7 +313,7 @@ unsafe fn AIO_fwriteSparse(
         storedSkips = storedSkips
             .wrapping_add(restPtr.offset_from(restStart) as core::ffi::c_long as core::ffi::c_uint);
         if restPtr != restEnd {
-            let restSize = restEnd.offset_from(restPtr) as core::ffi::c_long as size_t;
+            let restSize = restEnd.offset_from(restPtr) as size_t;
             if fseek(file, storedSkips as core::ffi::c_long, SEEK_CUR) != 0 {
                 if g_display_prefs.displayLevel >= 1 {
                     fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
