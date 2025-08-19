@@ -37,17 +37,18 @@ pub mod lib {
         mod zstdmt_compress;
     } // mod compress
     pub mod decompress;
-    pub mod dictBuilder {
-        pub mod cover;
-        pub mod divsufsort;
-        pub mod fastcover;
-        pub mod zdict;
+    mod dictBuilder {
+        pub(crate) mod cover;
+        pub(crate) mod divsufsort;
+        pub(crate) mod fastcover;
+        pub(crate) mod zdict;
     } // mod dictBuilder
     pub mod legacy {
         pub mod zstd_v05;
         pub mod zstd_v06;
         pub mod zstd_v07;
     } // mod legacy
+    pub mod zdict;
     pub mod zstd;
 } // mod lib
 
@@ -66,9 +67,7 @@ pub use crate::lib::decompress::{
 
 pub use crate::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
 
-pub use crate::lib::dictBuilder::zdict::{
-    ZDICT_getErrorName, ZDICT_isError, ZDICT_trainFromBuffer,
-};
+pub use crate::lib::zdict::{ZDICT_getErrorName, ZDICT_isError, ZDICT_trainFromBuffer};
 
 pub use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_freeCCtx,

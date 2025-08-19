@@ -6,7 +6,6 @@ use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32,
 };
-use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -14,393 +13,55 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
 use crate::lib::compress::zstd_compress::{
-    SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_MatchState_t, ZSTD_compressBegin_usingCDict_deprecated,
+    SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBegin_usingCDict_deprecated,
     ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCCtx,
     ZSTD_createCDict_advanced, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getParams, ZSTD_getSeqStore,
-    ZSTD_loadCEntropy, ZSTD_optimal_t, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
+    ZSTD_loadCEntropy, ZSTD_reset_compressedBlockState, ZSTD_seqToCodes,
 };
-use crate::lib::dictBuilder::fastcover::{
-    ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
+use crate::lib::dictBuilder::divsufsort::divsufsort;
+use crate::lib::dictBuilder::fastcover::ZDICT_optimizeTrainFromBuffer_fastCover;
+#[expect(deprecated)]
+use crate::lib::zdict::experimental::{
+    ZDICT_fastCover_params_t, ZDICT_legacy_params_t, ZDICT_CONTENTSIZE_MIN, ZDICT_DICTSIZE_MIN,
 };
+use crate::lib::zdict::ZDICT_params_t;
 use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
     fn clock() -> clock_t;
-    fn divsufsort(
-        T: *const core::ffi::c_uchar,
-        SA: *mut core::ffi::c_int,
-        n: core::ffi::c_int,
-        openMP: core::ffi::c_int,
-    ) -> core::ffi::c_int;
 }
-pub type __clock_t = core::ffi::c_long;
-pub type clock_t = __clock_t;
-pub type FSE_CTable = core::ffi::c_uint;
-pub type ERR_enum = ZSTD_ErrorCode;
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type HUF_CElt = size_t;
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
+type __clock_t = core::ffi::c_long;
+type clock_t = __clock_t;
+type HUF_CElt = size_t;
+type ZSTD_dictContentType_e = core::ffi::c_uint;
+const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
+type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
+const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_Sequence {
-    pub offset: core::ffi::c_uint,
-    pub litLength: core::ffi::c_uint,
-    pub matchLength: core::ffi::c_uint,
-    pub rep: core::ffi::c_uint,
+struct EStats_ress_t {
+    dict: *mut ZSTD_CDict,
+    zc: *mut ZSTD_CCtx,
+    workPlace: *mut core::ffi::c_void,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_blockSplitCtx {
-    pub fullSeqStoreChunk: SeqStore_t,
-    pub firstHalfSeqStore: SeqStore_t,
-    pub secondHalfSeqStore: SeqStore_t,
-    pub currSeqStore: SeqStore_t,
-    pub nextSeqStore: SeqStore_t,
-    pub partitions: [u32; 196],
-    pub entropyMetadata: ZSTD_entropyCTablesMetadata_t,
+struct offsetCount_t {
+    offset: u32,
+    count: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTD_entropyCTablesMetadata_t {
-    pub hufMetadata: ZSTD_hufCTablesMetadata_t,
-    pub fseMetadata: ZSTD_fseCTablesMetadata_t,
+struct dictItem {
+    pos: u32,
+    length: u32,
+    savings: u32,
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_fseCTablesMetadata_t {
-    pub llType: SymbolEncodingType_e,
-    pub ofType: SymbolEncodingType_e,
-    pub mlType: SymbolEncodingType_e,
-    pub fseTablesBuffer: [u8; 133],
-    pub fseTablesSize: size_t,
-    pub lastCountSize: size_t,
-}
-pub type SymbolEncodingType_e = core::ffi::c_uint;
-pub const set_repeat: SymbolEncodingType_e = 3;
-pub const set_compressed: SymbolEncodingType_e = 2;
-pub const set_rle: SymbolEncodingType_e = 1;
-pub const set_basic: SymbolEncodingType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_hufCTablesMetadata_t {
-    pub hType: SymbolEncodingType_e,
-    pub hufDesBuffer: [u8; 128],
-    pub hufDesSize: size_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqStore_t {
-    pub sequencesStart: *mut SeqDef,
-    pub sequences: *mut SeqDef,
-    pub litStart: *mut u8,
-    pub lit: *mut u8,
-    pub llCode: *mut u8,
-    pub mlCode: *mut u8,
-    pub ofCode: *mut u8,
-    pub maxNbSeq: size_t,
-    pub maxNbLit: size_t,
-    pub longLengthType: ZSTD_longLengthType_e,
-    pub longLengthPos: u32,
-}
-pub type ZSTD_longLengthType_e = core::ffi::c_uint;
-pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
-pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
-pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_prefixDict_s {
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-}
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_localDict {
-    pub dictBuffer: *mut core::ffi::c_void,
-    pub dict: *const core::ffi::c_void,
-    pub dictSize: size_t,
-    pub dictContentType: ZSTD_dictContentType_e,
-    pub cdict: *mut ZSTD_CDict,
-}
-pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_inBuffer_s {
-    pub src: *const core::ffi::c_void,
-    pub size: size_t,
-    pub pos: size_t,
-}
-pub type ZSTD_cStreamStage = core::ffi::c_uint;
-pub const zcss_flush: ZSTD_cStreamStage = 2;
-pub const zcss_load: ZSTD_cStreamStage = 1;
-pub const zcss_init: ZSTD_cStreamStage = 0;
-pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
-pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
-pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_blockState_t {
-    pub prevCBlock: *mut ZSTD_compressedBlockState_t,
-    pub nextCBlock: *mut ZSTD_compressedBlockState_t,
-    pub matchState: ZSTD_MatchState_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct optState_t {
-    pub litFreq: *mut core::ffi::c_uint,
-    pub litLengthFreq: *mut core::ffi::c_uint,
-    pub matchLengthFreq: *mut core::ffi::c_uint,
-    pub offCodeFreq: *mut core::ffi::c_uint,
-    pub matchTable: *mut ZSTD_match_t,
-    pub priceTable: *mut ZSTD_optimal_t,
-    pub litSum: u32,
-    pub litLengthSum: u32,
-    pub matchLengthSum: u32,
-    pub offCodeSum: u32,
-    pub litSumBasePrice: u32,
-    pub litLengthSumBasePrice: u32,
-    pub matchLengthSumBasePrice: u32,
-    pub offCodeSumBasePrice: u32,
-    pub priceType: ZSTD_OptPrice_e,
-    pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-}
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_entropyCTables_t {
-    pub huf: ZSTD_hufCTables_t,
-    pub fse: ZSTD_fseCTables_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_fseCTables_t {
-    pub offcodeCTable: [FSE_CTable; 193],
-    pub matchlengthCTable: [FSE_CTable; 363],
-    pub litlengthCTable: [FSE_CTable; 329],
-    pub offcode_repeatMode: FSE_repeat,
-    pub matchlength_repeatMode: FSE_repeat,
-    pub litlength_repeatMode: FSE_repeat,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_hufCTables_t {
-    pub CTable: [HUF_CElt; 257],
-    pub repeatMode: HUF_repeat,
-}
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_match_t {
-    pub off: u32,
-    pub len: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_window_t {
-    pub nextSrc: *const u8,
-    pub base: *const u8,
-    pub dictBase: *const u8,
-    pub dictLimit: u32,
-    pub lowLimit: u32,
-    pub nbOverflowCorrections: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmState_t {
-    pub window: ZSTD_window_t,
-    pub hashTable: *mut ldmEntry_t,
-    pub loadedDictEnd: u32,
-    pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
-    pub matchCandidates: [ldmMatchCandidate_t; 64],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmMatchCandidate_t {
-    pub split: *const u8,
-    pub hash: u32,
-    pub checksum: u32,
-    pub bucket: *mut ldmEntry_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmEntry_t {
-    pub offset: u32,
-    pub checksum: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct SeqCollector {
-    pub collectSequences: core::ffi::c_int,
-    pub seqStart: *mut ZSTD_Sequence,
-    pub seqIndex: size_t,
-    pub maxSequences: size_t,
-}
-pub type ZSTD_threadPool = POOL_ctx;
-pub type XXH64_state_t = XXH64_state_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
-pub type XXH64_hash_t = u64;
-pub type XXH32_hash_t = u32;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_cwksp {
-    pub workspace: *mut core::ffi::c_void,
-    pub workspaceEnd: *mut core::ffi::c_void,
-    pub objectEnd: *mut core::ffi::c_void,
-    pub tableEnd: *mut core::ffi::c_void,
-    pub tableValidEnd: *mut core::ffi::c_void,
-    pub allocStart: *mut core::ffi::c_void,
-    pub initOnceStart: *mut core::ffi::c_void,
-    pub allocFailed: u8,
-    pub workspaceOversizedDuration: core::ffi::c_int,
-    pub phase: ZSTD_cwksp_alloc_phase_e,
-    pub isStatic: ZSTD_cwksp_static_alloc_e,
-}
-pub type ZSTD_cwksp_static_alloc_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_static_alloc: ZSTD_cwksp_static_alloc_e = 1;
-pub const ZSTD_cwksp_dynamic_alloc: ZSTD_cwksp_static_alloc_e = 0;
-pub type ZSTD_cwksp_alloc_phase_e = core::ffi::c_uint;
-pub const ZSTD_cwksp_alloc_buffers: ZSTD_cwksp_alloc_phase_e = 3;
-pub const ZSTD_cwksp_alloc_aligned: ZSTD_cwksp_alloc_phase_e = 2;
-pub const ZSTD_cwksp_alloc_aligned_init_once: ZSTD_cwksp_alloc_phase_e = 1;
-pub const ZSTD_cwksp_alloc_objects: ZSTD_cwksp_alloc_phase_e = 0;
-pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZSTD_CCtx_params_s {
-    pub format: Format,
-    pub cParams: ZSTD_compressionParameters,
-    pub fParams: ZSTD_frameParameters,
-    pub compressionLevel: core::ffi::c_int,
-    pub forceWindow: core::ffi::c_int,
-    pub targetCBlockSize: size_t,
-    pub srcSizeHint: core::ffi::c_int,
-    pub attachDictPref: ZSTD_dictAttachPref_e,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
-    pub nbWorkers: core::ffi::c_int,
-    pub jobSize: size_t,
-    pub overlapLog: core::ffi::c_int,
-    pub rsyncable: core::ffi::c_int,
-    pub ldmParams: ldmParams_t,
-    pub enableDedicatedDictSearch: core::ffi::c_int,
-    pub inBufferMode: ZSTD_bufferMode_e,
-    pub outBufferMode: ZSTD_bufferMode_e,
-    pub blockDelimiters: ZSTD_SequenceFormat_e,
-    pub validateSequences: core::ffi::c_int,
-    pub postBlockSplitter: ZSTD_ParamSwitch_e,
-    pub preBlockSplitter_level: core::ffi::c_int,
-    pub maxBlockSize: size_t,
-    pub useRowMatchFinder: ZSTD_ParamSwitch_e,
-    pub deterministicRefPrefix: core::ffi::c_int,
-    pub customMem: ZSTD_customMem,
-    pub prefetchCDictTables: ZSTD_ParamSwitch_e,
-    pub enableMatchFinderFallback: core::ffi::c_int,
-    pub extSeqProdState: *mut core::ffi::c_void,
-    pub extSeqProdFunc: ZSTD_sequenceProducer_F,
-    pub searchForExternalRepcodes: ZSTD_ParamSwitch_e,
-}
-pub type ZSTD_sequenceProducer_F = Option<
-    unsafe extern "C" fn(
-        *mut core::ffi::c_void,
-        *mut ZSTD_Sequence,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        *const core::ffi::c_void,
-        size_t,
-        core::ffi::c_int,
-        size_t,
-    ) -> size_t,
->;
-pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
-pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
-pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ldmParams_t {
-    pub enableLdm: ZSTD_ParamSwitch_e,
-    pub hashLog: u32,
-    pub bucketSizeLog: u32,
-    pub minMatchLength: u32,
-    pub hashRateLog: u32,
-    pub windowLog: u32,
-}
-pub type ZSTD_dictAttachPref_e = core::ffi::c_uint;
-pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
-pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
-pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
-pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
-pub type ZSTD_compressionStage_e = core::ffi::c_uint;
-pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
-pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
-pub const ZSTDcs_init: ZSTD_compressionStage_e = 1;
-pub const ZSTDcs_created: ZSTD_compressionStage_e = 0;
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_params_t {
-    pub compressionLevel: core::ffi::c_int,
-    pub notificationLevel: core::ffi::c_uint,
-    pub dictID: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct EStats_ress_t {
-    pub dict: *mut ZSTD_CDict,
-    pub zc: *mut ZSTD_CCtx,
-    pub workPlace: *mut core::ffi::c_void,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct offsetCount_t {
-    pub offset: u32,
-    pub count: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct ZDICT_legacy_params_t {
-    pub selectivityLevel: core::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct dictItem {
-    pub pos: u32,
-    pub length: u32,
-    pub savings: u32,
-}
-pub const MINRATIO: core::ffi::c_int = 4;
-pub const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
-pub const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
+const MINRATIO: core::ffi::c_int = 4;
+const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
+#[expect(deprecated)]
+const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
 #[inline]
 unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
@@ -436,18 +97,13 @@ unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
 unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
-pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
-pub const ZDICT_CONTENTSIZE_MIN: core::ffi::c_int = 128;
-pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-pub const NOISELENGTH: core::ffi::c_int = 32;
+const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
+const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
+const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
+const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
+const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
+const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;
 unsafe fn ZDICT_clockSpan(nPrevious: clock_t) -> clock_t {
     clock() - nPrevious
@@ -538,8 +194,8 @@ unsafe fn ZDICT_initDictItem(d: *mut dictItem) {
     (*d).length = 0;
     (*d).savings = -(1 as core::ffi::c_int) as u32;
 }
-pub const LLIMIT: core::ffi::c_int = 64;
-pub const MINMATCHLENGTH: core::ffi::c_int = 7;
+const LLIMIT: core::ffi::c_int = 64;
+const MINMATCHLENGTH: core::ffi::c_int = 7;
 unsafe fn ZDICT_analyzePos(
     doneMarks: *mut u8,
     suffix: *const core::ffi::c_uint,
@@ -1162,7 +818,7 @@ unsafe fn ZDICT_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
         p = p.wrapping_add(1);
     }
 }
-pub const MAXREPOFFSET: core::ffi::c_int = 1024;
+const MAXREPOFFSET: core::ffi::c_int = 1024;
 unsafe fn ZDICT_countEStats(
     esr: EStats_ress_t,
     params: *const ZSTD_parameters,
@@ -1308,7 +964,7 @@ unsafe fn ZDICT_flatLit(countLit: *mut core::ffi::c_uint) {
     *countLit.offset(253) = 1;
     *countLit.offset(254) = 1;
 }
-pub const OFFCODE_MAX: core::ffi::c_int = 30;
+const OFFCODE_MAX: core::ffi::c_int = 30;
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
@@ -1854,7 +1510,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     memset(outDictPadding as *mut core::ffi::c_void, 0, paddingSize);
     dictSize
 }
-pub const HBUFFSIZE: core::ffi::c_int = 256;
+const HBUFFSIZE: core::ffi::c_int = 256;
 unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     dictBuffer: *mut core::ffi::c_void,
     dictContentSize: size_t,
@@ -2055,6 +1711,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
     }
     let mut dictContentSize_0 = ZDICT_dictSize(dictList);
+    #[expect(deprecated)]
     if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN as core::ffi::c_uint {
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
@@ -2257,6 +1914,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
         &mut params,
     )
 }
+#[deprecated = "use ZDICT_finalizeDictionary() instead"]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_addEntropyTablesFromBuffer))]
 pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     dictBuffer: *mut core::ffi::c_void,

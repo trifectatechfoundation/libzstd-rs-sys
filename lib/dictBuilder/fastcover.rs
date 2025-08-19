@@ -9,84 +9,51 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::dictBuilder::cover::{
-    COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_s, COVER_best_start,
-    COVER_best_t, COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError,
-    COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_selectDict, COVER_sum,
-    COVER_warnOnSmallCorpus, ZDICT_cover_params_t,
+    COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_start, COVER_best_t,
+    COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
+    COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict, COVER_sum,
+    COVER_warnOnSmallCorpus,
 };
-use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
+use crate::lib::zdict::experimental::{
+    ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
+};
+use crate::lib::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
 
 extern "C" {
     static mut stderr: *mut FILE;
     fn clock() -> clock_t;
 }
-pub type __clock_t = core::ffi::c_long;
-pub type clock_t = __clock_t;
+type __clock_t = core::ffi::c_long;
+type clock_t = __clock_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZDICT_fastCover_params_t {
-    pub k: core::ffi::c_uint,
-    pub d: core::ffi::c_uint,
-    pub f: core::ffi::c_uint,
-    pub steps: core::ffi::c_uint,
-    pub nbThreads: core::ffi::c_uint,
-    pub splitPoint: core::ffi::c_double,
-    pub accel: core::ffi::c_uint,
-    pub shrinkDict: core::ffi::c_uint,
-    pub shrinkDictMaxRegression: core::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
+struct FASTCOVER_accel_t {
+    finalize: core::ffi::c_uint,
+    skip: core::ffi::c_uint,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FASTCOVER_accel_t {
-    pub finalize: core::ffi::c_uint,
-    pub skip: core::ffi::c_uint,
+struct FASTCOVER_ctx_t {
+    samples: *const u8,
+    offsets: *mut size_t,
+    samplesSizes: *const size_t,
+    nbSamples: size_t,
+    nbTrainSamples: size_t,
+    nbTestSamples: size_t,
+    nbDmers: size_t,
+    freqs: *mut u32,
+    d: core::ffi::c_uint,
+    f: core::ffi::c_uint,
+    accelParams: FASTCOVER_accel_t,
+    displayLevel: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct FASTCOVER_ctx_t {
-    pub samples: *const u8,
-    pub offsets: *mut size_t,
-    pub samplesSizes: *const size_t,
-    pub nbSamples: size_t,
-    pub nbTrainSamples: size_t,
-    pub nbTestSamples: size_t,
-    pub nbDmers: size_t,
-    pub freqs: *mut u32,
-    pub d: core::ffi::c_uint,
-    pub f: core::ffi::c_uint,
-    pub accelParams: FASTCOVER_accel_t,
-    pub displayLevel: core::ffi::c_int,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_segment_t {
-    pub begin: u32,
-    pub end: u32,
-    pub score: u32,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_epoch_info_t {
-    pub num: u32,
-    pub size: u32,
-}
-pub type FASTCOVER_tryParameters_data_t = FASTCOVER_tryParameters_data_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FASTCOVER_tryParameters_data_s {
-    pub ctx: *const FASTCOVER_ctx_t,
-    pub best: *mut COVER_best_t,
-    pub dictBufferCapacity: size_t,
-    pub parameters: ZDICT_cover_params_t,
-}
-pub type COVER_dictSelection_t = COVER_dictSelection;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_dictSelection {
-    pub dictContent: *mut u8,
-    pub dictSize: size_t,
-    pub totalCompressedSize: size_t,
+struct FASTCOVER_tryParameters_data_t {
+    ctx: *const FASTCOVER_ctx_t,
+    best: *mut COVER_best_t,
+    dictBufferCapacity: size_t,
+    parameters: ZDICT_cover_params_t,
 }
 static prime6bytes: u64 = 227718039650203;
 unsafe fn ZSTD_hash6(u: u64, h: u32, s: u64) -> size_t {
@@ -103,14 +70,12 @@ unsafe fn ZSTD_hash8(u: u64, h: u32, s: u64) -> size_t {
 unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
 }
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
-pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-pub const FASTCOVER_MAX_F: core::ffi::c_int = 31;
-pub const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
-pub const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
-pub const DEFAULT_F: core::ffi::c_int = 20;
-pub const DEFAULT_ACCEL: core::ffi::c_int = 1;
+const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
+const FASTCOVER_MAX_F: core::ffi::c_int = 31;
+const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
+const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
+const DEFAULT_F: core::ffi::c_int = 20;
+const DEFAULT_ACCEL: core::ffi::c_int = 1;
 unsafe fn FASTCOVER_hashPtrToIndex(
     p: *const core::ffi::c_void,
     f: u32,
@@ -933,7 +898,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
-    let mut best = COVER_best_s {
+    let mut best = COVER_best_t {
         mutex: PTHREAD_MUTEX_INITIALIZER,
         cond: PTHREAD_COND_INITIALIZER,
         liveJobs: 0,
