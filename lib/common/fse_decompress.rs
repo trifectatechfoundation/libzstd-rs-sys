@@ -381,12 +381,9 @@ fn FSE_decompress_wksp_body(
     {
         return Err(Error::tableLog_tooLarge);
     }
-    wkspSize = (wkspSize as core::ffi::c_ulong).wrapping_sub(
-        (::core::mem::size_of::<FSE_DecompressWksp>() as core::ffi::c_ulong).wrapping_add(
-            ((1 + ((1) << tableLog)) as core::ffi::c_ulong)
-                .wrapping_mul(::core::mem::size_of::<FSE_DTable>() as core::ffi::c_ulong),
-        ),
-    ) as size_t as size_t;
+    wkspSize = wkspSize.wrapping_sub((::core::mem::size_of::<FSE_DecompressWksp>()).wrapping_add(
+        (1usize + (1 << tableLog)).wrapping_mul(::core::mem::size_of::<FSE_DTable>()),
+    ));
 
     let () = FSE_buildDTable_internal(
         &mut workspace.dtable,
@@ -401,7 +398,6 @@ fn FSE_decompress_wksp_body(
         &workspace.dtable,
         workspace.dtable.header.fastMode != 0,
     )
-    .map(|e| e as size_t)
 }
 
 fn FSE_decompress_wksp_body_default(

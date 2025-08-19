@@ -357,16 +357,16 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                     );
                 }
                 dctx.litPtr = dctx.litBuffer;
-                dctx.litSize = litSize as size_t;
-                return lhSize.wrapping_add(litSize) as size_t;
+                dctx.litSize = litSize;
+                return lhSize.wrapping_add(litSize);
             }
 
             dctx.litPtr = src[lhSize..].as_ptr();
-            dctx.litSize = litSize as size_t;
+            dctx.litSize = litSize;
             dctx.litBufferEnd = (dctx.litPtr).add(litSize);
             dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
 
-            return lhSize.wrapping_add(litSize) as size_t;
+            return lhSize.wrapping_add(litSize);
         }
         SymbolEncodingType_e::set_rle => {
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
@@ -412,8 +412,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 ptr::write_bytes(dctx.litBuffer as *mut u8, src[lhSize], litSize);
             }
             dctx.litPtr = dctx.litBuffer;
-            dctx.litSize = litSize as size_t;
-            return lhSize.wrapping_add(1) as size_t;
+            dctx.litSize = litSize;
+            return lhSize.wrapping_add(1);
         }
     }
 
@@ -533,14 +533,14 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     }
 
     dctx.litPtr = dctx.litBuffer;
-    dctx.litSize = litSize as size_t;
+    dctx.litSize = litSize;
     dctx.litEntropy = 1;
 
     if let SymbolEncodingType_e::set_compressed = litEncType {
         dctx.HUFptr = &raw const dctx.entropy.hufTable as *const u32;
     }
 
-    litCSize.wrapping_add(lhSize) as size_t
+    litCSize.wrapping_add(lhSize)
 }
 
 pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
@@ -907,8 +907,8 @@ fn ZSTD_buildSeqTable<const N: usize>(
             }
             if ddictIsCold != 0 && nbSeq > 24 {
                 let pStart = *DTablePtr as *const core::ffi::c_void;
-                let pSize = (::core::mem::size_of::<ZSTD_seqSymbol>())
-                    .wrapping_mul((1 + ((1) << maxLog)) as size_t);
+                let pSize =
+                    (::core::mem::size_of::<ZSTD_seqSymbol>()).wrapping_mul(1usize + (1 << maxLog));
                 let _ptr = pStart as *const core::ffi::c_char;
                 let _size = pSize;
                 let mut _pos: size_t = 0;
@@ -975,7 +975,7 @@ fn ZSTD_decodeSeqHeaders(
         if ip != src.len() {
             return Error::corruption_detected.to_error_code();
         }
-        return ip as size_t;
+        return ip;
     }
 
     /* FSE table descriptors */
@@ -1062,7 +1062,7 @@ fn ZSTD_decodeSeqHeaders(
 
     ip += mlhSize as usize;
 
-    ip as size_t
+    ip
 }
 
 #[inline(always)]
@@ -1131,8 +1131,8 @@ unsafe fn ZSTD_safecopy(
             oend_w.offset_from(op) as size_t,
             ovtype,
         );
-        ip = ip.offset(oend_w.offset_from(op) as core::ffi::c_long as isize);
-        op = op.offset(oend_w.offset_from(op) as core::ffi::c_long as isize);
+        ip = ip.offset(oend_w.offset_from(op));
+        op = op.offset(oend_w.offset_from(op));
     }
     while op < oend {
         let fresh7 = ip;
@@ -1162,8 +1162,8 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
             oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as size_t,
             ZSTD_no_overlap,
         );
-        ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as core::ffi::c_long as isize);
-        op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as core::ffi::c_long as isize);
+        ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
+        op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
     }
     while op < oend {
         let fresh11 = ip;
@@ -1202,7 +1202,7 @@ unsafe fn ZSTD_execSequenceEnd(
         if sequence.offset > oLitEnd.offset_from(virtualStart) as size_t {
             return Error::corruption_detected.to_error_code();
         }
-        match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0) as core::ffi::c_long as isize));
+        match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0)));
         if match_0.add(sequence.matchLength) <= dictEnd {
             libc::memmove(
                 oLitEnd as *mut core::ffi::c_void,
@@ -2591,8 +2591,6 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
 mod test {
     use core::ffi::*;
 
-    use libc::size_t;
-
     #[test]
     fn basic_decompress() {
         rs(&[40, 181, 47, 253, 48, 21, 44, 0, 0, 0, 253, 49, 0, 21]);
@@ -2606,7 +2604,7 @@ mod test {
 
         // Get decompressed size from frame header
         let decompressed_size =
-            unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size as size_t) };
+            unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size) };
         if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
             return (decompressed_size as usize, vec![]);
         } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
@@ -2618,9 +2616,9 @@ mod test {
         let result = unsafe {
             ZSTD_decompress(
                 decompressed.as_mut_ptr() as *mut c_void,
-                decompressed.len() as size_t,
+                decompressed.len(),
                 compressed_ptr,
-                compressed_size as size_t,
+                compressed_size,
             )
         };
 
