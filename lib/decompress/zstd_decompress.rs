@@ -969,7 +969,11 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader_advanced(
 
     get_frame_header_advanced(
         zfhPtr,
-        core::slice::from_raw_parts(src as *const u8, srcSize),
+        if src.is_null() {
+            &[]
+        } else {
+            core::slice::from_raw_parts(src as *const u8, srcSize)
+        },
         format,
     )
 }
@@ -3104,11 +3108,10 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 }
                 return hint;
             }
-            let hSize = ZSTD_getFrameHeader_advanced(
+            let hSize = get_frame_header_advanced(
                 &mut (*zds).fParams,
-                ((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                (*zds).lhSize,
-                (*zds).format as _,
+                &(&(*zds).headerBuffer)[..(*zds).lhSize],
+                (*zds).format,
             );
             if (*zds).refMultipleDDicts != MultipleDDicts::Single && !((*zds).ddictSet).is_null() {
                 ZSTD_DCtx_selectFrameDDict(zds);
@@ -3172,11 +3175,10 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         (*zds).lhSize = ((*zds).lhSize).wrapping_add(remainingInput);
                     }
                     (*input).pos = (*input).size;
-                    let err_code_1 = ZSTD_getFrameHeader_advanced(
+                    let err_code_1 = get_frame_header_advanced(
                         &mut (*zds).fParams,
-                        ((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                        (*zds).lhSize,
-                        (*zds).format as _,
+                        &(&(*zds).headerBuffer)[..(*zds).lhSize],
+                        (*zds).format,
                     );
                     if ERR_isError(err_code_1) != 0 {
                         return err_code_1;
