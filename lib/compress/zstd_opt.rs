@@ -66,9 +66,6 @@ pub struct FSE_symbolCompressionTransform {
     pub deltaFindState: core::ffi::c_int,
     pub deltaNbBits: u32,
 }
-pub type ZSTD_overlap_e = core::ffi::c_uint;
-pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
-pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -110,7 +107,7 @@ use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };
 use crate::lib::common::zstd_internal::{
-    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, ZSTD_copy16, ZSTD_wildcopy, MINMATCH,
+    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH,
     WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
 };
 use crate::lib::compress::hist::HIST_count_simple;
@@ -171,7 +168,7 @@ unsafe fn ZSTD_safecopyLiterals(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
             ilimit_w.offset_from(ip) as size_t,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
         ip = ilimit_w;
@@ -234,7 +231,7 @@ unsafe fn ZSTD_storeSeq(
                 ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
                 literals.offset(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
-                ZSTD_no_overlap,
+                Overlap::NoOverlap,
             );
         }
     } else {

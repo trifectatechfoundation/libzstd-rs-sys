@@ -102,9 +102,6 @@ pub struct ldmParams_t {
     pub hashRateLog: u32,
     pub windowLog: u32,
 }
-pub type ZSTD_overlap_e = core::ffi::c_uint;
-pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
-pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
 pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -138,7 +135,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
-    ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
+    Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t,
@@ -161,7 +158,7 @@ unsafe fn ZSTD_safecopyLiterals(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
             ilimit_w.offset_from(ip) as size_t,
-            ZSTD_no_overlap,
+            Overlap::NoOverlap,
         );
         op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
         ip = ilimit_w;
@@ -224,7 +221,7 @@ unsafe fn ZSTD_storeSeq(
                 ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
                 literals.offset(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
-                ZSTD_no_overlap,
+                Overlap::NoOverlap,
             );
         }
     } else {
