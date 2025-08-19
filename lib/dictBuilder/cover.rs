@@ -15,7 +15,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
     ZSTD_createCDict, ZSTD_freeCCtx, ZSTD_freeCDict,
 };
-use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError, ZDICT_params_t};
+use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
+use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
+use crate::lib::zdict::ZDICT_params_t;
 
 extern "C" {
     static mut stderr: *mut FILE;
@@ -28,9 +30,9 @@ extern "C" {
     );
     fn clock() -> clock_t;
 }
-pub type __clock_t = core::ffi::c_long;
-pub type clock_t = __clock_t;
-pub type __compar_d_fn_t = Option<
+type __clock_t = core::ffi::c_long;
+type clock_t = __clock_t;
+type __compar_d_fn_t = Option<
     unsafe extern "C" fn(
         *const core::ffi::c_void,
         *const core::ffi::c_void,
@@ -39,91 +41,74 @@ pub type __compar_d_fn_t = Option<
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZDICT_cover_params_t {
-    pub k: core::ffi::c_uint,
-    pub d: core::ffi::c_uint,
-    pub steps: core::ffi::c_uint,
-    pub nbThreads: core::ffi::c_uint,
-    pub splitPoint: core::ffi::c_double,
-    pub shrinkDict: core::ffi::c_uint,
-    pub shrinkDictMaxRegression: core::ffi::c_uint,
-    pub zParams: ZDICT_params_t,
-}
-pub type COVER_map_t = COVER_map_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_map_s {
-    pub data: *mut COVER_map_pair_t,
-    pub sizeLog: u32,
-    pub size: u32,
-    pub sizeMask: u32,
-}
-pub type COVER_map_pair_t = COVER_map_pair_t_s;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct COVER_map_pair_t_s {
-    pub key: u32,
-    pub value: u32,
+struct COVER_map_t {
+    data: *mut COVER_map_pair_t,
+    sizeLog: u32,
+    size: u32,
+    sizeMask: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_ctx_t {
-    pub samples: *const u8,
-    pub offsets: *mut size_t,
-    pub samplesSizes: *const size_t,
-    pub nbSamples: size_t,
-    pub nbTrainSamples: size_t,
-    pub nbTestSamples: size_t,
-    pub suffix: *mut u32,
-    pub suffixSize: size_t,
-    pub freqs: *mut u32,
-    pub dmerAt: *mut u32,
-    pub d: core::ffi::c_uint,
-    pub displayLevel: core::ffi::c_int,
+struct COVER_map_pair_t {
+    key: u32,
+    value: u32,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_segment_t {
-    pub begin: u32,
-    pub end: u32,
-    pub score: u32,
+struct COVER_ctx_t {
+    samples: *const u8,
+    offsets: *mut size_t,
+    samplesSizes: *const size_t,
+    nbSamples: size_t,
+    nbTrainSamples: size_t,
+    nbTestSamples: size_t,
+    suffix: *mut u32,
+    suffixSize: size_t,
+    freqs: *mut u32,
+    dmerAt: *mut u32,
+    d: core::ffi::c_uint,
+    displayLevel: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_epoch_info_t {
-    pub num: u32,
-    pub size: u32,
+pub(super) struct COVER_segment_t {
+    pub(super) begin: u32,
+    pub(super) end: u32,
+    pub(super) score: u32,
 }
-pub type COVER_best_t = COVER_best_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_best_s {
-    pub mutex: pthread_mutex_t,
-    pub cond: pthread_cond_t,
-    pub liveJobs: size_t,
-    pub dict: *mut core::ffi::c_void,
-    pub dictSize: size_t,
-    pub parameters: ZDICT_cover_params_t,
-    pub compressedSize: size_t,
+pub(super) struct COVER_epoch_info_t {
+    pub(super) num: u32,
+    pub(super) size: u32,
 }
-pub type COVER_tryParameters_data_t = COVER_tryParameters_data_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_tryParameters_data_s {
-    pub ctx: *const COVER_ctx_t,
-    pub best: *mut COVER_best_t,
-    pub dictBufferCapacity: size_t,
-    pub parameters: ZDICT_cover_params_t,
+pub(super) struct COVER_best_t {
+    pub(super) mutex: pthread_mutex_t,
+    pub(super) cond: pthread_cond_t,
+    pub(super) liveJobs: size_t,
+    pub(super) dict: *mut core::ffi::c_void,
+    pub(super) dictSize: size_t,
+    pub(super) parameters: ZDICT_cover_params_t,
+    pub(super) compressedSize: size_t,
 }
-pub type COVER_dictSelection_t = COVER_dictSelection;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct COVER_dictSelection {
-    pub dictContent: *mut u8,
-    pub dictSize: size_t,
-    pub totalCompressedSize: size_t,
+struct COVER_tryParameters_data_t {
+    ctx: *const COVER_ctx_t,
+    best: *mut COVER_best_t,
+    dictBufferCapacity: size_t,
+    parameters: ZDICT_cover_params_t,
 }
-pub const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub(super) struct COVER_dictSelection_t {
+    dictContent: *mut u8,
+    dictSize: size_t,
+    totalCompressedSize: size_t,
+}
+const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 #[inline]
 unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
@@ -132,10 +117,8 @@ unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
-pub const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
-pub const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
+const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
+const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
     memset(
         (*map).data as *mut core::ffi::c_void,
@@ -222,7 +205,10 @@ unsafe fn COVER_map_destroy(map: *mut COVER_map_t) {
     (*map).data = core::ptr::null_mut();
     (*map).size = 0;
 }
-pub unsafe fn COVER_sum(samplesSizes: *const size_t, nbSamples: core::ffi::c_uint) -> size_t {
+pub(super) unsafe fn COVER_sum(
+    samplesSizes: *const size_t,
+    nbSamples: core::ffi::c_uint,
+) -> size_t {
     let mut sum = 0 as size_t;
     let mut i: core::ffi::c_uint = 0;
     i = 0;
@@ -715,7 +701,7 @@ unsafe fn COVER_ctx_init(
     (*ctx).suffix = core::ptr::null_mut();
     0
 }
-pub unsafe fn COVER_warnOnSmallCorpus(
+pub(super) unsafe fn COVER_warnOnSmallCorpus(
     maxDictSize: size_t,
     nbDmers: size_t,
     displayLevel: core::ffi::c_int,
@@ -736,7 +722,7 @@ pub unsafe fn COVER_warnOnSmallCorpus(
         fflush(stderr);
     }
 }
-pub unsafe fn COVER_computeEpochs(
+pub(super) unsafe fn COVER_computeEpochs(
     maxDictSize: u32,
     nbDmers: u32,
     k: u32,
@@ -889,7 +875,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         d: 0,
         displayLevel: 0,
     };
-    let mut activeDmers = COVER_map_s {
+    let mut activeDmers = COVER_map_t {
         data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
         size: 0,
@@ -996,7 +982,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     COVER_map_destroy(&mut activeDmers);
     dictionarySize
 }
-pub unsafe fn COVER_checkTotalCompressedSize(
+pub(super) unsafe fn COVER_checkTotalCompressedSize(
     parameters: ZDICT_cover_params_t,
     samplesSizes: *const size_t,
     samples: *const u8,
@@ -1066,7 +1052,7 @@ pub unsafe fn COVER_checkTotalCompressedSize(
     }
     totalCompressedSize
 }
-pub unsafe fn COVER_best_init(best: *mut COVER_best_t) {
+pub(super) unsafe fn COVER_best_init(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
@@ -1082,7 +1068,7 @@ pub unsafe fn COVER_best_init(best: *mut COVER_best_t) {
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
 }
-pub unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
+pub(super) unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
@@ -1092,7 +1078,7 @@ pub unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
     }
     pthread_mutex_unlock(&mut (*best).mutex);
 }
-pub unsafe fn COVER_best_destroy(best: *mut COVER_best_t) {
+pub(super) unsafe fn COVER_best_destroy(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
@@ -1103,7 +1089,7 @@ pub unsafe fn COVER_best_destroy(best: *mut COVER_best_t) {
     pthread_mutex_destroy(&mut (*best).mutex);
     pthread_cond_destroy(&mut (*best).cond);
 }
-pub unsafe fn COVER_best_start(best: *mut COVER_best_t) {
+pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
@@ -1112,7 +1098,7 @@ pub unsafe fn COVER_best_start(best: *mut COVER_best_t) {
     (*best).liveJobs;
     pthread_mutex_unlock(&mut (*best).mutex);
 }
-pub unsafe fn COVER_best_finish(
+pub(super) unsafe fn COVER_best_finish(
     best: *mut COVER_best_t,
     parameters: ZDICT_cover_params_t,
     selection: COVER_dictSelection_t,
@@ -1155,7 +1141,7 @@ pub unsafe fn COVER_best_finish(
     pthread_mutex_unlock(&mut (*best).mutex);
 }
 unsafe fn setDictSelection(buf: *mut u8, s: size_t, csz: size_t) -> COVER_dictSelection_t {
-    let mut ds = COVER_dictSelection {
+    let mut ds = COVER_dictSelection_t {
         dictContent: core::ptr::null_mut::<u8>(),
         dictSize: 0,
         totalCompressedSize: 0,
@@ -1165,17 +1151,19 @@ unsafe fn setDictSelection(buf: *mut u8, s: size_t, csz: size_t) -> COVER_dictSe
     ds.totalCompressedSize = csz;
     ds
 }
-pub unsafe fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
+pub(super) unsafe fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
     setDictSelection(core::ptr::null_mut(), 0, error)
 }
-pub unsafe fn COVER_dictSelectionIsError(selection: COVER_dictSelection_t) -> core::ffi::c_uint {
+pub(super) unsafe fn COVER_dictSelectionIsError(
+    selection: COVER_dictSelection_t,
+) -> core::ffi::c_uint {
     (ERR_isError(selection.totalCompressedSize) != 0 || (selection.dictContent).is_null())
         as core::ffi::c_int as core::ffi::c_uint
 }
-pub unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
+pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
     free(selection.dictContent as *mut core::ffi::c_void);
 }
-pub unsafe fn COVER_selectDict(
+pub(super) unsafe fn COVER_selectDict(
     customDictContent: *mut u8,
     dictBufferCapacity: size_t,
     mut dictContentSize: size_t,
@@ -1297,7 +1285,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
-    let mut activeDmers = COVER_map_s {
+    let mut activeDmers = COVER_map_t {
         data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
         size: 0,
@@ -1427,7 +1415,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
-    let mut best = COVER_best_s {
+    let mut best = COVER_best_t {
         mutex: PTHREAD_MUTEX_INITIALIZER,
         cond: PTHREAD_COND_INITIALIZER,
         liveJobs: 0,

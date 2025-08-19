@@ -6,9 +6,10 @@ use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versi
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
 };
-use libzstd_rs::lib::dictBuilder::cover::ZDICT_cover_params_t;
-use libzstd_rs::lib::dictBuilder::fastcover::ZDICT_fastCover_params_t;
-use libzstd_rs::lib::dictBuilder::zdict::{ZDICT_legacy_params_t, ZDICT_params_t};
+use libzstd_rs::lib::zdict::experimental::{
+    ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
+};
+use libzstd_rs::lib::zdict::ZDICT_params_t;
 use libzstd_rs::lib::zstd::*;
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
