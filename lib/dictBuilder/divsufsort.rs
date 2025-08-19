@@ -8,46 +8,46 @@ extern "C" {
         __function: *const core::ffi::c_char,
     ) -> !;
 }
-pub type trbudget_t = _trbudget_t;
+type trbudget_t = _trbudget_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _trbudget_t {
-    pub chance: core::ffi::c_int,
-    pub remain: core::ffi::c_int,
-    pub incval: core::ffi::c_int,
-    pub count: core::ffi::c_int,
+struct _trbudget_t {
+    chance: core::ffi::c_int,
+    remain: core::ffi::c_int,
+    incval: core::ffi::c_int,
+    count: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed {
-    pub a: *const core::ffi::c_int,
-    pub b: *mut core::ffi::c_int,
-    pub c: *mut core::ffi::c_int,
-    pub d: core::ffi::c_int,
-    pub e: core::ffi::c_int,
+struct C2RustUnnamed {
+    a: *const core::ffi::c_int,
+    b: *mut core::ffi::c_int,
+    c: *mut core::ffi::c_int,
+    d: core::ffi::c_int,
+    e: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_0 {
-    pub a: *mut core::ffi::c_int,
-    pub b: *mut core::ffi::c_int,
-    pub c: core::ffi::c_int,
-    pub d: core::ffi::c_int,
+struct C2RustUnnamed_0 {
+    a: *mut core::ffi::c_int,
+    b: *mut core::ffi::c_int,
+    c: core::ffi::c_int,
+    d: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct C2RustUnnamed_1 {
-    pub a: *mut core::ffi::c_int,
-    pub b: *mut core::ffi::c_int,
-    pub c: *mut core::ffi::c_int,
-    pub d: core::ffi::c_int,
+struct C2RustUnnamed_1 {
+    a: *mut core::ffi::c_int,
+    b: *mut core::ffi::c_int,
+    c: *mut core::ffi::c_int,
+    d: core::ffi::c_int,
 }
-pub const ALPHABET_SIZE: core::ffi::c_int = 256;
-pub const BUCKET_A_SIZE: core::ffi::c_int = 256;
-pub const BUCKET_B_SIZE: core::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
-pub const SS_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
-pub const SS_BLOCKSIZE: core::ffi::c_int = 1024;
-pub const TR_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
+const ALPHABET_SIZE: core::ffi::c_int = 256;
+const BUCKET_A_SIZE: core::ffi::c_int = 256;
+const BUCKET_B_SIZE: core::ffi::c_int = ALPHABET_SIZE * ALPHABET_SIZE;
+const SS_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
+const SS_BLOCKSIZE: core::ffi::c_int = 1024;
+const TR_INSERTIONSORT_THRESHOLD: core::ffi::c_int = 8;
 static lg_table: [core::ffi::c_int; 256] = [
     -(1),
     0,
@@ -4506,438 +4506,7 @@ unsafe fn construct_SA(
         i = i.offset(1);
     }
 }
-unsafe fn construct_BWT(
-    T: *const core::ffi::c_uchar,
-    SA: *mut core::ffi::c_int,
-    bucket_A: *mut core::ffi::c_int,
-    bucket_B: *mut core::ffi::c_int,
-    n: core::ffi::c_int,
-    m: core::ffi::c_int,
-) -> core::ffi::c_int {
-    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut k = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut orig = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut s: core::ffi::c_int = 0;
-    let mut c0: core::ffi::c_int = 0;
-    let mut c1: core::ffi::c_int = 0;
-    let mut c2: core::ffi::c_int = 0;
-    if (0) < m {
-        c1 = ALPHABET_SIZE - 2;
-        while 0 <= c1 {
-            i = SA.offset(*bucket_B.offset(((c1 << 8) | (c1 + 1)) as isize) as isize);
-            j = SA
-                .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
-                .offset(-(1));
-            k = core::ptr::null_mut();
-            c2 = -(1);
-            while i <= j {
-                s = *j;
-                if (0) < s {
-                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
-                    if (s + 1) < n
-                        && *T.offset(s as isize) as core::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1695,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if *T.offset((s - 1) as isize) as core::ffi::c_int
-                        <= *T.offset(s as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1696,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    s -= 1;
-                    c0 = *T.offset(s as isize) as core::ffi::c_int;
-                    *j = !c0;
-                    if (0) < s && *T.offset((s - 1) as isize) as core::ffi::c_int > c0 {
-                        s = !s;
-                    }
-                    if c0 != c2 {
-                        if 0 <= c2 {
-                            *bucket_B.offset((c1 << 8 | c2) as isize) =
-                                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                        }
-                        c2 = c0;
-                        k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
-                    }
-                    if k < j {
-                    } else {
-                        __assert_fail(
-                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1704,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if !k.is_null() {
-                    } else {
-                        __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1704,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    let fresh195 = k;
-                    k = k.offset(-1);
-                    *fresh195 = s;
-                } else if s != 0 {
-                    *j = !s;
-                } else {
-                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
-                }
-                j = j.offset(-1);
-            }
-            c1 -= 1;
-        }
-    }
-    c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
-    k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
-    let fresh196 = k;
-    k = k.offset(1);
-    *fresh196 = if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
-        !(*T.offset((n - 2) as isize) as core::ffi::c_int)
-    } else {
-        n - 1
-    };
-    i = SA;
-    j = SA.offset(n as isize);
-    orig = SA;
-    while i < j {
-        s = *i;
-        if (0) < s {
-            if *T.offset((s - 1) as isize) as core::ffi::c_int
-                >= *T.offset(s as isize) as core::ffi::c_int
-            {
-            } else {
-                __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1724,
-                    (*::core::mem::transmute::<
-                        &[u8; 72],
-                        &[core::ffi::c_char; 72],
-                    >(
-                        b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-            s -= 1;
-            c0 = *T.offset(s as isize) as core::ffi::c_int;
-            *i = c0;
-            if (0) < s && (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
-                s = !(*T.offset((s - 1) as isize) as core::ffi::c_int);
-            }
-            if c0 != c2 {
-                *bucket_A.offset(c2 as isize) =
-                    k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                c2 = c0;
-                k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
-            }
-            if i < k {
-            } else {
-                __assert_fail(
-                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1732,
-                    (*::core::mem::transmute::<
-                        &[u8; 72],
-                        &[core::ffi::c_char; 72],
-                    >(
-                        b"int construct_BWT(const unsigned char *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-            let fresh197 = k;
-            k = k.offset(1);
-            *fresh197 = s;
-        } else if s != 0 {
-            *i = !s;
-        } else {
-            orig = i;
-        }
-        i = i.offset(1);
-    }
-    orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
-}
-unsafe fn construct_BWT_indexes(
-    T: *const core::ffi::c_uchar,
-    SA: *mut core::ffi::c_int,
-    bucket_A: *mut core::ffi::c_int,
-    bucket_B: *mut core::ffi::c_int,
-    n: core::ffi::c_int,
-    m: core::ffi::c_int,
-    num_indexes: *mut core::ffi::c_uchar,
-    indexes: *mut core::ffi::c_int,
-) -> core::ffi::c_int {
-    let mut i = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut j = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut k = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut orig = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut s: core::ffi::c_int = 0;
-    let mut c0: core::ffi::c_int = 0;
-    let mut c1: core::ffi::c_int = 0;
-    let mut c2: core::ffi::c_int = 0;
-    let mut mod_0 = n / 8;
-    mod_0 |= mod_0 >> 1;
-    mod_0 |= mod_0 >> 2;
-    mod_0 |= mod_0 >> 4;
-    mod_0 |= mod_0 >> 8;
-    mod_0 |= mod_0 >> 16;
-    mod_0 >>= 1;
-    *num_indexes = ((n - 1) / (mod_0 + 1)) as core::ffi::c_uchar;
-    if (0) < m {
-        c1 = ALPHABET_SIZE - 2;
-        while 0 <= c1 {
-            i = SA.offset(*bucket_B.offset(((c1 << 8) | (c1 + 1)) as isize) as isize);
-            j = SA
-                .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
-                .offset(-(1));
-            k = core::ptr::null_mut();
-            c2 = -(1);
-            while i <= j {
-                s = *j;
-                if (0) < s {
-                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
-                    if (s + 1) < n
-                        && *T.offset(s as isize) as core::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1776,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if *T.offset((s - 1) as isize) as core::ffi::c_int
-                        <= *T.offset(s as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1777,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if s & mod_0 == 0 {
-                        *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                            j.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                    }
-                    s -= 1;
-                    c0 = *T.offset(s as isize) as core::ffi::c_int;
-                    *j = !c0;
-                    if (0) < s && *T.offset((s - 1) as isize) as core::ffi::c_int > c0 {
-                        s = !s;
-                    }
-                    if c0 != c2 {
-                        if 0 <= c2 {
-                            *bucket_B.offset((c1 << 8 | c2) as isize) =
-                                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                        }
-                        c2 = c0;
-                        k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
-                    }
-                    if k < j {
-                    } else {
-                        __assert_fail(
-                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1788,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if !k.is_null() {
-                    } else {
-                        __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1788,
-                            (*::core::mem::transmute::<
-                                &[u8; 104],
-                                &[core::ffi::c_char; 104],
-                            >(
-                                b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    let fresh198 = k;
-                    k = k.offset(-1);
-                    *fresh198 = s;
-                } else if s != 0 {
-                    *j = !s;
-                } else {
-                    assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
-                }
-                j = j.offset(-1);
-            }
-            c1 -= 1;
-        }
-    }
-    c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
-    k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
-    if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
-        if (n - 1) & mod_0 == 0 {
-            *indexes.offset(((n - 1) / (mod_0 + 1) - 1) as isize) =
-                k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-        }
-        let fresh199 = k;
-        k = k.offset(1);
-        *fresh199 = !(*T.offset((n - 2) as isize) as core::ffi::c_int);
-    } else {
-        let fresh200 = k;
-        k = k.offset(1);
-        *fresh200 = n - 1;
-    }
-    i = SA;
-    j = SA.offset(n as isize);
-    orig = SA;
-    while i < j {
-        s = *i;
-        if (0) < s {
-            if *T.offset((s - 1) as isize) as core::ffi::c_int
-                >= *T.offset(s as isize) as core::ffi::c_int
-            {
-            } else {
-                __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1815,
-                    (*::core::mem::transmute::<
-                        &[u8; 104],
-                        &[core::ffi::c_char; 104],
-                    >(
-                        b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-            if s & mod_0 == 0 {
-                *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                    i.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-            }
-            s -= 1;
-            c0 = *T.offset(s as isize) as core::ffi::c_int;
-            *i = c0;
-            if c0 != c2 {
-                *bucket_A.offset(c2 as isize) =
-                    k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                c2 = c0;
-                k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
-            }
-            if i < k {
-            } else {
-                __assert_fail(
-                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1825,
-                    (*::core::mem::transmute::<
-                        &[u8; 104],
-                        &[core::ffi::c_char; 104],
-                    >(
-                        b"int construct_BWT_indexes(const unsigned char *, int *, int *, int *, int, int, unsigned char *, int *)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
-            if (0) < s && (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
-                if s & mod_0 == 0 {
-                    *indexes.offset((s / (mod_0 + 1) - 1) as isize) =
-                        k.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                }
-                let fresh201 = k;
-                k = k.offset(1);
-                *fresh201 = !(*T.offset((s - 1) as isize) as core::ffi::c_int);
-            } else {
-                let fresh202 = k;
-                k = k.offset(1);
-                *fresh202 = s;
-            }
-        } else if s != 0 {
-            *i = !s;
-        } else {
-            orig = i;
-        }
-        i = i.offset(1);
-    }
-    orig.offset_from(SA) as core::ffi::c_long as core::ffi::c_int
-}
-pub unsafe fn divsufsort(
+pub(super) unsafe fn divsufsort(
     T: *const core::ffi::c_uchar,
     SA: *mut core::ffi::c_int,
     n: core::ffi::c_int,
@@ -4976,67 +4545,4 @@ pub unsafe fn divsufsort(
     free(bucket_B as *mut core::ffi::c_void);
     free(bucket_A as *mut core::ffi::c_void);
     err
-}
-pub unsafe fn divbwt(
-    T: *const core::ffi::c_uchar,
-    U: *mut core::ffi::c_uchar,
-    A: *mut core::ffi::c_int,
-    n: core::ffi::c_int,
-    num_indexes: *mut core::ffi::c_uchar,
-    indexes: *mut core::ffi::c_int,
-    openMP: core::ffi::c_int,
-) -> core::ffi::c_int {
-    let mut B = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut bucket_A = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut bucket_B = core::ptr::null_mut::<core::ffi::c_int>();
-    let mut m: core::ffi::c_int = 0;
-    let mut pidx: core::ffi::c_int = 0;
-    let mut i: core::ffi::c_int = 0;
-    if T.is_null() || U.is_null() || n < 0 {
-        return -(1);
-    } else if n <= 1 {
-        if n == 1 {
-            *U.offset(0) = *T.offset(0);
-        }
-        return n;
-    }
-    B = A;
-    if B.is_null() {
-        B = malloc(((n + 1) as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
-            as *mut core::ffi::c_int;
-    }
-    bucket_A =
-        malloc((BUCKET_A_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
-            as *mut core::ffi::c_int;
-    bucket_B =
-        malloc((BUCKET_B_SIZE as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_int>()))
-            as *mut core::ffi::c_int;
-    if !B.is_null() && !bucket_A.is_null() && !bucket_B.is_null() {
-        m = sort_typeBstar(T, B, bucket_A, bucket_B, n, openMP);
-        if num_indexes.is_null() || indexes.is_null() {
-            pidx = construct_BWT(T, B, bucket_A, bucket_B, n, m);
-        } else {
-            pidx = construct_BWT_indexes(T, B, bucket_A, bucket_B, n, m, num_indexes, indexes);
-        }
-        *U.offset(0) = *T.offset((n - 1) as isize);
-        i = 0;
-        while i < pidx {
-            *U.offset((i + 1) as isize) = *B.offset(i as isize) as core::ffi::c_uchar;
-            i += 1;
-        }
-        i += 1;
-        while i < n {
-            *U.offset(i as isize) = *B.offset(i as isize) as core::ffi::c_uchar;
-            i += 1;
-        }
-        pidx += 1;
-    } else {
-        pidx = -(2);
-    }
-    free(bucket_B as *mut core::ffi::c_void);
-    free(bucket_A as *mut core::ffi::c_void);
-    if A.is_null() {
-        free(B as *mut core::ffi::c_void);
-    }
-    pidx
 }

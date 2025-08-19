@@ -4,16 +4,12 @@ use libc::{
     __errno_location, exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t,
     strerror, FILE,
 };
-use libzstd_rs::lib::dictBuilder::cover::{
-    ZDICT_cover_params_t, ZDICT_optimizeTrainFromBuffer_cover, ZDICT_trainFromBuffer_cover,
+use libzstd_rs::lib::zdict::experimental::{
+    ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
+    ZDICT_optimizeTrainFromBuffer_cover, ZDICT_optimizeTrainFromBuffer_fastCover,
+    ZDICT_trainFromBuffer_cover, ZDICT_trainFromBuffer_fastCover, ZDICT_trainFromBuffer_legacy,
 };
-use libzstd_rs::lib::dictBuilder::fastcover::{
-    ZDICT_fastCover_params_t, ZDICT_optimizeTrainFromBuffer_fastCover,
-    ZDICT_trainFromBuffer_fastCover,
-};
-use libzstd_rs::lib::dictBuilder::zdict::{
-    ZDICT_getErrorName, ZDICT_isError, ZDICT_legacy_params_t, ZDICT_trainFromBuffer_legacy,
-};
+use libzstd_rs::lib::zdict::{ZDICT_getErrorName, ZDICT_isError};
 use libzstd_rs::lib::zstd::*;
 
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_getTime, UTIL_time_t};
