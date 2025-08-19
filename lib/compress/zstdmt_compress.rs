@@ -28,10 +28,9 @@ use crate::lib::compress::zstd_ldm::{
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::*;
-pub type ZSTDMT_CCtx = ZSTDMT_CCtx_s;
-#[derive(Copy, Clone, BitfieldStruct)]
+#[derive(Copy, Clone)]
 #[repr(C)]
-pub struct ZSTDMT_CCtx_s {
+pub struct ZSTDMT_CCtx {
     factory: *mut POOL_ctx,
     jobs: *mut ZSTDMT_jobDescription,
     bufPool: *mut ZSTDMT_bufferPool,
@@ -56,10 +55,7 @@ pub struct ZSTDMT_CCtx_s {
     cMem: ZSTD_customMem,
     cdictLocal: *mut ZSTD_CDict,
     cdict: *const ZSTD_CDict,
-    #[bitfield(name = "providedFactory", ty = "core::ffi::c_uint", bits = "0..=0")]
-    providedFactory: [u8; 1],
-    #[bitfield(padding)]
-    c2rust_padding: [u8; 7],
+    providedFactory: bool,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1241,10 +1237,10 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     (*mtctx).allJobsCompleted = 1;
     if !pool.is_null() {
         (*mtctx).factory = pool;
-        (*mtctx).set_providedFactory(1);
+        (*mtctx).providedFactory = true;
     } else {
         (*mtctx).factory = POOL_create_advanced(nbWorkers as size_t, 0, cMem);
-        (*mtctx).set_providedFactory(0);
+        (*mtctx).providedFactory = false;
     }
     (*mtctx).jobs = ZSTDMT_createJobsTable(&mut nbJobs, cMem);
     (*mtctx).jobIDMask = nbJobs.wrapping_sub(1);
@@ -1322,7 +1318,7 @@ pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
     }
-    if (*mtctx).providedFactory() == 0 {
+    if !(*mtctx).providedFactory {
         POOL_free((*mtctx).factory);
     }
     ZSTDMT_releaseAllJobResources(mtctx);

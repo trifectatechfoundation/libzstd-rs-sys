@@ -5,8 +5,7 @@
 #![cfg_attr(test, feature(test))]
 #![feature(likely_unlikely)]
 #![feature(linkage)]
-#[macro_use]
-extern crate c2rust_bitfields;
+
 pub mod lib {
     pub mod common {
         pub mod bitstream;
