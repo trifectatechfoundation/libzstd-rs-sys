@@ -152,18 +152,18 @@ pub struct algo_time_t {
 pub type ERR_enum = ZSTD_ErrorCode;
 #[repr(C)]
 pub struct ZBUFFv05_DCtx_s {
-    pub zc: *mut ZSTDv05_DCtx,
-    pub params: ZSTDv05_parameters,
-    pub inBuff: *mut core::ffi::c_char,
-    pub inBuffSize: size_t,
-    pub inPos: size_t,
-    pub outBuff: *mut core::ffi::c_char,
-    pub outBuffSize: size_t,
-    pub outStart: size_t,
-    pub outEnd: size_t,
-    pub hPos: size_t,
-    pub stage: ZBUFFv05_dStage,
-    pub headerBuffer: [core::ffi::c_uchar; 5],
+    zc: *mut ZSTDv05_DCtx,
+    params: ZSTDv05_parameters,
+    inBuff: *mut core::ffi::c_char,
+    inBuffSize: size_t,
+    inPos: size_t,
+    outBuff: *mut core::ffi::c_char,
+    outBuffSize: size_t,
+    outStart: size_t,
+    outEnd: size_t,
+    hPos: size_t,
+    stage: ZBUFFv05_dStage,
+    headerBuffer: [core::ffi::c_uchar; 5],
 }
 pub type ZBUFFv05_dStage = core::ffi::c_uint;
 pub const ZBUFFv05ds_flush: ZBUFFv05_dStage = 6;
