@@ -6,7 +6,7 @@ use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::FseWorkspace;
-use crate::lib::zstd::{BufferMode, Format, ZSTD_bufferMode_e, ZSTD_customMem, ZSTD_outBuffer};
+use crate::lib::zstd::{BufferMode, Format, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
