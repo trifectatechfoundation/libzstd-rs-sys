@@ -117,14 +117,15 @@ pub enum NextInputType {
     SkippableFrame = 5,
 }
 
-pub type ZSTD_nextInputType_e = core::ffi::c_uint;
-
-pub type ZSTD_dStreamStage = core::ffi::c_uint;
-pub const zdss_flush: ZSTD_dStreamStage = 4;
-pub const zdss_load: ZSTD_dStreamStage = 3;
-pub const zdss_read: ZSTD_dStreamStage = 2;
-pub const zdss_loadHeader: ZSTD_dStreamStage = 1;
-pub const zdss_init: ZSTD_dStreamStage = 0;
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StreamStage {
+    Init,
+    LoadHeader,
+    Read,
+    Load,
+    Flush,
+}
 
 pub type ZSTD_dictUses_e = core::ffi::c_int;
 pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
@@ -261,7 +262,7 @@ pub struct ZSTD_DCtx_s {
     pub refMultipleDDicts: MultipleDDicts,
     pub disableHufAsm: core::ffi::c_int,
     pub maxBlockSizeParam: core::ffi::c_int,
-    pub streamStage: ZSTD_dStreamStage,
+    pub streamStage: StreamStage,
     pub inBuff: *mut core::ffi::c_char,
     pub inBuffSize: size_t,
     pub inPos: size_t,
