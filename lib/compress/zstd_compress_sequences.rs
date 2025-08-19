@@ -21,7 +21,6 @@ pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;
 pub const FSE_repeat_none: FSE_repeat = 0;
 pub type FSE_CTable = core::ffi::c_uint;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BIT_CStream_t {
     pub bitContainer: BitContainerType,
@@ -30,7 +29,6 @@ pub struct BIT_CStream_t {
     pub ptr: *mut core::ffi::c_char,
     pub endPtr: *mut core::ffi::c_char,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,

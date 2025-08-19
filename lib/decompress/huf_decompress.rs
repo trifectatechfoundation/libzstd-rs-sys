@@ -90,7 +90,6 @@ pub struct HUF_DEltX1 {
     pub nbBits: u8,
     pub byte: u8,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_ReadDTableX1_Workspace {
     pub rankVal: [u32; 13],
@@ -109,7 +108,6 @@ pub struct HUF_DEltX2 {
 }
 
 pub type rankValCol_t = [u32; 13];
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_ReadDTableX2_Workspace {
     pub rankVal: [rankValCol_t; 12],
@@ -119,12 +117,10 @@ pub struct HUF_ReadDTableX2_Workspace {
     pub weightList: [u8; 256],
     pub calleeWksp: crate::lib::common::entropy_common::Workspace,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct sortedSymbol_t {
     pub symbol: u8,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_DecompressFastArgs<'a> {
     pub ip: [*const u8; 4],

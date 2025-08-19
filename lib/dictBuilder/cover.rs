@@ -39,7 +39,6 @@ type __compar_d_fn_t = Option<
         *mut core::ffi::c_void,
     ) -> core::ffi::c_int,
 >;
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct COVER_map_t {
     data: *mut COVER_map_pair_t,
@@ -47,13 +46,11 @@ struct COVER_map_t {
     size: u32,
     sizeMask: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct COVER_map_pair_t {
     key: u32,
     value: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct COVER_ctx_t {
     samples: *const u8,
@@ -76,13 +73,11 @@ pub(super) struct COVER_segment_t {
     pub(super) end: u32,
     pub(super) score: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub(super) struct COVER_epoch_info_t {
     pub(super) num: u32,
     pub(super) size: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub(super) struct COVER_best_t {
     pub(super) mutex: pthread_mutex_t,
@@ -93,7 +88,6 @@ pub(super) struct COVER_best_t {
     pub(super) parameters: ZDICT_cover_params_t,
     pub(super) compressedSize: size_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct COVER_tryParameters_data_t {
     ctx: *const COVER_ctx_t,
