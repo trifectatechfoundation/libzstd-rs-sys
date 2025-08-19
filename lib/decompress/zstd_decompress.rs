@@ -2985,41 +2985,45 @@ unsafe fn ZSTD_decompressContinueStream(
     }
     0
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressStream))]
 pub unsafe extern "C" fn ZSTD_decompressStream(
     zds: *mut ZSTD_DStream,
     output: *mut ZSTD_outBuffer,
     input: *mut ZSTD_inBuffer,
 ) -> size_t {
-    let src = (*input).src as *const core::ffi::c_char;
-    let istart = if (*input).pos != 0 {
-        src.add((*input).pos)
+    let output = output.as_mut().unwrap();
+    let input = input.as_mut().unwrap();
+
+    let src = input.src as *const core::ffi::c_char;
+    let istart = if input.pos != 0 {
+        src.add(input.pos)
     } else {
         src
     };
-    let iend = if (*input).size != 0 {
-        src.add((*input).size)
+    let iend = if input.size != 0 {
+        src.add(input.size)
     } else {
         src
     };
     let mut ip = istart;
-    let dst = (*output).dst as *mut core::ffi::c_char;
-    let ostart = if (*output).pos != 0 {
-        dst.add((*output).pos)
+    let dst = output.dst as *mut core::ffi::c_char;
+    let ostart = if output.pos != 0 {
+        dst.add(output.pos)
     } else {
         dst
     };
-    let oend = if (*output).size != 0 {
-        dst.add((*output).size)
+    let oend = if output.size != 0 {
+        dst.add(output.size)
     } else {
         dst
     };
     let mut op = ostart;
     let mut someMoreWork = 1;
-    if (*input).pos > (*input).size {
+    if input.pos > input.size {
         return Error::srcSize_wrong.to_error_code();
     }
-    if (*output).pos > (*output).size {
+    if output.pos > output.size {
         return Error::dstSize_tooSmall.to_error_code();
     }
     let err_code = ZSTD_checkOutBuffer(zds, output);
@@ -3161,7 +3165,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         );
                         (*zds).lhSize = ((*zds).lhSize).wrapping_add(remainingInput);
                     }
-                    (*input).pos = (*input).size;
+                    input.pos = input.size;
                     let err_code_1 = get_frame_header_advanced(
                         &mut (*zds).fParams,
                         &(&(*zds).headerBuffer)[..(*zds).lhSize],
@@ -3423,8 +3427,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
         }
     }
-    (*input).pos = ip.offset_from((*input).src as *const core::ffi::c_char) as size_t;
-    (*output).pos = op.offset_from((*output).dst as *mut core::ffi::c_char) as size_t;
+    input.pos = ip.offset_from((*input).src as *const core::ffi::c_char) as size_t;
+    output.pos = op.offset_from((*output).dst as *mut core::ffi::c_char) as size_t;
     (*zds).expectedOutBuffer = *output;
     if ip == istart && op == ostart {
         (*zds).noForwardProgress += 1;
@@ -3444,18 +3448,18 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if nextSrcSizeHint == 0 {
         if (*zds).outEnd == (*zds).outStart {
             if (*zds).hostageByte != 0 {
-                if (*input).pos >= (*input).size {
+                if input.pos >= input.size {
                     (*zds).streamStage = StreamStage::Read;
                     return 1;
                 }
-                (*input).pos = ((*input).pos).wrapping_add(1);
-                (*input).pos;
+                input.pos = (input.pos).wrapping_add(1);
+                input.pos;
             }
             return 0;
         }
         if (*zds).hostageByte == 0 {
-            (*input).pos = ((*input).pos).wrapping_sub(1);
-            (*input).pos;
+            input.pos = (input.pos).wrapping_sub(1);
+            input.pos;
             (*zds).hostageByte = 1;
         }
         return 1;
@@ -3468,6 +3472,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub((*zds).inPos);
     nextSrcSizeHint
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressStream_simpleArgs))]
 pub unsafe extern "C" fn ZSTD_decompressStream_simpleArgs(
     dctx: *mut ZSTD_DCtx,
