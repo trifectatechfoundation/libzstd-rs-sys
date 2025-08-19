@@ -3604,7 +3604,7 @@ unsafe fn ZSTDv07_execSequence(
         if sequence.offset > oLitEnd.offset_from(vBase) as size_t {
             return Error::corruption_detected.to_error_code();
         }
-        match_0 = dictEnd.offset(-(base.offset_from(match_0) as core::ffi::c_long as isize));
+        match_0 = dictEnd.offset(-(base.offset_from(match_0)));
         if match_0.add(sequence.matchLength) <= dictEnd {
             memmove(
                 oLitEnd as *mut core::ffi::c_void,

@@ -5154,7 +5154,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     entropyWkspSize = (entropyWkspSize as size_t).wrapping_sub(
         ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>()),
-    ) as size_t as size_t;
+    );
     let numSequences =
         ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
     let suspectUncompressible = (numSequences == 0

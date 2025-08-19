@@ -1,5 +1,3 @@
-use libc::size_t;
-
 use crate::lib::common::error_private::Error;
 
 pub type BitContainerType = usize;
@@ -90,7 +88,7 @@ impl BIT_DStream_t {
             bitD.ptr = (srcBuffer.as_ptr() as *const core::ffi::c_char)
                 .wrapping_add(srcBuffer.len())
                 .wrapping_sub(USIZE_BYTES);
-            bitD.bitContainer = usize::from_le_bytes(*chunk) as size_t;
+            bitD.bitContainer = usize::from_le_bytes(*chunk);
 
             match srcBuffer.last().and_then(|v| v.checked_ilog2()) {
                 None => {

@@ -365,7 +365,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
         5 => {
             ZSTDv05_findFrameSizeInfoLegacy(
                 src.as_ptr().cast(),
-                src.len() as size_t,
+                src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -373,7 +373,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
         6 => {
             ZSTDv06_findFrameSizeInfoLegacy(
                 src.as_ptr().cast(),
-                src.len() as size_t,
+                src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -381,7 +381,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
                 src.as_ptr().cast(),
-                src.len() as size_t,
+                src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -1159,7 +1159,7 @@ fn read_skippable_frame_size(src: &[u8]) -> size_t {
         return Error::srcSize_wrong.to_error_code();
     }
 
-    skippableSize as size_t
+    skippableSize
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_readSkippableFrame))]
@@ -1309,8 +1309,8 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         frameSizeInfo
     } else {
         let mut ip = 0;
-        let mut remainingSize = src.len() as size_t;
-        let mut nbBlocks = 0 as size_t;
+        let mut remainingSize = src.len();
+        let mut nbBlocks = 0usize;
         let mut zfh = ZSTD_FrameHeader {
             frameContentSize: 0,
             windowSize: 0,
@@ -1436,7 +1436,7 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
 }
 
 fn decompression_margin(mut src: &[u8]) -> size_t {
-    let mut margin = 0 as size_t;
+    let mut margin = 0;
     let mut maxBlockSize = 0;
 
     /* Iterate over each frame */
@@ -3345,11 +3345,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             let bufferSize = neededInBuffSize.wrapping_add(neededOutBuffSize);
                             if (*zds).staticSize != 0 {
                                 if bufferSize
-                                    > ((*zds).staticSize).wrapping_sub(::core::mem::size_of::<
-                                        ZSTD_DCtx,
-                                    >(
-                                    )
-                                        as size_t)
+                                    > ((*zds).staticSize)
+                                        .wrapping_sub(::core::mem::size_of::<ZSTD_DCtx>())
                                 {
                                     return Error::dictionary_corrupted.to_error_code();
                                 }
@@ -3487,8 +3484,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     nextSrcSizeHint = nextSrcSizeHint.wrapping_add(
         ZSTD_blockHeaderSize
             * (ZSTD_nextInputType(zds) as core::ffi::c_uint
-                == ZSTDnit_block as core::ffi::c_int as core::ffi::c_uint)
-                as core::ffi::c_int as size_t,
+                == ZSTDnit_block as core::ffi::c_int as core::ffi::c_uint) as size_t,
     );
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub((*zds).inPos);
     nextSrcSizeHint
@@ -3539,7 +3535,7 @@ mod tests {
         fn decompress_bound_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
                 let expected = zstd_sys::ZSTD_decompressBound(input.as_ptr().cast(), input.len() );
-                let actual = super::ZSTD_decompressBound(input.as_ptr().cast(), input.len() as size_t);
+                let actual = super::ZSTD_decompressBound(input.as_ptr().cast(), input.len());
 
                 assert_eq!(expected, actual);
                 expected == actual
@@ -3556,7 +3552,7 @@ mod tests {
         fn decompression_margin_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
                 let expected = zstd_sys::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() );
-                let actual = super::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() as size_t) as usize;
+                let actual = super::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len());
 
                 assert_eq!(expected, actual);
                 expected == actual
