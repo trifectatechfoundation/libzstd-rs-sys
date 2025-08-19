@@ -121,6 +121,11 @@ fn XXH64_endian_align(input: &[u8], seed: u64, align: Align) -> u64 {
     h64 = h64.wrapping_add(input.len() as u64);
     XXH64_finalize(h64, remainder, align)
 }
+
+pub fn ZSTD_XXH64_slice(input: &[u8], seed: u64) -> u64 {
+    XXH64_endian_align(input, seed, Align::Unaligned)
+}
+
 pub unsafe fn ZSTD_XXH64(input: *const core::ffi::c_void, len: usize, seed: u64) -> u64 {
     let slice = if input.is_null() {
         assert_eq!(len, 0);
