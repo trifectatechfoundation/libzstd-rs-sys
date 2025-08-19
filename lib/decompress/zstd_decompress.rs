@@ -6,7 +6,7 @@ use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::xxhash::{
-    ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64,
+    ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update,
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::common::zstd_internal::{
@@ -557,16 +557,14 @@ pub const DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT: core::ffi::c_int = 4;
 pub const DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT: core::ffi::c_int = 3;
 pub const DDICT_HASHSET_TABLE_BASE_SIZE: core::ffi::c_int = 64;
 pub const DDICT_HASHSET_RESIZE_FACTOR: core::ffi::c_int = 2;
-unsafe fn ZSTD_DDictHashSet_getIndex(hashSet: *const ZSTD_DDictHashSet, mut dictID: u32) -> size_t {
-    let hash = ZSTD_XXH64(
-        &mut dictID as *mut u32 as *const core::ffi::c_void,
-        ::core::mem::size_of::<u32>(),
-        0,
-    );
+
+fn ZSTD_DDictHashSet_getIndex(hashSet: &ZSTD_DDictHashSet, dictID: u32) -> size_t {
+    let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
     hash as size_t & ((*hashSet).ddictPtrTableSize).wrapping_sub(1)
 }
+
 unsafe fn ZSTD_DDictHashSet_emplaceDDict(
-    hashSet: *mut ZSTD_DDictHashSet,
+    hashSet: &mut ZSTD_DDictHashSet,
     ddict: *const ZSTD_DDict,
 ) -> size_t {
     let dictID = ZSTD_getDictID_fromDDict(ddict);
@@ -590,8 +588,9 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     (*hashSet).ddictPtrCount;
     0
 }
+
 unsafe fn ZSTD_DDictHashSet_expand(
-    hashSet: *mut ZSTD_DDictHashSet,
+    hashSet: &mut ZSTD_DDictHashSet,
     customMem: ZSTD_customMem,
 ) -> size_t {
     let newTableSize = (*hashSet).ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
@@ -621,8 +620,9 @@ unsafe fn ZSTD_DDictHashSet_expand(
     ZSTD_customFree(oldTable as *mut core::ffi::c_void, customMem);
     0
 }
+
 unsafe fn ZSTD_DDictHashSet_getDDict(
-    hashSet: *mut ZSTD_DDictHashSet,
+    hashSet: &mut ZSTD_DDictHashSet,
     dictID: u32,
 ) -> *const ZSTD_DDict {
     let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
@@ -637,6 +637,7 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
     }
     *((*hashSet).ddictPtrTable).add(idx)
 }
+
 unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
     let ret = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DDictHashSet>(), customMem)
         as *mut ZSTD_DDictHashSet;
@@ -656,6 +657,7 @@ unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictH
     (*ret).ddictPtrCount = 0;
     ret
 }
+
 unsafe fn ZSTD_freeDDictHashSet(hashSet: *mut ZSTD_DDictHashSet, customMem: ZSTD_customMem) {
     if !hashSet.is_null() && !((*hashSet).ddictPtrTable).is_null() {
         ZSTD_customFree(
@@ -668,12 +670,12 @@ unsafe fn ZSTD_freeDDictHashSet(hashSet: *mut ZSTD_DDictHashSet, customMem: ZSTD
     }
 }
 unsafe fn ZSTD_DDictHashSet_addDDict(
-    hashSet: *mut ZSTD_DDictHashSet,
+    hashSet: &mut ZSTD_DDictHashSet,
     ddict: *const ZSTD_DDict,
     customMem: ZSTD_customMem,
 ) -> size_t {
-    if (*hashSet).ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
-        / (*hashSet).ddictPtrTableSize
+    if hashSet.ddictPtrCount * DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT as size_t
+        / hashSet.ddictPtrTableSize
         * DDICT_HASHSET_MAX_LOAD_FACTOR_SIZE_MULT as size_t
         != 0
     {
@@ -823,7 +825,8 @@ pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const 
 }
 unsafe fn ZSTD_DCtx_selectFrameDDict(dctx: *mut ZSTD_DCtx) {
     if !((*dctx).ddict).is_null() {
-        let frameDDict = ZSTD_DDictHashSet_getDDict((*dctx).ddictSet, (*dctx).fParams.dictID);
+        let frameDDict =
+            ZSTD_DDictHashSet_getDDict((*dctx).ddictSet.as_mut().unwrap(), (*dctx).fParams.dictID);
         if !frameDDict.is_null() {
             ZSTD_clearDict(dctx);
             (*dctx).dictID = (*dctx).fParams.dictID;
@@ -2543,6 +2546,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
     }
     ZSTD_startingInputLength((*dctx).format)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refDDict))]
 pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2552,24 +2556,29 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
         return Error::stage_wrong.to_error_code();
     }
     ZSTD_clearDict(dctx);
+
     if !ddict.is_null() {
         (*dctx).ddict = ddict;
         (*dctx).dictUses = ZSTD_use_indefinitely;
         if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
             if ((*dctx).ddictSet).is_null() {
                 (*dctx).ddictSet = ZSTD_createDDictHashSet((*dctx).customMem);
-                if ((*dctx).ddictSet).is_null() {
-                    return Error::memory_allocation.to_error_code();
-                }
             }
-            let err_code = ZSTD_DDictHashSet_addDDict((*dctx).ddictSet, ddict, (*dctx).customMem);
+
+            let Some(ddictSet) = (*dctx).ddictSet.as_mut() else {
+                return Error::memory_allocation.to_error_code();
+            };
+
+            let err_code = ZSTD_DDictHashSet_addDDict(ddictSet, ddict, (*dctx).customMem);
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
         }
     }
+
     0
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setMaxWindowSize))]
 pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
     dctx: *mut ZSTD_DCtx,
