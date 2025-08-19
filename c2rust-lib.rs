@@ -43,10 +43,10 @@ pub mod lib {
         pub(crate) mod fastcover;
         pub(crate) mod zdict;
     } // mod dictBuilder
-    pub mod legacy {
-        pub mod zstd_v05;
-        pub mod zstd_v06;
-        pub mod zstd_v07;
+    pub(crate) mod legacy {
+        pub(crate) mod zstd_v05;
+        pub(crate) mod zstd_v06;
+        pub(crate) mod zstd_v07;
     } // mod legacy
     pub mod zdict;
     pub mod zstd;
