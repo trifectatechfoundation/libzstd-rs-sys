@@ -361,32 +361,16 @@ pub fn HUF_readDTableX1_wksp(
     // rankStart[0] is not filled because there are no entries in the table for
     // weight 0.
     let mut nextRankStart = 0u32;
-    let unroll = 4;
-    let nLimit = nbSymbols as core::ffi::c_int - unroll + 1;
     for n in 0..tableLog as usize + 1 {
         let curr = nextRankStart;
         nextRankStart += wksp.rankVal[n];
         wksp.rankStart[n] = curr;
     }
 
-    let mut n = 0;
-    while n < nLimit {
-        for u in 0..unroll {
-            let w = usize::from(wksp.huffWeight[(n + u) as usize]);
-
-            wksp.symbols[wksp.rankStart[w] as usize] = (n + u) as u8;
-            wksp.rankStart[w] += 1;
-        }
-        n += unroll;
-    }
-
-    while n < nbSymbols as core::ffi::c_int {
-        let w = usize::from(wksp.huffWeight[n as usize]);
-
+    for (n, w) in wksp.huffWeight[..nbSymbols as usize].iter().enumerate() {
+        let w = usize::from(*w);
         wksp.symbols[wksp.rankStart[w] as usize] = n as u8;
         wksp.rankStart[w] += 1;
-
-        n += 1;
     }
 
     // fill DTable
@@ -397,11 +381,11 @@ pub fn HUF_readDTableX1_wksp(
     // optimized for that particular case.
     let mut symbol = wksp.rankVal[0] as usize;
     let mut rankStart = 0;
-    for w_1 in 1..tableLog.wrapping_add(1) {
-        let symbolCount = wksp.rankVal[w_1 as usize] as usize;
-        let length = (1) << w_1 >> 1;
+    for w in 1..tableLog.wrapping_add(1) {
+        let symbolCount = wksp.rankVal[w as usize] as usize;
+        let length = (1) << w >> 1;
         let dt = dt[rankStart..][..length * symbolCount].chunks_exact_mut(length);
-        let nbBits = tableLog.wrapping_add(1).wrapping_sub(w_1) as u8;
+        let nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
 
         // FIXME: zstd unrolls this loop for low values of `length` (a power of 2).
         // we should investigate whether that is beneficial here.
