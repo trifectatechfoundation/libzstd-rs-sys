@@ -470,7 +470,7 @@ fn HUF_decodeStreamX1(
         p.write_u8(HUF_decodeSymbolX1(bitDPtr, dt, dtLog));
     }
 
-    (capacity - p.capacity()) as size_t
+    capacity - p.capacity()
 }
 
 #[inline(always)]
@@ -494,7 +494,7 @@ fn HUF_decompress1X1_usingDTable_internal_body(
         return Error::corruption_detected.to_error_code();
     }
 
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 #[inline(always)]
@@ -595,7 +595,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
         return Error::corruption_detected.to_error_code();
     }
 
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 fn HUF_decompress4X1_usingDTable_internal_bmi2(
@@ -794,7 +794,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         }
     }
 
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 fn HUF_decompress1X1_usingDTable_internal_bmi2(
@@ -1252,7 +1252,7 @@ unsafe fn HUF_decodeStreamX2(
         HUF_decodeLastSymbolX2(&mut p, bitDPtr, dt, dtLog);
     }
 
-    (capacity - p.capacity()) as size_t
+    capacity - p.capacity()
 }
 
 #[inline(always)]
@@ -1273,7 +1273,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_body(
         return Error::corruption_detected.to_error_code();
     }
 
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 #[inline(always)]
@@ -1415,7 +1415,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     }
 
     // The decoded size.
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 unsafe fn HUF_decompress4X2_usingDTable_internal_bmi2(
@@ -1626,7 +1626,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         }
     }
 
-    dst.capacity() as size_t
+    dst.capacity()
 }
 
 unsafe fn HUF_decompress4X2_usingDTable_internal(

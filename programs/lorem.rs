@@ -380,13 +380,13 @@ unsafe fn generateWord(
         *g_ptr.add(g_nbChars) = (*g_ptr.add(g_nbChars) as core::ffi::c_int
             + toUp as core::ffi::c_int) as core::ffi::c_char;
     }
-    g_nbChars = g_nbChars.wrapping_add(strlen(word)) as size_t as size_t;
+    g_nbChars = g_nbChars.wrapping_add(strlen(word));
     memcpy(
         g_ptr.add(g_nbChars) as *mut core::ffi::c_void,
         separator as *const core::ffi::c_void,
         strlen(separator),
     );
-    g_nbChars = g_nbChars.wrapping_add(strlen(separator)) as size_t as size_t;
+    g_nbChars = g_nbChars.wrapping_add(strlen(separator));
 }
 unsafe fn about(target: core::ffi::c_uint) -> core::ffi::c_int {
     (LOREM_rand(target))

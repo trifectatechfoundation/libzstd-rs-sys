@@ -141,7 +141,7 @@ unsafe fn HUF_compressWeights(
     let wksp = HUF_alignUpWorkspace(
         workspace,
         &mut workspaceSize,
-        ::core::mem::align_of::<u32>() as size_t,
+        ::core::mem::align_of::<u32>(),
     ) as *mut HUF_CompressWeightsWksp;
     if workspaceSize < ::core::mem::size_of::<HUF_CompressWeightsWksp>() {
         return Error::GENERIC.to_error_code();
