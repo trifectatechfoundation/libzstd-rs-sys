@@ -9,7 +9,6 @@ use crate::lib::common::mem::{
 use crate::lib::zstd::*;
 
 pub type ZSTDv06_DCtx = ZSTDv06_DCtx_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv06_DCtx_s {
     pub LLTable: [FSEv06_DTable; 513],
@@ -144,7 +143,6 @@ pub struct algo_time_t {
     pub decode256Time: u32,
 }
 pub type ERR_enum = ZSTD_ErrorCode;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZBUFFv06_DCtx_s {
     pub zd: *mut ZSTDv06_DCtx,

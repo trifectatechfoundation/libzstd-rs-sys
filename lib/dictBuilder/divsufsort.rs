@@ -9,7 +9,6 @@ extern "C" {
     ) -> !;
 }
 type trbudget_t = _trbudget_t;
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct _trbudget_t {
     chance: core::ffi::c_int,

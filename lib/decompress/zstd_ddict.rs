@@ -25,14 +25,12 @@ impl TryFrom<u32> for MultipleDDicts {
     }
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_DDictHashSet {
     pub ddictPtrTable: *mut *const ZSTD_DDict,
     pub ddictPtrTableSize: size_t,
     pub ddictPtrCount: size_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_DDict {
     dictBuffer: *mut core::ffi::c_void,

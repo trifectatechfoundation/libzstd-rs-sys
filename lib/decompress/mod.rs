@@ -177,7 +177,7 @@ impl From<u32> for BlockType {
     }
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
     pub frameContentSize: core::ffi::c_ulonglong,
@@ -191,7 +191,6 @@ pub struct ZSTD_FrameHeader {
     pub _reserved2: core::ffi::c_uint,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Workspace {
     data: [u32; 640],
@@ -220,7 +219,6 @@ impl Workspace {
 }
 
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_DCtx_s {
     pub LLTptr: *const ZSTD_seqSymbol,
