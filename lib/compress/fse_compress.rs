@@ -1,9 +1,8 @@
 use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::bitstream::BitContainerType;
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
-use crate::lib::zstd::*;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -56,7 +55,7 @@ unsafe fn BIT_initCStream(
         .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     0
 }
@@ -207,7 +206,7 @@ pub unsafe fn FSE_buildCTable_wksp(
         )
         > wkspSize as core::ffi::c_ulonglong
     {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     *tableU16.offset(-2) = tableLog as u16;
     *tableU16.offset(-1) = maxSymbolValue as u16;
@@ -389,7 +388,7 @@ unsafe fn FSE_writeNCount_generic(
                 bitStream = (bitStream as core::ffi::c_uint)
                     .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
                 if writeIsSafe == 0 && out > oend.offset(-(2)) {
-                    return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                    return Error::dstSize_tooSmall.to_error_code();
                 }
                 *out.offset(0) = bitStream as u8;
                 *out.offset(1) = (bitStream >> 8) as u8;
@@ -406,7 +405,7 @@ unsafe fn FSE_writeNCount_generic(
             bitCount += 2;
             if bitCount > 16 {
                 if writeIsSafe == 0 && out > oend.offset(-(2)) {
-                    return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                    return Error::dstSize_tooSmall.to_error_code();
                 }
                 *out.offset(0) = bitStream as u8;
                 *out.offset(1) = (bitStream >> 8) as u8;
@@ -429,7 +428,7 @@ unsafe fn FSE_writeNCount_generic(
         bitCount -= (count < max) as core::ffi::c_int;
         previousIs0 = (count == 1) as core::ffi::c_int;
         if remaining < 1 {
-            return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+            return Error::GENERIC.to_error_code();
         }
         while remaining < threshold {
             nbBits -= 1;
@@ -437,7 +436,7 @@ unsafe fn FSE_writeNCount_generic(
         }
         if bitCount > 16 {
             if writeIsSafe == 0 && out > oend.offset(-(2)) {
-                return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+                return Error::dstSize_tooSmall.to_error_code();
             }
             *out.offset(0) = bitStream as u8;
             *out.offset(1) = (bitStream >> 8) as u8;
@@ -447,10 +446,10 @@ unsafe fn FSE_writeNCount_generic(
         }
     }
     if remaining != 1 {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if writeIsSafe == 0 && out > oend.offset(-(2)) {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     *out.offset(0) = bitStream as u8;
     *out.offset(1) = (bitStream >> 8) as u8;
@@ -465,10 +464,10 @@ pub unsafe fn FSE_writeNCount(
     tableLog: core::ffi::c_uint,
 ) -> size_t {
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     if tableLog < FSE_MIN_TABLELOG as core::ffi::c_uint {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if bufferSize < FSE_NCountWriteBound(maxSymbolValue, tableLog) {
         return FSE_writeNCount_generic(
@@ -622,7 +621,7 @@ unsafe fn FSE_normalizeM2(
             let sEnd = (end >> vStepLog) as u32;
             let weight = sEnd.wrapping_sub(sStart);
             if weight < 1 {
-                return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+                return Error::GENERIC.to_error_code();
             }
             *norm.offset(s as isize) = weight as core::ffi::c_short;
             tmpTotal = end;
@@ -643,13 +642,13 @@ pub unsafe fn FSE_normalizeCount(
         tableLog = FSE_DEFAULT_TABLELOG as core::ffi::c_uint;
     }
     if tableLog < FSE_MIN_TABLELOG as core::ffi::c_uint {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {
-        return -(ZSTD_error_tableLog_tooLarge as core::ffi::c_int) as size_t;
+        return Error::tableLog_tooLarge.to_error_code();
     }
     if tableLog < FSE_minTableLog(total, maxSymbolValue) {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
     let lowProbCount = (if useLowProbCount != 0 { -(1) } else { 1 }) as core::ffi::c_short;
