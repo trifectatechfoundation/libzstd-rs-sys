@@ -500,7 +500,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     if dictSize <= 8 || MEM_readLE32(dictBuffer) != ZSTD_MAGIC_DICTIONARY {
         return Error::dictionary_corrupted.to_error_code();
     }
-    let bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>() as size_t)
+    let bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>())
         as *mut ZSTD_compressedBlockState_t;
     let wksp = malloc(HUF_WORKSPACE_SIZE as size_t) as *mut u32;
     if bs.is_null() || wksp.is_null() {
@@ -1003,18 +1003,17 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let suffix0 = malloc(
         bufferSize
             .wrapping_add(2)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t),
+            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>()),
     ) as *mut core::ffi::c_uint;
     let suffix = suffix0.offset(1);
-    let reverseSuffix =
-        malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>() as size_t)) as *mut u32;
+    let reverseSuffix = malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let doneMarks = malloc(
         bufferSize
             .wrapping_add(16)
-            .wrapping_mul(::core::mem::size_of::<u8>() as size_t),
+            .wrapping_mul(::core::mem::size_of::<u8>()),
     ) as *mut u8;
-    let filePos = malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
-        as *mut u32;
+    let filePos =
+        malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let mut result = 0;
     let mut displayClock = 0;
     let refreshRate = CLOCKS_PER_SEC as __clock_t * 3 / 10;
@@ -1482,7 +1481,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 255,
                 huffLog,
                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 1216]>() as size_t,
+                ::core::mem::size_of::<[u32; 1216]>(),
             );
             if ERR_isError(maxNbBits) != 0 {
                 eSize = maxNbBits;
@@ -1510,7 +1509,7 @@ unsafe fn ZDICT_analyzeEntropy(
                         255,
                         huffLog,
                         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                        ::core::mem::size_of::<[u32; 1216]>() as size_t,
+                        ::core::mem::size_of::<[u32; 1216]>(),
                     );
                 }
                 huffLog = maxNbBits as u32;
@@ -1613,7 +1612,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                 255,
                                 huffLog,
                                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                                ::core::mem::size_of::<[u32; 1216]>() as size_t,
+                                ::core::mem::size_of::<[u32; 1216]>(),
                             );
                             if ERR_isError(hhSize) != 0 {
                                 eSize = hhSize;
@@ -1956,9 +1955,8 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         } else {
             (maxDictSize / 16) as u32
         };
-    let dictList =
-        malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>() as size_t))
-            as *mut dictItem;
+    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>()))
+        as *mut dictItem;
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {

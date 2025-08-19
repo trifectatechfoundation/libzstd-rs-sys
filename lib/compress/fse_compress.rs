@@ -54,7 +54,7 @@ unsafe fn BIT_initCStream(
     (*bitC).endPtr = ((*bitC).startPtr)
         .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() as size_t {
+    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() {
         return Error::dstSize_tooSmall.to_error_code();
     }
     0
@@ -836,8 +836,8 @@ pub unsafe fn FSE_compress_usingCTable(
         >= srcSize
             .wrapping_add(srcSize >> 7)
             .wrapping_add(4)
-            .wrapping_add(::core::mem::size_of::<size_t>() as size_t))
-        as core::ffi::c_int as core::ffi::c_uint;
+            .wrapping_add(::core::mem::size_of::<size_t>())) as core::ffi::c_int
+        as core::ffi::c_uint;
     if fast != 0 {
         FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 1)
     } else {
@@ -848,6 +848,6 @@ pub fn FSE_compressBound(size: size_t) -> size_t {
     (FSE_NCOUNTBOUND as size_t).wrapping_add(
         size.wrapping_add(size >> 7)
             .wrapping_add(4)
-            .wrapping_add(::core::mem::size_of::<size_t>() as size_t),
+            .wrapping_add(::core::mem::size_of::<size_t>()),
     )
 }

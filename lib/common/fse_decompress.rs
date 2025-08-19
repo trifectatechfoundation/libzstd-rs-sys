@@ -335,11 +335,11 @@ fn FSE_decompress_wksp_body(
     workspace: &mut Workspace,
     bmi2: core::ffi::c_int,
 ) -> Result<size_t, Error> {
-    let mut wkspSize = size_of::<Workspace>() as size_t;
+    let mut wkspSize = size_of::<Workspace>();
 
     let mut tableLog: core::ffi::c_uint = 0;
     let mut maxSymbolValue = FSE_MAX_SYMBOL_VALUE as core::ffi::c_uint;
-    if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() as size_t {
+    if wkspSize < ::core::mem::size_of::<FSE_DecompressWksp>() {
         return Err(Error::GENERIC);
     }
     let NCountLength = FSE_readNCount_bmi2(
