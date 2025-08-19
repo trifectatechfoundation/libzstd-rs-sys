@@ -1249,13 +1249,8 @@ pub unsafe extern "C" fn ZSTD_getDecompressedSize(
     }
 }
 
-unsafe fn ZSTD_decodeFrameHeader(
-    dctx: *mut ZSTD_DCtx,
-    src: *const core::ffi::c_void,
-    headerSize: size_t,
-) -> size_t {
-    let result =
-        ZSTD_getFrameHeader_advanced(&mut (*dctx).fParams, src, headerSize, (*dctx).format as _);
+unsafe fn ZSTD_decodeFrameHeader(dctx: *mut ZSTD_DCtx, src: &[u8]) -> size_t {
+    let result = get_frame_header_advanced(&mut (*dctx).fParams, src, (*dctx).format);
     if ERR_isError(result) != 0 {
         return result;
     }
@@ -1269,15 +1264,11 @@ unsafe fn ZSTD_decodeFrameHeader(
         return Error::dictionary_wrong.to_error_code();
     }
     (*dctx).validateChecksum =
-        (if (*dctx).fParams.checksumFlag != 0 && (*dctx).forceIgnoreChecksum as u64 == 0 {
-            1
-        } else {
-            0
-        }) as u32;
+        ((*dctx).fParams.checksumFlag != 0 && (*dctx).forceIgnoreChecksum as u64 == 0) as u32;
     if (*dctx).validateChecksum != 0 {
         ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
     }
-    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(headerSize) as u64;
+    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(src.len()) as u64;
     0
 }
 
@@ -1591,7 +1582,7 @@ unsafe fn ZSTD_decompressFrame(
     if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
-    let err_code = ZSTD_decodeFrameHeader(dctx, ip.as_ptr().cast(), frameHeaderSize);
+    let err_code = ZSTD_decodeFrameHeader(dctx, &ip[..frameHeaderSize]);
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
@@ -1936,11 +1927,8 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 src,
                 srcSize as libc::size_t,
             );
-            let err_code = ZSTD_decodeFrameHeader(
-                dctx,
-                ((*dctx).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                (*dctx).headerSize,
-            );
+            let err_code =
+                ZSTD_decodeFrameHeader(dctx, &(&(*dctx).headerBuffer)[..(*dctx).headerSize]);
             if ERR_isError(err_code) != 0 {
                 return err_code;
             }
@@ -3289,8 +3277,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         } else {
                             let err_code_3 = ZSTD_decodeFrameHeader(
                                 zds,
-                                ((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                                (*zds).lhSize,
+                                &((&(*zds).headerBuffer)[..(*zds).lhSize]),
                             );
                             if ERR_isError(err_code_3) != 0 {
                                 return err_code_3;
