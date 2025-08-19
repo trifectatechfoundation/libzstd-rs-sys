@@ -10,9 +10,8 @@ use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
-    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_copy4, ZSTD_copy8, ZSTD_wildcopy,
-    LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN,
-    ZSTD_REP_NUM,
+    MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_wildcopy, LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG,
+    OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
 };
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
@@ -1029,6 +1028,11 @@ fn ZSTD_decodeSeqHeaders(
     ip
 }
 
+///  Copies 8 bytes from ip to op and updates op and ip where ip <= op.
+///  If the offset is < 8 then the offset is spread to at least 8 bytes.
+///
+///  Precondition: *ip <= *op
+///  Postcondition: *op - *ip >= 8
 #[inline(always)]
 unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t) {
     if offset < 8 {
@@ -1039,18 +1043,12 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t
 
         static dec32table: [u8; 8] = [0, 1, 2, 1, 4, 4, 4, 4]; // added
         *ip = (*ip).add(usize::from(dec32table[offset]));
-        ZSTD_copy4(
-            (*op).add(4) as *mut core::ffi::c_void,
-            *ip as *const core::ffi::c_void,
-        );
+        core::ptr::copy(*ip, (*op).add(4), 4);
 
         static dec64table: [u8; 8] = [8, 8, 8, 7, 8, 9, 10, 11]; // subtracted
         *ip = (*ip).sub(usize::from(dec64table[offset]));
     } else {
-        ZSTD_copy8(
-            *op as *mut core::ffi::c_void,
-            *ip as *const core::ffi::c_void,
-        );
+        core::ptr::copy(*ip, *op, 8);
     }
 
     *ip = (*ip).add(8);

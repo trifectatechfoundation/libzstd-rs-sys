@@ -68,15 +68,11 @@ pub(crate) static OF_defaultNorm: [i16; 29] = [
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
 pub(crate) static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
 
-pub(crate) unsafe fn ZSTD_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    core::ptr::copy(src, dst, 4)
-}
-
-pub(crate) unsafe fn ZSTD_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    core::ptr::copy(src, dst, 8)
-}
-
 pub(crate) unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
+    // We use `copy` instead of `copy_nonoverlapping` here because the literal buffer can now
+    // be located within the dst buffer. In circumstances where the op "catches up" to where the
+    // literal buffer is, there can be partial overlaps in this call on the final
+    // copy if the literal is being shifted by less than 16 bytes.
     core::ptr::copy(src, dst, 16)
 }
 
@@ -89,6 +85,12 @@ pub(crate) enum Overlap {
     OverlapSrcBeforeDst,
 }
 
+/// Custom version of ZSTD_memcpy(), can over read/write up to WILDCOPY_OVERLENGTH bytes (if length==0)
+///
+/// The `ovtype` controls the overlap detection
+/// - ZSTD_no_overlap: The source and destination are guaranteed to be at least WILDCOPY_VECLEN bytes apart.
+/// - ZSTD_overlap_src_before_dst: The src and dst may overlap, but they MUST be at least 8 bytes apart.
+///   The src buffer must be before the dst buffer.
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_wildcopy(
     dst: *mut core::ffi::c_void,
@@ -96,38 +98,59 @@ pub(crate) unsafe fn ZSTD_wildcopy(
     length: size_t,
     ovtype: Overlap,
 ) {
-    let diff = (dst as *mut u8).offset_from(src as *const u8);
+    let diff = dst.byte_offset_from(src);
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
     if ovtype == Overlap::OverlapSrcBeforeDst && diff < WILDCOPY_VECLEN as isize {
+        debug_assert!(ip <= op.wrapping_sub(8).cast_const());
+
+        // Handle short offset copies.
         loop {
-            ZSTD_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(8);
-            ip = ip.offset(8);
+            // SAFETY: ip and op are guaranteed to be at least 8 bytes apart.
+            core::ptr::copy_nonoverlapping(ip, op, 8);
+
+            op = op.add(8);
+            ip = ip.add(8);
+
             if op >= oend {
                 break;
             }
         }
     } else {
-        ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
+        assert!(diff.abs() >= WILDCOPY_VECLEN as isize);
+
+        // NOTE: ip and op are at least 8 apart, but may be less than 16 apart, so we cannot use
+        // `copy_nonoverlapping` when copying more than 8 bytes.
+
+        // Separate out the first 16-byte copy call because the copy length is
+        // almost certain to be short, so the branches have different
+        // probabilities. Since it is almost certain to be short, only do
+        // one 16-byte copy in the first call. Then, do two calls per loop since
+        // at that point it is more likely to have a high trip count.
+        core::ptr::copy(ip, op, 16);
+
         if 16 >= length {
             return;
         }
-        op = op.offset(16);
-        ip = ip.offset(16);
+
+        op = op.add(16);
+        ip = ip.add(16);
+
         loop {
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
-            ZSTD_copy16(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
-            op = op.offset(16);
-            ip = ip.offset(16);
+            core::ptr::copy(ip, op, 16);
+            op = op.add(16);
+            ip = ip.add(16);
+
+            core::ptr::copy(ip, op, 16);
+            op = op.add(16);
+            ip = ip.add(16);
+
             if op >= oend {
                 break;
             }
         }
-    };
+    }
 }
 
 #[inline]
@@ -137,14 +160,8 @@ pub(crate) unsafe fn ZSTD_limitCopy(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let length = if dstCapacity < srcSize {
-        dstCapacity
-    } else {
-        srcSize
-    };
-    if length > 0 {
-        libc::memcpy(dst, src, length as libc::size_t);
-    }
+    let length = Ord::min(dstCapacity, srcSize);
+    core::ptr::copy_nonoverlapping(src, dst, length);
     length
 }
 
