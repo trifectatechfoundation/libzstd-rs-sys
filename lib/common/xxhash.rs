@@ -1,11 +1,5 @@
 use core::ffi::c_void;
 
-#[repr(u32)]
-pub enum XXH_errorcode {
-    XXH_ERROR = 1,
-    XXH_OK = 0,
-}
-
 enum Align {
     Aligned,
     Unaligned,
@@ -13,13 +7,13 @@ enum Align {
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct XXH64_state_t {
-    pub total_len: u64,
-    pub v: [u64; 4],
-    pub mem64: [u64; 4],
-    pub memsize: u32,
-    pub reserved32: u32,
-    pub reserved64: u64,
+pub(crate) struct XXH64_state_t {
+    total_len: u64,
+    v: [u64; 4],
+    mem64: [u64; 4],
+    memsize: u32,
+    reserved32: u32,
+    reserved64: u64,
 }
 
 impl XXH64_state_t {
@@ -137,36 +131,34 @@ pub unsafe fn ZSTD_XXH64(input: *const core::ffi::c_void, len: usize, seed: u64)
     XXH64_endian_align(slice, seed, Align::Unaligned)
 }
 
-pub fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) -> XXH_errorcode {
+pub(crate) fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) {
     *state = XXH64_state_t::default();
 
     state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
     state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
     state.v[2] = seed.wrapping_add(0);
     state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
-    XXH_errorcode::XXH_OK
 }
 
-pub unsafe fn ZSTD_XXH64_update(
+pub(crate) unsafe fn ZSTD_XXH64_update(
     state: &mut XXH64_state_t,
     input: *const c_void,
     len: usize,
-) -> XXH_errorcode {
+) {
     if input.is_null() {
         assert_eq!(len, 0);
-        XXH_errorcode::XXH_OK
     } else {
-        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input as *const u8, len))
+        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input as *const u8, len));
     }
 }
 
-fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_errorcode {
+fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
         state.mem64_as_bytes_mut()[..slice.len()].copy_from_slice(slice);
         state.memsize = state.memsize.wrapping_add(slice.len() as u32);
-        return XXH_errorcode::XXH_OK;
+        return;
     }
 
     if state.memsize != 0 {
@@ -200,9 +192,8 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) -> XXH_er
         state.mem64_as_bytes_mut()[..remainder.len()].copy_from_slice(remainder);
         state.memsize = remainder.len() as u32;
     }
-    XXH_errorcode::XXH_OK
 }
-pub fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
+pub(crate) fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
     let mut h64;
     if state.total_len >= 32 {
         h64 = (state.v[0].rotate_left(1))

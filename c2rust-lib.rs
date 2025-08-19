@@ -15,7 +15,7 @@ pub mod lib {
         pub mod fse_decompress;
         pub mod mem;
         pub mod pool;
-        pub mod xxhash;
+        pub(crate) mod xxhash;
         pub mod zstd_common;
         pub mod zstd_internal;
         pub mod zstd_trace;
@@ -72,6 +72,11 @@ pub use crate::lib::zdict::{ZDICT_getErrorName, ZDICT_isError, ZDICT_trainFromBu
 pub use crate::lib::compress::zstd_compress::{
     ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_freeCCtx,
 };
+
+pub mod internal {
+    // Needed by benchzstd
+    pub use crate::lib::common::xxhash::ZSTD_XXH64;
+}
 
 #[cfg(all(feature = "export-symbols", feature = "semver-prefix"))]
 macro_rules! prefix {
