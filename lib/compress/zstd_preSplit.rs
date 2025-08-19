@@ -5,13 +5,11 @@ use libc::size_t;
 use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Fingerprint {
     pub events: [core::ffi::c_uint; 1024],
     pub nbEvents: size_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FPStats {
     pub pastEvents: Fingerprint,

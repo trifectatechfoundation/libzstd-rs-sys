@@ -34,18 +34,6 @@ pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
 pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
 pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
 pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct XXH64_state_s {
-    pub total_len: XXH64_hash_t,
-    pub v: [XXH64_hash_t; 4],
-    pub mem64: [XXH64_hash_t; 4],
-    pub memsize: XXH32_hash_t,
-    pub reserved32: XXH32_hash_t,
-    pub reserved64: XXH64_hash_t,
-}
-type XXH64_hash_t = u64;
-type XXH32_hash_t = u32;
 
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
@@ -75,7 +63,6 @@ enum Offset {
     Long = 1,
 }
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seqState_t {
     pub DStream: BIT_DStream_t,
@@ -84,7 +71,6 @@ pub struct seqState_t {
     pub stateML: ZSTD_fseState,
     pub prevOffset: [size_t; 3],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_fseState {
     pub state: size_t,

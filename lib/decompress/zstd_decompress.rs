@@ -60,7 +60,6 @@ use crate::lib::decompress::zstd_ddict::{
 };
 
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
     pub f1c: u32,
@@ -77,14 +76,12 @@ pub const XXH_OK: XXH_errorcode = 0;
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameSizeInfo {
     pub nbBlocks: size_t,
     pub compressedSize: size_t,
     pub decompressedBound: core::ffi::c_ulonglong,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_bounds {
     pub error: size_t,

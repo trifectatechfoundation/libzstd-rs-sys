@@ -2,7 +2,6 @@ use core::arch::asm;
 use core::ptr;
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_CCtx_s {
     pub stage: ZSTD_compressionStage_e,
@@ -144,7 +143,6 @@ pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 pub type ZSTD_CDict = ZSTD_CDict_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_CDict_s {
     pub dictContent: *const core::ffi::c_void,
@@ -201,7 +199,6 @@ pub const HUF_repeat_valid: HUF_repeat = 2;
 pub const HUF_repeat_check: HUF_repeat = 1;
 pub const HUF_repeat_none: HUF_repeat = 0;
 pub type HUF_CElt = size_t;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_MatchState_t {
     pub window: ZSTD_window_t,
@@ -241,7 +238,6 @@ pub struct rawSeq {
     pub litLength: u32,
     pub matchLength: u32,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
@@ -329,14 +325,12 @@ pub const zcss_init: ZSTD_cStreamStage = 0;
 pub type ZSTD_buffered_policy_e = core::ffi::c_uint;
 pub const ZSTDb_buffered: ZSTD_buffered_policy_e = 1;
 pub const ZSTDb_not_buffered: ZSTD_buffered_policy_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_blockState_t {
     pub prevCBlock: *mut ZSTD_compressedBlockState_t,
     pub nextCBlock: *mut ZSTD_compressedBlockState_t,
     pub matchState: ZSTD_MatchState_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SeqCollector {
     pub collectSequences: core::ffi::c_int,
@@ -451,7 +445,6 @@ pub struct ZSTD_SequencePosition {
     pub posInSrc: size_t,
 }
 pub type S64 = i64;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct seqStoreSplits {
     pub splitLocations: *mut u32,

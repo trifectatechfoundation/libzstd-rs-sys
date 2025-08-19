@@ -63,7 +63,6 @@ pub struct HUF_CompressWeightsWksp {
     pub count: [core::ffi::c_uint; 13],
     pub norm: [i16; 13],
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_CStream_t {
     pub bitContainer: [size_t; 2],

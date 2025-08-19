@@ -9,7 +9,6 @@ use crate::lib::common::mem::{
 use crate::lib::zstd::*;
 
 pub type ZSTDv05_DCtx = ZSTDv05_DCtx_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDv05_DCtx_s {
     pub LLTable: [FSEv05_DTable; 1025],
@@ -62,7 +61,6 @@ pub const ZSTDv05_lazy: ZSTDv05_strategy = 2;
 pub const ZSTDv05_greedy: ZSTDv05_strategy = 1;
 pub const ZSTDv05_fast: ZSTDv05_strategy = 0;
 pub type FSEv05_DTable = core::ffi::c_uint;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct blockProperties_t {
     pub blockType: blockType_t,
@@ -152,7 +150,6 @@ pub struct algo_time_t {
     pub decode256Time: u32,
 }
 pub type ERR_enum = ZSTD_ErrorCode;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZBUFFv05_DCtx_s {
     pub zc: *mut ZSTDv05_DCtx,

@@ -4,7 +4,6 @@ use crate::lib::common::bitstream::BitContainerType;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
 
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BIT_CStream_t {
     pub bitContainer: BitContainerType,
@@ -14,7 +13,6 @@ pub struct BIT_CStream_t {
     pub endPtr: *mut core::ffi::c_char,
 }
 pub type FSE_CTable = core::ffi::c_uint;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,

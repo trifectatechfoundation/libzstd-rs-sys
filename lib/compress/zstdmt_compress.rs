@@ -28,7 +28,6 @@ use crate::lib::compress::zstd_ldm::{
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
 use crate::lib::zstd::*;
-#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTDMT_CCtx {
     factory: *mut POOL_ctx,
@@ -57,14 +56,12 @@ pub struct ZSTDMT_CCtx {
     cdict: *const ZSTD_CDict,
     providedFactory: bool,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct RSyncState_t {
     hash: u64,
     hitMask: u64,
     primePower: u64,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct SerialState {
     mutex: pthread_mutex_t,
@@ -87,7 +84,6 @@ struct RoundBuff_t {
     capacity: size_t,
     pos: size_t,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct InBuff_t {
     prefix: Range,
@@ -109,7 +105,6 @@ struct Range {
 }
 type ZSTDMT_seqPool = ZSTDMT_bufferPool;
 type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct ZSTDMT_bufferPool_s {
     poolMutex: pthread_mutex_t,
@@ -119,7 +114,6 @@ struct ZSTDMT_bufferPool_s {
     cMem: ZSTD_customMem,
     buffers: *mut Buffer,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct ZSTDMT_CCtxPool {
     poolMutex: pthread_mutex_t,
@@ -128,7 +122,6 @@ struct ZSTDMT_CCtxPool {
     cMem: ZSTD_customMem,
     cctxs: *mut *mut ZSTD_CCtx,
 }
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct ZSTDMT_jobDescription {
     consumed: size_t,
@@ -169,7 +162,6 @@ const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
-#[derive(Copy, Clone)]
 #[repr(C)]
 struct SyncPoint {
     toLoad: size_t,
