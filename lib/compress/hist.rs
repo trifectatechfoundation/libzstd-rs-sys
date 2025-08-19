@@ -5,9 +5,8 @@ use core::ptr;
 
 use libc::size_t;
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_read32;
-use crate::lib::zstd::*;
 pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
 pub const HIST_WKSP_SIZE: size_t = (HIST_WKSP_SIZE_U32 as size_t)
     .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as size_t);
@@ -173,7 +172,7 @@ unsafe fn HIST_count_parallel_wksp(
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }
     if check as core::ffi::c_uint != 0 && maxSymbolValue > *maxSymbolValuePtr {
-        return -(ZSTD_error_maxSymbolValue_tooSmall as core::ffi::c_int) as size_t;
+        return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
     libc::memmove(
@@ -195,10 +194,10 @@ pub unsafe fn HIST_countFast_wksp(
         return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
     }
     if workSpace as size_t & 3 != 0 {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if workSpaceSize < HIST_WKSP_SIZE {
-        return -(ZSTD_error_workSpace_tooSmall as core::ffi::c_int) as size_t;
+        return Error::workSpace_tooSmall.to_error_code();
     }
     HIST_count_parallel_wksp(
         count,
@@ -218,10 +217,10 @@ pub unsafe fn HIST_count_wksp(
     workSpaceSize: size_t,
 ) -> size_t {
     if workSpace as size_t & 3 != 0 {
-        return -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+        return Error::GENERIC.to_error_code();
     }
     if workSpaceSize < HIST_WKSP_SIZE {
-        return -(ZSTD_error_workSpace_tooSmall as core::ffi::c_int) as size_t;
+        return Error::workSpace_tooSmall.to_error_code();
     }
     if *maxSymbolValuePtr < 255 {
         return HIST_count_parallel_wksp(

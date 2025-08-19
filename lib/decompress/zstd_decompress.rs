@@ -338,7 +338,7 @@ unsafe fn ZSTD_decompressLegacy(
             ZSTDv07_freeDCtx(zd_1);
             result_1
         }
-        _ => -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t,
+        _ => Error::prefix_unknown.to_error_code(),
     }
 }
 
@@ -387,14 +387,13 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
             );
         }
         _ => {
-            frameSizeInfo.compressedSize =
-                -(ZSTD_error_prefix_unknown as core::ffi::c_int) as size_t;
+            frameSizeInfo.compressedSize = Error::prefix_unknown.to_error_code();
             frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
         }
     }
 
     if ERR_isError(frameSizeInfo.compressedSize) == 0 && frameSizeInfo.compressedSize > src.len() {
-        frameSizeInfo.compressedSize = -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        frameSizeInfo.compressedSize = Error::srcSize_wrong.to_error_code();
         frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
     }
 
@@ -425,7 +424,7 @@ unsafe fn ZSTD_freeLegacyStreamContext(
         5 => ZBUFFv05_freeDCtx(legacyContext as *mut ZBUFFv05_DCtx),
         6 => ZBUFFv06_freeDCtx(legacyContext as *mut ZBUFFv06_DCtx),
         7 => ZBUFFv07_freeDCtx(legacyContext as *mut ZBUFFv07_DCtx),
-        1 | 2 | 3 | _ => -(ZSTD_error_version_unsupported as core::ffi::c_int) as size_t,
+        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
     }
 }
 #[inline]
@@ -553,7 +552,7 @@ unsafe fn ZSTD_decompressLegacyStream(
             (*input).pos = ((*input).pos).wrapping_add(readSize_1);
             hintSize_1
         }
-        1 | 2 | 3 | _ => -(ZSTD_error_version_unsupported as core::ffi::c_int) as size_t,
+        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
     }
 }
 pub const DDICT_HASHSET_MAX_LOAD_FACTOR_COUNT_MULT: core::ffi::c_int = 4;
@@ -1331,9 +1330,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
             return ZSTD_errorFrameSizeInfo(ret);
         }
         if ret > 0 {
-            return ZSTD_errorFrameSizeInfo(
-                -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
-            );
+            return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
         }
         ip += zfh.headerSize as usize;
         remainingSize = remainingSize.wrapping_sub(zfh.headerSize as size_t);
@@ -1354,9 +1351,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
                 return ZSTD_errorFrameSizeInfo(cBlockSize);
             }
             if ZSTD_blockHeaderSize.wrapping_add(cBlockSize) > remainingSize {
-                return ZSTD_errorFrameSizeInfo(
-                    -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
-                );
+                return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
             }
             ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize) as usize;
             remainingSize =
@@ -1368,9 +1363,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         }
         if zfh.checksumFlag != 0 {
             if remainingSize < 4 {
-                return ZSTD_errorFrameSizeInfo(
-                    -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t,
-                );
+                return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
             }
             ip += 4;
         }
@@ -2667,7 +2660,7 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
         }
         _ => {}
     }
-    bounds.error = -(ZSTD_error_parameter_unsupported as core::ffi::c_int) as size_t;
+    bounds.error = Error::parameter_unsupported.to_error_code();
     bounds
 }
 unsafe fn ZSTD_dParam_withinBounds(
@@ -2722,7 +2715,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
             *value = (*dctx).maxBlockSizeParam;
             0
         }
-        _ => -(ZSTD_error_parameter_unsupported as core::ffi::c_int) as size_t,
+        _ => Error::parameter_unsupported.to_error_code(),
     }
 }
 
@@ -2797,7 +2790,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
         }
         _ => {}
     }
-    -(ZSTD_error_parameter_unsupported as core::ffi::c_int) as size_t
+    Error::parameter_unsupported.to_error_code()
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_reset))]
 pub unsafe extern "C" fn ZSTD_DCtx_reset(
@@ -2960,7 +2953,7 @@ unsafe fn ZSTD_checkOutBuffer(zds: *const ZSTD_DStream, output: *const ZSTD_outB
     if expect.dst == (*output).dst && expect.pos == (*output).pos && expect.size == (*output).size {
         return 0;
     }
-    -(ZSTD_error_dstBuffer_wrong as core::ffi::c_int) as size_t
+    Error::dstBuffer_wrong.to_error_code()
 }
 unsafe fn ZSTD_decompressContinueStream(
     zds: *mut ZSTD_DStream,

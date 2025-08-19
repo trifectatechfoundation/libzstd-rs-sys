@@ -1,6 +1,6 @@
 use libc::size_t;
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::zstd_internal::{
@@ -24,7 +24,6 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::*;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -322,7 +321,7 @@ unsafe fn ZSTD_noCompressBlock(
         .wrapping_add((bt_raw as core::ffi::c_int as u32) << 1)
         .wrapping_add((srcSize << 3) as u32);
     if srcSize.wrapping_add(ZSTD_blockHeaderSize) > dstCapacity {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     MEM_writeLE24(dst, cBlockHeader24);
     libc::memcpy(
@@ -544,7 +543,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     let mut seqHead = core::ptr::null_mut::<u8>();
     *entropyWritten = 0;
     if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if nbSeq < 128 {
         let fresh0 = op;
@@ -767,7 +766,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
         cSymbolTypeSizeEstimateInBits = if max <= defaultMax {
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max)
         } else {
-            -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t
+            Error::GENERIC.to_error_code()
         };
     } else if type_0 as core::ffi::c_uint == set_rle as core::ffi::c_int as core::ffi::c_uint {
         cSymbolTypeSizeEstimateInBits = 0;

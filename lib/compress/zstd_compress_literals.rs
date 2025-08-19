@@ -1,6 +1,6 @@
 use libc::size_t;
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::LitHufLog;
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
@@ -61,7 +61,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
     let flSize =
         (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
     if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     match flSize {
         1 => {
@@ -183,7 +183,7 @@ pub unsafe fn ZSTD_compressLiterals(
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
     if dstCapacity < lhSize.wrapping_add(1) {
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     let mut repeat = (*prevHuf).repeatMode;
     let flags =

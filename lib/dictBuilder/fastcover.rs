@@ -5,7 +5,7 @@ use libc::{
     PTHREAD_MUTEX_INITIALIZER,
 };
 
-use crate::lib::common::error_private::ERR_isError;
+use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::dictBuilder::cover::{
@@ -15,7 +15,6 @@ use crate::lib::dictBuilder::cover::{
     COVER_warnOnSmallCorpus, ZDICT_cover_params_t,
 };
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
-use crate::lib::zstd::*;
 
 extern "C" {
     static mut stderr: *mut FILE;
@@ -391,7 +390,7 @@ unsafe fn FASTCOVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
@@ -403,7 +402,7 @@ unsafe fn FASTCOVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
@@ -415,7 +414,7 @@ unsafe fn FASTCOVER_ctx_init(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<FASTCOVER_ctx_t>());
     if displayLevel >= 2 {
@@ -464,7 +463,7 @@ unsafe fn FASTCOVER_ctx_init(
             fflush(stderr);
         }
         FASTCOVER_ctx_destroy(ctx);
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     let mut i: u32 = 0;
     *((*ctx).offsets).offset(0) = 0;
@@ -485,7 +484,7 @@ unsafe fn FASTCOVER_ctx_init(
             fflush(stderr);
         }
         FASTCOVER_ctx_destroy(ctx);
-        return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+        return Error::memory_allocation.to_error_code();
     }
     if displayLevel >= 2 {
         fprintf(
@@ -595,11 +594,10 @@ unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let ctx = (*data).ctx;
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
-    let totalCompressedSize = -(ZSTD_error_GENERIC as core::ffi::c_int) as size_t;
+    let totalCompressedSize = Error::GENERIC.to_error_code();
     let segmentFreqs = calloc((1) << (*ctx).f, ::core::mem::size_of::<u16>() as size_t) as *mut u16;
     let dict = malloc(dictBufferCapacity) as *mut u8;
-    let mut selection =
-        COVER_dictSelectionError(-(ZSTD_error_GENERIC as core::ffi::c_int) as size_t);
+    let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let freqs =
         malloc(((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>() as size_t))
             as *mut u32;
@@ -762,7 +760,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
@@ -773,7 +771,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
@@ -785,7 +783,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     accelParams = *FASTCOVER_defaultAccelParameters
         .as_ptr()
@@ -970,7 +968,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if accel == 0 || accel > FASTCOVER_MAX_ACCEL as core::ffi::c_uint {
         if displayLevel >= 1 {
@@ -980,7 +978,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if kMinK < kMaxD || kMaxK < kMinK {
         if displayLevel >= 1 {
@@ -990,7 +988,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_parameter_outOfBound as core::ffi::c_int) as size_t;
+        return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
@@ -1001,7 +999,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_srcSize_wrong as core::ffi::c_int) as size_t;
+        return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
@@ -1013,12 +1011,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             );
             fflush(stderr);
         }
-        return -(ZSTD_error_dstSize_tooSmall as core::ffi::c_int) as size_t;
+        return Error::dstSize_tooSmall.to_error_code();
     }
     if nbThreads > 1 {
         pool = POOL_create(nbThreads as size_t, 1);
         if pool.is_null() {
-            return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+            return Error::memory_allocation.to_error_code();
         }
     }
     COVER_best_init(&mut best);
@@ -1122,7 +1120,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 COVER_best_destroy(&mut best);
                 FASTCOVER_ctx_destroy(&mut ctx);
                 POOL_free(pool);
-                return -(ZSTD_error_memory_allocation as core::ffi::c_int) as size_t;
+                return Error::memory_allocation.to_error_code();
             }
             (*data).ctx = &mut ctx;
             (*data).best = &mut best;
