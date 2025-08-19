@@ -230,7 +230,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
-        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()) as libc::size_t,
+        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()),
     );
     ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
     (*ctx).threads = threadPool;

@@ -46,7 +46,7 @@ fn FSE_readNCount_body(
 
         let countSize = FSE_readNCount_slice(normalizedCounter, maxSVPtr, tableLogPtr, &buffer)?;
 
-        if countSize > hbSize as size_t {
+        if countSize > hbSize {
             return Err(Error::corruption_detected);
         }
         return Ok(countSize);
@@ -176,7 +176,7 @@ fn FSE_readNCount_body(
     *maxSVPtr = charnum.wrapping_sub(1);
     ip += ((bitCount + 7) >> 3) as usize;
 
-    Ok(ip as size_t)
+    Ok(ip)
 }
 
 fn FSE_readNCount_body_default(
@@ -300,7 +300,7 @@ fn HUF_readStats_body(
     workspace: &mut Workspace,
     bmi2: bool,
 ) -> Result<size_t, Error> {
-    let srcSize = ip.len() as size_t;
+    let srcSize = ip.len();
 
     let mut weightTotal: u32 = 0;
     let mut iSize: size_t = 0;
@@ -308,7 +308,7 @@ fn HUF_readStats_body(
     if srcSize == 0 {
         return Err(Error::srcSize_wrong);
     }
-    iSize = ip[0] as size_t;
+    iSize = ip[0] as usize;
     if iSize >= 128 {
         // Special header case.
         oSize = iSize.wrapping_sub(127);
@@ -517,7 +517,7 @@ pub fn HUF_readStats_wksp(
 
     match ret {
         Ok(v) => v,
-        Err(e) => -(e as core::ffi::c_int) as size_t,
+        Err(e) => e.to_error_code(),
     }
 }
 
