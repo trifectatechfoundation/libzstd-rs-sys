@@ -1033,7 +1033,7 @@ pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     }) as size_t;
     let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
-        ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>() as size_t),
+        ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>()),
     ));
     if params.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint

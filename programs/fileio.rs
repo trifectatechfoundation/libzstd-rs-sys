@@ -484,7 +484,7 @@ pub const FIO_OVERLAP_LOG_NOTSET: core::ffi::c_int = 9999;
 pub const FIO_LDM_PARAM_NOTSET: core::ffi::c_int = 9999;
 #[no_mangle]
 pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
-    let ret = malloc(::core::mem::size_of::<FIO_prefs_t>() as size_t) as *mut FIO_prefs_t;
+    let ret = malloc(::core::mem::size_of::<FIO_prefs_t>()) as *mut FIO_prefs_t;
     if ret.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -547,7 +547,7 @@ pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
 }
 #[no_mangle]
 pub unsafe fn FIO_createContext() -> *mut FIO_ctx_t {
-    let ret = malloc(::core::mem::size_of::<FIO_ctx_t>() as size_t) as *mut FIO_ctx_t;
+    let ret = malloc(::core::mem::size_of::<FIO_ctx_t>()) as *mut FIO_ctx_t;
     if ret.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -1485,10 +1485,9 @@ pub unsafe fn FIO_checkFilenameCollisions(
     let mut prevElem = core::ptr::null::<core::ffi::c_char>();
     let mut filename = core::ptr::null::<core::ffi::c_char>();
     let mut u: core::ffi::c_uint = 0;
-    filenameTableSorted = malloc(
-        (::core::mem::size_of::<*mut core::ffi::c_char>() as size_t)
-            .wrapping_mul(nbFiles as size_t),
-    ) as *mut *const core::ffi::c_char;
+    filenameTableSorted =
+        malloc((::core::mem::size_of::<*mut core::ffi::c_char>()).wrapping_mul(nbFiles as size_t))
+            as *mut *const core::ffi::c_char;
     if filenameTableSorted.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -1514,7 +1513,7 @@ pub unsafe fn FIO_checkFilenameCollisions(
     qsort(
         filenameTableSorted as *mut core::ffi::c_void,
         nbFiles as size_t,
-        ::core::mem::size_of::<*mut core::ffi::c_char>() as size_t,
+        ::core::mem::size_of::<*mut core::ffi::c_char>(),
         Some(
             UTIL_compareStr
                 as unsafe extern "C" fn(
@@ -7021,7 +7020,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
         let numBytesRead = fread(
             headerBuffer.as_mut_ptr() as *mut core::ffi::c_void,
             1,
-            ::core::mem::size_of::<[u8; 18]>() as size_t,
+            ::core::mem::size_of::<[u8; 18]>(),
             srcFile,
         );
         if numBytesRead

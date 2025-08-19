@@ -598,7 +598,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
 ) -> size_t {
     let newTableSize = (*hashSet).ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let newTable = ZSTD_customCalloc(
-        (::core::mem::size_of::<*mut ZSTD_DDict>() as size_t).wrapping_mul(newTableSize),
+        (::core::mem::size_of::<*mut ZSTD_DDict>()).wrapping_mul(newTableSize),
         customMem,
     ) as *mut *const ZSTD_DDict;
     let oldTable = (*hashSet).ddictPtrTable;
@@ -640,16 +640,14 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
     *((*hashSet).ddictPtrTable).add(idx)
 }
 unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
-    let ret = ZSTD_customMalloc(
-        ::core::mem::size_of::<ZSTD_DDictHashSet>() as size_t,
-        customMem,
-    ) as *mut ZSTD_DDictHashSet;
+    let ret = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DDictHashSet>(), customMem)
+        as *mut ZSTD_DDictHashSet;
     if ret.is_null() {
         return core::ptr::null_mut();
     }
     (*ret).ddictPtrTable = ZSTD_customCalloc(
         (DDICT_HASHSET_TABLE_BASE_SIZE as size_t)
-            .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>() as size_t),
+            .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
         customMem,
     ) as *mut *const ZSTD_DDict;
     if ((*ret).ddictPtrTable).is_null() {
@@ -697,14 +695,14 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DCtx>() as size_t)
+    (::core::mem::size_of::<ZSTD_DCtx>())
         .wrapping_add(ZSTD_sizeof_DDict((*dctx).ddictLocal))
         .wrapping_add((*dctx).inBuffSize)
         .wrapping_add((*dctx).outBuffSize)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDCtxSize))]
 pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
-    ::core::mem::size_of::<ZSTD_DCtx>() as size_t
+    ::core::mem::size_of::<ZSTD_DCtx>()
 }
 
 const fn ZSTD_startingInputLength(format: Format) -> size_t {
@@ -754,7 +752,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     if workspace as size_t & 7 != 0 {
         return core::ptr::null_mut();
     }
-    if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() as size_t {
+    if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() {
         return core::ptr::null_mut();
     }
     ZSTD_initDCtx_internal(dctx);
@@ -768,8 +766,7 @@ unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx 
         return core::ptr::null_mut();
     }
 
-    let dctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>() as size_t, customMem)
-        as *mut ZSTD_DCtx;
+    let dctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>(), customMem) as *mut ZSTD_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }

@@ -319,13 +319,11 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DDict>() as size_t).wrapping_add(
-        if !((*ddict).dictBuffer).is_null() {
-            (*ddict).dictSize
-        } else {
-            0
-        },
-    )
+    (::core::mem::size_of::<ZSTD_DDict>()).wrapping_add(if !((*ddict).dictBuffer).is_null() {
+        (*ddict).dictSize
+    } else {
+        0
+    })
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromDDict))]
 pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> core::ffi::c_uint {
