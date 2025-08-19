@@ -83,25 +83,24 @@ pub unsafe fn ZSTD_copy16(dst: *mut core::ffi::c_void, src: *const core::ffi::c_
 pub const WILDCOPY_OVERLENGTH: usize = 32;
 pub const WILDCOPY_VECLEN: core::ffi::c_int = 16;
 
-pub type ZSTD_overlap_e = core::ffi::c_uint;
-pub const ZSTD_overlap_src_before_dst: ZSTD_overlap_e = 1;
-pub const ZSTD_no_overlap: ZSTD_overlap_e = 0;
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Overlap {
+    NoOverlap,
+    OverlapSrcBeforeDst,
+}
 
 #[inline(always)]
 pub unsafe fn ZSTD_wildcopy(
     dst: *mut core::ffi::c_void,
     src: *const core::ffi::c_void,
     length: size_t,
-    ovtype: ZSTD_overlap_e,
+    ovtype: Overlap,
 ) {
     let diff = (dst as *mut u8).offset_from(src as *const u8);
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);
-    if ovtype as core::ffi::c_uint
-        == ZSTD_overlap_src_before_dst as core::ffi::c_int as core::ffi::c_uint
-        && diff < WILDCOPY_VECLEN as isize
-    {
+    if ovtype == Overlap::OverlapSrcBeforeDst && diff < WILDCOPY_VECLEN as isize {
         loop {
             ZSTD_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
             op = op.offset(8);
