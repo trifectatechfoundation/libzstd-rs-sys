@@ -1200,25 +1200,36 @@ pub unsafe extern "C" fn ZSTD_readSkippableFrame(
     }
     skippableContentSize
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_findDecompressedSize))]
 pub unsafe extern "C" fn ZSTD_findDecompressedSize(
-    mut src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    src: *const core::ffi::c_void,
+    srcSize: size_t,
 ) -> core::ffi::c_ulonglong {
-    let mut totalDstSize = 0 as core::ffi::c_ulonglong;
-    while srcSize >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
-        let magicNumber = MEM_readLE32(src);
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast(), srcSize)
+    };
+
+    find_decompressed_size(src)
+}
+
+fn find_decompressed_size(mut src: &[u8]) -> u64 {
+    let mut totalDstSize = 0u64;
+
+    while let [a, b, c, d, _, ..] = *src {
+        let magicNumber = u32::from_le_bytes([a, b, c, d]);
         if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
             == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
         {
-            let skippableSize = readSkippableFrameSize(src, srcSize);
+            let skippableSize = read_skippable_frame_size(src);
             if ERR_isError(skippableSize) != 0 {
                 return ZSTD_CONTENTSIZE_ERROR;
             }
-            src = (src as *const u8).add(skippableSize) as *const core::ffi::c_void;
-            srcSize = srcSize.wrapping_sub(skippableSize);
+            src = &src[skippableSize..];
         } else {
-            let fcs = ZSTD_getFrameContentSize(src, srcSize);
+            let fcs = get_frame_content_size(src);
             if fcs >= ZSTD_CONTENTSIZE_ERROR {
                 return fcs;
             }
@@ -1226,19 +1237,21 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
                 return ZSTD_CONTENTSIZE_ERROR;
             }
             totalDstSize = totalDstSize.wrapping_add(fcs);
-            let frameSrcSize = ZSTD_findFrameCompressedSize(src, srcSize);
+            let frameSrcSize = ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1);
             if ERR_isError(frameSrcSize) != 0 {
                 return ZSTD_CONTENTSIZE_ERROR;
             }
-            src = (src as *const u8).add(frameSrcSize) as *const core::ffi::c_void;
-            srcSize = srcSize.wrapping_sub(frameSrcSize);
+            src = &src[frameSrcSize..];
         }
     }
-    if srcSize != 0 {
+
+    if !src.is_empty() {
         return ZSTD_CONTENTSIZE_ERROR;
     }
+
     totalDstSize
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDecompressedSize))]
 pub unsafe extern "C" fn ZSTD_getDecompressedSize(
     src: *const core::ffi::c_void,
