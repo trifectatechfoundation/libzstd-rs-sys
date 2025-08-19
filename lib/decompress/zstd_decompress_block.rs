@@ -2547,11 +2547,8 @@ pub unsafe fn ZSTD_checkContinuity(
 ) {
     if dst != (*dctx).previousDstEnd && dstSize > 0 {
         (*dctx).dictEnd = (*dctx).previousDstEnd;
-        (*dctx).virtualStart = (dst as *const core::ffi::c_char).offset(
-            -(((*dctx).previousDstEnd as *const core::ffi::c_char)
-                .offset_from((*dctx).prefixStart as *const core::ffi::c_char)
-                as core::ffi::c_long as isize),
-        ) as *const core::ffi::c_void;
+        (*dctx).virtualStart =
+            dst.byte_offset(-(((*dctx).previousDstEnd).byte_offset_from((*dctx).prefixStart)));
         (*dctx).prefixStart = dst;
         (*dctx).previousDstEnd = dst;
     }
@@ -2572,7 +2569,7 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
-    (*dctx).previousDstEnd = (dst as *mut core::ffi::c_char).add(dSize) as *const core::ffi::c_void;
+    (*dctx).previousDstEnd = dst.byte_add(dSize);
     dSize
 }
 
