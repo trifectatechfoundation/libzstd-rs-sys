@@ -2368,21 +2368,17 @@ unsafe fn ZSTD_getOffsetInfo(
         let ptr = offTable as *const core::ffi::c_void;
         let tableLog = (*(ptr as *const ZSTD_seqSymbol_header).offset(0)).tableLog;
         let table = offTable.offset(1);
-        let max = ((1) << tableLog) as u32;
-        let mut u: u32 = 0;
-        u = 0;
-        while u < max {
+        for u in 0..1 << tableLog {
             info.maxNbAdditionalBits = if info.maxNbAdditionalBits
-                > (*table.offset(u as isize)).nbAdditionalBits as core::ffi::c_uint
+                > (*table.add(u)).nbAdditionalBits as core::ffi::c_uint
             {
                 info.maxNbAdditionalBits
             } else {
-                (*table.offset(u as isize)).nbAdditionalBits as core::ffi::c_uint
+                (*table.add(u)).nbAdditionalBits as core::ffi::c_uint
             };
-            if (*table.offset(u as isize)).nbAdditionalBits as core::ffi::c_int > 22 {
+            if (*table.add(u)).nbAdditionalBits as core::ffi::c_int > 22 {
                 info.longOffsetShare = (info.longOffsetShare).wrapping_add(1);
             }
-            u = u.wrapping_add(1);
         }
         info.longOffsetShare <<= (OffFSELog as u32).wrapping_sub(tableLog);
     }
