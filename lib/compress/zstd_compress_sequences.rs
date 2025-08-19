@@ -215,7 +215,7 @@ unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as core::ffi::c_long as size_t)
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t)
         .wrapping_add(((*bitC).bitPos > 0) as core::ffi::c_int as size_t)
 }
 static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
@@ -495,7 +495,7 @@ pub unsafe fn ZSTD_buildCTable(
             }
             let NCountSize = FSE_writeNCount(
                 op as *mut core::ffi::c_void,
-                oend.offset_from(op) as core::ffi::c_long as size_t,
+                oend.offset_from(op) as size_t,
                 ((*wksp).norm).as_mut_ptr(),
                 max,
                 tableLog,

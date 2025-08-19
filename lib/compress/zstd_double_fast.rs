@@ -127,7 +127,7 @@ unsafe fn ZSTD_safecopyLiterals(
         ZSTD_wildcopy(
             op as *mut core::ffi::c_void,
             ip as *const core::ffi::c_void,
-            ilimit_w.offset_from(ip) as core::ffi::c_long as size_t,
+            ilimit_w.offset_from(ip) as size_t,
             ZSTD_no_overlap,
         );
         op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
@@ -224,7 +224,7 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
                     pMatch.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
             } else {
                 pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
-                return pIn.offset_from(pStart) as core::ffi::c_long as size_t;
+                return pIn.offset_from(pStart) as size_t;
             }
         }
     }
@@ -246,7 +246,7 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
         pIn = pIn.offset(1);
     }
-    pIn.offset_from(pStart) as core::ffi::c_long as size_t
+    pIn.offset_from(pStart) as size_t
 }
 #[inline]
 unsafe fn ZSTD_count_2segments(
@@ -515,8 +515,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     let base = (*ms).window.base;
     let istart = src as *const u8;
     let mut anchor = istart;
-    let endIndex =
-        (istart.offset_from(base) as core::ffi::c_long as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixLowest = base.offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
@@ -601,7 +600,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                         ip = ip.offset(1);
                         ZSTD_storeSeq(
                             seqStore,
-                            ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                            ip.offset_from(anchor) as size_t,
                             anchor,
                             iend,
                             REPCODE1_TO_OFFBASE as u32,
@@ -709,7 +708,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                             }
                             ZSTD_storeSeq(
                                 seqStore,
-                                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                                ip.offset_from(anchor) as size_t,
                                 anchor,
                                 iend,
                                 offset.wrapping_add(ZSTD_REP_NUM as u32),
@@ -796,7 +795,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
             } else {
                 offsetSaved2
             };
-            return iend.offset_from(anchor) as core::ffi::c_long as size_t;
+            return iend.offset_from(anchor) as size_t;
         }
     }
 }
@@ -819,8 +818,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
-    let endIndex =
-        (istart.offset_from(base) as core::ffi::c_long as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixLowest = base.offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
@@ -912,7 +910,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
             ip = ip.offset(1);
             ZSTD_storeSeq(
                 seqStore,
-                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                ip.offset_from(anchor) as size_t,
                 anchor,
                 iend,
                 REPCODE1_TO_OFFBASE as u32,
@@ -1146,7 +1144,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
             offset_1 = offset;
             ZSTD_storeSeq(
                 seqStore,
-                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                ip.offset_from(anchor) as size_t,
                 anchor,
                 iend,
                 offset.wrapping_add(ZSTD_REP_NUM as u32),
@@ -1225,7 +1223,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     }
     *rep.offset(0) = offset_1;
     *rep.offset(1) = offset_2;
-    iend.offset_from(anchor) as core::ffi::c_long as size_t
+    iend.offset_from(anchor) as size_t
 }
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_4(
     ms: *mut ZSTD_MatchState_t,
@@ -1348,8 +1346,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     let iend = istart.add(srcSize);
     let ilimit = iend.offset(-(8));
     let base = (*ms).window.base;
-    let endIndex =
-        (istart.offset_from(base) as core::ffi::c_long as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = (*ms).window.dictLimit;
@@ -1418,7 +1415,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             ip = ip.offset(1);
             ZSTD_storeSeq(
                 seqStore,
-                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                ip.offset_from(anchor) as size_t,
                 anchor,
                 iend,
                 REPCODE1_TO_OFFBASE as u32,
@@ -1461,7 +1458,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             offset_1 = offset;
             ZSTD_storeSeq(
                 seqStore,
-                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                ip.offset_from(anchor) as size_t,
                 anchor,
                 iend,
                 offset.wrapping_add(ZSTD_REP_NUM as u32),
@@ -1550,7 +1547,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             offset_1 = offset_0;
             ZSTD_storeSeq(
                 seqStore,
-                ip.offset_from(anchor) as core::ffi::c_long as size_t,
+                ip.offset_from(anchor) as size_t,
                 anchor,
                 iend,
                 offset_0.wrapping_add(ZSTD_REP_NUM as u32),
@@ -1634,7 +1631,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     }
     *rep.offset(0) = offset_1;
     *rep.offset(1) = offset_2;
-    iend.offset_from(anchor) as core::ffi::c_long as size_t
+    iend.offset_from(anchor) as size_t
 }
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_4(
     ms: *mut ZSTD_MatchState_t,

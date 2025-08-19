@@ -175,7 +175,7 @@ unsafe fn HUF_compressWeights(
     }
     let hSize = FSE_writeNCount(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         ((*wksp).norm).as_mut_ptr(),
         maxSymbolValue,
         tableLog,
@@ -197,7 +197,7 @@ unsafe fn HUF_compressWeights(
     }
     let cSize = FSE_compress_usingCTable(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         weightTable,
         wtSize,
         ((*wksp).CTable).as_mut_ptr(),
@@ -209,7 +209,7 @@ unsafe fn HUF_compressWeights(
         return 0;
     }
     op = op.add(cSize);
-    op.offset_from(ostart) as core::ffi::c_long as size_t
+    op.offset_from(ostart) as size_t
 }
 fn HUF_getNbBits(elt: HUF_CElt) -> size_t {
     elt & 0xff as core::ffi::c_int as HUF_CElt
@@ -981,7 +981,7 @@ unsafe fn HUF_closeCStream(bitC: *mut HUF_CStream_t) -> size_t {
     if (*bitC).ptr >= (*bitC).endPtr {
         return 0;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as core::ffi::c_long as size_t)
+    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t)
         .wrapping_add((nbBits > 0) as core::ffi::c_int as size_t)
 }
 #[inline(always)]
@@ -1100,7 +1100,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
     let initErr = HUF_initCStream(
         &mut bitC,
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
     );
     if ERR_isError(initErr) != 0 {
         return 0;
@@ -1215,7 +1215,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     op = op.offset(6);
     let cSize = HUF_compress1X_usingCTable_internal(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         ip as *const core::ffi::c_void,
         segmentSize,
         CTable,
@@ -1232,7 +1232,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     ip = ip.add(segmentSize);
     let cSize_0 = HUF_compress1X_usingCTable_internal(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         ip as *const core::ffi::c_void,
         segmentSize,
         CTable,
@@ -1249,7 +1249,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     ip = ip.add(segmentSize);
     let cSize_1 = HUF_compress1X_usingCTable_internal(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         ip as *const core::ffi::c_void,
         segmentSize,
         CTable,
@@ -1266,9 +1266,9 @@ unsafe fn HUF_compress4X_usingCTable_internal(
     ip = ip.add(segmentSize);
     let cSize_2 = HUF_compress1X_usingCTable_internal(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as core::ffi::c_long as size_t,
+        oend.offset_from(op) as size_t,
         ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as core::ffi::c_long as size_t,
+        iend.offset_from(ip) as size_t,
         CTable,
         flags,
     );
@@ -1279,7 +1279,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         return 0;
     }
     op = op.add(cSize_2);
-    op.offset_from(ostart) as core::ffi::c_long as size_t
+    op.offset_from(ostart) as size_t
 }
 pub unsafe fn HUF_compress4X_usingCTable(
     dst: *mut core::ffi::c_void,
@@ -1306,7 +1306,7 @@ unsafe fn HUF_compressCTable_internal(
     {
         HUF_compress1X_usingCTable_internal(
             op as *mut core::ffi::c_void,
-            oend.offset_from(op) as core::ffi::c_long as size_t,
+            oend.offset_from(op) as size_t,
             src,
             srcSize,
             CTable,
@@ -1315,7 +1315,7 @@ unsafe fn HUF_compressCTable_internal(
     } else {
         HUF_compress4X_usingCTable_internal(
             op as *mut core::ffi::c_void,
-            oend.offset_from(op) as core::ffi::c_long as size_t,
+            oend.offset_from(op) as size_t,
             src,
             srcSize,
             CTable,
@@ -1329,10 +1329,10 @@ unsafe fn HUF_compressCTable_internal(
         return 0;
     }
     op = op.add(cSize);
-    if op.offset_from(ostart) as core::ffi::c_long as size_t >= srcSize.wrapping_sub(1) {
+    if op.offset_from(ostart) as size_t >= srcSize.wrapping_sub(1) {
         return 0;
     }
-    op.offset_from(ostart) as core::ffi::c_long as size_t
+    op.offset_from(ostart) as size_t
 }
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: core::ffi::c_int = 4096;
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_RATIO: core::ffi::c_int = 10;
