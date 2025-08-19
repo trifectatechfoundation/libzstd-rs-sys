@@ -880,16 +880,8 @@ fn ZSTD_buildSeqTable<const N: usize>(
                 return Error::corruption_detected.to_error_code();
             }
             if ddictIsCold != 0 && nbSeq > 24 {
-                let pStart = *DTablePtr as *const core::ffi::c_void;
-                let pSize =
-                    (::core::mem::size_of::<ZSTD_seqSymbol>()).wrapping_mul(1usize + (1 << maxLog));
-                let _ptr = pStart as *const core::ffi::c_char;
-                let _size = pSize;
-                let mut _pos: size_t = 0;
-                _pos = 0;
-                while _pos < _size {
-                    _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
-                }
+                let pSize = size_of::<ZSTD_seqSymbol>().wrapping_mul(1 + (1usize << maxLog));
+                prefetch_area(*DTablePtr, pSize);
             }
             0
         }
@@ -1075,11 +1067,9 @@ unsafe fn ZSTD_safecopy(
     let oend = op.add(length);
     if length < 8 {
         while op < oend {
-            let fresh5 = ip;
-            ip = ip.offset(1);
-            let fresh6 = op;
-            op = op.offset(1);
-            *fresh6 = *fresh5;
+            *op = *ip;
+            ip = ip.add(1);
+            op = op.add(1);
         }
         return;
     }
@@ -1107,23 +1097,20 @@ unsafe fn ZSTD_safecopy(
         op = op.offset(oend_w.offset_from(op));
     }
     while op < oend {
-        let fresh7 = ip;
-        ip = ip.offset(1);
-        let fresh8 = op;
-        op = op.offset(1);
-        *fresh8 = *fresh7;
+        *op = *ip;
+        ip = ip.add(1);
+        op = op.add(1);
     }
 }
+
 unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
     let diff = op.offset_from(ip) as ptrdiff_t;
     let oend = op.add(length);
     if length < 8 || diff > -8 as ptrdiff_t {
         while op < oend {
-            let fresh9 = ip;
+            *op = *ip;
             ip = ip.offset(1);
-            let fresh10 = op;
             op = op.offset(1);
-            *fresh10 = *fresh9;
         }
         return;
     }
@@ -1138,13 +1125,12 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
     }
     while op < oend {
-        let fresh11 = ip;
+        *op = *ip;
         ip = ip.offset(1);
-        let fresh12 = op;
         op = op.offset(1);
-        *fresh12 = *fresh11;
     }
 }
+
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEnd(
     mut op: *mut u8,
@@ -1724,6 +1710,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             op = op.add(oneSeqSize);
             nbSeq -= 1;
         }
+
         if nbSeq > 0 {
             let leftoverLit = (dctx.litBufferEnd).offset_from(litPtr) as size_t;
             if leftoverLit != 0 {
