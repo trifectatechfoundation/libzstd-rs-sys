@@ -3,14 +3,13 @@ use core::hint::likely;
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::fse_decompress::{
-    FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
+use crate::lib::common::fse::{
+    FSE_DTableHeader, FSE_decode_t, FSE_MIN_TABLELOG, FSE_TABLELOG_ABSOLUTE_MAX,
 };
+use crate::lib::common::fse_decompress::{FSE_DecompressWksp, FSE_decompress_wksp_bmi2};
 use crate::lib::common::huf::{
     HUF_flags_bmi2, HUF_READ_STATS_WORKSPACE_SIZE_U32, HUF_TABLELOG_MAX,
 };
-const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
-const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 
 #[inline(always)]
 fn FSE_readNCount_body(
