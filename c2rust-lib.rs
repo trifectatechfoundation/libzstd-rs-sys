@@ -17,7 +17,7 @@ pub mod lib {
         pub(crate) mod pool;
         pub(crate) mod xxhash;
         pub mod zstd_common;
-        pub mod zstd_internal;
+        pub(crate) mod zstd_internal;
         pub mod zstd_trace;
     } // mod common
     pub mod compress {
