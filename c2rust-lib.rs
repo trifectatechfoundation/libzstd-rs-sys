@@ -8,7 +8,7 @@
 
 pub mod lib {
     pub mod common {
-        pub mod bitstream;
+        pub(crate) mod bitstream;
         pub mod debug;
         pub mod entropy_common;
         pub mod error_private;
