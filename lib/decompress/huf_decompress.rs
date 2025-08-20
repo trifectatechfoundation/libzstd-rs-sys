@@ -6,20 +6,16 @@ use libc::size_t;
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{
+    HUF_flags_bmi2, HUF_flags_disableAsm, HUF_flags_disableFast, HUF_SYMBOLVALUE_MAX,
+    HUF_TABLELOG_MAX,
+};
 use crate::lib::common::mem::{MEM_read64, MEM_readLEST, MEM_write16};
 use crate::lib::decompress::Workspace;
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
 }
-pub type HUF_DTable = u32;
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
-pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct algo_time_t {
@@ -132,8 +128,6 @@ pub struct HUF_DecompressFastArgs<'a> {
     pub iend: [*const u8; 4],
 }
 
-pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
-pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
