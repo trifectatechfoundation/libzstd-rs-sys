@@ -1,17 +1,12 @@
 use libc::{ptrdiff_t, size_t};
 
-use crate::lib::common::bitstream::BitContainerType;
+use crate::lib::common::bitstream::{
+    BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast,
+    BIT_initCStream, BitContainerType,
+};
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::{MEM_read16, MEM_write64, MEM_writeLEST};
+use crate::lib::common::mem::{MEM_read16, MEM_write64};
 
-#[repr(C)]
-pub struct BIT_CStream_t {
-    pub bitContainer: BitContainerType,
-    pub bitPos: core::ffi::c_uint,
-    pub startPtr: *mut core::ffi::c_char,
-    pub ptr: *mut core::ffi::c_char,
-    pub endPtr: *mut core::ffi::c_char,
-}
 pub type FSE_CTable = core::ffi::c_uint;
 #[repr(C)]
 pub struct FSE_CState_t {
@@ -33,80 +28,6 @@ fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 #[inline]
 fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
-static BIT_mask: [core::ffi::c_uint; 32] = [
-    0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff, 0x1ff, 0x3ff, 0x7ff, 0xfff, 0x1fff, 0x3fff, 0x7fff,
-    0xffff, 0x1ffff, 0x3ffff, 0x7ffff, 0xfffff, 0x1fffff, 0x3fffff, 0x7fffff, 0xffffff, 0x1ffffff,
-    0x3ffffff, 0x7ffffff, 0xfffffff, 0x1fffffff, 0x3fffffff, 0x7fffffff,
-];
-#[inline]
-unsafe fn BIT_initCStream(
-    bitC: *mut BIT_CStream_t,
-    startPtr: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-) -> size_t {
-    (*bitC).bitContainer = 0;
-    (*bitC).bitPos = 0;
-    (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
-    (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
-        .add(dstCapacity)
-        .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
-    0
-}
-#[inline(always)]
-unsafe fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
-    bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType
-}
-#[inline]
-unsafe fn BIT_addBits(
-    bitC: *mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
-    (*bitC).bitContainer |= BIT_getLowerBits(value, nbBits) << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
-}
-#[inline]
-unsafe fn BIT_addBitsFast(
-    bitC: *mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
-    (*bitC).bitContainer |= value << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
-}
-#[inline]
-unsafe fn BIT_flushBitsFast(bitC: *mut BIT_CStream_t) {
-    let nbBytes = ((*bitC).bitPos >> 3) as size_t;
-    MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    (*bitC).bitPos &= 7;
-    (*bitC).bitContainer >>= nbBytes * 8;
-}
-#[inline]
-unsafe fn BIT_flushBits(bitC: *mut BIT_CStream_t) {
-    let nbBytes = ((*bitC).bitPos >> 3) as size_t;
-    MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    if (*bitC).ptr > (*bitC).endPtr {
-        (*bitC).ptr = (*bitC).endPtr;
-    }
-    (*bitC).bitPos &= 7;
-    (*bitC).bitContainer >>= nbBytes * 8;
-}
-#[inline]
-unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
-    BIT_addBitsFast(bitC, 1, 1);
-    BIT_flushBits(bitC);
-    if (*bitC).ptr >= (*bitC).endPtr {
-        return 0;
-    }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as usize)
-        .wrapping_add(((*bitC).bitPos > 0) as usize)
 }
 pub const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
 #[inline]
