@@ -31,7 +31,7 @@ pub struct POOL_ctx {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct POOL_job {
+pub(crate) struct POOL_job {
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 }
@@ -95,7 +95,7 @@ pub unsafe extern "C" fn ZSTD_createThreadPool(numThreads: size_t) -> *mut ZSTD_
 pub unsafe fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx {
     POOL_create_advanced(numThreads, queueSize, ZSTD_defaultCMem)
 }
-pub unsafe fn POOL_create_advanced(
+pub(crate) unsafe fn POOL_create_advanced(
     numThreads: size_t,
     queueSize: size_t,
     customMem: ZSTD_customMem,
@@ -203,7 +203,7 @@ pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
 pub unsafe extern "C" fn ZSTD_freeThreadPool(pool: *mut ZSTD_threadPool) {
     POOL_free(pool);
 }
-pub unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
+pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
     if ctx.is_null() {
         return 0;
     }
@@ -254,7 +254,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     (*ctx).threadLimit = numThreads;
     0
 }
-pub unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
+pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
     let mut result: core::ffi::c_int = 0;
     if ctx.is_null() {
         return 1;
@@ -304,7 +304,7 @@ pub unsafe fn POOL_add(
     POOL_add_internal(ctx, function, opaque);
     pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
-pub unsafe fn POOL_tryAdd(
+pub(crate) unsafe fn POOL_tryAdd(
     ctx: *mut POOL_ctx,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
