@@ -1,9 +1,13 @@
-use libc::{ptrdiff_t, size_t};
+use libc::size_t;
 
 use crate::lib::common::bitstream::{
     BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::{
+    FSE_CState_t, FSE_CTable, FSE_bitCost, FSE_encodeSymbol, FSE_flushCState, FSE_initCState,
+    FSE_initCState2, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
+};
 use crate::lib::common::mem::{MEM_32bits, MEM_read16};
 use crate::lib::common::zstd_internal::{LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog};
 use crate::lib::compress::fse_compress::{
@@ -18,24 +22,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
-#[repr(C)]
-pub struct FSE_CState_t {
-    pub value: ptrdiff_t,
-    pub stateTable: *const core::ffi::c_void,
-    pub symbolTT: *const core::ffi::c_void,
-    pub stateLog: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FSE_symbolCompressionTransform {
-    pub deltaFindState: core::ffi::c_int,
-    pub deltaNbBits: u32,
-}
 pub type ZSTD_DefaultPolicy_e = core::ffi::c_uint;
 pub const ZSTD_defaultAllowed: ZSTD_DefaultPolicy_e = 1;
 pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
@@ -44,76 +30,6 @@ pub const ZSTD_defaultDisallowed: ZSTD_DefaultPolicy_e = 0;
 pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
-}
-#[inline]
-unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
-    let ptr = ct as *const core::ffi::c_void;
-    let u16ptr = ptr as *const u16;
-    let tableLog = MEM_read16(ptr) as u32;
-    (*statePtr).value = (1) << tableLog;
-    (*statePtr).stateTable = u16ptr.offset(2) as *const core::ffi::c_void;
-    (*statePtr).symbolTT = ct.offset(1).offset(
-        (if tableLog != 0 {
-            (1) << tableLog.wrapping_sub(1)
-        } else {
-            1
-        }) as isize,
-    ) as *const core::ffi::c_void;
-    (*statePtr).stateLog = tableLog;
-}
-#[inline]
-unsafe fn FSE_initCState2(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable, symbol: u32) {
-    FSE_initCState(statePtr, ct);
-    let symbolTT =
-        *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = (*statePtr).stateTable as *const u16;
-    let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(((1) << 15) as u32) >> 16;
-    (*statePtr).value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
-    (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
-        as ptrdiff_t;
-}
-#[inline]
-unsafe fn FSE_encodeSymbol(
-    bitC: *mut BIT_CStream_t,
-    statePtr: *mut FSE_CState_t,
-    symbol: core::ffi::c_uint,
-) {
-    let symbolTT =
-        *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = (*statePtr).stateTable as *const u16;
-    let nbBitsOut = (((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, (*statePtr).value as BitContainerType, nbBitsOut);
-    (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
-        as ptrdiff_t;
-}
-#[inline]
-unsafe fn FSE_flushCState(bitC: *mut BIT_CStream_t, statePtr: *const FSE_CState_t) {
-    BIT_addBits(
-        bitC,
-        (*statePtr).value as BitContainerType,
-        (*statePtr).stateLog,
-    );
-    BIT_flushBits(bitC);
-}
-#[inline]
-unsafe fn FSE_bitCost(
-    symbolTTPtr: *const core::ffi::c_void,
-    tableLog: u32,
-    symbolValue: u32,
-    accuracyLog: u32,
-) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    let minNbBits = (*symbolTT.offset(symbolValue as isize)).deltaNbBits >> 16;
-    let threshold = minNbBits.wrapping_add(1) << 16;
-    let tableSize = ((1) << tableLog) as u32;
-    let deltaFromThreshold = threshold.wrapping_sub(
-        ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add(tableSize),
-    );
-    let normalizedDeltaFromThreshold = deltaFromThreshold << accuracyLog >> tableLog;
-    let bitMultiplier = ((1) << accuracyLog) as u32;
-    (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
 }
 static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     0, 2048, 1792, 1642, 1536, 1453, 1386, 1329, 1280, 1236, 1197, 1162, 1130, 1100, 1073, 1047,
