@@ -4,6 +4,7 @@ use libc::size_t;
 
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{
     HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
@@ -16,7 +17,6 @@ use crate::lib::compress::fse_compress::{
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp};
-pub type FSE_CTable = core::ffi::c_uint;
 pub type nodeElt = nodeElt_s;
 #[derive(Copy, Clone)]
 #[repr(C)]

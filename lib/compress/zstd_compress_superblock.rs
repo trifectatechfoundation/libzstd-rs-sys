@@ -1,6 +1,7 @@
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::FSE_CTable;
 use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
@@ -116,11 +117,6 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;

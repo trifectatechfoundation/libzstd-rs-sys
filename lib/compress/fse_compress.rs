@@ -5,22 +5,12 @@ use crate::lib::common::bitstream::{
     BIT_initCStream, BitContainerType,
 };
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::{
+    FSE_CState_t, FSE_CTable, FSE_encodeSymbol, FSE_symbolCompressionTransform,
+    FSE_DEFAULT_TABLELOG, FSE_MAX_TABLELOG, FSE_MIN_TABLELOG, FSE_NCOUNTBOUND,
+};
 use crate::lib::common::mem::{MEM_read16, MEM_write64};
 
-pub type FSE_CTable = core::ffi::c_uint;
-#[repr(C)]
-pub struct FSE_CState_t {
-    pub value: ptrdiff_t,
-    pub stateTable: *const core::ffi::c_void,
-    pub symbolTT: *const core::ffi::c_void,
-    pub stateLog: core::ffi::c_uint,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct FSE_symbolCompressionTransform {
-    pub deltaFindState: core::ffi::c_int,
-    pub deltaNbBits: u32,
-}
 #[inline]
 fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
     val.leading_zeros() as i32 as core::ffi::c_uint
@@ -29,7 +19,6 @@ fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
 #[inline]
 unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let ptr = ct as *const core::ffi::c_void;
@@ -59,21 +48,6 @@ unsafe fn FSE_initCState2(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable, sy
         as ptrdiff_t;
 }
 #[inline]
-unsafe fn FSE_encodeSymbol(
-    bitC: *mut BIT_CStream_t,
-    statePtr: *mut FSE_CState_t,
-    symbol: core::ffi::c_uint,
-) {
-    let symbolTT =
-        *((*statePtr).symbolTT as *const FSE_symbolCompressionTransform).offset(symbol as isize);
-    let stateTable = (*statePtr).stateTable as *const u16;
-    let nbBitsOut = (((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
-    BIT_addBits(bitC, (*statePtr).value as BitContainerType, nbBitsOut);
-    (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
-        as ptrdiff_t;
-}
-#[inline]
 unsafe fn FSE_flushCState(bitC: *mut BIT_CStream_t, statePtr: *const FSE_CState_t) {
     BIT_addBits(
         bitC,
@@ -82,11 +56,6 @@ unsafe fn FSE_flushCState(bitC: *mut BIT_CStream_t, statePtr: *const FSE_CState_
     );
     BIT_flushBits(bitC);
 }
-pub const FSE_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
-pub const FSE_DEFAULT_MEMORY_USAGE: core::ffi::c_int = 13;
-pub const FSE_MAX_TABLELOG: core::ffi::c_int = FSE_MAX_MEMORY_USAGE - 2;
-pub const FSE_DEFAULT_TABLELOG: core::ffi::c_int = FSE_DEFAULT_MEMORY_USAGE - 2;
-pub const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
 pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub unsafe fn FSE_buildCTable_wksp(
     ct: *mut FSE_CTable,

@@ -183,11 +183,6 @@ pub struct ZSTD_fseCTables_t {
     pub matchlength_repeatMode: FSE_repeat,
     pub litlength_repeatMode: FSE_repeat,
 }
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
@@ -1130,6 +1125,9 @@ use libc::{calloc, free, malloc, ptrdiff_t, size_t};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::fse::{
+    FSE_CTable, FSE_repeat, FSE_repeat_check, FSE_repeat_none, FSE_repeat_valid,
+};
 use crate::lib::common::huf::{
     HUF_CElt, HUF_flags_optimalDepth, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
