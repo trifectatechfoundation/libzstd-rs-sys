@@ -5,12 +5,6 @@ use crate::lib::common::error_private::{
 };
 use crate::lib::zstd::*;
 
-pub type ERR_enum = ZSTD_ErrorCode;
-pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
-pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
-pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
-pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_versionNumber))]
 pub unsafe extern "C" fn ZSTD_versionNumber() -> core::ffi::c_uint {
     ZSTD_VERSION_NUMBER as core::ffi::c_uint
