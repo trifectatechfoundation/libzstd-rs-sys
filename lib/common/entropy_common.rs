@@ -1,25 +1,15 @@
 use core::hint::likely;
 
-pub type C2RustUnnamed = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed = 4;
-pub const HUF_flags_optimalDepth: C2RustUnnamed = 2;
-pub const HUF_flags_bmi2: C2RustUnnamed = 1;
+type C2RustUnnamed = core::ffi::c_uint;
+const HUF_flags_bmi2: C2RustUnnamed = 1;
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse_decompress::{
     FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
 };
-pub const FSE_VERSION_MAJOR: core::ffi::c_int = 0;
-pub const FSE_VERSION_MINOR: core::ffi::c_int = 9;
-pub const FSE_VERSION_RELEASE: core::ffi::c_int = 0;
-pub const FSE_VERSION_NUMBER: core::ffi::c_int =
-    FSE_VERSION_MAJOR * 100 * 100 + FSE_VERSION_MINOR * 100 + FSE_VERSION_RELEASE;
-pub const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
-pub const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
+const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
+const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 
 #[inline(always)]
 fn FSE_readNCount_body(
@@ -196,7 +186,7 @@ fn FSE_readNCount_body_bmi2(
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
-pub fn FSE_readNCount_bmi2(
+pub(super) fn FSE_readNCount_bmi2(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
@@ -210,7 +200,7 @@ pub fn FSE_readNCount_bmi2(
     }
 }
 
-pub unsafe fn FSE_readNCount(
+pub(crate) unsafe fn FSE_readNCount(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
@@ -230,7 +220,7 @@ pub unsafe fn FSE_readNCount(
     }
 }
 
-pub fn FSE_readNCount_slice(
+pub(crate) fn FSE_readNCount_slice(
     normalizedCounter: &mut [i16],
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
@@ -263,7 +253,7 @@ const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize)
 const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
     FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
-pub fn HUF_readStats(
+pub(crate) fn HUF_readStats(
     huffWeight: &mut [u8; 256],
     hwSize: size_t,
     rankStats: &mut [u32; 13],
@@ -385,9 +375,9 @@ fn HUF_readStats_body(
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C, align(4))]
-pub struct DTable {
-    pub header: FSE_DTableHeader,
-    pub elements: [FSE_decode_t; 90],
+pub(super) struct DTable {
+    pub(super) header: FSE_DTableHeader,
+    pub(super) elements: [FSE_decode_t; 90],
 }
 
 impl DTable {
@@ -405,7 +395,7 @@ impl DTable {
         }
     }
 
-    pub fn destructure_mut(
+    pub(super) fn destructure_mut(
         &mut self,
         max_symbol_value: u32,
         tableLog: u32,
@@ -430,9 +420,9 @@ impl DTable {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Workspace {
-    pub a: FSE_DecompressWksp,
-    pub dtable: DTable,
+pub(crate) struct Workspace {
+    pub(super) a: FSE_DecompressWksp,
+    pub(super) dtable: DTable,
 }
 
 impl Workspace {
@@ -492,7 +482,7 @@ impl quickcheck::Arbitrary for DTable {
     }
 }
 
-pub fn HUF_readStats_wksp(
+pub(crate) fn HUF_readStats_wksp(
     huffWeight: &mut [u8; 256],
     hwSize: size_t,
     rankStats: &mut [u32; 13],

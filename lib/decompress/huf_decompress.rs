@@ -92,11 +92,11 @@ pub struct HUF_DEltX1 {
 }
 #[repr(C)]
 pub struct HUF_ReadDTableX1_Workspace {
-    pub rankVal: [u32; 13],
-    pub rankStart: [u32; 13],
-    pub statsWksp: crate::lib::common::entropy_common::Workspace,
-    pub symbols: [u8; 256],
-    pub huffWeight: [u8; 256],
+    rankVal: [u32; 13],
+    rankStart: [u32; 13],
+    statsWksp: crate::lib::common::entropy_common::Workspace,
+    symbols: [u8; 256],
+    huffWeight: [u8; 256],
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -110,12 +110,12 @@ pub struct HUF_DEltX2 {
 pub type rankValCol_t = [u32; 13];
 #[repr(C)]
 pub struct HUF_ReadDTableX2_Workspace {
-    pub rankVal: [rankValCol_t; 12],
-    pub rankStats: [u32; 13],
-    pub rankStart0: [u32; 15],
-    pub sortedSymbol: [sortedSymbol_t; 256],
-    pub weightList: [u8; 256],
-    pub calleeWksp: crate::lib::common::entropy_common::Workspace,
+    rankVal: [rankValCol_t; 12],
+    rankStats: [u32; 13],
+    rankStart0: [u32; 15],
+    sortedSymbol: [sortedSymbol_t; 256],
+    weightList: [u8; 256],
+    calleeWksp: crate::lib::common::entropy_common::Workspace,
 }
 #[repr(C)]
 pub struct sortedSymbol_t {
