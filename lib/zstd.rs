@@ -167,3 +167,9 @@ pub struct ZSTD_frameProgression {
     pub currentJobID: core::ffi::c_uint,
     pub nbActiveWorkers: core::ffi::c_uint,
 }
+
+pub mod experimental {
+    pub use crate::lib::common::pool::{
+        ZSTD_createThreadPool, ZSTD_freeThreadPool, ZSTD_threadPool,
+    };
+}
