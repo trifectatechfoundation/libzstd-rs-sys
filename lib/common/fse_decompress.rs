@@ -1,5 +1,8 @@
 use libc::size_t;
 
+use crate::lib::common::fse::{
+    FSE_DTableHeader, FSE_decode_t, FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG,
+};
 use crate::lib::common::{
     bitstream::{BIT_DStream_t, StreamStatus},
     entropy_common::{DTable, FSE_readNCount_bmi2, Workspace},
@@ -7,24 +10,9 @@ use crate::lib::common::{
 };
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[repr(C)]
-pub struct FSE_decode_t {
-    pub newState: u16,
-    pub symbol: u8,
-    pub nbBits: u8,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
 #[repr(C, align(4))]
 pub(crate) struct FSE_DTable {
     pub header: FSE_DTableHeader,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-#[repr(C)]
-pub(crate) struct FSE_DTableHeader {
-    pub tableLog: u16,
-    pub fastMode: u16,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -77,10 +65,6 @@ impl<'a> FSE_DState_t<'a> {
         symbol
     }
 }
-
-const FSE_MAX_MEMORY_USAGE: i32 = 14;
-const FSE_MAX_SYMBOL_VALUE: i32 = 255;
-const FSE_MAX_TABLELOG: i32 = FSE_MAX_MEMORY_USAGE - 2;
 
 fn FSE_buildDTable_internal(
     dt: &mut DTable,

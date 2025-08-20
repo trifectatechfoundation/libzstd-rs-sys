@@ -41,11 +41,6 @@ pub struct ZSTD_fseCTables_t {
     pub matchlength_repeatMode: FSE_repeat,
     pub litlength_repeatMode: FSE_repeat,
 }
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
@@ -73,6 +68,7 @@ pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 use libc::size_t;
 
+use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readLE64,

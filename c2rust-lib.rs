@@ -12,6 +12,7 @@ pub mod lib {
         pub mod debug;
         pub(crate) mod entropy_common;
         pub(crate) mod error_private;
+        pub(crate) mod fse;
         pub mod fse_decompress;
         pub(crate) mod huf;
         pub(crate) mod mem;
