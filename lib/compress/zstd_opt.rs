@@ -21,11 +21,6 @@ pub struct ZSTD_fseCTables_t {
     pub matchlength_repeatMode: FSE_repeat,
     pub litlength_repeatMode: FSE_repeat,
 }
-pub type FSE_repeat = core::ffi::c_uint;
-pub const FSE_repeat_valid: FSE_repeat = 2;
-pub const FSE_repeat_check: FSE_repeat = 1;
-pub const FSE_repeat_none: FSE_repeat = 0;
-pub type FSE_CTable = core::ffi::c_uint;
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
@@ -42,18 +37,6 @@ pub struct ZSTD_window_t {
     pub dictLimit: u32,
     pub lowLimit: u32,
     pub nbOverflowCorrections: u32,
-}
-#[repr(C)]
-pub struct FSE_CState_t {
-    pub value: ptrdiff_t,
-    pub stateTable: *const core::ffi::c_void,
-    pub symbolTT: *const core::ffi::c_void,
-    pub stateLog: core::ffi::c_uint,
-}
-#[repr(C)]
-pub struct FSE_symbolCompressionTransform {
-    pub deltaFindState: core::ffi::c_int,
-    pub deltaNbBits: u32,
 }
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
@@ -88,8 +71,11 @@ pub type base_directive_e = core::ffi::c_uint;
 pub const base_1guaranteed: base_directive_e = 1;
 pub const base_0possible: base_directive_e = 0;
 
-use libc::{ptrdiff_t, size_t};
+use libc::size_t;
 
+use crate::lib::common::fse::{
+    FSE_CState_t, FSE_CTable, FSE_getMaxNbBits, FSE_initCState, FSE_repeat,
+};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_repeat_valid};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
@@ -407,28 +393,6 @@ unsafe fn ZSTD_getLowestMatchIndex(
 #[inline]
 unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
-}
-#[inline]
-unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
-    let ptr = ct as *const core::ffi::c_void;
-    let u16ptr = ptr as *const u16;
-    let tableLog = MEM_read16(ptr) as u32;
-    (*statePtr).value = (1) << tableLog;
-    (*statePtr).stateTable = u16ptr.offset(2) as *const core::ffi::c_void;
-    (*statePtr).symbolTT = ct.offset(1).offset(
-        (if tableLog != 0 {
-            (1) << tableLog.wrapping_sub(1)
-        } else {
-            1
-        }) as isize,
-    ) as *const core::ffi::c_void;
-    (*statePtr).stateLog = tableLog;
-}
-#[inline]
-unsafe fn FSE_getMaxNbBits(symbolTTPtr: *const core::ffi::c_void, symbolValue: u32) -> u32 {
-    let symbolTT = symbolTTPtr as *const FSE_symbolCompressionTransform;
-    ((*symbolTT.offset(symbolValue as isize)).deltaNbBits).wrapping_add((((1) << 16) - 1) as u32)
-        >> 16
 }
 #[inline]
 unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
