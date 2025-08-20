@@ -11,7 +11,7 @@ pub mod lib {
         pub(crate) mod bitstream;
         pub mod debug;
         pub mod entropy_common;
-        pub mod error_private;
+        pub(crate) mod error_private;
         pub mod fse_decompress;
         pub mod mem;
         pub(crate) mod pool;
