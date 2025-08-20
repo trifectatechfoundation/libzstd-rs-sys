@@ -65,11 +65,11 @@ enum Offset {
 
 #[repr(C)]
 pub struct seqState_t {
-    pub DStream: BIT_DStream_t,
-    pub stateLL: ZSTD_fseState,
-    pub stateOffb: ZSTD_fseState,
-    pub stateML: ZSTD_fseState,
-    pub prevOffset: [size_t; 3],
+    DStream: BIT_DStream_t,
+    stateLL: ZSTD_fseState,
+    stateOffb: ZSTD_fseState,
+    stateML: ZSTD_fseState,
+    prevOffset: [size_t; 3],
 }
 #[repr(C)]
 pub struct ZSTD_fseState {
