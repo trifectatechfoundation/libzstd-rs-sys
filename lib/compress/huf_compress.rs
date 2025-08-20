@@ -4,6 +4,12 @@ use libc::size_t;
 
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{
+    HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
+    HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
+    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_SYMBOLVALUE_MAX,
+    HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX,
+};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
@@ -11,14 +17,6 @@ use crate::lib::compress::fse_compress::{
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp};
 pub type FSE_CTable = core::ffi::c_uint;
-pub type HUF_CElt = size_t;
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
-pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 pub type nodeElt = nodeElt_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -43,13 +41,6 @@ pub struct rankPos {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct HUF_CTableHeader {
-    pub tableLog: u8,
-    pub maxSymbolValue: u8,
-    pub unused: [u8; 6],
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 pub struct HUF_WriteCTableWksp {
     pub wksp: HUF_CompressWeightsWksp,
     pub bitsToWeight: [u8; 13],
@@ -71,10 +62,6 @@ pub struct HUF_CStream_t {
     pub ptr: *mut u8,
     pub endPtr: *mut u8,
 }
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
 pub type HUF_nbStreams_e = core::ffi::c_uint;
 pub const HUF_fourStreams: HUF_nbStreams_e = 1;
 pub const HUF_singleStream: HUF_nbStreams_e = 0;
@@ -100,11 +87,6 @@ const fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 const fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const HUF_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
-pub const HUF_TABLELOG_MAX: core::ffi::c_int = 12;
-pub const HUF_TABLELOG_DEFAULT: core::ffi::c_int = 11;
-pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
-pub const HUF_CTABLEBOUND: core::ffi::c_int = 129;
 pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe fn HUF_alignUpWorkspace(
     workspace: *mut core::ffi::c_void,
@@ -234,11 +216,11 @@ unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
                 .wrapping_sub(nbBits);
     }
 }
-pub unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTableHeader {
+pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTableHeader {
     let mut header = HUF_CTableHeader {
         tableLog: 0,
         maxSymbolValue: 0,
-        unused: [0; 6],
+        unused: [0; _],
     };
     libc::memcpy(
         &mut header as *mut HUF_CTableHeader as *mut core::ffi::c_void,
@@ -251,7 +233,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     let mut header = HUF_CTableHeader {
         tableLog: 0,
         maxSymbolValue: 0,
-        unused: [0; 6],
+        unused: [0; _],
     };
     ptr::write_bytes(
         &mut header as *mut HUF_CTableHeader as *mut u8,

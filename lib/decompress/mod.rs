@@ -76,8 +76,6 @@ impl<const N: usize> SymbolTable<N> {
     }
 }
 
-pub type HUF_DTable = u32;
-
 pub type ZSTD_dStage = core::ffi::c_uint;
 
 #[repr(u32)]

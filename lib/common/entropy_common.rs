@@ -1,12 +1,13 @@
 use core::hint::likely;
 
-type C2RustUnnamed = core::ffi::c_uint;
-const HUF_flags_bmi2: C2RustUnnamed = 1;
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse_decompress::{
     FSE_DTableHeader, FSE_DecompressWksp, FSE_decode_t, FSE_decompress_wksp_bmi2,
+};
+use crate::lib::common::huf::{
+    HUF_flags_bmi2, HUF_READ_STATS_WORKSPACE_SIZE_U32, HUF_TABLELOG_MAX,
 };
 const FSE_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSE_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
@@ -228,30 +229,6 @@ pub(crate) fn FSE_readNCount_slice(
 ) -> Result<size_t, Error> {
     FSE_readNCount_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer, 0)
 }
-
-/// Max runtime value of tableLog (due to static allocation); can be modified up to HUF_TABLELOG_ABSOLUTEMAX.
-const HUF_TABLELOG_MAX: usize = 12;
-
-const fn FSE_DTABLE_SIZE_U32(maxTableLog: usize) -> usize {
-    1 + (1 << (maxTableLog))
-}
-
-const fn FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog: usize, maxSymbolValue: usize) -> usize {
-    size_of::<u16>() * (maxSymbolValue + 1) + (1 << maxTableLog) + 8
-}
-
-/// Maximum symbol value authorized.
-const FSE_MAX_SYMBOL_VALUE: usize = 255;
-
-const fn FSE_DECOMPRESS_WKSP_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
-    FSE_DTABLE_SIZE_U32(maxTableLog)
-        + 1
-        + FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog, maxSymbolValue).div_ceil(size_of::<u32>())
-        + FSE_MAX_SYMBOL_VALUE.div_ceil(2)
-        + 1
-}
-const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
-    FSE_DECOMPRESS_WKSP_SIZE_U32(6, HUF_TABLELOG_MAX - 1);
 
 pub(crate) fn HUF_readStats(
     huffWeight: &mut [u8; 256],

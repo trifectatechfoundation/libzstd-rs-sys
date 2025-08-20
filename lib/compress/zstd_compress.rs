@@ -194,11 +194,6 @@ pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
     pub repeatMode: HUF_repeat,
 }
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
-pub type HUF_CElt = size_t;
 #[repr(C)]
 pub struct ZSTD_MatchState_t {
     pub window: ZSTD_window_t,
@@ -450,7 +445,6 @@ pub struct seqStoreSplits {
     pub idx: size_t,
 }
 
-pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
 pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -556,12 +550,6 @@ pub struct BlockSummary {
     pub blockSize: size_t,
     pub litSize: size_t,
 }
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
-pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 pub type C2RustUnnamed_2 = core::ffi::c_uint;
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
 pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
@@ -1142,6 +1130,10 @@ use libc::{calloc, free, malloc, ptrdiff_t, size_t};
 
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{
+    HUF_CElt, HUF_flags_optimalDepth, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
+    HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
+};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32,
     MEM_readST, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
@@ -1547,9 +1539,6 @@ unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeed
         (*ws).workspaceOversizedDuration = 0;
     };
 }
-pub const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
-pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
-pub const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 #[inline]
 unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
