@@ -50,11 +50,6 @@ pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
     pub repeatMode: HUF_repeat,
 }
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
-pub type HUF_CElt = size_t;
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
@@ -126,6 +121,7 @@ pub struct ldmRollingHashState_t {
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
 use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{

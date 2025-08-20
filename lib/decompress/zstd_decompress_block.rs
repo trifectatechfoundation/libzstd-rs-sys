@@ -6,6 +6,7 @@ use libc::{ptrdiff_t, size_t};
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
@@ -28,12 +29,6 @@ pub const BIT_DStream_completed: BIT_DStream_status = 2;
 pub const BIT_DStream_endOfBuffer: BIT_DStream_status = 1;
 pub const BIT_DStream_unfinished: BIT_DStream_status = 0;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
-pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;

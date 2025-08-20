@@ -3,6 +3,7 @@ use core::ptr;
 use libc::{fflush, fprintf, free, malloc, memcpy, memmove, memset, size_t, FILE};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
+use crate::lib::common::huf::{HUF_CElt, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{
     MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32,
 };
@@ -33,7 +34,6 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
-type HUF_CElt = size_t;
 type ZSTD_dictContentType_e = core::ffi::c_uint;
 const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
@@ -97,7 +97,6 @@ unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
 unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
 const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
 const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;

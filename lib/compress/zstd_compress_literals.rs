@@ -1,6 +1,11 @@
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
+use crate::lib::common::huf::{
+    HUF_CElt, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
+    HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
+    HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX,
+};
 use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::LitHufLog;
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
@@ -12,18 +17,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type HUF_repeat = core::ffi::c_uint;
-pub const HUF_repeat_valid: HUF_repeat = 2;
-pub const HUF_repeat_check: HUF_repeat = 1;
-pub const HUF_repeat_none: HUF_repeat = 0;
-pub type HUF_CElt = size_t;
-pub type C2RustUnnamed_0 = core::ffi::c_uint;
-pub const HUF_flags_disableFast: C2RustUnnamed_0 = 32;
-pub const HUF_flags_disableAsm: C2RustUnnamed_0 = 16;
-pub const HUF_flags_suspectUncompressible: C2RustUnnamed_0 = 8;
-pub const HUF_flags_preferRepeat: C2RustUnnamed_0 = 4;
-pub const HUF_flags_optimalDepth: C2RustUnnamed_0 = 2;
-pub const HUF_flags_bmi2: C2RustUnnamed_0 = 1;
 pub type huf_compress_f = Option<
     unsafe extern "C" fn(
         *mut core::ffi::c_void,
@@ -49,8 +42,6 @@ unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
         };
     (srcSize >> minlog).wrapping_add(2)
 }
-pub const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
-pub const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as core::ffi::c_int;
 pub unsafe fn ZSTD_noCompressLiterals(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
