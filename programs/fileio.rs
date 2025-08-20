@@ -6,7 +6,7 @@ use libc::{
     fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, munmap, remove, size_t, strcmp,
     strcpy, strerror, strlen, strrchr, timespec, FILE,
 };
-use libzstd_rs::lib::common::mem::{MEM_readLE24, MEM_readLE32};
+use libzstd_rs::internal::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
 use libzstd_rs::lib::compress::zstd_compress::{
     ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary_byReference, ZSTD_CCtx_refPrefix,
