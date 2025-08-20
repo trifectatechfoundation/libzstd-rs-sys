@@ -13,7 +13,7 @@ pub mod lib {
         pub mod entropy_common;
         pub(crate) mod error_private;
         pub mod fse_decompress;
-        pub mod mem;
+        pub(crate) mod mem;
         pub(crate) mod pool;
         pub(crate) mod xxhash;
         pub mod zstd_common;
@@ -77,6 +77,9 @@ pub use crate::lib::compress::zstd_compress::{
 pub mod internal {
     // Needed by benchzstd
     pub use crate::lib::common::xxhash::ZSTD_XXH64;
+
+    // Needed by fileio
+    pub use crate::lib::common::mem::{MEM_readLE24, MEM_readLE32};
 
     // Needed by fileio_asyncio
     pub use crate::lib::common::pool::{
