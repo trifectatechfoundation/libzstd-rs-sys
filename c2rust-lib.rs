@@ -14,7 +14,7 @@ pub mod lib {
         pub mod error_private;
         pub mod fse_decompress;
         pub mod mem;
-        pub mod pool;
+        pub(crate) mod pool;
         pub(crate) mod xxhash;
         pub mod zstd_common;
         pub mod zstd_internal;
@@ -77,6 +77,11 @@ pub use crate::lib::compress::zstd_compress::{
 pub mod internal {
     // Needed by benchzstd
     pub use crate::lib::common::xxhash::ZSTD_XXH64;
+
+    // Needed by fileio_asyncio
+    pub use crate::lib::common::pool::{
+        POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
+    };
 }
 
 #[cfg(all(feature = "export-symbols", feature = "semver-prefix"))]

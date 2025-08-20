@@ -10,7 +10,7 @@ use libc::{
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
 use crate::lib::common::pool::{
-    POOL_create_advanced, POOL_ctx, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd,
+    POOL_create_advanced, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd, ZSTD_threadPool,
 };
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
@@ -30,7 +30,7 @@ use crate::lib::compress::zstd_ldm::{
 use crate::lib::zstd::*;
 #[repr(C)]
 pub struct ZSTDMT_CCtx {
-    factory: *mut POOL_ctx,
+    factory: *mut ZSTD_threadPool,
     jobs: *mut ZSTDMT_jobDescription,
     bufPool: *mut ZSTDMT_bufferPool,
     cctxPool: *mut ZSTDMT_CCtxPool,
@@ -147,7 +147,6 @@ struct ZSTDMT_jobDescription {
 type ZSTD_dictContentType_e = core::ffi::c_uint;
 const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-type ZSTD_threadPool = POOL_ctx;
 type ZSTD_cParameter = core::ffi::c_uint;
 const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
 const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
