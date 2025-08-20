@@ -12,13 +12,13 @@ use crate::lib::common::zstd_internal::{
     MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_copy8, ZSTD_wildcopy, LL_DEFAULTNORMLOG,
     ML_DEFAULTNORMLOG, OF_DEFAULTNORMLOG, WILDCOPY_OVERLENGTH, WILDCOPY_VECLEN, ZSTD_REP_NUM,
 };
-use crate::lib::decompress::huf_decompress::{DTable, HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::huf_decompress::{
     HUF_decompress1X1_DCtx_wksp, HUF_decompress1X_usingDTable, HUF_decompress4X_usingDTable,
 };
+use crate::lib::decompress::huf_decompress::{HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::{blockProperties_t, BlockType, SymbolTable};
 use crate::lib::decompress::{
-    HUF_DTable, LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
+    LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
 

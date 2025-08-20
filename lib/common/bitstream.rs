@@ -1,6 +1,6 @@
 use crate::lib::common::error_private::Error;
 
-pub type BitContainerType = usize;
+pub(crate) type BitContainerType = usize;
 
 /// Bitstream decoder
 ///
@@ -13,16 +13,16 @@ pub type BitContainerType = usize;
 /// *  Checking if DStream has reached its end can be performed with BIT_endOfDStream().
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub struct BIT_DStream_t {
-    pub bitContainer: usize,
-    pub bitsConsumed: core::ffi::c_uint,
-    pub ptr: *const core::ffi::c_char,
-    pub start: *const core::ffi::c_char,
-    pub limitPtr: *const core::ffi::c_char,
+pub(crate) struct BIT_DStream_t {
+    pub(crate) bitContainer: usize,
+    pub(crate) bitsConsumed: core::ffi::c_uint,
+    pub(crate) ptr: *const core::ffi::c_char,
+    pub(crate) start: *const core::ffi::c_char,
+    pub(crate) limitPtr: *const core::ffi::c_char,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StreamStatus {
+pub(crate) enum StreamStatus {
     /// Fully refilled.
     Unfinished = 0,
     /// Still some bits left in the bitstream.
@@ -66,7 +66,7 @@ const fn get_middle_bits(
 }
 
 impl BIT_DStream_t {
-    pub fn new(srcBuffer: &[u8]) -> Result<Self, Error> {
+    pub(crate) fn new(srcBuffer: &[u8]) -> Result<Self, Error> {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
@@ -160,7 +160,7 @@ impl BIT_DStream_t {
 
     /// Like [`look_bits`], but only works when `nbBits >= 1`
     #[inline]
-    pub const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
+    pub(crate) const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
 
@@ -170,7 +170,7 @@ impl BIT_DStream_t {
     }
 
     #[inline(always)]
-    pub const fn skip_bits(&mut self, nbBits: u32) {
+    pub(crate) const fn skip_bits(&mut self, nbBits: u32) {
         self.bitsConsumed += nbBits;
     }
 
@@ -178,7 +178,7 @@ impl BIT_DStream_t {
     ///
     /// Pay attention to not read more than nbBits contained into local register.
     #[inline(always)]
-    pub const fn read_bits(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
+    pub(crate) const fn read_bits(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         let value = self.look_bits(nbBits);
         self.skip_bits(nbBits);
         value
@@ -186,7 +186,7 @@ impl BIT_DStream_t {
 
     /// Like [`read_bits`], but only works when `nbBits >= 1`
     #[inline]
-    pub const fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
+    pub(crate) const fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
         // quickcheck hits this
         // debug_assert!(nbBits > 1);
 
@@ -210,7 +210,7 @@ impl BIT_DStream_t {
     }
 
     #[inline]
-    pub fn reload_fast(&mut self) -> StreamStatus {
+    pub(crate) fn reload_fast(&mut self) -> StreamStatus {
         if self.ptr < self.limitPtr {
             StreamStatus::Overflow
         } else {
@@ -226,7 +226,7 @@ impl BIT_DStream_t {
     /// status of the internal register. when `status == StreamStatus::Unfinished`,
     /// the internal register is filled with at least 25 or 57 bits.
     #[inline(always)]
-    pub fn reload(&mut self) -> StreamStatus {
+    pub(crate) fn reload(&mut self) -> StreamStatus {
         if self.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
             static zeroFilled: BitContainerType = 0;
             self.ptr = &zeroFilled as *const BitContainerType as *const core::ffi::c_char;
@@ -264,7 +264,7 @@ impl BIT_DStream_t {
         result
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.ptr == self.start
             && self.bitsConsumed as usize == size_of::<BitContainerType>().wrapping_mul(8)
     }
