@@ -2,7 +2,6 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
-use crate::lib::common::pool::POOL_ctx;
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
     ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
@@ -168,7 +167,6 @@ pub struct SeqCollector {
     pub seqIndex: size_t,
     pub maxSequences: size_t,
 }
-pub type ZSTD_threadPool = POOL_ctx;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct XXH64_state_s {
