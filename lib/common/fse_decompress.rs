@@ -418,7 +418,7 @@ fn FSE_decompress_wksp_body_bmi2(
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1)
 }
 
-pub fn FSE_decompress_wksp_bmi2(
+pub(super) fn FSE_decompress_wksp_bmi2(
     dst: &mut [u8],
     cSrc: &[u8],
     maxLog: core::ffi::c_uint,

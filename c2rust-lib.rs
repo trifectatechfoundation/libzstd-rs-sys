@@ -10,7 +10,7 @@ pub mod lib {
     pub mod common {
         pub(crate) mod bitstream;
         pub mod debug;
-        pub mod entropy_common;
+        pub(crate) mod entropy_common;
         pub(crate) mod error_private;
         pub mod fse_decompress;
         pub(crate) mod mem;
