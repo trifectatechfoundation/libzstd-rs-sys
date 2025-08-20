@@ -1,5 +1,11 @@
 use libc::size_t;
 
+pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
+pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
+pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
+pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
+    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
+
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 
 pub const ZSTD_error_maxCode: ZSTD_ErrorCode = 120;
