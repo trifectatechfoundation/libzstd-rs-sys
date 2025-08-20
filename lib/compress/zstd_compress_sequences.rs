@@ -1,8 +1,10 @@
 use libc::{ptrdiff_t, size_t};
 
-use crate::lib::common::bitstream::BitContainerType;
+use crate::lib::common::bitstream::{
+    BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_initCStream, BitContainerType,
+};
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::{MEM_32bits, MEM_read16, MEM_writeLEST};
+use crate::lib::common::mem::{MEM_32bits, MEM_read16};
 use crate::lib::common::zstd_internal::{LLFSELog, LL_bits, MLFSELog, ML_bits, OffFSELog};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_rle, FSE_buildCTable_wksp, FSE_normalizeCount, FSE_optimalTableLog,
@@ -21,14 +23,6 @@ pub const FSE_repeat_valid: FSE_repeat = 2;
 pub const FSE_repeat_check: FSE_repeat = 1;
 pub const FSE_repeat_none: FSE_repeat = 0;
 pub type FSE_CTable = core::ffi::c_uint;
-#[repr(C)]
-pub struct BIT_CStream_t {
-    pub bitContainer: BitContainerType,
-    pub bitPos: core::ffi::c_uint,
-    pub startPtr: *mut core::ffi::c_char,
-    pub ptr: *mut core::ffi::c_char,
-    pub endPtr: *mut core::ffi::c_char,
-}
 #[repr(C)]
 pub struct FSE_CState_t {
     pub value: ptrdiff_t,
@@ -120,101 +114,6 @@ unsafe fn FSE_bitCost(
     let normalizedDeltaFromThreshold = deltaFromThreshold << accuracyLog >> tableLog;
     let bitMultiplier = ((1) << accuracyLog) as u32;
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
-}
-static BIT_mask: [core::ffi::c_uint; 32] = [
-    0,
-    1,
-    3,
-    7,
-    0xf as core::ffi::c_int as core::ffi::c_uint,
-    0x1f as core::ffi::c_int as core::ffi::c_uint,
-    0x3f as core::ffi::c_int as core::ffi::c_uint,
-    0x7f as core::ffi::c_int as core::ffi::c_uint,
-    0xff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ff as core::ffi::c_int as core::ffi::c_uint,
-    0xfff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fff as core::ffi::c_int as core::ffi::c_uint,
-    0xffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ffff as core::ffi::c_int as core::ffi::c_uint,
-    0xfffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fffff as core::ffi::c_int as core::ffi::c_uint,
-    0xffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7ffffff as core::ffi::c_int as core::ffi::c_uint,
-    0xfffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x1fffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x3fffffff as core::ffi::c_int as core::ffi::c_uint,
-    0x7fffffff as core::ffi::c_int as core::ffi::c_uint,
-];
-#[inline]
-unsafe fn BIT_initCStream(
-    bitC: *mut BIT_CStream_t,
-    startPtr: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-) -> size_t {
-    (*bitC).bitContainer = 0;
-    (*bitC).bitPos = 0;
-    (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
-    (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
-        .add(dstCapacity)
-        .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
-    0
-}
-#[inline(always)]
-unsafe fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
-    bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType
-}
-#[inline]
-unsafe fn BIT_addBits(
-    bitC: *mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
-    (*bitC).bitContainer |= BIT_getLowerBits(value, nbBits) << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
-}
-#[inline]
-unsafe fn BIT_addBitsFast(
-    bitC: *mut BIT_CStream_t,
-    value: BitContainerType,
-    nbBits: core::ffi::c_uint,
-) {
-    (*bitC).bitContainer |= value << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
-}
-#[inline]
-unsafe fn BIT_flushBits(bitC: *mut BIT_CStream_t) {
-    let nbBytes = ((*bitC).bitPos >> 3) as size_t;
-    MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    if (*bitC).ptr > (*bitC).endPtr {
-        (*bitC).ptr = (*bitC).endPtr;
-    }
-    (*bitC).bitPos &= 7;
-    (*bitC).bitContainer >>= nbBytes * 8;
-}
-#[inline]
-unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
-    BIT_addBitsFast(bitC, 1, 1);
-    BIT_flushBits(bitC);
-    if (*bitC).ptr >= (*bitC).endPtr {
-        return 0;
-    }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t)
-        .wrapping_add(((*bitC).bitPos > 0) as core::ffi::c_int as size_t)
 }
 static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     0, 2048, 1792, 1642, 1536, 1453, 1386, 1329, 1280, 1236, 1197, 1162, 1130, 1100, 1073, 1047,
