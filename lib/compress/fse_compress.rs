@@ -56,8 +56,7 @@ unsafe fn FSE_flushCState(bitC: *mut BIT_CStream_t, statePtr: *const FSE_CState_
     );
     BIT_flushBits(bitC);
 }
-pub const FSE_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
-pub unsafe fn FSE_buildCTable_wksp(
+pub(crate) unsafe fn FSE_buildCTable_wksp(
     ct: *mut FSE_CTable,
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: core::ffi::c_uint,
@@ -218,7 +217,7 @@ pub unsafe fn FSE_buildCTable_wksp(
     }
     0
 }
-pub unsafe fn FSE_NCountWriteBound(
+unsafe fn FSE_NCountWriteBound(
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
 ) -> size_t {
@@ -344,7 +343,7 @@ unsafe fn FSE_writeNCount_generic(
     out = out.offset(((bitCount + 7) / 8) as isize);
     out.offset_from(ostart) as size_t
 }
-pub unsafe fn FSE_writeNCount(
+pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
     bufferSize: size_t,
     normalizedCounter: *const core::ffi::c_short,
@@ -385,7 +384,7 @@ unsafe fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) ->
         minBitsSymbols
     }
 }
-pub unsafe fn FSE_optimalTableLog_internal(
+pub(crate) unsafe fn FSE_optimalTableLog_internal(
     maxTableLog: core::ffi::c_uint,
     srcSize: size_t,
     maxSymbolValue: core::ffi::c_uint,
@@ -411,7 +410,7 @@ pub unsafe fn FSE_optimalTableLog_internal(
     }
     tableLog
 }
-pub unsafe fn FSE_optimalTableLog(
+pub(crate) unsafe fn FSE_optimalTableLog(
     maxTableLog: core::ffi::c_uint,
     srcSize: size_t,
     maxSymbolValue: core::ffi::c_uint,
@@ -518,7 +517,7 @@ unsafe fn FSE_normalizeM2(
     }
     0
 }
-pub unsafe fn FSE_normalizeCount(
+pub(crate) unsafe fn FSE_normalizeCount(
     normalizedCounter: *mut core::ffi::c_short,
     mut tableLog: core::ffi::c_uint,
     count: *const core::ffi::c_uint,
@@ -598,7 +597,7 @@ pub unsafe fn FSE_normalizeCount(
     }
     tableLog as size_t
 }
-pub unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> size_t {
+pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> size_t {
     let ptr = ct as *mut core::ffi::c_void;
     let tableU16 = (ptr as *mut u16).offset(2);
     let FSCTptr = (ptr as *mut u32).offset(2) as *mut core::ffi::c_void;
@@ -713,7 +712,7 @@ unsafe fn FSE_compress_usingCTable_generic(
     FSE_flushCState(&mut bitC, &CState1);
     BIT_closeCStream(&mut bitC)
 }
-pub unsafe fn FSE_compress_usingCTable(
+pub(crate) unsafe fn FSE_compress_usingCTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
     src: *const core::ffi::c_void,
@@ -731,11 +730,4 @@ pub unsafe fn FSE_compress_usingCTable(
     } else {
         FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 0)
     }
-}
-pub fn FSE_compressBound(size: size_t) -> size_t {
-    (FSE_NCOUNTBOUND as size_t).wrapping_add(
-        size.wrapping_add(size >> 7)
-            .wrapping_add(4)
-            .wrapping_add(::core::mem::size_of::<size_t>()),
-    )
 }
