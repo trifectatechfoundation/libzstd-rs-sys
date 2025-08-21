@@ -16,7 +16,7 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
-    DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp,
+    DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp, Writer,
 };
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
@@ -1885,19 +1885,17 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
-    decompress_continue(dctx, dst, dstCapacity, src)
+    // NOTE: already handles the `dst.is_null()` case.
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+
+    decompress_continue(dctx, dst, src)
 }
 
-unsafe fn decompress_continue(
-    dctx: *mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: &[u8],
-) -> size_t {
+unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[u8]) -> size_t {
     if src.len() != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, src.len()) {
         return Error::srcSize_wrong.to_error_code();
     }
-    ZSTD_checkContinuity(dctx, dst, dstCapacity);
+    ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
     (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(src.len()) as u64;
     match (*dctx).stage {
         DecompressStage::GetFrameHeaderSize => {
@@ -1972,8 +1970,8 @@ unsafe fn decompress_continue(
                 BlockType::Compressed => {
                     rSize = ZSTD_decompressBlock_internal(
                         dctx,
-                        dst,
-                        dstCapacity,
+                        dst.as_mut_ptr().cast(),
+                        dst.capacity(),
                         src.as_ptr().cast(),
                         src.len(),
                         is_streaming,
@@ -1981,7 +1979,12 @@ unsafe fn decompress_continue(
                     (*dctx).expected = 0;
                 }
                 BlockType::Raw => {
-                    rSize = ZSTD_copyRawBlock(dst, dstCapacity, src.as_ptr().cast(), src.len());
+                    rSize = ZSTD_copyRawBlock(
+                        dst.as_mut_ptr().cast(),
+                        dst.capacity(),
+                        src.as_ptr().cast(),
+                        src.len(),
+                    );
                     let err_code_0 = rSize;
                     if ERR_isError(err_code_0) {
                         return err_code_0;
@@ -1989,7 +1992,12 @@ unsafe fn decompress_continue(
                     (*dctx).expected = ((*dctx).expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
-                    rSize = ZSTD_setRleBlock(dst, dstCapacity, src[0], (*dctx).rleSize);
+                    rSize = ZSTD_setRleBlock(
+                        dst.as_mut_ptr().cast(),
+                        dst.capacity(),
+                        src[0],
+                        (*dctx).rleSize,
+                    );
                     (*dctx).expected = 0;
                 }
                 BlockType::Reserved => {
@@ -2005,10 +2013,13 @@ unsafe fn decompress_continue(
             }
             (*dctx).decodedSize = ((*dctx).decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
             if (*dctx).validateChecksum != 0 {
-                ZSTD_XXH64_update(&mut (*dctx).xxhState, dst, rSize as usize);
+                ZSTD_XXH64_update(
+                    &mut (*dctx).xxhState,
+                    dst.as_mut_ptr().cast(),
+                    rSize as usize,
+                );
             }
-            (*dctx).previousDstEnd =
-                (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
+            (*dctx).previousDstEnd = dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>();
             if (*dctx).expected > 0 {
                 return rSize;
             }
