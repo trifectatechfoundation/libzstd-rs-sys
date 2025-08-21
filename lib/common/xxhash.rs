@@ -165,11 +165,11 @@ pub(crate) unsafe fn ZSTD_XXH64_update(
     if input.is_null() {
         assert_eq!(len, 0);
     } else {
-        ZSTD_XXH64_update_help(state, core::slice::from_raw_parts(input as *const u8, len));
+        ZSTD_XXH64_update_slice(state, core::slice::from_raw_parts(input as *const u8, len));
     }
 }
 
-fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) {
+pub(crate) fn ZSTD_XXH64_update_slice(state: &mut XXH64_state_t, mut slice: &[u8]) {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
@@ -294,7 +294,7 @@ mod tests {
         let input = vec![vec![0], vec![1]];
         for chunk in input {
             expected.update(&chunk);
-            ZSTD_XXH64_update_help(&mut actual, &chunk);
+            ZSTD_XXH64_update_slice(&mut actual, &chunk);
         }
         assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
 
@@ -303,7 +303,7 @@ mod tests {
         let input = vec![[0u8; 32]];
         for chunk in input {
             expected.update(&chunk);
-            ZSTD_XXH64_update_help(&mut actual, &chunk);
+            ZSTD_XXH64_update_slice(&mut actual, &chunk);
         }
         assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
 
@@ -318,7 +318,7 @@ mod tests {
         ];
         for chunk in input {
             expected.update(&chunk);
-            ZSTD_XXH64_update_help(&mut actual, &chunk);
+            ZSTD_XXH64_update_slice(&mut actual, &chunk);
         }
         assert_eq!(
             expected.digest().to_le_bytes(),
@@ -345,7 +345,7 @@ mod tests {
 
             for chunk in input {
                 expected.update(&chunk);
-                ZSTD_XXH64_update_help(&mut actual, &chunk);
+                ZSTD_XXH64_update_slice(&mut actual, &chunk);
             }
 
             assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
