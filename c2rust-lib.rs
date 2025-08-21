@@ -19,6 +19,7 @@ pub mod lib {
         pub(crate) mod huf;
         pub(crate) mod mem;
         pub(crate) mod pool;
+        pub(crate) mod reader;
         pub(crate) mod xxhash;
         pub mod zstd_common;
         pub(crate) mod zstd_internal;
