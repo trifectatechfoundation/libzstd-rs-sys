@@ -1451,23 +1451,39 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
     blockSize
 }
 
-unsafe fn ZSTD_copyRawBlock(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    if srcSize > dstCapacity {
+fn copy_raw_block_slice(mut dst: Writer<'_>, src: &[u8]) -> size_t {
+    if src.len() > dst.capacity() {
         return Error::dstSize_tooSmall.to_error_code();
     }
+
     if dst.is_null() {
-        if srcSize == 0 {
+        if src.is_empty() {
             return 0;
         }
         return Error::dstBuffer_null.to_error_code();
     }
-    core::ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), srcSize);
-    srcSize
+
+    unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
+
+    src.len()
+}
+
+fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> size_t {
+    if src.len() > dst.capacity() {
+        return Error::dstSize_tooSmall.to_error_code();
+    }
+
+    if dst.is_null() {
+        if src.is_empty() {
+            return 0;
+        }
+        return Error::dstBuffer_null.to_error_code();
+    }
+
+    // src and dst can overlap in this case.
+    unsafe { core::ptr::copy(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
+
+    src.len()
 }
 
 unsafe fn ZSTD_setRleBlock(
@@ -1601,12 +1617,7 @@ unsafe fn ZSTD_decompressFrame(
         match blockProperties.blockType {
             BlockType::Raw => {
                 // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
-                decodedSize = ZSTD_copyRawBlock(
-                    op.as_mut_ptr().cast(),
-                    op.capacity(),
-                    ip.as_ptr().cast(),
-                    cBlockSize,
-                );
+                decodedSize = copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize));
             }
             BlockType::Rle => {
                 decodedSize = ZSTD_setRleBlock(
@@ -1873,6 +1884,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
 ) -> size_t {
     let dctx = dctx.as_mut().unwrap();
 
+    // For `ZSTD_decompressContinue` is is not valid for src and dst to overlap.
     let src = if src.is_null() {
         &[]
     } else {
@@ -1968,12 +1980,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                     dctx.expected = 0;
                 }
                 BlockType::Raw => {
-                    rSize = ZSTD_copyRawBlock(
-                        dst.as_mut_ptr().cast(),
-                        dst.capacity(),
-                        src.as_ptr().cast(),
-                        src.len(),
-                    );
+                    rSize = copy_raw_block_slice(dst.subslice(..), src);
                     let err_code_0 = rSize;
                     if ERR_isError(err_code_0) {
                         return err_code_0;
