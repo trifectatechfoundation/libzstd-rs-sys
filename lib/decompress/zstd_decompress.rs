@@ -1469,6 +1469,7 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
         (blockStart as *const core::ffi::c_char).add(blockSize) as *const core::ffi::c_void;
     blockSize
 }
+
 unsafe fn ZSTD_copyRawBlock(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -1487,6 +1488,7 @@ unsafe fn ZSTD_copyRawBlock(
     core::ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), srcSize);
     srcSize
 }
+
 unsafe fn ZSTD_setRleBlock(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -1505,6 +1507,7 @@ unsafe fn ZSTD_setRleBlock(
     ptr::write_bytes(dst, b, regenSize);
     regenSize
 }
+
 unsafe fn ZSTD_DCtx_trace_end(
     dctx: *const ZSTD_DCtx,
     uncompressedSize: u64,
@@ -1876,49 +1879,50 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    if srcSize != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, srcSize) {
+    let src = if src.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
+    };
+
+    decompress_continue(dctx, dst, dstCapacity, src)
+}
+
+unsafe fn decompress_continue(
+    dctx: *mut ZSTD_DCtx,
+    dst: *mut core::ffi::c_void,
+    dstCapacity: size_t,
+    src: &[u8],
+) -> size_t {
+    if src.len() != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, src.len()) {
         return Error::srcSize_wrong.to_error_code();
     }
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
-    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(srcSize) as u64;
+    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(src.len()) as u64;
     match (*dctx).stage {
         DecompressStage::GetFrameHeaderSize => {
             if (*dctx).format == Format::ZSTD_f_zstd1
-                && MEM_readLE32(src) & ZSTD_MAGIC_SKIPPABLE_MASK
+                && u32::from_le_bytes(*src.first_chunk().unwrap()) & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
             {
-                libc::memcpy(
-                    ((*dctx).headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                    src,
-                    srcSize as libc::size_t,
-                );
-                (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(srcSize);
+                (&mut (*dctx).headerBuffer)[..src.len()].copy_from_slice(src);
+
+                (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(src.len());
                 (*dctx).stage = DecompressStage::DecodeSkippableHeader;
                 return 0;
             }
-            let src_slice = core::slice::from_raw_parts(src.cast(), srcSize);
-            (*dctx).headerSize = frame_header_size_internal(src_slice, (*dctx).format);
+            (*dctx).headerSize = frame_header_size_internal(src, (*dctx).format);
             if ERR_isError((*dctx).headerSize) {
                 return (*dctx).headerSize;
             }
-            libc::memcpy(
-                ((*dctx).headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                src,
-                srcSize as libc::size_t,
-            );
-            (*dctx).expected = ((*dctx).headerSize).wrapping_sub(srcSize);
+            (&mut (*dctx).headerBuffer)[..src.len()].copy_from_slice(src);
+            (*dctx).expected = ((*dctx).headerSize).wrapping_sub(src.len());
             (*dctx).stage = DecompressStage::DecodeFrameHeader;
             0
         }
         DecompressStage::DecodeFrameHeader => {
-            libc::memcpy(
-                ((*dctx).headerBuffer)
-                    .as_mut_ptr()
-                    .add(((*dctx).headerSize).wrapping_sub(srcSize))
-                    as *mut core::ffi::c_void,
-                src,
-                srcSize as libc::size_t,
-            );
+            (&mut (*dctx).headerBuffer)[((*dctx).headerSize) - src.len()..][..src.len()]
+                .copy_from_slice(src);
             let err_code =
                 ZSTD_decodeFrameHeader(dctx, &(&(*dctx).headerBuffer)[..(*dctx).headerSize]);
             if ERR_isError(err_code) {
@@ -1929,15 +1933,11 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             0
         }
         DecompressStage::DecodeBlockHeader => {
-            let mut bp = blockProperties_t {
-                blockType: BlockType::Raw,
-                lastBlock: 0,
-                origSize: 0,
+            let (bp, cBlockSize) = match getc_block_size(src) {
+                Ok(ret) => ret,
+                Err(e) => return e.to_error_code(),
             };
-            let cBlockSize = ZSTD_getcBlockSize(src, ZSTD_blockHeaderSize, &mut bp);
-            if ERR_isError(cBlockSize) {
-                return cBlockSize;
-            }
+
             if cBlockSize > (*dctx).fParams.blockSizeMax as size_t {
                 return Error::corruption_detected.to_error_code();
             }
@@ -1974,14 +1974,14 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                         dctx,
                         dst,
                         dstCapacity,
-                        src,
-                        srcSize,
+                        src.as_ptr().cast(),
+                        src.len(),
                         is_streaming,
                     );
                     (*dctx).expected = 0;
                 }
                 BlockType::Raw => {
-                    rSize = ZSTD_copyRawBlock(dst, dstCapacity, src, srcSize);
+                    rSize = ZSTD_copyRawBlock(dst, dstCapacity, src.as_ptr().cast(), src.len());
                     let err_code_0 = rSize;
                     if ERR_isError(err_code_0) {
                         return err_code_0;
@@ -1989,8 +1989,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                     (*dctx).expected = ((*dctx).expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
-                    rSize =
-                        ZSTD_setRleBlock(dst, dstCapacity, *(src as *const u8), (*dctx).rleSize);
+                    rSize = ZSTD_setRleBlock(dst, dstCapacity, src[0], (*dctx).rleSize);
                     (*dctx).expected = 0;
                 }
                 BlockType::Reserved => {
@@ -2037,7 +2036,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
         DecompressStage::CheckChecksum => {
             if (*dctx).validateChecksum != 0 {
                 let h32 = ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32;
-                let check32 = MEM_readLE32(src);
+                let check32 = u32::from_le_bytes(*src.first_chunk().unwrap());
                 if check32 != h32 {
                     return Error::checksum_wrong.to_error_code();
                 }
@@ -2048,17 +2047,12 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
             0
         }
         DecompressStage::DecodeSkippableHeader => {
-            libc::memcpy(
-                ((*dctx).headerBuffer)
-                    .as_mut_ptr()
-                    .add((8 as size_t).wrapping_sub(srcSize))
-                    as *mut core::ffi::c_void,
-                src,
-                srcSize as libc::size_t,
-            );
-            (*dctx).expected =
-                MEM_readLE32(((*dctx).headerBuffer).as_mut_ptr().add(ZSTD_FRAMEIDSIZE)
-                    as *const core::ffi::c_void) as size_t;
+            (&mut (*dctx).headerBuffer)[8 - src.len()..][..src.len()].copy_from_slice(src);
+            (*dctx).expected = u32::from_le_bytes(
+                *(&(*dctx).headerBuffer)[ZSTD_FRAMEIDSIZE as usize..]
+                    .first_chunk()
+                    .unwrap(),
+            ) as usize;
             (*dctx).stage = DecompressStage::SkipFrame;
             0
         }
