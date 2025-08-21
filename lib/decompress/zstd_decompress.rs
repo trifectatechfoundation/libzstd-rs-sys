@@ -5,6 +5,7 @@ use libc::{calloc, free, malloc, size_t};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
+use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update,
 };
@@ -313,18 +314,7 @@ unsafe fn ZSTD_decompressLegacy(
     }
 }
 
-#[inline]
-unsafe fn ZSTD_findFrameSizeInfoLegacy(
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> ZSTD_frameSizeInfo {
-    find_frame_size_info_legacy(if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast(), srcSize)
-    })
-}
-
+// FIXME: this should be totally safe at this point.
 unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     let mut frameSizeInfo = ZSTD_frameSizeInfo {
         nbBlocks: 0,
@@ -375,15 +365,6 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     }
 
     frameSizeInfo
-}
-
-#[inline]
-unsafe fn ZSTD_findFrameCompressedSizeLegacy(
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    let frameSizeInfo = ZSTD_findFrameSizeInfoLegacy(src, srcSize);
-    frameSizeInfo.compressedSize
 }
 
 #[inline]
@@ -1548,7 +1529,7 @@ unsafe fn ZSTD_DCtx_trace_end(
 unsafe fn ZSTD_decompressFrame(
     dctx: *mut ZSTD_DCtx,
     mut dst: Writer<'_>,
-    srcPtr: &mut &[u8],
+    srcPtr: &mut Reader<'_>,
 ) -> size_t {
     let ilen = srcPtr.len();
     let ip = srcPtr;
@@ -1559,53 +1540,68 @@ unsafe fn ZSTD_decompressFrame(
         ostart
     };
     let mut op = ostart;
-    if ip.len()
-        < (match (*dctx).format {
-            Format::ZSTD_f_zstd1 => 6usize,
-            Format::ZSTD_f_zstd1_magicless => 2,
-        })
-        .wrapping_add(ZSTD_blockHeaderSize)
-    {
+
+    /* check */
+    if ip.len() < (*dctx).format.frame_header_size_min() + ZSTD_blockHeaderSize {
         return Error::srcSize_wrong.to_error_code();
     }
-    let frameHeaderSize = frame_header_size_internal(ip, (*dctx).format);
+
+    /* Frame Header */
+    let frameHeaderSize = frame_header_size_internal(ip.as_slice(), (*dctx).format);
     if ERR_isError(frameHeaderSize) {
         return frameHeaderSize;
     }
     if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
-    let err_code = ZSTD_decodeFrameHeader(dctx, &ip[..frameHeaderSize]);
+    let err_code = ZSTD_decodeFrameHeader(dctx, &ip.as_slice()[..frameHeaderSize]);
     if ERR_isError(err_code) {
         return err_code;
     }
-    *ip = &ip[frameHeaderSize..];
+    *ip = ip.subslice(frameHeaderSize..);
+
+    /* Shrink the blockSizeMax if enabled */
     if (*dctx).maxBlockSizeParam != 0 {
-        (*dctx).fParams.blockSizeMax =
-            if (*dctx).fParams.blockSizeMax < (*dctx).maxBlockSizeParam as core::ffi::c_uint {
-                (*dctx).fParams.blockSizeMax
-            } else {
-                (*dctx).maxBlockSizeParam as core::ffi::c_uint
-            };
+        (*dctx).fParams.blockSizeMax = Ord::min(
+            (*dctx).fParams.blockSizeMax,
+            (*dctx).maxBlockSizeParam as core::ffi::c_uint,
+        );
     }
+
+    /* Loop on each block */
     loop {
         let mut oBlockEnd = oend;
         let mut decodedSize: size_t = 0;
 
-        let (blockProperties, cBlockSize) = match getc_block_size(ip) {
+        let (blockProperties, cBlockSize) = match getc_block_size(ip.as_slice()) {
             Ok(ret) => ret,
             Err(e) => return e.to_error_code(),
         };
 
-        *ip = &ip[ZSTD_blockHeaderSize..];
+        *ip = ip.subslice(ZSTD_blockHeaderSize..);
         if cBlockSize > ip.len() {
             return Error::srcSize_wrong.to_error_code();
         }
+
         if ip.as_ptr() >= op as *const u8 && ip.as_ptr() < oBlockEnd as *const u8 {
+            // We are decompressing in-place. Limit the output pointer so that we
+            // don't overwrite the block that we are currently reading. This will
+            // fail decompression if the input & output pointers aren't spaced
+            // far enough apart.
+            //
+            // This is important to set, even when the pointers are far enough
+            // apart, because ZSTD_decompressBlock_internal() can decide to store
+            // literals in the output buffer, after the block it is decompressing.
+            // Since we don't want anything to overwrite our input, we have to tell
+            // ZSTD_decompressBlock_internal to never write past ip.
+            //
+            // See ZSTD_allocateLiteralsBuffer() for reference.
             oBlockEnd = op.offset(ip.as_ptr().offset_from(op) as core::ffi::c_long as isize);
         }
+
         match blockProperties.blockType {
             BlockType::Raw => {
+                // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
                 decodedSize = ZSTD_copyRawBlock(
                     op as *mut core::ffi::c_void,
                     oend.offset_from(op) as size_t,
@@ -1617,7 +1613,7 @@ unsafe fn ZSTD_decompressFrame(
                 decodedSize = ZSTD_setRleBlock(
                     op as *mut core::ffi::c_void,
                     oBlockEnd.offset_from(op) as size_t,
-                    ip[0],
+                    ip.as_slice()[0],
                     blockProperties.origSize as size_t,
                 );
             }
@@ -1635,10 +1631,11 @@ unsafe fn ZSTD_decompressFrame(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        let err_code_0 = decodedSize;
-        if ERR_isError(err_code_0) {
-            return err_code_0;
+
+        if ERR_isError(decodedSize) {
+            return decodedSize;
         }
+
         if (*dctx).validateChecksum != 0 {
             ZSTD_XXH64_update(
                 &mut (*dctx).xxhState,
@@ -1646,10 +1643,11 @@ unsafe fn ZSTD_decompressFrame(
                 decodedSize,
             );
         }
-        if decodedSize != 0 {
-            op = op.add(decodedSize);
-        }
-        *ip = &ip[cBlockSize..];
+
+        // Adding 0 to NULL is not UB in rust.
+        op = op.add(decodedSize);
+
+        *ip = ip.subslice(cBlockSize..);
         if blockProperties.lastBlock != 0 {
             break;
         }
@@ -1660,8 +1658,10 @@ unsafe fn ZSTD_decompressFrame(
     {
         return Error::corruption_detected.to_error_code();
     }
+
+    /* Frame content checksum verification */
     if (*dctx).fParams.checksumFlag != 0 {
-        let [a, b, c, d, ..] = **ip else {
+        let [a, b, c, d, ..] = *ip.as_slice() else {
             return Error::checksum_wrong.to_error_code();
         };
 
@@ -1671,7 +1671,7 @@ unsafe fn ZSTD_decompressFrame(
             return Error::checksum_wrong.to_error_code();
         }
 
-        *ip = &ip[4..];
+        *ip = ip.subslice(4..);
     }
 
     ZSTD_DCtx_trace_end(
@@ -1681,13 +1681,14 @@ unsafe fn ZSTD_decompressFrame(
         0,
     );
 
+    /* Allow caller to get size read */
     op.offset_from(ostart) as size_t
 }
 
 unsafe fn ZSTD_decompressMultiFrame(
     dctx: *mut ZSTD_DCtx,
     mut dst: Writer<'_>,
-    mut src: &[u8],
+    mut src: Reader<'_>,
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     ddict: Option<&ZSTD_DDict>,
@@ -1701,51 +1702,48 @@ unsafe fn ZSTD_decompressMultiFrame(
     }
 
     while src.len() >= ZSTD_startingInputLength((*dctx).format) {
-        if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src) != 0 {
-            let frameSize;
-            {
-                let srcSize = src.len();
-                let src = src.as_ptr().cast();
-
-                let mut decodedSize: size_t = 0;
-                frameSize = ZSTD_findFrameCompressedSizeLegacy(src, srcSize);
-                if ERR_isError(frameSize) {
-                    return frameSize;
-                }
-                if (*dctx).staticSize != 0 {
-                    return Error::memory_allocation.to_error_code();
-                }
-                decodedSize = ZSTD_decompressLegacy(
-                    dst.as_mut_ptr().cast(),
-                    dst.capacity(),
-                    src,
-                    frameSize,
-                    dict,
-                    dictSize,
-                );
-                if ERR_isError(decodedSize) {
-                    return decodedSize;
-                }
-                let expectedSize = ZSTD_getFrameContentSize(src, srcSize);
-                if expectedSize == ZSTD_CONTENTSIZE_ERROR {
-                    return Error::corruption_detected.to_error_code();
-                }
-                if expectedSize != ZSTD_CONTENTSIZE_UNKNOWN
-                    && expectedSize != decodedSize as core::ffi::c_ulonglong
-                {
-                    return Error::corruption_detected.to_error_code();
-                }
-                dst = dst.subslice(decodedSize..);
+        if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src.as_slice()) != 0 {
+            let frameSizeInfo = find_frame_size_info_legacy(src.as_slice());
+            let frameSize = frameSizeInfo.compressedSize;
+            if ERR_isError(frameSize) {
+                return frameSize;
             }
-            src = &src[frameSize..];
+
+            if (*dctx).staticSize != 0 {
+                return Error::memory_allocation.to_error_code();
+            }
+
+            let decodedSize = ZSTD_decompressLegacy(
+                dst.as_mut_ptr().cast(),
+                dst.capacity(),
+                src.as_ptr().cast(),
+                frameSize,
+                dict,
+                dictSize,
+            );
+            if ERR_isError(decodedSize) {
+                return decodedSize;
+            }
+
+            let expectedSize = get_frame_content_size(src.as_slice());
+            if expectedSize == ZSTD_CONTENTSIZE_ERROR {
+                return Error::corruption_detected.to_error_code();
+            }
+
+            if expectedSize != ZSTD_CONTENTSIZE_UNKNOWN && expectedSize != decodedSize as u64 {
+                return Error::corruption_detected.to_error_code();
+            }
+
+            dst = dst.subslice(decodedSize..);
+            src = src.subslice(frameSize..);
         } else {
-            if (*dctx).format == Format::ZSTD_f_zstd1 && is_skippable_frame(src) {
-                let skippableSize = read_skippable_frame_size(src);
+            if (*dctx).format == Format::ZSTD_f_zstd1 && is_skippable_frame(src.as_slice()) {
+                let skippableSize = read_skippable_frame_size(src.as_slice());
                 let err_code = skippableSize;
                 if ERR_isError(err_code) {
                     return err_code;
                 }
-                src = &src[skippableSize..];
+                src = src.subslice(skippableSize..);
                 continue;
             }
 
@@ -1790,13 +1788,8 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let src = if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
-    };
-
-    // NOTE: already handles the `dst.is_null()` case.
+    // It is valid for src and dst to overlap.
+    let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
     ZSTD_decompressMultiFrame(dctx, dst, src, dict, dictSize, None)
@@ -1905,10 +1898,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
     dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
     match dctx.stage {
         DecompressStage::GetFrameHeaderSize => {
-            if dctx.format == Format::ZSTD_f_zstd1
-                && u32::from_le_bytes(*src.first_chunk().unwrap()) & ZSTD_MAGIC_SKIPPABLE_MASK
-                    == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
-            {
+            if dctx.format == Format::ZSTD_f_zstd1 && is_skippable_frame(src) {
                 dctx.headerBuffer[..src.len()].copy_from_slice(src);
 
                 dctx.expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(src.len());
@@ -2350,13 +2340,8 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
     srcSize: size_t,
     ddict: *const ZSTD_DDict,
 ) -> size_t {
-    let src = if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
-    };
-
-    // NOTE: already handles the `dst.is_null()` case.
+    // It is valid for src and dst to overlap.
+    let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
     ZSTD_decompressMultiFrame(dctx, dst, src, core::ptr::null(), 0, ddict.as_ref())
