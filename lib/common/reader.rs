@@ -53,7 +53,7 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn as_ptr(&mut self) -> *const u8 {
+    pub fn as_ptr(&self) -> *const u8 {
         match self.ptr {
             None => core::ptr::null_mut(),
             Some(ptr) => ptr.as_ptr(),
