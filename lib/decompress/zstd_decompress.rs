@@ -1879,6 +1879,8 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
+    let dctx = dctx.as_mut().unwrap();
+
     let src = if src.is_null() {
         &[]
     } else {
@@ -1891,43 +1893,41 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     decompress_continue(dctx, dst, src)
 }
 
-unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[u8]) -> size_t {
+unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[u8]) -> size_t {
     if src.len() != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, src.len()) {
         return Error::srcSize_wrong.to_error_code();
     }
     ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
-    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(src.len()) as u64;
-    match (*dctx).stage {
+    dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
+    match dctx.stage {
         DecompressStage::GetFrameHeaderSize => {
-            if (*dctx).format == Format::ZSTD_f_zstd1
+            if dctx.format == Format::ZSTD_f_zstd1
                 && u32::from_le_bytes(*src.first_chunk().unwrap()) & ZSTD_MAGIC_SKIPPABLE_MASK
                     == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
             {
-                (&mut (*dctx).headerBuffer)[..src.len()].copy_from_slice(src);
+                dctx.headerBuffer[..src.len()].copy_from_slice(src);
 
-                (*dctx).expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(src.len());
-                (*dctx).stage = DecompressStage::DecodeSkippableHeader;
+                dctx.expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(src.len());
+                dctx.stage = DecompressStage::DecodeSkippableHeader;
                 return 0;
             }
-            (*dctx).headerSize = frame_header_size_internal(src, (*dctx).format);
-            if ERR_isError((*dctx).headerSize) {
-                return (*dctx).headerSize;
+            dctx.headerSize = frame_header_size_internal(src, dctx.format);
+            if ERR_isError(dctx.headerSize) {
+                return dctx.headerSize;
             }
-            (&mut (*dctx).headerBuffer)[..src.len()].copy_from_slice(src);
-            (*dctx).expected = ((*dctx).headerSize).wrapping_sub(src.len());
-            (*dctx).stage = DecompressStage::DecodeFrameHeader;
+            dctx.headerBuffer[..src.len()].copy_from_slice(src);
+            dctx.expected = (dctx.headerSize).wrapping_sub(src.len());
+            dctx.stage = DecompressStage::DecodeFrameHeader;
             0
         }
         DecompressStage::DecodeFrameHeader => {
-            (&mut (*dctx).headerBuffer)[((*dctx).headerSize) - src.len()..][..src.len()]
-                .copy_from_slice(src);
-            let err_code =
-                ZSTD_decodeFrameHeader(dctx, &(&(*dctx).headerBuffer)[..(*dctx).headerSize]);
+            dctx.headerBuffer[(dctx.headerSize) - src.len()..][..src.len()].copy_from_slice(src);
+            let err_code = ZSTD_decodeFrameHeader(dctx, &dctx.headerBuffer[..dctx.headerSize]);
             if ERR_isError(err_code) {
                 return err_code;
             }
-            (*dctx).expected = ZSTD_blockHeaderSize;
-            (*dctx).stage = DecompressStage::DecodeBlockHeader;
+            dctx.expected = ZSTD_blockHeaderSize;
+            dctx.stage = DecompressStage::DecodeBlockHeader;
             0
         }
         DecompressStage::DecodeBlockHeader => {
@@ -1936,37 +1936,37 @@ unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 Err(e) => return e.to_error_code(),
             };
 
-            if cBlockSize > (*dctx).fParams.blockSizeMax as size_t {
+            if cBlockSize > dctx.fParams.blockSizeMax as size_t {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).expected = cBlockSize;
-            (*dctx).bType = bp.blockType;
-            (*dctx).rleSize = bp.origSize as size_t;
+            dctx.expected = cBlockSize;
+            dctx.bType = bp.blockType;
+            dctx.rleSize = bp.origSize as size_t;
             if cBlockSize != 0 {
-                (*dctx).stage = match bp.lastBlock {
+                dctx.stage = match bp.lastBlock {
                     0 => DecompressStage::DecompressBlock,
                     _ => DecompressStage::DecompressLastBlock,
                 };
                 return 0;
             }
             if bp.lastBlock != 0 {
-                if (*dctx).fParams.checksumFlag != 0 {
-                    (*dctx).expected = 4;
-                    (*dctx).stage = DecompressStage::CheckChecksum;
+                if dctx.fParams.checksumFlag != 0 {
+                    dctx.expected = 4;
+                    dctx.stage = DecompressStage::CheckChecksum;
                 } else {
-                    (*dctx).expected = 0;
-                    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
+                    dctx.expected = 0;
+                    dctx.stage = DecompressStage::GetFrameHeaderSize;
                 }
             } else {
-                (*dctx).expected = ZSTD_blockHeaderSize;
-                (*dctx).stage = DecompressStage::DecodeBlockHeader;
+                dctx.expected = ZSTD_blockHeaderSize;
+                dctx.stage = DecompressStage::DecodeBlockHeader;
             }
             0
         }
 
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
             let mut rSize: size_t = 0;
-            match (*dctx).bType {
+            match dctx.bType {
                 BlockType::Compressed => {
                     rSize = ZSTD_decompressBlock_internal(
                         dctx,
@@ -1976,7 +1976,7 @@ unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                         src.len(),
                         is_streaming,
                     );
-                    (*dctx).expected = 0;
+                    dctx.expected = 0;
                 }
                 BlockType::Raw => {
                     rSize = ZSTD_copyRawBlock(
@@ -1989,16 +1989,16 @@ unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                     if ERR_isError(err_code_0) {
                         return err_code_0;
                     }
-                    (*dctx).expected = ((*dctx).expected).wrapping_sub(rSize);
+                    dctx.expected = (dctx.expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
                     rSize = ZSTD_setRleBlock(
                         dst.as_mut_ptr().cast(),
                         dst.capacity(),
                         src[0],
-                        (*dctx).rleSize,
+                        dctx.rleSize,
                     );
-                    (*dctx).expected = 0;
+                    dctx.expected = 0;
                 }
                 BlockType::Reserved => {
                     return Error::corruption_detected.to_error_code();
@@ -2008,68 +2008,61 @@ unsafe fn decompress_continue(dctx: *mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             if ERR_isError(err_code_1) {
                 return err_code_1;
             }
-            if rSize > (*dctx).fParams.blockSizeMax as size_t {
+            if rSize > dctx.fParams.blockSizeMax as size_t {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).decodedSize = ((*dctx).decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
-            if (*dctx).validateChecksum != 0 {
-                ZSTD_XXH64_update(
-                    &mut (*dctx).xxhState,
-                    dst.as_mut_ptr().cast(),
-                    rSize as usize,
-                );
+            dctx.decodedSize = (dctx.decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
+            if dctx.validateChecksum != 0 {
+                ZSTD_XXH64_update(&mut dctx.xxhState, dst.as_mut_ptr().cast(), rSize as usize);
             }
-            (*dctx).previousDstEnd = dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>();
-            if (*dctx).expected > 0 {
+            dctx.previousDstEnd = dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>();
+            if dctx.expected > 0 {
                 return rSize;
             }
-            if (*dctx).stage == DecompressStage::DecompressLastBlock {
-                if (*dctx).fParams.frameContentSize != (0 as core::ffi::c_ulonglong).wrapping_sub(1)
-                    && (*dctx).decodedSize as core::ffi::c_ulonglong
-                        != (*dctx).fParams.frameContentSize
+            if dctx.stage == DecompressStage::DecompressLastBlock {
+                if dctx.fParams.frameContentSize != (0 as core::ffi::c_ulonglong).wrapping_sub(1)
+                    && dctx.decodedSize as core::ffi::c_ulonglong != dctx.fParams.frameContentSize
                 {
                     return Error::corruption_detected.to_error_code();
                 }
-                if (*dctx).fParams.checksumFlag != 0 {
-                    (*dctx).expected = 4;
-                    (*dctx).stage = DecompressStage::CheckChecksum;
+                if dctx.fParams.checksumFlag != 0 {
+                    dctx.expected = 4;
+                    dctx.stage = DecompressStage::CheckChecksum;
                 } else {
-                    ZSTD_DCtx_trace_end(dctx, (*dctx).decodedSize, (*dctx).processedCSize, 1);
-                    (*dctx).expected = 0;
-                    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
+                    ZSTD_DCtx_trace_end(dctx, dctx.decodedSize, dctx.processedCSize, 1);
+                    dctx.expected = 0;
+                    dctx.stage = DecompressStage::GetFrameHeaderSize;
                 }
             } else {
-                (*dctx).stage = DecompressStage::DecodeBlockHeader;
-                (*dctx).expected = ZSTD_blockHeaderSize;
+                dctx.stage = DecompressStage::DecodeBlockHeader;
+                dctx.expected = ZSTD_blockHeaderSize;
             }
             rSize
         }
         DecompressStage::CheckChecksum => {
-            if (*dctx).validateChecksum != 0 {
-                let h32 = ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32;
+            if dctx.validateChecksum != 0 {
+                let h32 = ZSTD_XXH64_digest(&mut dctx.xxhState) as u32;
                 let check32 = u32::from_le_bytes(*src.first_chunk().unwrap());
                 if check32 != h32 {
                     return Error::checksum_wrong.to_error_code();
                 }
             }
-            ZSTD_DCtx_trace_end(dctx, (*dctx).decodedSize, (*dctx).processedCSize, 1);
-            (*dctx).expected = 0;
-            (*dctx).stage = DecompressStage::GetFrameHeaderSize;
+            ZSTD_DCtx_trace_end(dctx, dctx.decodedSize, dctx.processedCSize, 1);
+            dctx.expected = 0;
+            dctx.stage = DecompressStage::GetFrameHeaderSize;
             0
         }
         DecompressStage::DecodeSkippableHeader => {
-            (&mut (*dctx).headerBuffer)[8 - src.len()..][..src.len()].copy_from_slice(src);
-            (*dctx).expected = u32::from_le_bytes(
-                *(&(*dctx).headerBuffer)[ZSTD_FRAMEIDSIZE as usize..]
-                    .first_chunk()
-                    .unwrap(),
-            ) as usize;
-            (*dctx).stage = DecompressStage::SkipFrame;
+            dctx.headerBuffer[8 - src.len()..][..src.len()].copy_from_slice(src);
+            dctx.expected =
+                u32::from_le_bytes(*dctx.headerBuffer[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap())
+                    as usize;
+            dctx.stage = DecompressStage::SkipFrame;
             0
         }
         DecompressStage::SkipFrame => {
-            (*dctx).expected = 0;
-            (*dctx).stage = DecompressStage::GetFrameHeaderSize;
+            dctx.expected = 0;
+            dctx.stage = DecompressStage::GetFrameHeaderSize;
             0
         }
     }
