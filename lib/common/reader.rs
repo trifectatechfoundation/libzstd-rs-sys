@@ -39,10 +39,10 @@ impl<'a> Reader<'a> {
         }
     }
 
-    #[inline]
-    pub fn is_null(&self) -> bool {
-        self.ptr.is_none()
-    }
+    //    #[inline]
+    //    pub fn is_null(&self) -> bool {
+    //        self.ptr.is_none()
+    //    }
 
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -53,18 +53,29 @@ impl<'a> Reader<'a> {
     }
 
     #[inline]
-    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+    pub fn as_ptr(&mut self) -> *const u8 {
         match self.ptr {
             None => core::ptr::null_mut(),
             Some(ptr) => ptr.as_ptr(),
         }
     }
 
+    //    #[inline]
+    //    pub fn as_ptr_range(&mut self) -> core::ops::Range<*const u8> {
+    //        match self.ptr {
+    //            None => core::ptr::null_mut()..core::ptr::null(),
+    //            Some(ptr) => ptr.as_ptr().cast_const()..self.end,
+    //        }
+    //    }
+
     #[inline]
-    pub fn as_mut_ptr_range(&mut self) -> core::ops::Range<*const u8> {
+    pub fn as_slice(&self) -> &[u8] {
         match self.ptr {
-            None => core::ptr::null_mut()..core::ptr::null(),
-            Some(ptr) => ptr.as_ptr().cast_const()..self.end,
+            None => &[],
+            Some(ptr) => {
+                let ptr = ptr.as_ptr().cast_const();
+                unsafe { core::slice::from_raw_parts(ptr, self.end.offset_from_unsigned(ptr)) }
+            }
         }
     }
 

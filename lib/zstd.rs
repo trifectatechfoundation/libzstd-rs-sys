@@ -104,6 +104,15 @@ pub enum Format {
     ZSTD_f_zstd1_magicless = 1,
 }
 
+impl Format {
+    pub(crate) const fn frame_header_size_min(self) -> usize {
+        match self {
+            Format::ZSTD_f_zstd1 => 6,
+            Format::ZSTD_f_zstd1_magicless => 2,
+        }
+    }
+}
+
 impl TryFrom<ZSTD_format_e> for Format {
     type Error = ();
 
