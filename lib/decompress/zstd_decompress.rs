@@ -1547,15 +1547,14 @@ unsafe fn ZSTD_DCtx_trace_end(
 }
 unsafe fn ZSTD_decompressFrame(
     dctx: *mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    mut dst: Writer<'_>,
     srcPtr: &mut &[u8],
 ) -> size_t {
     let ilen = srcPtr.len();
     let ip = srcPtr;
-    let ostart = dst as *mut u8;
-    let oend = if dstCapacity != 0 {
-        ostart.add(dstCapacity)
+    let ostart = dst.as_mut_ptr();
+    let oend = if dst.capacity() != 0 {
+        ostart.add(dst.capacity())
     } else {
         ostart
     };
@@ -1762,7 +1761,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                 }
             }
             ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
-            let res = ZSTD_decompressFrame(dctx, dst.as_mut_ptr().cast(), dst.capacity(), &mut src);
+            let res = ZSTD_decompressFrame(dctx, dst.subslice(..), &mut src);
             if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
                 return Error::srcSize_wrong.to_error_code();
             }
