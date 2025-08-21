@@ -1547,18 +1547,15 @@ unsafe fn ZSTD_DCtx_trace_end(
 }
 unsafe fn ZSTD_decompressFrame(
     dctx: *mut ZSTD_DCtx,
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     srcPtr: &mut Reader<'_>,
 ) -> size_t {
     let ilen = srcPtr.len();
     let ip = srcPtr;
-    let ostart = dst.as_mut_ptr();
-    let oend = if dst.capacity() != 0 {
-        ostart.add(dst.capacity())
-    } else {
-        ostart
-    };
-    let mut op = ostart;
+
+    let start_capacity = dst.capacity();
+    let mut op = dst;
+    let oend = op.as_mut_ptr_range().end;
 
     /* check */
     if ip.len() < (*dctx).format.frame_header_size_min() + ZSTD_blockHeaderSize {
@@ -1602,7 +1599,7 @@ unsafe fn ZSTD_decompressFrame(
             return Error::srcSize_wrong.to_error_code();
         }
 
-        if ip.as_ptr() >= op as *const u8 && ip.as_ptr() < oBlockEnd as *const u8 {
+        if op.as_mut_ptr_range().contains(&ip.as_ptr().cast_mut()) {
             // We are decompressing in-place. Limit the output pointer so that we
             // don't overwrite the block that we are currently reading. This will
             // fail decompression if the input & output pointers aren't spaced
@@ -1615,23 +1612,25 @@ unsafe fn ZSTD_decompressFrame(
             // ZSTD_decompressBlock_internal to never write past ip.
             //
             // See ZSTD_allocateLiteralsBuffer() for reference.
-            oBlockEnd = op.offset(ip.as_ptr().offset_from(op) as core::ffi::c_long as isize);
+            oBlockEnd = op
+                .as_mut_ptr()
+                .add(ip.as_ptr().offset_from_unsigned(op.as_mut_ptr()));
         }
 
         match blockProperties.blockType {
             BlockType::Raw => {
                 // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
                 decodedSize = ZSTD_copyRawBlock(
-                    op as *mut core::ffi::c_void,
-                    oend.offset_from(op) as size_t,
+                    op.as_mut_ptr().cast(),
+                    op.capacity(),
                     ip.as_ptr().cast(),
                     cBlockSize,
                 );
             }
             BlockType::Rle => {
                 decodedSize = ZSTD_setRleBlock(
-                    op as *mut core::ffi::c_void,
-                    oBlockEnd.offset_from(op) as size_t,
+                    op.as_mut_ptr().cast(),
+                    oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
                     ip.as_slice()[0],
                     blockProperties.origSize as size_t,
                 );
@@ -1639,8 +1638,8 @@ unsafe fn ZSTD_decompressFrame(
             BlockType::Compressed => {
                 decodedSize = ZSTD_decompressBlock_internal(
                     dctx,
-                    op as *mut core::ffi::c_void,
-                    oBlockEnd.offset_from(op) as size_t,
+                    op.as_mut_ptr().cast(),
+                    oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                     not_streaming,
@@ -1656,15 +1655,11 @@ unsafe fn ZSTD_decompressFrame(
         }
 
         if (*dctx).validateChecksum != 0 {
-            ZSTD_XXH64_update(
-                &mut (*dctx).xxhState,
-                op as *const core::ffi::c_void,
-                decodedSize,
-            );
+            ZSTD_XXH64_update(&mut (*dctx).xxhState, op.as_mut_ptr().cast(), decodedSize);
         }
 
         // Adding 0 to NULL is not UB in rust.
-        op = op.add(decodedSize);
+        op = op.subslice(decodedSize..);
 
         *ip = ip.subslice(cBlockSize..);
         if blockProperties.lastBlock != 0 {
@@ -1672,7 +1667,7 @@ unsafe fn ZSTD_decompressFrame(
         }
     }
     if (*dctx).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
-        && op.offset_from(ostart) as core::ffi::c_long as u64 as core::ffi::c_ulonglong
+        && (start_capacity - op.capacity()) as core::ffi::c_ulonglong
             != (*dctx).fParams.frameContentSize
     {
         return Error::corruption_detected.to_error_code();
@@ -1695,13 +1690,13 @@ unsafe fn ZSTD_decompressFrame(
 
     ZSTD_DCtx_trace_end(
         dctx,
-        op.offset_from(ostart) as core::ffi::c_long as u64,
+        (start_capacity - op.capacity()) as u64,
         (ilen - ip.len()) as u64,
         0,
     );
 
     /* Allow caller to get size read */
-    op.offset_from(ostart) as size_t
+    start_capacity - op.capacity()
 }
 
 unsafe fn ZSTD_decompressMultiFrame(
