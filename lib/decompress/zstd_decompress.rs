@@ -1706,14 +1706,13 @@ unsafe fn ZSTD_decompressFrame(
 
 unsafe fn ZSTD_decompressMultiFrame(
     dctx: *mut ZSTD_DCtx,
-    mut dst: *mut core::ffi::c_void,
-    mut dstCapacity: size_t,
+    mut dst: Writer<'_>,
     mut src: &[u8],
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     ddict: Option<&ZSTD_DDict>,
 ) -> size_t {
-    let dststart = dst;
+    let start_capacity = dst.capacity();
     let mut more_than_one_frame = false;
 
     if let Some(ddict) = ddict {
@@ -1736,8 +1735,14 @@ unsafe fn ZSTD_decompressMultiFrame(
                 if (*dctx).staticSize != 0 {
                     return Error::memory_allocation.to_error_code();
                 }
-                decodedSize =
-                    ZSTD_decompressLegacy(dst, dstCapacity, src, frameSize, dict, dictSize);
+                decodedSize = ZSTD_decompressLegacy(
+                    dst.as_mut_ptr().cast(),
+                    dst.capacity(),
+                    src,
+                    frameSize,
+                    dict,
+                    dictSize,
+                );
                 if ERR_isError(decodedSize) {
                     return decodedSize;
                 }
@@ -1750,8 +1755,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                 {
                     return Error::corruption_detected.to_error_code();
                 }
-                dst = (dst as *mut u8).add(decodedSize) as *mut core::ffi::c_void;
-                dstCapacity = dstCapacity.wrapping_sub(decodedSize);
+                dst = dst.subslice(decodedSize..);
             }
             src = &src[frameSize..];
         } else {
@@ -1776,18 +1780,15 @@ unsafe fn ZSTD_decompressMultiFrame(
                     return err_code_1;
                 }
             }
-            ZSTD_checkContinuity(dctx, dst, dstCapacity);
-            let res = ZSTD_decompressFrame(dctx, dst, dstCapacity, &mut src);
+            ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
+            let res = ZSTD_decompressFrame(dctx, dst.as_mut_ptr().cast(), dst.capacity(), &mut src);
             if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
                 return Error::srcSize_wrong.to_error_code();
             }
             if ERR_isError(res) {
                 return res;
             }
-            if res != 0 {
-                dst = (dst as *mut u8).add(res) as *mut core::ffi::c_void;
-            }
-            dstCapacity = dstCapacity.wrapping_sub(res);
+            dst = dst.subslice(res..);
             more_than_one_frame = true;
         }
     }
@@ -1796,7 +1797,7 @@ unsafe fn ZSTD_decompressMultiFrame(
         return Error::srcSize_wrong.to_error_code();
     }
 
-    (dst as *mut u8).offset_from(dststart as *mut u8) as size_t
+    start_capacity - dst.capacity()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDict))]
@@ -1814,7 +1815,11 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     } else {
         core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
-    ZSTD_decompressMultiFrame(dctx, dst, dstCapacity, src, dict, dictSize, None)
+
+    // NOTE: already handles the `dst.is_null()` case.
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+
+    ZSTD_decompressMultiFrame(dctx, dst, src, dict, dictSize, None)
 }
 
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
@@ -2371,15 +2376,10 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
         core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
     };
 
-    ZSTD_decompressMultiFrame(
-        dctx,
-        dst,
-        dstCapacity,
-        src,
-        core::ptr::null(),
-        0,
-        ddict.as_ref(),
-    )
+    // NOTE: already handles the `dst.is_null()` case.
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+
+    ZSTD_decompressMultiFrame(dctx, dst, src, core::ptr::null(), 0, ddict.as_ref())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
