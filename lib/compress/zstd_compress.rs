@@ -1144,8 +1144,8 @@ use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
     LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
     MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, OffFSELog, Overlap, ZSTD_copy16,
-    ZSTD_limitCopy, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
-    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH,
+    ZSTD_OPT_NUM, ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -1211,11 +1211,6 @@ pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
-#[inline]
-unsafe fn ZSTD_cpuSupportsBmi2() -> core::ffi::c_int {
-    let cpuid = ZSTD_cpuid();
-    (ZSTD_cpuid_bmi1(cpuid) != 0 && ZSTD_cpuid_bmi2(cpuid) != 0) as core::ffi::c_int
-}
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 #[inline]
 unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: *mut ZSTD_cwksp) {}
@@ -1605,60 +1600,6 @@ unsafe fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
 }
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
-#[inline]
-unsafe fn ZSTD_cpuid() -> ZSTD_cpuid_t {
-    let mut f1c = 0;
-    let mut f1d = 0;
-    let mut f7b = 0;
-    let mut f7c = 0;
-    let mut n: u32 = 0;
-    asm!(
-        "cpuid",
-        inlateout("ax") 0 => n,
-        out("ecx") _,
-        out("edx") _,
-        options(preserves_flags, pure, readonly, att_syntax)
-    );
-    if n >= 1 {
-        asm!(
-            "cpuid",
-            inlateout("ax") 1 => _,
-            lateout("cx") f1c,
-            lateout("dx") f1d,
-            options(preserves_flags, pure, readonly, att_syntax)
-        );
-    }
-    if n >= 7 {
-        asm!(
-            "cpuid
-            mov {restmp0:x}, %bx",
-            restmp0 = lateout(reg) f7b,
-            inlateout("ax") 7 => _,
-            inlateout("cx") 0 => f7c,
-            out("edx") _,
-            options(preserves_flags, pure, readonly, att_syntax)
-        );
-    }
-    let mut cpuid = ZSTD_cpuid_t {
-        f1c: 0,
-        f1d: 0,
-        f7b: 0,
-        f7c: 0,
-    };
-    cpuid.f1c = f1c;
-    cpuid.f1d = f1d;
-    cpuid.f7b = f7b;
-    cpuid.f7c = f7c;
-    cpuid
-}
-#[inline]
-unsafe fn ZSTD_cpuid_bmi1(cpuid: ZSTD_cpuid_t) -> core::ffi::c_int {
-    (cpuid.f7b & (1) << 3 != 0) as core::ffi::c_int
-}
-#[inline]
-unsafe fn ZSTD_cpuid_bmi2(cpuid: ZSTD_cpuid_t) -> core::ffi::c_int {
-    (cpuid.f7b & (1) << 8 != 0) as core::ffi::c_int
-}
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST: unsafe fn(
     *mut ZSTD_MatchState_t,
     *mut SeqStore_t,
@@ -1952,7 +1893,7 @@ pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
 unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, ::core::mem::size_of::<ZSTD_CCtx>());
     (*cctx).customMem = memManager;
-    (*cctx).bmi2 = ZSTD_cpuSupportsBmi2();
+    (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     let err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
@@ -2060,7 +2001,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     } else {
         8208
     };
-    (*cctx).bmi2 = ZSTD_cpuid_bmi2(ZSTD_cpuid());
+    (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     cctx
 }
 unsafe fn ZSTD_clearAllDicts(cctx: *mut ZSTD_CCtx) {

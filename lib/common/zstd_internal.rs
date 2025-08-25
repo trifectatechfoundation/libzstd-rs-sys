@@ -167,3 +167,15 @@ pub(crate) unsafe fn ZSTD_limitCopy(
 
 pub(crate) const ZSTD_WORKSPACETOOLARGE_FACTOR: core::ffi::c_int = 3;
 pub(crate) const ZSTD_WORKSPACETOOLARGE_MAXDURATION: core::ffi::c_int = 128;
+
+#[inline]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+pub(crate) fn ZSTD_cpuSupportsBmi2() -> bool {
+    is_x86_feature_detected!("bmi1") && is_x86_feature_detected!("bmi2")
+}
+
+#[inline]
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+pub(crate) fn ZSTD_cpuSupportsBmi2() -> bool {
+    false
+}

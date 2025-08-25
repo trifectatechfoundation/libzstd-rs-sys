@@ -10,9 +10,9 @@ use crate::lib::common::xxhash::{
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::common::zstd_internal::{
-    repStartValue, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize, ZSTD_limitCopy,
-    WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE, ZSTD_WORKSPACETOOLARGE_FACTOR,
-    ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    repStartValue, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize,
+    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
+    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
@@ -145,18 +145,6 @@ pub const ZSTD_d_disableHuffmanAssembly: core::ffi::c_int = 1004;
 pub const ZSTD_d_maxBlockSize: core::ffi::c_int = 1005;
 pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
-
-#[inline]
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-fn ZSTD_cpuSupportsBmi2() -> bool {
-    is_x86_feature_detected!("bmi1") && is_x86_feature_detected!("bmi2")
-}
-
-#[inline]
-#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-fn ZSTD_cpuSupportsBmi2() -> bool {
-    false
-}
 
 #[inline]
 unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
