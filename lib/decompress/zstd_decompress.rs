@@ -147,8 +147,15 @@ pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 #[inline]
-unsafe fn ZSTD_cpuSupportsBmi2() -> bool {
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+fn ZSTD_cpuSupportsBmi2() -> bool {
     is_x86_feature_detected!("bmi1") && is_x86_feature_detected!("bmi2")
+}
+
+#[inline]
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+fn ZSTD_cpuSupportsBmi2() -> bool {
+    false
 }
 
 #[inline]
