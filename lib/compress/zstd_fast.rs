@@ -80,7 +80,6 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::zstd_compress::{
     SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
 };
-use crate::lib::compress::zstd_compress_internal::ZSTD_selectAddr;
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
@@ -465,7 +464,8 @@ unsafe fn ZSTD_match4Found_cmov(
         0x56 as core::ffi::c_int as u8,
         0x78 as core::ffi::c_int as u8,
     ];
-    let mvalAddr = ZSTD_selectAddr(matchIdx, idxLowLimit, matchAddress, dummy.as_ptr());
+    let mvalAddr =
+        core::hint::select_unpredictable(matchIdx >= idxLowLimit, matchAddress, dummy.as_ptr());
     if MEM_read32(currentPtr as *const core::ffi::c_void)
         != MEM_read32(mvalAddr as *const core::ffi::c_void)
     {
