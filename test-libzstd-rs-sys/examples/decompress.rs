@@ -22,7 +22,7 @@ fn main() {
 }
 
 fn rs(compressed: &[u8]) -> i32 {
-    use libzstd_rs::lib::{
+    use libzstd_rs_sys::lib::{
         common::zstd_common::{ZSTD_getErrorName, ZSTD_isError},
         decompress::zstd_decompress::{
             ZSTD_decompress, ZSTD_getFrameContentSize, ZSTD_CONTENTSIZE_ERROR,

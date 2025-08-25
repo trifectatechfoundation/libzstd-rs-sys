@@ -86,7 +86,7 @@ fn decompress_stream_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
 }
 
 fn decompress_stream_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     decompress_stream!(compressed, dict)
 }
@@ -241,7 +241,7 @@ fn decompress_continue_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
 }
 
 fn decompress_continue_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     decompress_continue!(compressed, dict)
 }
@@ -313,7 +313,7 @@ mod fastest_wasm_zlib_continue {
 fn decompress_using_dict() {
     use std::ffi::c_void;
 
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     let input_data = "The quick brown fox jumps high";
 
@@ -468,7 +468,7 @@ fn test_decompress_stream_with_dict() {
     const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 
     unsafe {
-        use libzstd_rs::*;
+        use libzstd_rs_sys::*;
 
         let mut zd: Box<core::mem::MaybeUninit<ZSTD_DStream>> = Box::new_uninit();
         core::ptr::write_bytes(zd.as_mut_ptr(), 0u8, 1);
@@ -480,7 +480,7 @@ fn test_decompress_stream_with_dict() {
             zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             (ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
         );
-        assert_eq!(libzstd_rs::ZSTD_isError(ret), 0);
+        assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
 
         let mut buffer = vec![0; 10485760];
 

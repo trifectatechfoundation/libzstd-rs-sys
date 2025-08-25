@@ -6,22 +6,22 @@ use libc::{
     fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, munmap, remove, size_t, strcmp,
     strcpy, strerror, strlen, strrchr, timespec, FILE,
 };
-use libzstd_rs::internal::{MEM_readLE24, MEM_readLE32};
-use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
-use libzstd_rs::lib::compress::zstd_compress::{
+use libzstd_rs_sys::internal::{MEM_readLE24, MEM_readLE32};
+use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
+use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary_byReference, ZSTD_CCtx_refPrefix,
     ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize, ZSTD_CStream, ZSTD_CStreamInSize,
     ZSTD_CStreamOutSize, ZSTD_compressStream2, ZSTD_createCCtx, ZSTD_freeCStream, ZSTD_getCParams,
     ZSTD_getFrameProgression, ZSTD_maxCLevel, ZSTD_minCLevel, ZSTD_toFlushNow,
 };
-use libzstd_rs::lib::decompress::zstd_decompress::{
+use libzstd_rs_sys::lib::decompress::zstd_decompress::{
     ZSTD_DCtx_loadDictionary_byReference, ZSTD_DCtx_refPrefix, ZSTD_DCtx_reset,
     ZSTD_DCtx_setMaxWindowSize, ZSTD_DCtx_setParameter, ZSTD_DStreamInSize, ZSTD_DStreamOutSize,
     ZSTD_createDStream, ZSTD_decompressStream, ZSTD_frameHeaderSize, ZSTD_freeDStream,
     ZSTD_getFrameContentSize, ZSTD_getFrameHeader, ZSTD_isFrame,
 };
-use libzstd_rs::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
-use libzstd_rs::lib::zstd::*;
+use libzstd_rs_sys::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
+use libzstd_rs_sys::lib::zstd::*;
 
 use crate::fileio_asyncio::{
     AIO_ReadPool_closeFile, AIO_ReadPool_consumeAndRefill, AIO_ReadPool_consumeBytes,

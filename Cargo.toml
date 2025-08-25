@@ -15,7 +15,7 @@ edition = "2021"
 autobins = false
 
 [lib]
-name = "libzstd_rs"
+name = "libzstd_rs_sys"
 path = "c2rust-lib.rs"
 crate-type = ["staticlib", "rlib"]
 
