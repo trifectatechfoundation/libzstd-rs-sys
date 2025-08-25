@@ -1,10 +1,4 @@
 use core::arch::asm;
-#[cfg(target_arch = "x86")]
-use core::arch::x86::{__m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8};
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::{
-    __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8,
-};
 pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
@@ -1454,12 +1448,22 @@ unsafe fn ZSTD_row_matchMaskGroupWidth(rowEntries: u32) -> u32 {
     1
 }
 #[inline(always)]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 unsafe fn ZSTD_row_getSSEMask(
     nbChunks: core::ffi::c_int,
     src: *const u8,
     tag: u8,
     head: u32,
 ) -> ZSTD_VecMask {
+    #[cfg(target_arch = "x86")]
+    use core::arch::x86::{
+        __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8,
+    };
+    #[cfg(target_arch = "x86_64")]
+    use core::arch::x86_64::{
+        __m128i, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_movemask_epi8, _mm_set1_epi8,
+    };
+
     let comparisonMask = _mm_set1_epi8(tag as core::ffi::c_char);
     let mut matches: [core::ffi::c_int; 4] = [0; 4];
     let mut i: core::ffi::c_int = 0;
@@ -1497,8 +1501,68 @@ unsafe fn ZSTD_row_getMatchMask(
     rowEntries: u32,
 ) -> ZSTD_VecMask {
     let src = tagRow;
-    ZSTD_row_getSSEMask((rowEntries / 16) as core::ffi::c_int, src, tag, headGrouped)
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    if true {
+        return ZSTD_row_getSSEMask((rowEntries / 16) as core::ffi::c_int, src, tag, headGrouped);
+    }
+
+    // Fallback using Simd Within A Register (SWAR).
+
+    let chunkSize = size_of::<usize>();
+    let shiftAmount = (chunkSize * 8) - chunkSize;
+    let xFF = usize::MAX;
+    let x01 = xFF / 0xFF;
+    let x80 = x01 << 7;
+    let splatChar = usize::from(tag) * x01;
+
+    let mut matches: ZSTD_VecMask = 0;
+    let mut i = rowEntries as isize - chunkSize as isize;
+    assert!((size_of::<usize>() == 4) || (size_of::<usize>() == 8));
+
+    if cfg!(target_endian = "little") {
+        let extractMagic = (xFF / 0x7F) >> chunkSize;
+
+        loop {
+            let mut chunk = src.offset(i).cast::<usize>().read_unaligned();
+            chunk ^= splatChar;
+            chunk = (((chunk | x80) - x01) | chunk) & x80;
+            matches <<= chunkSize;
+            matches |= ((chunk * extractMagic) >> shiftAmount) as ZSTD_VecMask;
+            i -= chunkSize as isize;
+
+            if i < 0 {
+                break;
+            }
+        }
+    } else {
+        // big endian: reverse bits during extraction.
+        let msb = xFF ^ (xFF >> 1);
+        let extractMagic = (msb / 0x1FF) | msb;
+
+        loop {
+            let mut chunk = src.offset(i).cast::<usize>().read_unaligned();
+            chunk ^= splatChar;
+            chunk = (((chunk | x80) - x01) | chunk) & x80;
+            matches <<= chunkSize;
+            matches |= (((chunk >> 7) * extractMagic) >> shiftAmount) as ZSTD_VecMask;
+            i -= chunkSize as isize;
+
+            if i < 0 {
+                break;
+            }
+        }
+    }
+
+    matches = !matches;
+    match rowEntries {
+        16 => (matches as u16).rotate_right(headGrouped) as ZSTD_VecMask,
+        32 => (matches as u32).rotate_right(headGrouped) as ZSTD_VecMask,
+        64 => (matches as u64).rotate_right(headGrouped) as ZSTD_VecMask,
+        _ => unreachable!(),
+    }
 }
+
 #[inline(always)]
 unsafe fn ZSTD_RowFindBestMatch(
     ms: *mut ZSTD_MatchState_t,
