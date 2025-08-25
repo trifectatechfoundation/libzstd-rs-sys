@@ -1830,16 +1830,6 @@ unsafe fn main_0(
     argCount: core::ffi::c_int,
     argv: *mut *const core::ffi::c_char,
 ) -> core::ffi::c_int {
-    #[derive(Clone, Eq, PartialEq)]
-    enum Block {
-        AfterArgLoop,
-        AfterFollowLinksLoop,
-        AfterFileOfNames,
-        AfterNbInputFileNames,
-        AfterShowDefaultCParams,
-    }
-
-    let mut current_block: Block;
     let mut argNb: core::ffi::c_int = 0;
     let mut followLinks = 0;
     let mut allowBlockDevices = 0;
@@ -2005,7 +1995,6 @@ unsafe fn main_0(
     'end: {
         loop {
             if argNb >= argCount {
-                current_block = Block::AfterArgLoop;
                 break;
             }
             let mut argument = *argv.offset(argNb as isize);
@@ -3956,244 +3945,220 @@ unsafe fn main_0(
             }
             argNb += 1;
         }
-        if current_block == Block::AfterArgLoop {
-            if g_displayLevel >= 3 {
-                fprintf(
-                    stderr,
-                    b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
-                    b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-                    (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
-                    b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
-                    b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
-                );
-            }
-            if operation as core::ffi::c_uint
-                == zom_decompress as core::ffi::c_int as core::ffi::c_uint
-                && setThreads_non1 != 0
-                && g_displayLevel >= 2
-            {
-                fprintf(
-                    stderr,
-                    b"Warning : decompression does not support multi-threading\n\0" as *const u8
-                        as *const core::ffi::c_char,
-                );
-            }
-            if nbWorkers == NBWORKERS_AUTOCPU as core::ffi::c_uint && singleThread == 0 {
-                if defaultLogicalCores != 0 {
-                    nbWorkers = UTIL_countLogicalCores() as core::ffi::c_uint;
-                    if g_displayLevel >= 3 {
-                        fprintf(
-                            stderr,
-                            b"Note: %d logical core(s) detected \n\0" as *const u8
-                                as *const core::ffi::c_char,
-                            nbWorkers,
-                        );
-                    }
-                } else {
-                    nbWorkers = UTIL_countPhysicalCores() as core::ffi::c_uint;
-                    if g_displayLevel >= 3 {
-                        fprintf(
-                            stderr,
-                            b"Note: %d physical core(s) detected \n\0" as *const u8
-                                as *const core::ffi::c_char,
-                            nbWorkers,
-                        );
-                    }
-                }
-            }
-            if operation as core::ffi::c_uint
-                == zom_compress as core::ffi::c_int as core::ffi::c_uint
-                && g_displayLevel >= 4
-            {
-                fprintf(
-                    stderr,
-                    b"Compressing with %u worker threads \n\0" as *const u8
-                        as *const core::ffi::c_char,
-                    nbWorkers,
-                );
-            }
-            g_utilDisplayLevel = g_displayLevel;
-            if followLinks == 0 {
-                let mut u: core::ffi::c_uint = 0;
-                let mut fileNamesNb: core::ffi::c_uint = 0;
-                let nbFilenames = (*filenames).tableSize as core::ffi::c_uint;
-                u = 0;
-                fileNamesNb = 0;
-                while u < nbFilenames {
-                    if UTIL_isLink(*((*filenames).fileNames).offset(u as isize)) != 0
-                        && UTIL_isFIFO(*((*filenames).fileNames).offset(u as isize)) == 0
-                    {
-                        if g_displayLevel >= 2 {
-                            fprintf(
-                                stderr,
-                                b"Warning : %s is a symbolic link, ignoring \n\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                *((*filenames).fileNames).offset(u as isize),
-                            );
-                        }
-                    } else {
-                        let fresh3 = fileNamesNb;
-                        fileNamesNb = fileNamesNb.wrapping_add(1);
-                        let fresh4 = &mut (*((*filenames).fileNames).offset(fresh3 as isize));
-                        *fresh4 = *((*filenames).fileNames).offset(u as isize);
-                    }
-                    u = u.wrapping_add(1);
-                }
-                if fileNamesNb == 0 && nbFilenames > 0 {
-                    operationResult = 1;
-                    break 'end;
-                } else {
-                    (*filenames).tableSize = fileNamesNb as size_t;
-                    current_block = Block::AfterFollowLinksLoop;
-                }
-            } else {
-                current_block = Block::AfterFollowLinksLoop;
-            }
-            if (*file_of_names).tableSize != 0 {
-                let nbFileLists = (*file_of_names).tableSize;
-                let mut flNb: size_t = 0;
-                flNb = 0;
-                loop {
-                    if flNb >= nbFileLists {
-                        current_block = Block::AfterFileOfNames;
-                        break;
-                    }
-                    let fnt = UTIL_createFileNamesTable_fromFileList(
-                        *((*file_of_names).fileNames).add(flNb),
+
+        if g_displayLevel >= 3 {
+            fprintf(
+                stderr,
+                b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
+                b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
+                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
+                b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
+                b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
+            );
+        }
+        if operation as core::ffi::c_uint == zom_decompress as core::ffi::c_int as core::ffi::c_uint
+            && setThreads_non1 != 0
+            && g_displayLevel >= 2
+        {
+            fprintf(
+                stderr,
+                b"Warning : decompression does not support multi-threading\n\0" as *const u8
+                    as *const core::ffi::c_char,
+            );
+        }
+        if nbWorkers == NBWORKERS_AUTOCPU as core::ffi::c_uint && singleThread == 0 {
+            if defaultLogicalCores != 0 {
+                nbWorkers = UTIL_countLogicalCores() as core::ffi::c_uint;
+                if g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"Note: %d logical core(s) detected \n\0" as *const u8
+                            as *const core::ffi::c_char,
+                        nbWorkers,
                     );
-                    if fnt.is_null() {
-                        if g_displayLevel >= 1 {
-                            fprintf(
-                                stderr,
-                                b"zstd: error reading %s \n\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                *((*file_of_names).fileNames).add(flNb),
-                            );
-                        }
-                        operationResult = 1;
-                        break 'end;
-                    } else {
-                        filenames = UTIL_mergeFileNamesTable(filenames, fnt);
-                        flNb = flNb.wrapping_add(1);
-                    }
                 }
             } else {
-                current_block = Block::AfterFileOfNames;
+                nbWorkers = UTIL_countPhysicalCores() as core::ffi::c_uint;
+                if g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"Note: %d physical core(s) detected \n\0" as *const u8
+                            as *const core::ffi::c_char,
+                        nbWorkers,
+                    );
+                }
             }
-            nbInputFileNames = (*filenames).tableSize;
-            if recursive != 0 {
-                UTIL_expandFNT(&mut filenames, followLinks);
-            }
-            if operation as core::ffi::c_uint == zom_list as core::ffi::c_int as core::ffi::c_uint {
-                let ret = FIO_listMultipleFiles(
-                    (*filenames).tableSize as core::ffi::c_uint,
-                    (*filenames).fileNames,
-                    g_displayLevel,
-                );
-                operationResult = ret;
-            } else if operation as core::ffi::c_uint
-                == zom_bench as core::ffi::c_int as core::ffi::c_uint
-            {
-                if cType as core::ffi::c_uint
-                    != FIO_zstdCompression as core::ffi::c_int as core::ffi::c_uint
+        }
+        if operation as core::ffi::c_uint == zom_compress as core::ffi::c_int as core::ffi::c_uint
+            && g_displayLevel >= 4
+        {
+            fprintf(
+                stderr,
+                b"Compressing with %u worker threads \n\0" as *const u8 as *const core::ffi::c_char,
+                nbWorkers,
+            );
+        }
+        g_utilDisplayLevel = g_displayLevel;
+        if followLinks == 0 {
+            let mut u: core::ffi::c_uint = 0;
+            let mut fileNamesNb: core::ffi::c_uint = 0;
+            let nbFilenames = (*filenames).tableSize as core::ffi::c_uint;
+            u = 0;
+            fileNamesNb = 0;
+            while u < nbFilenames {
+                if UTIL_isLink(*((*filenames).fileNames).offset(u as isize)) != 0
+                    && UTIL_isFIFO(*((*filenames).fileNames).offset(u as isize)) == 0
                 {
+                    if g_displayLevel >= 2 {
+                        fprintf(
+                            stderr,
+                            b"Warning : %s is a symbolic link, ignoring \n\0" as *const u8
+                                as *const core::ffi::c_char,
+                            *((*filenames).fileNames).offset(u as isize),
+                        );
+                    }
+                } else {
+                    let fresh3 = fileNamesNb;
+                    fileNamesNb = fileNamesNb.wrapping_add(1);
+                    let fresh4 = &mut (*((*filenames).fileNames).offset(fresh3 as isize));
+                    *fresh4 = *((*filenames).fileNames).offset(u as isize);
+                }
+                u = u.wrapping_add(1);
+            }
+            if fileNamesNb == 0 && nbFilenames > 0 {
+                operationResult = 1;
+                break 'end;
+            } else {
+                (*filenames).tableSize = fileNamesNb as size_t;
+            }
+        }
+        if (*file_of_names).tableSize != 0 {
+            let nbFileLists = (*file_of_names).tableSize;
+            let mut flNb: size_t = 0;
+            flNb = 0;
+            loop {
+                if flNb >= nbFileLists {
+                    break;
+                }
+                let fnt =
+                    UTIL_createFileNamesTable_fromFileList(*((*file_of_names).fileNames).add(flNb));
+                if fnt.is_null() {
                     if g_displayLevel >= 1 {
                         fprintf(
                             stderr,
-                            b"benchmark mode is only compatible with zstd format \n\0" as *const u8
-                                as *const core::ffi::c_char,
+                            b"zstd: error reading %s \n\0" as *const u8 as *const core::ffi::c_char,
+                            *((*file_of_names).fileNames).add(flNb),
                         );
                     }
                     operationResult = 1;
+                    break 'end;
                 } else {
-                    benchParams.chunkSizeMax = chunkSize;
-                    benchParams.targetCBlockSize = targetCBlockSize;
-                    benchParams.nbWorkers = nbWorkers as core::ffi::c_int;
-                    benchParams.realTime = setRealTimePrio as core::ffi::c_uint;
-                    benchParams.nbSeconds = bench_nbSeconds;
-                    benchParams.ldmFlag = ldmFlag;
-                    benchParams.ldmMinMatch = g_ldmMinMatch as core::ffi::c_int;
-                    benchParams.ldmHashLog = g_ldmHashLog as core::ffi::c_int;
-                    benchParams.useRowMatchFinder = useRowMatchFinder as core::ffi::c_int;
-                    if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
-                        benchParams.ldmBucketSizeLog = g_ldmBucketSizeLog as core::ffi::c_int;
-                    }
-                    if g_ldmHashRateLog != LDM_PARAM_DEFAULT as u32 {
-                        benchParams.ldmHashRateLog = g_ldmHashRateLog as core::ffi::c_int;
-                    }
-                    benchParams.literalCompressionMode = literalCompressionMode;
-                    if benchParams.mode as core::ffi::c_uint
-                        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
-                    {
-                        cLevelLast = 0;
-                        cLevel = cLevelLast;
-                    }
-                    if cLevel > ZSTD_maxCLevel() {
-                        cLevel = ZSTD_maxCLevel();
-                    }
-                    if cLevelLast > ZSTD_maxCLevel() {
-                        cLevelLast = ZSTD_maxCLevel();
-                    }
-                    if cLevelLast < cLevel {
-                        cLevelLast = cLevel;
-                    }
+                    filenames = UTIL_mergeFileNamesTable(filenames, fnt);
+                    flNb = flNb.wrapping_add(1);
+                }
+            }
+        }
+        nbInputFileNames = (*filenames).tableSize;
+        if recursive != 0 {
+            UTIL_expandFNT(&mut filenames, followLinks);
+        }
+        if operation as core::ffi::c_uint == zom_list as core::ffi::c_int as core::ffi::c_uint {
+            let ret = FIO_listMultipleFiles(
+                (*filenames).tableSize as core::ffi::c_uint,
+                (*filenames).fileNames,
+                g_displayLevel,
+            );
+            operationResult = ret;
+        } else if operation as core::ffi::c_uint
+            == zom_bench as core::ffi::c_int as core::ffi::c_uint
+        {
+            if cType as core::ffi::c_uint
+                != FIO_zstdCompression as core::ffi::c_int as core::ffi::c_uint
+            {
+                if g_displayLevel >= 1 {
+                    fprintf(
+                        stderr,
+                        b"benchmark mode is only compatible with zstd format \n\0" as *const u8
+                            as *const core::ffi::c_char,
+                    );
+                }
+                operationResult = 1;
+            } else {
+                benchParams.chunkSizeMax = chunkSize;
+                benchParams.targetCBlockSize = targetCBlockSize;
+                benchParams.nbWorkers = nbWorkers as core::ffi::c_int;
+                benchParams.realTime = setRealTimePrio as core::ffi::c_uint;
+                benchParams.nbSeconds = bench_nbSeconds;
+                benchParams.ldmFlag = ldmFlag;
+                benchParams.ldmMinMatch = g_ldmMinMatch as core::ffi::c_int;
+                benchParams.ldmHashLog = g_ldmHashLog as core::ffi::c_int;
+                benchParams.useRowMatchFinder = useRowMatchFinder as core::ffi::c_int;
+                if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
+                    benchParams.ldmBucketSizeLog = g_ldmBucketSizeLog as core::ffi::c_int;
+                }
+                if g_ldmHashRateLog != LDM_PARAM_DEFAULT as u32 {
+                    benchParams.ldmHashRateLog = g_ldmHashRateLog as core::ffi::c_int;
+                }
+                benchParams.literalCompressionMode = literalCompressionMode;
+                if benchParams.mode as core::ffi::c_uint
+                    == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
+                {
+                    cLevelLast = 0;
+                    cLevel = cLevelLast;
+                }
+                if cLevel > ZSTD_maxCLevel() {
+                    cLevel = ZSTD_maxCLevel();
+                }
+                if cLevelLast > ZSTD_maxCLevel() {
+                    cLevelLast = ZSTD_maxCLevel();
+                }
+                if cLevelLast < cLevel {
+                    cLevelLast = cLevel;
+                }
+                if g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"Benchmarking \0" as *const u8 as *const core::ffi::c_char,
+                    );
+                }
+                if (*filenames).tableSize > 1 && g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"%u files \0" as *const u8 as *const core::ffi::c_char,
+                        (*filenames).tableSize as core::ffi::c_uint,
+                    );
+                }
+                if cLevelLast > cLevel {
                     if g_displayLevel >= 3 {
                         fprintf(
                             stderr,
-                            b"Benchmarking \0" as *const u8 as *const core::ffi::c_char,
-                        );
-                    }
-                    if (*filenames).tableSize > 1 && g_displayLevel >= 3 {
-                        fprintf(
-                            stderr,
-                            b"%u files \0" as *const u8 as *const core::ffi::c_char,
-                            (*filenames).tableSize as core::ffi::c_uint,
-                        );
-                    }
-                    if cLevelLast > cLevel {
-                        if g_displayLevel >= 3 {
-                            fprintf(
-                                stderr,
-                                b"from level %d to %d \0" as *const u8 as *const core::ffi::c_char,
-                                cLevel,
-                                cLevelLast,
-                            );
-                        }
-                    } else if g_displayLevel >= 3 {
-                        fprintf(
-                            stderr,
-                            b"at level %d \0" as *const u8 as *const core::ffi::c_char,
+                            b"from level %d to %d \0" as *const u8 as *const core::ffi::c_char,
                             cLevel,
+                            cLevelLast,
                         );
                     }
-                    if g_displayLevel >= 3 {
-                        fprintf(
-                            stderr,
-                            b"using %i threads \n\0" as *const u8 as *const core::ffi::c_char,
-                            nbWorkers,
-                        );
-                    }
-                    if (*filenames).tableSize > 0 {
-                        if separateFiles != 0 {
-                            let mut i: core::ffi::c_uint = 0;
-                            i = 0;
-                            while (i as size_t) < (*filenames).tableSize {
-                                operationResult = BMK_benchFilesAdvanced(
-                                    &*((*filenames).fileNames).offset(i as isize),
-                                    1,
-                                    dictFileName,
-                                    cLevel,
-                                    cLevelLast,
-                                    &compressionParams,
-                                    g_displayLevel,
-                                    &benchParams,
-                                );
-                                i = i.wrapping_add(1);
-                            }
-                        } else {
+                } else if g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"at level %d \0" as *const u8 as *const core::ffi::c_char,
+                        cLevel,
+                    );
+                }
+                if g_displayLevel >= 3 {
+                    fprintf(
+                        stderr,
+                        b"using %i threads \n\0" as *const u8 as *const core::ffi::c_char,
+                        nbWorkers,
+                    );
+                }
+                if (*filenames).tableSize > 0 {
+                    if separateFiles != 0 {
+                        let mut i: core::ffi::c_uint = 0;
+                        i = 0;
+                        while (i as size_t) < (*filenames).tableSize {
                             operationResult = BMK_benchFilesAdvanced(
-                                (*filenames).fileNames,
-                                (*filenames).tableSize as core::ffi::c_uint,
+                                &*((*filenames).fileNames).offset(i as isize),
+                                1,
                                 dictFileName,
                                 cLevel,
                                 cLevelLast,
@@ -4201,10 +4166,13 @@ unsafe fn main_0(
                                 g_displayLevel,
                                 &benchParams,
                             );
+                            i = i.wrapping_add(1);
                         }
                     } else {
-                        operationResult = BMK_syntheticTest(
-                            compressibility,
+                        operationResult = BMK_benchFilesAdvanced(
+                            (*filenames).fileNames,
+                            (*filenames).tableSize as core::ffi::c_uint,
+                            dictFileName,
                             cLevel,
                             cLevelLast,
                             &compressionParams,
@@ -4212,355 +4180,351 @@ unsafe fn main_0(
                             &benchParams,
                         );
                     }
-                }
-            } else if operation as core::ffi::c_uint
-                == zom_train as core::ffi::c_int as core::ffi::c_uint
-            {
-                let mut zParams = ZDICT_params_t {
-                    compressionLevel: 0,
-                    notificationLevel: 0,
-                    dictID: 0,
-                };
-                zParams.compressionLevel = dictCLevel;
-                zParams.notificationLevel = g_displayLevel as core::ffi::c_uint;
-                zParams.dictID = dictID;
-                if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
-                    let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
-                    coverParams.nbThreads = nbWorkers;
-                    coverParams.zParams = zParams;
-                    operationResult = DiB_trainFromFiles(
-                        outFileName,
-                        maxDictSize as size_t,
-                        (*filenames).fileNames,
-                        (*filenames).tableSize as core::ffi::c_int,
-                        chunkSize,
-                        core::ptr::null_mut(),
-                        &mut coverParams,
-                        core::ptr::null_mut(),
-                        optimize,
-                        memLimit,
-                    );
-                } else if dict as core::ffi::c_uint
-                    == fastCover as core::ffi::c_int as core::ffi::c_uint
-                {
-                    let optimize_0 =
-                        (fastCoverParams.k == 0 || fastCoverParams.d == 0) as core::ffi::c_int;
-                    fastCoverParams.nbThreads = nbWorkers;
-                    fastCoverParams.zParams = zParams;
-                    operationResult = DiB_trainFromFiles(
-                        outFileName,
-                        maxDictSize as size_t,
-                        (*filenames).fileNames,
-                        (*filenames).tableSize as core::ffi::c_int,
-                        chunkSize,
-                        core::ptr::null_mut(),
-                        core::ptr::null_mut(),
-                        &mut fastCoverParams,
-                        optimize_0,
-                        memLimit,
-                    );
                 } else {
-                    let mut dictParams = ZDICT_legacy_params_t {
-                        selectivityLevel: 0,
-                        zParams: ZDICT_params_t {
-                            compressionLevel: 0,
-                            notificationLevel: 0,
-                            dictID: 0,
-                        },
-                    };
-                    ptr::write_bytes(
-                        &mut dictParams as *mut ZDICT_legacy_params_t as *mut u8,
-                        0,
-                        ::core::mem::size_of::<ZDICT_legacy_params_t>(),
-                    );
-                    dictParams.selectivityLevel = dictSelect;
-                    dictParams.zParams = zParams;
-                    operationResult = DiB_trainFromFiles(
-                        outFileName,
-                        maxDictSize as size_t,
-                        (*filenames).fileNames,
-                        (*filenames).tableSize as core::ffi::c_int,
-                        chunkSize,
-                        &mut dictParams,
-                        core::ptr::null_mut(),
-                        core::ptr::null_mut(),
-                        0,
-                        memLimit,
+                    operationResult = BMK_syntheticTest(
+                        compressibility,
+                        cLevel,
+                        cLevelLast,
+                        &compressionParams,
+                        g_displayLevel,
+                        &benchParams,
                     );
                 }
+            }
+        } else if operation as core::ffi::c_uint
+            == zom_train as core::ffi::c_int as core::ffi::c_uint
+        {
+            let mut zParams = ZDICT_params_t {
+                compressionLevel: 0,
+                notificationLevel: 0,
+                dictID: 0,
+            };
+            zParams.compressionLevel = dictCLevel;
+            zParams.notificationLevel = g_displayLevel as core::ffi::c_uint;
+            zParams.dictID = dictID;
+            if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
+                let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
+                coverParams.nbThreads = nbWorkers;
+                coverParams.zParams = zParams;
+                operationResult = DiB_trainFromFiles(
+                    outFileName,
+                    maxDictSize as size_t,
+                    (*filenames).fileNames,
+                    (*filenames).tableSize as core::ffi::c_int,
+                    chunkSize,
+                    core::ptr::null_mut(),
+                    &mut coverParams,
+                    core::ptr::null_mut(),
+                    optimize,
+                    memLimit,
+                );
+            } else if dict as core::ffi::c_uint
+                == fastCover as core::ffi::c_int as core::ffi::c_uint
+            {
+                let optimize_0 =
+                    (fastCoverParams.k == 0 || fastCoverParams.d == 0) as core::ffi::c_int;
+                fastCoverParams.nbThreads = nbWorkers;
+                fastCoverParams.zParams = zParams;
+                operationResult = DiB_trainFromFiles(
+                    outFileName,
+                    maxDictSize as size_t,
+                    (*filenames).fileNames,
+                    (*filenames).tableSize as core::ffi::c_int,
+                    chunkSize,
+                    core::ptr::null_mut(),
+                    core::ptr::null_mut(),
+                    &mut fastCoverParams,
+                    optimize_0,
+                    memLimit,
+                );
             } else {
-                if operation as core::ffi::c_uint
-                    == zom_test as core::ffi::c_int as core::ffi::c_uint
-                {
-                    FIO_setTestMode(prefs, 1);
-                    outFileName = nulmark.as_ptr();
-                    removeSrcFile = 0;
+                let mut dictParams = ZDICT_legacy_params_t {
+                    selectivityLevel: 0,
+                    zParams: ZDICT_params_t {
+                        compressionLevel: 0,
+                        notificationLevel: 0,
+                        dictID: 0,
+                    },
+                };
+                ptr::write_bytes(
+                    &mut dictParams as *mut ZDICT_legacy_params_t as *mut u8,
+                    0,
+                    ::core::mem::size_of::<ZDICT_legacy_params_t>(),
+                );
+                dictParams.selectivityLevel = dictSelect;
+                dictParams.zParams = zParams;
+                operationResult = DiB_trainFromFiles(
+                    outFileName,
+                    maxDictSize as size_t,
+                    (*filenames).fileNames,
+                    (*filenames).tableSize as core::ffi::c_int,
+                    chunkSize,
+                    &mut dictParams,
+                    core::ptr::null_mut(),
+                    core::ptr::null_mut(),
+                    0,
+                    memLimit,
+                );
+            }
+        } else {
+            if operation as core::ffi::c_uint == zom_test as core::ffi::c_int as core::ffi::c_uint {
+                FIO_setTestMode(prefs, 1);
+                outFileName = nulmark.as_ptr();
+                removeSrcFile = 0;
+            }
+            if (*filenames).tableSize == 0 {
+                if nbInputFileNames > 0 {
+                    if g_displayLevel >= 1 {
+                        fprintf(
+                        stderr,
+                        b"please provide correct input file(s) or non-empty directories -- ignored \n\0"
+                            as *const u8 as *const core::ffi::c_char,
+                    );
+                    }
+                    operationResult = 0;
+                    break 'end;
+                } else {
+                    UTIL_refFilename(filenames, stdinmark.as_ptr());
                 }
-                if (*filenames).tableSize == 0 {
-                    if nbInputFileNames > 0 {
+            }
+            if (*filenames).tableSize == 1
+                && strcmp(*((*filenames).fileNames).offset(0), stdinmark.as_ptr()) == 0
+                && outFileName.is_null()
+            {
+                outFileName = stdoutmark.as_ptr();
+            }
+            if forceStdin == 0
+                && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr()) != -(1)
+                && UTIL_isConsole(stdin) != 0
+            {
+                if g_displayLevel >= 1 {
+                    fprintf(
+                        stderr,
+                        b"stdin is a console, aborting\n\0" as *const u8
+                            as *const core::ffi::c_char,
+                    );
+                }
+                operationResult = 1;
+            } else if (outFileName.is_null() || strcmp(outFileName, stdoutmark.as_ptr()) == 0)
+                && UTIL_isConsole(stdout) != 0
+                && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr()) != -(1)
+                && forceStdout == 0
+                && operation as core::ffi::c_uint
+                    != zom_decompress as core::ffi::c_int as core::ffi::c_uint
+            {
+                if g_displayLevel >= 1 {
+                    fprintf(
+                        stderr,
+                        b"stdout is a console, aborting\n\0" as *const u8
+                            as *const core::ffi::c_char,
+                    );
+                }
+                operationResult = 1;
+            } else {
+                let maxCLevel = if ultra != 0 {
+                    ZSTD_maxCLevel()
+                } else {
+                    ZSTDCLI_CLEVEL_MAX
+                };
+                if cLevel > maxCLevel {
+                    if g_displayLevel >= 2 {
+                        fprintf(
+                            stderr,
+                            b"Warning : compression level higher than max, reduced to %i \n\0"
+                                as *const u8
+                                as *const core::ffi::c_char,
+                            maxCLevel,
+                        );
+                    }
+                    cLevel = maxCLevel;
+                }
+                if showDefaultCParams != 0 {
+                    if operation as core::ffi::c_uint
+                        == zom_decompress as core::ffi::c_int as core::ffi::c_uint
+                    {
                         if g_displayLevel >= 1 {
                             fprintf(
                             stderr,
-                            b"please provide correct input file(s) or non-empty directories -- ignored \n\0"
+                            b"error : can't use --show-default-cparams in decompression mode \n\0"
                                 as *const u8 as *const core::ffi::c_char,
                         );
                         }
-                        operationResult = 0;
+                        operationResult = 1;
                         break 'end;
-                    } else {
-                        UTIL_refFilename(filenames, stdinmark.as_ptr());
-                        current_block = Block::AfterNbInputFileNames;
                     }
-                } else {
-                    current_block = Block::AfterNbInputFileNames;
                 }
-                if (*filenames).tableSize == 1
-                    && strcmp(*((*filenames).fileNames).offset(0), stdinmark.as_ptr()) == 0
-                    && outFileName.is_null()
-                {
-                    outFileName = stdoutmark.as_ptr();
-                }
-                if forceStdin == 0
-                    && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr()) != -(1)
-                    && UTIL_isConsole(stdin) != 0
-                {
+                if !dictFileName.is_null() && !patchFromDictFileName.is_null() {
                     if g_displayLevel >= 1 {
                         fprintf(
                             stderr,
-                            b"stdin is a console, aborting\n\0" as *const u8
+                            b"error : can't use -D and --patch-from=# at the same time \n\0"
+                                as *const u8
                                 as *const core::ffi::c_char,
                         );
                     }
                     operationResult = 1;
-                } else if (outFileName.is_null() || strcmp(outFileName, stdoutmark.as_ptr()) == 0)
-                    && UTIL_isConsole(stdout) != 0
-                    && UTIL_searchFileNamesTable(filenames, stdinmark.as_ptr()) != -(1)
-                    && forceStdout == 0
-                    && operation as core::ffi::c_uint
-                        != zom_decompress as core::ffi::c_int as core::ffi::c_uint
-                {
+                } else if !patchFromDictFileName.is_null() && (*filenames).tableSize > 1 {
                     if g_displayLevel >= 1 {
                         fprintf(
                             stderr,
-                            b"stdout is a console, aborting\n\0" as *const u8
+                            b"error : can't use --patch-from=# on multiple files \n\0" as *const u8
                                 as *const core::ffi::c_char,
                         );
                     }
                     operationResult = 1;
                 } else {
-                    let maxCLevel = if ultra != 0 {
-                        ZSTD_maxCLevel()
-                    } else {
-                        ZSTDCLI_CLEVEL_MAX
-                    };
-                    if cLevel > maxCLevel {
-                        if g_displayLevel >= 2 {
+                    hasStdout = (!outFileName.is_null()
+                        && strcmp(outFileName, stdoutmark.as_ptr()) == 0)
+                        as core::ffi::c_int;
+                    if hasStdout != 0 && g_displayLevel == 2 {
+                        g_displayLevel = 1;
+                    }
+                    if UTIL_isConsole(stderr) == 0
+                        && progress as core::ffi::c_uint
+                            != FIO_ps_always as core::ffi::c_int as core::ffi::c_uint
+                    {
+                        progress = FIO_ps_never;
+                    }
+                    FIO_setProgressSetting(progress);
+                    if hasStdout != 0 && removeSrcFile != 0 {
+                        if g_displayLevel >= 3 {
                             fprintf(
                                 stderr,
-                                b"Warning : compression level higher than max, reduced to %i \n\0"
+                                b"Note: src files are not removed when output is stdout \n\0"
                                     as *const u8
                                     as *const core::ffi::c_char,
-                                maxCLevel,
                             );
                         }
-                        cLevel = maxCLevel;
+                        removeSrcFile = 0;
                     }
-                    if showDefaultCParams != 0 {
-                        if operation as core::ffi::c_uint
-                            == zom_decompress as core::ffi::c_int as core::ffi::c_uint
-                        {
-                            if g_displayLevel >= 1 {
-                                fprintf(
-                                stderr,
-                                b"error : can't use --show-default-cparams in decompression mode \n\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                            );
-                            }
-                            operationResult = 1;
-                            break 'end;
+                    FIO_setRemoveSrcFile(prefs, removeSrcFile);
+                    FIO_setHasStdoutOutput(fCtx, hasStdout);
+                    FIO_setNbFilesTotal(fCtx, (*filenames).tableSize as core::ffi::c_int);
+                    FIO_determineHasStdinInput(fCtx, filenames);
+                    FIO_setNotificationLevel(g_displayLevel);
+                    FIO_setAllowBlockDevices(prefs, allowBlockDevices);
+                    FIO_setPatchFromMode(
+                        prefs,
+                        (!patchFromDictFileName.is_null()) as core::ffi::c_int,
+                    );
+                    FIO_setMMapDict(prefs, mmapDict);
+                    if memLimit == 0 {
+                        if compressionParams.windowLog == 0 as core::ffi::c_uint {
+                            memLimit = 1_u32 << g_defaultMaxWindowLog;
                         } else {
-                            current_block = Block::AfterShowDefaultCParams;
+                            memLimit = 1_u32 << (compressionParams.windowLog & 31);
                         }
-                    } else {
-                        current_block = Block::AfterShowDefaultCParams;
                     }
-                    if !dictFileName.is_null() && !patchFromDictFileName.is_null() {
-                        if g_displayLevel >= 1 {
-                            fprintf(
-                                stderr,
-                                b"error : can't use -D and --patch-from=# at the same time \n\0"
-                                    as *const u8
-                                    as *const core::ffi::c_char,
-                            );
+                    if !patchFromDictFileName.is_null() {
+                        dictFileName = patchFromDictFileName;
+                    }
+                    FIO_setMemLimit(prefs, memLimit);
+                    if operation as core::ffi::c_uint
+                        == zom_compress as core::ffi::c_int as core::ffi::c_uint
+                    {
+                        FIO_setCompressionType(prefs, cType);
+                        FIO_setContentSize(prefs, contentSize);
+                        FIO_setNbWorkers(prefs, nbWorkers as core::ffi::c_int);
+                        FIO_setJobSize(prefs, chunkSize as core::ffi::c_int);
+                        if g_overlapLog != OVERLAP_LOG_DEFAULT as u32 {
+                            FIO_setOverlapLog(prefs, g_overlapLog as core::ffi::c_int);
                         }
-                        operationResult = 1;
-                    } else if !patchFromDictFileName.is_null() && (*filenames).tableSize > 1 {
-                        if g_displayLevel >= 1 {
-                            fprintf(
-                                stderr,
-                                b"error : can't use --patch-from=# on multiple files \n\0"
-                                    as *const u8
-                                    as *const core::ffi::c_char,
-                            );
+                        FIO_setLdmFlag(prefs, ldmFlag as core::ffi::c_uint);
+                        FIO_setLdmHashLog(prefs, g_ldmHashLog as core::ffi::c_int);
+                        FIO_setLdmMinMatch(prefs, g_ldmMinMatch as core::ffi::c_int);
+                        if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
+                            FIO_setLdmBucketSizeLog(prefs, g_ldmBucketSizeLog as core::ffi::c_int);
                         }
-                        operationResult = 1;
-                    } else {
-                        hasStdout = (!outFileName.is_null()
-                            && strcmp(outFileName, stdoutmark.as_ptr()) == 0)
-                            as core::ffi::c_int;
-                        if hasStdout != 0 && g_displayLevel == 2 {
-                            g_displayLevel = 1;
+                        if g_ldmHashRateLog != LDM_PARAM_DEFAULT as u32 {
+                            FIO_setLdmHashRateLog(prefs, g_ldmHashRateLog as core::ffi::c_int);
                         }
-                        if UTIL_isConsole(stderr) == 0
-                            && progress as core::ffi::c_uint
-                                != FIO_ps_always as core::ffi::c_int as core::ffi::c_uint
-                        {
-                            progress = FIO_ps_never;
+                        FIO_setAdaptiveMode(prefs, adapt);
+                        FIO_setUseRowMatchFinder(prefs, useRowMatchFinder as core::ffi::c_int);
+                        FIO_setAdaptMin(prefs, adaptMin);
+                        FIO_setAdaptMax(prefs, adaptMax);
+                        FIO_setRsyncable(prefs, rsyncable);
+                        FIO_setStreamSrcSize(prefs, streamSrcSize);
+                        FIO_setTargetCBlockSize(prefs, targetCBlockSize);
+                        FIO_setSrcSizeHint(prefs, srcSizeHint);
+                        FIO_setLiteralCompressionMode(prefs, literalCompressionMode);
+                        FIO_setSparseWrite(prefs, 0);
+                        if adaptMin > cLevel {
+                            cLevel = adaptMin;
                         }
-                        FIO_setProgressSetting(progress);
-                        if hasStdout != 0 && removeSrcFile != 0 {
-                            if g_displayLevel >= 3 {
-                                fprintf(
-                                    stderr,
-                                    b"Note: src files are not removed when output is stdout \n\0"
-                                        as *const u8
-                                        as *const core::ffi::c_char,
-                                );
-                            }
-                            removeSrcFile = 0;
+                        if adaptMax < cLevel {
+                            cLevel = adaptMax;
                         }
-                        FIO_setRemoveSrcFile(prefs, removeSrcFile);
-                        FIO_setHasStdoutOutput(fCtx, hasStdout);
-                        FIO_setNbFilesTotal(fCtx, (*filenames).tableSize as core::ffi::c_int);
-                        FIO_determineHasStdinInput(fCtx, filenames);
-                        FIO_setNotificationLevel(g_displayLevel);
-                        FIO_setAllowBlockDevices(prefs, allowBlockDevices);
-                        FIO_setPatchFromMode(
-                            prefs,
-                            (!patchFromDictFileName.is_null()) as core::ffi::c_int,
+                        let strategyBounds = ZSTD_cParam_getBounds(ZSTD_c_strategy);
+                        assert!(
+                            ZSTD_NB_STRATEGIES as core::ffi::c_int == strategyBounds.upperBound
                         );
-                        FIO_setMMapDict(prefs, mmapDict);
-                        if memLimit == 0 {
-                            if compressionParams.windowLog == 0 as core::ffi::c_uint {
-                                memLimit = 1_u32 << g_defaultMaxWindowLog;
-                            } else {
-                                memLimit = 1_u32 << (compressionParams.windowLog & 31);
-                            }
-                        }
-                        if !patchFromDictFileName.is_null() {
-                            dictFileName = patchFromDictFileName;
-                        }
-                        FIO_setMemLimit(prefs, memLimit);
-                        if operation as core::ffi::c_uint
-                            == zom_compress as core::ffi::c_int as core::ffi::c_uint
-                        {
-                            FIO_setCompressionType(prefs, cType);
-                            FIO_setContentSize(prefs, contentSize);
-                            FIO_setNbWorkers(prefs, nbWorkers as core::ffi::c_int);
-                            FIO_setJobSize(prefs, chunkSize as core::ffi::c_int);
-                            if g_overlapLog != OVERLAP_LOG_DEFAULT as u32 {
-                                FIO_setOverlapLog(prefs, g_overlapLog as core::ffi::c_int);
-                            }
-                            FIO_setLdmFlag(prefs, ldmFlag as core::ffi::c_uint);
-                            FIO_setLdmHashLog(prefs, g_ldmHashLog as core::ffi::c_int);
-                            FIO_setLdmMinMatch(prefs, g_ldmMinMatch as core::ffi::c_int);
-                            if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
-                                FIO_setLdmBucketSizeLog(
-                                    prefs,
-                                    g_ldmBucketSizeLog as core::ffi::c_int,
-                                );
-                            }
-                            if g_ldmHashRateLog != LDM_PARAM_DEFAULT as u32 {
-                                FIO_setLdmHashRateLog(prefs, g_ldmHashRateLog as core::ffi::c_int);
-                            }
-                            FIO_setAdaptiveMode(prefs, adapt);
-                            FIO_setUseRowMatchFinder(prefs, useRowMatchFinder as core::ffi::c_int);
-                            FIO_setAdaptMin(prefs, adaptMin);
-                            FIO_setAdaptMax(prefs, adaptMax);
-                            FIO_setRsyncable(prefs, rsyncable);
-                            FIO_setStreamSrcSize(prefs, streamSrcSize);
-                            FIO_setTargetCBlockSize(prefs, targetCBlockSize);
-                            FIO_setSrcSizeHint(prefs, srcSizeHint);
-                            FIO_setLiteralCompressionMode(prefs, literalCompressionMode);
-                            FIO_setSparseWrite(prefs, 0);
-                            if adaptMin > cLevel {
-                                cLevel = adaptMin;
-                            }
-                            if adaptMax < cLevel {
-                                cLevel = adaptMax;
-                            }
-                            let strategyBounds = ZSTD_cParam_getBounds(ZSTD_c_strategy);
-                            assert!(
-                                ZSTD_NB_STRATEGIES as core::ffi::c_int == strategyBounds.upperBound
-                            );
-                            if showDefaultCParams != 0 || g_displayLevel >= 4 {
-                                let mut fileNb: size_t = 0;
-                                fileNb = 0;
-                                while fileNb < (*filenames).tableSize {
-                                    if showDefaultCParams != 0 {
-                                        printDefaultCParams(
-                                            *((*filenames).fileNames).add(fileNb),
-                                            dictFileName,
-                                            cLevel,
-                                        );
-                                    }
-                                    if g_displayLevel >= 4 {
-                                        printActualCParams(
-                                            *((*filenames).fileNames).add(fileNb),
-                                            dictFileName,
-                                            cLevel,
-                                            &compressionParams,
-                                        );
-                                    }
-                                    fileNb = fileNb.wrapping_add(1);
+                        if showDefaultCParams != 0 || g_displayLevel >= 4 {
+                            let mut fileNb: size_t = 0;
+                            fileNb = 0;
+                            while fileNb < (*filenames).tableSize {
+                                if showDefaultCParams != 0 {
+                                    printDefaultCParams(
+                                        *((*filenames).fileNames).add(fileNb),
+                                        dictFileName,
+                                        cLevel,
+                                    );
                                 }
+                                if g_displayLevel >= 4 {
+                                    printActualCParams(
+                                        *((*filenames).fileNames).add(fileNb),
+                                        dictFileName,
+                                        cLevel,
+                                        &compressionParams,
+                                    );
+                                }
+                                fileNb = fileNb.wrapping_add(1);
                             }
-                            if g_displayLevel >= 4 {
-                                FIO_displayCompressionParameters(prefs);
-                            }
-                            if (*filenames).tableSize == 1 && !outFileName.is_null() {
-                                operationResult = FIO_compressFilename(
-                                    fCtx,
-                                    prefs,
-                                    outFileName,
-                                    *((*filenames).fileNames).offset(0),
-                                    dictFileName,
-                                    cLevel,
-                                    compressionParams,
-                                );
-                            } else {
-                                operationResult = FIO_compressMultipleFilenames(
-                                    fCtx,
-                                    prefs,
-                                    (*filenames).fileNames,
-                                    outMirroredDirName,
-                                    outDirName,
-                                    outFileName,
-                                    suffix,
-                                    dictFileName,
-                                    cLevel,
-                                    compressionParams,
-                                );
-                            }
-                        } else if (*filenames).tableSize == 1 && !outFileName.is_null() {
-                            operationResult = FIO_decompressFilename(
+                        }
+                        if g_displayLevel >= 4 {
+                            FIO_displayCompressionParameters(prefs);
+                        }
+                        if (*filenames).tableSize == 1 && !outFileName.is_null() {
+                            operationResult = FIO_compressFilename(
                                 fCtx,
                                 prefs,
                                 outFileName,
                                 *((*filenames).fileNames).offset(0),
                                 dictFileName,
+                                cLevel,
+                                compressionParams,
                             );
                         } else {
-                            operationResult = FIO_decompressMultipleFilenames(
+                            operationResult = FIO_compressMultipleFilenames(
                                 fCtx,
                                 prefs,
                                 (*filenames).fileNames,
                                 outMirroredDirName,
                                 outDirName,
                                 outFileName,
+                                suffix,
                                 dictFileName,
+                                cLevel,
+                                compressionParams,
                             );
                         }
+                    } else if (*filenames).tableSize == 1 && !outFileName.is_null() {
+                        operationResult = FIO_decompressFilename(
+                            fCtx,
+                            prefs,
+                            outFileName,
+                            *((*filenames).fileNames).offset(0),
+                            dictFileName,
+                        );
+                    } else {
+                        operationResult = FIO_decompressMultipleFilenames(
+                            fCtx,
+                            prefs,
+                            (*filenames).fileNames,
+                            outMirroredDirName,
+                            outDirName,
+                            outFileName,
+                            dictFileName,
+                        );
                     }
                 }
             }
