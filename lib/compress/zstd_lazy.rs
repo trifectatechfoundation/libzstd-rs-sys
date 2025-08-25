@@ -2801,7 +2801,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     }
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    asm!(".p2align 5", options(preserves_flags, att_syntax));
+    asm!(".p2align 5", options(preserves_flags));
 
     while ip < ilimit {
         let mut matchLength = 0;
