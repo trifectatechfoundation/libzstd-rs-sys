@@ -1,7 +1,7 @@
 use core::ptr;
 
 use libc::{
-    free, pthread_attr_t, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
+    calloc, free, pthread_attr_t, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
     pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_create,
     pthread_join, pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
     pthread_mutex_unlock, pthread_mutexattr_t, pthread_t, size_t,
@@ -9,9 +9,6 @@ use libc::{
 
 use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
-extern "C" {
-    fn calloc(_: size_t, _: size_t) -> *mut core::ffi::c_void;
-}
 #[repr(C)]
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
