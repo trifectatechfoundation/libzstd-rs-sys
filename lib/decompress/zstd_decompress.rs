@@ -1538,7 +1538,7 @@ unsafe fn ZSTD_DCtx_trace_end(
     compressedSize: u64,
     streaming: core::ffi::c_int,
 ) {
-    if (*dctx).traceCtx != 0 && ZSTD_trace_decompress_end.is_some() {
+    if (*dctx).traceCtx != 0 {
         let mut trace = ZSTD_Trace {
             version: 0,
             streaming: 0,
@@ -1566,7 +1566,7 @@ unsafe fn ZSTD_DCtx_trace_end(
         trace.uncompressedSize = uncompressedSize as size_t;
         trace.compressedSize = compressedSize as size_t;
         trace.dctx = dctx;
-        ZSTD_trace_decompress_end.unwrap()((*dctx).traceCtx, &mut trace);
+        ZSTD_trace_decompress_end((*dctx).traceCtx, &mut trace);
     }
 }
 unsafe fn ZSTD_decompressFrame(
@@ -2257,7 +2257,7 @@ unsafe fn ZSTD_decompress_insertDictionary(dctx: *mut ZSTD_DCtx, dict: &[u8]) ->
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin))]
 pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
-    (*dctx).traceCtx = ZSTD_trace_decompress_begin.map_or(0, |f| f(dctx));
+    (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
     (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
     (*dctx).stage = DecompressStage::GetFrameHeaderSize;
     (*dctx).processedCSize = 0;

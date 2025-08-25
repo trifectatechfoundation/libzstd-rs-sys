@@ -1,7 +1,7 @@
 use libc::size_t;
 
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s, ZSTD_CCtx_s};
-use crate::lib::decompress::ZSTD_DCtx_s;
+use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
 
 #[repr(C)]
 pub struct ZSTD_Trace {
@@ -19,50 +19,53 @@ pub struct ZSTD_Trace {
 
 pub type ZSTD_TraceCtx = core::ffi::c_ulonglong;
 
-pub use statics::*;
+#[inline]
+pub(crate) fn ZSTD_trace_compress_begin(_cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx {
+    #[cfg(feature = "trace")]
+    unsafe {
+        return statics::ZSTD_trace_compress_begin(_cctx);
+    }
 
-#[cfg(not(miri))]
+    #[cfg(not(feature = "trace"))]
+    0
+}
+
+#[inline]
+pub(crate) fn ZSTD_trace_compress_end(_ctx: ZSTD_TraceCtx, _trace: *const ZSTD_Trace) {
+    #[cfg(feature = "trace")]
+    unsafe {
+        return statics::ZSTD_trace_compress_end(_ctx, _trace);
+    }
+}
+
+#[inline]
+pub(crate) fn ZSTD_trace_decompress_begin(_dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx {
+    #[cfg(feature = "trace")]
+    unsafe {
+        return statics::ZSTD_trace_decompress_begin(_dctx);
+    }
+
+    #[cfg(not(feature = "trace"))]
+    0
+}
+
+#[inline]
+pub(crate) fn ZSTD_trace_decompress_end(_ctx: ZSTD_TraceCtx, _trace: *const ZSTD_Trace) {
+    #[cfg(feature = "trace")]
+    unsafe {
+        return statics::ZSTD_trace_decompress_end(_ctx, _trace);
+    }
+}
+
+#[cfg(feature = "trace")]
 mod statics {
     use super::{ZSTD_CCtx, ZSTD_Trace, ZSTD_TraceCtx};
     use crate::lib::decompress::ZSTD_DCtx;
 
     extern "C" {
-        #[linkage = "extern_weak"]
-        pub static ZSTD_trace_compress_begin:
-            Option<unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx>;
-
-        #[linkage = "extern_weak"]
-        pub static ZSTD_trace_compress_end:
-            Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
-
-        #[linkage = "extern_weak"]
-        pub static ZSTD_trace_decompress_begin:
-            Option<unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx>;
-
-        #[linkage = "extern_weak"]
-        pub static ZSTD_trace_decompress_end:
-            Option<unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace)>;
+        pub(super) fn ZSTD_trace_compress_begin(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx;
+        pub(super) fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
+        pub(super) fn ZSTD_trace_decompress_begin(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx;
+        pub(super) fn ZSTD_trace_decompress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
     }
-}
-
-#[cfg(miri)]
-mod statics {
-    use super::{ZSTD_CCtx, ZSTD_Trace, ZSTD_TraceCtx};
-    use crate::lib::decompress::ZSTD_DCtx;
-
-    pub static ZSTD_trace_compress_begin: Option<
-        unsafe extern "C" fn(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx,
-    > = None;
-
-    pub static ZSTD_trace_compress_end: Option<
-        unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
-    > = None;
-
-    pub static ZSTD_trace_decompress_begin: Option<
-        unsafe extern "C" fn(dctx: *const ZSTD_DCtx) -> ZSTD_TraceCtx,
-    > = None;
-
-    pub static ZSTD_trace_decompress_end: Option<
-        unsafe extern "C" fn(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace),
-    > = None;
 }
