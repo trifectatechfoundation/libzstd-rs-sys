@@ -5,7 +5,7 @@ use libc::{
     pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t,
     strerror, FILE,
 };
-use libzstd_rs::internal::{
+use libzstd_rs_sys::internal::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
 };
 

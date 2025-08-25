@@ -2,15 +2,15 @@ use core::ptr;
 use std::ffi::CStr;
 
 use libc::{exit, fprintf, getchar, getenv, size_t, strcmp, strlen, strncmp, strrchr, FILE};
-use libzstd_rs::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
-use libzstd_rs::lib::compress::zstd_compress::{
+use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_isDeterministicBuild, ZSTD_versionString};
+use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_cParam_getBounds, ZSTD_getCParams, ZSTD_maxCLevel, ZSTD_minCLevel,
 };
-use libzstd_rs::lib::zdict::experimental::{
+use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
 };
-use libzstd_rs::lib::zdict::ZDICT_params_t;
-use libzstd_rs::lib::zstd::*;
+use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
+use libzstd_rs_sys::lib::zstd::*;
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
 use crate::dibio::DiB_trainFromFiles;

@@ -4,13 +4,13 @@ use libc::{
     __errno_location, exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t,
     strerror, FILE,
 };
-use libzstd_rs::lib::zdict::experimental::{
+use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
     ZDICT_optimizeTrainFromBuffer_cover, ZDICT_optimizeTrainFromBuffer_fastCover,
     ZDICT_trainFromBuffer_cover, ZDICT_trainFromBuffer_fastCover, ZDICT_trainFromBuffer_legacy,
 };
-use libzstd_rs::lib::zdict::{ZDICT_getErrorName, ZDICT_isError};
-use libzstd_rs::lib::zstd::*;
+use libzstd_rs_sys::lib::zdict::{ZDICT_getErrorName, ZDICT_isError};
+use libzstd_rs_sys::lib::zstd::*;
 
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_getTime, UTIL_time_t};
 use crate::util::UTIL_getFileSize;
