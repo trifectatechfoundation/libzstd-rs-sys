@@ -347,7 +347,7 @@ const info_not_zstd: InfoError = 2;
 const info_frame_error: InfoError = 1;
 const info_success: InfoError = 0;
 const _IOFBF: core::ffi::c_int = 0;
-const UINT64_MAX: core::ffi::c_ulong = 18446744073709551615;
+const UINT64_MAX: u64 = 18446744073709551615;
 
 const PATH_SEP: core::ffi::c_int = '/' as i32;
 const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
