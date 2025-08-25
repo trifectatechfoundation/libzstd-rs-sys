@@ -1830,7 +1830,19 @@ unsafe fn main_0(
     argCount: core::ffi::c_int,
     argv: *mut *const core::ffi::c_char,
 ) -> core::ffi::c_int {
-    let mut current_block: u64;
+    #[derive(Clone, Eq, PartialEq)]
+    enum Block {
+        End,
+        GzipArg,
+        NoGzipArg,
+        AfterArgLoop,
+        AfterFollowLinksLoop,
+        AfterFileOfNames,
+        AfterNbInputFileNames,
+        AfterShowDefaultCParams,
+    }
+
+    let mut current_block: Block;
     let mut argNb: core::ffi::c_int = 0;
     let mut followLinks = 0;
     let mut allowBlockDevices = 0;
@@ -1994,7 +2006,7 @@ unsafe fn main_0(
     argNb = 1;
     's_373: loop {
         if argNb >= argCount {
-            current_block = 17866802397806708230;
+            current_block = Block::AfterArgLoop;
             break;
         }
         let mut argument = *argv.offset(argNb as isize);
@@ -2049,7 +2061,7 @@ unsafe fn main_0(
                     {
                         printVersion();
                         operationResult = 0;
-                        current_block = 16277912505878250739;
+                        current_block = Block::End;
                         break;
                     } else if strcmp(
                         argument,
@@ -2058,7 +2070,7 @@ unsafe fn main_0(
                     {
                         usageAdvanced(programName);
                         operationResult = 0;
-                        current_block = 16277912505878250739;
+                        current_block = Block::End;
                         break;
                     } else if strcmp(
                         argument,
@@ -2215,7 +2227,7 @@ unsafe fn main_0(
                         if parseAdaptParameters(argument, &mut adaptMin, &mut adaptMax) == 0 {
                             badUsage(programName, originalArgument);
                             operationResult = 1;
-                            current_block = 16277912505878250739;
+                            current_block = Block::End;
                             break;
                         }
                     } else if strcmp(
@@ -2260,21 +2272,21 @@ unsafe fn main_0(
                             {
                                 cLevel = 9;
                                 dictCLevel = cLevel;
-                                current_block = 8834769789432328951;
+                                current_block = Block::GzipArg;
                             } else if strcmp(
                                 argument,
                                 b"--no-name\0" as *const u8 as *const core::ffi::c_char,
                             ) == 0
                             {
-                                current_block = 8834769789432328951;
+                                current_block = Block::GzipArg;
                             } else {
-                                current_block = 2925215368761540503;
+                                current_block = Block::NoGzipArg;
                             }
                         } else {
-                            current_block = 2925215368761540503;
+                            current_block = Block::NoGzipArg;
                         }
                         match current_block {
-                            8834769789432328951 => {}
+                            Block::GzipArg => {}
                             _ => {
                                 if strcmp(
                                     argument,
@@ -2375,7 +2387,7 @@ unsafe fn main_0(
                                         }
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     } else {
                                         ultra = 1;
@@ -2405,14 +2417,14 @@ unsafe fn main_0(
                                         if *fresh0 as core::ffi::c_int != '=' as i32 {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else if parseCoverParameters(argument, &mut coverParams)
                                             == 0
                                         {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         }
                                     }
@@ -2439,7 +2451,7 @@ unsafe fn main_0(
                                         if *fresh1 as core::ffi::c_int != '=' as i32 {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else if parseFastCoverParameters(
                                             argument,
@@ -2448,7 +2460,7 @@ unsafe fn main_0(
                                         {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         }
                                     }
@@ -2468,14 +2480,14 @@ unsafe fn main_0(
                                         if *fresh2 as core::ffi::c_int != '=' as i32 {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else if parseLegacyParameters(argument, &mut dictSelect)
                                             == 0
                                         {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         }
                                     }
@@ -2501,7 +2513,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb = *argv.offset(argNb as isize);
@@ -2531,7 +2543,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2566,7 +2578,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_0 = *argv.offset(argNb as isize);
@@ -2596,7 +2608,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2630,7 +2642,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_1 = *argv.offset(argNb as isize);
@@ -2660,7 +2672,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2695,7 +2707,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_2 = *argv.offset(argNb as isize);
@@ -2725,7 +2737,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2759,7 +2771,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_3 = *argv.offset(argNb as isize);
@@ -2789,7 +2801,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2823,7 +2835,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_4 = *argv.offset(argNb as isize);
@@ -2853,7 +2865,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2887,7 +2899,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_5 = *argv.offset(argNb as isize);
@@ -2917,7 +2929,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -2951,7 +2963,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_6 = *argv.offset(argNb as isize);
@@ -2981,7 +2993,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3015,7 +3027,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_7 = *argv.offset(argNb as isize);
@@ -3045,7 +3057,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3067,7 +3079,7 @@ unsafe fn main_0(
                                     {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     } else {
                                         cType = FIO_zstdCompression;
@@ -3094,7 +3106,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_8 = *argv.offset(argNb as isize);
@@ -3124,7 +3136,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3159,7 +3171,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_9 = *argv.offset(argNb as isize);
@@ -3189,7 +3201,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3223,7 +3235,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             __nb_10 = *argv.offset(argNb as isize);
@@ -3254,7 +3266,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3287,7 +3299,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             outDirName = *argv.offset(argNb as isize);
@@ -3319,7 +3331,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3333,7 +3345,7 @@ unsafe fn main_0(
                                             );
                                         }
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     }
                                 } else if longCommandWArg(
@@ -3358,7 +3370,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             threadDefault = *argv.offset(argNb as isize);
@@ -3390,7 +3402,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3424,7 +3436,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             outMirroredDirName = *argv.offset(argNb as isize);
@@ -3456,7 +3468,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3470,7 +3482,7 @@ unsafe fn main_0(
                                             );
                                         }
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     }
                                 } else if longCommandWArg(
@@ -3495,7 +3507,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             traceFile = *argv.offset(argNb as isize);
@@ -3527,7 +3539,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3554,7 +3566,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             patchFromDictFileName = *argv.offset(argNb as isize);
@@ -3586,7 +3598,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3614,7 +3626,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             patchFromDictFileName = *argv.offset(argNb as isize);
@@ -3646,7 +3658,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3671,7 +3683,7 @@ unsafe fn main_0(
                                     } else if *argument as core::ffi::c_int != 0 {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     } else {
                                         ldmWindowLog = g_defaultMaxWindowLog;
@@ -3698,13 +3710,13 @@ unsafe fn main_0(
                                         } else {
                                             badUsage(programName, originalArgument);
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         }
                                     } else if *argument as core::ffi::c_int != 0 {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
-                                        current_block = 16277912505878250739;
+                                        current_block = Block::End;
                                         break;
                                     } else {
                                         cLevel = -(1);
@@ -3731,7 +3743,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break;
                                         } else {
                                             listName = *argv.offset(argNb as isize);
@@ -3762,7 +3774,7 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                                 break;
                                             }
                                         }
@@ -3771,7 +3783,7 @@ unsafe fn main_0(
                                 } else {
                                     badUsage(programName, originalArgument);
                                     operationResult = 1;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                     break;
                                 }
                             }
@@ -3790,19 +3802,19 @@ unsafe fn main_0(
                                 86 => {
                                     printVersion();
                                     operationResult = 0;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                     break 's_373;
                                 }
                                 72 => {
                                     usageAdvanced(programName);
                                     operationResult = 0;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                     break 's_373;
                                 }
                                 104 => {
                                     usage(stdout, programName);
                                     operationResult = 0;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                     break 's_373;
                                 }
                                 122 => {
@@ -3843,7 +3855,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break 's_373;
                                         } else {
                                             outFileName = *argv.offset(argNb as isize);
@@ -3877,7 +3889,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break 's_373;
                                         }
                                     }
@@ -3903,7 +3915,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break 's_373;
                                         } else {
                                             dictFileName = *argv.offset(argNb as isize);
@@ -3937,7 +3949,7 @@ unsafe fn main_0(
                                                 );
                                             }
                                             operationResult = 1;
-                                            current_block = 16277912505878250739;
+                                            current_block = Block::End;
                                             break 's_373;
                                         }
                                     }
@@ -4034,7 +4046,7 @@ unsafe fn main_0(
                                     *shortArgument.as_mut_ptr().offset(1) = *argument.offset(0);
                                     badUsage(programName, shortArgument.as_mut_ptr());
                                     operationResult = 1;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                     break 's_373;
                                 }
                             }
@@ -4047,7 +4059,7 @@ unsafe fn main_0(
         }
         argNb += 1;
     }
-    if current_block == 17866802397806708230 {
+    if current_block == Block::AfterArgLoop {
         if g_displayLevel >= 3 {
             fprintf(
                 stderr,
@@ -4129,16 +4141,16 @@ unsafe fn main_0(
             }
             if fileNamesNb == 0 && nbFilenames > 0 {
                 operationResult = 1;
-                current_block = 16277912505878250739;
+                current_block = Block::End;
             } else {
                 (*filenames).tableSize = fileNamesNb as size_t;
-                current_block = 665450585616957159;
+                current_block = Block::AfterFollowLinksLoop;
             }
         } else {
-            current_block = 665450585616957159;
+            current_block = Block::AfterFollowLinksLoop;
         }
         match current_block {
-            16277912505878250739 => {}
+            Block::End => {}
             _ => {
                 if (*file_of_names).tableSize != 0 {
                     let nbFileLists = (*file_of_names).tableSize;
@@ -4146,7 +4158,7 @@ unsafe fn main_0(
                     flNb = 0;
                     loop {
                         if flNb >= nbFileLists {
-                            current_block = 2697231409163282360;
+                            current_block = Block::AfterFileOfNames;
                             break;
                         }
                         let fnt = UTIL_createFileNamesTable_fromFileList(
@@ -4162,7 +4174,7 @@ unsafe fn main_0(
                                 );
                             }
                             operationResult = 1;
-                            current_block = 16277912505878250739;
+                            current_block = Block::End;
                             break;
                         } else {
                             filenames = UTIL_mergeFileNamesTable(filenames, fnt);
@@ -4170,10 +4182,10 @@ unsafe fn main_0(
                         }
                     }
                 } else {
-                    current_block = 2697231409163282360;
+                    current_block = Block::AfterFileOfNames;
                 }
                 match current_block {
-                    16277912505878250739 => {}
+                    Block::End => {}
                     _ => {
                         nbInputFileNames = (*filenames).tableSize;
                         if recursive != 0 {
@@ -4412,16 +4424,16 @@ unsafe fn main_0(
                                         );
                                     }
                                     operationResult = 0;
-                                    current_block = 16277912505878250739;
+                                    current_block = Block::End;
                                 } else {
                                     UTIL_refFilename(filenames, stdinmark.as_ptr());
-                                    current_block = 2266625133249563118;
+                                    current_block = Block::AfterNbInputFileNames;
                                 }
                             } else {
-                                current_block = 2266625133249563118;
+                                current_block = Block::AfterNbInputFileNames;
                             }
                             match current_block {
-                                16277912505878250739 => {}
+                                Block::End => {}
                                 _ => {
                                     if (*filenames).tableSize == 1
                                         && strcmp(
@@ -4493,15 +4505,15 @@ unsafe fn main_0(
                                                     );
                                                 }
                                                 operationResult = 1;
-                                                current_block = 16277912505878250739;
+                                                current_block = Block::End;
                                             } else {
-                                                current_block = 16042738330116972545;
+                                                current_block = Block::AfterShowDefaultCParams;
                                             }
                                         } else {
-                                            current_block = 16042738330116972545;
+                                            current_block = Block::AfterShowDefaultCParams;
                                         }
                                         match current_block {
-                                            16277912505878250739 => {}
+                                            Block::End => {}
                                             _ => {
                                                 if !dictFileName.is_null()
                                                     && !patchFromDictFileName.is_null()
