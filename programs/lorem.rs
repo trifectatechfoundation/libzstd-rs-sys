@@ -1,16 +1,7 @@
 use std::ffi::CStr;
 
-use libc::size_t;
+use libc::{memcpy, memset, size_t, strlen};
 
-extern "C" {
-    fn memcpy(
-        _: *mut core::ffi::c_void,
-        _: *const core::ffi::c_void,
-        _: size_t,
-    ) -> *mut core::ffi::c_void;
-    fn memset(_: *mut core::ffi::c_void, _: core::ffi::c_int, _: size_t) -> *mut core::ffi::c_void;
-    fn strlen(_: *const core::ffi::c_char) -> size_t;
-}
 static kWords: [&CStr; 255] = [
     c"lorem",
     c"ipsum",
