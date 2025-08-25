@@ -11213,9 +11213,10 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                 bs_0.nbSequences = n.wrapping_add(1);
                 if MEM_isLittleEndian() != 0 {
                     bs_0.litSize = litMatchSize0 as u32 as size_t;
-                    bs_0.blockSize = (bs_0.litSize).wrapping_add(litMatchSize0 as size_t >> 32);
+                    bs_0.blockSize =
+                        (bs_0.litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize;
                 } else {
-                    bs_0.litSize = litMatchSize0 as size_t >> 32;
+                    bs_0.litSize = (litMatchSize0 >> 32) as usize;
                     bs_0.blockSize = (bs_0.litSize).wrapping_add(litMatchSize0 as u32 as size_t);
                 }
                 return bs_0;
