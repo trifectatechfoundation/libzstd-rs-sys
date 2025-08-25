@@ -7887,7 +7887,7 @@ unsafe fn ZSTD_compressBegin_internal(
     } else {
         dictSize
     };
-    (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
+    (*cctx).traceCtx = ZSTD_trace_compress_begin(cctx);
     if !cdict.is_null()
         && (*cdict).dictContentSize > 0
         && (pledgedSrcSize < ZSTD_USE_CDICT_PARAMS_SRCSIZE_CUTOFF as u64
@@ -8199,7 +8199,7 @@ unsafe fn ZSTD_writeEpilogue(
     op.offset_from(ostart) as size_t
 }
 pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
-    if (*cctx).traceCtx != 0 && ZSTD_trace_compress_end.is_some() {
+    if (*cctx).traceCtx != 0 {
         let streaming = ((*cctx).inBuffSize > 0
             || (*cctx).outBuffSize > 0
             || (*cctx).appliedParams.nbWorkers > 0) as core::ffi::c_int;
@@ -8229,7 +8229,7 @@ pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
             ((*cctx).producedCSize).wrapping_add(extraCSize as core::ffi::c_ulonglong) as size_t;
         trace.params = &mut (*cctx).appliedParams;
         trace.cctx = cctx;
-        ZSTD_trace_compress_end.unwrap()((*cctx).traceCtx, &mut trace);
+        ZSTD_trace_compress_end((*cctx).traceCtx, &mut trace);
     }
     (*cctx).traceCtx = 0;
 }
@@ -10220,7 +10220,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
         params.nbWorkers = 0;
     }
     if params.nbWorkers > 0 {
-        (*cctx).traceCtx = ZSTD_trace_compress_begin.map_or(0, |f| f(cctx));
+        (*cctx).traceCtx = ZSTD_trace_compress_begin(cctx);
         if ((*cctx).mtctx).is_null() {
             (*cctx).mtctx = ZSTDMT_createCCtx_advanced(
                 params.nbWorkers as u32,
