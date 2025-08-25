@@ -26,7 +26,7 @@ path = "programs/main.rs"
 [dependencies]
 libc = "0.2"
 
-[target.'cfg(target_arch = "x86_64")'.build-dependencies]
+[build-dependencies]
 cc = "1.2.30"
 
 [dev-dependencies]
