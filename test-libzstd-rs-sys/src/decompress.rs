@@ -86,7 +86,7 @@ fn decompress_stream_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
 }
 
 fn decompress_stream_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     decompress_stream!(compressed, dict)
 }
@@ -241,7 +241,7 @@ fn decompress_continue_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
 }
 
 fn decompress_continue_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     decompress_continue!(compressed, dict)
 }
@@ -313,7 +313,7 @@ mod fastest_wasm_zlib_continue {
 fn decompress_using_dict() {
     use std::ffi::c_void;
 
-    use libzstd_rs::*;
+    use libzstd_rs_sys::*;
 
     let input_data = "The quick brown fox jumps high";
 
