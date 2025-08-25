@@ -1,11 +1,15 @@
 use std::ffi::CStr;
 use std::io;
 
+#[cfg(target_os = "linux")]
+use libc::__errno_location;
+#[cfg(target_vendor = "apple")]
+use libc::__error as __errno_location;
 use libc::{
-    __errno_location, calloc, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof,
-    ferror, fgets, fileno, fopen, fprintf, fread, free, getchar, isatty, malloc, memcpy, mkdir,
-    mode_t, opendir, readdir, realloc, size_t, strchr, strcmp, strdup, strlen, strncmp, strrchr,
-    strstr, strtol, sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
+    calloc, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror, fgets,
+    fileno, fopen, fprintf, fread, free, getchar, isatty, malloc, memcpy, mkdir, mode_t, opendir,
+    readdir, realloc, size_t, strchr, strcmp, strdup, strlen, strncmp, strrchr, strstr, strtol,
+    sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
 };
 
 extern "C" {
@@ -291,7 +295,7 @@ pub unsafe fn UTIL_fchmod(
             stderr,
             b"UTIL_chmod(%s, %#4o)\0" as *const u8 as *const core::ffi::c_char,
             filename,
-            permissions,
+            permissions as core::ffi::c_uint,
         );
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
@@ -523,7 +527,7 @@ pub unsafe fn UTIL_setFDStat(
         fd,
         filename,
         &curStatBuf,
-        (*statbuf).st_mode & 0o777 as core::ffi::c_int as __mode_t,
+        ((*statbuf).st_mode & 0o777) as mode_t,
     );
     if fd >= 0 {
         res += fchown(fd, (*statbuf).st_uid, -(1 as core::ffi::c_int) as __gid_t);
@@ -1780,7 +1784,7 @@ unsafe fn getDirMode(dirName: *const core::ffi::c_char) -> mode_t {
         );
         return DIR_DEFAULT_MODE as mode_t;
     }
-    st.st_mode
+    st.st_mode as mode_t
 }
 unsafe fn makeDir(dir: *const core::ffi::c_char, mode: mode_t) -> core::ffi::c_int {
     let ret = mkdir(dir, mode);
