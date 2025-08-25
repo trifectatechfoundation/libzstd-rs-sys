@@ -1,15 +1,17 @@
 use core::ptr;
 use std::ffi::CStr;
+use std::io;
 
 use libc::{
-    __errno_location, calloc, clock_t, close, exit, fclose, fdopen, feof, fflush, fileno, fopen,
-    fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove,
-    sighandler_t, signal, size_t, strcmp, strcpy, strerror, strlen, strrchr, timespec, FILE,
-    O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY, SIGINT, SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR,
-    S_IWGRP, S_IWOTH, S_IWUSR,
+    calloc, clock_t, close, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, fread,
+    free, fseek, ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove, sighandler_t, signal,
+    size_t, strcmp, strcpy, strlen, strrchr, timespec, FILE, O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY,
+    SIGINT, SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR,
 };
 use libzstd_rs_sys::internal::{MEM_readLE24, MEM_readLE32};
-use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
+use libzstd_rs_sys::lib::common::zstd_common::{
+    ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError,
+};
 use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary_byReference, ZSTD_CCtx_refPrefix,
     ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize, ZSTD_CStream, ZSTD_CStreamInSize,
@@ -849,12 +851,10 @@ unsafe fn FIO_openSrcFile(
     }
     if UTIL_stat(srcFileName, statbuf) == 0 {
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"zstd: can't stat %s : %s -- ignored \n\0" as *const u8
-                    as *const core::ffi::c_char,
-                srcFileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "zstd: can't stat {} : {} -- ignored",
+                CStr::from_ptr(srcFileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
         }
         return core::ptr::null_mut();
@@ -879,11 +879,10 @@ unsafe fn FIO_openSrcFile(
         b"rb\0" as *const u8 as *const core::ffi::c_char,
     );
     if f.is_null() && g_display_prefs.displayLevel >= 1 {
-        fprintf(
-            stderr,
-            b"zstd: %s: %s \n\0" as *const u8 as *const core::ffi::c_char,
-            srcFileName,
-            strerror(*__errno_location()),
+        eprintln!(
+            "zstd: {}: {}",
+            CStr::from_ptr(srcFileName).to_string_lossy(),
+            io::Error::last_os_error(),
         );
     }
     f
@@ -1021,11 +1020,10 @@ unsafe fn FIO_openDstFile(
                 );
             }
         } else if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"zstd: %s: %s\n\0" as *const u8 as *const core::ffi::c_char,
-                dstFileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "zstd: {}: {}",
+                CStr::from_ptr(dstFileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
         }
     } else if setvbuf(f, core::ptr::null_mut(), _IOFBF, ((1) << 20) as size_t) != 0
@@ -1064,15 +1062,11 @@ unsafe fn FIO_getDictFileStat(fileName: *const core::ffi::c_char, dictFileStat: 
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Stat failed on dictionary file %s: %s\0" as *const u8 as *const core::ffi::c_char,
-                fileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Stat failed on dictionary file {}: {}",
+                CStr::from_ptr(fileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(31);
     }
@@ -1151,15 +1145,11 @@ unsafe fn FIO_setDictBufferMalloc(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Couldn't open dictionary %s: %s\0" as *const u8 as *const core::ffi::c_char,
-                fileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Couldn't open dictionary {}: {}",
+                CStr::from_ptr(fileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(33);
     }
@@ -1223,14 +1213,7 @@ unsafe fn FIO_setDictBufferMalloc(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"%s\0" as *const u8 as *const core::ffi::c_char,
-                strerror(*__errno_location()),
-            );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            eprintln!("{}", io::Error::last_os_error());
         }
         exit(34);
     }
@@ -1255,15 +1238,11 @@ unsafe fn FIO_setDictBufferMalloc(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error reading dictionary file %s : %s\0" as *const u8 as *const core::ffi::c_char,
-                fileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Error reading dictionary file {} : {}",
+                CStr::from_ptr(fileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(35);
     }
@@ -1320,15 +1299,11 @@ unsafe fn FIO_setDictBufferMMap(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Couldn't open dictionary %s: %s\0" as *const u8 as *const core::ffi::c_char,
-                fileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Couldn't open dictionary {}: {}",
+                CStr::from_ptr(fileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(33);
     }
@@ -1399,11 +1374,7 @@ unsafe fn FIO_setDictBufferMMap(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"%s\0" as *const u8 as *const core::ffi::c_char,
-                strerror(*__errno_location()),
-            );
+            eprintln!("{}", io::Error::last_os_error());
         }
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
@@ -1560,15 +1531,10 @@ unsafe fn FIO_createFilename_fromOutDir(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"zstd: FIO_createFilename_fromOutDir: %s\0" as *const u8
-                    as *const core::ffi::c_char,
-                strerror(*__errno_location()),
+            eprintln!(
+                "zstd: FIO_createFilename_fromOutDir: {}",
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(30);
     }
@@ -2085,11 +2051,9 @@ unsafe fn FIO_createCResources(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"allocation error (%s): can't create ZSTD_CCtx\0" as *const u8
-                    as *const core::ffi::c_char,
-                strerror(*__errno_location()),
+            eprintln!(
+                "allocation error ({}): can't create ZSTD_CCtx",
+                io::Error::last_os_error(),
             );
         }
         if g_display_prefs.displayLevel >= 1 {
@@ -4789,11 +4753,10 @@ unsafe fn FIO_compressFilename_dstFile(
         }
         if AIO_WritePool_closeFile(ress.writeCtx) != 0 {
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"zstd: %s: %s \n\0" as *const u8 as *const core::ffi::c_char,
-                    dstFileName,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "zstd: {}: {}",
+                    CStr::from_ptr(dstFileName).to_string_lossy(),
+                    io::Error::last_os_error(),
                 );
             }
             result = 1;
@@ -5057,15 +5020,11 @@ unsafe fn FIO_compressFilename_srcFile(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"zstd: %s: %s\0" as *const u8 as *const core::ffi::c_char,
-                    srcFileName,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "zstd: {}: {}",
+                    CStr::from_ptr(srcFileName).to_string_lossy(),
+                    io::Error::last_os_error(),
                 );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             }
             exit(1);
         }
@@ -5267,14 +5226,7 @@ unsafe fn FIO_determineCompressedName(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"zstd: %s\0" as *const u8 as *const core::ffi::c_char,
-                    strerror(*__errno_location()),
-                );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                eprintln!("zstd: {}", io::Error::last_os_error());
             }
             exit(30);
         }
@@ -5397,16 +5349,11 @@ pub unsafe fn FIO_compressMultipleFilenames(
                     );
                 }
                 if g_display_prefs.displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Write error (%s) : cannot properly close %s\0" as *const u8
-                            as *const core::ffi::c_char,
-                        strerror(*__errno_location()),
-                        outFileName,
+                    eprintln!(
+                        "Write error ({}) : cannot properly close {}",
+                        io::Error::last_os_error(),
+                        CStr::from_ptr(outFileName).to_string_lossy(),
                     );
-                }
-                if g_display_prefs.displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 }
                 exit(29);
             }
@@ -5617,14 +5564,10 @@ unsafe fn FIO_createDResources(
             );
         }
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error: %s : can't create ZSTD_DStream\0" as *const u8 as *const core::ffi::c_char,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Error: {} : can't create ZSTD_DStream",
+                io::Error::last_os_error(),
             );
-        }
-        if g_display_prefs.displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
         }
         exit(60);
     }
@@ -6560,11 +6503,10 @@ unsafe fn FIO_decompressDstFile(
         }
         if AIO_WritePool_closeFile(ress.writeCtx) != 0 {
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"zstd: %s: %s \n\0" as *const u8 as *const core::ffi::c_char,
-                    dstFileName,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "zstd: {}: {}",
+                    CStr::from_ptr(dstFileName).to_string_lossy(),
+                    io::Error::last_os_error(),
                 );
             }
             result = 1;
@@ -6643,11 +6585,10 @@ unsafe fn FIO_decompressSrcFile(
     AIO_ReadPool_setFile(ress.readCtx, core::ptr::null_mut());
     if fclose(srcFile) != 0 {
         if g_display_prefs.displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"zstd: %s: %s \n\0" as *const u8 as *const core::ffi::c_char,
-                srcFileName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "zstd: {}: {}",
+                CStr::from_ptr(srcFileName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
         }
         return 1;
@@ -6656,11 +6597,10 @@ unsafe fn FIO_decompressSrcFile(
         clearHandler();
         if FIO_removeFile(srcFileName) != 0 {
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"zstd: %s: %s \n\0" as *const u8 as *const core::ffi::c_char,
-                    srcFileName,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "zstd: {}: {}",
+                    CStr::from_ptr(srcFileName).to_string_lossy(),
+                    io::Error::last_os_error(),
                 );
             }
             return 1;
@@ -6769,15 +6709,10 @@ unsafe fn FIO_determineDstName(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"%s : not enough memory for dstFileName\0" as *const u8
-                        as *const core::ffi::c_char,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "{} : not enough memory for dstFileName",
+                    io::Error::last_os_error(),
                 );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             }
             exit(74);
         }
@@ -6896,15 +6831,10 @@ pub unsafe fn FIO_decompressMultipleFilenames(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Write error : %s : cannot properly close output file\0" as *const u8
-                        as *const core::ffi::c_char,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "Write error : {} : cannot properly close output file",
+                    io::Error::last_os_error(),
                 );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             }
             exit(72);
         }

@@ -1,9 +1,8 @@
 use core::ptr;
+use std::ffi::CStr;
+use std::io;
 
-use libc::{
-    __errno_location, exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t,
-    strerror, FILE,
-};
+use libc::{exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t, FILE};
 use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
     ZDICT_optimizeTrainFromBuffer_cover, ZDICT_optimizeTrainFromBuffer_fastCover,
@@ -79,11 +78,10 @@ unsafe fn DiB_loadFiles(
                     b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
                     10,
                 );
-                fprintf(
-                    stderr,
-                    b"zstd: dictBuilder: %s %s \0" as *const u8 as *const core::ffi::c_char,
-                    *fileNamesTable.offset(fileIndex as isize),
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "zstd: dictBuilder: {} {}",
+                    CStr::from_ptr(*fileNamesTable.offset(fileIndex as isize)).to_string_lossy(),
+                    io::Error::last_os_error()
                 );
                 fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
                 exit(10);
