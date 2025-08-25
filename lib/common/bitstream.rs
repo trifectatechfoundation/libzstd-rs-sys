@@ -246,8 +246,8 @@ impl BIT_DStream_t {
             self.bitContainer,
             (size_of::<BitContainerType>() as u64)
                 .wrapping_mul(8)
-                .wrapping_sub(self.bitsConsumed as core::ffi::c_ulong)
-                .wrapping_sub(nbBits as core::ffi::c_ulong) as u32,
+                .wrapping_sub(self.bitsConsumed as u64)
+                .wrapping_sub(nbBits as u64) as u32,
             nbBits,
         )
     }
