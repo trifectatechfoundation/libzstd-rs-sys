@@ -862,24 +862,18 @@ impl HUF_DEltX2 {
 }
 
 fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::c_int) -> u32 {
-    if cfg!(target_endian = "little") {
-        let seq = if level == 1 {
-            symbol
-        } else {
-            baseSeq.wrapping_add(symbol << 8)
-        };
-        seq.wrapping_add(nbBits << 16)
-            .wrapping_add((level as u32) << 24)
+    const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, sequence) == 0);
+    const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, nbBits) == 2);
+    const _: () = assert!(core::mem::offset_of!(HUF_DEltX2, length) == 3);
+    const _: () = assert!(size_of::<HUF_DEltX2>() == size_of::<u32>());
+
+    let seq = if level == 1 {
+        symbol
     } else {
-        let seq = if level == 1 {
-            symbol << 8
-        } else {
-            (baseSeq << 8).wrapping_add(symbol)
-        };
-        (seq << 16)
-            .wrapping_add(nbBits << 8)
-            .wrapping_add(level as u32)
-    }
+        baseSeq.wrapping_add(symbol << 8)
+    };
+    seq.wrapping_add(nbBits << 16)
+        .wrapping_add((level as u32) << 24)
 }
 
 fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
@@ -2216,7 +2210,7 @@ impl<'a> Writer<'a> {
         // assert!( self.ptr.wrapping_add(length as usize) <= self.end, "write out of bounds {:?} {length}", self.as_mut_ptr_range());
 
         // SAFETY: `ptr < end` and we're allowed to write to this memory.
-        unsafe { ptr.as_ptr().cast::<u16>().write_unaligned(value) }
+        unsafe { ptr.as_ptr().cast::<u16>().write_unaligned(value.to_le()) }
 
         // SAFETY: `ptr..end` is a contiguous allocation.
         self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(length as usize)) }
