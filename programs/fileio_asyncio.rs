@@ -1,9 +1,10 @@
+use std::io;
+
 use libc::{
-    __errno_location, exit, fclose, feof, ferror, fprintf, fread, free, fseek, fwrite, malloc,
-    memcpy, pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
+    exit, fclose, feof, ferror, fprintf, fread, free, fseek, fwrite, malloc, memcpy,
+    pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
     pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
-    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t,
-    strerror, FILE,
+    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t, FILE,
 };
 use libzstd_rs_sys::internal::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
@@ -157,15 +158,10 @@ unsafe fn AIO_fwriteSparse(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Write error : cannot write block : %s\0" as *const u8
-                        as *const core::ffi::c_char,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "Write error : cannot write block : {}",
+                    io::Error::last_os_error(),
                 );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             }
             exit(70);
         }
@@ -287,15 +283,10 @@ unsafe fn AIO_fwriteSparse(
                     );
                 }
                 if g_display_prefs.displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Write error : cannot write block : %s\0" as *const u8
-                            as *const core::ffi::c_char,
-                        strerror(*__errno_location()),
+                    eprintln!(
+                        "Write error : cannot write block : {}",
+                        io::Error::last_os_error(),
                     );
-                }
-                if g_display_prefs.displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 }
                 exit(93);
             }
@@ -367,15 +358,10 @@ unsafe fn AIO_fwriteSparse(
                     );
                 }
                 if g_display_prefs.displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Write error : cannot write end of decoded block : %s\0" as *const u8
-                            as *const core::ffi::c_char,
-                        strerror(*__errno_location()),
+                    eprintln!(
+                        "Write error : cannot write end of decoded block : {}",
+                        io::Error::last_os_error(),
                     );
-                }
-                if g_display_prefs.displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
                 }
                 exit(95);
             }
@@ -457,15 +443,10 @@ unsafe fn AIO_fwriteSparseEnd(
                 );
             }
             if g_display_prefs.displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Write error : cannot write last zero : %s\0" as *const u8
-                        as *const core::ffi::c_char,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "Write error : cannot write last zero : {}",
+                    io::Error::last_os_error(),
                 );
-            }
-            if g_display_prefs.displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
             }
             exit(69);
         }

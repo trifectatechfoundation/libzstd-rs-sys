@@ -1,10 +1,11 @@
 use std::ffi::CStr;
+use std::io;
 
 use libc::{
     __errno_location, calloc, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof,
     ferror, fgets, fileno, fopen, fprintf, fread, free, getchar, isatty, malloc, memcpy, mkdir,
-    mode_t, opendir, readdir, realloc, size_t, strchr, strcmp, strdup, strerror, strlen, strncmp,
-    strrchr, strstr, strtol, sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
+    mode_t, opendir, readdir, realloc, size_t, strchr, strcmp, strdup, strlen, strncmp, strrchr,
+    strstr, strtol, sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
 };
 
 extern "C" {
@@ -1583,11 +1584,10 @@ unsafe fn UTIL_prepareFileList(
     dir = opendir(dirName);
     if dir.is_null() {
         if g_utilDisplayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Cannot open directory '%s': %s\n\0" as *const u8 as *const core::ffi::c_char,
-                dirName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "Cannot open directory '{}': {}",
+                CStr::from_ptr(dirName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
         }
         return 0;
@@ -1681,13 +1681,12 @@ unsafe fn UTIL_prepareFileList(
             *__errno_location() = 0;
         }
     }
-    if *__errno_location() != 0 {
+    if io::Error::last_os_error().raw_os_error().unwrap() != 0 {
         if g_utilDisplayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"readdir(%s) error: %s \n\0" as *const u8 as *const core::ffi::c_char,
-                dirName,
-                strerror(*__errno_location()),
+            eprintln!(
+                "readdir({}) error: {}",
+                CStr::from_ptr(dirName).to_string_lossy(),
+                io::Error::last_os_error(),
             );
         }
         free(*bufStart as *mut core::ffi::c_void);
@@ -1766,11 +1765,10 @@ unsafe fn getDirMode(dirName: *const core::ffi::c_char) -> mode_t {
         __glibc_reserved: [0; 3],
     };
     if UTIL_stat(dirName, &mut st) == 0 {
-        fprintf(
-            stderr,
-            b"zstd: failed to get DIR stats %s: %s\n\0" as *const u8 as *const core::ffi::c_char,
-            dirName,
-            strerror(*__errno_location()),
+        eprintln!(
+            "zstd: failed to get DIR stats {}: {}",
+            CStr::from_ptr(dirName).to_string_lossy(),
+            io::Error::last_os_error(),
         );
         return DIR_DEFAULT_MODE as mode_t;
     }
@@ -1787,14 +1785,13 @@ unsafe fn getDirMode(dirName: *const core::ffi::c_char) -> mode_t {
 unsafe fn makeDir(dir: *const core::ffi::c_char, mode: mode_t) -> core::ffi::c_int {
     let ret = mkdir(dir, mode);
     if ret != 0 {
-        if *__errno_location() == EEXIST {
+        if io::Error::last_os_error().kind() == io::ErrorKind::AlreadyExists {
             return 0;
         }
-        fprintf(
-            stderr,
-            b"zstd: failed to create DIR %s: %s\n\0" as *const u8 as *const core::ffi::c_char,
-            dir,
-            strerror(*__errno_location()),
+        eprintln!(
+            "zstd: failed to create DIR {}: {}",
+            CStr::from_ptr(dir).to_string_lossy(),
+            io::Error::last_os_error(),
         );
     }
     ret
