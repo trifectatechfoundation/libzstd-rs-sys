@@ -413,7 +413,7 @@ pub const ADAPT_WINDOWLOG_DEFAULT: core::ffi::c_int = 23;
 pub const DICTSIZE_MAX: core::ffi::c_int = 32 * ((1) << 20);
 pub const DEFAULT_FILE_PERMISSIONS: mode_t =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-pub const TEMPORARY_FILE_PERMISSIONS: core::ffi::c_uint = S_IRUSR | S_IWUSR;
+pub const TEMPORARY_FILE_PERMISSIONS: mode_t = S_IRUSR | S_IWUSR;
 static mut g_artefact: *const core::ffi::c_char = core::ptr::null();
 unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
     assert!(sig == SIGINT);
@@ -991,7 +991,7 @@ unsafe fn FIO_openDstFile(
     }
     let mut isDstRegFile: core::ffi::c_int = 0;
     let openflags = O_WRONLY | O_CREAT | O_TRUNC;
-    let fd = open(dstFileName, openflags, mode);
+    let fd = open(dstFileName, openflags, mode as core::ffi::c_uint);
     let mut f = core::ptr::null_mut();
     if fd != -(1) {
         f = fdopen(fd, b"wb\0" as *const u8 as *const core::ffi::c_char);
