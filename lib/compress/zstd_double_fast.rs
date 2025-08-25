@@ -80,7 +80,6 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::zstd_compress::{
     SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
 };
-use crate::lib::compress::zstd_compress_internal::ZSTD_selectAddr;
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
@@ -577,12 +576,13 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                         break;
                     } else {
                         hl1 = ZSTD_hashPtr(ip1 as *const core::ffi::c_void, hBitsL, 8);
-                        let matchl0_safe = ZSTD_selectAddr(
-                            idxl0,
-                            prefixLowestIndex,
-                            matchl0,
-                            &*dummy.as_ptr().offset(0),
-                        );
+                        let matchl0_safe = {
+                            core::hint::select_unpredictable(
+                                idxl0 >= prefixLowestIndex,
+                                matchl0,
+                                dummy.as_ptr(),
+                            )
+                        };
                         if MEM_read64(matchl0_safe as *const core::ffi::c_void)
                             == MEM_read64(ip as *const core::ffi::c_void)
                             && matchl0_safe == matchl0
@@ -605,12 +605,13 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
                         } else {
                             idxl1 = *hashLong.add(hl1);
                             matchl1 = base.offset(idxl1 as isize);
-                            matchs0_safe = ZSTD_selectAddr(
-                                idxs0,
-                                prefixLowestIndex,
-                                matchs0,
-                                &*dummy.as_ptr().offset(0),
-                            );
+                            matchs0_safe = {
+                                core::hint::select_unpredictable(
+                                    idxs0 >= prefixLowestIndex,
+                                    matchs0,
+                                    dummy.as_ptr(),
+                                )
+                            };
                             if MEM_read32(matchs0_safe as *const core::ffi::c_void)
                                 == MEM_read32(ip as *const core::ffi::c_void)
                                 && matchs0_safe == matchs0
