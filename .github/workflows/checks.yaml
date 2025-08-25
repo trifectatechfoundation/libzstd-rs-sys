@@ -107,5 +107,6 @@ jobs:
       - name: run the fuzzer 
         run: |
           cargo fuzz run decompress zstd-files/compressed -- -max_total_time=10
-        env: 
+          cargo fuzz run decompress_overlapping zstd-files/compressed -- -max_total_time=10
+        env:
           RUSTFLAGS: "-Awarnings"
