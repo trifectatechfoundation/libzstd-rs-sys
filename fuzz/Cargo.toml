@@ -9,7 +9,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-zstd-sys = "2.0.15"
+zstd-sys = { version = "2.0.15", features = ["experimental"] }
 
 [dependencies.c2rust_out]
 path = ".."
@@ -18,6 +18,13 @@ features = ["semver-prefix"]
 [[bin]]
 name = "decompress"
 path = "fuzz_targets/decompress.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decompress_overlapping"
+path = "fuzz_targets/decompress_overlapping.rs"
 test = false
 doc = false
 bench = false
