@@ -1,13 +1,5 @@
 use libc::{free, malloc, size_t};
 
-extern "C" {
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
-}
 type trbudget_t = _trbudget_t;
 #[repr(C)]
 struct _trbudget_t {
@@ -708,6 +700,8 @@ unsafe fn ss_mintrosort(
     mut last: *mut core::ffi::c_int,
     mut depth: core::ffi::c_int,
 ) {
+    const STACK_SIZE: core::ffi::c_int = 16;
+
     let mut stack: [C2RustUnnamed_0; 16] = [C2RustUnnamed_0 {
         a: core::ptr::null_mut::<core::ffi::c_int>(),
         b: core::ptr::null_mut::<core::ffi::c_int>(),
@@ -736,22 +730,7 @@ unsafe fn ss_mintrosort(
             if (1) < last.offset_from(first) as core::ffi::c_long {
                 ss_insertionsort(T, PA, first, last, depth);
             }
-            if 0 <= ssize {
-            } else {
-                __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    418,
-                    (*::core::mem::transmute::<
-                        &[u8; 74],
-                        &[core::ffi::c_char; 74],
-                    >(
-                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(0 <= ssize);
             if ssize == 0 {
                 return;
             }
@@ -794,23 +773,7 @@ unsafe fn ss_mintrosort(
                     <= last.offset_from(a) as core::ffi::c_long
                 {
                     if (1) < a.offset_from(first) as core::ffi::c_long {
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                437,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh2 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh2 = a;
                         let fresh3 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -828,23 +791,7 @@ unsafe fn ss_mintrosort(
                         limit = -(1);
                     }
                 } else if (1) < last.offset_from(a) as core::ffi::c_long {
-                    if ssize < 16 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            444,
-                            (*::core::mem::transmute::<
-                                &[u8; 74],
-                                &[core::ffi::c_char; 74],
-                            >(
-                                b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh5 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh5 = first;
                     let fresh6 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1005,23 +952,7 @@ unsafe fn ss_mintrosort(
                         if last.offset_from(c) as core::ffi::c_long
                             <= c.offset_from(b) as core::ffi::c_long
                         {
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    494,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh8 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh8 = b;
                             let fresh9 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1031,23 +962,7 @@ unsafe fn ss_mintrosort(
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh10 as isize)).d =
                                 ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    495,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh11 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh11 = c;
                             let fresh12 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1060,23 +975,7 @@ unsafe fn ss_mintrosort(
                         } else if a.offset_from(first) as core::ffi::c_long
                             <= c.offset_from(b) as core::ffi::c_long
                         {
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    498,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh14 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh14 = c;
                             let fresh15 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1085,23 +984,7 @@ unsafe fn ss_mintrosort(
                             let fresh16 = ssize;
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh16 as isize)).d = limit;
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    499,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh17 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh17 = b;
                             let fresh18 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1113,23 +996,7 @@ unsafe fn ss_mintrosort(
                                 ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                             last = a;
                         } else {
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    502,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh20 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh20 = c;
                             let fresh21 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1138,23 +1005,7 @@ unsafe fn ss_mintrosort(
                             let fresh22 = ssize;
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh22 as isize)).d = limit;
-                            if ssize < 16 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    503,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 74],
-                                        &[core::ffi::c_char; 74],
-                                    >(
-                                        b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh23 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh23 = first;
                             let fresh24 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1172,23 +1023,7 @@ unsafe fn ss_mintrosort(
                     } else if a.offset_from(first) as core::ffi::c_long
                         <= c.offset_from(b) as core::ffi::c_long
                     {
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                508,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh26 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh26 = b;
                         let fresh27 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1198,23 +1033,7 @@ unsafe fn ss_mintrosort(
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh28 as isize)).d =
                             ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                509,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh29 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh29 = first;
                         let fresh30 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1227,23 +1046,7 @@ unsafe fn ss_mintrosort(
                     } else if last.offset_from(c) as core::ffi::c_long
                         <= c.offset_from(b) as core::ffi::c_long
                     {
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                512,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh32 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh32 = first;
                         let fresh33 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1252,23 +1055,7 @@ unsafe fn ss_mintrosort(
                         let fresh34 = ssize;
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh34 as isize)).d = limit;
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                513,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh35 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh35 = b;
                         let fresh36 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1280,23 +1067,7 @@ unsafe fn ss_mintrosort(
                             ss_ilg(c.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                         first = c;
                     } else {
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                516,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh38 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh38 = first;
                         let fresh39 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1305,23 +1076,7 @@ unsafe fn ss_mintrosort(
                         let fresh40 = ssize;
                         ssize += 1;
                         (*stack.as_mut_ptr().offset(fresh40 as isize)).d = limit;
-                        if ssize < 16 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                517,
-                                (*::core::mem::transmute::<
-                                    &[u8; 74],
-                                    &[core::ffi::c_char; 74],
-                                >(
-                                    b"void ss_mintrosort(const unsigned char *, const int *, int *, int *, int)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh41 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh41 = c;
                         let fresh42 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -1820,6 +1575,8 @@ unsafe fn ss_swapmerge(
     bufsize: core::ffi::c_int,
     depth: core::ffi::c_int,
 ) {
+    const STACK_SIZE: core::ffi::c_int = 32;
+
     let mut stack: [C2RustUnnamed_1; 32] = [C2RustUnnamed_1 {
         a: core::ptr::null_mut::<core::ffi::c_int>(),
         b: core::ptr::null_mut::<core::ffi::c_int>(),
@@ -1876,22 +1633,7 @@ unsafe fn ss_swapmerge(
             {
                 *last = !*last;
             }
-            if 0 <= ssize {
-            } else {
-                __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    771,
-                    (*::core::mem::transmute::<
-                        &[u8; 92],
-                        &[core::ffi::c_char; 92],
-                    >(
-                        b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(0 <= ssize);
             if ssize == 0 {
                 return;
             }
@@ -1937,22 +1679,7 @@ unsafe fn ss_swapmerge(
             {
                 *last = !*last;
             }
-            if 0 <= ssize {
-            } else {
-                __assert_fail(
-                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    780,
-                    (*::core::mem::transmute::<
-                        &[u8; 92],
-                        &[core::ffi::c_char; 92],
-                    >(
-                        b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(0 <= ssize);
             if ssize == 0 {
                 return;
             }
@@ -2038,23 +1765,7 @@ unsafe fn ss_swapmerge(
                 if l.offset_from(first) as core::ffi::c_long
                     <= last.offset_from(r) as core::ffi::c_long
                 {
-                    if ssize < 32 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            810,
-                            (*::core::mem::transmute::<
-                                &[u8; 92],
-                                &[core::ffi::c_char; 92],
-                            >(
-                                b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh80 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh80 = r;
                     let fresh81 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -2071,23 +1782,7 @@ unsafe fn ss_swapmerge(
                     if next & 2 != 0 && r == middle {
                         next ^= 6;
                     }
-                    if ssize < 32 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            814,
-                            (*::core::mem::transmute::<
-                                &[u8; 92],
-                                &[core::ffi::c_char; 92],
-                            >(
-                                b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh84 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh84 = first;
                     let fresh85 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -2150,22 +1845,7 @@ unsafe fn ss_swapmerge(
                 {
                     *last = !*last;
                 }
-                if 0 <= ssize {
-                } else {
-                    __assert_fail(
-                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                            as *const core::ffi::c_char,
-                        822,
-                        (*::core::mem::transmute::<
-                            &[u8; 92],
-                            &[core::ffi::c_char; 92],
-                        >(
-                            b"void ss_swapmerge(const unsigned char *, const int *, int *, int *, int *, int *, int, int)\0",
-                        ))
-                            .as_ptr(),
-                    );
-                }
+                assert!(0 <= ssize);
                 if ssize == 0 {
                     return;
                 }
@@ -2829,6 +2509,8 @@ unsafe fn tr_introsort(
     mut last: *mut core::ffi::c_int,
     budget: *mut trbudget_t,
 ) {
+    const STACK_SIZE: core::ffi::c_int = 64;
+
     let mut stack: [C2RustUnnamed; 64] = [C2RustUnnamed {
         a: core::ptr::null::<core::ffi::c_int>(),
         b: core::ptr::null_mut::<core::ffi::c_int>(),
@@ -2878,23 +2560,7 @@ unsafe fn tr_introsort(
                     }
                 }
                 if (1) < b.offset_from(a) as core::ffi::c_long {
-                    if ssize < 64 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1204,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh89 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh89 = core::ptr::null::<core::ffi::c_int>();
                     let fresh90 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -2905,23 +2571,7 @@ unsafe fn tr_introsort(
                     let fresh92 = ssize;
                     ssize += 1;
                     (*stack.as_mut_ptr().offset(fresh92 as isize)).e = 0;
-                    if ssize < 64 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1205,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh93 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh93 = ISAd.offset(-(incr as isize));
                     let fresh94 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -2938,23 +2588,7 @@ unsafe fn tr_introsort(
                     <= last.offset_from(b) as core::ffi::c_long
                 {
                     if (1) < a.offset_from(first) as core::ffi::c_long {
-                        if ssize < 64 {
-                        } else {
-                            __assert_fail(
-                                b"ssize < STACK_SIZE\0" as *const u8
-                                    as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                1210,
-                                (*::core::mem::transmute::<
-                                    &[u8; 73],
-                                    &[core::ffi::c_char; 73],
-                                >(
-                                    b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(ssize < STACK_SIZE);
                         let fresh97 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                         *fresh97 = ISAd;
                         let fresh98 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -2974,22 +2608,7 @@ unsafe fn tr_introsort(
                         limit =
                             tr_ilg(last.offset_from(b) as core::ffi::c_long as core::ffi::c_int);
                     } else {
-                        if 0 <= ssize {
-                        } else {
-                            __assert_fail(
-                                b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                                b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                    as *const u8 as *const core::ffi::c_char,
-                                1215,
-                                (*::core::mem::transmute::<
-                                    &[u8; 73],
-                                    &[core::ffi::c_char; 73],
-                                >(
-                                    b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                ))
-                                    .as_ptr(),
-                            );
-                        }
+                        assert!(0 <= ssize);
                         if ssize == 0 {
                             return;
                         }
@@ -3001,23 +2620,7 @@ unsafe fn tr_introsort(
                         trlink = (*stack.as_mut_ptr().offset(ssize as isize)).e;
                     }
                 } else if (1) < last.offset_from(b) as core::ffi::c_long {
-                    if ssize < 64 {
-                    } else {
-                        __assert_fail(
-                            b"ssize < STACK_SIZE\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1219,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(ssize < STACK_SIZE);
                     let fresh101 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                     *fresh101 = ISAd;
                     let fresh102 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3035,22 +2638,7 @@ unsafe fn tr_introsort(
                     last = a;
                     limit = tr_ilg(a.offset_from(first) as core::ffi::c_long as core::ffi::c_int);
                 } else {
-                    if 0 <= ssize {
-                    } else {
-                        __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1224,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(0 <= ssize);
                     if ssize == 0 {
                         return;
                     }
@@ -3089,22 +2677,7 @@ unsafe fn tr_introsort(
                         ISAd.offset_from(ISA) as core::ffi::c_long as core::ffi::c_int,
                     );
                 }
-                if 0 <= ssize {
-                } else {
-                    __assert_fail(
-                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                            as *const core::ffi::c_char,
-                        1236,
-                        (*::core::mem::transmute::<
-                            &[u8; 73],
-                            &[core::ffi::c_char; 73],
-                        >(
-                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                        ))
-                            .as_ptr(),
-                    );
-                }
+                assert!(0 <= ssize);
                 if ssize == 0 {
                     return;
                 }
@@ -3158,23 +2731,7 @@ unsafe fn tr_introsort(
                         if a.offset_from(first) as core::ffi::c_long
                             <= last.offset_from(a) as core::ffi::c_long
                         {
-                            if ssize < 64 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1252,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh105 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh105 = ISAd;
                             let fresh106 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3189,23 +2746,7 @@ unsafe fn tr_introsort(
                             last = a;
                             limit = next;
                         } else if (1) < last.offset_from(a) as core::ffi::c_long {
-                            if ssize < 64 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1256,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh109 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh109 = ISAd.offset(incr as isize);
                             let fresh110 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3231,22 +2772,7 @@ unsafe fn tr_introsort(
                             first = a;
                             limit = -(3);
                         } else {
-                            if 0 <= ssize {
-                            } else {
-                                __assert_fail(
-                                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1267,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(0 <= ssize);
                             if ssize == 0 {
                                 return;
                             }
@@ -3259,22 +2785,7 @@ unsafe fn tr_introsort(
                         }
                     }
                 } else {
-                    if 0 <= ssize {
-                    } else {
-                        __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1271,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(0 <= ssize);
                     if ssize == 0 {
                         return;
                     }
@@ -3353,23 +2864,7 @@ unsafe fn tr_introsort(
                                 <= b.offset_from(a) as core::ffi::c_long
                             {
                                 if (1) < a.offset_from(first) as core::ffi::c_long {
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1311,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh114 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh114 = ISAd.offset(incr as isize);
@@ -3383,23 +2878,7 @@ unsafe fn tr_introsort(
                                     let fresh117 = ssize;
                                     ssize += 1;
                                     (*stack.as_mut_ptr().offset(fresh117 as isize)).e = trlink;
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1312,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh118 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh118 = ISAd;
@@ -3415,23 +2894,7 @@ unsafe fn tr_introsort(
                                     (*stack.as_mut_ptr().offset(fresh121 as isize)).e = trlink;
                                     last = a;
                                 } else if (1) < last.offset_from(b) as core::ffi::c_long {
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1315,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh122 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh122 = ISAd.offset(incr as isize);
@@ -3456,23 +2919,7 @@ unsafe fn tr_introsort(
                                 <= b.offset_from(a) as core::ffi::c_long
                             {
                                 if (1) < a.offset_from(first) as core::ffi::c_long {
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1322,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh126 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh126 = ISAd;
@@ -3486,23 +2933,7 @@ unsafe fn tr_introsort(
                                     let fresh129 = ssize;
                                     ssize += 1;
                                     (*stack.as_mut_ptr().offset(fresh129 as isize)).e = trlink;
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1323,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh130 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh130 = ISAd.offset(incr as isize);
@@ -3518,23 +2949,7 @@ unsafe fn tr_introsort(
                                     (*stack.as_mut_ptr().offset(fresh133 as isize)).e = trlink;
                                     last = a;
                                 } else {
-                                    if ssize < 64 {
-                                    } else {
-                                        __assert_fail(
-                                            b"ssize < STACK_SIZE\0" as *const u8
-                                                as *const core::ffi::c_char,
-                                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                                as *const u8 as *const core::ffi::c_char,
-                                            1326,
-                                            (*::core::mem::transmute::<
-                                                &[u8; 73],
-                                                &[core::ffi::c_char; 73],
-                                            >(
-                                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                            ))
-                                                .as_ptr(),
-                                        );
-                                    }
+                                    assert!(ssize < STACK_SIZE);
                                     let fresh134 =
                                         &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                     *fresh134 = ISAd;
@@ -3554,23 +2969,7 @@ unsafe fn tr_introsort(
                                     limit = next;
                                 }
                             } else {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1330,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh138 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh138 = ISAd;
                                 let fresh139 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3581,23 +2980,7 @@ unsafe fn tr_introsort(
                                 let fresh141 = ssize;
                                 ssize += 1;
                                 (*stack.as_mut_ptr().offset(fresh141 as isize)).e = trlink;
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1331,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh142 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh142 = ISAd;
                                 let fresh143 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3617,23 +3000,7 @@ unsafe fn tr_introsort(
                             <= b.offset_from(a) as core::ffi::c_long
                         {
                             if (1) < last.offset_from(b) as core::ffi::c_long {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1337,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh146 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh146 = ISAd.offset(incr as isize);
                                 let fresh147 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3644,23 +3011,7 @@ unsafe fn tr_introsort(
                                 let fresh149 = ssize;
                                 ssize += 1;
                                 (*stack.as_mut_ptr().offset(fresh149 as isize)).e = trlink;
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1338,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh150 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh150 = ISAd;
                                 let fresh151 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3673,23 +3024,7 @@ unsafe fn tr_introsort(
                                 (*stack.as_mut_ptr().offset(fresh153 as isize)).e = trlink;
                                 first = b;
                             } else if (1) < a.offset_from(first) as core::ffi::c_long {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1341,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh154 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh154 = ISAd.offset(incr as isize);
                                 let fresh155 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3711,23 +3046,7 @@ unsafe fn tr_introsort(
                             <= b.offset_from(a) as core::ffi::c_long
                         {
                             if (1) < last.offset_from(b) as core::ffi::c_long {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1348,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh158 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh158 = ISAd;
                                 let fresh159 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3738,23 +3057,7 @@ unsafe fn tr_introsort(
                                 let fresh161 = ssize;
                                 ssize += 1;
                                 (*stack.as_mut_ptr().offset(fresh161 as isize)).e = trlink;
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1349,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh162 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh162 = ISAd.offset(incr as isize);
                                 let fresh163 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3767,23 +3070,7 @@ unsafe fn tr_introsort(
                                 (*stack.as_mut_ptr().offset(fresh165 as isize)).e = trlink;
                                 first = b;
                             } else {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1352,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh166 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh166 = ISAd;
                                 let fresh167 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3800,23 +3087,7 @@ unsafe fn tr_introsort(
                                 limit = next;
                             }
                         } else {
-                            if ssize < 64 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1356,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh170 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh170 = ISAd;
                             let fresh171 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3827,23 +3098,7 @@ unsafe fn tr_introsort(
                             let fresh173 = ssize;
                             ssize += 1;
                             (*stack.as_mut_ptr().offset(fresh173 as isize)).e = trlink;
-                            if ssize < 64 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1357,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh174 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh174 = ISAd;
                             let fresh175 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3867,23 +3122,7 @@ unsafe fn tr_introsort(
                             <= last.offset_from(b) as core::ffi::c_long
                         {
                             if (1) < a.offset_from(first) as core::ffi::c_long {
-                                if ssize < 64 {
-                                } else {
-                                    __assert_fail(
-                                        b"ssize < STACK_SIZE\0" as *const u8
-                                            as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1365,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(ssize < STACK_SIZE);
                                 let fresh178 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                                 *fresh178 = ISAd;
                                 let fresh179 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3898,22 +3137,7 @@ unsafe fn tr_introsort(
                             } else if (1) < last.offset_from(b) as core::ffi::c_long {
                                 first = b;
                             } else {
-                                if 0 <= ssize {
-                                } else {
-                                    __assert_fail(
-                                        b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                                        b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                            as *const u8 as *const core::ffi::c_char,
-                                        1370,
-                                        (*::core::mem::transmute::<
-                                            &[u8; 73],
-                                            &[core::ffi::c_char; 73],
-                                        >(
-                                            b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                        ))
-                                            .as_ptr(),
-                                    );
-                                }
+                                assert!(0 <= ssize);
                                 if ssize == 0 {
                                     return;
                                 }
@@ -3925,23 +3149,7 @@ unsafe fn tr_introsort(
                                 trlink = (*stack.as_mut_ptr().offset(ssize as isize)).e;
                             }
                         } else if (1) < last.offset_from(b) as core::ffi::c_long {
-                            if ssize < 64 {
-                            } else {
-                                __assert_fail(
-                                    b"ssize < STACK_SIZE\0" as *const u8
-                                        as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1374,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(ssize < STACK_SIZE);
                             let fresh182 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).a;
                             *fresh182 = ISAd;
                             let fresh183 = &mut (*stack.as_mut_ptr().offset(ssize as isize)).b;
@@ -3956,22 +3164,7 @@ unsafe fn tr_introsort(
                         } else if (1) < a.offset_from(first) as core::ffi::c_long {
                             last = a;
                         } else {
-                            if 0 <= ssize {
-                            } else {
-                                __assert_fail(
-                                    b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                    1379,
-                                    (*::core::mem::transmute::<
-                                        &[u8; 73],
-                                        &[core::ffi::c_char; 73],
-                                    >(
-                                        b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                                    ))
-                                        .as_ptr(),
-                                );
-                            }
+                            assert!(0 <= ssize);
                             if ssize == 0 {
                                 return;
                             }
@@ -3995,22 +3188,7 @@ unsafe fn tr_introsort(
                     if 0 <= trlink {
                         (*stack.as_mut_ptr().offset(trlink as isize)).d = -(1);
                     }
-                    if 0 <= ssize {
-                    } else {
-                        __assert_fail(
-                            b"0 <= ssize\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1388,
-                            (*::core::mem::transmute::<
-                                &[u8; 73],
-                                &[core::ffi::c_char; 73],
-                            >(
-                                b"void tr_introsort(int *, const int *, int *, int *, int *, trbudget_t *)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(0 <= ssize);
                     if ssize == 0 {
                         return;
                     }
@@ -4324,45 +3502,15 @@ unsafe fn construct_SA(
                 s = *j;
                 if (0) < s {
                     assert_eq!(*T.offset(s as isize) as core::ffi::c_int, c1);
-                    if (s + 1) < n
-                        && *T.offset(s as isize) as core::ffi::c_int
-                            <= *T.offset((s + 1) as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"((s + 1) < n) && (T[s] <= T[s + 1])\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1631,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if *T.offset((s - 1) as isize) as core::ffi::c_int
-                        <= *T.offset(s as isize) as core::ffi::c_int
-                    {
-                    } else {
-                        __assert_fail(
-                            b"T[s - 1] <= T[s]\0" as *const u8
-                                as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1632,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(
+                        (s + 1) < n
+                            && *T.offset(s as isize) as core::ffi::c_int
+                                <= *T.offset((s + 1) as isize) as core::ffi::c_int
+                    );
+                    assert!(
+                        *T.offset((s - 1) as isize) as core::ffi::c_int
+                            <= *T.offset(s as isize) as core::ffi::c_int
+                    );
                     *j = !s;
                     s -= 1;
                     c0 = *T.offset(s as isize) as core::ffi::c_int;
@@ -4377,38 +3525,8 @@ unsafe fn construct_SA(
                         c2 = c0;
                         k = SA.offset(*bucket_B.offset((c1 << 8 | c2) as isize) as isize);
                     }
-                    if k < j {
-                    } else {
-                        __assert_fail(
-                            b"k < j\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1640,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
-                    if !k.is_null() {
-                    } else {
-                        __assert_fail(
-                            b"k != NULL\0" as *const u8 as *const core::ffi::c_char,
-                            b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0"
-                                as *const u8 as *const core::ffi::c_char,
-                            1640,
-                            (*::core::mem::transmute::<
-                                &[u8; 72],
-                                &[core::ffi::c_char; 72],
-                            >(
-                                b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                            ))
-                                .as_ptr(),
-                        );
-                    }
+                    assert!(k < j);
+                    assert!(!k.is_null());
                     let fresh192 = k;
                     k = k.offset(-1);
                     *fresh192 = s;
@@ -4435,24 +3553,10 @@ unsafe fn construct_SA(
     while i < j {
         s = *i;
         if (0) < s {
-            if *T.offset((s - 1) as isize) as core::ffi::c_int
-                >= *T.offset(s as isize) as core::ffi::c_int
-            {
-            } else {
-                __assert_fail(
-                    b"T[s - 1] >= T[s]\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1657,
-                    (*::core::mem::transmute::<
-                        &[u8; 72],
-                        &[core::ffi::c_char; 72],
-                    >(
-                        b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(
+                *T.offset((s - 1) as isize) as core::ffi::c_int
+                    >= *T.offset(s as isize) as core::ffi::c_int
+            );
             s -= 1;
             c0 = *T.offset(s as isize) as core::ffi::c_int;
             if s == 0 || (*T.offset((s - 1) as isize) as core::ffi::c_int) < c0 {
@@ -4464,42 +3568,12 @@ unsafe fn construct_SA(
                 c2 = c0;
                 k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
             }
-            if i < k {
-            } else {
-                __assert_fail(
-                    b"i < k\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1664,
-                    (*::core::mem::transmute::<
-                        &[u8; 72],
-                        &[core::ffi::c_char; 72],
-                    >(
-                        b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(i < k);
             let fresh194 = k;
             k = k.offset(1);
             *fresh194 = s;
         } else {
-            if s < 0 {
-            } else {
-                __assert_fail(
-                    b"s < 0\0" as *const u8 as *const core::ffi::c_char,
-                    b"/tmp/zstd-c2rust/lib//dictBuilder/divsufsort.c\0" as *const u8
-                        as *const core::ffi::c_char,
-                    1667,
-                    (*::core::mem::transmute::<
-                        &[u8; 72],
-                        &[core::ffi::c_char; 72],
-                    >(
-                        b"void construct_SA(const unsigned char *, int *, int *, int *, int, int)\0",
-                    ))
-                        .as_ptr(),
-                );
-            }
+            assert!(s < 0);
             *i = !s;
         }
         i = i.offset(1);
