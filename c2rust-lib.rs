@@ -4,7 +4,6 @@
 #![allow(unused_assignments)]
 #![cfg_attr(test, feature(test))]
 #![feature(likely_unlikely)]
-#![feature(linkage)]
 
 pub mod lib {
     pub mod common {
