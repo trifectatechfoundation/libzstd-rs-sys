@@ -3,8 +3,10 @@ use std::ffi::CStr;
 
 use libc::{
     __errno_location, calloc, clock_t, close, exit, fclose, fdopen, feof, fflush, fileno, fopen,
-    fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, munmap, remove, size_t, strcmp,
-    strcpy, strerror, strlen, strrchr, timespec, FILE,
+    fprintf, fread, free, fseek, ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove,
+    sighandler_t, signal, size_t, strcmp, strcpy, strerror, strlen, strrchr, timespec, FILE,
+    O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY, SIGINT, SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR,
+    S_IWGRP, S_IWOTH, S_IWUSR,
 };
 use libzstd_rs::internal::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorCode, ZSTD_getErrorName, ZSTD_isError};
@@ -63,12 +65,6 @@ extern "C" {
         __compar: __compar_fn_t,
     );
     fn clock() -> clock_t;
-    fn open(
-        __file: *const core::ffi::c_char,
-        __oflag: core::ffi::c_int,
-        _: ...
-    ) -> core::ffi::c_int;
-    fn signal(__sig: core::ffi::c_int, __handler: __sighandler_t) -> __sighandler_t;
     fn zlibVersion() -> *const core::ffi::c_char;
     fn deflate(strm: z_streamp, flush: core::ffi::c_int) -> core::ffi::c_int;
     fn deflateEnd(strm: z_streamp) -> core::ffi::c_int;
@@ -102,7 +98,6 @@ extern "C" {
 type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
-type __sighandler_t = Option<unsafe extern "C" fn(core::ffi::c_int) -> ()>;
 pub type ZSTD_cParameter = core::ffi::c_uint;
 pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
 pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
@@ -354,12 +349,6 @@ const UINT64_MAX: core::ffi::c_ulong = 18446744073709551615;
 
 const PATH_SEP: core::ffi::c_int = '/' as i32;
 const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
-const S_IRUSR: core::ffi::c_int = __S_IREAD;
-const S_IWUSR: core::ffi::c_int = __S_IWRITE;
-const S_IRGRP: core::ffi::c_int = S_IRUSR >> 3;
-const S_IWGRP: core::ffi::c_int = S_IWUSR >> 3;
-const S_IROTH: core::ffi::c_int = S_IRGRP >> 3;
-const S_IWOTH: core::ffi::c_int = S_IWGRP >> 3;
 const SEC_TO_MICRO: core::ffi::c_int = 1000000;
 const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
 const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
@@ -406,16 +395,7 @@ const Z_STREAM_END: core::ffi::c_int = 1;
 const Z_BUF_ERROR: core::ffi::c_int = -(5);
 const Z_BEST_COMPRESSION: core::ffi::c_int = 9;
 const ZSTD_SPARSE_DEFAULT: core::ffi::c_int = 1;
-const __S_IREAD: core::ffi::c_int = 0o400 as core::ffi::c_int;
-const __S_IWRITE: core::ffi::c_int = 0o200 as core::ffi::c_int;
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-const O_RDONLY: core::ffi::c_int = 0;
-const O_WRONLY: core::ffi::c_int = 0o1 as core::ffi::c_int;
-const O_CREAT: core::ffi::c_int = 0o100 as core::ffi::c_int;
-const O_TRUNC: core::ffi::c_int = 0o1000 as core::ffi::c_int;
-const SIG_DFL: core::ffi::c_int = 0;
-const SIG_IGN: core::ffi::c_int = 1;
-const SIGINT: core::ffi::c_int = 2;
 const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
 const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
 pub unsafe fn FIO_zlibVersion() -> *const core::ffi::c_char {
@@ -429,16 +409,13 @@ pub unsafe fn FIO_lzmaVersion() -> *const core::ffi::c_char {
 }
 pub const ADAPT_WINDOWLOG_DEFAULT: core::ffi::c_int = 23;
 pub const DICTSIZE_MAX: core::ffi::c_int = 32 * ((1) << 20);
-pub const DEFAULT_FILE_PERMISSIONS: core::ffi::c_int =
+pub const DEFAULT_FILE_PERMISSIONS: mode_t =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-pub const TEMPORARY_FILE_PERMISSIONS: core::ffi::c_int = S_IRUSR | S_IWUSR;
+pub const TEMPORARY_FILE_PERMISSIONS: core::ffi::c_uint = S_IRUSR | S_IWUSR;
 static mut g_artefact: *const core::ffi::c_char = core::ptr::null();
 unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
     assert!(sig == SIGINT);
-    signal(
-        sig,
-        ::core::mem::transmute::<libc::intptr_t, __sighandler_t>(SIG_IGN as libc::intptr_t),
-    );
+    signal(sig, SIG_IGN);
     if !g_artefact.is_null() {
         assert!(UTIL_isRegularFile(g_artefact) != 0);
         remove(g_artefact);
@@ -449,20 +426,14 @@ unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
 unsafe fn addHandler(dstFileName: *const core::ffi::c_char) {
     if UTIL_isRegularFile(dstFileName) != 0 {
         g_artefact = dstFileName;
-        signal(
-            SIGINT,
-            Some(INThandler as unsafe extern "C" fn(core::ffi::c_int) -> ()),
-        );
+        signal(SIGINT, INThandler as sighandler_t);
     } else {
         g_artefact = core::ptr::null();
     };
 }
 unsafe fn clearHandler() {
     if !g_artefact.is_null() {
-        signal(
-            SIGINT,
-            ::core::mem::transmute::<libc::intptr_t, __sighandler_t>(SIG_DFL as libc::intptr_t),
-        );
+        signal(SIGINT, SIG_DFL);
     }
     g_artefact = core::ptr::null();
 }
@@ -922,7 +893,7 @@ unsafe fn FIO_openDstFile(
     prefs: *mut FIO_prefs_t,
     srcFileName: *const core::ffi::c_char,
     dstFileName: *const core::ffi::c_char,
-    mode: core::ffi::c_int,
+    mode: mode_t,
 ) -> *mut FILE {
     if (*prefs).testMode != 0 {
         return core::ptr::null_mut();
