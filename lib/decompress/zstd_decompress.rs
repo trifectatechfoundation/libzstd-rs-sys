@@ -2937,13 +2937,13 @@ unsafe fn ZSTD_DCtx_isOversizedTooLong(zds: *mut ZSTD_DStream) -> core::ffi::c_i
     ((*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t) as core::ffi::c_int
 }
 unsafe fn ZSTD_checkOutBuffer(zds: *const ZSTD_DStream, output: *const ZSTD_outBuffer) -> size_t {
-    let expect = (*zds).expectedOutBuffer;
     if (*zds).outBufferMode != BufferMode::Stable {
         return 0;
     }
     if (*zds).streamStage == StreamStage::Init {
         return 0;
     }
+    let expect = (*zds).expectedOutBuffer;
     if expect.dst == (*output).dst && expect.pos == (*output).pos && expect.size == (*output).size {
         return 0;
     }
@@ -3524,6 +3524,7 @@ mod tests {
     }
 
     quickcheck! {
+        #[cfg(not(miri))]
         fn decompress_bound_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
                 let expected = zstd_sys::ZSTD_decompressBound(input.as_ptr().cast(), input.len() );
@@ -3541,6 +3542,7 @@ mod tests {
     }
 
     quickcheck! {
+        #[cfg(not(miri))]
         fn decompression_margin_quickcheck(input: Vec<u8>) -> bool {
             unsafe {
                 let expected = zstd_sys::ZSTD_decompressionMargin(input.as_ptr().cast(), input.len() );

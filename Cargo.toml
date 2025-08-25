@@ -7,7 +7,7 @@ exclude = [ "fuzz" ]
 edition = "2021"
 
 [package]
-name = "c2rust_out"
+name = "libzstd-rs-sys"
 authors = ["C2Rust"]
 version = "0.0.0"
 publish = false

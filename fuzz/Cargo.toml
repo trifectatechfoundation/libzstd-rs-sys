@@ -11,7 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 zstd-sys = { version = "2.0.15", features = ["experimental"] }
 
-[dependencies.c2rust_out]
+[dependencies.libzstd-rs-sys]
 path = ".."
 features = ["semver-prefix"]
 
