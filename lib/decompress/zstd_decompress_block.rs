@@ -1684,7 +1684,12 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 offset: 0,
             }
         };
-        asm!(".p2align 6", options(preserves_flags, att_syntax));
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        if !cfg!(miri) {
+            asm!(".p2align 6", options(preserves_flags, att_syntax));
+        }
+
         while nbSeq != 0 {
             sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
 
@@ -1742,11 +1747,15 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             nbSeq -= 1;
         }
         if nbSeq > 0 {
-            asm!(".p2align 6", options(preserves_flags, att_syntax));
-            asm!("nop", options(preserves_flags, att_syntax));
-            asm!(".p2align 4", options(preserves_flags, att_syntax));
-            asm!("nop", options(preserves_flags, att_syntax));
-            asm!(".p2align 3", options(preserves_flags, att_syntax));
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            if !cfg!(miri) {
+                asm!(".p2align 6", options(preserves_flags, att_syntax));
+                asm!("nop", options(preserves_flags, att_syntax));
+                asm!(".p2align 4", options(preserves_flags, att_syntax));
+                asm!("nop", options(preserves_flags, att_syntax));
+                asm!(".p2align 3", options(preserves_flags, att_syntax));
+            }
+
             while nbSeq != 0 {
                 let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
                 let oneSeqSize_1 = ZSTD_execSequence(
@@ -1868,6 +1877,7 @@ unsafe fn ZSTD_decompressSequences_body(
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
 
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         if !cfg!(miri) {
             asm!(".p2align 6", options(preserves_flags, att_syntax));
             asm!("nop", options(preserves_flags, att_syntax));
