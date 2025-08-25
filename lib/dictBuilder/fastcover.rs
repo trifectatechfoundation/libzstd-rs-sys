@@ -1,8 +1,7 @@
 use core::ptr;
 
 use libc::{
-    calloc, fflush, fprintf, free, malloc, memcpy, size_t, FILE, PTHREAD_COND_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
+    calloc, free, malloc, memcpy, size_t, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
 };
 
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -20,7 +19,6 @@ use crate::lib::zdict::experimental::{
 use crate::lib::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
 
 extern "C" {
-    static mut stderr: *mut FILE;
     fn clock() -> clock_t;
 }
 type __clock_t = core::ffi::c_long;
@@ -340,63 +338,48 @@ unsafe fn FASTCOVER_ctx_init(
             }) as size_t
     {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total samples size is too large (%u MB), maximum size is %u MB\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                (totalSamplesSize >> 20) as core::ffi::c_uint,
+            eprintln!(
+                "Total samples size is too large ({} MB), maximum size is {} MB",
+                (totalSamplesSize >> 20),
                 (if ::core::mem::size_of::<size_t>() == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
                     (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
                 }) >> 20,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total number of training samples is %u and is invalid\n\0" as *const u8
-                    as *const core::ffi::c_char,
+            eprintln!(
+                "Total number of training samples is {} and is invalid",
                 nbTrainSamples,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total number of testing samples is %u and is invalid.\n\0" as *const u8
-                    as *const core::ffi::c_char,
+            eprintln!(
+                "Total number of testing samples is {} and is invalid.",
                 nbTestSamples,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<FASTCOVER_ctx_t>());
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Training on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            nbTrainSamples,
-            trainingSamplesSize as core::ffi::c_uint,
+        eprintln!(
+            "Training on {} samples of total size {}",
+            nbTrainSamples, trainingSamplesSize,
         );
-        fflush(stderr);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Testing on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            nbTestSamples,
-            testSamplesSize as core::ffi::c_uint,
+        eprintln!(
+            "Testing on {} samples of total size {}",
+            nbTestSamples, testSamplesSize,
         );
-        fflush(stderr);
     }
     (*ctx).samples = samples;
     (*ctx).samplesSizes = samplesSizes;
@@ -419,11 +402,7 @@ unsafe fn FASTCOVER_ctx_init(
     ) as *mut size_t;
     if ((*ctx).offsets).is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate scratch buffers \n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate scratch buffers");
         }
         FASTCOVER_ctx_destroy(ctx);
         return Error::memory_allocation.to_error_code();
@@ -440,21 +419,13 @@ unsafe fn FASTCOVER_ctx_init(
     (*ctx).freqs = calloc((1) << f, ::core::mem::size_of::<u32>()) as *mut u32;
     if ((*ctx).freqs).is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate frequency table \n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate frequency table");
         }
         FASTCOVER_ctx_destroy(ctx);
         return Error::memory_allocation.to_error_code();
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Computing frequencies\n\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        eprintln!("Computing frequencies");
     }
     FASTCOVER_computeFrequency((*ctx).freqs, ctx);
     0
@@ -481,14 +452,10 @@ unsafe fn FASTCOVER_buildDictionary(
     let mut lastUpdateTime = 0;
     let mut epoch: size_t = 0;
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Breaking content into %u epochs of size %u\n\0" as *const u8
-                as *const core::ffi::c_char,
-            epochs.num,
-            epochs.size,
+        eprintln!(
+            "Breaking content into {} epochs of size {}",
+            epochs.num, epochs.size,
         );
-        fflush(stderr);
     }
     epoch = 0;
     while tail > 0 {
@@ -530,25 +497,18 @@ unsafe fn FASTCOVER_buildDictionary(
                 let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
                 if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
                     lastUpdateTime = clock();
-                    fprintf(
-                        stderr,
-                        b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
+                    eprint!(
+                        "\r{}%       ",
                         (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
                             as core::ffi::c_uint,
                     );
-                    fflush(stderr);
                 }
             }
         }
         epoch = epoch.wrapping_add(1) % epochs.num as size_t;
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        println!("\r{:79 }\r", "");
     }
     tail
 }
@@ -566,12 +526,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let displayLevel = (*ctx).displayLevel;
     if segmentFreqs.is_null() || dict.is_null() || freqs.is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate buffers: out of memory\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate buffers: out of memory");
         }
     } else {
         memcpy(
@@ -603,11 +558,7 @@ unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
             totalCompressedSize,
         );
         if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to select dictionary\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to select dictionary");
         }
     }
     free(dict as *mut core::ffi::c_void);
@@ -716,34 +667,19 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     ) == 0
     {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"FASTCOVER parameters incorrect\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("FASTCOVER parameters incorrect");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"FASTCOVER must have at least one input file\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("FASTCOVER must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                256,
-            );
-            fflush(stderr);
+            eprintln!("dictBufferCapacity must be at least {}", 256);
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -763,21 +699,13 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     );
     if ERR_isError(initVal) != 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to initialize context\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to initialize context");
         }
         return initVal;
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Building dictionary\n\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        eprintln!("Building dictionary");
     }
     let segmentFreqs = calloc(1 << parameters.f, ::core::mem::size_of::<u16>()) as *mut u16;
     let tail = FASTCOVER_buildDictionary(
@@ -801,12 +729,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         coverParams.zParams,
     );
     if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Constructed dictionary of size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            dictionarySize as core::ffi::c_uint,
-        );
-        fflush(stderr);
+        eprintln!("Constructed dictionary of size {}", dictionarySize);
     }
     FASTCOVER_ctx_destroy(&mut ctx);
     free(segmentFreqs as *mut core::ffi::c_void);
@@ -923,54 +846,31 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut lastUpdateTime = 0;
     if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Incorrect splitPoint\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Incorrect splitPoint");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if accel == 0 || accel > FASTCOVER_MAX_ACCEL as core::ffi::c_uint {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Incorrect accel\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Incorrect accel");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if kMinK < kMaxD || kMaxK < kMinK {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Incorrect k\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Incorrect k");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"FASTCOVER must have at least one input file\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("FASTCOVER must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                256,
-            );
-            fflush(stderr);
+            eprintln!("dictBufferCapacity must be at least {}", 256);
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -991,12 +891,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         .as_ptr()
         .offset(accel as isize);
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Trying %u different sets of parameters\n\0" as *const u8 as *const core::ffi::c_char,
-            kIterations,
-        );
-        fflush(stderr);
+        eprintln!("Trying {} different sets of parameters", kIterations);
     }
     d = kMinD;
     while d <= kMaxD {
@@ -1018,12 +913,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             displayLevel: 0,
         };
         if displayLevel >= 3 {
-            fprintf(
-                stderr,
-                b"d=%u\n\0" as *const u8 as *const core::ffi::c_char,
-                d,
-            );
-            fflush(stderr);
+            eprintln!("d={}", d);
         }
         let childDisplayLevel = if displayLevel == 0 {
             0
@@ -1043,11 +933,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         );
         if ERR_isError(initVal) != 0 {
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Failed to initialize context\n\0" as *const u8 as *const core::ffi::c_char,
-                );
-                fflush(stderr);
+                eprintln!("Failed to initialize context");
             }
             COVER_best_destroy(&mut best);
             POOL_free(pool);
@@ -1062,21 +948,11 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             let data = malloc(::core::mem::size_of::<FASTCOVER_tryParameters_data_t>())
                 as *mut FASTCOVER_tryParameters_data_t;
             if displayLevel >= 3 {
-                fprintf(
-                    stderr,
-                    b"k=%u\n\0" as *const u8 as *const core::ffi::c_char,
-                    k,
-                );
-                fflush(stderr);
+                eprintln!("k={}", k);
             }
             if data.is_null() {
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Failed to allocate parameters\n\0" as *const u8
-                            as *const core::ffi::c_char,
-                    );
-                    fflush(stderr);
+                    eprintln!("Failed to allocate parameters");
                 }
                 COVER_best_destroy(&mut best);
                 FASTCOVER_ctx_destroy(&mut ctx);
@@ -1101,12 +977,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             ) == 0
             {
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"FASTCOVER parameters incorrect\n\0" as *const u8
-                            as *const core::ffi::c_char,
-                    );
-                    fflush(stderr);
+                    eprintln!("FASTCOVER parameters incorrect");
                 }
                 free(data as *mut core::ffi::c_void);
             } else {
@@ -1127,12 +998,10 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                     let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
                     if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
                         lastUpdateTime = clock();
-                        fprintf(
-                            stderr,
-                            b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
+                        eprintln!(
+                            "\r{}%       ",
                             iteration.wrapping_mul(100).wrapping_div(kIterations),
                         );
-                        fflush(stderr);
                     }
                 }
                 iteration = iteration.wrapping_add(1);
@@ -1144,12 +1013,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         d = d.wrapping_add(2);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        println!("\r{:79 }\r", "");
     }
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) != 0 {
