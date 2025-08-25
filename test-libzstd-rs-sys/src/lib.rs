@@ -15,7 +15,7 @@ macro_rules! assert_eq_rs_c {
 
         #[allow(clippy::macro_metavars_in_unsafe)]
         let _rs = unsafe {
-            use libzstd_rs::*;
+            use libzstd_rs_sys::*;
 
             #[allow(unused_braces)]
             $tt
