@@ -42,12 +42,6 @@ extern "C" {
     static mut stdin: *mut FILE;
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
-    fn __assert_fail(
-        __assertion: *const core::ffi::c_char,
-        __file: *const core::ffi::c_char,
-        __line: core::ffi::c_uint,
-        __function: *const core::ffi::c_char,
-    ) -> !;
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1999,6 +1993,68 @@ unsafe fn main_0(
             }
             let mut argument = *argv.offset(argNb as isize);
             let originalArgument = argument;
+
+            macro_rules! NEXT_FIELD {
+                ($ptr:ident) => {
+                    if *argument as u8 == b'=' {
+                        argument = argument.offset(1);
+                        $ptr = argument;
+                        argument = argument.add(strlen($ptr));
+                    } else {
+                        argNb += 1;
+                        if argNb >= argCount {
+                            if g_displayLevel >= 1 {
+                                fprintf(stderr, c"error: missing command argument \n".as_ptr());
+                            }
+                            operationResult = 1;
+                            break 'end;
+                        } else {
+                            $ptr = *argv.offset(argNb as isize);
+                            assert!(!$ptr.is_null());
+                            if *$ptr.offset(0) as u8 == b'-' {
+                                if g_displayLevel >= 1 {
+                                    fprintf(
+                                        stderr,
+                                        c"error: command cannot be separated from its argument by another command \n"
+                                            .as_ptr(),
+                                    );
+                                }
+                                operationResult = 1;
+                                break 'end;
+                            }
+                        }
+                    }
+                }
+            }
+
+            macro_rules! NEXT_UINT32 {
+                ($_varu32:ident) => {
+                    let mut __nb;
+                    NEXT_FIELD!(__nb);
+                    $_varu32 = readU32FromChar(&mut __nb);
+                    if *__nb != 0 {
+                        errorOut(
+                            c"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed"
+                                .as_ptr(),
+                        );
+                    }
+                }
+            }
+
+            macro_rules! NEXT_TSIZE {
+                ($_varTsize:ident) => {
+                    let mut __nb;
+                    NEXT_FIELD!(__nb);
+                    $_varTsize = readSizeTFromChar(&mut __nb);
+                    if *__nb != 0 {
+                        errorOut(
+                            c"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed"
+                                .as_ptr(),
+                        );
+                    }
+                }
+            }
+
             if !argument.is_null() {
                 if nextArgumentsAreFiles != 0 {
                     UTIL_refFilename(filenames, argument);
@@ -2464,551 +2520,56 @@ unsafe fn main_0(
                                 b"--threads\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb = argument;
-                                    argument = argument.add(strlen(__nb));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb = *argv.offset(argNb as isize);
-                                        if !__nb.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1086,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                nbWorkers = readU32FromChar(&mut __nb);
-                                if *__nb as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(nbWorkers);
                                 setThreads_non1 = (nbWorkers != 1) as core::ffi::c_int;
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--memlimit\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_0 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_0 = argument;
-                                    argument = argument.add(strlen(__nb_0));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_0 = *argv.offset(argNb as isize);
-                                        if !__nb_0.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1087,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_0.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                memLimit = readU32FromChar(&mut __nb_0);
-                                if *__nb_0 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(memLimit);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--memory\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_1 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_1 = argument;
-                                    argument = argument.add(strlen(__nb_1));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_1 = *argv.offset(argNb as isize);
-                                        if !__nb_1.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1088,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_1.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                memLimit = readU32FromChar(&mut __nb_1);
-                                if *__nb_1 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(memLimit);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--memlimit-decompress\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_2 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_2 = argument;
-                                    argument = argument.add(strlen(__nb_2));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_2 = *argv.offset(argNb as isize);
-                                        if !__nb_2.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1089,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_2.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                memLimit = readU32FromChar(&mut __nb_2);
-                                if *__nb_2 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(memLimit);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--block-size\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_3 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_3 = argument;
-                                    argument = argument.add(strlen(__nb_3));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_3 = *argv.offset(argNb as isize);
-                                        if !__nb_3.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1090,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_3.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                chunkSize = readSizeTFromChar(&mut __nb_3);
-                                if *__nb_3 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(chunkSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--split\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_4 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_4 = argument;
-                                    argument = argument.add(strlen(__nb_4));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_4 = *argv.offset(argNb as isize);
-                                        if !__nb_4.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1091,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_4.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                chunkSize = readSizeTFromChar(&mut __nb_4);
-                                if *__nb_4 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(chunkSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--jobsize\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_5 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_5 = argument;
-                                    argument = argument.add(strlen(__nb_5));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_5 = *argv.offset(argNb as isize);
-                                        if !__nb_5.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1092,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_5.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                chunkSize = readSizeTFromChar(&mut __nb_5);
-                                if *__nb_5 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(chunkSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--maxdict\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_6 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_6 = argument;
-                                    argument = argument.add(strlen(__nb_6));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_6 = *argv.offset(argNb as isize);
-                                        if !__nb_6.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1093,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_6.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                maxDictSize = readU32FromChar(&mut __nb_6);
-                                if *__nb_6 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(maxDictSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--dictID\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_7 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_7 = argument;
-                                    argument = argument.add(strlen(__nb_7));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_7 = *argv.offset(argNb as isize);
-                                        if !__nb_7.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1094,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_7.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                dictID = readU32FromChar(&mut __nb_7);
-                                if *__nb_7 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_UINT32!(dictID);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--zstd=\0" as *const u8 as *const core::ffi::c_char,
@@ -3027,238 +2588,26 @@ unsafe fn main_0(
                                 b"--stream-size\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_8 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_8 = argument;
-                                    argument = argument.add(strlen(__nb_8));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_8 = *argv.offset(argNb as isize);
-                                        if !__nb_8.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1096,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_8.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                streamSrcSize = readSizeTFromChar(&mut __nb_8);
-                                if *__nb_8 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(streamSrcSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--target-compressed-block-size\0" as *const u8
                                     as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_9 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_9 = argument;
-                                    argument = argument.add(strlen(__nb_9));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_9 = *argv.offset(argNb as isize);
-                                        if !__nb_9.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1097,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_9.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                targetCBlockSize = readSizeTFromChar(&mut __nb_9);
-                                if *__nb_9 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(targetCBlockSize);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--size-hint\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut __nb_10 = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    __nb_10 = argument;
-                                    argument = argument.add(strlen(__nb_10));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        __nb_10 = *argv.offset(argNb as isize);
-                                        if !__nb_10.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"__nb != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1098,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *__nb_10.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
-                                srcSizeHint = readSizeTFromChar(&mut __nb_10);
-                                if *__nb_10 as core::ffi::c_int != 0 {
-                                    errorOut(
-                                    b"error: only numeric values with optional suffixes K, KB, KiB, M, MB, MiB are allowed\0"
-                                        as *const u8 as *const core::ffi::c_char,
-                                );
-                                }
+                                NEXT_TSIZE!(srcSizeHint);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--output-dir-flat\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    outDirName = argument;
-                                    argument = argument.add(strlen(outDirName));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        outDirName = *argv.offset(argNb as isize);
-                                        if !outDirName.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"outDirName != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1100,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *outDirName.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                NEXT_FIELD!(outDirName);
                                 if strlen(outDirName) == 0 {
                                     if g_displayLevel >= 1 {
                                         fprintf(
@@ -3275,57 +2624,8 @@ unsafe fn main_0(
                                 b"--auto-threads\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut threadDefault = core::ptr::null();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    threadDefault = argument;
-                                    argument = argument.add(strlen(threadDefault));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        threadDefault = *argv.offset(argNb as isize);
-                                        if !threadDefault.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"threadDefault != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1109,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *threadDefault.offset(0) as core::ffi::c_int
-                                            == '-' as i32
-                                        {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                let threadDefault;
+                                NEXT_FIELD!(threadDefault);
                                 if strcmp(
                                     threadDefault,
                                     b"logical\0" as *const u8 as *const core::ffi::c_char,
@@ -3338,56 +2638,7 @@ unsafe fn main_0(
                                 b"--output-dir-mirror\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    outMirroredDirName = argument;
-                                    argument = argument.add(strlen(outMirroredDirName));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        outMirroredDirName = *argv.offset(argNb as isize);
-                                        if !outMirroredDirName.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"outMirroredDirName != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1116,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *outMirroredDirName.offset(0) as core::ffi::c_int
-                                            == '-' as i32
-                                        {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                NEXT_FIELD!(outMirroredDirName);
                                 if strlen(outMirroredDirName) == 0 {
                                     if g_displayLevel >= 1 {
                                         fprintf(
@@ -3404,111 +2655,15 @@ unsafe fn main_0(
                                 b"--trace\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                let mut traceFile = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    traceFile = argument;
-                                    argument = argument.add(strlen(traceFile));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        traceFile = *argv.offset(argNb as isize);
-                                        if !traceFile.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"traceFile != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1125,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *traceFile.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                let traceFile;
+                                NEXT_FIELD!(traceFile);
                                 TRACE_enable(traceFile);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--patch-from\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    patchFromDictFileName = argument;
-                                    argument = argument.add(strlen(patchFromDictFileName));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        patchFromDictFileName = *argv.offset(argNb as isize);
-                                        if !patchFromDictFileName.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"patchFromDictFileName != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1127,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *patchFromDictFileName.offset(0) as core::ffi::c_int
-                                            == '-' as i32
-                                        {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                NEXT_FIELD!(patchFromDictFileName);
                                 ultra = 1;
                             } else if longCommandWArg(
                                 &mut argument,
@@ -3516,56 +2671,7 @@ unsafe fn main_0(
                             ) != 0
                             {
                                 operation = zom_decompress;
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    patchFromDictFileName = argument;
-                                    argument = argument.add(strlen(patchFromDictFileName));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        patchFromDictFileName = *argv.offset(argNb as isize);
-                                        if !patchFromDictFileName.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"patchFromDictFileName != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1128,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *patchFromDictFileName.offset(0) as core::ffi::c_int
-                                            == '-' as i32
-                                        {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                NEXT_FIELD!(patchFromDictFileName);
                                 memLimit = (1)
                                     << (if ::core::mem::size_of::<size_t>() == 4 {
                                         ZSTD_WINDOWLOG_MAX_32
@@ -3627,54 +2733,7 @@ unsafe fn main_0(
                             ) != 0
                             {
                                 let mut listName = core::ptr::null::<core::ffi::c_char>();
-                                if *argument as core::ffi::c_int == '=' as i32 {
-                                    argument = argument.offset(1);
-                                    listName = argument;
-                                    argument = argument.add(strlen(listName));
-                                } else {
-                                    argNb += 1;
-                                    if argNb >= argCount {
-                                        if g_displayLevel >= 1 {
-                                            fprintf(
-                                                stderr,
-                                                b"error: missing command argument \n\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                            );
-                                        }
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else {
-                                        listName = *argv.offset(argNb as isize);
-                                        if !listName.is_null() {
-                                        } else {
-                                            __assert_fail(
-                                                b"listName != NULL\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                b"zstdcli.c\0" as *const u8
-                                                    as *const core::ffi::c_char,
-                                                1177,
-                                                (*::core::mem::transmute::<
-                                                    &[u8; 29],
-                                                    &[core::ffi::c_char; 29],
-                                                >(
-                                                    b"int main(int, const char **)\0"
-                                                ))
-                                                .as_ptr(),
-                                            );
-                                        }
-                                        if *listName.offset(0) as core::ffi::c_int == '-' as i32 {
-                                            if g_displayLevel >= 1 {
-                                                fprintf(
-                                                stderr,
-                                                b"error: command cannot be separated from its argument by another command \n\0"
-                                                    as *const u8 as *const core::ffi::c_char,
-                                            );
-                                            }
-                                            operationResult = 1;
-                                            break 'end;
-                                        }
-                                    }
-                                }
+                                NEXT_FIELD!(listName);
                                 UTIL_refFilename(file_of_names, listName);
                             } else {
                                 badUsage(programName, originalArgument);
@@ -3729,116 +2788,14 @@ unsafe fn main_0(
                                     }
                                     111 => {
                                         argument = argument.offset(1);
-                                        if *argument as core::ffi::c_int == '=' as i32 {
-                                            argument = argument.offset(1);
-                                            outFileName = argument;
-                                            argument = argument.add(strlen(outFileName));
-                                        } else {
-                                            argNb += 1;
-                                            if argNb >= argCount {
-                                                if g_displayLevel >= 1 {
-                                                    fprintf(
-                                                        stderr,
-                                                        b"error: missing command argument \n\0"
-                                                            as *const u8
-                                                            as *const core::ffi::c_char,
-                                                    );
-                                                }
-                                                operationResult = 1;
-                                                break 'end;
-                                            } else {
-                                                outFileName = *argv.offset(argNb as isize);
-                                                if !outFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"outFileName != NULL\0" as *const u8
-                                                            as *const core::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const core::ffi::c_char,
-                                                        1219,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[core::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                                if *outFileName.offset(0) as core::ffi::c_int
-                                                    != '-' as i32
-                                                {
-                                                    continue;
-                                                }
-                                                if g_displayLevel >= 1 {
-                                                    fprintf(
-                                                    stderr,
-                                                    b"error: command cannot be separated from its argument by another command \n\0"
-                                                        as *const u8 as *const core::ffi::c_char,
-                                                );
-                                                }
-                                                operationResult = 1;
-                                                break 'end;
-                                            }
-                                        }
+                                        NEXT_FIELD!(outFileName);
                                     }
                                     110 => {
                                         argument = argument.offset(1);
                                     }
                                     68 => {
                                         argument = argument.offset(1);
-                                        if *argument as core::ffi::c_int == '=' as i32 {
-                                            argument = argument.offset(1);
-                                            dictFileName = argument;
-                                            argument = argument.add(strlen(dictFileName));
-                                        } else {
-                                            argNb += 1;
-                                            if argNb >= argCount {
-                                                if g_displayLevel >= 1 {
-                                                    fprintf(
-                                                        stderr,
-                                                        b"error: missing command argument \n\0"
-                                                            as *const u8
-                                                            as *const core::ffi::c_char,
-                                                    );
-                                                }
-                                                operationResult = 1;
-                                                break 'end;
-                                            } else {
-                                                dictFileName = *argv.offset(argNb as isize);
-                                                if !dictFileName.is_null() {
-                                                } else {
-                                                    __assert_fail(
-                                                        b"dictFileName != NULL\0" as *const u8
-                                                            as *const core::ffi::c_char,
-                                                        b"zstdcli.c\0" as *const u8
-                                                            as *const core::ffi::c_char,
-                                                        1225,
-                                                        (*::core::mem::transmute::<
-                                                            &[u8; 29],
-                                                            &[core::ffi::c_char; 29],
-                                                        >(
-                                                            b"int main(int, const char **)\0"
-                                                        ))
-                                                        .as_ptr(),
-                                                    );
-                                                }
-                                                if *dictFileName.offset(0) as core::ffi::c_int
-                                                    != '-' as i32
-                                                {
-                                                    continue;
-                                                }
-                                                if g_displayLevel >= 1 {
-                                                    fprintf(
-                                                    stderr,
-                                                    b"error: command cannot be separated from its argument by another command \n\0"
-                                                        as *const u8 as *const core::ffi::c_char,
-                                                );
-                                                }
-                                                operationResult = 1;
-                                                break 'end;
-                                            }
-                                        }
+                                        NEXT_FIELD!(dictFileName);
                                     }
                                     102 => {
                                         FIO_overwriteMode(prefs);
