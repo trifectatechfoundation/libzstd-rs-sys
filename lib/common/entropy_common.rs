@@ -535,6 +535,7 @@ mod tests {
     }
 
     quickcheck! {
+        #[cfg(not(miri))]
         fn new_matches_old(input: Input) -> bool {
             unsafe {
                 let expected = {

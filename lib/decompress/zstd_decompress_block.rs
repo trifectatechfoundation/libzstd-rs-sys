@@ -1064,7 +1064,7 @@ unsafe fn ZSTD_safecopy(
     mut length: size_t,
     ovtype: Overlap,
 ) {
-    let diff = op.offset_from(ip) as core::ffi::c_long;
+    let diff = op as isize - ip as isize;
     let oend = op.add(length);
     if length < 8 {
         while op < oend {

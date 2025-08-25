@@ -85,7 +85,7 @@ jobs:
       #     verbose: true
 
   fuzz-decompress:
-    name: fuzz-decompress 
+    name: fuzz-decompress
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -104,9 +104,39 @@ jobs:
         run: |
           wget https://github.com/trifectatechfoundation/compression-corpus/releases/download/2025-07-30-091654/zstd-files.zip
           unzip zstd-files.zip -d zstd-files
-      - name: run the fuzzer 
+      - name: run the fuzzer
         run: |
           cargo fuzz run decompress zstd-files/compressed -- -max_total_time=10
           cargo fuzz run decompress_overlapping zstd-files/compressed -- -max_total_time=10
         env:
           RUSTFLAGS: "-Awarnings"
+
+  miri:
+    name: "Miri"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --component miri
+          cargo +nightly miri setup
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@d12e869b89167df346dd0ff65da342d1fb1202fb # v2.53.2
+        with:
+          tool: cargo-nextest
+      #      - name: Test public C api with miri
+      #        env:
+      #          QUICKCHECK_TESTS: 10
+      #          RUSTFLAGS: "-Awarnings"
+      #        run: |
+      #          cargo +nightly miri nextest run -j4 -p test-libzstd-rs-sys
+      - name: Run unit tests with miri
+        env:
+          QUICKCHECK_TESTS: 10
+          RUSTFLAGS: "-Awarnings"
+        run: |
+          cargo +nightly miri nextest run -j4 -p libzstd-rs-sys

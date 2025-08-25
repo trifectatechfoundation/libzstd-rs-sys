@@ -24,6 +24,6 @@ macro_rules! assert_eq_rs_c {
         #[cfg(not(miri))]
         assert_eq!(_rs, _c);
 
-        _c
+        _rs
     }};
 }
