@@ -80,27 +80,11 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::zstd_compress::{
     SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
 };
+use crate::lib::compress::zstd_compress_internal::ZSTD_selectAddr;
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
-#[inline]
-unsafe fn ZSTD_selectAddr(
-    index: u32,
-    lowLimit: u32,
-    mut candidate: *const u8,
-    backup: *const u8,
-) -> *const u8 {
-    asm!(
-        "cmp {1:e}, {2:e}
-        cmova {3}, {0}",
-        inlateout(reg) candidate,
-        inlateout(reg) index => _,
-        inlateout(reg) lowLimit => _,
-        inlateout(reg) backup => _,
-        options(preserves_flags, pure, readonly, att_syntax)
-    );
-    candidate
-}
+
 unsafe fn ZSTD_safecopyLiterals(
     mut op: *mut u8,
     mut ip: *const u8,
@@ -487,7 +471,7 @@ unsafe fn ZSTD_match4Found_cmov(
     {
         return 0;
     }
-    asm!("", options(preserves_flags, att_syntax));
+    asm!("", options(preserves_flags));
     (matchIdx >= idxLowLimit) as core::ffi::c_int
 }
 unsafe fn ZSTD_match4Found_branch(

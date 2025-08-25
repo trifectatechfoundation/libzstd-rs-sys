@@ -2796,7 +2796,10 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     {
         ZSTD_row_fillHashCache(ms, base, rowLog, mls, (*ms).nextToUpdate, ilimit);
     }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     asm!(".p2align 5", options(preserves_flags, att_syntax));
+
     while ip < ilimit {
         let mut matchLength = 0;
         let mut offBase = REPCODE1_TO_OFFBASE as size_t;
@@ -3675,7 +3678,10 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     {
         ZSTD_row_fillHashCache(ms, base, rowLog, mls, (*ms).nextToUpdate, ilimit);
     }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     asm!(".p2align 5", options(preserves_flags, att_syntax));
+
     let mut current_block_61: u64;
     while ip < ilimit {
         let mut matchLength = 0;
