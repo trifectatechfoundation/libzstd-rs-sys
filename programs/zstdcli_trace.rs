@@ -1,11 +1,11 @@
 use std::sync::Mutex;
 
 use libc::{fclose, fopen, fprintf, FILE};
-use libzstd_rs::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
-use libzstd_rs::lib::compress::zstd_compress::{
+use libzstd_rs_sys::lib::common::zstd_trace::{ZSTD_Trace, ZSTD_TraceCtx};
+use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_CCtxParams_getParameter, ZSTD_CCtx_params_s, ZSTD_CCtx_s,
 };
-use libzstd_rs::lib::decompress::ZSTD_DCtx;
+use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
 
 use crate::timefn::{PTime, UTIL_clockSpanNano, UTIL_getTime, UTIL_time_t};
 use crate::util::UTIL_isRegularFile;

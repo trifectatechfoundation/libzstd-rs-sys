@@ -4,18 +4,18 @@ use libc::{
     __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
     memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
 };
-use libzstd_rs::internal::ZSTD_XXH64;
-use libzstd_rs::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
-use libzstd_rs::lib::compress::zstd_compress::{
+use libzstd_rs_sys::internal::ZSTD_XXH64;
+use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
+use libzstd_rs_sys::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_compress2,
     ZSTD_compressBound, ZSTD_createCCtx, ZSTD_freeCCtx, ZSTD_maxCLevel, ZSTD_sizeof_CCtx,
 };
-use libzstd_rs::lib::decompress::zstd_decompress::{
+use libzstd_rs_sys::lib::decompress::zstd_decompress::{
     ZSTD_DCtx_loadDictionary, ZSTD_DCtx_reset, ZSTD_createDCtx, ZSTD_decompressStream,
     ZSTD_findDecompressedSize, ZSTD_freeDCtx,
 };
-use libzstd_rs::lib::decompress::ZSTD_DCtx;
-use libzstd_rs::lib::zstd::*;
+use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
+use libzstd_rs_sys::lib::zstd::*;
 
 use crate::benchfn::{
     BMK_benchParams_t, BMK_benchTimedFn, BMK_createTimedFnState, BMK_extract_runTime,
