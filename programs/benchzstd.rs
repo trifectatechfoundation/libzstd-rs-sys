@@ -1,8 +1,10 @@
 use core::ptr;
+use std::ffi::CStr;
+use std::io;
 
 use libc::{
-    __errno_location, abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc,
-    memcpy, setpriority, size_t, strerror, strlen, strrchr, FILE, PRIO_PROCESS,
+    abort, calloc, exit, fclose, fflush, fopen, fprintf, fread, free, malloc, memcpy, setpriority,
+    size_t, strlen, strrchr, FILE, PRIO_PROCESS,
 };
 use libzstd_rs_sys::internal::ZSTD_XXH64;
 use libzstd_rs_sys::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
@@ -2149,11 +2151,10 @@ pub unsafe fn BMK_benchFilesAdvanced(
         let dictFileSize = UTIL_getFileSize(dictFileName);
         if dictFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"error loading %s : %s \n\0" as *const u8 as *const core::ffi::c_char,
-                    dictFileName,
-                    strerror(*__errno_location()),
+                eprintln!(
+                    "error loading {} : {}",
+                    CStr::from_ptr(dictFileName).to_string_lossy(),
+                    io::Error::last_os_error(),
                 );
                 fflush(core::ptr::null_mut());
             }
