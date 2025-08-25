@@ -1988,7 +1988,7 @@ fn prefetch_l1<T>(ptr: *const T) {
     }
 
     #[cfg(target_arch = "x86")]
-    if cfg!(target_feature(enable = "sse2")) {
+    if cfg!(target_feature = "sse") {
         use core::arch::x86;
         unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T0) };
         return;
@@ -2016,7 +2016,7 @@ fn prefetch_l2<T>(ptr: *const T) {
     }
 
     #[cfg(target_arch = "x86")]
-    if cfg!(target_feature(enable = "sse2")) {
+    if cfg!(target_feature = "sse") {
         use core::arch::x86;
         unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T1) };
         return;
