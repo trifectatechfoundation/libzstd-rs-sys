@@ -31,7 +31,7 @@ pub(crate) unsafe fn MEM_read64(ptr: *const c_void) -> u64 {
 }
 #[inline]
 pub(crate) unsafe fn MEM_readST(ptr: *const c_void) -> size_t {
-    ptr.cast::<size_t>().read_unaligned()
+    ptr.cast::<usize>().read_unaligned()
 }
 
 #[inline]
