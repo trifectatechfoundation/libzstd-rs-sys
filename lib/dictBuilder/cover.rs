@@ -1,11 +1,11 @@
 use core::ptr;
 
 use libc::{
-    fflush, fprintf, free, malloc, memcmp, memcpy, memset, pthread_cond_broadcast,
-    pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_t,
-    pthread_cond_wait, pthread_condattr_t, pthread_mutex_destroy, pthread_mutex_init,
-    pthread_mutex_lock, pthread_mutex_t, pthread_mutex_unlock, pthread_mutexattr_t, size_t, FILE,
-    PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
+    free, malloc, memcmp, memcpy, memset, pthread_cond_broadcast, pthread_cond_destroy,
+    pthread_cond_init, pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
+    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
+    pthread_mutex_unlock, pthread_mutexattr_t, size_t, PTHREAD_COND_INITIALIZER,
+    PTHREAD_MUTEX_INITIALIZER,
 };
 
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -20,7 +20,6 @@ use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::lib::zdict::ZDICT_params_t;
 
 extern "C" {
-    static mut stderr: *mut FILE;
     fn qsort_r(
         __base: *mut core::ffi::c_void,
         __nmemb: size_t,
@@ -538,10 +537,8 @@ unsafe fn COVER_ctx_init(
             }) as size_t
     {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total samples size is too large (%u MB), maximum size is %u MB\n\0" as *const u8
-                    as *const core::ffi::c_char,
+            eprintln!(
+                "Total samples size is too large ({} MB), maximum size is {} MB",
                 (totalSamplesSize >> 20) as core::ffi::c_uint,
                 (if ::core::mem::size_of::<size_t>() == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
@@ -549,52 +546,39 @@ unsafe fn COVER_ctx_init(
                     (1 as core::ffi::c_uint).wrapping_mul((1) << 30)
                 }) >> 20,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if nbTrainSamples < 5 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total number of training samples is %u and is invalid.\0" as *const u8
-                    as *const core::ffi::c_char,
+            eprintln!(
+                "Total number of training samples is {} and is invalid.",
                 nbTrainSamples,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if nbTestSamples < 1 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Total number of testing samples is %u and is invalid.\0" as *const u8
-                    as *const core::ffi::c_char,
+            eprintln!(
+                "Total number of testing samples is {} and is invalid.",
                 nbTestSamples,
             );
-            fflush(stderr);
         }
         return Error::srcSize_wrong.to_error_code();
     }
     ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<COVER_ctx_t>());
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Training on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            nbTrainSamples,
-            trainingSamplesSize as core::ffi::c_uint,
+        eprintln!(
+            "Training on {} samples of total size {}",
+            nbTrainSamples, trainingSamplesSize,
         );
-        fflush(stderr);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Testing on %u samples of total size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            nbTestSamples,
-            testSamplesSize as core::ffi::c_uint,
+        eprintln!(
+            "Testing on {} samples of total size {}",
+            nbTestSamples, testSamplesSize,
         );
-        fflush(stderr);
     }
     (*ctx).samples = samples;
     (*ctx).samplesSizes = samplesSizes;
@@ -617,11 +601,7 @@ unsafe fn COVER_ctx_init(
     ) as *mut size_t;
     if ((*ctx).suffix).is_null() || ((*ctx).dmerAt).is_null() || ((*ctx).offsets).is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate scratch buffers\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate scratch buffers");
         }
         COVER_ctx_destroy(ctx);
         return Error::memory_allocation.to_error_code();
@@ -638,11 +618,7 @@ unsafe fn COVER_ctx_init(
         i = i.wrapping_add(1);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Constructing partial suffix array\n\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        eprintln!("Constructing partial suffix array");
     }
     let mut i_0: u32 = 0;
     i_0 = 0;
@@ -652,11 +628,7 @@ unsafe fn COVER_ctx_init(
     }
     stableSort(ctx);
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Computing frequencies\n\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        eprintln!("Computing frequencies");
     }
     COVER_groupBy(
         (*ctx).suffix as *const core::ffi::c_void,
@@ -705,15 +677,14 @@ pub(super) unsafe fn COVER_warnOnSmallCorpus(
         return;
     }
     if displayLevel >= 1 {
-        fprintf(
-            stderr,
-            b"WARNING: The maximum dictionary size %u is too large compared to the source size %u! size(source)/size(dictionary) = %f, but it should be >= 10! This may lead to a subpar dictionary! We recommend training on sources at least 10x, and preferably 100x the size of the dictionary! \n\0"
-                as *const u8 as *const core::ffi::c_char,
-            maxDictSize as u32,
-            nbDmers as u32,
-            ratio,
+        eprintln!(
+            "WARNING: The maximum dictionary size {} is too large compared to the source size {}! \
+                size(source)/size(dictionary) = {}, but it should be >= 10! \
+                This may lead to a subpar dictionary! \
+                We recommend training on sources at least 10x, \
+                and preferably 100x the size of the dictionary!",
+            maxDictSize, nbDmers, ratio,
         );
-        fflush(stderr);
     }
 }
 pub(super) unsafe fn COVER_computeEpochs(
@@ -774,14 +745,10 @@ unsafe fn COVER_buildDictionary(
     let mut lastUpdateTime = 0;
     let displayLevel = (*ctx).displayLevel;
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Breaking content into %u epochs of size %u\n\0" as *const u8
-                as *const core::ffi::c_char,
-            epochs.num,
-            epochs.size,
+        eprintln!(
+            "Breaking content into {} epochs of size {}",
+            epochs.num, epochs.size,
         );
-        fflush(stderr);
     }
     epoch = 0;
     while tail > 0 {
@@ -823,25 +790,18 @@ unsafe fn COVER_buildDictionary(
                 let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
                 if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
                     lastUpdateTime = clock();
-                    fprintf(
-                        stderr,
-                        b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
+                    eprint!(
+                        "\r{}%       ",
                         (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
                             as core::ffi::c_uint,
                     );
-                    fflush(stderr);
                 }
             }
         }
         epoch = epoch.wrapping_add(1) % epochs.num as size_t;
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        println!("\r{:79 }\r", "");
     }
     tail
 }
@@ -879,34 +839,19 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     parameters.splitPoint = 1.0f64;
     if COVER_checkParameters(parameters, dictBufferCapacity) == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Cover parameters incorrect\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Cover parameters incorrect");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Cover must have at least one input file\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Cover must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                256,
-            );
-            fflush(stderr);
+            eprintln!("dictBufferCapacity must be at least {}", 256,);
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -929,22 +874,13 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     ) == 0
     {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate dmer map: out of memory\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate dmer map: out of memory");
         }
         COVER_ctx_destroy(&mut ctx);
         return Error::memory_allocation.to_error_code();
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Building dictionary\n\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        eprintln!("Building dictionary");
     }
     let tail = COVER_buildDictionary(
         &ctx,
@@ -965,12 +901,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         parameters.zParams,
     );
     if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Constructed dictionary of size %u\n\0" as *const u8 as *const core::ffi::c_char,
-            dictionarySize as core::ffi::c_uint,
-        );
-        fflush(stderr);
+        eprintln!("Constructed dictionary of size {}", dictionarySize,);
     }
     COVER_ctx_destroy(&mut ctx);
     COVER_map_destroy(&mut activeDmers);
@@ -1295,21 +1226,11 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     ) == 0
     {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate dmer map: out of memory\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate dmer map: out of memory");
         }
     } else if dict.is_null() || freqs.is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to allocate buffers: out of memory\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to allocate buffers: out of memory");
         }
     } else {
         memcpy(
@@ -1339,11 +1260,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
             totalCompressedSize,
         );
         if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Failed to select dictionary\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Failed to select dictionary");
         }
     }
     free(dict as *mut core::ffi::c_void);
@@ -1436,44 +1353,25 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut lastUpdateTime = 0;
     if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Incorrect parameters\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Incorrect parameters");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if kMinK < kMaxD || kMaxK < kMinK {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Incorrect parameters\n\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Incorrect parameters");
         }
         return Error::parameter_outOfBound.to_error_code();
     }
     if nbSamples == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Cover must have at least one input file\n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
-            fflush(stderr);
+            eprintln!("Cover must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"dictBufferCapacity must be at least %u\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                256,
-            );
-            fflush(stderr);
+            eprintln!("dictBufferCapacity must be at least {}", 256);
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -1485,12 +1383,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     }
     COVER_best_init(&mut best);
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"Trying %u different sets of parameters\n\0" as *const u8 as *const core::ffi::c_char,
-            kIterations,
-        );
-        fflush(stderr);
+        eprintln!("Trying {} different sets of parameters", kIterations);
     }
     d = kMinD;
     while d <= kMaxD {
@@ -1509,12 +1402,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             displayLevel: 0,
         };
         if displayLevel >= 3 {
-            fprintf(
-                stderr,
-                b"d=%u\n\0" as *const u8 as *const core::ffi::c_char,
-                d,
-            );
-            fflush(stderr);
+            eprintln!("d={}", d);
         }
         let childDisplayLevel = if displayLevel == 0 {
             0
@@ -1532,11 +1420,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         );
         if ERR_isError(initVal) != 0 {
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Failed to initialize context\n\0" as *const u8 as *const core::ffi::c_char,
-                );
-                fflush(stderr);
+                eprintln!("Failed to initialize context");
             }
             COVER_best_destroy(&mut best);
             POOL_free(pool);
@@ -1551,21 +1435,11 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             let data = malloc(::core::mem::size_of::<COVER_tryParameters_data_t>())
                 as *mut COVER_tryParameters_data_t;
             if displayLevel >= 3 {
-                fprintf(
-                    stderr,
-                    b"k=%u\n\0" as *const u8 as *const core::ffi::c_char,
-                    k,
-                );
-                fflush(stderr);
+                eprintln!("k={}", k);
             }
             if data.is_null() {
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Failed to allocate parameters\n\0" as *const u8
-                            as *const core::ffi::c_char,
-                    );
-                    fflush(stderr);
+                    eprintln!("Failed to allocate parameters");
                 }
                 COVER_best_destroy(&mut best);
                 COVER_ctx_destroy(&mut ctx);
@@ -1584,11 +1458,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
             if COVER_checkParameters((*data).parameters, dictBufferCapacity) == 0 {
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Cover parameters incorrect\n\0" as *const u8 as *const core::ffi::c_char,
-                    );
-                    fflush(stderr);
+                    eprintln!("Cover parameters incorrect");
                 }
                 free(data as *mut core::ffi::c_void);
             } else {
@@ -1609,12 +1479,10 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                     let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
                     if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
                         lastUpdateTime = clock();
-                        fprintf(
-                            stderr,
-                            b"\r%u%%       \0" as *const u8 as *const core::ffi::c_char,
+                        eprintln!(
+                            "\r{}%       ",
                             iteration.wrapping_mul(100).wrapping_div(kIterations),
                         );
-                        fflush(stderr);
                     }
                 }
                 iteration = iteration.wrapping_add(1);
@@ -1626,12 +1494,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         d = d.wrapping_add(2);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
-        fflush(stderr);
+        println!("\r{:79 }\r", "");
     }
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) != 0 {

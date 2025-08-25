@@ -188,11 +188,7 @@ unsafe fn DiB_loadFiles(
         fclose(f);
     }
     if displayLevel >= 2 {
-        fprintf(
-            stderr,
-            b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
+        println!("\r{:79 }\r", "");
     }
     if displayLevel >= 4 {
         fprintf(
