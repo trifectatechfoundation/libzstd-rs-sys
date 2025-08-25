@@ -1507,6 +1507,9 @@ unsafe fn ZSTD_row_getMatchMask(
         return ZSTD_row_getSSEMask((rowEntries / 16) as core::ffi::c_int, src, tag, headGrouped);
     }
 
+    // FIXME: Evaluate if the custom SIMD implementation is worth it on x86, and if so also add an
+    // aarch64 implementation.
+
     // Fallback using Simd Within A Register (SWAR).
 
     let chunkSize = size_of::<usize>();
