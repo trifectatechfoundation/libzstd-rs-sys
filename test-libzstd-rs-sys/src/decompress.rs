@@ -98,12 +98,17 @@ mod fastest_wasm_zlib {
 
     #[track_caller]
     fn helper(compressed: &[u8]) {
-        let c = decompress_stream_c(compressed, None);
-        assert_eq!(DECOMPRESSED, c);
+        if cfg!(miri) {
+            // Just check that the rust implementation does not have UB.
+            decompress_stream_rs(compressed, None);
+        } else {
+            let c = decompress_stream_c(compressed, None);
+            assert_eq!(DECOMPRESSED, c);
 
-        let rs = decompress_stream_rs(compressed, None);
+            let rs = decompress_stream_rs(compressed, None);
 
-        assert_eq!(c, rs);
+            assert_eq!(c, rs);
+        }
     }
 
     #[test]
@@ -135,6 +140,7 @@ mod fastest_wasm_zlib {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
     fn zstd_custom_dict() {
         const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
         const COMPRESSED: &[u8] =
@@ -247,12 +253,17 @@ mod fastest_wasm_zlib_continue {
 
     #[track_caller]
     fn helper(compressed: &[u8]) {
-        let c = decompress_continue_c(compressed, None);
-        assert_eq!(DECOMPRESSED, c);
+        if cfg!(miri) {
+            // Just check that the rust implementation does not have UB.
+            decompress_continue_rs(compressed, None);
+        } else {
+            let c = decompress_continue_c(compressed, None);
+            assert_eq!(DECOMPRESSED, c);
 
-        let rs = decompress_continue_rs(compressed, None);
+            let rs = decompress_continue_rs(compressed, None);
 
-        assert_eq!(c, rs);
+            assert_eq!(c, rs);
+        }
     }
 
     #[test]
@@ -298,6 +309,7 @@ mod fastest_wasm_zlib_continue {
 }
 
 #[test]
+#[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
 fn decompress_using_dict() {
     use std::ffi::c_void;
 

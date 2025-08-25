@@ -10,7 +10,7 @@ edition.workspace = true
 # publish.workspace = true
 # rust-version.workspace = true
 
-[dependencies.c2rust_out]
+[dependencies.libzstd-rs-sys]
 path = ".."
 features = ["semver-prefix"]
 
