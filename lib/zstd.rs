@@ -175,6 +175,16 @@ pub struct ZSTD_frameProgression {
 }
 
 pub mod experimental {
+    use crate::lib::zstd::Format;
+
+    pub const fn ZSTD_FRAMEHEADERSIZE_MIN(format: Format) -> usize {
+        if let Format::ZSTD_f_zstd1 = format {
+            6
+        } else {
+            2
+        }
+    }
+
     pub use crate::lib::common::pool::{
         ZSTD_createThreadPool, ZSTD_freeThreadPool, ZSTD_threadPool,
     };
