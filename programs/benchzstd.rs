@@ -2098,7 +2098,6 @@ pub unsafe fn BMK_benchFilesAdvanced(
     displayLevel: core::ffi::c_int,
     adv: *const BMK_advancedParams_t,
 ) -> core::ffi::c_int {
-    let current_block: u64;
     let mut srcBuffer = core::ptr::null_mut();
     let mut benchedSize: size_t = 0;
     let mut dictBuffer = core::ptr::null_mut();
@@ -2106,125 +2105,102 @@ pub unsafe fn BMK_benchFilesAdvanced(
     let mut fileSizes = core::ptr::null_mut();
     let mut res = 1;
     let totalSizeToLoad = UTIL_getTotalFileSize(fileNamesTable, nbFiles);
+
     if nbFiles == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"No Files to Benchmark\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(core::ptr::null_mut());
+            eprintln!("No Files to Benchmark");
         }
         return 13;
     }
+
     if endCLevel > ZSTD_maxCLevel() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Invalid Compression Level\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(core::ptr::null_mut());
+            eprintln!("Invalid Compression Level");
         }
         return 14;
     }
+
     if totalSizeToLoad == UTIL_FILESIZE_UNKNOWN as u64 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error loading files\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(core::ptr::null_mut());
+            eprintln!("Error loading files");
         }
         return 15;
     }
+
     fileSizes = calloc(nbFiles as size_t, ::core::mem::size_of::<size_t>()) as *mut size_t;
     if fileSizes.is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"not enough memory for fileSizes\0" as *const u8 as *const core::ffi::c_char,
-            );
-            fflush(core::ptr::null_mut());
+            eprintln!("not enough memory for fileSizes");
         }
         return 16;
     }
-    if !dictFileName.is_null() {
-        let dictFileSize = UTIL_getFileSize(dictFileName);
-        if dictFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
-            if displayLevel >= 1 {
-                eprintln!(
-                    "error loading {} : {}",
-                    CStr::from_ptr(dictFileName).to_string_lossy(),
-                    io::Error::last_os_error(),
-                );
-                fflush(core::ptr::null_mut());
+
+    '_cleanUp: {
+        // Load dictionary
+        if !dictFileName.is_null() {
+            let dictFileSize = UTIL_getFileSize(dictFileName);
+            if dictFileSize == UTIL_FILESIZE_UNKNOWN as u64 {
+                if displayLevel >= 1 {
+                    eprintln!(
+                        "error loading {} : {}",
+                        CStr::from_ptr(dictFileName).to_string_lossy(),
+                        io::Error::last_os_error(),
+                    );
+                }
+                free(fileSizes as *mut core::ffi::c_void);
+                if displayLevel >= 1 {
+                    eprintln!("benchmark aborted");
+                }
+                return 17;
             }
-            free(fileSizes as *mut core::ffi::c_void);
-            if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"benchmark aborted\0" as *const u8 as *const core::ffi::c_char,
-                );
-                fflush(core::ptr::null_mut());
+            if dictFileSize > (64 * ((1) << 20)) as u64 {
+                free(fileSizes as *mut core::ffi::c_void);
+                if displayLevel >= 1 {
+                    eprintln!(
+                        "dictionary file {} too large",
+                        CStr::from_ptr(dictFileName).to_string_lossy(),
+                    );
+                }
+                return 18;
             }
-            return 17;
-        }
-        if dictFileSize > (64 * ((1) << 20)) as u64 {
-            free(fileSizes as *mut core::ffi::c_void);
-            if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"dictionary file %s too large\0" as *const u8 as *const core::ffi::c_char,
-                    dictFileName,
-                );
-                fflush(core::ptr::null_mut());
+            dictBufferSize = dictFileSize as size_t;
+            dictBuffer = malloc(dictBufferSize);
+            if dictBuffer.is_null() {
+                free(fileSizes as *mut core::ffi::c_void);
+                if displayLevel >= 1 {
+                    eprintln!(
+                        "not enough memory for dictionary ({} bytes)\0",
+                        dictBufferSize,
+                    );
+                }
+                return 19;
             }
-            return 18;
-        }
-        dictBufferSize = dictFileSize as size_t;
-        dictBuffer = malloc(dictBufferSize);
-        if dictBuffer.is_null() {
-            free(fileSizes as *mut core::ffi::c_void);
-            if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"not enough memory for dictionary (%u bytes)\0" as *const u8
-                        as *const core::ffi::c_char,
-                    dictBufferSize as core::ffi::c_uint,
-                );
-                fflush(core::ptr::null_mut());
+
+            let errorCode = BMK_loadFiles(
+                dictBuffer,
+                dictBufferSize,
+                fileSizes,
+                &dictFileName,
+                1,
+                displayLevel,
+            );
+            if errorCode != 0 {
+                break '_cleanUp;
             }
-            return 19;
         }
-        let errorCode = BMK_loadFiles(
-            dictBuffer,
-            dictBufferSize,
-            fileSizes,
-            &dictFileName,
-            1,
-            displayLevel,
-        );
-        if errorCode != 0 {
-            current_block = 17673386618729300592;
-        } else {
-            current_block = 5181772461570869434;
-        }
-    } else {
-        current_block = 5181772461570869434;
-    }
-    if current_block == 5181772461570869434 {
+
+        // Memory allocation & restrictions
         benchedSize = BMK_findMaxMem(totalSizeToLoad * 3) / 3;
         if benchedSize > totalSizeToLoad as size_t {
             benchedSize = totalSizeToLoad as size_t;
         }
         if benchedSize < totalSizeToLoad as size_t {
-            fprintf(
-                stderr,
-                b"Not enough memory; testing %u MB only...\n\0" as *const u8
-                    as *const core::ffi::c_char,
-                (benchedSize >> 20) as core::ffi::c_uint,
+            eprintln!(
+                "Not enough memory; testing {} MB only...",
+                benchedSize >> 20,
             );
-            fflush(core::ptr::null_mut());
         }
+
         srcBuffer = if benchedSize != 0 {
             malloc(benchedSize)
         } else {
@@ -2234,15 +2210,14 @@ pub unsafe fn BMK_benchFilesAdvanced(
             free(dictBuffer);
             free(fileSizes as *mut core::ffi::c_void);
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"not enough memory for srcBuffer\0" as *const u8 as *const core::ffi::c_char,
-                );
+                eprintln!("not enough memory for srcBuffer");
                 fflush(core::ptr::null_mut());
             }
             return 20;
         }
-        let errorCode_0 = BMK_loadFiles(
+
+        // Load input buffer
+        let errorCode = BMK_loadFiles(
             srcBuffer,
             benchedSize,
             fileSizes,
@@ -2250,40 +2225,45 @@ pub unsafe fn BMK_benchFilesAdvanced(
             nbFiles,
             displayLevel,
         );
-        if errorCode_0 == 0 {
-            let mut mfName: [core::ffi::c_char; 20] = [0; 20];
-            formatString_u(
-                mfName.as_mut_ptr(),
-                ::core::mem::size_of::<[core::ffi::c_char; 20]>(),
-                b" %u files\0" as *const u8 as *const core::ffi::c_char,
-                nbFiles,
-            );
-            let displayName = if nbFiles > 1 {
-                mfName.as_mut_ptr() as *const core::ffi::c_char
-            } else {
-                *fileNamesTable.offset(0)
-            };
-            res = BMK_benchCLevels(
-                srcBuffer,
-                benchedSize,
-                fileSizes,
-                nbFiles,
-                startCLevel,
-                endCLevel,
-                compressionParams,
-                dictBuffer,
-                dictBufferSize,
-                displayLevel,
-                displayName,
-                adv,
-            );
+        if errorCode != 0 {
+            break '_cleanUp;
         }
+
+        // Bench
+        let mut mfName: [core::ffi::c_char; 20] = [0; 20];
+        formatString_u(
+            mfName.as_mut_ptr(),
+            ::core::mem::size_of::<[core::ffi::c_char; 20]>(),
+            c" %u files".as_ptr(),
+            nbFiles,
+        );
+        let displayName = if nbFiles > 1 {
+            mfName.as_mut_ptr() as *const core::ffi::c_char
+        } else {
+            *fileNamesTable.offset(0)
+        };
+        res = BMK_benchCLevels(
+            srcBuffer,
+            benchedSize,
+            fileSizes,
+            nbFiles,
+            startCLevel,
+            endCLevel,
+            compressionParams,
+            dictBuffer,
+            dictBufferSize,
+            displayLevel,
+            displayName,
+            adv,
+        );
     }
+
     free(srcBuffer);
     free(dictBuffer);
     free(fileSizes as *mut core::ffi::c_void);
     res
 }
+
 pub unsafe fn BMK_benchFiles(
     fileNamesTable: *const *const core::ffi::c_char,
     nbFiles: core::ffi::c_uint,
