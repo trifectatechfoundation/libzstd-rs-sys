@@ -173,6 +173,10 @@ jobs:
         with:
           packages: qemu-user qemu-user-static qemu-system-s390x gcc-s390x-linux-gnu gcc-i686-linux-gnu g++-s390x-linux-gnu
           version: 1.0
+      - name: Print compiler versions
+        run: |
+          i686-linux-gnu-gcc --version
+          s390x-linux-gnu-gcc --version
       - name: Copy QEMU Cargo Config
         run: |
           mkdir -p .cargo
