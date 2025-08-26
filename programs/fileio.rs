@@ -455,7 +455,6 @@ unsafe fn FIO_shouldDisplayMultipleFileSummary(fCtx: *const FIO_ctx_t) -> core::
 }
 pub const FIO_OVERLAP_LOG_NOTSET: core::ffi::c_int = 9999;
 pub const FIO_LDM_PARAM_NOTSET: core::ffi::c_int = 9999;
-#[no_mangle]
 pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     let ret = malloc(::core::mem::size_of::<FIO_prefs_t>()) as *mut FIO_prefs_t;
     if ret.is_null() {
@@ -518,7 +517,6 @@ pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     (*ret).passThrough = -(1);
     ret
 }
-#[no_mangle]
 pub unsafe fn FIO_createContext() -> *mut FIO_ctx_t {
     let ret = malloc(::core::mem::size_of::<FIO_ctx_t>()) as *mut FIO_ctx_t;
     if ret.is_null() {
