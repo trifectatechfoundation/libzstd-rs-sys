@@ -3046,10 +3046,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             LoadHeader,
             Read,
             Load,
-            NotSinglePass,
-            Loop,
         }
-        let mut current_block_402: Block;
+        let mut current_block: Block;
         match (*zds).streamStage {
             StreamStage::Init => {
                 (*zds).streamStage = StreamStage::LoadHeader;
@@ -3060,16 +3058,16 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 (*zds).legacyVersion = 0;
                 (*zds).hostageByte = 0;
                 (*zds).expectedOutBuffer = *output;
-                current_block_402 = Block::LoadHeader;
+                current_block = Block::LoadHeader;
             }
             StreamStage::LoadHeader => {
-                current_block_402 = Block::LoadHeader;
+                current_block = Block::LoadHeader;
             }
             StreamStage::Read => {
-                current_block_402 = Block::Read;
+                current_block = Block::Read;
             }
             StreamStage::Load => {
-                current_block_402 = Block::Load;
+                current_block = Block::Load;
             }
             StreamStage::Flush => {
                 let toFlushSize = ((*zds).outEnd).wrapping_sub((*zds).outStart);
@@ -3098,14 +3096,17 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         (*zds).outEnd = 0;
                         (*zds).outStart = 0;
                     }
-                } else {
-                    // cannot complete flush
-                    some_more_work = false;
+                    continue;
                 }
-                current_block_402 = Block::Loop;
+
+                // cannot complete flush
+                some_more_work = false;
+                continue;
             }
         }
-        if current_block_402 == Block::LoadHeader {
+        if current_block == Block::LoadHeader {
+            drop(current_block);
+
             if (*zds).legacyVersion != 0 {
                 if (*zds).staticSize != 0 {
                     return Error::memory_allocation.to_error_code();
@@ -3216,7 +3217,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 );
                 (*zds).lhSize = hSize;
                 ip = ip.add(toLoad);
-                current_block_402 = Block::Loop;
+                continue;
             } else {
                 // check for single-pass mode opportunity
                 if (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
@@ -3254,130 +3255,116 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         (*zds).expected = 0;
                         (*zds).streamStage = StreamStage::Init;
                         some_more_work = false;
-                        current_block_402 = Block::Loop;
-                    } else {
-                        current_block_402 = Block::NotSinglePass;
+                        continue;
                     }
+                }
+
+                // Check output buffer is large enough for ZSTD_odm_stable.
+                if (*zds).outBufferMode == BufferMode::Stable
+                    && (*zds).fParams.frameType != ZSTD_skippableFrame
+                    && (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
+                    && (oend.offset_from(op) as size_t as core::ffi::c_ulonglong)
+                        < (*zds).fParams.frameContentSize
+                {
+                    return Error::dstSize_tooSmall.to_error_code();
+                }
+                let err_code = ZSTD_decompressBegin_usingDDict(zds, ZSTD_getDDict(zds));
+                if ERR_isError(err_code) != 0 {
+                    return err_code;
+                }
+                if (*zds).format == Format::ZSTD_f_zstd1
+                    && MEM_readLE32(((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void)
+                        & ZSTD_MAGIC_SKIPPABLE_MASK
+                        == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
+                {
+                    // skippable frame
+                    (*zds).expected = MEM_readLE32(
+                        ((*zds).headerBuffer)
+                            .as_mut_ptr()
+                            .offset(ZSTD_FRAMEIDSIZE as isize)
+                            as *const core::ffi::c_void,
+                    ) as size_t;
+                    (*zds).stage = DecompressStage::SkipFrame;
                 } else {
-                    current_block_402 = Block::NotSinglePass;
-                }
-                match current_block_402 {
-                    Block::Loop => {}
-                    _ => {
-                        // Check output buffer is large enough for ZSTD_odm_stable.
-                        if (*zds).outBufferMode == BufferMode::Stable
-                            && (*zds).fParams.frameType != ZSTD_skippableFrame
-                            && (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
-                            && (oend.offset_from(op) as size_t as core::ffi::c_ulonglong)
-                                < (*zds).fParams.frameContentSize
-                        {
-                            return Error::dstSize_tooSmall.to_error_code();
-                        }
-                        let err_code = ZSTD_decompressBegin_usingDDict(zds, ZSTD_getDDict(zds));
-                        if ERR_isError(err_code) != 0 {
-                            return err_code;
-                        }
-                        if (*zds).format == Format::ZSTD_f_zstd1
-                            && MEM_readLE32(
-                                ((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void
-                            ) & ZSTD_MAGIC_SKIPPABLE_MASK
-                                == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
-                        {
-                            // skippable frame
-                            (*zds).expected = MEM_readLE32(
-                                ((*zds).headerBuffer)
-                                    .as_mut_ptr()
-                                    .offset(ZSTD_FRAMEIDSIZE as isize)
-                                    as *const core::ffi::c_void,
-                            ) as size_t;
-                            (*zds).stage = DecompressStage::SkipFrame;
-                        } else {
-                            let err_code = ZSTD_decodeFrameHeader(
-                                zds,
-                                &((&(*zds).headerBuffer)[..(*zds).lhSize]),
-                            );
-                            if ERR_isError(err_code) != 0 {
-                                return err_code;
-                            }
-                            (*zds).expected = ZSTD_blockHeaderSize;
-                            (*zds).stage = DecompressStage::DecodeBlockHeader;
-                        }
-
-                        // control buffer memory usage
-                        (*zds).fParams.windowSize = Ord::max(
-                            (*zds).fParams.windowSize,
-                            (1 << ZSTD_WINDOWLOG_ABSOLUTEMIN) as core::ffi::c_ulonglong,
-                        );
-                        if (*zds).fParams.windowSize
-                            > (*zds).maxWindowSize as core::ffi::c_ulonglong
-                        {
-                            return Error::frameParameter_windowTooLarge.to_error_code();
-                        }
-                        if (*zds).maxBlockSizeParam != 0 {
-                            (*zds).fParams.blockSizeMax = Ord::min(
-                                (*zds).fParams.blockSizeMax,
-                                (*zds).maxBlockSizeParam as core::ffi::c_uint,
-                            );
-                        }
-
-                        // Adapt buffer sizes to frame header instructions
-                        let neededInBuffSize =
-                            std::cmp::max((*zds).fParams.blockSizeMax, 4) as size_t;
-                        let neededOutBuffSize = if (*zds).outBufferMode == BufferMode::Buffered {
-                            ZSTD_decodingBufferSize_internal(
-                                (*zds).fParams.windowSize,
-                                (*zds).fParams.frameContentSize,
-                                (*zds).fParams.blockSizeMax as size_t,
-                            )
-                        } else {
-                            0
-                        };
-
-                        ZSTD_DCtx_updateOversizedDuration(zds, neededInBuffSize, neededOutBuffSize);
-
-                        let tooSmall = ((*zds).inBuffSize < neededInBuffSize
-                            || (*zds).outBuffSize < neededOutBuffSize)
-                            as core::ffi::c_int;
-                        let tooLarge = ZSTD_DCtx_isOversizedTooLong(zds);
-
-                        if tooSmall != 0 || tooLarge != 0 {
-                            let bufferSize = neededInBuffSize.wrapping_add(neededOutBuffSize);
-                            if (*zds).staticSize != 0 {
-                                // static DCtx
-                                assert!((*zds).staticSize >= size_of::<ZSTD_DCtx>()); // controlled at init
-                                if bufferSize > (*zds).staticSize - size_of::<ZSTD_DCtx>() {
-                                    return Error::dictionary_corrupted.to_error_code();
-                                }
-                            } else {
-                                ZSTD_customFree(
-                                    (*zds).inBuff as *mut core::ffi::c_void,
-                                    (*zds).customMem,
-                                );
-                                (*zds).inBuffSize = 0;
-                                (*zds).outBuffSize = 0;
-                                (*zds).inBuff = ZSTD_customMalloc(bufferSize, (*zds).customMem)
-                                    as *mut core::ffi::c_char;
-                                if (*zds).inBuff.is_null() {
-                                    return Error::dictionary_corrupted.to_error_code();
-                                }
-                            }
-                            (*zds).inBuffSize = neededInBuffSize;
-                            (*zds).outBuff = ((*zds).inBuff).add((*zds).inBuffSize);
-                            (*zds).outBuffSize = neededOutBuffSize;
-                        }
-                        (*zds).streamStage = StreamStage::Read;
-                        current_block_402 = Block::Read;
+                    let err_code =
+                        ZSTD_decodeFrameHeader(zds, &((&(*zds).headerBuffer)[..(*zds).lhSize]));
+                    if ERR_isError(err_code) != 0 {
+                        return err_code;
                     }
+                    (*zds).expected = ZSTD_blockHeaderSize;
+                    (*zds).stage = DecompressStage::DecodeBlockHeader;
                 }
+
+                // control buffer memory usage
+                (*zds).fParams.windowSize = Ord::max(
+                    (*zds).fParams.windowSize,
+                    (1 << ZSTD_WINDOWLOG_ABSOLUTEMIN) as core::ffi::c_ulonglong,
+                );
+                if (*zds).fParams.windowSize > (*zds).maxWindowSize as core::ffi::c_ulonglong {
+                    return Error::frameParameter_windowTooLarge.to_error_code();
+                }
+                if (*zds).maxBlockSizeParam != 0 {
+                    (*zds).fParams.blockSizeMax = std::cmp::min(
+                        (*zds).fParams.blockSizeMax,
+                        (*zds).maxBlockSizeParam as core::ffi::c_uint,
+                    );
+                }
+
+                // Adapt buffer sizes to frame header instructions
+                let neededInBuffSize = std::cmp::max((*zds).fParams.blockSizeMax, 4) as size_t;
+                let neededOutBuffSize = if (*zds).outBufferMode == BufferMode::Buffered {
+                    ZSTD_decodingBufferSize_internal(
+                        (*zds).fParams.windowSize,
+                        (*zds).fParams.frameContentSize,
+                        (*zds).fParams.blockSizeMax as size_t,
+                    )
+                } else {
+                    0
+                };
+
+                ZSTD_DCtx_updateOversizedDuration(zds, neededInBuffSize, neededOutBuffSize);
+
+                let tooSmall = ((*zds).inBuffSize < neededInBuffSize
+                    || (*zds).outBuffSize < neededOutBuffSize)
+                    as core::ffi::c_int;
+                let tooLarge = ZSTD_DCtx_isOversizedTooLong(zds);
+
+                if tooSmall != 0 || tooLarge != 0 {
+                    let bufferSize = neededInBuffSize.wrapping_add(neededOutBuffSize);
+                    if (*zds).staticSize != 0 {
+                        // static DCtx
+                        assert!((*zds).staticSize >= size_of::<ZSTD_DCtx>()); // controlled at init
+                        if bufferSize > (*zds).staticSize - size_of::<ZSTD_DCtx>() {
+                            return Error::dictionary_corrupted.to_error_code();
+                        }
+                    } else {
+                        ZSTD_customFree((*zds).inBuff as *mut core::ffi::c_void, (*zds).customMem);
+                        (*zds).inBuffSize = 0;
+                        (*zds).outBuffSize = 0;
+                        (*zds).inBuff = ZSTD_customMalloc(bufferSize, (*zds).customMem)
+                            as *mut core::ffi::c_char;
+                        if (*zds).inBuff.is_null() {
+                            return Error::dictionary_corrupted.to_error_code();
+                        }
+                    }
+                    (*zds).inBuffSize = neededInBuffSize;
+                    (*zds).outBuff = ((*zds).inBuff).add((*zds).inBuffSize);
+                    (*zds).outBuffSize = neededOutBuffSize;
+                }
+                (*zds).streamStage = StreamStage::Read;
+                current_block = Block::Read;
             }
         }
-        if current_block_402 == Block::Read {
+
+        if current_block == Block::Read {
+            drop(current_block);
+
             let neededInSize =
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
             if neededInSize == 0 {
                 (*zds).streamStage = StreamStage::Init;
                 some_more_work = false;
-                current_block_402 = Block::Loop;
+                continue;
             } else if iend.offset_from(ip) as size_t >= neededInSize {
                 // decode directly from src
                 let err_code_4 = ZSTD_decompressContinueStream(
@@ -3393,17 +3380,20 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 assert!(!ip.is_null());
                 ip = ip.add(neededInSize);
                 // Function modifies the stage so we must break
-                current_block_402 = Block::Loop;
+                continue;
             } else if ip == iend {
                 // no more input
                 some_more_work = false;
-                current_block_402 = Block::Loop;
+                continue;
             } else {
                 (*zds).streamStage = StreamStage::Load;
-                current_block_402 = Block::Load;
+                current_block = Block::Load;
             }
         }
-        if current_block_402 == Block::Load {
+
+        if current_block == Block::Load {
+            drop(current_block);
+
             let neededInSize = ZSTD_nextSrcSizeToDecompress(zds);
             let toLoad_0 = neededInSize.wrapping_sub((*zds).inPos);
             let isSkipFrame = ZSTD_isSkipFrame(zds);
