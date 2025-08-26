@@ -5270,6 +5270,12 @@ unsafe fn FIO_getLargestFileSize(
     }
     maxFileSize
 }
+
+/// FIO_compressMultipleFilenames() :
+/// compress nbFiles files
+/// into either one destination (outFileName),
+/// or into one file each (outFileName == NULL, but suffix != NULL),
+/// or into a destination folder (specified with -O)
 pub unsafe fn FIO_compressMultipleFilenames(
     fCtx: *mut FIO_ctx_t,
     prefs: *mut FIO_prefs_t,
@@ -5291,8 +5297,11 @@ pub unsafe fn FIO_compressMultipleFilenames(
         compressionLevel,
         comprParams,
     );
+
+    // init
     assert!(!outFileName.is_null() || !suffix.is_null());
     if !outFileName.is_null() {
+        // output into a single destination (stdout typically)
         let mut dstFile = core::ptr::null_mut::<FILE>();
         if FIO_multiFilesConcatWarning(fCtx, prefs, outFileName, 1) != 0 {
             FIO_freeCResources(&mut ress);
@@ -5306,6 +5315,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
             DEFAULT_FILE_PERMISSIONS,
         );
         if dstFile.is_null() {
+            // could not open outFileName
             error = 1;
         } else {
             AIO_WritePool_setFile(ress.writeCtx, dstFile);
@@ -5320,31 +5330,19 @@ pub unsafe fn FIO_compressMultipleFilenames(
                 );
                 if status == 0 {
                     (*fCtx).nbFilesProcessed += 1;
-                    (*fCtx).nbFilesProcessed;
                 }
                 error |= status;
                 (*fCtx).currFileIdx += 1;
-                (*fCtx).currFileIdx;
             }
             if AIO_WritePool_closeFile(ress.writeCtx) != 0 {
                 if g_display_prefs.displayLevel >= 1 {
-                    fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
+                    eprint!("zstd: ");
                 }
                 if g_display_prefs.displayLevel >= 5 {
-                    fprintf(
-                        stderr,
-                        b"Error defined at %s, line %i : \n\0" as *const u8
-                            as *const core::ffi::c_char,
-                        b"fileio.c\0" as *const u8 as *const core::ffi::c_char,
-                        2261,
-                    );
+                    eprintln!("Error defined at {}, line {} : ", file!(), line!());
                 }
                 if g_display_prefs.displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        29,
-                    );
+                    eprint!("error {} : ", 29);
                 }
                 if g_display_prefs.displayLevel >= 1 {
                     eprintln!(
@@ -5364,7 +5362,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
                 outMirroredRootDirName,
             );
         }
-        let mut current_block_63: u64;
+
         while (*fCtx).currFileIdx < (*fCtx).nbFilesTotal {
             let srcFileName = *inFileNamesTable.offset((*fCtx).currFileIdx as isize);
             let mut dstFileName = core::ptr::null::<core::ffi::c_char>();
@@ -5375,42 +5373,35 @@ pub unsafe fn FIO_compressMultipleFilenames(
                     dstFileName =
                         FIO_determineCompressedName(srcFileName, validMirroredDirName, suffix);
                     free(validMirroredDirName as *mut core::ffi::c_void);
-                    current_block_63 = 5892776923941496671;
                 } else {
                     if g_display_prefs.displayLevel >= 2 {
-                        fprintf(
-                            stderr,
-                            b"zstd: --output-dir-mirror cannot compress '%s' into '%s' \n\0"
-                                as *const u8
-                                as *const core::ffi::c_char,
-                            srcFileName,
-                            outMirroredRootDirName,
+                        eprintln!(
+                            "zstd: --output-dir-mirror cannot compress '{}' into '{}'",
+                            CStr::from_ptr(srcFileName).to_string_lossy(),
+                            CStr::from_ptr(outMirroredRootDirName).to_string_lossy(),
                         );
                     }
                     error = 1;
-                    current_block_63 = 15090052786889560393;
+                    (*fCtx).currFileIdx += 1;
+                    continue;
                 }
             } else {
                 dstFileName = FIO_determineCompressedName(srcFileName, outDirName, suffix);
-                current_block_63 = 5892776923941496671;
             }
-            if current_block_63 == 5892776923941496671 {
-                status = FIO_compressFilename_srcFile(
-                    fCtx,
-                    prefs,
-                    ress,
-                    dstFileName,
-                    srcFileName,
-                    compressionLevel,
-                );
-                if status == 0 {
-                    (*fCtx).nbFilesProcessed += 1;
-                    (*fCtx).nbFilesProcessed;
-                }
-                error |= status;
+            status = FIO_compressFilename_srcFile(
+                fCtx,
+                prefs,
+                ress,
+                dstFileName,
+                srcFileName,
+                compressionLevel,
+            );
+            if status == 0 {
+                (*fCtx).nbFilesProcessed += 1;
             }
+            error |= status;
+
             (*fCtx).currFileIdx += 1;
-            (*fCtx).currFileIdx;
         }
         if !outDirName.is_null() {
             FIO_checkFilenameCollisions(
@@ -5422,23 +5413,18 @@ pub unsafe fn FIO_compressMultipleFilenames(
     if FIO_shouldDisplayMultipleFileSummary(fCtx) != 0 {
         let hr_isize = UTIL_makeHumanReadableSize((*fCtx).totalBytesInput as u64);
         let hr_osize = UTIL_makeHumanReadableSize((*fCtx).totalBytesOutput as u64);
-        if g_display_prefs.progressSetting as core::ffi::c_uint
-            != FIO_ps_never as core::ffi::c_int as core::ffi::c_uint
+
+        if g_display_prefs.progressSetting != FIO_ps_never
             && (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
         {
-            fprintf(
-                stderr,
-                b"\r%79s\r\0" as *const u8 as *const core::ffi::c_char,
-                b"\0" as *const u8 as *const core::ffi::c_char,
-            );
+            eprintln!("\r{:79 }\r", "");
         }
+
         if (*fCtx).totalBytesInput == 0 {
             if (g_display_prefs.displayLevel >= 2
-                || g_display_prefs.progressSetting as core::ffi::c_uint
-                    == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+                || g_display_prefs.progressSetting == FIO_ps_always)
                 && g_display_prefs.displayLevel >= 1
             {
                 fprintf(
@@ -5455,8 +5441,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
                 );
             }
         } else if (g_display_prefs.displayLevel >= 2
-            || g_display_prefs.progressSetting as core::ffi::c_uint
-                == FIO_ps_always as core::ffi::c_int as core::ffi::c_uint)
+            || g_display_prefs.progressSetting == FIO_ps_always)
             && g_display_prefs.displayLevel >= 1
         {
             fprintf(
@@ -5476,6 +5461,7 @@ pub unsafe fn FIO_compressMultipleFilenames(
             );
         }
     }
+
     FIO_freeCResources(&mut ress);
     error
 }
