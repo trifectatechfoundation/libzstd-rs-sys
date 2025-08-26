@@ -229,6 +229,7 @@ unsafe fn ZSTDv06_wildcopy(
 unsafe fn BITv06_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
 }
+
 #[inline]
 unsafe fn BITv06_initDStream(
     bitD: *mut BITv06_DStream_t,
@@ -243,95 +244,64 @@ unsafe fn BITv06_initDStream(
         );
         return Error::srcSize_wrong.to_error_code();
     }
+
+    let bitD = &mut *bitD;
+
     if srcSize >= ::core::mem::size_of::<size_t>() {
-        (*bitD).start = srcBuffer as *const core::ffi::c_char;
-        (*bitD).ptr = (srcBuffer as *const core::ffi::c_char)
+        // normal case
+        bitD.start = srcBuffer as *const core::ffi::c_char;
+        bitD.ptr = (srcBuffer as *const core::ffi::c_char)
             .add(srcSize)
-            .offset(-(::core::mem::size_of::<size_t>() as isize));
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
+            .sub(::core::mem::size_of::<size_t>());
+        bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
-        if lastByte as core::ffi::c_int == 0 {
-            return Error::GENERIC.to_error_code();
+        if lastByte == 0 {
+            return Error::GENERIC.to_error_code(); // endMark not present
         }
-        (*bitD).bitsConsumed =
-            (8 as core::ffi::c_uint).wrapping_sub(BITv06_highbit32(lastByte as u32));
+        bitD.bitsConsumed = 8 - BITv06_highbit32(lastByte as u32);
     } else {
-        (*bitD).start = srcBuffer as *const core::ffi::c_char;
-        (*bitD).ptr = (*bitD).start;
-        (*bitD).bitContainer = *((*bitD).start as *const u8) as size_t;
-        let mut current_block_20: u64;
-        match srcSize {
-            7 => {
-                (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                    (*(srcBuffer as *const u8).offset(6) as size_t)
-                        << (::core::mem::size_of::<size_t>())
-                            .wrapping_mul(8)
-                            .wrapping_sub(16),
-                );
-                current_block_20 = 11220331375136032509;
-            }
-            6 => {
-                current_block_20 = 11220331375136032509;
-            }
-            5 => {
-                current_block_20 = 10901957826175510184;
-            }
-            4 => {
-                current_block_20 = 3201895511516222412;
-            }
-            3 => {
-                current_block_20 = 12760952191649157579;
-            }
-            2 => {
-                current_block_20 = 13935781298497728377;
-            }
-            _ => {
-                current_block_20 = 5689001924483802034;
-            }
+        bitD.start = srcBuffer as *const core::ffi::c_char;
+        bitD.ptr = bitD.start;
+        bitD.bitContainer = *(bitD.start as *const u8) as size_t;
+
+        if srcSize == 7 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(6) as size_t)
+                << (::core::mem::size_of::<size_t>() * 8 - 16);
         }
-        if current_block_20 == 11220331375136032509 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(5) as size_t)
-                    << (::core::mem::size_of::<size_t>())
-                        .wrapping_mul(8)
-                        .wrapping_sub(24),
-            );
-            current_block_20 = 10901957826175510184;
+
+        if srcSize >= 6 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(5) as size_t)
+                << (::core::mem::size_of::<size_t>() * 8 - 24);
         }
-        if current_block_20 == 10901957826175510184 {
-            (*bitD).bitContainer = ((*bitD).bitContainer).wrapping_add(
-                (*(srcBuffer as *const u8).offset(4) as size_t)
-                    << (::core::mem::size_of::<size_t>())
-                        .wrapping_mul(8)
-                        .wrapping_sub(32),
-            );
-            current_block_20 = 3201895511516222412;
+
+        if srcSize >= 5 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(4) as size_t)
+                << (::core::mem::size_of::<size_t>() * 8 - 32);
         }
-        if current_block_20 == 3201895511516222412 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(3) as size_t) << 24);
-            current_block_20 = 12760952191649157579;
+
+        if srcSize >= 4 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(3) as size_t) << 24;
         }
-        if current_block_20 == 12760952191649157579 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(2) as size_t) << 16);
-            current_block_20 = 13935781298497728377;
+
+        if srcSize >= 3 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(2) as size_t) << 16;
         }
-        if current_block_20 == 13935781298497728377 {
-            (*bitD).bitContainer = ((*bitD).bitContainer)
-                .wrapping_add((*(srcBuffer as *const u8).offset(1) as size_t) << 8);
+
+        if srcSize >= 2 {
+            bitD.bitContainer += (*(bitD.start as *const u8).offset(1) as size_t) << 8;
         }
-        let lastByte_0 = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
-        if lastByte_0 as core::ffi::c_int == 0 {
+
+        let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
+        if lastByte == 0 {
+            // endMark not present
             return Error::GENERIC.to_error_code();
         }
-        (*bitD).bitsConsumed =
-            (8 as core::ffi::c_uint).wrapping_sub(BITv06_highbit32(lastByte_0 as u32));
-        (*bitD).bitsConsumed = ((*bitD).bitsConsumed)
-            .wrapping_add((::core::mem::size_of::<size_t>()).wrapping_sub(srcSize) as u32 * 8);
+        bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv06_highbit32(lastByte as u32);
+        bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
     }
     srcSize
 }
+
 #[inline]
 unsafe fn BITv06_lookBits(bitD: *const BITv06_DStream_t, nbBits: u32) -> size_t {
     let bitMask = (::core::mem::size_of::<size_t>())
