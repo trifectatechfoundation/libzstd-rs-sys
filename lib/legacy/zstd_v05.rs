@@ -136,7 +136,7 @@ struct algo_time_t {
     decode256Time: u32,
 }
 #[repr(C)]
-pub struct ZBUFFv05_DCtx_s {
+pub(crate) struct ZBUFFv05_DCtx_s {
     zc: *mut ZSTDv05_DCtx,
     params: ZSTDv05_parameters,
     inBuff: *mut core::ffi::c_char,
