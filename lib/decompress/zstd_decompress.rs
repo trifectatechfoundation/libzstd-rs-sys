@@ -3042,8 +3042,17 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if ERR_isError(err_code) != 0 {
         return err_code;
     }
+
     while some_more_work {
-        let mut current_block_402: u64;
+        #[derive(Eq, PartialEq)]
+        enum Block {
+            LoadHeader,
+            Read,
+            Load,
+            NotSinglePass,
+            Loop,
+        }
+        let mut current_block_402: Block;
         match (*zds).streamStage {
             StreamStage::Init => {
                 (*zds).streamStage = StreamStage::LoadHeader;
@@ -3054,16 +3063,16 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 (*zds).legacyVersion = 0;
                 (*zds).hostageByte = 0;
                 (*zds).expectedOutBuffer = *output;
-                current_block_402 = 1623252117315916725;
+                current_block_402 = Block::LoadHeader;
             }
             StreamStage::LoadHeader => {
-                current_block_402 = 1623252117315916725;
+                current_block_402 = Block::LoadHeader;
             }
             StreamStage::Read => {
-                current_block_402 = 7991679940794782184;
+                current_block_402 = Block::Read;
             }
             StreamStage::Load => {
-                current_block_402 = 18111739650402451604;
+                current_block_402 = Block::Load;
             }
             StreamStage::Flush => {
                 let toFlushSize = ((*zds).outEnd).wrapping_sub((*zds).outStart);
@@ -3073,13 +3082,16 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     ((*zds).outBuff).add((*zds).outStart) as *const core::ffi::c_void,
                     toFlushSize,
                 );
+
                 op = if !op.is_null() {
                     op.add(flushedSize)
                 } else {
                     op
                 };
+
                 (*zds).outStart = ((*zds).outStart).wrapping_add(flushedSize);
                 if flushedSize == toFlushSize {
+                    // flush completed
                     (*zds).streamStage = StreamStage::Read;
                     if ((*zds).outBuffSize as core::ffi::c_ulonglong)
                         < (*zds).fParams.frameContentSize
@@ -3087,15 +3099,16 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             > (*zds).outBuffSize
                     {
                         (*zds).outEnd = 0;
-                        (*zds).outStart = (*zds).outEnd;
+                        (*zds).outStart = 0;
                     }
                 } else {
+                    // cannot complete flush
                     some_more_work = false;
                 }
-                current_block_402 = 7792909578691485565;
+                current_block_402 = Block::Loop;
             }
         }
-        if current_block_402 == 1623252117315916725 {
+        if current_block_402 == Block::LoadHeader {
             if (*zds).legacyVersion != 0 {
                 if (*zds).staticSize != 0 {
                     return Error::memory_allocation.to_error_code();
@@ -3211,7 +3224,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 );
                 (*zds).lhSize = hSize;
                 ip = ip.add(toLoad);
-                current_block_402 = 7792909578691485565;
+                current_block_402 = Block::Loop;
             } else {
                 if (*zds).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
                     && (*zds).fParams.frameType as core::ffi::c_uint
@@ -3247,15 +3260,15 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         (*zds).expected = 0;
                         (*zds).streamStage = StreamStage::Init;
                         some_more_work = false;
-                        current_block_402 = 7792909578691485565;
+                        current_block_402 = Block::Loop;
                     } else {
-                        current_block_402 = 8968043056769084000;
+                        current_block_402 = Block::NotSinglePass;
                     }
                 } else {
-                    current_block_402 = 8968043056769084000;
+                    current_block_402 = Block::NotSinglePass;
                 }
                 match current_block_402 {
-                    7792909578691485565 => {}
+                    Block::Loop => {}
                     _ => {
                         if (*zds).outBufferMode == BufferMode::Stable
                             && (*zds).fParams.frameType as core::ffi::c_uint
@@ -3360,18 +3373,18 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             (*zds).outBuffSize = neededOutBuffSize;
                         }
                         (*zds).streamStage = StreamStage::Read;
-                        current_block_402 = 7991679940794782184;
+                        current_block_402 = Block::Read;
                     }
                 }
             }
         }
-        if current_block_402 == 7991679940794782184 {
+        if current_block_402 == Block::Read {
             let neededInSize =
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
             if neededInSize == 0 {
                 (*zds).streamStage = StreamStage::Init;
                 some_more_work = false;
-                current_block_402 = 7792909578691485565;
+                current_block_402 = Block::Loop;
             } else if iend.offset_from(ip) as size_t >= neededInSize {
                 let err_code_4 = ZSTD_decompressContinueStream(
                     zds,
@@ -3384,16 +3397,16 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return err_code_4;
                 }
                 ip = ip.add(neededInSize);
-                current_block_402 = 7792909578691485565;
+                current_block_402 = Block::Loop;
             } else if ip == iend {
                 some_more_work = false;
-                current_block_402 = 7792909578691485565;
+                current_block_402 = Block::Loop;
             } else {
                 (*zds).streamStage = StreamStage::Load;
-                current_block_402 = 18111739650402451604;
+                current_block_402 = Block::Load;
             }
         }
-        if current_block_402 == 18111739650402451604 {
+        if current_block_402 == Block::Load {
             let neededInSize_0 = ZSTD_nextSrcSizeToDecompress(zds);
             let toLoad_0 = neededInSize_0.wrapping_sub((*zds).inPos);
             let isSkipFrame = ZSTD_isSkipFrame(zds);
