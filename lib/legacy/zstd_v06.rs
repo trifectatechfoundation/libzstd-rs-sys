@@ -2350,60 +2350,61 @@ unsafe fn ZSTDv06_frameHeaderSize(src: *const core::ffi::c_void, srcSize: size_t
     let fcsId = (*(src as *const u8).offset(4) as core::ffi::c_int >> 6) as u32;
     ZSTDv06_frameHeaderSize_min.wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize))
 }
+
+/// ZSTDv06_getFrameParams() :
+/// decode Frame Header, or provide expected `srcSize`.
+/// @return : 0, `fparamsPtr` is correctly filled,
+///          >0, `srcSize` is too small, result is expected `srcSize`,
+///           or an error code, which can be tested using ZSTDv06_isError()
 pub(crate) unsafe fn ZSTDv06_getFrameParams(
     fparamsPtr: *mut ZSTDv06_frameParams,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
     let ip = src as *const u8;
+
     if srcSize < ZSTDv06_frameHeaderSize_min {
         return ZSTDv06_frameHeaderSize_min;
     }
     if MEM_readLE32(src) != ZSTDv06_MAGICNUMBER {
         return Error::prefix_unknown.to_error_code();
     }
+
+    // ensure there is enough `srcSize` to fully read/decode frame header
     let fhsize = ZSTDv06_frameHeaderSize(src, srcSize);
     if srcSize < fhsize {
         return fhsize;
     }
+
     ptr::write_bytes(
         fparamsPtr as *mut u8,
         0,
         ::core::mem::size_of::<ZSTDv06_frameParams>(),
     );
+
     let frameDesc = *ip.offset(4);
-    (*fparamsPtr).windowLog = ((frameDesc as core::ffi::c_int & 0xf as core::ffi::c_int)
-        + ZSTDv06_WINDOWLOG_ABSOLUTEMIN) as core::ffi::c_uint;
-    if frameDesc as core::ffi::c_int & 0x20 as core::ffi::c_int != 0 {
+    (*fparamsPtr).windowLog =
+        (frameDesc & 0xf) as core::ffi::c_uint + ZSTDv06_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
+    if frameDesc & 0x20 != 0 {
+        // reserved 1 bit
         return Error::frameParameter_unsupported.to_error_code();
     }
-    let current_block_14: u64;
     match frameDesc as core::ffi::c_int >> 6 {
-        0 => {
-            current_block_14 = 2128447534733725941;
-        }
-        1 => {
-            (*fparamsPtr).frameContentSize = *ip.offset(5) as core::ffi::c_ulonglong;
-            current_block_14 = 17407779659766490442;
-        }
+        // fcsId
+        0 => (*fparamsPtr).frameContentSize = 0,
+        1 => (*fparamsPtr).frameContentSize = *ip.offset(5) as core::ffi::c_ulonglong,
         2 => {
-            (*fparamsPtr).frameContentSize = (MEM_readLE16(ip.offset(5) as *const core::ffi::c_void)
-                as core::ffi::c_int
-                + 256) as core::ffi::c_ulonglong;
-            current_block_14 = 17407779659766490442;
+            (*fparamsPtr).frameContentSize = MEM_readLE16(ip.offset(5) as *const core::ffi::c_void)
+                as core::ffi::c_ulonglong
+                + 256;
         }
         3 => {
             (*fparamsPtr).frameContentSize =
                 MEM_readLE64(ip.offset(5) as *const core::ffi::c_void) as core::ffi::c_ulonglong;
-            current_block_14 = 17407779659766490442;
         }
-        _ => {
-            current_block_14 = 2128447534733725941;
-        }
+        _ => unreachable!(),
     }
-    if current_block_14 == 2128447534733725941 {
-        (*fparamsPtr).frameContentSize = 0;
-    }
+
     0
 }
 unsafe fn ZSTDv06_decodeFrameHeader(
