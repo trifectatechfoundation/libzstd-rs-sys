@@ -211,7 +211,11 @@ unsafe fn BITv07_initDStream(
             .sub(::core::mem::size_of::<size_t>());
         bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
         let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
-        bitD.bitsConsumed = 8 - BITv07_highbit32(lastByte as u32);
+        bitD.bitsConsumed = if lastByte != 0 {
+            8 - BITv07_highbit32(lastByte as u32)
+        } else {
+            0
+        };
         if lastByte == 0 {
             return Error::GENERIC.to_error_code(); // endMark not present
         }
@@ -248,7 +252,11 @@ unsafe fn BITv07_initDStream(
         }
 
         let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
-        bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv07_highbit32(lastByte as u32);
+        bitD.bitsConsumed = if lastByte != 0 {
+            8 - BITv07_highbit32(lastByte as u32)
+        } else {
+            0
+        };
         if lastByte == 0 {
             // endMark not present
             return Error::GENERIC.to_error_code();
