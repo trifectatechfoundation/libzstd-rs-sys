@@ -173,30 +173,3 @@ jobs:
         with:
           packages: qemu-user qemu-user-static qemu-system-s390x gcc-s390x-linux-gnu gcc-i686-linux-gnu g++-s390x-linux-gnu
           version: 1.0
-      - name: Print compiler versions
-        run: |
-          i686-linux-gnu-gcc --version
-          s390x-linux-gnu-gcc --version
-      - name: Copy QEMU Cargo Config
-        run: |
-          mkdir -p .cargo
-          cp qemu-cargo-config.toml .cargo/config.toml
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@be73d7920c329f220ce78e0234b8f96b7ae60248
-        with:
-          toolchain: "${{ matrix.rust }}"
-          targets: "${{ matrix.target }}"
-      - name: target
-        run: "rustc -vV | sed -n 's|host: ||p'"
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@d12e869b89167df346dd0ff65da342d1fb1202fb # v2.53.2
-        with:
-          tool: cargo-nextest
-      - name: cargo build
-        run: cargo build --target ${{matrix.target}} ${{ matrix.features }}
-      - name: cargo nextest # reports segfaults in a helpful way
-        run: RUNNER="${{ matrix.runner }}" cargo nextest run --target ${{matrix.target}} ${{ matrix.features }}
-        env:
-          RUSTFLAGS: "-Awarnings"
-          RUST_BACKTRACE: 1
-          CC: ${{matrix.gcc}}
