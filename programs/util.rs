@@ -2210,83 +2210,82 @@ pub unsafe fn UTIL_createFNT_fromROTable(
     );
     UTIL_assembleFileNamesTable(newFNTable, nbFilenames, core::ptr::null_mut())
 }
-pub unsafe fn UTIL_countCores(logical: core::ffi::c_int) -> core::ffi::c_int {
-    let current_block: u64;
+
+/// parse /proc/cpuinfo
+/// siblings / cpu cores should give hyperthreading ratio
+/// otherwise fall back on sysconf
+/// FIXME handle logic for OSes other than Linux
+pub unsafe fn UTIL_countCores(logical: bool) -> core::ffi::c_int {
     static mut numCores: core::ffi::c_int = 0;
+
     if numCores != 0 {
         return numCores;
     }
+
     numCores = sysconf(_SC_NPROCESSORS_ONLN) as core::ffi::c_int;
-    if numCores == -(1) {
+    if numCores == -1 {
+        // value not queryable, fall back on 1
         numCores = 1;
         return numCores;
     }
-    let cpuinfo = fopen(
-        b"/proc/cpuinfo\0" as *const u8 as *const core::ffi::c_char,
-        b"r\0" as *const u8 as *const core::ffi::c_char,
-    );
-    let mut buff: [core::ffi::c_char; 80] = [0; 80];
+
+    // try to determine if there's hyperthreading
+    let cpuinfo = fopen(c"/proc/cpuinfo".as_ptr(), c"r".as_ptr());
+    let mut buff: [core::ffi::c_char; BUF_SIZE] = [0; BUF_SIZE];
+
     let mut siblings = 0;
     let mut cpu_cores = 0;
     let mut ratio = 1;
+
     if cpuinfo.is_null() {
+        // fall back on the sysconf value
         return numCores;
     }
-    loop {
-        if feof(cpuinfo) != 0 {
-            current_block = 11584701595673473500;
-            break;
-        }
-        if !(fgets(buff.as_mut_ptr(), BUF_SIZE, cpuinfo)).is_null() {
-            if strncmp(
-                buff.as_mut_ptr(),
-                b"siblings\0" as *const u8 as *const core::ffi::c_char,
-                8,
-            ) == 0
-            {
-                let sep: *const core::ffi::c_char = strchr(buff.as_mut_ptr(), ':' as i32);
-                if sep.is_null() || *sep as core::ffi::c_int == '\0' as i32 {
-                    current_block = 14973054249330249614;
-                    break;
-                } else {
+
+    'failed: {
+        // assume the cpu cores/siblings values will be constant across all
+        // present processors
+        while feof(cpuinfo) == 0 {
+            if !fgets(buff.as_mut_ptr(), BUF_SIZE as _, cpuinfo).is_null() {
+                if strncmp(buff.as_mut_ptr(), c"siblings".as_ptr(), 8) == 0 {
+                    let sep = strchr(buff.as_mut_ptr(), b':' as core::ffi::c_int);
+                    if sep.is_null() || *sep == 0 {
+                        // formatting was broken?
+                        break 'failed;
+                    }
+
                     siblings = atoi(sep.offset(1));
                 }
+                if strncmp(buff.as_mut_ptr(), c"cpu cores".as_ptr(), 9) == 0 {
+                    let sep = strchr(buff.as_mut_ptr(), b':' as core::ffi::c_int);
+                    if sep.is_null() || *sep == 0 {
+                        // formatting was broken?
+                        break 'failed;
+                    }
+
+                    cpu_cores = atoi(sep.offset(1));
+                }
+            } else if ferror(cpuinfo) != 0 {
+                // fall back on the sysconf value
+                break 'failed;
             }
-            if strncmp(
-                buff.as_mut_ptr(),
-                b"cpu cores\0" as *const u8 as *const core::ffi::c_char,
-                9,
-            ) != 0
-            {
-                continue;
-            }
-            let sep_0: *const core::ffi::c_char = strchr(buff.as_mut_ptr(), ':' as i32);
-            if sep_0.is_null() || *sep_0 as core::ffi::c_int == '\0' as i32 {
-                current_block = 14973054249330249614;
-                break;
-            } else {
-                cpu_cores = atoi(sep_0.offset(1));
-            }
-        } else if ferror(cpuinfo) != 0 {
-            current_block = 14973054249330249614;
-            break;
         }
-    }
-    if current_block == 11584701595673473500 {
         if siblings != 0 && cpu_cores != 0 && siblings > cpu_cores {
             ratio = siblings / cpu_cores;
         }
-        if ratio != 0 && numCores > ratio && logical == 0 {
+
+        if ratio != 0 && numCores > ratio && !logical {
             numCores /= ratio;
         }
     }
+
     fclose(cpuinfo);
     numCores
 }
-pub const BUF_SIZE: core::ffi::c_int = 80;
+pub const BUF_SIZE: usize = 80;
 pub unsafe fn UTIL_countPhysicalCores() -> core::ffi::c_int {
-    UTIL_countCores(0)
+    UTIL_countCores(false)
 }
 pub unsafe fn UTIL_countLogicalCores() -> core::ffi::c_int {
-    UTIL_countCores(1)
+    UTIL_countCores(true)
 }
