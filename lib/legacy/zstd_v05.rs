@@ -3698,7 +3698,15 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     let mut notDone = 1;
 
     while notDone != 0 {
-        let mut current_block_68: u64;
+        #[derive(Eq, PartialEq)]
+        enum Block {
+            DecodeHeader,
+            Read,
+            Load,
+            Flush,
+            Loop,
+        }
+        let mut current_block_68;
         match (*zbc).stage {
             ZBUFFv05ds_init => return Error::init_missing.to_error_code(),
             ZBUFFv05ds_readHeader => {
@@ -3721,7 +3729,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     return headerSize.wrapping_sub((*zbc).hPos);
                 }
                 (*zbc).stage = ZBUFFv05ds_decodeHeader;
-                current_block_68 = 10512632378975961025;
+                current_block_68 = Block::Loop;
             }
             ZBUFFv05ds_loadHeader => {
                 // complete header from src
@@ -3746,23 +3754,23 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     *maxDstSizePtr = 0;
                     return headerSize_0.wrapping_sub((*zbc).hPos);
                 }
-                current_block_68 = 10092070165720998011;
+                current_block_68 = Block::DecodeHeader;
             }
             ZBUFFv05ds_decodeHeader => {
-                current_block_68 = 10092070165720998011;
+                current_block_68 = Block::DecodeHeader;
             }
             ZBUFFv05ds_read => {
-                current_block_68 = 6450636197030046351;
+                current_block_68 = Block::Read;
             }
             ZBUFFv05ds_load => {
-                current_block_68 = 13460095289871124136;
+                current_block_68 = Block::Load;
             }
             ZBUFFv05ds_flush => {
-                current_block_68 = 12930649117290160518;
+                current_block_68 = Block::Flush;
             }
             _ => return Error::GENERIC.to_error_code(),
         }
-        if current_block_68 == 10092070165720998011 {
+        if current_block_68 == Block::DecodeHeader {
             // apply header to create / resize buffers
             let neededOutSize = 1 << (*zbc).params.windowLog;
             let neededInSize = BLOCKSIZE as size_t; // a block is never > BLOCKSIZE
@@ -3792,19 +3800,19 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 (*zbc).inPos = (*zbc).hPos;
                 (*zbc).hPos = 0;
                 (*zbc).stage = ZBUFFv05ds_load;
-                current_block_68 = 10512632378975961025;
+                current_block_68 = Block::Loop;
             } else {
                 (*zbc).stage = ZBUFFv05ds_read;
-                current_block_68 = 6450636197030046351;
+                current_block_68 = Block::Read;
             }
         }
-        if current_block_68 == 6450636197030046351 {
+        if current_block_68 == Block::Read {
             let neededInSize_0 = ZSTDv05_nextSrcSizeToDecompress((*zbc).zc);
             if neededInSize_0 == 0 {
                 // end of frame
                 (*zbc).stage = ZBUFFv05ds_init;
                 notDone = 0;
-                current_block_68 = 10512632378975961025;
+                current_block_68 = Block::Loop;
             } else if iend.offset_from(ip) as size_t >= neededInSize_0 {
                 // directly decode from src
                 let decodedSize = ZSTDv05_decompressContinue(
@@ -3819,22 +3827,22 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 }
                 ip = ip.add(neededInSize_0);
                 if decodedSize == 0 {
-                    current_block_68 = 10512632378975961025; // this was just a header
+                    current_block_68 = Block::Loop; // this was just a header
                 } else {
                     (*zbc).outEnd = ((*zbc).outStart).wrapping_add(decodedSize);
                     (*zbc).stage = ZBUFFv05ds_flush;
-                    current_block_68 = 10512632378975961025;
+                    current_block_68 = Block::Loop;
                 }
             } else if ip == iend {
                 // no more input
                 notDone = 0;
-                current_block_68 = 10512632378975961025;
+                current_block_68 = Block::Loop;
             } else {
                 (*zbc).stage = ZBUFFv05ds_load;
-                current_block_68 = 13460095289871124136;
+                current_block_68 = Block::Load;
             }
         }
-        if current_block_68 == 13460095289871124136 {
+        if current_block_68 == Block::Load {
             let neededInSize_1 = ZSTDv05_nextSrcSizeToDecompress((*zbc).zc);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize_1.wrapping_sub((*zbc).inPos);
@@ -3853,7 +3861,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             if loadedSize < toLoad {
                 // not enough input, wait for more
                 notDone = 0;
-                current_block_68 = 10512632378975961025;
+                current_block_68 = Block::Loop;
             } else {
                 let decodedSize_0 = ZSTDv05_decompressContinue(
                     (*zbc).zc,
@@ -3869,15 +3877,15 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 if decodedSize_0 == 0 {
                     // this was just a header
                     (*zbc).stage = ZBUFFv05ds_read;
-                    current_block_68 = 10512632378975961025;
+                    current_block_68 = Block::Loop;
                 } else {
                     (*zbc).outEnd = ((*zbc).outStart).wrapping_add(decodedSize_0);
                     (*zbc).stage = ZBUFFv05ds_flush;
-                    current_block_68 = 12930649117290160518;
+                    current_block_68 = Block::Flush;
                 }
             }
         }
-        if current_block_68 == 12930649117290160518 {
+        if current_block_68 == Block::Flush {
             let toFlushSize = ((*zbc).outEnd).wrapping_sub((*zbc).outStart);
             let flushedSize = ZBUFFv05_limitCopy(
                 op as *mut core::ffi::c_void,
