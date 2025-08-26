@@ -1430,7 +1430,6 @@ pub unsafe fn UTIL_freeFileNamesTable(table: *mut FileNamesTable) {
     free((*table).buf as *mut core::ffi::c_void);
     free(table as *mut core::ffi::c_void);
 }
-#[no_mangle]
 pub unsafe fn UTIL_allocateFileNamesTable(tableSize: size_t) -> *mut FileNamesTable {
     let fnTable = malloc(tableSize.wrapping_mul(::core::mem::size_of::<*const core::ffi::c_char>()))
         as *mut *const core::ffi::c_char;
