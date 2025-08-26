@@ -67,9 +67,9 @@ pub struct ZSTD_cpuid_t {
     pub f7b: u32,
     pub f7c: u32,
 }
-pub type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
-pub type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
-pub type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
+type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
+type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
+type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
 type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
