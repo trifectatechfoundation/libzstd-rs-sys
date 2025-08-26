@@ -4061,7 +4061,14 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
     let mut notDone = 1;
 
     while notDone != 0 {
-        let mut current_block_66: u64;
+        #[derive(Eq, PartialEq)]
+        enum Block {
+            Read,
+            Load,
+            Flush,
+            Loop,
+        }
+        let mut current_block: Block;
         match (*zbd).stage {
             ZBUFFds_init => return Error::init_missing.to_error_code(),
             ZBUFFds_loadHeader => {
@@ -4101,7 +4108,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     );
                     (*zbd).lhSize = hSize;
                     ip = ip.add(toLoad);
-                    current_block_66 = 12961834331865314435;
+                    current_block = Block::Loop;
                 } else {
                     // Consume header
                     let h1Size = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd); // == ZSTDv07_frameHeaderSize_min
@@ -4167,27 +4174,27 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                         }
                     }
                     (*zbd).stage = ZBUFFds_read;
-                    current_block_66 = 8845338526596852646;
+                    current_block = Block::Read;
                 }
             }
             ZBUFFds_read => {
-                current_block_66 = 8845338526596852646;
+                current_block = Block::Read;
             }
             ZBUFFds_load => {
-                current_block_66 = 14945149239039849694;
+                current_block = Block::Load;
             }
             ZBUFFds_flush => {
-                current_block_66 = 5181772461570869434;
+                current_block = Block::Flush;
             }
             _ => return Error::GENERIC.to_error_code(),
         }
-        if current_block_66 == 8845338526596852646 {
+        if current_block == Block::Read {
             let neededInSize = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
             if neededInSize == 0 {
                 // end of frame
                 (*zbd).stage = ZBUFFds_init;
                 notDone = 0;
-                current_block_66 = 12961834331865314435;
+                current_block = Block::Loop;
             } else if iend.offset_from(ip) as size_t >= neededInSize {
                 // decode directly from src
                 let isSkipFrame = ZSTDv07_isSkipFrame((*zbd).zd);
@@ -4208,22 +4215,22 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 ip = ip.add(neededInSize);
                 if decodedSize == 0 && isSkipFrame == 0 {
                     // this was just a header
-                    current_block_66 = 12961834331865314435;
+                    current_block = Block::Loop;
                 } else {
                     (*zbd).outEnd = ((*zbd).outStart).wrapping_add(decodedSize);
                     (*zbd).stage = ZBUFFds_flush;
-                    current_block_66 = 12961834331865314435;
+                    current_block = Block::Loop;
                 }
             } else if ip == iend {
                 // no more input
                 notDone = 0;
-                current_block_66 = 12961834331865314435;
+                current_block = Block::Loop;
             } else {
                 (*zbd).stage = ZBUFFds_load;
-                current_block_66 = 14945149239039849694;
+                current_block = Block::Load;
             }
         }
-        if current_block_66 == 14945149239039849694 {
+        if current_block == Block::Load {
             let neededInSize_0 = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize_0.wrapping_sub((*zbd).inPos);
@@ -4242,7 +4249,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             if loadedSize < toLoad {
                 // not enough input, wait for more
                 notDone = 0;
-                current_block_66 = 12961834331865314435;
+                current_block = Block::Loop;
             } else {
                 // decode loaded input
                 let isSkipFrame_0 = ZSTDv07_isSkipFrame((*zbd).zd);
@@ -4259,15 +4266,15 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 (*zbd).inPos = 0; // input is consumed
                 if decodedSize_0 == 0 && isSkipFrame_0 == 0 {
                     (*zbd).stage = ZBUFFds_read;
-                    current_block_66 = 12961834331865314435;
+                    current_block = Block::Loop;
                 } else {
                     (*zbd).outEnd = ((*zbd).outStart).wrapping_add(decodedSize_0);
                     (*zbd).stage = ZBUFFds_flush;
-                    current_block_66 = 5181772461570869434;
+                    current_block = Block::Flush;
                 }
             }
         }
-        if current_block_66 == 5181772461570869434 {
+        if current_block == Block::Flush {
             let toFlushSize = ((*zbd).outEnd).wrapping_sub((*zbd).outStart);
             let flushedSize = ZBUFFv07_limitCopy(
                 op as *mut core::ffi::c_void,
