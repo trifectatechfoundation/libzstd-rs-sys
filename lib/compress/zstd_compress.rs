@@ -1,4 +1,3 @@
-use core::arch::asm;
 use core::ptr;
 
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
