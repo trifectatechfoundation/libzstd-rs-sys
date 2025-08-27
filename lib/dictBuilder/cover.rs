@@ -486,7 +486,7 @@ unsafe fn COVER_ctx_destroy(ctx: *mut COVER_ctx_t) {
     }
 }
 unsafe fn COVER_ctx_init(
-    ctx: *mut COVER_ctx_t,
+    ctx: &mut COVER_ctx_t,
     samplesBuffer: *const core::ffi::c_void,
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
@@ -516,7 +516,7 @@ unsafe fn COVER_ctx_init(
     } else {
         totalSamplesSize
     };
-    (*ctx).displayLevel = displayLevel;
+    ctx.displayLevel = displayLevel;
     if totalSamplesSize
         < (if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
@@ -561,7 +561,11 @@ unsafe fn COVER_ctx_init(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<COVER_ctx_t>());
+    ptr::write_bytes(
+        &raw mut *ctx as *mut u8,
+        0,
+        ::core::mem::size_of::<COVER_ctx_t>(),
+    );
     if displayLevel >= 2 {
         eprintln!(
             "Training on {} samples of total size {}",
@@ -574,39 +578,39 @@ unsafe fn COVER_ctx_init(
             nbTestSamples, testSamplesSize,
         );
     }
-    (*ctx).samples = samples;
-    (*ctx).samplesSizes = samplesSizes;
-    (*ctx).nbSamples = nbSamples as size_t;
-    (*ctx).nbTrainSamples = nbTrainSamples as size_t;
-    (*ctx).nbTestSamples = nbTestSamples as size_t;
-    (*ctx).suffixSize = trainingSamplesSize
+    ctx.samples = samples;
+    ctx.samplesSizes = samplesSizes;
+    ctx.nbSamples = nbSamples as size_t;
+    ctx.nbTrainSamples = nbTrainSamples as size_t;
+    ctx.nbTestSamples = nbTestSamples as size_t;
+    ctx.suffixSize = trainingSamplesSize
         .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
             ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
-    (*ctx).suffix =
-        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
-    (*ctx).dmerAt =
-        malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
-    (*ctx).offsets = malloc(
+    ctx.suffix =
+        malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.dmerAt =
+        malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.offsets = malloc(
         (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
     ) as *mut size_t;
-    if ((*ctx).suffix).is_null() || ((*ctx).dmerAt).is_null() || ((*ctx).offsets).is_null() {
+    if (ctx.suffix).is_null() || (ctx.dmerAt).is_null() || (ctx.offsets).is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate scratch buffers");
         }
         COVER_ctx_destroy(ctx);
         return Error::memory_allocation.to_error_code();
     }
-    (*ctx).freqs = core::ptr::null_mut();
-    (*ctx).d = d;
+    ctx.freqs = core::ptr::null_mut();
+    ctx.d = d;
     let mut i: u32 = 0;
-    *((*ctx).offsets).offset(0) = 0;
+    *(ctx.offsets).offset(0) = 0;
     i = 1;
     while i <= nbSamples {
-        *((*ctx).offsets).offset(i as isize) = (*((*ctx).offsets)
+        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets)
             .offset(i.wrapping_sub(1) as isize))
         .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
@@ -616,8 +620,8 @@ unsafe fn COVER_ctx_init(
     }
     let mut i_0: u32 = 0;
     i_0 = 0;
-    while (i_0 as size_t) < (*ctx).suffixSize {
-        *((*ctx).suffix).offset(i_0 as isize) = i_0;
+    while (i_0 as size_t) < ctx.suffixSize {
+        *(ctx.suffix).offset(i_0 as isize) = i_0;
         i_0 = i_0.wrapping_add(1);
     }
     stableSort(ctx);
@@ -625,11 +629,11 @@ unsafe fn COVER_ctx_init(
         eprintln!("Computing frequencies");
     }
     COVER_groupBy(
-        (*ctx).suffix as *const core::ffi::c_void,
-        (*ctx).suffixSize,
+        ctx.suffix as *const core::ffi::c_void,
+        ctx.suffixSize,
         ::core::mem::size_of::<u32>(),
         ctx,
-        if (*ctx).d <= 8 {
+        if ctx.d <= 8 {
             Some(
                 COVER_cmp8
                     as unsafe extern "C" fn(
@@ -657,8 +661,8 @@ unsafe fn COVER_ctx_init(
                 ) -> (),
         ),
     );
-    (*ctx).freqs = (*ctx).suffix;
-    (*ctx).suffix = core::ptr::null_mut();
+    ctx.freqs = ctx.suffix;
+    ctx.suffix = core::ptr::null_mut();
     0
 }
 pub(super) unsafe fn COVER_warnOnSmallCorpus(
@@ -993,8 +997,8 @@ pub(super) unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
 }
 pub(super) unsafe fn COVER_best_destroy(best: &mut COVER_best_t) {
     COVER_best_wait(best);
-    if !((*best).dict).is_null() {
-        free((*best).dict);
+    if !(best.dict).is_null() {
+        free(best.dict);
     }
 }
 pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
