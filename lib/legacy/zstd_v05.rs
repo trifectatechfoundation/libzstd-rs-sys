@@ -2775,7 +2775,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
     }
     ip.offset_from(istart) as size_t
 }
-unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: &mut seqState_t) {
+unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
     let mut litLength: size_t = 0;
     let mut prevOffset: size_t = 0;
     let mut offset: size_t = 0;
@@ -2784,7 +2784,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: &mut seqState_t) {
     let de = seqState.dumpsEnd;
     litLength = FSEv05_peakSymbol(&mut seqState.stateLL) as size_t;
     prevOffset = if litLength != 0 {
-        (*seq).offset
+        seq.offset
     } else {
         seqState.prevOffset
     };
@@ -2826,7 +2826,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: &mut seqState_t) {
         offset = prevOffset;
     }
     if offsetCode | (litLength == 0) as core::ffi::c_int as u32 != 0 {
-        seqState.prevOffset = (*seq).offset;
+        seqState.prevOffset = seq.offset;
     }
     FSEv05_decodeSymbol(&mut seqState.stateOffb, &mut seqState.DStream);
     FSEv05_decodeSymbol(&mut seqState.stateLL, &mut seqState.DStream);
@@ -2859,9 +2859,9 @@ unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: &mut seqState_t) {
         }
     }
     matchLength = matchLength.wrapping_add(MINMATCH as size_t);
-    (*seq).litLength = litLength;
-    (*seq).offset = offset;
-    (*seq).matchLength = matchLength;
+    seq.litLength = litLength;
+    seq.offset = offset;
+    seq.matchLength = matchLength;
     seqState.dumps = dumps;
 }
 unsafe fn ZSTDv05_execSequence(
@@ -3024,11 +3024,6 @@ unsafe fn ZSTDv05_decompressSequences(
     }
     ip = ip.add(errorCode);
     if nbSeq != 0 {
-        let mut sequence = seq_t {
-            litLength: 0,
-            matchLength: 0,
-            offset: 0,
-        };
         let mut seqState = seqState_t {
             DStream: BITv05_DStream_t::default(),
             stateLL: FSEv05_DState_t::default(),
@@ -3038,12 +3033,12 @@ unsafe fn ZSTDv05_decompressSequences(
             dumps,
             dumpsEnd: dumps.add(dumpsLength),
         };
-        ptr::write_bytes(
-            &mut sequence as *mut seq_t as *mut u8,
-            0,
-            ::core::mem::size_of::<seq_t>(),
-        );
-        sequence.offset = REPCODE_STARTVALUE as size_t;
+
+        let mut sequence = seq_t {
+            litLength: 0,
+            matchLength: 0,
+            offset: REPCODE_STARTVALUE as size_t,
+        };
         errorCode = BITv05_initDStream(
             &mut seqState.DStream,
             ip as *const core::ffi::c_void,
