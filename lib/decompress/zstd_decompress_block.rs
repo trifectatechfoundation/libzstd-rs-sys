@@ -2173,7 +2173,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         for seqNb in nbSeq - seqAdvance..nbSeq {
             let sequence = &mut sequences[(seqNb & STORED_SEQS_MASK) as usize];
             if dctx.litBufferLocation == LitLocation::ZSTD_split
-                && litPtr.add((*sequence).litLength) > dctx.litBufferEnd
+                && litPtr.add(sequence.litLength) > dctx.litBufferEnd
             {
                 let leftoverLit_0 = (dctx.litBufferEnd).offset_from(litPtr) as size_t;
                 if leftoverLit_0 != 0 {
@@ -2181,7 +2181,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         return Error::dstSize_tooSmall.to_error_code();
                     }
                     ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit_0);
-                    (*sequence).litLength = ((*sequence).litLength).wrapping_sub(leftoverLit_0);
+                    sequence.litLength = (sequence.litLength).wrapping_sub(leftoverLit_0);
                     op = op.add(leftoverLit_0);
                 }
                 litPtr = (dctx.litExtraBuffer).as_mut_ptr();
@@ -2206,7 +2206,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     ZSTD_execSequenceSplitLitBuffer(
                         op,
                         oend,
-                        litPtr.add((*sequence).litLength).sub(WILDCOPY_OVERLENGTH),
+                        litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
                         *sequence,
                         &mut litPtr,
                         litBufferEnd,
