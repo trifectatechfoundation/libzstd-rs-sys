@@ -452,28 +452,40 @@ pub unsafe fn ZSTD_fillHashTable(
         ZSTD_fillHashTableForCCtx(ms, end, dtlm);
     };
 }
+
 unsafe fn ZSTD_match4Found_cmov(
     currentPtr: *const u8,
     matchAddress: *const u8,
     matchIdx: u32,
     idxLowLimit: u32,
 ) -> core::ffi::c_int {
-    static dummy: [u8; 4] = [
-        0x12 as core::ffi::c_int as u8,
-        0x34 as core::ffi::c_int as u8,
-        0x56 as core::ffi::c_int as u8,
-        0x78 as core::ffi::c_int as u8,
-    ];
+    // Array of ~random data, should have low probability of matching data.
+    // Load from here if the index is invalid.
+    // Used to avoid unpredictable branches.
+    static dummy: [u8; 4] = [0x12, 0x34, 0x56, 0x78];
+
+    // currentIdx >= lowLimit is a (somewhat) unpredictable branch.
+    // However expression below compiles into conditional move.
     let mvalAddr =
         core::hint::select_unpredictable(matchIdx >= idxLowLimit, matchAddress, dummy.as_ptr());
+
+    // Note: this used to be written as : return test1 && test2;
+    // Unfortunately, once inlined, these tests become branches,
+    // in which case it becomes critical that they are executed in the right order (test1 then test2).
+    // So we have to write these tests in a specific manner to ensure their ordering.
     if MEM_read32(currentPtr as *const core::ffi::c_void)
         != MEM_read32(mvalAddr as *const core::ffi::c_void)
     {
         return 0;
     }
+
+    // force ordering of these tests, which matters once the function is inlined, as they become branches.
+    #[cfg(not(target_family = "wasm"))]
     asm!("", options(preserves_flags));
+
     (matchIdx >= idxLowLimit) as core::ffi::c_int
 }
+
 unsafe fn ZSTD_match4Found_branch(
     currentPtr: *const u8,
     matchAddress: *const u8,
