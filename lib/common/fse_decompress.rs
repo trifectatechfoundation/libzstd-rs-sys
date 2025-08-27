@@ -355,7 +355,7 @@ fn FSE_decompress_wksp_body(
                         as core::ffi::c_ulonglong,
                 ),
         )
-        .wrapping_add(((FSE_MAX_SYMBOL_VALUE + 1) / 2) as core::ffi::c_ulonglong)
+        .wrapping_add(FSE_MAX_SYMBOL_VALUE.div_ceil(2) as core::ffi::c_ulonglong)
         .wrapping_add(1)
         .wrapping_mul(
             ::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong
