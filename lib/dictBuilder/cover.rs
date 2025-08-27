@@ -15,13 +15,6 @@ use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::lib::zdict::ZDICT_params_t;
 
 extern "C" {
-    fn qsort_r(
-        __base: *mut core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        __compar: __compar_d_fn_t,
-        __arg: *mut core::ffi::c_void,
-    );
     fn clock() -> clock_t;
 }
 type __clock_t = core::ffi::c_long;
@@ -239,55 +232,18 @@ unsafe extern "C" fn COVER_cmp8(
     }
     (lhs > rhs) as core::ffi::c_int
 }
-unsafe extern "C" fn COVER_strict_cmp(
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-    g_coverCtx: *mut core::ffi::c_void,
-) -> core::ffi::c_int {
-    let mut result = COVER_cmp(g_coverCtx as *mut COVER_ctx_t, lp, rp);
-    if result == 0 {
-        result = if lp < rp { -(1) } else { 1 };
-    }
-    result
+
+unsafe fn stableSort(ctx: &mut COVER_ctx_t) {
+    let suffix = core::slice::from_raw_parts_mut(ctx.suffix, ctx.suffixSize);
+
+    suffix.sort_by(|lp, rp| {
+        let lhs = core::slice::from_raw_parts(ctx.samples.add(*lp as usize), ctx.d as size_t);
+        let rhs = core::slice::from_raw_parts(ctx.samples.add(*rp as usize), ctx.d as size_t);
+
+        lhs.cmp(rhs)
+    });
 }
-unsafe extern "C" fn COVER_strict_cmp8(
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-    g_coverCtx: *mut core::ffi::c_void,
-) -> core::ffi::c_int {
-    let mut result = COVER_cmp8(g_coverCtx as *mut COVER_ctx_t, lp, rp);
-    if result == 0 {
-        result = if lp < rp { -(1) } else { 1 };
-    }
-    result
-}
-unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
-    qsort_r(
-        ctx.suffix as *mut core::ffi::c_void,
-        ctx.suffixSize,
-        ::core::mem::size_of::<u32>(),
-        if ctx.d <= 8 {
-            Some(
-                COVER_strict_cmp8
-                    as unsafe extern "C" fn(
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                        *mut core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
-        } else {
-            Some(
-                COVER_strict_cmp
-                    as unsafe extern "C" fn(
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                        *mut core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
-        },
-        &raw mut *ctx as *mut core::ffi::c_void,
-    );
-}
+
 unsafe fn COVER_lower_bound(
     mut first: *const size_t,
     last: *const size_t,
