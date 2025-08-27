@@ -1,8 +1,7 @@
 use core::ptr;
+use std::sync::{Condvar, Mutex};
 
-use libc::{
-    calloc, free, malloc, memcpy, size_t, PTHREAD_COND_INITIALIZER, PTHREAD_MUTEX_INITIALIZER,
-};
+use libc::{calloc, free, malloc, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
@@ -820,8 +819,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_t {
-        mutex: PTHREAD_MUTEX_INITIALIZER,
-        cond: PTHREAD_COND_INITIALIZER,
+        mutex: Mutex::new(()),
+        cond: Condvar::new(),
         liveJobs: 0,
         dict: core::ptr::null_mut::<core::ffi::c_void>(),
         dictSize: 0,
