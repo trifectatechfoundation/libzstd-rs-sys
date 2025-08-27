@@ -1,14 +1,15 @@
 use core::ptr;
 use std::sync::{Condvar, Mutex};
+use std::thread::JoinHandle;
 
-use libc::{calloc, free, pthread_attr_t, pthread_create, pthread_join, pthread_t, size_t};
+use libc::{calloc, free, size_t};
 
 use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
 #[repr(C)]
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
-    threads: *mut pthread_t,
+    threads: *mut JoinHandle<()>,
     threadCapacity: size_t,
     threadLimit: size_t,
     queue: *mut POOL_job,
@@ -22,6 +23,10 @@ pub struct POOL_ctx {
     queuePopCond: Condvar,
     shutdown: core::ffi::c_int,
 }
+
+struct SendPoolCtxPtr(*mut POOL_ctx);
+unsafe impl Send for SendPoolCtxPtr {}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(crate) struct POOL_job {
@@ -52,16 +57,15 @@ unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZST
         }
     }
 }
-unsafe fn POOL_thread(opaque: *mut core::ffi::c_void) -> *mut core::ffi::c_void {
-    let ctx = opaque as *mut POOL_ctx;
+unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     if ctx.is_null() {
-        return core::ptr::null_mut();
+        return;
     }
     loop {
         let mut guard = (*ctx).queueMutex.lock().unwrap();
         while (*ctx).queueEmpty != 0 || (*ctx).numThreadsBusy >= (*ctx).threadLimit {
             if (*ctx).shutdown != 0 {
-                return opaque;
+                return;
             }
             guard = (*ctx).queuePopCond.wait(guard).unwrap();
         }
@@ -113,32 +117,24 @@ pub(crate) unsafe fn POOL_create_advanced(
     ptr::write(ptr::addr_of_mut!((*ctx).queuePopCond), Condvar::new());
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>()),
+        numThreads.wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
         customMem,
-    ) as *mut pthread_t;
+    ) as *mut JoinHandle<()>;
     (*ctx).threadCapacity = 0;
     (*ctx).customMem = customMem;
     if ((*ctx).threads).is_null() || ((*ctx).queue).is_null() {
         POOL_free(ctx);
         return core::ptr::null_mut();
     }
-    let mut i: size_t = 0;
-    i = 0;
-    while i < numThreads {
-        if pthread_create(
-            &mut *((*ctx).threads).add(i),
-            core::ptr::null::<pthread_attr_t>(),
-            core::mem::transmute(
-                POOL_thread as unsafe fn(*mut core::ffi::c_void) -> *mut core::ffi::c_void,
-            ),
-            ctx as *mut core::ffi::c_void,
-        ) != 0
-        {
-            (*ctx).threadCapacity = i;
-            POOL_free(ctx);
-            return core::ptr::null_mut();
-        }
-        i = i.wrapping_add(1);
+    for i in 0..numThreads {
+        let ctx = SendPoolCtxPtr(ctx);
+        core::ptr::write(
+            ((*ctx.0).threads).add(i),
+            std::thread::spawn(|| {
+                let ctx = ctx;
+                POOL_thread(ctx.0)
+            }),
+        );
     }
     (*ctx).threadCapacity = numThreads;
     (*ctx).threadLimit = numThreads;
@@ -150,11 +146,8 @@ unsafe fn POOL_join(ctx: *mut POOL_ctx) {
     drop(guard);
     (*ctx).queuePushCond.notify_all();
     (*ctx).queuePopCond.notify_all();
-    let mut i: size_t = 0;
-    i = 0;
-    while i < (*ctx).threadCapacity {
-        pthread_join(*((*ctx).threads).add(i), core::ptr::null_mut());
-        i = i.wrapping_add(1);
+    for i in 0..(*ctx).threadCapacity {
+        core::ptr::read(((*ctx).threads).add(i)).join().unwrap();
     }
 }
 pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
@@ -185,7 +178,9 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
     }
     (::core::mem::size_of::<POOL_ctx>())
         .wrapping_add(((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>()))
-        .wrapping_add(((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()))
+        .wrapping_add(
+            ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
+        )
 }
 unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
     if numThreads <= (*ctx).threadCapacity {
@@ -196,35 +191,28 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
         return 0;
     }
     let threadPool = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>()),
+        numThreads.wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
         (*ctx).customMem,
-    ) as *mut pthread_t;
+    ) as *mut JoinHandle<()>;
     if threadPool.is_null() {
         return 1;
     }
     libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
-        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<pthread_t>()),
+        ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
     );
     ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
     (*ctx).threads = threadPool;
-    let mut threadId: size_t = 0;
-    threadId = (*ctx).threadCapacity;
-    while threadId < numThreads {
-        if pthread_create(
-            &mut *threadPool.add(threadId),
-            core::ptr::null::<pthread_attr_t>(),
-            core::mem::transmute(
-                POOL_thread as unsafe fn(*mut core::ffi::c_void) -> *mut core::ffi::c_void,
-            ),
-            ctx as *mut core::ffi::c_void,
-        ) != 0
-        {
-            (*ctx).threadCapacity = threadId;
-            return 1;
-        }
-        threadId = threadId.wrapping_add(1);
+    for threadId in (*ctx).threadCapacity..numThreads {
+        let ctx = SendPoolCtxPtr(ctx);
+        core::ptr::write(
+            ((*ctx.0).threads).add(threadId),
+            std::thread::spawn(|| {
+                let ctx = ctx;
+                POOL_thread(ctx.0)
+            }),
+        );
     }
     (*ctx).threadCapacity = numThreads;
     (*ctx).threadLimit = numThreads;
