@@ -556,7 +556,7 @@ pub const DDICT_HASHSET_RESIZE_FACTOR: core::ffi::c_int = 2;
 
 fn ZSTD_DDictHashSet_getIndex(hashSet: &ZSTD_DDictHashSet, dictID: u32) -> size_t {
     let hash = ZSTD_XXH64_slice(&dictID.to_ne_bytes(), 0);
-    hash as size_t & ((*hashSet).ddictPtrTableSize).wrapping_sub(1)
+    hash as size_t & (hashSet.ddictPtrTableSize).wrapping_sub(1)
 }
 
 unsafe fn ZSTD_DDictHashSet_emplaceDDict(
@@ -565,23 +565,23 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
 ) -> size_t {
     let dictID = ZSTD_getDictID_fromDDict(ddict);
     let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
-    let idxRangeMask = ((*hashSet).ddictPtrTableSize).wrapping_sub(1);
-    if (*hashSet).ddictPtrCount == (*hashSet).ddictPtrTableSize {
+    let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
+    if hashSet.ddictPtrCount == hashSet.ddictPtrTableSize {
         return Error::GENERIC.to_error_code();
     }
-    while !(*((*hashSet).ddictPtrTable).add(idx)).is_null() {
-        if ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).add(idx)) == dictID {
-            let fresh0 = &mut (*((*hashSet).ddictPtrTable).add(idx));
+    while !(*(hashSet.ddictPtrTable).add(idx)).is_null() {
+        if ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) == dictID {
+            let fresh0 = &mut (*(hashSet.ddictPtrTable).add(idx));
             *fresh0 = ddict;
             return 0;
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
-    let fresh1 = &mut (*((*hashSet).ddictPtrTable).add(idx));
+    let fresh1 = &mut (*(hashSet.ddictPtrTable).add(idx));
     *fresh1 = ddict;
-    (*hashSet).ddictPtrCount = ((*hashSet).ddictPtrCount).wrapping_add(1);
-    (*hashSet).ddictPtrCount;
+    hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
+    hashSet.ddictPtrCount;
     0
 }
 
@@ -589,20 +589,20 @@ unsafe fn ZSTD_DDictHashSet_expand(
     hashSet: &mut ZSTD_DDictHashSet,
     customMem: ZSTD_customMem,
 ) -> size_t {
-    let newTableSize = (*hashSet).ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
+    let newTableSize = hashSet.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let newTable = ZSTD_customCalloc(
         (::core::mem::size_of::<*mut ZSTD_DDict>()).wrapping_mul(newTableSize),
         customMem,
     ) as *mut *const ZSTD_DDict;
-    let oldTable = (*hashSet).ddictPtrTable;
-    let oldTableSize = (*hashSet).ddictPtrTableSize;
+    let oldTable = hashSet.ddictPtrTable;
+    let oldTableSize = hashSet.ddictPtrTableSize;
     let mut i: size_t = 0;
     if newTable.is_null() {
         return Error::memory_allocation.to_error_code();
     }
-    (*hashSet).ddictPtrTable = newTable;
-    (*hashSet).ddictPtrTableSize = newTableSize;
-    (*hashSet).ddictPtrCount = 0;
+    hashSet.ddictPtrTable = newTable;
+    hashSet.ddictPtrTableSize = newTableSize;
+    hashSet.ddictPtrCount = 0;
     i = 0;
     while i < oldTableSize {
         if !(*oldTable.add(i)).is_null() {
@@ -622,16 +622,16 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
     dictID: u32,
 ) -> *const ZSTD_DDict {
     let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
-    let idxRangeMask = ((*hashSet).ddictPtrTableSize).wrapping_sub(1);
+    let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
     loop {
-        let currDictID = ZSTD_getDictID_fromDDict(*((*hashSet).ddictPtrTable).add(idx)) as size_t;
+        let currDictID = ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) as size_t;
         if currDictID == dictID as size_t || currDictID == 0 {
             break;
         }
         idx &= idxRangeMask;
         idx = idx.wrapping_add(1);
     }
-    *((*hashSet).ddictPtrTable).add(idx)
+    *(hashSet.ddictPtrTable).add(idx)
 }
 
 unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
@@ -3451,8 +3451,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
 
     // result
-    input.pos = ip.offset_from((*input).src as *const core::ffi::c_char) as size_t;
-    output.pos = op.offset_from((*output).dst as *mut core::ffi::c_char) as size_t;
+    input.pos = ip.offset_from(input.src as *const core::ffi::c_char) as size_t;
+    output.pos = op.offset_from(output.dst as *mut core::ffi::c_char) as size_t;
 
     // Update the expected output buffer for ZSTD_obm_stable.
     (*zds).expectedOutBuffer = *output;
