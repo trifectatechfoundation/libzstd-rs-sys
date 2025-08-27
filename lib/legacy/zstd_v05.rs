@@ -174,9 +174,9 @@ const REPCODE_STARTVALUE: core::ffi::c_int = 1;
 const MLbits: core::ffi::c_int = 7;
 const LLbits: core::ffi::c_int = 6;
 const Offbits: core::ffi::c_int = 5;
-const MaxML: core::ffi::c_int = ((1) << MLbits) - 1;
-const MaxLL: core::ffi::c_int = ((1) << LLbits) - 1;
-const MaxOff: core::ffi::c_int = ((1) << Offbits) - 1;
+const MaxML: core::ffi::c_int = (1 << MLbits) - 1;
+const MaxLL: core::ffi::c_int = (1 << LLbits) - 1;
+const MaxOff: core::ffi::c_int = (1 << Offbits) - 1;
 const MLFSEv05Log: core::ffi::c_int = 10;
 const LLFSEv05Log: core::ffi::c_int = 10;
 const OffFSEv05Log: core::ffi::c_int = 9;
@@ -420,42 +420,31 @@ unsafe fn FSEv05_buildDTable(
     let mut highThreshold = tableSize.wrapping_sub(1);
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
     let mut noLarge = 1;
-    let mut s: u32 = 0;
     if maxSymbolValue > FSEv05_MAX_SYMBOL_VALUE as core::ffi::c_uint {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     if tableLog > FSEv05_MAX_TABLELOG as core::ffi::c_uint {
         return Error::tableLog_tooLarge.to_error_code();
     }
-    memset(
-        tableDecode as *mut core::ffi::c_void,
-        0,
-        (::core::mem::size_of::<u8>()).wrapping_mul(maxSymbolValue.wrapping_add(1) as size_t),
-    );
+    ptr::write_bytes(tableDecode as *mut u8, 0, maxSymbolValue as size_t + 1);
     DTableH.tableLog = tableLog as u16;
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
             let fresh0 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             (*tableDecode.offset(fresh0 as isize)).symbol = s as u8;
-            *symbolNext.as_mut_ptr().offset(s as isize) = 1;
+            symbolNext[s as usize] = 1;
         } else {
-            if *normalizedCounter.offset(s as isize) as core::ffi::c_int
-                >= largeLimit as core::ffi::c_int
-            {
+            if *normalizedCounter.add(s as usize) >= largeLimit {
                 noLarge = 0;
             }
-            *symbolNext.as_mut_ptr().offset(s as isize) =
-                *normalizedCounter.offset(s as isize) as u16;
+            symbolNext[s as usize] = *normalizedCounter.add(s as usize) as u16;
         }
-        s = s.wrapping_add(1);
     }
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         let mut i: core::ffi::c_int = 0;
         i = 0;
-        while i < *normalizedCounter.offset(s as isize) as core::ffi::c_int {
+        while i < *normalizedCounter.add(s as usize) as core::ffi::c_int {
             (*tableDecode.offset(position as isize)).symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
@@ -463,7 +452,6 @@ unsafe fn FSEv05_buildDTable(
             }
             i += 1;
         }
-        s = s.wrapping_add(1);
     }
     if position != 0 {
         return Error::GENERIC.to_error_code();
@@ -2688,7 +2676,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.offset(1);
             FSEv05_buildDTable_rle(
                 DTableOffb,
-                (*fresh42 as core::ffi::c_int & MaxOff) as core::ffi::c_uchar,
+                *fresh42 as core::ffi::c_uchar & (MaxOff as core::ffi::c_uchar),
             );
         }
         0 => {
@@ -2701,10 +2689,10 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             }
         }
         3 | _ => {
-            let mut max_0 = MaxOff as core::ffi::c_uint;
+            let mut max = MaxOff as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
-                &mut max_0,
+                &mut max,
                 &mut Offlog,
                 ip as *const core::ffi::c_void,
                 iend.offset_from(ip) as size_t,
@@ -2716,7 +2704,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max_0, Offlog);
+            FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog);
         }
     }
     match MLtype {
@@ -2739,10 +2727,10 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             }
         }
         3 | _ => {
-            let mut max_1 = MaxML as core::ffi::c_uint;
+            let mut max = MaxML as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
-                &mut max_1,
+                &mut max,
                 &mut MLlog,
                 ip as *const core::ffi::c_void,
                 iend.offset_from(ip) as size_t,
@@ -2754,7 +2742,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max_1, MLlog);
+            FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog);
         }
     }
     ip.offset_from(istart) as size_t
