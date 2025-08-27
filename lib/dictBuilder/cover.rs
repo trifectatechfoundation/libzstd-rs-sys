@@ -261,12 +261,12 @@ unsafe extern "C" fn COVER_strict_cmp8(
     }
     result
 }
-unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
+unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
     qsort_r(
-        (*ctx).suffix as *mut core::ffi::c_void,
-        (*ctx).suffixSize,
+        ctx.suffix as *mut core::ffi::c_void,
+        ctx.suffixSize,
         ::core::mem::size_of::<u32>(),
-        if (*ctx).d <= 8 {
+        if ctx.d <= 8 {
             Some(
                 COVER_strict_cmp8
                     as unsafe extern "C" fn(
@@ -285,7 +285,7 @@ unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
                     ) -> core::ffi::c_int,
             )
         },
-        ctx as *mut core::ffi::c_void,
+        &raw mut *ctx as *mut core::ffi::c_void,
     );
 }
 unsafe fn COVER_lower_bound(
@@ -590,10 +590,8 @@ unsafe fn COVER_ctx_init(
             ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
-    ctx.suffix =
-        malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
-    ctx.dmerAt =
-        malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.suffix = malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.dmerAt = malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     ctx.offsets = malloc(
         (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
     ) as *mut size_t;
@@ -610,9 +608,8 @@ unsafe fn COVER_ctx_init(
     *(ctx.offsets).offset(0) = 0;
     i = 1;
     while i <= nbSamples {
-        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets)
-            .offset(i.wrapping_sub(1) as isize))
-        .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
+        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets).offset(i.wrapping_sub(1) as isize))
+            .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
     }
     if displayLevel >= 2 {
