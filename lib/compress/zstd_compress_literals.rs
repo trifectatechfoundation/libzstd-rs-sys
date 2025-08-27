@@ -256,7 +256,7 @@ pub unsafe fn ZSTD_compressLiterals(
         hType = set_repeat;
     }
     let minGain = ZSTD_minGain(srcSize, strategy);
-    if cLitSize == 0 || cLitSize >= srcSize.wrapping_sub(minGain) || ERR_isError(cLitSize) != 0 {
+    if cLitSize == 0 || cLitSize >= srcSize.wrapping_sub(minGain) || ERR_isError(cLitSize) {
         libc::memcpy(
             nextHuf as *mut core::ffi::c_void,
             prevHuf as *const core::ffi::c_void,
