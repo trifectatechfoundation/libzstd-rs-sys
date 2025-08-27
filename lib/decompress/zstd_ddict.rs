@@ -58,7 +58,6 @@ pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = DictLoadMethod::ByRef as _;
 
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 #[inline]
 unsafe extern "C" fn ZSTD_customMalloc(
     size: size_t,
@@ -145,7 +144,7 @@ unsafe fn ZSTD_loadEntropy_intoDDict(
 
     let ret = ZSTD_loadDEntropy(&mut (*ddict).entropy, dict);
 
-    if ERR_isError(ret) != 0 {
+    if ERR_isError(ret) {
         return Error::dictionary_corrupted.to_error_code();
     }
 
@@ -184,7 +183,7 @@ unsafe fn ZSTD_initDDict_internal(
     (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
 
     let err_code = ZSTD_loadEntropy_intoDDict(ddict, dictContentType);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
 
@@ -213,7 +212,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     let initResult =
         ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType);
 
-    if ERR_isError(initResult) != 0 {
+    if ERR_isError(initResult) {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
     }
@@ -283,7 +282,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
         dictContentType,
     );
 
-    if ERR_isError(ret) != 0 {
+    if ERR_isError(ret) {
         return core::ptr::null_mut();
     }
 

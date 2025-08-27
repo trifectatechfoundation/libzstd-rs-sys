@@ -133,7 +133,6 @@ pub struct HUF_DecompressFastArgs<'a> {
 
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
-pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 
 unsafe fn HUF_initFastDStream(ip: *const u8) -> size_t {
     let lastByte = *ip.offset(7);
@@ -331,7 +330,7 @@ pub fn HUF_readDTableX1_wksp(
         &mut wksp.statsWksp,
         flags,
     );
-    if ERR_isError(iSize) != 0 {
+    if ERR_isError(iSize) {
         return iSize;
     }
 
@@ -838,7 +837,7 @@ unsafe fn HUF_decompress4X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags);
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if hSize as usize >= src.len() {
@@ -1038,7 +1037,7 @@ pub fn HUF_readDTableX2_wksp(
         &mut wksp.calleeWksp,
         flags,
     );
-    if ERR_isError(iSize) != 0 {
+    if ERR_isError(iSize) {
         return iSize;
     }
     if tableLog > maxTableLog {
@@ -1670,7 +1669,7 @@ pub unsafe fn HUF_decompress1X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if hSize as usize >= src.len() {
@@ -1688,7 +1687,7 @@ unsafe fn HUF_decompress4X2_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if hSize as usize >= src.len() {
@@ -2004,7 +2003,7 @@ pub unsafe fn HUF_decompress1X1_DCtx_wksp(
     flags: core::ffi::c_int,
 ) -> size_t {
     let hSize = { HUF_readDTableX1_wksp(dctx, src, workSpace, flags) };
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if hSize as usize >= src.len() {

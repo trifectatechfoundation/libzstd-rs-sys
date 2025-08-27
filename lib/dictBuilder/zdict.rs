@@ -121,7 +121,7 @@ unsafe fn ZDICT_printHex(ptr: *const core::ffi::c_void, length: size_t) {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
 pub unsafe extern "C" fn ZDICT_isError(errorCode: size_t) -> core::ffi::c_uint {
-    ERR_isError(errorCode)
+    ERR_isError(errorCode) as _
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getErrorName))]
 pub unsafe extern "C" fn ZDICT_getErrorName(errorCode: size_t) -> *const core::ffi::c_char {
@@ -801,7 +801,7 @@ unsafe fn ZDICT_countEStats(
         srcSize = blockSizeMax;
     }
     let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
-    if ERR_isError(errorCode) != 0 {
+    if ERR_isError(errorCode) {
         if notificationLevel >= 1 {
             eprintln!("warning : ZSTD_compressBegin_usingCDict failed");
         }
@@ -814,7 +814,7 @@ unsafe fn ZDICT_countEStats(
         src,
         srcSize,
     );
-    if ERR_isError(cSize) != 0 {
+    if ERR_isError(cSize) {
         if notificationLevel >= 3 {
             eprintln!("warning : could not compress sample size {} ", srcSize);
         }
@@ -1078,7 +1078,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
                 ::core::mem::size_of::<[u32; 1216]>(),
             );
-            if ERR_isError(maxNbBits) != 0 {
+            if ERR_isError(maxNbBits) {
                 eSize = maxNbBits;
                 if notificationLevel >= 1 {
                     eprintln!(" HUF_buildCTable error");
@@ -1126,7 +1126,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     offcodeMax,
                     1,
                 );
-                if ERR_isError(errorCode) != 0 {
+                if ERR_isError(errorCode) {
                     eSize = errorCode;
                     if notificationLevel >= 1 {
                         eprintln!("FSE_normalizeCount error with offcodeCount");
@@ -1148,7 +1148,7 @@ unsafe fn ZDICT_analyzeEntropy(
                         MaxML as core::ffi::c_uint,
                         1,
                     );
-                    if ERR_isError(errorCode) != 0 {
+                    if ERR_isError(errorCode) {
                         eSize = errorCode;
                         if notificationLevel >= 1 {
                             eprintln!("FSE_normalizeCount error with matchLengthCount");
@@ -1170,7 +1170,7 @@ unsafe fn ZDICT_analyzeEntropy(
                             MaxLL as core::ffi::c_uint,
                             1,
                         );
-                        if ERR_isError(errorCode) != 0 {
+                        if ERR_isError(errorCode) {
                             eSize = errorCode;
                             if notificationLevel >= 1 {
                                 eprintln!("FSE_normalizeCount error with litLengthCount");
@@ -1186,7 +1186,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                 wksp.as_mut_ptr() as *mut core::ffi::c_void,
                                 ::core::mem::size_of::<[u32; 1216]>(),
                             );
-                            if ERR_isError(hhSize) != 0 {
+                            if ERR_isError(hhSize) {
                                 eSize = hhSize;
                                 if notificationLevel >= 1 {
                                     eprintln!("HUF_writeCTable error");
@@ -1202,7 +1202,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                     OFFCODE_MAX as core::ffi::c_uint,
                                     Offlog,
                                 );
-                                if ERR_isError(ohSize) != 0 {
+                                if ERR_isError(ohSize) {
                                     eSize = ohSize;
                                     if notificationLevel >= 1 {
                                         eprintln!("FSE_writeNCount error with offcodeNCount");
@@ -1218,7 +1218,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                         MaxML as core::ffi::c_uint,
                                         mlLog,
                                     );
-                                    if ERR_isError(mhSize) != 0 {
+                                    if ERR_isError(mhSize) {
                                         eSize = mhSize;
                                         if notificationLevel >= 1 {
                                             eprintln!(
@@ -1236,7 +1236,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                             MaxLL as core::ffi::c_uint,
                                             llLog,
                                         );
-                                        if ERR_isError(lhSize) != 0 {
+                                        if ERR_isError(lhSize) {
                                             eSize = lhSize;
                                             if notificationLevel >= 1 {
                                                 eprintln!(
