@@ -1025,7 +1025,7 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
     }
 
     let fhsize = frame_header_size_internal(src, format);
-    if src.len() < fhsize as usize {
+    if src.len() < fhsize {
         return fhsize;
     }
 
