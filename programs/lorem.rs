@@ -275,7 +275,7 @@ unsafe fn countFreqs(
     let mut w: size_t = 0;
     w = 0;
     while w < nbWords {
-        let mut len = strlen((*words.add(w)).as_ptr());
+        let mut len = (*words.add(w)).to_bytes().len();
         let mut lmax: core::ffi::c_int = 0;
         if len >= nbWeights {
             len = nbWeights.wrapping_sub(1);
@@ -298,7 +298,7 @@ unsafe fn init_word_distrib(
     countFreqs(words, nbWords, weights, nbWeights);
     w = 0;
     while w < nbWords {
-        let mut len = strlen((*words.add(w)).as_ptr());
+        let mut len = (*words.add(w)).to_bytes().len();
         let mut l: core::ffi::c_int = 0;
         let mut lmax: core::ffi::c_int = 0;
         if len >= nbWeights {
