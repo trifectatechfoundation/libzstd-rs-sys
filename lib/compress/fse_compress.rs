@@ -44,7 +44,7 @@ unsafe fn FSE_initCState2(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable, sy
     let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(((1) << 15) as u32) >> 16;
     (*statePtr).value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
     (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
+        .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 #[inline]

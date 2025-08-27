@@ -79,7 +79,7 @@ pub(crate) unsafe fn FSE_initCState2(
     let nbBitsOut = (symbolTT.deltaNbBits).wrapping_add(((1) << 15) as u32) >> 16;
     (*statePtr).value = (nbBitsOut << 16).wrapping_sub(symbolTT.deltaNbBits) as ptrdiff_t;
     (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
+        .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 
@@ -95,7 +95,7 @@ pub(crate) unsafe fn FSE_encodeSymbol(
     let nbBitsOut = (((*statePtr).value + symbolTT.deltaNbBits as ptrdiff_t) >> 16) as u32;
     BIT_addBits(bitC, (*statePtr).value as BitContainerType, nbBitsOut);
     (*statePtr).value = *stateTable
-        .offset((((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t) as isize)
+        .offset(((*statePtr).value >> nbBitsOut) + symbolTT.deltaFindState as ptrdiff_t)
         as ptrdiff_t;
 }
 
