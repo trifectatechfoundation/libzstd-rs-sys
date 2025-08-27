@@ -1,11 +1,7 @@
 use core::ptr;
+use std::sync::{Condvar, Mutex};
 
-use libc::{
-    calloc, free, pthread_attr_t, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
-    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t, pthread_create,
-    pthread_join, pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, pthread_t, size_t,
-};
+use libc::{calloc, free, pthread_attr_t, pthread_create, pthread_join, pthread_t, size_t};
 
 use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
@@ -21,9 +17,9 @@ pub struct POOL_ctx {
     queueSize: size_t,
     numThreadsBusy: size_t,
     queueEmpty: core::ffi::c_int,
-    queueMutex: pthread_mutex_t,
-    queuePushCond: pthread_cond_t,
-    queuePopCond: pthread_cond_t,
+    queueMutex: Mutex<()>,
+    queuePushCond: Condvar,
+    queuePopCond: Condvar,
     shutdown: core::ffi::c_int,
 }
 #[derive(Copy, Clone)]
@@ -62,27 +58,25 @@ unsafe fn POOL_thread(opaque: *mut core::ffi::c_void) -> *mut core::ffi::c_void 
         return core::ptr::null_mut();
     }
     loop {
-        pthread_mutex_lock(&mut (*ctx).queueMutex);
+        let mut guard = (*ctx).queueMutex.lock().unwrap();
         while (*ctx).queueEmpty != 0 || (*ctx).numThreadsBusy >= (*ctx).threadLimit {
             if (*ctx).shutdown != 0 {
-                pthread_mutex_unlock(&mut (*ctx).queueMutex);
                 return opaque;
             }
-            pthread_cond_wait(&mut (*ctx).queuePopCond, &mut (*ctx).queueMutex);
+            guard = (*ctx).queuePopCond.wait(guard).unwrap();
         }
         let job = *((*ctx).queue).add((*ctx).queueHead);
         (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_add(1);
         (*ctx).numThreadsBusy;
         (*ctx).queueEmpty = ((*ctx).queueHead == (*ctx).queueTail) as core::ffi::c_int;
-        pthread_cond_signal(&mut (*ctx).queuePushCond);
-        pthread_mutex_unlock(&mut (*ctx).queueMutex);
+        (*ctx).queuePushCond.notify_one();
+        drop(guard);
         (job.function).unwrap_unchecked()(job.opaque);
-        pthread_mutex_lock(&mut (*ctx).queueMutex);
+        guard = (*ctx).queueMutex.lock().unwrap();
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_sub(1);
         (*ctx).numThreadsBusy;
-        pthread_cond_signal(&mut (*ctx).queuePushCond);
-        pthread_mutex_unlock(&mut (*ctx).queueMutex);
+        (*ctx).queuePushCond.notify_one();
     }
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createThreadPool))]
@@ -114,23 +108,9 @@ pub(crate) unsafe fn POOL_create_advanced(
     (*ctx).queueTail = 0;
     (*ctx).numThreadsBusy = 0;
     (*ctx).queueEmpty = 1;
-    let mut error = 0;
-    error |= pthread_mutex_init(
-        &mut (*ctx).queueMutex,
-        core::ptr::null::<pthread_mutexattr_t>(),
-    );
-    error |= pthread_cond_init(
-        &mut (*ctx).queuePushCond,
-        core::ptr::null::<pthread_condattr_t>(),
-    );
-    error |= pthread_cond_init(
-        &mut (*ctx).queuePopCond,
-        core::ptr::null::<pthread_condattr_t>(),
-    );
-    if error != 0 {
-        POOL_free(ctx);
-        return core::ptr::null_mut();
-    }
+    ptr::write(ptr::addr_of_mut!((*ctx).queueMutex), Mutex::new(()));
+    ptr::write(ptr::addr_of_mut!((*ctx).queuePushCond), Condvar::new());
+    ptr::write(ptr::addr_of_mut!((*ctx).queuePopCond), Condvar::new());
     (*ctx).shutdown = 0;
     (*ctx).threads = ZSTD_customCalloc(
         numThreads.wrapping_mul(::core::mem::size_of::<pthread_t>()),
@@ -165,11 +145,11 @@ pub(crate) unsafe fn POOL_create_advanced(
     ctx
 }
 unsafe fn POOL_join(ctx: *mut POOL_ctx) {
-    pthread_mutex_lock(&mut (*ctx).queueMutex);
+    let guard = (*ctx).queueMutex.lock().unwrap();
     (*ctx).shutdown = 1;
-    pthread_mutex_unlock(&mut (*ctx).queueMutex);
-    pthread_cond_broadcast(&mut (*ctx).queuePushCond);
-    pthread_cond_broadcast(&mut (*ctx).queuePopCond);
+    drop(guard);
+    (*ctx).queuePushCond.notify_all();
+    (*ctx).queuePopCond.notify_all();
     let mut i: size_t = 0;
     i = 0;
     while i < (*ctx).threadCapacity {
@@ -182,19 +162,18 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
         return;
     }
     POOL_join(ctx);
-    pthread_mutex_destroy(&mut (*ctx).queueMutex);
-    pthread_cond_destroy(&mut (*ctx).queuePushCond);
-    pthread_cond_destroy(&mut (*ctx).queuePopCond);
+    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queueMutex));
+    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePushCond));
+    ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePopCond));
     ZSTD_customFree((*ctx).queue as *mut core::ffi::c_void, (*ctx).customMem);
     ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
     ZSTD_customFree(ctx as *mut core::ffi::c_void, (*ctx).customMem);
 }
 pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
-    pthread_mutex_lock(&mut (*ctx).queueMutex);
+    let mut guard = (*ctx).queueMutex.lock().unwrap();
     while (*ctx).queueEmpty == 0 || (*ctx).numThreadsBusy > 0 {
-        pthread_cond_wait(&mut (*ctx).queuePushCond, &mut (*ctx).queueMutex);
+        guard = (*ctx).queuePushCond.wait(guard).unwrap();
     }
-    pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeThreadPool))]
 pub unsafe extern "C" fn ZSTD_freeThreadPool(pool: *mut ZSTD_threadPool) {
@@ -256,10 +235,9 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> core
     if ctx.is_null() {
         return 1;
     }
-    pthread_mutex_lock(&mut (*ctx).queueMutex);
+    let _guard = (*ctx).queueMutex.lock().unwrap();
     result = POOL_resize_internal(ctx, numThreads);
-    pthread_cond_broadcast(&mut (*ctx).queuePopCond);
-    pthread_mutex_unlock(&mut (*ctx).queueMutex);
+    (*ctx).queuePopCond.notify_all();
     result
 }
 unsafe fn isQueueFull(ctx: *const POOL_ctx) -> core::ffi::c_int {
@@ -287,31 +265,28 @@ unsafe fn POOL_add_internal(
     (*ctx).queueEmpty = 0;
     *((*ctx).queue).add((*ctx).queueTail) = job;
     (*ctx).queueTail = ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize;
-    pthread_cond_signal(&mut (*ctx).queuePopCond);
+    (*ctx).queuePopCond.notify_one();
 }
 pub unsafe fn POOL_add(
     ctx: *mut POOL_ctx,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) {
-    pthread_mutex_lock(&mut (*ctx).queueMutex);
+    let mut guard = (*ctx).queueMutex.lock().unwrap();
     while isQueueFull(ctx) != 0 && (*ctx).shutdown == 0 {
-        pthread_cond_wait(&mut (*ctx).queuePushCond, &mut (*ctx).queueMutex);
+        guard = (*ctx).queuePushCond.wait(guard).unwrap();
     }
     POOL_add_internal(ctx, function, opaque);
-    pthread_mutex_unlock(&mut (*ctx).queueMutex);
 }
 pub(crate) unsafe fn POOL_tryAdd(
     ctx: *mut POOL_ctx,
     function: POOL_function,
     opaque: *mut core::ffi::c_void,
 ) -> core::ffi::c_int {
-    pthread_mutex_lock(&mut (*ctx).queueMutex);
+    let _guard = (*ctx).queueMutex.lock().unwrap();
     if isQueueFull(ctx) != 0 {
-        pthread_mutex_unlock(&mut (*ctx).queueMutex);
         return 0;
     }
     POOL_add_internal(ctx, function, opaque);
-    pthread_mutex_unlock(&mut (*ctx).queueMutex);
     1
 }
