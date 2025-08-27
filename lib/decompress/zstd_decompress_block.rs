@@ -146,7 +146,6 @@ unsafe fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
     (*dctx).bmi2
 }
 
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
@@ -499,7 +498,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         dctx.litBufferEnd = (dctx.litBufferEnd).sub(WILDCOPY_OVERLENGTH);
     }
 
-    if ERR_isError(hufSuccess) != 0 {
+    if ERR_isError(hufSuccess) {
         return Error::corruption_detected.to_error_code();
     }
 
@@ -977,7 +976,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.workspace,
         dctx.bmi2 != 0,
     );
-    if ERR_isError(llhSize) != 0 {
+    if ERR_isError(llhSize) {
         return Error::corruption_detected.to_error_code();
     }
 
@@ -998,7 +997,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.workspace,
         dctx.bmi2 != 0,
     );
-    if ERR_isError(ofhSize) != 0 {
+    if ERR_isError(ofhSize) {
         return Error::corruption_detected.to_error_code();
     }
 
@@ -1019,7 +1018,7 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.workspace,
         dctx.bmi2 != 0,
     );
-    if ERR_isError(mlhSize) != 0 {
+    if ERR_isError(mlhSize) {
         return Error::corruption_detected.to_error_code();
     }
 
@@ -2123,7 +2122,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     dictEnd,
                 );
 
-                if ERR_isError(oneSeqSize) != 0 {
+                if ERR_isError(oneSeqSize) {
                     return oneSeqSize;
                 }
 
@@ -2156,7 +2155,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         dictEnd,
                     )
                 };
-                if ERR_isError(oneSeqSize_0) != 0 {
+                if ERR_isError(oneSeqSize_0) {
                     return oneSeqSize_0;
                 }
 
@@ -2197,7 +2196,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     dictStart,
                     dictEnd,
                 );
-                if ERR_isError(oneSeqSize_1) != 0 {
+                if ERR_isError(oneSeqSize_1) {
                     return oneSeqSize_1;
                 }
                 op = op.add(oneSeqSize_1);
@@ -2226,7 +2225,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         dictEnd,
                     )
                 };
-                if ERR_isError(oneSeqSize_2) != 0 {
+                if ERR_isError(oneSeqSize_2) {
                     return oneSeqSize_2;
                 }
                 op = op.add(oneSeqSize_2);
@@ -2447,7 +2446,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
 
     let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming);
-    if ERR_isError(litCSize) != 0 {
+    if ERR_isError(litCSize) {
         return litCSize;
     }
 
@@ -2464,7 +2463,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     let mut use_prefetch_decoder = dctx.ddictIsCold != 0;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip);
-    if ERR_isError(seqHSize) != 0 {
+    if ERR_isError(seqHSize) {
         return seqHSize;
     }
     ip = &ip[seqHSize as usize..];
@@ -2543,7 +2542,7 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     ZSTD_checkContinuity(dctx, dst, dstCapacity);
     dSize = ZSTD_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize, not_streaming);
     let err_code = dSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     (*dctx).previousDstEnd = dst.byte_add(dSize);

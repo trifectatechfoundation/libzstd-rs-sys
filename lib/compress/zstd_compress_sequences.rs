@@ -72,7 +72,7 @@ unsafe fn ZSTD_NCountCost(
         max,
         ZSTD_useLowProbCount(nbSeq),
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     FSE_writeNCount(
@@ -255,7 +255,7 @@ pub unsafe fn ZSTD_buildCTable(
     match type_0 as core::ffi::c_uint {
         1 => {
             let err_code = FSE_buildCTable_rle(nextCTable, max as u8);
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
             if dstCapacity == 0 {
@@ -281,7 +281,7 @@ pub unsafe fn ZSTD_buildCTable(
                 entropyWorkspace,
                 entropyWorkspaceSize,
             );
-            if ERR_isError(err_code_0) != 0 {
+            if ERR_isError(err_code_0) {
                 return err_code_0;
             }
             0
@@ -303,7 +303,7 @@ pub unsafe fn ZSTD_buildCTable(
                 max,
                 ZSTD_useLowProbCount(nbSeq_1),
             );
-            if ERR_isError(err_code_1) != 0 {
+            if ERR_isError(err_code_1) {
                 return err_code_1;
             }
             let NCountSize = FSE_writeNCount(
@@ -314,7 +314,7 @@ pub unsafe fn ZSTD_buildCTable(
                 tableLog,
             );
             let err_code_2 = NCountSize;
-            if ERR_isError(err_code_2) != 0 {
+            if ERR_isError(err_code_2) {
                 return err_code_2;
             }
             let err_code_3 = FSE_buildCTable_wksp(
@@ -325,7 +325,7 @@ pub unsafe fn ZSTD_buildCTable(
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
                 ::core::mem::size_of::<[u32; 285]>(),
             );
-            if ERR_isError(err_code_3) != 0 {
+            if ERR_isError(err_code_3) {
                 return err_code_3;
             }
             NCountSize
@@ -371,7 +371,7 @@ unsafe fn ZSTD_encodeSequences_body(
         symbolTT: core::ptr::null::<core::ffi::c_void>(),
         stateLog: 0,
     };
-    if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) != 0 {
+    if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) {
         return Error::dstSize_tooSmall.to_error_code();
     }
     FSE_initCState2(

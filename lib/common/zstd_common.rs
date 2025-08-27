@@ -15,7 +15,7 @@ pub unsafe extern "C" fn ZSTD_versionString() -> *const core::ffi::c_char {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_isError))]
 pub unsafe extern "C" fn ZSTD_isError(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code)
+    ERR_isError(code) as _
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getErrorName))]
 pub unsafe extern "C" fn ZSTD_getErrorName(code: size_t) -> *const core::ffi::c_char {
