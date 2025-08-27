@@ -215,7 +215,7 @@ unsafe fn ZSTDv06_wildcopy(
 ) {
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let oend = op.offset(length as isize);
+    let oend = op.offset(length);
     loop {
         ZSTDv06_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
         op = op.offset(8);

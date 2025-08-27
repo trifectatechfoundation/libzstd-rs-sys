@@ -116,7 +116,7 @@ unsafe fn ZSTD_maybeNullPtrAdd(
     add: ptrdiff_t,
 ) -> *mut core::ffi::c_void {
     if add > 0 {
-        (ptr as *mut core::ffi::c_char).offset(add as isize) as *mut core::ffi::c_void
+        (ptr as *mut core::ffi::c_char).offset(add) as *mut core::ffi::c_void
     } else {
         ptr
     }
