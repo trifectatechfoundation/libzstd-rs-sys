@@ -28,25 +28,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: stable
+          - target: "x86_64-unknown-linux-gnu"
+            rust: stable
             os: ubuntu-latest
             flags: "--workspace"
-            target: "x86_64-unknown-linux-gnu"
             codecov: true
-          - rust: stable
+          - target: "i686-unknown-linux-gnu"
+            rust: stable
             os: ubuntu-latest
             flags: "--workspace"
-            target: "i686-unknown-linux-gnu"
             codecov: true
           # FIXME: ubuntu-22.04-arm, ubuntu-24.04-arm and windows-11-arm are not supported yet for private repositories
           # - rust: stable
           #   os: ubuntu-24.04-arm
           #   features: ""
           #   target: "aarch64-unknown-linux-gnu"
-          - rust: stable
+          - target: "aarch64-apple-darwin"
+            rust: stable
             os: macos-latest
             flags: "--workspace"
-            target: "aarch64-apple-darwin"
             codecov: true
             # - rust: msrv
             #   os: ubuntu-latest
