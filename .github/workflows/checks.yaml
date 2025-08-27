@@ -24,9 +24,17 @@ jobs:
     env:
       RUST_BACKTRACE: 1
       RUSTFLAGS: "-Awarnings"
+      # i686-unknown-linux-gnu
       CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: i686-linux-gnu-gcc
+      # s390x-unknown-linux-gnu
       CARGO_TARGET_S390X_UNKNOWN_LINUX_GNU_LINKER: s390x-linux-gnu-gcc
       CARGO_TARGET_S390X_UNKNOWN_LINUX_GNU_RUNNER: qemu-s390x -L /usr/s390x-linux-gnu
+      # wasm32-wasip2
+      WASI_SDK_PATH: /tmp/wasi-sdk-24.0-x86_64-linux
+      CC_wasm32_wasip2: /tmp/wasi-sdk-24.0-x86_64-linux/bin/clang
+      AR_wasm32_wasip2: /tmp/wasi-sdk-24.0-x86_64-linux/bin/llvm-ar
+      CARGO_TARGET_WASM32_WASIP2_RUNNER: "wasmtime"
+      BINDGEN_EXTRA_CLANG_ARGS_wasm32_wasip2: "--sysroot=/tmp/wasi-sdk-24.0-x86_64-linux/share/wasi-sysroot"
     strategy:
       matrix:
         include:
@@ -55,6 +63,12 @@ jobs:
             os: ubuntu-24.04-arm
             flags: "--workspace"
             codecov: true
+
+          - target: "wasm32-wasip2"
+            rust: stable
+            os: ubuntu-latest
+            flags: "-p libzstd-rs-sys" # cross-compiling zstd for wasm does not work
+            codecov: false
 
           - target: "aarch64-apple-darwin"
             rust: stable
@@ -96,6 +110,12 @@ jobs:
         with:
           packages: "${{ matrix.packages }}"
           version: 2
+      - name: Download wasmtime & wasi-sdk
+        if: matrix.target == 'wasm32-wasip2'
+        run: |
+          curl https://wasmtime.dev/install.sh -sSf | bash
+          echo "$HOME/.wasmtime/bin" >> $GITHUB_PATH
+          curl -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz | tar xz --directory /tmp
       - name: cargo llvm-cov nextest
         if: matrix.codecov
         run: cargo llvm-cov nextest --lcov --output-path lcov.info --ignore-filename-regex "test-" --target ${{matrix.target}} ${{ matrix.flags }}
