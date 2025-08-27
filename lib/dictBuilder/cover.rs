@@ -328,7 +328,7 @@ custom_cfg_select! {
         }
     }
     _ => {
-        compile_error!("no qsort implementation available");
+        /* a fallback implementation is used */
     }
 }
 
@@ -374,7 +374,14 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
             );
         }
         _ => {
-            compile_error!("no qsort implementation available");
+            let suffix = core::slice::from_raw_parts_mut(ctx.suffix, ctx.suffixSize);
+
+            suffix.sort_by(|lp, rp| {
+                let lhs = core::slice::from_raw_parts(ctx.samples.add(*lp as usize), ctx.d as size_t);
+                let rhs = core::slice::from_raw_parts(ctx.samples.add(*rp as usize), ctx.d as size_t);
+
+                lhs.cmp(rhs)
+            });
         }
     }
 }
