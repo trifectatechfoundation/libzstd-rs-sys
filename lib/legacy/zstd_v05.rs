@@ -2269,7 +2269,7 @@ pub(crate) unsafe fn ZSTDv05_freeDCtx(dctx: *mut ZSTDv05_DCtx) -> size_t {
     0
 }
 unsafe fn ZSTDv05_decodeFrameHeader_Part1(
-    zc: *mut ZSTDv05_DCtx,
+    zc: &mut ZSTDv05_DCtx,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2281,8 +2281,8 @@ unsafe fn ZSTDv05_decodeFrameHeader_Part1(
     if magicNumber != ZSTDv05_MAGICNUMBER {
         return Error::prefix_unknown.to_error_code();
     }
-    (*zc).headerSize = ZSTDv05_frameHeaderSize_min;
-    (*zc).headerSize
+    zc.headerSize = ZSTDv05_frameHeaderSize_min;
+    zc.headerSize
 }
 pub(crate) unsafe fn ZSTDv05_getFrameParams(
     params: *mut ZSTDv05_parameters,
@@ -2371,7 +2371,7 @@ unsafe fn ZSTDv05_copyRawBlock(
     srcSize
 }
 unsafe fn ZSTDv05_decodeLiteralsBlock(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
@@ -2429,14 +2429,14 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             }
             if ERR_isError(if singleStream != 0 {
                 HUFv05_decompress1X2(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
                     istart.offset(lhSize as isize) as *const core::ffi::c_void,
                     litCSize,
                 )
             } else {
                 HUFv05_decompress(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
                     istart.offset(lhSize as isize) as *const core::ffi::c_void,
                     litCSize,
@@ -2444,10 +2444,10 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             }) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-            (*dctx).litSize = litSize;
+            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litSize = litSize;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2461,7 +2461,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             if lhSize_0 != 1 {
                 return Error::corruption_detected.to_error_code();
             }
-            if (*dctx).flagStaticTables == 0 {
+            if dctx.flagStaticTables == 0 {
                 return Error::dictionary_corrupted.to_error_code();
             }
             lhSize_0 = 3;
@@ -2473,19 +2473,19 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 return Error::corruption_detected.to_error_code();
             }
             errorCode = HUFv05_decompress1X4_usingDTable(
-                ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 litSize_0,
                 istart.offset(lhSize_0 as isize) as *const core::ffi::c_void,
                 litCSize_0,
-                ((*dctx).hufTableX4).as_mut_ptr(),
+                dctx.hufTableX4.as_mut_ptr(),
             );
             if ERR_isError(errorCode) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-            (*dctx).litSize = litSize_0;
+            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litSize = litSize_0;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                (dctx.litBuffer).as_mut_ptr().add(dctx.litSize) as *mut u8,
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2520,21 +2520,21 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                     return Error::corruption_detected.to_error_code();
                 }
                 memcpy(
-                    ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     istart.offset(lhSize_1 as isize) as *const core::ffi::c_void,
                     litSize_1,
                 );
-                (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-                (*dctx).litSize = litSize_1;
+                dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+                dctx.litSize = litSize_1;
                 ptr::write_bytes(
-                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
                 return (lhSize_1 as size_t).wrapping_add(litSize_1);
             }
-            (*dctx).litPtr = istart.offset(lhSize_1 as isize);
-            (*dctx).litSize = litSize_1;
+            dctx.litPtr = istart.offset(lhSize_1 as isize);
+            dctx.litSize = litSize_1;
             (lhSize_1 as size_t).wrapping_add(litSize_1)
         }
         IS_RLE => {
@@ -2564,12 +2564,12 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 return Error::corruption_detected.to_error_code();
             }
             memset(
-                ((*dctx).litBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 *istart.offset(lhSize_2 as isize) as core::ffi::c_int,
                 litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as size_t),
             );
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
-            (*dctx).litSize = litSize_2;
+            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litSize = litSize_2;
             lhSize_2.wrapping_add(1) as size_t
         }
         _ => Error::corruption_detected.to_error_code(),
@@ -2970,7 +2970,7 @@ unsafe fn ZSTDv05_execSequence(
     sequenceLength
 }
 unsafe fn ZSTDv05_decompressSequences(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     seqStart: *const core::ffi::c_void,
@@ -2983,16 +2983,16 @@ unsafe fn ZSTDv05_decompressSequences(
     let oend = ostart.add(maxDstSize);
     let mut errorCode: size_t = 0;
     let mut dumpsLength = 0;
-    let mut litPtr = (*dctx).litPtr;
-    let litEnd = litPtr.add((*dctx).litSize);
+    let mut litPtr = dctx.litPtr;
+    let litEnd = litPtr.add(dctx.litSize);
     let mut nbSeq = 0;
     let mut dumps = core::ptr::null();
-    let DTableLL = ((*dctx).LLTable).as_mut_ptr();
-    let DTableML = ((*dctx).MLTable).as_mut_ptr();
-    let DTableOffb = ((*dctx).OffTable).as_mut_ptr();
-    let base = (*dctx).base as *const u8;
-    let vBase = (*dctx).vBase as *const u8;
-    let dictEnd = (*dctx).dictEnd as *const u8;
+    let DTableLL = dctx.LLTable.as_mut_ptr();
+    let DTableML = dctx.MLTable.as_mut_ptr();
+    let DTableOffb = dctx.OffTable.as_mut_ptr();
+    let base = dctx.base as *const u8;
+    let vBase = dctx.vBase as *const u8;
+    let dictEnd = dctx.dictEnd as *const u8;
     errorCode = ZSTDv05_decodeSeqHeaders(
         &mut nbSeq,
         &mut dumps,
@@ -3002,7 +3002,7 @@ unsafe fn ZSTDv05_decompressSequences(
         DTableOffb,
         ip as *const core::ffi::c_void,
         seqSize,
-        (*dctx).flagStaticTables,
+        dctx.flagStaticTables,
     );
     if ERR_isError(errorCode) {
         return errorCode;
@@ -3078,20 +3078,20 @@ unsafe fn ZSTDv05_decompressSequences(
     }
     op.offset_from(ostart) as size_t
 }
-unsafe fn ZSTDv05_checkContinuity(dctx: *mut ZSTDv05_DCtx, dst: *const core::ffi::c_void) {
-    if dst != (*dctx).previousDstEnd {
-        (*dctx).dictEnd = (*dctx).previousDstEnd;
-        (*dctx).vBase = (dst as *const core::ffi::c_char).offset(
-            -(((*dctx).previousDstEnd as *const core::ffi::c_char)
-                .offset_from((*dctx).base as *const core::ffi::c_char)
+unsafe fn ZSTDv05_checkContinuity(dctx: &mut ZSTDv05_DCtx, dst: *const core::ffi::c_void) {
+    if dst != dctx.previousDstEnd {
+        dctx.dictEnd = dctx.previousDstEnd;
+        dctx.vBase = (dst as *const core::ffi::c_char).offset(
+            -((dctx.previousDstEnd as *const core::ffi::c_char)
+                .offset_from(dctx.base as *const core::ffi::c_char)
                 as core::ffi::c_long as isize),
         ) as *const core::ffi::c_void;
-        (*dctx).base = dst;
-        (*dctx).previousDstEnd = dst;
+        dctx.base = dst;
+        dctx.previousDstEnd = dst;
     }
 }
 unsafe fn ZSTDv05_decompressBlock_internal(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
@@ -3117,7 +3117,7 @@ unsafe fn ZSTDv05_decompressBlock_internal(
     )
 }
 unsafe fn ZSTDv05_decompress_continueDCtx(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     src: *const core::ffi::c_void,
@@ -3209,7 +3209,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
     op.offset_from(ostart) as size_t
 }
 pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     src: *const core::ffi::c_void,
@@ -3278,39 +3278,39 @@ pub(crate) unsafe fn ZSTDv05_findFrameSizeInfoLegacy(
     *cSize = ip.offset_from(src as *const u8) as size_t;
     *dBound = (nbBlocks * BLOCKSIZE as size_t) as core::ffi::c_ulonglong;
 }
-unsafe fn ZSTDv05_nextSrcSizeToDecompress(dctx: *mut ZSTDv05_DCtx) -> size_t {
-    (*dctx).expected
+fn ZSTDv05_nextSrcSizeToDecompress(dctx: &mut ZSTDv05_DCtx) -> size_t {
+    dctx.expected
 }
 unsafe fn ZSTDv05_decompressContinue(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    if srcSize != (*dctx).expected {
+    if srcSize != dctx.expected {
         return Error::srcSize_wrong.to_error_code();
     }
     ZSTDv05_checkContinuity(dctx, dst);
-    match (*dctx).stage as core::ffi::c_uint {
+    match dctx.stage as core::ffi::c_uint {
         0 => {
             if srcSize != ZSTDv05_frameHeaderSize_min {
                 return Error::srcSize_wrong.to_error_code();
             }
-            (*dctx).headerSize =
+            dctx.headerSize =
                 ZSTDv05_decodeFrameHeader_Part1(dctx, src, ZSTDv05_frameHeaderSize_min);
-            if ERR_isError((*dctx).headerSize) {
-                return (*dctx).headerSize;
+            if ERR_isError(dctx.headerSize) {
+                return dctx.headerSize;
             }
             memcpy(
-                ((*dctx).headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+                (dctx.headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
                 src,
                 ZSTDv05_frameHeaderSize_min,
             );
-            if (*dctx).headerSize > ZSTDv05_frameHeaderSize_min {
+            if dctx.headerSize > ZSTDv05_frameHeaderSize_min {
                 return Error::GENERIC.to_error_code();
             }
-            (*dctx).expected = 0;
+            dctx.expected = 0;
         }
         1 => {}
         2 => {
@@ -3324,18 +3324,18 @@ unsafe fn ZSTDv05_decompressContinue(
             }
             if bp.blockType as core::ffi::c_uint == bt_end as core::ffi::c_int as core::ffi::c_uint
             {
-                (*dctx).expected = 0;
-                (*dctx).stage = ZSTDv05ds_getFrameHeaderSize;
+                dctx.expected = 0;
+                dctx.stage = ZSTDv05ds_getFrameHeaderSize;
             } else {
-                (*dctx).expected = blockSize;
-                (*dctx).bType = bp.blockType;
-                (*dctx).stage = ZSTDv05ds_decompressBlock;
+                dctx.expected = blockSize;
+                dctx.bType = bp.blockType;
+                dctx.stage = ZSTDv05ds_decompressBlock;
             }
             return 0;
         }
         3 => {
             let mut rSize: size_t = 0;
-            match (*dctx).bType as core::ffi::c_uint {
+            match dctx.bType as core::ffi::c_uint {
                 0 => {
                     rSize = ZSTDv05_decompressBlock_internal(dctx, dst, maxDstSize, src, srcSize);
                 }
@@ -3348,12 +3348,12 @@ unsafe fn ZSTDv05_decompressContinue(
                 }
                 _ => return Error::GENERIC.to_error_code(),
             }
-            (*dctx).stage = ZSTDv05ds_decodeBlockHeader;
-            (*dctx).expected = ZSTDv05_blockHeaderSize;
+            dctx.stage = ZSTDv05ds_decodeBlockHeader;
+            dctx.expected = ZSTDv05_blockHeaderSize;
             if ERR_isError(rSize) {
                 return rSize;
             }
-            (*dctx).previousDstEnd =
+            dctx.previousDstEnd =
                 (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
             return rSize;
         }
@@ -3361,33 +3361,33 @@ unsafe fn ZSTDv05_decompressContinue(
     }
     let result = ZSTDv05_decodeFrameHeader_Part2(
         dctx,
-        ((*dctx).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-        (*dctx).headerSize,
+        (dctx.headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
+        dctx.headerSize,
     );
     if ERR_isError(result) {
         return result;
     }
-    (*dctx).expected = ZSTDv05_blockHeaderSize;
-    (*dctx).stage = ZSTDv05ds_decodeBlockHeader;
+    dctx.expected = ZSTDv05_blockHeaderSize;
+    dctx.stage = ZSTDv05ds_decodeBlockHeader;
     0
 }
 unsafe fn ZSTDv05_refDictContent(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) {
-    (*dctx).dictEnd = (*dctx).previousDstEnd;
-    (*dctx).vBase = (dict as *const core::ffi::c_char).offset(
-        -(((*dctx).previousDstEnd as *const core::ffi::c_char)
-            .offset_from((*dctx).base as *const core::ffi::c_char) as core::ffi::c_long
+    dctx.dictEnd = dctx.previousDstEnd;
+    dctx.vBase = (dict as *const core::ffi::c_char).offset(
+        -((dctx.previousDstEnd as *const core::ffi::c_char)
+            .offset_from(dctx.base as *const core::ffi::c_char) as core::ffi::c_long
             as isize),
     ) as *const core::ffi::c_void;
-    (*dctx).base = dict;
-    (*dctx).previousDstEnd =
+    dctx.base = dict;
+    dctx.previousDstEnd =
         (dict as *const core::ffi::c_char).add(dictSize) as *const core::ffi::c_void;
 }
 unsafe fn ZSTDv05_loadEntropy(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
 ) -> size_t {
@@ -3405,7 +3405,7 @@ unsafe fn ZSTDv05_loadEntropy(
     let mut litlengthNCount: [core::ffi::c_short; 64] = [0; 64];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
-    hSize = HUFv05_readDTableX4(((*dctx).hufTableX4).as_mut_ptr(), dict, dictSize);
+    hSize = HUFv05_readDTableX4(dctx.hufTableX4.as_mut_ptr(), dict, dictSize);
     if ERR_isError(hSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
@@ -3425,7 +3425,7 @@ unsafe fn ZSTDv05_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     errorCode = FSEv05_buildDTable(
-        ((*dctx).OffTable).as_mut_ptr(),
+        dctx.OffTable.as_mut_ptr(),
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
         offcodeLog,
@@ -3449,7 +3449,7 @@ unsafe fn ZSTDv05_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     errorCode = FSEv05_buildDTable(
-        ((*dctx).MLTable).as_mut_ptr(),
+        dctx.MLTable.as_mut_ptr(),
         matchlengthNCount.as_mut_ptr(),
         matchlengthMaxValue,
         matchlengthLog,
@@ -3474,7 +3474,7 @@ unsafe fn ZSTDv05_loadEntropy(
         return Error::dictionary_corrupted.to_error_code();
     }
     errorCode = FSEv05_buildDTable(
-        ((*dctx).LLTable).as_mut_ptr(),
+        dctx.LLTable.as_mut_ptr(),
         litlengthNCount.as_mut_ptr(),
         litlengthMaxValue,
         litlengthLog,
@@ -3482,14 +3482,14 @@ unsafe fn ZSTDv05_loadEntropy(
     if ERR_isError(errorCode) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*dctx).flagStaticTables = 1;
+    dctx.flagStaticTables = 1;
     hSize
         .wrapping_add(offcodeHeaderSize)
         .wrapping_add(matchlengthHeaderSize)
         .wrapping_add(litlengthHeaderSize)
 }
 unsafe fn ZSTDv05_decompress_insertDictionary(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     mut dict: *const core::ffi::c_void,
     mut dictSize: size_t,
 ) -> size_t {
@@ -3511,7 +3511,7 @@ unsafe fn ZSTDv05_decompress_insertDictionary(
     0
 }
 unsafe fn ZSTDv05_decompressBegin_usingDict(
-    dctx: *mut ZSTDv05_DCtx,
+    dctx: &mut ZSTDv05_DCtx,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
@@ -3576,7 +3576,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
     (*zbc).outStart = (*zbc).outEnd;
     (*zbc).inPos = (*zbc).outStart;
     (*zbc).hPos = (*zbc).inPos;
-    ZSTDv05_decompressBegin_usingDict((*zbc).zc, dict, dictSize)
+    ZSTDv05_decompressBegin_usingDict(&mut *(*zbc).zc, dict, dictSize)
 }
 pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     zbc: *mut ZBUFFv05_DCtx,
@@ -3706,7 +3706,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
         if current_block == Block::Read {
             drop(current_block);
 
-            let neededInSize_0 = ZSTDv05_nextSrcSizeToDecompress((*zbc).zc);
+            let neededInSize_0 = ZSTDv05_nextSrcSizeToDecompress(&mut *(*zbc).zc);
             if neededInSize_0 == 0 {
                 // end of frame
                 (*zbc).stage = ZBUFFv05ds_init;
@@ -3716,7 +3716,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             if iend.offset_from(ip) as size_t >= neededInSize_0 {
                 // directly decode from src
                 let decodedSize = ZSTDv05_decompressContinue(
-                    (*zbc).zc,
+                    &mut *(*zbc).zc,
                     ((*zbc).outBuff).add((*zbc).outStart) as *mut core::ffi::c_void,
                     ((*zbc).outBuffSize).wrapping_sub((*zbc).outStart),
                     ip as *const core::ffi::c_void,
@@ -3744,7 +3744,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
         if current_block == Block::Load {
             drop(current_block);
 
-            let neededInSize_1 = ZSTDv05_nextSrcSizeToDecompress((*zbc).zc);
+            let neededInSize_1 = ZSTDv05_nextSrcSizeToDecompress(&mut *(*zbc).zc);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize_1.wrapping_sub((*zbc).inPos);
             let mut loadedSize: size_t = 0;
@@ -3765,7 +3765,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 continue;
             } else {
                 let decodedSize_0 = ZSTDv05_decompressContinue(
-                    (*zbc).zc,
+                    &mut *(*zbc).zc,
                     ((*zbc).outBuff).add((*zbc).outStart) as *mut core::ffi::c_void,
                     ((*zbc).outBuffSize).wrapping_sub((*zbc).outStart),
                     (*zbc).inBuff as *const core::ffi::c_void,
@@ -3813,7 +3813,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     }
     *srcSizePtr = ip.offset_from(istart) as size_t;
     *maxDstSizePtr = op.offset_from(ostart) as size_t;
-    let mut nextSrcSizeHint = ZSTDv05_nextSrcSizeToDecompress((*zbc).zc);
+    let mut nextSrcSizeHint = ZSTDv05_nextSrcSizeToDecompress(&mut *(*zbc).zc);
     if nextSrcSizeHint > ZBUFFv05_blockHeaderSize {
         nextSrcSizeHint = nextSrcSizeHint.wrapping_add(ZBUFFv05_blockHeaderSize);
     }
