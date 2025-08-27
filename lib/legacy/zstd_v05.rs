@@ -280,7 +280,7 @@ unsafe fn BITv05_initDStream(
 }
 
 #[inline]
-unsafe fn BITv05_lookBits(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
+fn BITv05_lookBits(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
     let bitMask = (::core::mem::size_of::<size_t>())
         .wrapping_mul(8)
         .wrapping_sub(1) as u32;
@@ -297,17 +297,17 @@ fn BITv05_lookBitsFast(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
         >> (bitMask.wrapping_add(1).wrapping_sub(nbBits) & bitMask)
 }
 #[inline]
-unsafe fn BITv05_skipBits(bitD: &mut BITv05_DStream_t, nbBits: u32) {
-    bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_add(nbBits);
+fn BITv05_skipBits(bitD: &mut BITv05_DStream_t, nbBits: u32) {
+    bitD.bitsConsumed += nbBits;
 }
 #[inline]
-unsafe fn BITv05_readBits(bitD: &mut BITv05_DStream_t, nbBits: core::ffi::c_uint) -> size_t {
+fn BITv05_readBits(bitD: &mut BITv05_DStream_t, nbBits: core::ffi::c_uint) -> size_t {
     let value = BITv05_lookBits(bitD, nbBits);
     BITv05_skipBits(bitD, nbBits);
     value
 }
 #[inline]
-unsafe fn BITv05_readBitsFast(bitD: &mut BITv05_DStream_t, nbBits: core::ffi::c_uint) -> size_t {
+fn BITv05_readBitsFast(bitD: &mut BITv05_DStream_t, nbBits: core::ffi::c_uint) -> size_t {
     let value = BITv05_lookBitsFast(bitD, nbBits);
     BITv05_skipBits(bitD, nbBits);
     value
