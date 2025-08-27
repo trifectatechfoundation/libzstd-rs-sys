@@ -2083,10 +2083,9 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
                 src,
                 srcSize as libc::size_t,
             );
-            (*dctx).expected = MEM_readLE32(
-                ((*dctx).headerBuffer)
-                    .as_mut_ptr().add(ZSTD_FRAMEIDSIZE) as *const core::ffi::c_void,
-            ) as size_t;
+            (*dctx).expected =
+                MEM_readLE32(((*dctx).headerBuffer).as_mut_ptr().add(ZSTD_FRAMEIDSIZE)
+                    as *const core::ffi::c_void) as size_t;
             (*dctx).stage = DecompressStage::SkipFrame;
             0
         }
@@ -2339,8 +2338,7 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromDict(
         return 0;
     }
     MEM_readLE32(
-        (dict as *const core::ffi::c_char).add(ZSTD_FRAMEIDSIZE)
-            as *const core::ffi::c_void,
+        (dict as *const core::ffi::c_char).add(ZSTD_FRAMEIDSIZE) as *const core::ffi::c_void
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromFrame))]
@@ -3281,11 +3279,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
                 {
                     // skippable frame
-                    (*zds).expected = MEM_readLE32(
-                        ((*zds).headerBuffer)
-                            .as_mut_ptr().add(ZSTD_FRAMEIDSIZE)
-                            as *const core::ffi::c_void,
-                    ) as size_t;
+                    (*zds).expected =
+                        MEM_readLE32(((*zds).headerBuffer).as_mut_ptr().add(ZSTD_FRAMEIDSIZE)
+                            as *const core::ffi::c_void) as size_t;
                     (*zds).stage = DecompressStage::SkipFrame;
                 } else {
                     let err_code =
