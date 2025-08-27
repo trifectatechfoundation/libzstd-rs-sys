@@ -78,9 +78,17 @@ macro_rules! decompress_stream {
 }
 
 fn decompress_stream_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use zstd_sys::*;
+    #[cfg(not(miri))]
+    {
+        use zstd_sys::*;
 
-    decompress_stream!(compressed, dict)
+        decompress_stream!(compressed, dict)
+    }
+
+    #[cfg(miri)]
+    {
+        vec![]
+    }
 }
 
 fn decompress_stream_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
@@ -233,9 +241,17 @@ macro_rules! decompress_continue {
 }
 
 fn decompress_continue_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
-    use zstd_sys::*;
+    #[cfg(not(miri))]
+    {
+        use zstd_sys::*;
 
-    decompress_continue!(compressed, dict)
+        decompress_continue!(compressed, dict)
+    }
+
+    #[cfg(miri)]
+    {
+        vec![]
+    }
 }
 
 fn decompress_continue_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
@@ -308,6 +324,7 @@ mod fastest_wasm_zlib_continue {
 
 #[test]
 #[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
+#[cfg(not(miri))]
 fn decompress_using_dict() {
     use std::ffi::c_void;
 

@@ -14,5 +14,5 @@ edition.workspace = true
 path = ".."
 features = ["semver-prefix"]
 
-[dependencies]
-zstd-sys = "2.0.15"
+# [target.'cfg(not(miri))'.dependencies]
+# zstd-sys = "2.0.15"
