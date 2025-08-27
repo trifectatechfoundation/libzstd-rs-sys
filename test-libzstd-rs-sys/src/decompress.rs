@@ -1,12 +1,10 @@
-use std::ffi::CStr;
+use std::ffi::{c_void, CStr};
 
 use crate::assert_eq_rs_c;
 
 macro_rules! decompress_stream {
     ($compressed:expr, $dict:expr) => {
         unsafe {
-            use core::ffi::c_void;
-
             // Allocate and initialize a decompression context
             let dctx = ZSTD_createDCtx();
             if dctx.is_null() {

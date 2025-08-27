@@ -130,7 +130,7 @@ unsafe fn COVER_map_init(map: *mut COVER_map_t, size: u32) -> core::ffi::c_int {
 }
 static COVER_prime4bytes: u32 = 2654435761;
 unsafe fn COVER_map_hash(map: *mut COVER_map_t, key: u32) -> u32 {
-    (key * COVER_prime4bytes) >> 32u32.wrapping_sub((*map).sizeLog)
+    (key.wrapping_mul(COVER_prime4bytes)) >> 32u32.wrapping_sub((*map).sizeLog)
 }
 unsafe fn COVER_map_index(map: *mut COVER_map_t, key: u32) -> u32 {
     let hash = COVER_map_hash(map, key);
