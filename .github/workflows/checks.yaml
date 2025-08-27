@@ -107,7 +107,7 @@ jobs:
           tool: cargo-fuzz
       - name: Download custom decompression corpus
         run: |
-          wget https://github.com/trifectatechfoundation/compression-corpus/releases/download/2025-07-30-091654/zstd-files.zip
+          wget https://github.com/trifectatechfoundation/compression-corpus/releases/download/2025-08-27-084941/zstd-files.zip
           unzip zstd-files.zip -d zstd-files
       - name: run the fuzzer
         run: |
