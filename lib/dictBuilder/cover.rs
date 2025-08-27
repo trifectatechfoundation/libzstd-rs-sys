@@ -1,12 +1,7 @@
 use core::ptr;
+use std::sync::{Condvar, Mutex};
 
-use libc::{
-    free, malloc, memcmp, memcpy, memset, pthread_cond_broadcast, pthread_cond_destroy,
-    pthread_cond_init, pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, size_t, PTHREAD_COND_INITIALIZER,
-    PTHREAD_MUTEX_INITIALIZER,
-};
+use libc::{free, malloc, memcmp, memcpy, memset, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
@@ -77,10 +72,9 @@ pub(super) struct COVER_epoch_info_t {
     pub(super) num: u32,
     pub(super) size: u32,
 }
-#[repr(C)]
 pub(super) struct COVER_best_t {
-    pub(super) mutex: pthread_mutex_t,
-    pub(super) cond: pthread_cond_t,
+    pub(super) mutex: Mutex<()>,
+    pub(super) cond: Condvar,
     pub(super) liveJobs: size_t,
     pub(super) dict: *mut core::ffi::c_void,
     pub(super) dictSize: size_t,
@@ -977,18 +971,13 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
     }
     totalCompressedSize
 }
-pub(super) unsafe fn COVER_best_init(best: *mut COVER_best_t) {
-    if best.is_null() {
-        return;
-    }
-    pthread_mutex_init(&mut (*best).mutex, core::ptr::null::<pthread_mutexattr_t>());
-    pthread_cond_init(&mut (*best).cond, core::ptr::null::<pthread_condattr_t>());
-    (*best).liveJobs = 0;
-    (*best).dict = core::ptr::null_mut();
-    (*best).dictSize = 0;
-    (*best).compressedSize = -(1 as core::ffi::c_int) as size_t;
+pub(super) unsafe fn COVER_best_init(best: &mut COVER_best_t) {
+    best.liveJobs = 0;
+    best.dict = core::ptr::null_mut();
+    best.dictSize = 0;
+    best.compressedSize = -(1 as core::ffi::c_int) as size_t;
     ptr::write_bytes(
-        &mut (*best).parameters as *mut ZDICT_cover_params_t as *mut u8,
+        &mut best.parameters as *mut ZDICT_cover_params_t as *mut u8,
         0,
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
@@ -997,31 +986,24 @@ pub(super) unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
-    pthread_mutex_lock(&mut (*best).mutex);
+    let mut guard = (*best).mutex.lock().unwrap();
     while (*best).liveJobs != 0 {
-        pthread_cond_wait(&mut (*best).cond, &mut (*best).mutex);
+        guard = (*best).cond.wait(guard).unwrap();
     }
-    pthread_mutex_unlock(&mut (*best).mutex);
 }
-pub(super) unsafe fn COVER_best_destroy(best: *mut COVER_best_t) {
-    if best.is_null() {
-        return;
-    }
+pub(super) unsafe fn COVER_best_destroy(best: &mut COVER_best_t) {
     COVER_best_wait(best);
     if !((*best).dict).is_null() {
         free((*best).dict);
     }
-    pthread_mutex_destroy(&mut (*best).mutex);
-    pthread_cond_destroy(&mut (*best).cond);
 }
 pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
     if best.is_null() {
         return;
     }
-    pthread_mutex_lock(&mut (*best).mutex);
+    let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_add(1);
     (*best).liveJobs;
-    pthread_mutex_unlock(&mut (*best).mutex);
 }
 pub(super) unsafe fn COVER_best_finish(
     best: *mut COVER_best_t,
@@ -1035,7 +1017,7 @@ pub(super) unsafe fn COVER_best_finish(
         return;
     }
     let mut liveJobs: size_t = 0;
-    pthread_mutex_lock(&mut (*best).mutex);
+    let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_sub(1);
     (*best).liveJobs;
     liveJobs = (*best).liveJobs;
@@ -1048,8 +1030,7 @@ pub(super) unsafe fn COVER_best_finish(
             if ((*best).dict).is_null() {
                 (*best).compressedSize = Error::GENERIC.to_error_code();
                 (*best).dictSize = 0;
-                pthread_cond_signal(&mut (*best).cond);
-                pthread_mutex_unlock(&mut (*best).mutex);
+                (*best).cond.notify_one();
                 return;
             }
         }
@@ -1061,9 +1042,8 @@ pub(super) unsafe fn COVER_best_finish(
         }
     }
     if liveJobs == 0 {
-        pthread_cond_broadcast(&mut (*best).cond);
+        (*best).cond.notify_all();
     }
-    pthread_mutex_unlock(&mut (*best).mutex);
 }
 unsafe fn setDictSelection(buf: *mut u8, s: size_t, csz: size_t) -> COVER_dictSelection_t {
     let mut ds = COVER_dictSelection_t {
@@ -1327,8 +1307,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_t {
-        mutex: PTHREAD_MUTEX_INITIALIZER,
-        cond: PTHREAD_COND_INITIALIZER,
+        mutex: Mutex::new(()),
+        cond: Condvar::new(),
         liveJobs: 0,
         dict: core::ptr::null_mut::<core::ffi::c_void>(),
         dictSize: 0,
