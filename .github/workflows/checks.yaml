@@ -30,12 +30,14 @@ jobs:
         include:
           - rust: stable
             os: ubuntu-latest
-            features: ""
+            flags: "--workspace"
             target: "x86_64-unknown-linux-gnu"
+            codecov: true
           - rust: stable
             os: ubuntu-latest
-            features: ""
+            flags: "--workspace"
             target: "i686-unknown-linux-gnu"
+            codecov: true
           # FIXME: ubuntu-22.04-arm, ubuntu-24.04-arm and windows-11-arm are not supported yet for private repositories
           # - rust: stable
           #   os: ubuntu-24.04-arm
@@ -43,8 +45,9 @@ jobs:
           #   target: "aarch64-unknown-linux-gnu"
           - rust: stable
             os: macos-latest
-            features: ""
+            flags: "--workspace"
             target: "aarch64-apple-darwin"
+            codecov: true
             # - rust: msrv
             #   os: ubuntu-latest
             #   features: ""
@@ -85,11 +88,14 @@ jobs:
           packages: gcc-i686-linux-gnu,libc6-dev-i386
           version: 2
       - name: cargo llvm-cov nextest
-        if: matrix.os != 'windows-2022'
-        run: cargo llvm-cov nextest --target ${{matrix.target}} ${{ matrix.features }} --lcov --output-path lcov.info --ignore-filename-regex "test-" --workspace
+        if: matrix.codecov
+        run: cargo llvm-cov nextest --lcov --output-path lcov.info --ignore-filename-regex "test-" --target ${{matrix.target}} ${{ matrix.flags }}
+      - name: cargo llvm-cov nextest
+        if: matrix.codecov == false
+        run: cargo nextest run --target ${{matrix.target}} ${{ matrix.flags }}
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
-      #   if: matrix.os != 'windows-2022' && matrix.rust == 'stable'
+      #   if: matrix.codecov && matrix.rust == 'stable'
       #   with:
       #     files: |
       #       ./lcov.info
