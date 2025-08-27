@@ -100,10 +100,10 @@ unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
-    memset(
-        (*map).data as *mut core::ffi::c_void,
-        MAP_EMPTY_VALUE,
-        ((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()),
+    core::ptr::write_bytes(
+        (*map).data,
+        (MAP_EMPTY_VALUE & 0xFF) as u8,
+        (*map).size as size_t,
     );
 }
 unsafe fn COVER_map_init(map: *mut COVER_map_t, size: u32) -> core::ffi::c_int {

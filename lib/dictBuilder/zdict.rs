@@ -1003,11 +1003,9 @@ unsafe fn ZDICT_analyzeEntropy(
             0,
             ::core::mem::size_of::<[u32; 1024]>(),
         );
-        let fresh15 = &mut (*repOffset.as_mut_ptr().offset(8));
-        *fresh15 = 1;
-        let fresh16 = &mut (*repOffset.as_mut_ptr().offset(4));
-        *fresh16 = *fresh15;
-        *repOffset.as_mut_ptr().offset(1) = *fresh16;
+        repOffset[1] = 1;
+        repOffset[4] = 1;
+        repOffset[8] = 1;
         ptr::write_bytes(
             bestRepOffset.as_mut_ptr() as *mut u8,
             0,
@@ -1382,9 +1380,9 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     let outDictHeader = dictBuffer as *mut u8;
     let outDictPadding = outDictHeader.add(hSize);
     let outDictContent = outDictPadding.add(paddingSize);
-    memmove(
-        outDictContent as *mut core::ffi::c_void,
-        customDictContent,
+    core::ptr::copy(
+        customDictContent.cast::<u8>(),
+        outDictContent,
         dictContentSize,
     );
     memcpy(
@@ -1392,7 +1390,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         header.as_mut_ptr() as *const core::ffi::c_void,
         hSize,
     );
-    memset(outDictPadding as *mut core::ffi::c_void, 0, paddingSize);
+    core::ptr::write_bytes(outDictPadding, 0, paddingSize);
     dictSize
 }
 const HBUFFSIZE: core::ffi::c_int = 256;
