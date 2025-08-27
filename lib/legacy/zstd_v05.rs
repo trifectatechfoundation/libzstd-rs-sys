@@ -360,7 +360,7 @@ unsafe fn FSEv05_initDState(
 }
 #[inline]
 unsafe fn FSEv05_peakSymbol(DStatePtr: &mut FSEv05_DState_t) -> u8 {
-    let DInfo = *(DStatePtr.table as *const FSEv05_decode_t).add((*DStatePtr).state);
+    let DInfo = *(DStatePtr.table as *const FSEv05_decode_t).add(DStatePtr.state);
     DInfo.symbol
 }
 #[inline]
@@ -1545,12 +1545,11 @@ unsafe fn HUFv05_decodeLastSymbolX4(
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
     if (*dt.add(val)).length as core::ffi::c_int == 1 {
         BITv05_skipBits(DStream, (*dt.add(val)).nbBits as u32);
-    } else if ((*DStream).bitsConsumed as size_t)
-        < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
+    } else if (DStream.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
     {
         BITv05_skipBits(DStream, (*dt.add(val)).nbBits as u32);
-        if (*DStream).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-            (*DStream).bitsConsumed =
+        if DStream.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+            DStream.bitsConsumed =
                 (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
         }
     }
