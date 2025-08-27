@@ -282,7 +282,7 @@ unsafe fn ZSTD_decompressLegacy(
                 return Error::memory_allocation.to_error_code();
             }
             result = ZSTDv05_decompress_usingDict(
-                zd,
+                &mut *zd,
                 dst,
                 dstCapacity,
                 src,
