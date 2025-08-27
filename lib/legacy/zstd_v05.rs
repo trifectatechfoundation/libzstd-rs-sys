@@ -74,7 +74,7 @@ struct seqState_t {
     dumps: *const u8,
     dumpsEnd: *const u8,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct FSEv05_DState_t {
     state: size_t,
@@ -348,48 +348,48 @@ unsafe fn BITv05_endOfDStream(DStream: &BITv05_DStream_t) -> core::ffi::c_uint {
 }
 #[inline]
 unsafe fn FSEv05_initDState(
-    DStatePtr: *mut FSEv05_DState_t,
+    DStatePtr: &mut FSEv05_DState_t,
     bitD: &mut BITv05_DStream_t,
     dt: *const FSEv05_DTable,
 ) {
     let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const FSEv05_DTableHeader;
-    (*DStatePtr).state = BITv05_readBits(bitD, (*DTableH).tableLog as core::ffi::c_uint);
+    DStatePtr.state = BITv05_readBits(bitD, (*DTableH).tableLog as core::ffi::c_uint);
     BITv05_reloadDStream(bitD);
-    (*DStatePtr).table = dt.offset(1) as *const core::ffi::c_void;
+    DStatePtr.table = dt.offset(1) as *const core::ffi::c_void;
 }
 #[inline]
-unsafe fn FSEv05_peakSymbol(DStatePtr: *mut FSEv05_DState_t) -> u8 {
-    let DInfo = *((*DStatePtr).table as *const FSEv05_decode_t).add((*DStatePtr).state);
+unsafe fn FSEv05_peakSymbol(DStatePtr: &mut FSEv05_DState_t) -> u8 {
+    let DInfo = *(DStatePtr.table as *const FSEv05_decode_t).add((*DStatePtr).state);
     DInfo.symbol
 }
 #[inline]
 unsafe fn FSEv05_decodeSymbol(
-    DStatePtr: *mut FSEv05_DState_t,
+    DStatePtr: &mut FSEv05_DState_t,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
-    let DInfo = *((*DStatePtr).table as *const FSEv05_decode_t).add((*DStatePtr).state);
+    let DInfo = *(DStatePtr.table as *const FSEv05_decode_t).add(DStatePtr.state);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
     let lowBits = BITv05_readBits(bitD, nbBits);
-    (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
+    DStatePtr.state = (DInfo.newState as size_t).wrapping_add(lowBits);
     symbol
 }
 #[inline]
 unsafe fn FSEv05_decodeSymbolFast(
-    DStatePtr: *mut FSEv05_DState_t,
+    DStatePtr: &mut FSEv05_DState_t,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
-    let DInfo = *((*DStatePtr).table as *const FSEv05_decode_t).add((*DStatePtr).state);
+    let DInfo = *(DStatePtr.table as *const FSEv05_decode_t).add(DStatePtr.state);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
     let lowBits = BITv05_readBitsFast(bitD, nbBits);
-    (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
+    DStatePtr.state = (DInfo.newState as size_t).wrapping_add(lowBits);
     symbol
 }
 #[inline]
-unsafe fn FSEv05_endOfDState(DStatePtr: *const FSEv05_DState_t) -> core::ffi::c_uint {
-    ((*DStatePtr).state == 0) as core::ffi::c_int as core::ffi::c_uint
+fn FSEv05_endOfDState(DStatePtr: &FSEv05_DState_t) -> core::ffi::c_uint {
+    (DStatePtr.state == 0) as core::ffi::c_int as core::ffi::c_uint
 }
 const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
 const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
@@ -663,14 +663,8 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
     let omax = op.add(maxDstSize);
     let olimit = omax.offset(-(3));
     let mut bitD = BITv05_DStream_t::default();
-    let mut state1 = FSEv05_DState_t {
-        state: 0,
-        table: core::ptr::null::<core::ffi::c_void>(),
-    };
-    let mut state2 = FSEv05_DState_t {
-        state: 0,
-        table: core::ptr::null::<core::ffi::c_void>(),
-    };
+    let mut state1 = FSEv05_DState_t::default();
+    let mut state2 = FSEv05_DState_t::default();
     let mut errorCode: size_t = 0;
     errorCode = BITv05_initDStream(&mut bitD, cSrc, cSrcSize);
     if FSEv05_isError(errorCode) != 0 {
@@ -3037,18 +3031,9 @@ unsafe fn ZSTDv05_decompressSequences(
         };
         let mut seqState = seqState_t {
             DStream: BITv05_DStream_t::default(),
-            stateLL: FSEv05_DState_t {
-                state: 0,
-                table: core::ptr::null::<core::ffi::c_void>(),
-            },
-            stateOffb: FSEv05_DState_t {
-                state: 0,
-                table: core::ptr::null::<core::ffi::c_void>(),
-            },
-            stateML: FSEv05_DState_t {
-                state: 0,
-                table: core::ptr::null::<core::ffi::c_void>(),
-            },
+            stateLL: FSEv05_DState_t::default(),
+            stateOffb: FSEv05_DState_t::default(),
+            stateML: FSEv05_DState_t::default(),
             prevOffset: 0,
             dumps: core::ptr::null::<u8>(),
             dumpsEnd: core::ptr::null::<u8>(),
