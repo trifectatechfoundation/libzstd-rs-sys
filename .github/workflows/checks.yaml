@@ -28,6 +28,10 @@ jobs:
             os: ubuntu-latest
             features: ""
             target: "x86_64-unknown-linux-gnu"
+          - rust: stable
+            os: ubuntu-latest
+            features: ""
+            target: "i686-unknown-linux-gnu"
           # FIXME: ubuntu-22.04-arm, ubuntu-24.04-arm and windows-11-arm are not supported yet for private repositories
           # - rust: stable
           #   os: ubuntu-24.04-arm
@@ -70,12 +74,19 @@ jobs:
         uses: taiki-e/install-action@d12e869b89167df346dd0ff65da342d1fb1202fb # v2.53.2
         with:
           tool: cargo-llvm-cov,cargo-nextest
+      - name: Cache apt packages
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: gcc-i686-linux-gnu,libc6-dev-i386
+          version: 2
       - name: cargo llvm-cov nextest
         if: matrix.os != 'windows-2022'
         run: cargo llvm-cov nextest --target ${{matrix.target}} ${{ matrix.features }} --lcov --output-path lcov.info --ignore-filename-regex "test-" --workspace
         env:
           RUST_BACKTRACE: 1
           RUSTFLAGS: "-Awarnings"
+          CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: i686-linux-gnu-gcc
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
       #   if: matrix.os != 'windows-2022' && matrix.rust == 'stable'
