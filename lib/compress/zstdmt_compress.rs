@@ -1,11 +1,7 @@
 use core::ptr;
+use std::sync::{Condvar, Mutex};
 
-use libc::{
-    calloc, free, malloc, pthread_cond_broadcast, pthread_cond_destroy, pthread_cond_init,
-    pthread_cond_signal, pthread_cond_t, pthread_cond_wait, pthread_condattr_t,
-    pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_t,
-    pthread_mutex_unlock, pthread_mutexattr_t, size_t,
-};
+use libc::{calloc, free, malloc, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
@@ -62,16 +58,15 @@ struct RSyncState_t {
     hitMask: u64,
     primePower: u64,
 }
-#[repr(C)]
 struct SerialState {
-    mutex: pthread_mutex_t,
-    cond: pthread_cond_t,
+    mutex: Mutex<()>,
+    cond: Condvar,
     params: ZSTD_CCtx_params,
     ldmState: ldmState_t,
     xxhState: XXH64_state_t,
     nextJobID: core::ffi::c_uint,
-    ldmWindowMutex: pthread_mutex_t,
-    ldmWindowCond: pthread_cond_t,
+    ldmWindowMutex: Mutex<()>,
+    ldmWindowCond: Condvar,
     ldmWindow: ZSTD_window_t,
 }
 type ZSTD_ParamSwitch_e = core::ffi::c_uint;
@@ -105,29 +100,26 @@ struct Range {
 }
 type ZSTDMT_seqPool = ZSTDMT_bufferPool;
 type ZSTDMT_bufferPool = ZSTDMT_bufferPool_s;
-#[repr(C)]
 struct ZSTDMT_bufferPool_s {
-    poolMutex: pthread_mutex_t,
+    poolMutex: Mutex<()>,
     bufferSize: size_t,
     totalBuffers: core::ffi::c_uint,
     nbBuffers: core::ffi::c_uint,
     cMem: ZSTD_customMem,
     buffers: *mut Buffer,
 }
-#[repr(C)]
 struct ZSTDMT_CCtxPool {
-    poolMutex: pthread_mutex_t,
+    poolMutex: Mutex<()>,
     totalCCtx: core::ffi::c_int,
     availCCtx: core::ffi::c_int,
     cMem: ZSTD_customMem,
     cctxs: *mut *mut ZSTD_CCtx,
 }
-#[repr(C)]
 struct ZSTDMT_jobDescription {
     consumed: size_t,
     cSize: size_t,
-    job_mutex: pthread_mutex_t,
-    job_cond: pthread_cond_t,
+    job_mutex: Mutex<()>,
+    job_cond: Condvar,
     cctxPool: *mut ZSTDMT_CCtxPool,
     bufPool: *mut ZSTDMT_bufferPool,
     seqPool: *mut ZSTDMT_seqPool,
@@ -350,7 +342,7 @@ unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
             (*bufPool).cMem,
         );
     }
-    pthread_mutex_destroy(&mut (*bufPool).poolMutex);
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*bufPool).poolMutex));
     ZSTD_customFree(bufPool as *mut core::ffi::c_void, (*bufPool).cMem);
 }
 unsafe fn ZSTDMT_createBufferPool(
@@ -362,14 +354,10 @@ unsafe fn ZSTDMT_createBufferPool(
     if bufPool.is_null() {
         return core::ptr::null_mut();
     }
-    if pthread_mutex_init(
-        &mut (*bufPool).poolMutex,
-        core::ptr::null::<pthread_mutexattr_t>(),
-    ) != 0
-    {
-        ZSTD_customFree(bufPool as *mut core::ffi::c_void, cMem);
-        return core::ptr::null_mut();
-    }
+    core::ptr::write(
+        core::ptr::addr_of_mut!((*bufPool).poolMutex),
+        Mutex::new(()),
+    );
     (*bufPool).buffers = ZSTD_customCalloc(
         (maxNbBuffers as usize).wrapping_mul(::core::mem::size_of::<Buffer>()),
         cMem,
@@ -390,22 +378,20 @@ unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> size_t {
         ((*bufPool).totalBuffers as size_t).wrapping_mul(::core::mem::size_of::<Buffer>());
     let mut u: core::ffi::c_uint = 0;
     let mut totalBufferSize = 0 as size_t;
-    pthread_mutex_lock(&mut (*bufPool).poolMutex);
+    let _guard = (*bufPool).poolMutex.lock().unwrap();
     u = 0;
     while u < (*bufPool).totalBuffers {
         totalBufferSize =
             totalBufferSize.wrapping_add((*((*bufPool).buffers).offset(u as isize)).capacity);
         u = u.wrapping_add(1);
     }
-    pthread_mutex_unlock(&mut (*bufPool).poolMutex);
     poolSize
         .wrapping_add(arraySize)
         .wrapping_add(totalBufferSize)
 }
 unsafe fn ZSTDMT_setBufferSize(bufPool: *mut ZSTDMT_bufferPool, bSize: size_t) {
-    pthread_mutex_lock(&mut (*bufPool).poolMutex);
+    let _guard = (*bufPool).poolMutex.lock().unwrap();
     (*bufPool).bufferSize = bSize;
-    pthread_mutex_unlock(&mut (*bufPool).poolMutex);
 }
 unsafe fn ZSTDMT_expandBufferPool(
     srcBufPool: *mut ZSTDMT_bufferPool,
@@ -430,7 +416,7 @@ unsafe fn ZSTDMT_expandBufferPool(
 }
 unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
     let bSize = (*bufPool).bufferSize;
-    pthread_mutex_lock(&mut (*bufPool).poolMutex);
+    let guard = (*bufPool).poolMutex.lock().unwrap();
     if (*bufPool).nbBuffers != 0 {
         (*bufPool).nbBuffers = ((*bufPool).nbBuffers).wrapping_sub(1);
         let buf = *((*bufPool).buffers).offset((*bufPool).nbBuffers as isize);
@@ -440,12 +426,11 @@ unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
             & (availBufferSize >> 3 <= bSize) as core::ffi::c_int
             != 0
         {
-            pthread_mutex_unlock(&mut (*bufPool).poolMutex);
             return buf;
         }
         ZSTD_customFree(buf.start, (*bufPool).cMem);
     }
-    pthread_mutex_unlock(&mut (*bufPool).poolMutex);
+    drop(guard);
     let mut buffer = buffer_s {
         start: core::ptr::null_mut::<core::ffi::c_void>(),
         capacity: 0,
@@ -460,15 +445,14 @@ unsafe fn ZSTDMT_releaseBuffer(bufPool: *mut ZSTDMT_bufferPool, buf: Buffer) {
     if (buf.start).is_null() {
         return;
     }
-    pthread_mutex_lock(&mut (*bufPool).poolMutex);
+    let guard = (*bufPool).poolMutex.lock().unwrap();
     if (*bufPool).nbBuffers < (*bufPool).totalBuffers {
         let fresh0 = (*bufPool).nbBuffers;
         (*bufPool).nbBuffers = ((*bufPool).nbBuffers).wrapping_add(1);
         *((*bufPool).buffers).offset(fresh0 as isize) = buf;
-        pthread_mutex_unlock(&mut (*bufPool).poolMutex);
         return;
     }
-    pthread_mutex_unlock(&mut (*bufPool).poolMutex);
+    drop(guard);
     ZSTD_customFree(buf.start, (*bufPool).cMem);
 }
 unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
@@ -525,7 +509,7 @@ unsafe fn ZSTDMT_freeCCtxPool(pool: *mut ZSTDMT_CCtxPool) {
     if pool.is_null() {
         return;
     }
-    pthread_mutex_destroy(&mut (*pool).poolMutex);
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*pool).poolMutex));
     if !((*pool).cctxs).is_null() {
         let mut cid: core::ffi::c_int = 0;
         cid = 0;
@@ -546,14 +530,10 @@ unsafe fn ZSTDMT_createCCtxPool(
     if cctxPool.is_null() {
         return core::ptr::null_mut();
     }
-    if pthread_mutex_init(
-        &mut (*cctxPool).poolMutex,
-        core::ptr::null::<pthread_mutexattr_t>(),
-    ) != 0
-    {
-        ZSTD_customFree(cctxPool as *mut core::ffi::c_void, cMem);
-        return core::ptr::null_mut();
-    }
+    core::ptr::write(
+        core::ptr::addr_of_mut!((*cctxPool).poolMutex),
+        Mutex::new(()),
+    );
     (*cctxPool).totalCCtx = nbWorkers;
     (*cctxPool).cctxs = ZSTD_customCalloc(
         (nbWorkers as usize).wrapping_mul(::core::mem::size_of::<*mut ZSTD_CCtx>()),
@@ -588,7 +568,7 @@ unsafe fn ZSTDMT_expandCCtxPool(
     ZSTDMT_createCCtxPool(nbWorkers, cMem)
 }
 unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> size_t {
-    pthread_mutex_lock(&mut (*cctxPool).poolMutex);
+    let _guard = (*cctxPool).poolMutex.lock().unwrap();
     let nbWorkers = (*cctxPool).totalCCtx as core::ffi::c_uint;
     let poolSize = ::core::mem::size_of::<ZSTDMT_CCtxPool>();
     let arraySize =
@@ -601,26 +581,23 @@ unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> size_t {
             totalCCtxSize.wrapping_add(ZSTD_sizeof_CCtx(*((*cctxPool).cctxs).offset(u as isize)));
         u = u.wrapping_add(1);
     }
-    pthread_mutex_unlock(&mut (*cctxPool).poolMutex);
     poolSize.wrapping_add(arraySize).wrapping_add(totalCCtxSize)
 }
 unsafe fn ZSTDMT_getCCtx(cctxPool: *mut ZSTDMT_CCtxPool) -> *mut ZSTD_CCtx {
-    pthread_mutex_lock(&mut (*cctxPool).poolMutex);
+    let _guard = (*cctxPool).poolMutex.lock().unwrap();
     if (*cctxPool).availCCtx != 0 {
         (*cctxPool).availCCtx -= 1;
         (*cctxPool).availCCtx;
         let cctx = *((*cctxPool).cctxs).offset((*cctxPool).availCCtx as isize);
-        pthread_mutex_unlock(&mut (*cctxPool).poolMutex);
         return cctx;
     }
-    pthread_mutex_unlock(&mut (*cctxPool).poolMutex);
     ZSTD_createCCtx_advanced((*cctxPool).cMem)
 }
 unsafe fn ZSTDMT_releaseCCtx(pool: *mut ZSTDMT_CCtxPool, cctx: *mut ZSTD_CCtx) {
     if cctx.is_null() {
         return;
     }
-    pthread_mutex_lock(&mut (*pool).poolMutex);
+    let _guard = (*pool).poolMutex.lock().unwrap();
     if (*pool).availCCtx < (*pool).totalCCtx {
         let fresh2 = (*pool).availCCtx;
         (*pool).availCCtx += 1;
@@ -629,7 +606,6 @@ unsafe fn ZSTDMT_releaseCCtx(pool: *mut ZSTDMT_CCtxPool, cctx: *mut ZSTD_CCtx) {
     } else {
         ZSTD_freeCCtx(cctx);
     }
-    pthread_mutex_unlock(&mut (*pool).poolMutex);
 }
 unsafe fn ZSTDMT_serialState_reset(
     serialState: *mut SerialState,
@@ -722,36 +698,32 @@ unsafe fn ZSTDMT_serialState_reset(
     0
 }
 unsafe fn ZSTDMT_serialState_init(serialState: *mut SerialState) -> core::ffi::c_int {
-    let mut initError = 0;
     ptr::write_bytes(
         serialState as *mut u8,
         0,
         ::core::mem::size_of::<SerialState>(),
     );
-    initError |= pthread_mutex_init(
-        &mut (*serialState).mutex,
-        core::ptr::null::<pthread_mutexattr_t>(),
+    core::ptr::write(
+        core::ptr::addr_of_mut!((*serialState).mutex),
+        Mutex::new(()),
     );
-    initError |= pthread_cond_init(
-        &mut (*serialState).cond,
-        core::ptr::null::<pthread_condattr_t>(),
+    core::ptr::write(core::ptr::addr_of_mut!((*serialState).cond), Condvar::new());
+    core::ptr::write(
+        core::ptr::addr_of_mut!((*serialState).ldmWindowMutex),
+        Mutex::new(()),
     );
-    initError |= pthread_mutex_init(
-        &mut (*serialState).ldmWindowMutex,
-        core::ptr::null::<pthread_mutexattr_t>(),
+    core::ptr::write(
+        core::ptr::addr_of_mut!((*serialState).ldmWindowCond),
+        Condvar::new(),
     );
-    initError |= pthread_cond_init(
-        &mut (*serialState).ldmWindowCond,
-        core::ptr::null::<pthread_condattr_t>(),
-    );
-    initError
+    0
 }
 unsafe fn ZSTDMT_serialState_free(serialState: *mut SerialState) {
     let cMem = (*serialState).params.customMem;
-    pthread_mutex_destroy(&mut (*serialState).mutex);
-    pthread_cond_destroy(&mut (*serialState).cond);
-    pthread_mutex_destroy(&mut (*serialState).ldmWindowMutex);
-    pthread_cond_destroy(&mut (*serialState).ldmWindowCond);
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).mutex));
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).cond));
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowMutex));
+    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowCond));
     ZSTD_customFree(
         (*serialState).ldmState.hashTable as *mut core::ffi::c_void,
         cMem,
@@ -767,9 +739,9 @@ unsafe fn ZSTDMT_serialState_genSequences(
     src: Range,
     jobID: core::ffi::c_uint,
 ) {
-    pthread_mutex_lock(&mut (*serialState).mutex);
+    let mut guard = (*serialState).mutex.lock().unwrap();
     while (*serialState).nextJobID < jobID {
-        pthread_cond_wait(&mut (*serialState).cond, &mut (*serialState).mutex);
+        guard = (*serialState).cond.wait(guard).unwrap();
     }
     if (*serialState).nextJobID == jobID {
         if (*serialState).params.ldmParams.enableLdm as core::ffi::c_uint
@@ -785,10 +757,9 @@ unsafe fn ZSTDMT_serialState_genSequences(
             );
             // We provide a large enough buffer to never fail.
             assert!(ZSTD_isError(error) == 0);
-            pthread_mutex_lock(&mut (*serialState).ldmWindowMutex);
+            let _guard = (*serialState).ldmWindowMutex.lock().unwrap();
             (*serialState).ldmWindow = (*serialState).ldmState.window;
-            pthread_cond_signal(&mut (*serialState).ldmWindowCond);
-            pthread_mutex_unlock(&mut (*serialState).ldmWindowMutex);
+            (*serialState).ldmWindowCond.notify_one();
         }
         if (*serialState).params.fParams.checksumFlag != 0 && src.size > 0 {
             ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size);
@@ -796,8 +767,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
     }
     (*serialState).nextJobID = ((*serialState).nextJobID).wrapping_add(1);
     (*serialState).nextJobID;
-    pthread_cond_broadcast(&mut (*serialState).cond);
-    pthread_mutex_unlock(&mut (*serialState).mutex);
+    (*serialState).cond.notify_all();
 }
 unsafe fn ZSTDMT_serialState_applySequences(
     serialState: *const SerialState,
@@ -813,16 +783,14 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
     jobID: core::ffi::c_uint,
     cSize: size_t,
 ) {
-    pthread_mutex_lock(&mut (*serialState).mutex);
+    let _guard = (*serialState).mutex.lock().unwrap();
     if (*serialState).nextJobID <= jobID {
         (*serialState).nextJobID = jobID.wrapping_add(1);
-        pthread_cond_broadcast(&mut (*serialState).cond);
-        pthread_mutex_lock(&mut (*serialState).ldmWindowMutex);
+        (*serialState).cond.notify_all();
+        let _guard = (*serialState).ldmWindowMutex.lock().unwrap();
         ZSTD_window_clear(&mut (*serialState).ldmWindow);
-        pthread_cond_signal(&mut (*serialState).ldmWindowCond);
-        pthread_mutex_unlock(&mut (*serialState).ldmWindowMutex);
+        (*serialState).ldmWindowCond.notify_one();
     }
-    pthread_mutex_unlock(&mut (*serialState).mutex);
 }
 static mut kNullRange: Range = Range {
     start: core::ptr::null(),
@@ -837,16 +805,16 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
     let mut dstBuff = (*job).dstBuff;
     let mut lastCBlockSize = 0;
     if cctx.is_null() {
-        pthread_mutex_lock(&mut (*job).job_mutex);
+        let guard = (*job).job_mutex.lock().unwrap();
         (*job).cSize = Error::memory_allocation.to_error_code();
-        pthread_mutex_unlock(&mut (*job).job_mutex);
+        drop(guard);
     } else {
         if (dstBuff.start).is_null() {
             dstBuff = ZSTDMT_getBuffer((*job).bufPool);
             if (dstBuff.start).is_null() {
-                pthread_mutex_lock(&mut (*job).job_mutex);
+                let guard = (*job).job_mutex.lock().unwrap();
                 (*job).cSize = Error::memory_allocation.to_error_code();
-                pthread_mutex_unlock(&mut (*job).job_mutex);
+                drop(guard);
                 current_block = 17100290475540901977;
             } else {
                 (*job).dstBuff = dstBuff;
@@ -862,9 +830,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                     == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
                     && (rawSeqStore.seq).is_null()
                 {
-                    pthread_mutex_lock(&mut (*job).job_mutex);
+                    let guard = (*job).job_mutex.lock().unwrap();
                     (*job).cSize = Error::memory_allocation.to_error_code();
-                    pthread_mutex_unlock(&mut (*job).job_mutex);
+                    drop(guard);
                 } else {
                     if (*job).jobID != 0 {
                         jobParams.fParams.checksumFlag = 0;
@@ -889,9 +857,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                             (*job).fullFrameSize,
                         );
                         if ERR_isError(initError) != 0 {
-                            pthread_mutex_lock(&mut (*job).job_mutex);
+                            let guard = (*job).job_mutex.lock().unwrap();
                             (*job).cSize = initError;
-                            pthread_mutex_unlock(&mut (*job).job_mutex);
+                            drop(guard);
                             current_block = 17100290475540901977;
                         } else {
                             current_block = 16738040538446813684;
@@ -908,9 +876,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                             ((*job).firstJob == 0) as core::ffi::c_int,
                         );
                         if ERR_isError(forceWindowError) != 0 {
-                            pthread_mutex_lock(&mut (*job).job_mutex);
+                            let guard = (*job).job_mutex.lock().unwrap();
                             (*job).cSize = forceWindowError;
-                            pthread_mutex_unlock(&mut (*job).job_mutex);
+                            drop(guard);
                             current_block = 17100290475540901977;
                         } else {
                             if (*job).firstJob == 0 {
@@ -920,9 +888,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                     0,
                                 );
                                 if ERR_isError(err) != 0 {
-                                    pthread_mutex_lock(&mut (*job).job_mutex);
+                                    let guard = (*job).job_mutex.lock().unwrap();
                                     (*job).cSize = err;
-                                    pthread_mutex_unlock(&mut (*job).job_mutex);
+                                    drop(guard);
                                     current_block = 17100290475540901977;
                                 } else {
                                     current_block = 2543120759711851213;
@@ -944,9 +912,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                         pledgedSrcSize as core::ffi::c_ulonglong,
                                     );
                                     if ERR_isError(initError_0) != 0 {
-                                        pthread_mutex_lock(&mut (*job).job_mutex);
+                                        let guard = (*job).job_mutex.lock().unwrap();
                                         (*job).cSize = initError_0;
-                                        pthread_mutex_unlock(&mut (*job).job_mutex);
+                                        drop(guard);
                                         current_block = 17100290475540901977;
                                     } else {
                                         current_block = 16738040538446813684;
@@ -968,9 +936,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                     0,
                                 );
                                 if ERR_isError(hSize) != 0 {
-                                    pthread_mutex_lock(&mut (*job).job_mutex);
+                                    let guard = (*job).job_mutex.lock().unwrap();
                                     (*job).cSize = hSize;
-                                    pthread_mutex_unlock(&mut (*job).job_mutex);
+                                    drop(guard);
                                     current_block = 17100290475540901977;
                                 } else {
                                     ZSTD_invalidateRepCodes(cctx);
@@ -1008,19 +976,19 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                             chunkSize,
                                         );
                                         if ERR_isError(cSize) != 0 {
-                                            pthread_mutex_lock(&mut (*job).job_mutex);
+                                            let guard = (*job).job_mutex.lock().unwrap();
                                             (*job).cSize = cSize;
-                                            pthread_mutex_unlock(&mut (*job).job_mutex);
+                                            drop(guard);
                                             current_block = 17100290475540901977;
                                             break;
                                         } else {
                                             ip = ip.add(chunkSize);
                                             op = op.add(cSize);
-                                            pthread_mutex_lock(&mut (*job).job_mutex);
+                                            let guard = (*job).job_mutex.lock().unwrap();
                                             (*job).cSize = ((*job).cSize).wrapping_add(cSize);
                                             (*job).consumed = chunkSize * chunkNb as size_t;
-                                            pthread_cond_signal(&mut (*job).job_cond);
-                                            pthread_mutex_unlock(&mut (*job).job_mutex);
+                                            (*job).job_cond.notify_one();
+                                            drop(guard);
                                             chunkNb += 1;
                                         }
                                     }
@@ -1064,9 +1032,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                                     )
                                                 };
                                                 if ERR_isError(cSize_0) != 0 {
-                                                    pthread_mutex_lock(&mut (*job).job_mutex);
+                                                    let guard = (*job).job_mutex.lock().unwrap();
                                                     (*job).cSize = cSize_0;
-                                                    pthread_mutex_unlock(&mut (*job).job_mutex);
+                                                    drop(guard);
                                                     current_block = 17100290475540901977;
                                                 } else {
                                                     lastCBlockSize = cSize_0;
@@ -1096,13 +1064,12 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
     (*job).prefix.size > 0;
     ZSTDMT_releaseSeq((*job).seqPool, rawSeqStore);
     ZSTDMT_releaseCCtx((*job).cctxPool, cctx);
-    pthread_mutex_lock(&mut (*job).job_mutex);
+    let _guard = (*job).job_mutex.lock().unwrap();
     ERR_isError((*job).cSize);
     0;
     (*job).cSize = ((*job).cSize).wrapping_add(lastCBlockSize);
     (*job).consumed = (*job).src.size;
-    pthread_cond_signal(&mut (*job).job_cond);
-    pthread_mutex_unlock(&mut (*job).job_mutex);
+    (*job).job_cond.notify_one();
 }
 static mut kNullRoundBuff: RoundBuff_t = RoundBuff_t {
     buffer: core::ptr::null_mut(),
@@ -1123,8 +1090,12 @@ unsafe fn ZSTDMT_freeJobsTable(
     }
     jobNb = 0;
     while jobNb < nbJobs {
-        pthread_mutex_destroy(&mut (*jobTable.offset(jobNb as isize)).job_mutex);
-        pthread_cond_destroy(&mut (*jobTable.offset(jobNb as isize)).job_cond);
+        core::ptr::drop_in_place(core::ptr::addr_of_mut!(
+            (*jobTable.offset(jobNb as isize)).job_mutex
+        ));
+        core::ptr::drop_in_place(core::ptr::addr_of_mut!(
+            (*jobTable.offset(jobNb as isize)).job_cond
+        ));
         jobNb = jobNb.wrapping_add(1);
     }
     ZSTD_customFree(jobTable as *mut core::ffi::c_void, cMem);
@@ -1140,26 +1111,21 @@ unsafe fn ZSTDMT_createJobsTable(
         (nbJobs as usize).wrapping_mul(::core::mem::size_of::<ZSTDMT_jobDescription>()),
         cMem,
     ) as *mut ZSTDMT_jobDescription;
-    let mut initError = 0;
     if jobTable.is_null() {
         return core::ptr::null_mut();
     }
     *nbJobsPtr = nbJobs;
     jobNb = 0;
     while jobNb < nbJobs {
-        initError |= pthread_mutex_init(
-            &mut (*jobTable.offset(jobNb as isize)).job_mutex,
-            core::ptr::null::<pthread_mutexattr_t>(),
+        core::ptr::write(
+            core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_mutex),
+            Mutex::new(()),
         );
-        initError |= pthread_cond_init(
-            &mut (*jobTable.offset(jobNb as isize)).job_cond,
-            core::ptr::null::<pthread_condattr_t>(),
+        core::ptr::write(
+            core::ptr::addr_of_mut!((*jobTable.offset(jobNb as isize)).job_cond),
+            Condvar::new(),
         );
         jobNb = jobNb.wrapping_add(1);
-    }
-    if initError != 0 {
-        ZSTDMT_freeJobsTable(jobTable, nbJobs, cMem);
-        return core::ptr::null_mut();
     }
     jobTable
 }
@@ -1269,8 +1235,12 @@ unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
     let mut jobID: core::ffi::c_uint = 0;
     jobID = 0;
     while jobID <= (*mtctx).jobIDMask {
-        let mutex = (*((*mtctx).jobs).offset(jobID as isize)).job_mutex;
-        let cond = (*((*mtctx).jobs).offset(jobID as isize)).job_cond;
+        let mutex = core::ptr::read(core::ptr::addr_of!(
+            (*((*mtctx).jobs).offset(jobID as isize)).job_mutex
+        ));
+        let cond = core::ptr::read(core::ptr::addr_of!(
+            (*((*mtctx).jobs).offset(jobID as isize)).job_cond
+        ));
         ZSTDMT_releaseBuffer(
             (*mtctx).bufPool,
             (*((*mtctx).jobs).offset(jobID as isize)).dstBuff,
@@ -1280,8 +1250,14 @@ unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
             0,
             ::core::mem::size_of::<ZSTDMT_jobDescription>(),
         );
-        (*((*mtctx).jobs).offset(jobID as isize)).job_mutex = mutex;
-        (*((*mtctx).jobs).offset(jobID as isize)).job_cond = cond;
+        core::ptr::write(
+            core::ptr::addr_of_mut!((*((*mtctx).jobs).offset(jobID as isize)).job_mutex),
+            mutex,
+        );
+        core::ptr::write(
+            core::ptr::addr_of_mut!((*((*mtctx).jobs).offset(jobID as isize)).job_cond),
+            cond,
+        );
         jobID = jobID.wrapping_add(1);
     }
     (*mtctx).inBuff.buffer = g_nullBuffer;
@@ -1291,18 +1267,19 @@ unsafe fn ZSTDMT_releaseAllJobResources(mtctx: *mut ZSTDMT_CCtx) {
 unsafe fn ZSTDMT_waitForAllJobsCompleted(mtctx: *mut ZSTDMT_CCtx) {
     while (*mtctx).doneJobID < (*mtctx).nextJobID {
         let jobID = (*mtctx).doneJobID & (*mtctx).jobIDMask;
-        pthread_mutex_lock(&mut (*((*mtctx).jobs).offset(jobID as isize)).job_mutex);
+        let mut guard = (*((*mtctx).jobs).offset(jobID as isize))
+            .job_mutex
+            .lock()
+            .unwrap();
         while (*((*mtctx).jobs).offset(jobID as isize)).consumed
             < (*((*mtctx).jobs).offset(jobID as isize)).src.size
         {
-            pthread_cond_wait(
-                &mut (*((*mtctx).jobs).offset(jobID as isize)).job_cond,
-                &mut (*((*mtctx).jobs).offset(jobID as isize)).job_mutex,
-            );
+            guard = (*((*mtctx).jobs).offset(jobID as isize))
+                .job_cond
+                .wait(guard)
+                .unwrap();
         }
-        pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(jobID as isize)).job_mutex);
-        (*mtctx).doneJobID = ((*mtctx).doneJobID).wrapping_add(1);
-        (*mtctx).doneJobID;
+        (*mtctx).doneJobID += 1;
     }
 }
 pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
@@ -1415,7 +1392,7 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         let wJobID = jobNb & (*mtctx).jobIDMask;
         let jobPtr: *mut ZSTDMT_jobDescription =
             &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
-        pthread_mutex_lock(&mut (*jobPtr).job_mutex);
+        let _guard = (*jobPtr).job_mutex.lock().unwrap();
         let cResult = (*jobPtr).cSize;
         let produced = if ERR_isError(cResult) != 0 {
             0
@@ -1434,8 +1411,7 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
         fps.nbActiveWorkers = (fps.nbActiveWorkers).wrapping_add(
             ((*jobPtr).consumed < (*jobPtr).src.size) as core::ffi::c_int as core::ffi::c_uint,
         );
-        pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
-        jobNb = jobNb.wrapping_add(1);
+        jobNb += 1;
     }
     fps
 }
@@ -1448,7 +1424,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     let wJobID = jobID & (*mtctx).jobIDMask;
     let jobPtr: *mut ZSTDMT_jobDescription =
         &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
-    pthread_mutex_lock(&mut (*jobPtr).job_mutex);
+    let _guard = (*jobPtr).job_mutex.lock().unwrap();
     let cResult = (*jobPtr).cSize;
     let produced = if ERR_isError(cResult) != 0 {
         0
@@ -1462,7 +1438,6 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     };
     toFlush = produced.wrapping_sub(flushed);
     toFlush == 0;
-    pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
     toFlush
 }
 unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::ffi::c_uint {
@@ -1794,7 +1769,10 @@ unsafe fn ZSTDMT_flushProduced(
     end: ZSTD_EndDirective,
 ) -> size_t {
     let wJobID = (*mtctx).doneJobID & (*mtctx).jobIDMask;
-    pthread_mutex_lock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
+    let mut guard = (*((*mtctx).jobs).offset(wJobID as isize))
+        .job_mutex
+        .lock()
+        .unwrap();
     if blockToFlush != 0 && (*mtctx).doneJobID < (*mtctx).nextJobID {
         while (*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed
             == (*((*mtctx).jobs).offset(wJobID as isize)).cSize
@@ -1804,16 +1782,16 @@ unsafe fn ZSTDMT_flushProduced(
             {
                 break;
             }
-            pthread_cond_wait(
-                &mut (*((*mtctx).jobs).offset(wJobID as isize)).job_cond,
-                &mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex,
-            );
+            guard = (*((*mtctx).jobs).offset(wJobID as isize))
+                .job_cond
+                .wait(guard)
+                .unwrap();
         }
     }
     let mut cSize = (*((*mtctx).jobs).offset(wJobID as isize)).cSize;
     let srcConsumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed;
     let srcSize = (*((*mtctx).jobs).offset(wJobID as isize)).src.size;
-    pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
+    drop(guard);
     if ERR_isError(cSize) != 0 {
         ZSTDMT_waitForAllJobsCompleted(mtctx);
         ZSTDMT_releaseAllJobResources(mtctx);
@@ -1903,9 +1881,12 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
     while jobID < lastJobID {
         let wJobID = jobID & (*mtctx).jobIDMask;
         let mut consumed: size_t = 0;
-        pthread_mutex_lock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
+        let guard = (*((*mtctx).jobs).offset(wJobID as isize))
+            .job_mutex
+            .lock()
+            .unwrap();
         consumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed;
-        pthread_mutex_unlock(&mut (*((*mtctx).jobs).offset(wJobID as isize)).job_mutex);
+        drop(guard);
         if consumed < (*((*mtctx).jobs).offset(wJobID as isize)).src.size {
             let mut range = (*((*mtctx).jobs).offset(wJobID as isize)).prefix;
             if range.size == 0 {
@@ -1951,12 +1932,10 @@ unsafe fn ZSTDMT_waitForLdmComplete(mtctx: *mut ZSTDMT_CCtx, buffer: Buffer) {
     if (*mtctx).params.ldmParams.enableLdm as core::ffi::c_uint
         == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
     {
-        let mutex: *mut pthread_mutex_t = &mut (*mtctx).serial.ldmWindowMutex;
-        pthread_mutex_lock(mutex);
+        let mut guard = (*mtctx).serial.ldmWindowMutex.lock().unwrap();
         while ZSTDMT_doesOverlapWindow(buffer, (*mtctx).serial.ldmWindow) != 0 {
-            pthread_cond_wait(&mut (*mtctx).serial.ldmWindowCond, mutex);
+            guard = (*mtctx).serial.ldmWindowCond.wait(guard).unwrap();
         }
-        pthread_mutex_unlock(mutex);
     }
 }
 unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
