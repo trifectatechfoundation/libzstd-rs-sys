@@ -21,6 +21,10 @@ jobs:
   build:
     name: Build and test
     runs-on: "${{ matrix.os }}"
+    env:
+      RUST_BACKTRACE: 1
+      RUSTFLAGS: "-Awarnings"
+      CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: i686-linux-gnu-gcc
     strategy:
       matrix:
         include:
@@ -83,10 +87,6 @@ jobs:
       - name: cargo llvm-cov nextest
         if: matrix.os != 'windows-2022'
         run: cargo llvm-cov nextest --target ${{matrix.target}} ${{ matrix.features }} --lcov --output-path lcov.info --ignore-filename-regex "test-" --workspace
-        env:
-          RUST_BACKTRACE: 1
-          RUSTFLAGS: "-Awarnings"
-          CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: i686-linux-gnu-gcc
       # - name: Upload coverage to Codecov
       #   uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
       #   if: matrix.os != 'windows-2022' && matrix.rust == 'stable'
