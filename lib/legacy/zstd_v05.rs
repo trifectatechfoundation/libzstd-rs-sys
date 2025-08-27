@@ -2775,18 +2775,18 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
     }
     ip.offset_from(istart) as size_t
 }
-unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
+unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: &mut seqState_t) {
     let mut litLength: size_t = 0;
     let mut prevOffset: size_t = 0;
     let mut offset: size_t = 0;
     let mut matchLength: size_t = 0;
-    let mut dumps = (*seqState).dumps;
-    let de = (*seqState).dumpsEnd;
-    litLength = FSEv05_peakSymbol(&mut (*seqState).stateLL) as size_t;
+    let mut dumps = seqState.dumps;
+    let de = seqState.dumpsEnd;
+    litLength = FSEv05_peakSymbol(&mut seqState.stateLL) as size_t;
     prevOffset = if litLength != 0 {
         (*seq).offset
     } else {
-        (*seqState).prevOffset
+        seqState.prevOffset
     };
     if litLength == MaxLL as size_t {
         let fresh44 = dumps;
@@ -2812,28 +2812,28 @@ unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
         131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 1, 1, 1, 1,
         1,
     ];
-    let offsetCode = FSEv05_peakSymbol(&mut (*seqState).stateOffb) as u32;
+    let offsetCode = FSEv05_peakSymbol(&mut seqState.stateOffb) as u32;
     let mut nbBits = offsetCode.wrapping_sub(1);
     if offsetCode == 0 {
         nbBits = 0;
     }
     offset = (*offsetPrefix.as_ptr().offset(offsetCode as isize) as size_t)
-        .wrapping_add(BITv05_readBits(&mut (*seqState).DStream, nbBits));
+        .wrapping_add(BITv05_readBits(&mut seqState.DStream, nbBits));
     if MEM_32bits() != 0 {
-        BITv05_reloadDStream(&mut (*seqState).DStream);
+        BITv05_reloadDStream(&mut seqState.DStream);
     }
     if offsetCode == 0 {
         offset = prevOffset;
     }
     if offsetCode | (litLength == 0) as core::ffi::c_int as u32 != 0 {
-        (*seqState).prevOffset = (*seq).offset;
+        seqState.prevOffset = (*seq).offset;
     }
-    FSEv05_decodeSymbol(&mut (*seqState).stateOffb, &mut (*seqState).DStream);
-    FSEv05_decodeSymbol(&mut (*seqState).stateLL, &mut (*seqState).DStream);
+    FSEv05_decodeSymbol(&mut seqState.stateOffb, &mut seqState.DStream);
+    FSEv05_decodeSymbol(&mut seqState.stateLL, &mut seqState.DStream);
     if MEM_32bits() != 0 {
-        BITv05_reloadDStream(&mut (*seqState).DStream);
+        BITv05_reloadDStream(&mut seqState.DStream);
     }
-    matchLength = FSEv05_decodeSymbol(&mut (*seqState).stateML, &mut (*seqState).DStream) as size_t;
+    matchLength = FSEv05_decodeSymbol(&mut seqState.stateML, &mut seqState.DStream) as size_t;
     if matchLength == MaxML as size_t {
         let add_0 = (if dumps < de {
             let fresh45 = dumps;
@@ -2862,7 +2862,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
     (*seq).litLength = litLength;
     (*seq).offset = offset;
     (*seq).matchLength = matchLength;
-    (*seqState).dumps = dumps;
+    seqState.dumps = dumps;
 }
 unsafe fn ZSTDv05_execSequence(
     mut op: *mut u8,
@@ -3034,9 +3034,9 @@ unsafe fn ZSTDv05_decompressSequences(
             stateLL: FSEv05_DState_t::default(),
             stateOffb: FSEv05_DState_t::default(),
             stateML: FSEv05_DState_t::default(),
-            prevOffset: 0,
-            dumps: core::ptr::null::<u8>(),
-            dumpsEnd: core::ptr::null::<u8>(),
+            prevOffset: REPCODE_STARTVALUE as size_t,
+            dumps,
+            dumpsEnd: dumps.add(dumpsLength),
         };
         ptr::write_bytes(
             &mut sequence as *mut seq_t as *mut u8,
@@ -3044,9 +3044,6 @@ unsafe fn ZSTDv05_decompressSequences(
             ::core::mem::size_of::<seq_t>(),
         );
         sequence.offset = REPCODE_STARTVALUE as size_t;
-        seqState.dumps = dumps;
-        seqState.dumpsEnd = dumps.add(dumpsLength);
-        seqState.prevOffset = REPCODE_STARTVALUE as size_t;
         errorCode = BITv05_initDStream(
             &mut seqState.DStream,
             ip as *const core::ffi::c_void,
