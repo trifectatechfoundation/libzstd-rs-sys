@@ -136,7 +136,7 @@ struct algo_time_t {
     decode256Time: u32,
 }
 #[repr(C)]
-pub(crate) struct ZBUFFv05_DCtx_s {
+pub(crate) struct ZBUFFv05_DCtx {
     zc: *mut ZSTDv05_DCtx,
     params: ZSTDv05_parameters,
     inBuff: *mut core::ffi::c_char,
@@ -158,7 +158,6 @@ const ZBUFFv05ds_decodeHeader: ZBUFFv05_dStage = 3;
 const ZBUFFv05ds_loadHeader: ZBUFFv05_dStage = 2;
 const ZBUFFv05ds_readHeader: ZBUFFv05_dStage = 1;
 const ZBUFFv05ds_init: ZBUFFv05_dStage = 0;
-type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
 const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb525 as core::ffi::c_uint;
 const ZSTDv05_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 11;
 const ZSTDv05_DICT_MAGIC: core::ffi::c_uint = 0xec30a435 as core::ffi::c_uint;
@@ -3579,7 +3578,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
     ZSTDv05_decompressBegin_usingDict(&mut *(*zbc).zc, dict, dictSize)
 }
 pub(crate) unsafe fn ZBUFFv05_decompressContinue(
-    zbc: *mut ZBUFFv05_DCtx,
+    zbc: &mut ZBUFFv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSizePtr: *mut size_t,
     src: *const core::ffi::c_void,
