@@ -37,7 +37,7 @@ use crate::lib::common::zstd_trace::{
 };
 
 use crate::lib::legacy::zstd_v05::{
-    ZBUFFv05_DCtx_s, ZBUFFv05_createDCtx, ZBUFFv05_decompressContinue,
+    ZBUFFv05_DCtx, ZBUFFv05_createDCtx, ZBUFFv05_decompressContinue,
     ZBUFFv05_decompressInitDictionary, ZBUFFv05_freeDCtx, ZSTDv05_createDCtx,
     ZSTDv05_decompress_usingDict, ZSTDv05_fast, ZSTDv05_findFrameSizeInfoLegacy, ZSTDv05_freeDCtx,
     ZSTDv05_getFrameParams, ZSTDv05_parameters,
@@ -70,7 +70,6 @@ pub struct ZSTD_cpuid_t {
 }
 type ZBUFFv07_DCtx = ZBUFFv07_DCtx_s;
 type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
-type ZBUFFv05_DCtx = ZBUFFv05_DCtx_s;
 type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
@@ -501,7 +500,7 @@ unsafe fn ZSTD_decompressLegacyStream(
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
             let mut decodedSize = (output.size).wrapping_sub(output.pos);
             let hintSize =
-                ZBUFFv05_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
+                ZBUFFv05_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
             output.pos = (output.pos).wrapping_add(decodedSize);
             input.pos = (input.pos).wrapping_add(readSize);
             hintSize
