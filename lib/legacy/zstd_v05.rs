@@ -209,7 +209,7 @@ unsafe fn ZSTDv05_wildcopy(
     }
 }
 #[inline]
-unsafe fn BITv05_highbit32(val: u32) -> core::ffi::c_uint {
+fn BITv05_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
 }
 
@@ -289,7 +289,7 @@ unsafe fn BITv05_lookBits(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
         >> (bitMask.wrapping_sub(nbBits) & bitMask)
 }
 #[inline]
-unsafe fn BITv05_lookBitsFast(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
+fn BITv05_lookBitsFast(bitD: &mut BITv05_DStream_t, nbBits: u32) -> size_t {
     let bitMask = (::core::mem::size_of::<size_t>())
         .wrapping_mul(8)
         .wrapping_sub(1) as u32;
@@ -341,7 +341,7 @@ unsafe fn BITv05_reloadDStream(bitD: &mut BITv05_DStream_t) -> BITv05_DStream_st
     result
 }
 #[inline]
-unsafe fn BITv05_endOfDStream(DStream: &BITv05_DStream_t) -> core::ffi::c_uint {
+fn BITv05_endOfDStream(DStream: &BITv05_DStream_t) -> core::ffi::c_uint {
     (DStream.ptr == DStream.start
         && DStream.bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
         as core::ffi::c_int as core::ffi::c_uint
@@ -396,7 +396,7 @@ const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 const FSEv05_MAX_TABLELOG: core::ffi::c_int = FSEv05_MAX_MEMORY_USAGE - 2;
 const FSEv05_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSEv05_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
-unsafe fn FSEv05_tableStep(tableSize: u32) -> u32 {
+fn FSEv05_tableStep(tableSize: u32) -> u32 {
     (tableSize >> 1)
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3)
@@ -493,15 +493,11 @@ unsafe fn FSEv05_buildDTable(
     );
     0
 }
-unsafe fn FSEv05_isError(code: size_t) -> core::ffi::c_uint {
+fn FSEv05_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
-unsafe fn FSEv05_abs(a: core::ffi::c_short) -> core::ffi::c_short {
-    (if (a as core::ffi::c_int) < 0 {
-        -(a as core::ffi::c_int)
-    } else {
-        a as core::ffi::c_int
-    }) as core::ffi::c_short
+fn FSEv05_abs(a: core::ffi::c_short) -> core::ffi::c_short {
+    a.abs()
 }
 unsafe fn FSEv05_readNCount(
     normalizedCounter: *mut core::ffi::c_short,
@@ -820,7 +816,7 @@ unsafe fn FSEv05_decompress(
 const HUFv05_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
 const HUFv05_MAX_TABLELOG: core::ffi::c_int = 12;
 const HUFv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
-unsafe fn HUFv05_isError(code: size_t) -> core::ffi::c_uint {
+fn HUFv05_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
 unsafe fn HUFv05_readStats(
@@ -2254,7 +2250,7 @@ unsafe fn HUFv05_decompress(
 unsafe fn ZSTDv05_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 4);
 }
-unsafe fn ZSTDv05_isError(code: size_t) -> core::ffi::c_uint {
+fn ZSTDv05_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code)
 }
 unsafe fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> size_t {
@@ -3235,9 +3231,9 @@ pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src, srcSize)
 }
-unsafe fn ZSTD_errorFrameSizeInfoLegacy(
-    cSize: *mut size_t,
-    dBound: *mut core::ffi::c_ulonglong,
+fn ZSTD_errorFrameSizeInfoLegacy(
+    cSize: &mut size_t,
+    dBound: &mut core::ffi::c_ulonglong,
     ret: size_t,
 ) {
     *cSize = ret;
@@ -3246,8 +3242,8 @@ unsafe fn ZSTD_errorFrameSizeInfoLegacy(
 pub(crate) unsafe fn ZSTDv05_findFrameSizeInfoLegacy(
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    cSize: *mut size_t,
-    dBound: *mut core::ffi::c_ulonglong,
+    cSize: &mut size_t,
+    dBound: &mut core::ffi::c_ulonglong,
 ) {
     let mut ip = src as *const u8;
     let mut remainingSize = srcSize;
