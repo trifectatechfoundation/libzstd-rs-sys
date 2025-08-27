@@ -283,7 +283,6 @@ unsafe fn ZSTD_window_update(
     }
     contiguous
 }
-const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 #[inline]
 unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
@@ -756,7 +755,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
                 src.size,
             );
             // We provide a large enough buffer to never fail.
-            assert!(ZSTD_isError(error) == 0);
+            assert!(!ERR_isError(error));
             let _guard = (*serialState).ldmWindowMutex.lock().unwrap();
             (*serialState).ldmWindow = (*serialState).ldmState.window;
             (*serialState).ldmWindowCond.notify_one();
@@ -856,7 +855,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                             &jobParams,
                             (*job).fullFrameSize,
                         );
-                        if ERR_isError(initError) != 0 {
+                        if ERR_isError(initError) {
                             let guard = (*job).job_mutex.lock().unwrap();
                             (*job).cSize = initError;
                             drop(guard);
@@ -875,7 +874,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                             ZSTD_c_forceMaxWindow as ZSTD_cParameter,
                             ((*job).firstJob == 0) as core::ffi::c_int,
                         );
-                        if ERR_isError(forceWindowError) != 0 {
+                        if ERR_isError(forceWindowError) {
                             let guard = (*job).job_mutex.lock().unwrap();
                             (*job).cSize = forceWindowError;
                             drop(guard);
@@ -887,7 +886,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                     ZSTD_c_deterministicRefPrefix as ZSTD_cParameter,
                                     0,
                                 );
-                                if ERR_isError(err) != 0 {
+                                if ERR_isError(err) {
                                     let guard = (*job).job_mutex.lock().unwrap();
                                     (*job).cSize = err;
                                     drop(guard);
@@ -911,7 +910,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                         &jobParams,
                                         pledgedSrcSize as core::ffi::c_ulonglong,
                                     );
-                                    if ERR_isError(initError_0) != 0 {
+                                    if ERR_isError(initError_0) {
                                         let guard = (*job).job_mutex.lock().unwrap();
                                         (*job).cSize = initError_0;
                                         drop(guard);
@@ -935,7 +934,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                     (*job).src.start,
                                     0,
                                 );
-                                if ERR_isError(hSize) != 0 {
+                                if ERR_isError(hSize) {
                                     let guard = (*job).job_mutex.lock().unwrap();
                                     (*job).cSize = hSize;
                                     drop(guard);
@@ -975,7 +974,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                             ip as *const core::ffi::c_void,
                                             chunkSize,
                                         );
-                                        if ERR_isError(cSize) != 0 {
+                                        if ERR_isError(cSize) {
                                             let guard = (*job).job_mutex.lock().unwrap();
                                             (*job).cSize = cSize;
                                             drop(guard);
@@ -1031,7 +1030,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                                         lastBlockSize,
                                                     )
                                                 };
-                                                if ERR_isError(cSize_0) != 0 {
+                                                if ERR_isError(cSize_0) {
                                                     let guard = (*job).job_mutex.lock().unwrap();
                                                     (*job).cSize = cSize_0;
                                                     drop(guard);
@@ -1330,7 +1329,7 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
         return Error::memory_allocation.to_error_code();
     }
     let err_code = ZSTDMT_expandJobsTable(mtctx, nbWorkers);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     (*mtctx).bufPool = ZSTDMT_expandBufferPool(
@@ -1394,12 +1393,8 @@ pub unsafe fn ZSTDMT_getFrameProgression(mtctx: *mut ZSTDMT_CCtx) -> ZSTD_frameP
             &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
         let _guard = (*jobPtr).job_mutex.lock().unwrap();
         let cResult = (*jobPtr).cSize;
-        let produced = if ERR_isError(cResult) != 0 {
-            0
-        } else {
-            cResult
-        };
-        let flushed = if ERR_isError(cResult) != 0 {
+        let produced = if ERR_isError(cResult) { 0 } else { cResult };
+        let flushed = if ERR_isError(cResult) {
             0
         } else {
             (*jobPtr).dstFlushed
@@ -1426,12 +1421,8 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
         &mut *((*mtctx).jobs).offset(wJobID as isize) as *mut ZSTDMT_jobDescription;
     let _guard = (*jobPtr).job_mutex.lock().unwrap();
     let cResult = (*jobPtr).cSize;
-    let produced = if ERR_isError(cResult) != 0 {
-        0
-    } else {
-        cResult
-    };
-    let flushed = if ERR_isError(cResult) != 0 {
+    let produced = if ERR_isError(cResult) { 0 } else { cResult };
+    let flushed = if ERR_isError(cResult) {
         0
     } else {
         (*jobPtr).dstFlushed
@@ -1517,7 +1508,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
 ) -> size_t {
     if params.nbWorkers != (*mtctx).params.nbWorkers {
         let err_code = ZSTDMT_resize(mtctx, params.nbWorkers as core::ffi::c_uint);
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
     }
@@ -1792,7 +1783,7 @@ unsafe fn ZSTDMT_flushProduced(
     let srcConsumed = (*((*mtctx).jobs).offset(wJobID as isize)).consumed;
     let srcSize = (*((*mtctx).jobs).offset(wJobID as isize)).src.size;
     drop(guard);
-    if ERR_isError(cSize) != 0 {
+    if ERR_isError(cSize) {
         ZSTDMT_waitForAllJobsCompleted(mtctx);
         ZSTDMT_releaseAllJobResources(mtctx);
         return cSize;
@@ -2110,7 +2101,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     {
         let jobSize = (*mtctx).inBuff.filled;
         let err_code = ZSTDMT_createCompressionJob(mtctx, jobSize, endOp);
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
     }

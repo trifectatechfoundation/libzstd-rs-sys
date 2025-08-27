@@ -858,7 +858,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         parameters.splitPoint,
         displayLevel,
     );
-    if ERR_isError(initVal) != 0 {
+    if ERR_isError(initVal) {
         return initVal;
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffixSize, displayLevel);
@@ -894,7 +894,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         nbSamples,
         parameters.zParams,
     );
-    if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 {
+    if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize,);
     }
     COVER_ctx_destroy(&mut ctx);
@@ -955,7 +955,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
                 *samplesSizes.add(i),
                 cdict,
             );
-            if ERR_isError(size) != 0 {
+            if ERR_isError(size) {
                 totalCompressedSize = size;
                 break;
             } else {
@@ -1062,7 +1062,7 @@ pub(super) unsafe fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelect
 pub(super) unsafe fn COVER_dictSelectionIsError(
     selection: COVER_dictSelection_t,
 ) -> core::ffi::c_uint {
-    (ERR_isError(selection.totalCompressedSize) != 0 || (selection.dictContent).is_null())
+    (ERR_isError(selection.totalCompressedSize) || (selection.dictContent).is_null())
         as core::ffi::c_int as core::ffi::c_uint
 }
 pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
@@ -1123,7 +1123,7 @@ pub(super) unsafe fn COVER_selectDict(
         largestDictbuffer,
         dictContentSize,
     );
-    if ERR_isError(totalCompressedSize) != 0 {
+    if ERR_isError(totalCompressedSize) {
         free(largestDictbuffer as *mut core::ffi::c_void);
         free(candidateDictBuffer as *mut core::ffi::c_void);
         return COVER_dictSelectionError(totalCompressedSize);
@@ -1166,7 +1166,7 @@ pub(super) unsafe fn COVER_selectDict(
             candidateDictBuffer,
             dictContentSize,
         );
-        if ERR_isError(totalCompressedSize) != 0 {
+        if ERR_isError(totalCompressedSize) {
             free(largestDictbuffer as *mut core::ffi::c_void);
             free(candidateDictBuffer as *mut core::ffi::c_void);
             return COVER_dictSelectionError(totalCompressedSize);
@@ -1398,7 +1398,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             splitPoint,
             childDisplayLevel,
         );
-        if ERR_isError(initVal) != 0 {
+        if ERR_isError(initVal) {
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
@@ -1477,7 +1477,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         println!("\r{:79 }\r", "");
     }
     let dictSize = best.dictSize;
-    if ERR_isError(best.compressedSize) != 0 {
+    if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
         COVER_best_destroy(&mut best);
         POOL_free(pool);

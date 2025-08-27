@@ -329,7 +329,6 @@ unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
         }
     };
 }
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
@@ -420,7 +419,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     };
     op = op.add(cSize);
     cLitSize = cLitSize.wrapping_add(cSize);
-    if cSize == 0 || ERR_isError(cSize) != 0 {
+    if cSize == 0 || ERR_isError(cSize) {
         return 0;
     }
     if writeEntropy == 0 && cLitSize >= litSize {
@@ -575,7 +574,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         bmi2,
     );
     let err_code = bitstreamSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     op = op.add(bitstreamSize);
@@ -626,7 +625,7 @@ unsafe fn ZSTD_compressSubBlock(
         litEntropyWritten,
     );
     let err_code = cLitSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if cLitSize == 0 {
@@ -649,7 +648,7 @@ unsafe fn ZSTD_compressSubBlock(
         seqEntropyWritten,
     );
     let err_code_0 = cSeqSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if cSeqSize == 0 {
@@ -696,7 +695,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             workspace,
             wkspSize,
         );
-        if ERR_isError(largest) != 0 {
+        if ERR_isError(largest) {
             return litSize;
         }
         let mut cLitSizeEstimate =
@@ -748,7 +747,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
-    if ERR_isError(cSymbolTypeSizeEstimateInBits) != 0 {
+    if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
     }
     while ctp < ctEnd {
@@ -1056,7 +1055,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 0,
             );
             let err_code = cSize;
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
             if cSize > 0 && cSize < decompressedSize {
@@ -1104,7 +1103,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         lastBlock,
     );
     let err_code_0 = cSize_0;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if cSize_0 > 0 && cSize_0 < decompressedSize_0 {
@@ -1143,7 +1142,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             lastBlock,
         );
         let err_code_1 = cSize_1;
-        if ERR_isError(err_code_1) != 0 {
+        if ERR_isError(err_code_1) {
             return err_code_1;
         }
         op = op.add(cSize_1);
@@ -1206,7 +1205,7 @@ pub unsafe fn ZSTD_compressSuperBlock(
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_compressSubBlock_multi(

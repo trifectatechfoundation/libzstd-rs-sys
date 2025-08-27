@@ -87,7 +87,6 @@ const fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
 const fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
     (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
 }
-pub const HUF_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 unsafe fn HUF_alignUpWorkspace(
     workspace: *mut core::ffi::c_void,
     workspaceSizePtr: *mut size_t,
@@ -151,7 +150,7 @@ unsafe fn HUF_compressWeights(
         maxSymbolValue,
         0,
     );
-    if ERR_isError(_var_err__) != 0 {
+    if ERR_isError(_var_err__) {
         return _var_err__;
     }
     let hSize = FSE_writeNCount(
@@ -161,7 +160,7 @@ unsafe fn HUF_compressWeights(
         maxSymbolValue,
         tableLog,
     );
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     op = op.add(hSize);
@@ -173,7 +172,7 @@ unsafe fn HUF_compressWeights(
         ((*wksp).scratchBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         ::core::mem::size_of::<[u32; 41]>(),
     );
-    if ERR_isError(_var_err___0) != 0 {
+    if ERR_isError(_var_err___0) {
         return _var_err___0;
     }
     let cSize = FSE_compress_usingCTable(
@@ -183,7 +182,7 @@ unsafe fn HUF_compressWeights(
         wtSize,
         ((*wksp).CTable).as_mut_ptr(),
     );
-    if ERR_isError(cSize) != 0 {
+    if ERR_isError(cSize) {
         return cSize;
     }
     if cSize == 0 {
@@ -296,7 +295,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut core::ffi::c_void,
         ::core::mem::size_of::<HUF_CompressWeightsWksp>(),
     );
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if (hSize > 1) as core::ffi::c_int
@@ -358,7 +357,7 @@ pub unsafe fn HUF_readCTable(
         &mut tableLog,
         src,
     );
-    if ERR_isError(readSize) != 0 {
+    if ERR_isError(readSize) {
         return readSize;
     }
     *hasZeroWeights =
@@ -1083,7 +1082,7 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
         op as *mut core::ffi::c_void,
         oend.offset_from(op) as size_t,
     );
-    if ERR_isError(initErr) != 0 {
+    if ERR_isError(initErr) {
         return 0;
     }
     if dstSize < HUF_tightCompressBound(srcSize, tableLog as size_t) || tableLog > 11 {
@@ -1202,7 +1201,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         CTable,
         flags,
     );
-    if ERR_isError(cSize) != 0 {
+    if ERR_isError(cSize) {
         return cSize;
     }
     if cSize == 0 || cSize > 65535 {
@@ -1219,7 +1218,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         CTable,
         flags,
     );
-    if ERR_isError(cSize_0) != 0 {
+    if ERR_isError(cSize_0) {
         return cSize_0;
     }
     if cSize_0 == 0 || cSize_0 > 65535 {
@@ -1236,7 +1235,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         CTable,
         flags,
     );
-    if ERR_isError(cSize_1) != 0 {
+    if ERR_isError(cSize_1) {
         return cSize_1;
     }
     if cSize_1 == 0 || cSize_1 > 65535 {
@@ -1253,7 +1252,7 @@ unsafe fn HUF_compress4X_usingCTable_internal(
         CTable,
         flags,
     );
-    if ERR_isError(cSize_2) != 0 {
+    if ERR_isError(cSize_2) {
         return cSize_2;
     }
     if cSize_2 == 0 || cSize_2 > 65535 {
@@ -1303,7 +1302,7 @@ unsafe fn HUF_compressCTable_internal(
             flags,
         )
     };
-    if ERR_isError(cSize) != 0 {
+    if ERR_isError(cSize) {
         return cSize;
     }
     if cSize == 0 {
@@ -1368,7 +1367,7 @@ pub unsafe fn HUF_optimalTableLog(
             workSpace,
             wkspSize,
         );
-        if ERR_isError(maxBits) == 0 {
+        if !ERR_isError(maxBits) {
             if maxBits < optLogGuess as size_t && optLogGuess > minTableLog {
                 break;
             }
@@ -1381,7 +1380,7 @@ pub unsafe fn HUF_optimalTableLog(
                 workSpace,
                 wkspSize,
             );
-            if ERR_isError(hSize) == 0 {
+            if !ERR_isError(hSize) {
                 newSize =
                     (HUF_estimateCompressedSize(table, count, maxSymbolValue)).wrapping_add(hSize);
                 if newSize > optSize.wrapping_add(1) {
@@ -1470,7 +1469,7 @@ unsafe fn HUF_compress_internal(
             src as *const u8 as *const core::ffi::c_void,
             4096,
         ) as size_t;
-        if ERR_isError(largestBegin) != 0 {
+        if ERR_isError(largestBegin) {
             return largestBegin;
         }
         largestTotal = largestTotal.wrapping_add(largestBegin);
@@ -1481,7 +1480,7 @@ unsafe fn HUF_compress_internal(
             (src as *const u8).add(srcSize).offset(-(4096)) as *const core::ffi::c_void,
             4096,
         ) as size_t;
-        if ERR_isError(largestEnd) != 0 {
+        if ERR_isError(largestEnd) {
             return largestEnd;
         }
         largestTotal = largestTotal.wrapping_add(largestEnd);
@@ -1497,7 +1496,7 @@ unsafe fn HUF_compress_internal(
         ((*table).wksps.hist_wksp).as_mut_ptr() as *mut core::ffi::c_void,
         ::core::mem::size_of::<[u32; 1024]>(),
     );
-    if ERR_isError(largest) != 0 {
+    if ERR_isError(largest) {
         return largest;
     }
     if largest == srcSize {
@@ -1548,7 +1547,7 @@ unsafe fn HUF_compress_internal(
         ::core::mem::size_of::<HUF_buildCTable_wksp_tables>(),
     );
     let _var_err__ = maxBits;
-    if ERR_isError(_var_err__) != 0 {
+    if ERR_isError(_var_err__) {
         return _var_err__;
     }
     huffLog = maxBits as u32;
@@ -1561,7 +1560,7 @@ unsafe fn HUF_compress_internal(
         &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut core::ffi::c_void,
         ::core::mem::size_of::<HUF_WriteCTableWksp>(),
     );
-    if ERR_isError(hSize) != 0 {
+    if ERR_isError(hSize) {
         return hSize;
     }
     if !repeat.is_null()

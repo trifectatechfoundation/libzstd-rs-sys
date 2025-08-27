@@ -656,7 +656,7 @@ unsafe fn ZSTD_cParam_withinBounds(
     value: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let bounds = ZSTD_cParam_getBounds(cParam);
-    if ERR_isError(bounds.error) != 0 {
+    if ERR_isError(bounds.error) {
         return 0;
     }
     if value < bounds.lowerBound {
@@ -1204,7 +1204,6 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::*;
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
@@ -1314,7 +1313,7 @@ unsafe fn ZSTD_cwksp_reserve_internal(
     phase: ZSTD_cwksp_alloc_phase_e,
 ) -> *mut core::ffi::c_void {
     let mut alloc = core::ptr::null_mut::<core::ffi::c_void>();
-    if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) != 0 || bytes == 0 {
+    if ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) || bytes == 0 {
         return core::ptr::null_mut();
     }
     alloc = ZSTD_cwksp_reserve_internal_buffer_space(ws, bytes);
@@ -1367,7 +1366,7 @@ unsafe fn ZSTD_cwksp_reserve_table(ws: *mut ZSTD_cwksp, bytes: size_t) -> *mut c
     let mut end = core::ptr::null_mut::<core::ffi::c_void>();
     let mut top = core::ptr::null_mut::<core::ffi::c_void>();
     if ((*ws).phase as core::ffi::c_uint) < phase as core::ffi::c_uint
-        && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase)) != 0
+        && ERR_isError(ZSTD_cwksp_internal_advance_phase(ws, phase))
     {
         return core::ptr::null_mut();
     }
@@ -2339,7 +2338,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
         return Error::GENERIC.to_error_code();
     }
     let err_code = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_CCtxParams_init_internal(cctxParams, &params, ZSTD_NO_CLEVEL);
@@ -2611,7 +2610,7 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_b
 }
 unsafe fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: *mut core::ffi::c_int) -> size_t {
     let bounds = ZSTD_cParam_getBounds(cParam);
-    if ERR_isError(bounds.error) != 0 {
+    if ERR_isError(bounds.error) {
         return bounds.error;
     }
     if *value < bounds.lowerBound {
@@ -2675,7 +2674,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         100 => {
             let err_code = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
             if value == 0 {
@@ -2771,7 +2770,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         400 => {
             let err_code_0 = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code_0) != 0 {
+            if ERR_isError(err_code_0) {
                 return err_code_0;
             }
             (*CCtxParams).nbWorkers = value;
@@ -2782,7 +2781,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
                 value = ZSTDMT_JOBSIZE_MIN;
             }
             let err_code_1 = ZSTD_cParam_clampBounds(param, &mut value);
-            if ERR_isError(err_code_1) != 0 {
+            if ERR_isError(err_code_1) {
                 return err_code_1;
             }
             (*CCtxParams).jobSize = value as size_t;
@@ -2790,7 +2789,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         402 => {
             let err_code_2 = ZSTD_cParam_clampBounds(ZSTD_c_overlapLog, &mut value);
-            if ERR_isError(err_code_2) != 0 {
+            if ERR_isError(err_code_2) {
                 return err_code_2;
             }
             (*CCtxParams).overlapLog = value;
@@ -2798,7 +2797,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         500 => {
             let err_code_3 = ZSTD_cParam_clampBounds(ZSTD_c_overlapLog, &mut value);
-            if ERR_isError(err_code_3) != 0 {
+            if ERR_isError(err_code_3) {
                 return err_code_3;
             }
             (*CCtxParams).rsyncable = value;
@@ -3105,7 +3104,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
     cparams: ZSTD_compressionParameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(cparams);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setParameter(
@@ -3113,17 +3112,17 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
         ZSTD_c_windowLog,
         cparams.windowLog as core::ffi::c_int,
     );
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 =
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_chainLog, cparams.chainLog as core::ffi::c_int);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     let err_code_2 =
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_hashLog, cparams.hashLog as core::ffi::c_int);
-    if ERR_isError(err_code_2) != 0 {
+    if ERR_isError(err_code_2) {
         return err_code_2;
     }
     let err_code_3 = ZSTD_CCtx_setParameter(
@@ -3131,12 +3130,12 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
         ZSTD_c_searchLog,
         cparams.searchLog as core::ffi::c_int,
     );
-    if ERR_isError(err_code_3) != 0 {
+    if ERR_isError(err_code_3) {
         return err_code_3;
     }
     let err_code_4 =
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_minMatch, cparams.minMatch as core::ffi::c_int);
-    if ERR_isError(err_code_4) != 0 {
+    if ERR_isError(err_code_4) {
         return err_code_4;
     }
     let err_code_5 = ZSTD_CCtx_setParameter(
@@ -3144,12 +3143,12 @@ pub unsafe extern "C" fn ZSTD_CCtx_setCParams(
         ZSTD_c_targetLength,
         cparams.targetLength as core::ffi::c_int,
     );
-    if ERR_isError(err_code_5) != 0 {
+    if ERR_isError(err_code_5) {
         return err_code_5;
     }
     let err_code_6 =
         ZSTD_CCtx_setParameter(cctx, ZSTD_c_strategy, cparams.strategy as core::ffi::c_int);
-    if ERR_isError(err_code_6) != 0 {
+    if ERR_isError(err_code_6) {
         return err_code_6;
     }
     0
@@ -3164,7 +3163,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
         ZSTD_c_contentSizeFlag,
         (fparams.contentSizeFlag != 0) as core::ffi::c_int,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setParameter(
@@ -3172,7 +3171,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
         ZSTD_c_checksumFlag,
         (fparams.checksumFlag != 0) as core::ffi::c_int,
     );
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_CCtx_setParameter(
@@ -3180,7 +3179,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_setFParams(
         ZSTD_c_dictIDFlag,
         (fparams.noDictIDFlag == 0) as core::ffi::c_int,
     );
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     0
@@ -3191,15 +3190,15 @@ pub unsafe extern "C" fn ZSTD_CCtx_setParams(
     params: ZSTD_parameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setFParams(cctx, params.fParams);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_CCtx_setCParams(cctx, params.cParams);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     0
@@ -4286,7 +4285,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         (*params).maxBlockSize,
     );
     let err_code = neededSpace;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if (*zc).staticSize == 0 {
@@ -4302,7 +4301,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         needsIndexReset = ZSTDirp_reset;
         ZSTD_cwksp_free(ws, (*zc).customMem);
         let err_code_0 = ZSTD_cwksp_create(ws, neededSpace, (*zc).customMem);
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         (*zc).blockState.prevCBlock =
@@ -4374,7 +4373,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         needsIndexReset,
         ZSTD_resetTarget_CCtx,
     );
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     (*zc).seqStore.sequencesStart =
@@ -4499,7 +4498,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
     let err_code =
         ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_makeClean, zbuff);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let cdictEnd = ((*cdict).matchState.window.nextSrc).offset_from((*cdict).matchState.window.base)
@@ -4561,7 +4560,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     params.useRowMatchFinder = (*cdict).useRowMatchFinder;
     let err_code =
         ZSTD_resetCCtx_internal(cctx, &params, pledgedSrcSize, 0, ZSTDcrp_leaveDirty, zbuff);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_cwksp_mark_tables_dirty(&mut (*cctx).workspace);
@@ -4924,7 +4923,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    if ERR_isError(countSize) != 0 {
+    if ERR_isError(countSize) {
         stats.size = countSize;
         return stats;
     }
@@ -4978,7 +4977,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    if ERR_isError(countSize_0) != 0 {
+    if ERR_isError(countSize_0) {
         stats.size = countSize_0;
         return stats;
     }
@@ -5027,7 +5026,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    if ERR_isError(countSize_1) != 0 {
+    if ERR_isError(countSize_1) {
         stats.size = countSize_1;
         return stats;
     }
@@ -5094,7 +5093,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         bmi2,
     );
     let err_code = cSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     op = op.add(cSize);
@@ -5141,7 +5140,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         entropyWkspSize,
     );
     let err_code_0 = stats.size;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     *seqHead = (stats.LLtype << 6)
@@ -5165,7 +5164,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         bmi2,
     );
     let err_code_1 = bitstreamSize;
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     op = op.add(bitstreamSize);
@@ -5211,7 +5210,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
         return 0;
     }
     let err_code = cSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, (*cctxParams).cParams.strategy));
@@ -5548,7 +5547,7 @@ unsafe fn ZSTD_buildSeqStore(
             src,
             srcSize,
         );
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         lastLLSize = ZSTD_ldm_blockCompress(
@@ -5579,7 +5578,7 @@ unsafe fn ZSTD_buildSeqStore(
             (*zc).extSeqBufCapacity,
             srcSize,
         );
-        if ERR_isError(nbPostProcessedSeqs) == 0 {
+        if !ERR_isError(nbPostProcessedSeqs) {
             let mut seqPos = {
                 ZSTD_SequencePosition {
                     idx: 0,
@@ -5600,7 +5599,7 @@ unsafe fn ZSTD_buildSeqStore(
                 srcSize,
                 (*zc).appliedParams.searchForExternalRepcodes,
             );
-            if ERR_isError(err_code_0) != 0 {
+            if ERR_isError(err_code_0) {
                 return err_code_0;
             }
             (*ms).ldmSeqStore = core::ptr::null();
@@ -5744,7 +5743,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     };
     let mut targetCBlockSize: core::ffi::c_int = 0;
     let err_code = ZSTD_CCtx_getParameter(zc, ZSTD_c_targetCBlockSize, &mut targetCBlockSize);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if targetCBlockSize != 0 {
@@ -5752,7 +5751,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     }
     let mut nbWorkers: core::ffi::c_int = 0;
     let err_code_0 = ZSTD_CCtx_getParameter(zc, ZSTD_c_nbWorkers, &mut nbWorkers);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if nbWorkers != 0 {
@@ -5770,7 +5769,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);
     ZSTD_customFree(dst, ZSTD_defaultCMem);
     let err_code_1 = ret;
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     (*zc).seqCollector.seqIndex
@@ -5903,7 +5902,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         wkspSize,
     );
     let err_code = largest;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if largest == srcSize {
@@ -5943,7 +5942,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         nodeWkspSize,
     );
     let err_code_0 = maxBits;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     huffLog = maxBits as u32;
@@ -6050,7 +6049,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
         ZSTD_buildDummySequencesStatistics(nextEntropy)
     };
     let err_code = stats.size;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     (*fseMetadata).llType = stats.LLtype as SymbolEncodingType_e;
@@ -6089,7 +6088,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         hufFlags,
     );
     let err_code = (*entropyMetadata).hufMetadata.hufDesSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     (*entropyMetadata).fseMetadata.fseTablesSize = ZSTD_buildBlockEntropyStats_sequences(
@@ -6102,7 +6101,7 @@ pub unsafe fn ZSTD_buildBlockEntropyStats(
         wkspSize,
     );
     let err_code_0 = (*entropyMetadata).fseMetadata.fseTablesSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     0
@@ -6143,7 +6142,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
             workspace,
             wkspSize,
         );
-        if ERR_isError(largest) != 0 {
+        if ERR_isError(largest) {
             return litSize;
         }
         let mut cLitSizeEstimate =
@@ -6195,7 +6194,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     {
         cSymbolTypeSizeEstimateInBits = ZSTD_fseBitCost(fseCTable, countWksp, max);
     }
-    if ERR_isError(cSymbolTypeSizeEstimateInBits) != 0 {
+    if ERR_isError(cSymbolTypeSizeEstimateInBits) {
         return nbSeq * 10;
     }
     while ctp < ctEnd {
@@ -6323,7 +6322,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         (*zc).tmpWorkspace,
         (*zc).tmpWkspSize,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_estimateBlockSize(
@@ -6504,7 +6503,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
         (*zc).bmi2,
     );
     let err_code = cSeqsSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if (*zc).isFirstBlock == 0
@@ -6519,7 +6518,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             seqStore,
             (dRepOriginal.rep).as_ptr(),
         );
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
@@ -6534,7 +6533,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             lastBlock,
         );
         let err_code_1 = cSize;
-        if ERR_isError(err_code_1) != 0 {
+        if ERR_isError(err_code_1) {
             return err_code_1;
         }
         *dRep = dRepOriginal;
@@ -6547,7 +6546,7 @@ unsafe fn ZSTD_compressSeqStore_singleBlock(
             lastBlock,
         );
         let err_code_2 = cSize;
-        if ERR_isError(err_code_2) != 0 {
+        if ERR_isError(err_code_2) {
             return err_code_2;
         }
         *dRep = dRepOriginal;
@@ -6598,9 +6597,9 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
         ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(firstHalfSeqStore, zc);
     estimatedSecondHalfSize =
         ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(secondHalfSeqStore, zc);
-    if ERR_isError(estimatedOriginalSize) != 0
-        || ERR_isError(estimatedFirstHalfSize) != 0
-        || ERR_isError(estimatedSecondHalfSize) != 0
+    if ERR_isError(estimatedOriginalSize)
+        || ERR_isError(estimatedFirstHalfSize)
+        || ERR_isError(estimatedSecondHalfSize)
     {
         return;
     }
@@ -6675,7 +6674,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             0,
         );
         let err_code = cSizeSingleBlock;
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         return cSizeSingleBlock;
@@ -6718,7 +6717,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
             1,
         );
         let err_code_0 = cSizeChunk;
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         ip = ip.add(srcBytes);
@@ -6747,7 +6746,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
     let mut cSize: size_t = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if bss == ZSTDbss_noCompress as core::ffi::c_int as size_t {
@@ -6767,7 +6766,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         }
         cSize = ZSTD_noCompressBlock(dst, dstCapacity, src, srcSize, lastBlock);
         let err_code_0 = cSize;
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         return cSize;
@@ -6784,7 +6783,7 @@ unsafe fn ZSTD_compressBlock_splitBlock(
         nbSeq,
     );
     let err_code_1 = cSize;
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     cSize
@@ -6803,7 +6802,7 @@ unsafe fn ZSTD_compressBlock_internal(
     let op = dst as *mut u8;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if bss == ZSTDbss_noCompress as core::ffi::c_int as size_t {
@@ -6818,7 +6817,7 @@ unsafe fn ZSTD_compressBlock_internal(
                 ZSTD_getSeqStore(zc),
                 ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *const u32,
             );
-            if ERR_isError(err_code_0) != 0 {
+            if ERR_isError(err_code_0) {
                 return err_code_0;
             }
             ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
@@ -6845,7 +6844,7 @@ unsafe fn ZSTD_compressBlock_internal(
             *op.offset(0) = *ip.offset(0);
         }
     }
-    if ERR_isError(cSize) == 0 && cSize > 1 {
+    if !ERR_isError(cSize) && cSize > 1 {
         ZSTD_blockState_confirmRepcodesAndEntropyTables(&mut (*zc).blockState);
     }
     if (*(*zc).blockState.prevCBlock)
@@ -6888,7 +6887,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize_body(
             let maxCSize =
                 srcSize.wrapping_sub(ZSTD_minGain(srcSize, (*zc).appliedParams.cParams.strategy));
             let err_code = cSize;
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
             if cSize != 0 && cSize < maxCSize.wrapping_add(ZSTD_blockHeaderSize) {
@@ -6910,7 +6909,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
     let mut cSize = 0;
     let bss = ZSTD_buildSeqStore(zc, src, srcSize);
     let err_code = bss;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     cSize = ZSTD_compressBlock_targetCBlockSize_body(
@@ -6923,7 +6922,7 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
         lastBlock,
     );
     let err_code_0 = cSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if (*(*zc).blockState.prevCBlock)
@@ -7078,7 +7077,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 lastBlock,
             );
             let err_code = cSize;
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
         } else if ZSTD_blockSplitterEnabled(&mut (*cctx).appliedParams) != 0 {
@@ -7091,7 +7090,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 lastBlock,
             );
             let err_code_0 = cSize;
-            if ERR_isError(err_code_0) != 0 {
+            if ERR_isError(err_code_0) {
                 return err_code_0;
             }
         } else {
@@ -7104,7 +7103,7 @@ unsafe fn ZSTD_compress_frameChunk(
                 1,
             );
             let err_code_1 = cSize;
-            if ERR_isError(err_code_1) != 0 {
+            if ERR_isError(err_code_1) {
                 return err_code_1;
             }
             if cSize == 0 {
@@ -7116,7 +7115,7 @@ unsafe fn ZSTD_compress_frameChunk(
                     lastBlock,
                 );
                 let err_code_2 = cSize;
-                if ERR_isError(err_code_2) != 0 {
+                if ERR_isError(err_code_2) {
                     return err_code_2;
                 }
             } else {
@@ -7312,7 +7311,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
             (*cctx).dictID,
         );
         let err_code = fhSize;
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
@@ -7346,7 +7345,7 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         ZSTD_compressBlock_internal(cctx, dst, dstCapacity, src, srcSize, 0)
     };
     let err_code_0 = cSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     (*cctx).consumedSrcSize =
@@ -7592,7 +7591,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     if hasZeroWeights == 0 && maxSymbolValue == 255 {
         (*bs).entropy.huf.repeatMode = HUF_repeat_valid;
     }
-    if ERR_isError(hufHeaderSize) != 0 {
+    if ERR_isError(hufHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
     dictPtr = dictPtr.add(hufHeaderSize);
@@ -7604,7 +7603,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from(dictPtr) as size_t,
     );
-    if ERR_isError(offcodeHeaderSize) != 0 {
+    if ERR_isError(offcodeHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
     if offcodeLog > 8 {
@@ -7617,8 +7616,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         offcodeLog,
         workspace,
         (((8) << 10) + 512) as size_t,
-    )) != 0
-    {
+    )) {
         return Error::dictionary_corrupted.to_error_code();
     }
     dictPtr = dictPtr.add(offcodeHeaderSize);
@@ -7632,7 +7630,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from(dictPtr) as size_t,
     );
-    if ERR_isError(matchlengthHeaderSize) != 0 {
+    if ERR_isError(matchlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
     if matchlengthLog > 9 {
@@ -7645,8 +7643,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         matchlengthLog,
         workspace,
         (((8) << 10) + 512) as size_t,
-    )) != 0
-    {
+    )) {
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.matchlength_repeatMode = ZSTD_dictNCountRepeat(
@@ -7665,7 +7662,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from(dictPtr) as size_t,
     );
-    if ERR_isError(litlengthHeaderSize) != 0 {
+    if ERR_isError(litlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
     if litlengthLog > 9 {
@@ -7678,8 +7675,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         litlengthLog,
         workspace,
         (((8) << 10) + 512) as size_t,
-    )) != 0
-    {
+    )) {
         return Error::dictionary_corrupted.to_error_code();
     }
     (*bs).entropy.fse.litlength_repeatMode = ZSTD_dictNCountRepeat(
@@ -7748,7 +7744,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     }) as size_t;
     eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
     let err_code = eSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     dictPtr = dictPtr.add(eSize);
@@ -7763,7 +7759,7 @@ unsafe fn ZSTD_loadZstdDictionary(
         dtlm,
         tfp,
     );
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     dictID
@@ -7849,7 +7845,7 @@ unsafe fn ZSTD_compressBegin_internal(
         ZSTDcrp_makeClean,
         zbuff,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let dictID = if !cdict.is_null() {
@@ -7882,7 +7878,7 @@ unsafe fn ZSTD_compressBegin_internal(
         )
     };
     let err_code_0 = dictID;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     (*cctx).dictID = dictID as u32;
@@ -7900,7 +7896,7 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_checkCParams((*params).cParams);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_compressBegin_internal(
@@ -8108,7 +8104,7 @@ unsafe fn ZSTD_writeEpilogue(
     if (*cctx).stage as core::ffi::c_uint == ZSTDcs_init as core::ffi::c_int as core::ffi::c_uint {
         let fhSize = ZSTD_writeFrameHeader(dst, dstCapacity, &(*cctx).appliedParams, 0, 0);
         let err_code = fhSize;
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         dstCapacity = dstCapacity.wrapping_sub(fhSize);
@@ -8184,7 +8180,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
     let mut endResult: size_t = 0;
     let cSize = ZSTD_compressContinue_internal(cctx, dst, dstCapacity, src, srcSize, 1, 1);
     let err_code = cSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     endResult = ZSTD_writeEpilogue(
@@ -8193,7 +8189,7 @@ pub unsafe extern "C" fn ZSTD_compressEnd_public(
         dstCapacity.wrapping_sub(cSize),
     );
     let err_code_0 = endResult;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if (*cctx).pledgedSrcSizePlusOne != 0
@@ -8226,7 +8222,7 @@ pub unsafe extern "C" fn ZSTD_compress_advanced(
     params: ZSTD_parameters,
 ) -> size_t {
     let err_code = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_CCtxParams_init_internal(&mut (*cctx).simpleApiParams, &params, ZSTD_NO_CLEVEL);
@@ -8262,7 +8258,7 @@ pub unsafe fn ZSTD_compress_advanced_internal(
         srcSize as u64,
         ZSTDb_not_buffered,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
@@ -8866,7 +8862,7 @@ unsafe fn ZSTD_initCDict_internal(
         ZSTDirp_reset,
         ZSTD_resetTarget_CDict,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     params.compressionLevel = ZSTD_CLEVEL_DEFAULT;
@@ -8885,7 +8881,7 @@ unsafe fn ZSTD_initCDict_internal(
         (*cdict).entropyWorkspace as *mut core::ffi::c_void,
     );
     let err_code_0 = dictID;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     (*cdict).dictID = dictID as u32;
@@ -9099,7 +9095,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
             dictLoadMethod,
             dictContentType,
             cctxParams,
-        )) != 0
+        ))
     {
         ZSTD_freeCDict(cdict);
         return core::ptr::null_mut();
@@ -9299,8 +9295,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         dictLoadMethod,
         dictContentType,
         params,
-    )) != 0
-    {
+    )) {
         return core::ptr::null();
     }
     cdict
@@ -9490,7 +9485,7 @@ unsafe fn ZSTD_compress_usingCDict_internal(
         fParams,
         srcSize as core::ffi::c_ulonglong,
     );
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
@@ -9578,11 +9573,11 @@ pub unsafe extern "C" fn ZSTD_resetCStream(
         pss
     };
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setPledgedSrcSize(zcs, pledgedSrcSize as core::ffi::c_ulonglong);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     0
@@ -9596,22 +9591,22 @@ pub unsafe fn ZSTD_initCStream_internal(
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setPledgedSrcSize(zcs, pledgedSrcSize);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     (*zcs).requestedParams = *params;
     if !dict.is_null() {
         let err_code_1 = ZSTD_CCtx_loadDictionary(zcs, dict, dictSize);
-        if ERR_isError(err_code_1) != 0 {
+        if ERR_isError(err_code_1) {
             return err_code_1;
         }
     } else {
         let err_code_2 = ZSTD_CCtx_refCDict(zcs, cdict);
-        if ERR_isError(err_code_2) != 0 {
+        if ERR_isError(err_code_2) {
             return err_code_2;
         }
     }
@@ -9625,16 +9620,16 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setPledgedSrcSize(zcs, pledgedSrcSize);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     (*zcs).requestedParams.fParams = fParams;
     let err_code_1 = ZSTD_CCtx_refCDict(zcs, cdict);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     0
@@ -9645,11 +9640,11 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     cdict: *const ZSTD_CDict,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_refCDict(zcs, cdict);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     0
@@ -9668,20 +9663,20 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
         pss
     };
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setPledgedSrcSize(zcs, pledgedSrcSize as core::ffi::c_ulonglong);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_checkCParams(params.cParams);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     ZSTD_CCtxParams_setZstdParams(&mut (*zcs).requestedParams, &params);
     let err_code_2 = ZSTD_CCtx_loadDictionary(zcs, dict, dictSize);
-    if ERR_isError(err_code_2) != 0 {
+    if ERR_isError(err_code_2) {
         return err_code_2;
     }
     0
@@ -9694,15 +9689,15 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_setParameter(zcs, ZSTD_c_compressionLevel, compressionLevel);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_CCtx_loadDictionary(zcs, dict, dictSize);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     0
@@ -9719,19 +9714,19 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
         pss
     };
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_refCDict(zcs, core::ptr::null::<ZSTD_CDict>());
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_CCtx_setParameter(zcs, ZSTD_c_compressionLevel, compressionLevel);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     let err_code_2 = ZSTD_CCtx_setPledgedSrcSize(zcs, pledgedSrcSize as core::ffi::c_ulonglong);
-    if ERR_isError(err_code_2) != 0 {
+    if ERR_isError(err_code_2) {
         return err_code_2;
     }
     0
@@ -9742,15 +9737,15 @@ pub unsafe extern "C" fn ZSTD_initCStream(
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
     let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let err_code_0 = ZSTD_CCtx_refCDict(zcs, core::ptr::null::<ZSTD_CDict>());
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     let err_code_1 = ZSTD_CCtx_setParameter(zcs, ZSTD_c_compressionLevel, compressionLevel);
-    if ERR_isError(err_code_1) != 0 {
+    if ERR_isError(err_code_1) {
         return err_code_1;
     }
     0
@@ -9832,7 +9827,7 @@ unsafe fn ZSTD_compressStream_generic(
                         iend.offset_from(ip) as size_t,
                     );
                     let err_code = cSize;
-                    if ERR_isError(err_code) != 0 {
+                    if ERR_isError(err_code) {
                         return err_code;
                     }
                     ip = iend;
@@ -9940,7 +9935,7 @@ unsafe fn ZSTD_compressStream_generic(
                                     )
                                 };
                                 let err_code_0 = cSize_0;
-                                if ERR_isError(err_code_0) != 0 {
+                                if ERR_isError(err_code_0) {
                                     return err_code_0;
                                 }
                                 (*zcs).frameEnded = lastBlock;
@@ -9979,7 +9974,7 @@ unsafe fn ZSTD_compressStream_generic(
                                     ip = ip.add(iSize);
                                 }
                                 let err_code_1 = cSize_0;
-                                if ERR_isError(err_code_1) != 0 {
+                                if ERR_isError(err_code_1) {
                                     return err_code_1;
                                 }
                                 (*zcs).frameEnded = lastBlock_0;
@@ -10055,7 +10050,7 @@ pub unsafe extern "C" fn ZSTD_compressStream(
     input: *mut ZSTD_inBuffer,
 ) -> size_t {
     let err_code = ZSTD_compressStream2(zcs, output, input, ZSTD_e_continue);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ZSTD_nextInputSizeHint_MTorST(zcs)
@@ -10108,7 +10103,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
     let mut params = (*cctx).requestedParams;
     let prefixDict = (*cctx).prefixDict;
     let err_code = ZSTD_initLocalDict(cctx);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     ptr::write_bytes(
@@ -10180,7 +10175,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             params,
             ((*cctx).pledgedSrcSizePlusOne).wrapping_sub(1),
         );
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         (*cctx).dictID = if !((*cctx).cdict).is_null() {
@@ -10210,7 +10205,7 @@ unsafe fn ZSTD_CCtx_init_compressStream2(
             pledgedSrcSize,
             ZSTDb_buffered,
         );
-        if ERR_isError(err_code_1) != 0 {
+        if ERR_isError(err_code_1) {
             return err_code_1;
         }
         (*cctx).inToCompress = 0;
@@ -10278,13 +10273,13 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
             }) as size_t;
         }
         let err_code = ZSTD_CCtx_init_compressStream2(cctx, endOp, totalInputSize);
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         ZSTD_setBufferExpectations(cctx, output, input);
     }
     let err_code_0 = ZSTD_checkBufferStability(cctx, output, input, endOp);
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     if (*cctx).appliedParams.nbWorkers > 0 {
@@ -10305,7 +10300,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 .wrapping_add(((*input).pos).wrapping_sub(ipos) as core::ffi::c_ulonglong);
             (*cctx).producedCSize = ((*cctx).producedCSize)
                 .wrapping_add(((*output).pos).wrapping_sub(opos) as core::ffi::c_ulonglong);
-            if ERR_isError(flushMin) != 0
+            if ERR_isError(flushMin)
                 || endOp as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint
                     && flushMin == 0
             {
@@ -10315,7 +10310,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
             }
             let err_code_1 = flushMin;
-            if ERR_isError(err_code_1) != 0 {
+            if ERR_isError(err_code_1) {
                 return err_code_1;
             }
             if endOp as core::ffi::c_uint
@@ -10336,7 +10331,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
         return flushMin;
     }
     let err_code_2 = ZSTD_compressStream_generic(cctx, output, input, endOp);
-    if ERR_isError(err_code_2) != 0 {
+    if ERR_isError(err_code_2) {
         return err_code_2;
     }
     ZSTD_setBufferExpectations(cctx, output, input);
@@ -10402,7 +10397,7 @@ pub unsafe extern "C" fn ZSTD_compress2(
     (*cctx).requestedParams.inBufferMode = originalInBufferMode;
     (*cctx).requestedParams.outBufferMode = originalOutBufferMode;
     let err_code = result;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if result != 0 {
@@ -10511,7 +10506,7 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
                 dictSize as size_t,
                 ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
             );
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
         }
@@ -10676,7 +10671,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
                 dictSize,
                 ZSTD_hasExtSeqProd(&(*cctx).appliedParams),
             );
-            if ERR_isError(err_code) != 0 {
+            if ERR_isError(err_code) {
                 return err_code;
             }
         }
@@ -10787,7 +10782,7 @@ unsafe fn determine_blockSize(
     }
     let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, inSeqsSize, seqPos);
     let err_code = explicitBlockSize;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if explicitBlockSize > blockSize {
@@ -10842,7 +10837,7 @@ unsafe fn ZSTD_compressSequences_internal(
         );
         let lastBlock = (blockSize == remaining) as core::ffi::c_int as u32;
         let err_code = blockSize;
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         ZSTD_resetSeqStore(&mut (*cctx).seqStore);
@@ -10856,7 +10851,7 @@ unsafe fn ZSTD_compressSequences_internal(
             (*cctx).appliedParams.searchForExternalRepcodes,
         );
         let err_code_0 = blockSize;
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         if blockSize
@@ -10873,7 +10868,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 lastBlock,
             );
             let err_code_1 = cBlockSize;
-            if ERR_isError(err_code_1) != 0 {
+            if ERR_isError(err_code_1) {
                 return err_code_1;
             }
             cSize = cSize.wrapping_add(cBlockSize);
@@ -10898,7 +10893,7 @@ unsafe fn ZSTD_compressSequences_internal(
                 (*cctx).bmi2,
             );
             let err_code_2 = compressedSeqsSize;
-            if ERR_isError(err_code_2) != 0 {
+            if ERR_isError(err_code_2) {
                 return err_code_2;
             }
             if (*cctx).isFirstBlock == 0
@@ -10916,7 +10911,7 @@ unsafe fn ZSTD_compressSequences_internal(
                     lastBlock,
                 );
                 let err_code_3 = cBlockSize;
-                if ERR_isError(err_code_3) != 0 {
+                if ERR_isError(err_code_3) {
                     return err_code_3;
                 }
             } else if compressedSeqsSize == 1 {
@@ -10928,7 +10923,7 @@ unsafe fn ZSTD_compressSequences_internal(
                     lastBlock,
                 );
                 let err_code_4 = cBlockSize;
-                if ERR_isError(err_code_4) != 0 {
+                if ERR_isError(err_code_4) {
                     return err_code_4;
                 }
             } else {
@@ -10977,7 +10972,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     let mut op = dst as *mut u8;
     let mut cSize = 0 as size_t;
     let err_code = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, srcSize);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     let frameHeaderSize = ZSTD_writeFrameHeader(
@@ -11003,7 +10998,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
         srcSize,
     );
     let err_code_0 = cBlocksSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     cSize = cSize.wrapping_add(cBlocksSize);
@@ -11283,7 +11278,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         let block = ZSTD_get1BlockSummary(inSeqs, nbSequences);
         let lastBlock = (block.nbSequences == nbSequences) as core::ffi::c_int as u32;
         let err_code = block.nbSequences;
-        if ERR_isError(err_code) != 0 {
+        if ERR_isError(err_code) {
             return err_code;
         }
         if block.litSize > litSize {
@@ -11293,7 +11288,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
         conversionStatus =
             ZSTD_convertBlockSequences(cctx, inSeqs, block.nbSequences, repcodeResolution);
         let err_code_0 = conversionStatus;
-        if ERR_isError(err_code_0) != 0 {
+        if ERR_isError(err_code_0) {
             return err_code_0;
         }
         inSeqs = inSeqs.add(block.nbSequences);
@@ -11316,7 +11311,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
             (*cctx).bmi2,
         );
         let err_code_1 = compressedSeqsSize;
-        if ERR_isError(err_code_1) != 0 {
+        if ERR_isError(err_code_1) {
             return err_code_1;
         }
         if compressedSeqsSize > (*cctx).blockSizeMax {
@@ -11381,7 +11376,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
         return Error::workSpace_tooSmall.to_error_code();
     }
     let err_code = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, decompressedSize);
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if (*cctx).appliedParams.blockDelimiters as core::ffi::c_uint
@@ -11416,7 +11411,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
         decompressedSize,
     );
     let err_code_0 = cBlocksSize;
-    if ERR_isError(err_code_0) != 0 {
+    if ERR_isError(err_code_0) {
         return err_code_0;
     }
     cSize = cSize.wrapping_add(cBlocksSize);
@@ -11457,7 +11452,7 @@ pub unsafe extern "C" fn ZSTD_endStream(
     let mut input = inBuffer_forEndFlush(zcs);
     let remainingToFlush = ZSTD_compressStream2(zcs, output, &mut input, ZSTD_e_end);
     let err_code = remainingToFlush;
-    if ERR_isError(err_code) != 0 {
+    if ERR_isError(err_code) {
         return err_code;
     }
     if (*zcs).appliedParams.nbWorkers > 0 {
