@@ -338,7 +338,7 @@ type __compar_d_fn_t = unsafe extern "C" fn(
     *const core::ffi::c_void,
 ) -> core::ffi::c_int;
 
-unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
+unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
     let compare_fn = if (*ctx).d <= 8 {
         COVER_strict_cmp8 as __compar_d_fn_t
     } else {
@@ -351,7 +351,7 @@ unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
                 (*ctx).suffix as *mut core::ffi::c_void,
                 (*ctx).suffixSize,
                 ::core::mem::size_of::<u32>(),
-                ctx as *mut core::ffi::c_void,
+                &raw mut *ctx as *mut core::ffi::c_void,
                 compare_fn,
             );
         }
@@ -361,7 +361,7 @@ unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
                 (*ctx).suffixSize,
                 ::core::mem::size_of::<u32>(),
                 compare_fn,
-                ctx as *mut core::ffi::c_void,
+                &raw mut *ctx as *mut core::ffi::c_void,
             );
         }
         unix => {
@@ -370,7 +370,7 @@ unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
                 (*ctx).suffixSize,
                 ::core::mem::size_of::<u32>(),
                 compare_fn,
-                ctx as *mut core::ffi::c_void,
+                &raw mut *ctx as *mut core::ffi::c_void,
             );
         }
         _ => {
