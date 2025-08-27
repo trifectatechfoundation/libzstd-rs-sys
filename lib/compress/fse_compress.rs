@@ -586,7 +586,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
             maxSymbolValue,
             lowProbCount,
         );
-        if ERR_isError(errorCode) != 0 {
+        if ERR_isError(errorCode) {
             return errorCode;
         }
     } else {
@@ -644,7 +644,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         return 0;
     }
     let initError = BIT_initCStream(&mut bitC, dst, dstSize);
-    if ERR_isError(initError) != 0 {
+    if ERR_isError(initError) {
         return 0;
     }
     if srcSize & 1 != 0 {

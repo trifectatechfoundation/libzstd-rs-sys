@@ -1,5 +1,4 @@
 use core::ffi::c_char;
-use std::ffi::c_uint;
 
 use libc::size_t;
 
@@ -50,7 +49,7 @@ impl Error {
     }
 
     pub fn from_error_code(code: size_t) -> Option<Self> {
-        if ERR_isError(code) == 0 {
+        if !ERR_isError(code) {
             return None;
         }
 
@@ -107,12 +106,12 @@ impl TryFrom<u32> for Error {
 
 type ERR_enum = ZSTD_ErrorCode;
 
-pub(crate) const fn ERR_isError(code: size_t) -> c_uint {
-    (code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t) as c_uint
+pub(crate) const fn ERR_isError(code: size_t) -> bool {
+    code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t
 }
 
 pub(crate) const fn ERR_getErrorCode(code: size_t) -> ZSTD_ErrorCode {
-    if ERR_isError(code) == 0 {
+    if !ERR_isError(code) {
         return 0;
     }
 

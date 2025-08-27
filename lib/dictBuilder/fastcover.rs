@@ -696,7 +696,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         accelParams,
         displayLevel,
     );
-    if ERR_isError(initVal) != 0 {
+    if ERR_isError(initVal) {
         if displayLevel >= 1 {
             eprintln!("Failed to initialize context");
         }
@@ -727,7 +727,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         nbFinalizeSamples,
         coverParams.zParams,
     );
-    if ERR_isError(dictionarySize) == 0 && displayLevel >= 2 {
+    if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize);
     }
     FASTCOVER_ctx_destroy(&mut ctx);
@@ -930,7 +930,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             accelParams,
             childDisplayLevel,
         );
-        if ERR_isError(initVal) != 0 {
+        if ERR_isError(initVal) {
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
@@ -1015,7 +1015,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         println!("\r{:79 }\r", "");
     }
     let dictSize = best.dictSize;
-    if ERR_isError(best.compressedSize) != 0 {
+    if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
         COVER_best_destroy(&mut best);
         POOL_free(pool);

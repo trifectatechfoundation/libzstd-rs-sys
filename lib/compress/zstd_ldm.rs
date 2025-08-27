@@ -432,7 +432,6 @@ unsafe fn ZSTD_window_enforceMaxDist(
         }
     }
 }
-pub const ZSTD_isError: fn(size_t) -> core::ffi::c_uint = ERR_isError;
 #[inline]
 unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
@@ -1482,7 +1481,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart as *const core::ffi::c_void,
             chunkSize,
         );
-        if ERR_isError(newLeftoverSize) != 0 {
+        if ERR_isError(newLeftoverSize) {
             return newLeftoverSize;
         }
         if prevSize < (*sequences).size {
