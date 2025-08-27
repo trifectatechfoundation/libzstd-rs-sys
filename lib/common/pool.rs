@@ -6,7 +6,6 @@ use libc::{calloc, free, size_t};
 
 use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
-#[repr(C)]
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
     threads: *mut JoinHandle<()>,
