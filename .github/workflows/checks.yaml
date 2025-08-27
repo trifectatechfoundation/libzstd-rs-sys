@@ -113,9 +113,7 @@ jobs:
         with:
           toolchain: nightly
       - name: Install cargo fuzz
-        uses: taiki-e/install-action@56ab7930c591507f833cbaed864d201386d518a8
-        with:
-          tool: cargo-fuzz
+        run: cargo install cargo-fuzz
       - name: Download custom decompression corpus
         run: |
           wget https://github.com/trifectatechfoundation/compression-corpus/releases/download/2025-08-27-084941/zstd-files.zip
