@@ -140,32 +140,8 @@ unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
 }
-unsafe fn flushEvents(fpstats: *mut FPStats) {
-    let mut n: size_t = 0;
-    n = 0;
-    while n < HASHTABLESIZE as size_t {
-        *((*fpstats).pastEvents.events).as_mut_ptr().add(n) =
-            *((*fpstats).newEvents.events).as_mut_ptr().add(n);
-        n = n.wrapping_add(1);
-    }
-    (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
-    ptr::write_bytes(
-        &mut (*fpstats).newEvents as *mut Fingerprint as *mut u8,
-        0,
-        ::core::mem::size_of::<Fingerprint>(),
-    );
-}
-unsafe fn removeEvents(acc: *mut Fingerprint, slice: *const Fingerprint) {
-    let mut n: size_t = 0;
-    n = 0;
-    while n < HASHTABLESIZE as size_t {
-        let fresh2 = &mut (*((*acc).events).as_mut_ptr().add(n));
-        *fresh2 = (*fresh2).wrapping_sub(*((*slice).events).as_ptr().add(n));
-        n = n.wrapping_add(1);
-    }
-    (*acc).nbEvents = ((*acc).nbEvents).wrapping_sub((*slice).nbEvents);
-}
 pub const CHUNKSIZE: core::ffi::c_int = (8) << 10;
+const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
 unsafe fn ZSTD_splitBlock_byChunks(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
@@ -197,6 +173,13 @@ unsafe fn ZSTD_splitBlock_byChunks(
     let p = blockStart as *const core::ffi::c_char;
     let mut penalty = THRESHOLD_PENALTY;
     let mut pos = 0;
+
+    assert_eq!(blockSize, (128 << 10));
+    assert!(!workspace.is_null());
+    assert!(workspace.cast::<FPStats>().is_aligned());
+    const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
+    assert!(wkspSize >= size_of::<FPStats>());
+
     initStats(fpstats);
     record_f.unwrap_unchecked()(
         &mut (*fpstats).pastEvents,
@@ -240,6 +223,13 @@ unsafe fn ZSTD_splitBlock_fromBorders(
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
             as isize,
     ) as *mut core::ffi::c_void as *mut Fingerprint;
+
+    assert_eq!(blockSize, (128 << 10));
+    assert!(!workspace.is_null());
+    assert!(workspace.cast::<FPStats>().is_aligned());
+    const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
+    assert!(wkspSize >= size_of::<FPStats>());
+
     initStats(fpstats);
     HIST_add(
         ((*fpstats).pastEvents.events).as_mut_ptr(),
