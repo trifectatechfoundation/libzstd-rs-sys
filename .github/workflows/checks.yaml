@@ -25,6 +25,8 @@ jobs:
       RUST_BACKTRACE: 1
       RUSTFLAGS: "-Awarnings"
       CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: i686-linux-gnu-gcc
+      CARGO_TARGET_S390X_UNKNOWN_LINUX_GNU_LINKER: s390x-linux-gnu-gcc
+      CARGO_TARGET_S390X_UNKNOWN_LINUX_GNU_RUNNER: qemu-s390x -L /usr/s390x-linux-gnu
     strategy:
       matrix:
         include:
@@ -38,6 +40,13 @@ jobs:
             os: ubuntu-latest
             flags: "--workspace"
             codecov: true
+            packages: gcc-i686-linux-gnu
+          - target: "s390x-unknown-linux-gnu"
+            rust: stable
+            os: ubuntu-latest
+            flags: "--workspace"
+            codecov: false
+            packages: gcc-s390x-linux-gnu qemu-user qemu-user-static
           # FIXME: ubuntu-22.04-arm, ubuntu-24.04-arm and windows-11-arm are not supported yet for private repositories
           # - rust: stable
           #   os: ubuntu-24.04-arm
@@ -83,10 +92,10 @@ jobs:
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: Cache apt packages
-        if: matrix.target == 'i686-unknown-linux-gnu'
+        if: matrix.packages != ''
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: gcc-i686-linux-gnu,libc6-dev-i386
+          packages: "${{ matrix.packages }}"
           version: 2
       - name: cargo llvm-cov nextest
         if: matrix.codecov
