@@ -16,6 +16,7 @@ use crate::lib::compress::fse_compress::{
 };
 use crate::lib::compress::zstd_compress::SeqDef;
 use crate::lib::zstd::*;
+use crate::ZSTD_isError;
 
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
@@ -220,7 +221,11 @@ pub unsafe fn ZSTD_selectEncodingType(
         };
         let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
-        isDefaultAllowed as u64 != 0;
+        if isDefaultAllowed != 0 {
+            assert!(ZSTD_isError(basicCost) == 0);
+            assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
+        }
+        assert!(ZSTD_isError(NCountCost) == 0);
         if basicCost <= repeatCost && basicCost <= compressedCost {
             *repeatMode = FSE_repeat_none;
             return set_basic;
