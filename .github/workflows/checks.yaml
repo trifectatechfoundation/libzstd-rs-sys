@@ -60,10 +60,11 @@ jobs:
             #   os: macos-latest
             #   features: ""
             #   target: "x86_64-apple-darwin"
-            # - rust: stable-x86_64-gnu
-            #   os: windows-2022
-            #   features: ""
-            #   target: "x86_64-pc-windows-gnu"
+          - target: "x86_64-pc-windows-gnu"
+            rust: stable-x86_64-gnu
+            os: windows-2022
+            flags: "--workspace"
+            codecov: false
     steps:
       - name: Checkout sources
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
