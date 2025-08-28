@@ -894,7 +894,7 @@ unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
     (*window).dictLimit = end;
 }
 #[inline]
-unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
+pub(crate) unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
     (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
 }
 #[inline]
