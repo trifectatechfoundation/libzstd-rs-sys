@@ -868,6 +868,14 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
         ((*dictCParams).hashLog).wrapping_add(ZSTD_SHORT_CACHE_TAG_BITS as core::ffi::c_uint);
     let maxDistance = (1) << (*cParams).windowLog;
     let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    assert!(endIndex - prefixStartIndex <= maxDistance);
+
+    let _ = hasStep; /* not currently specialized on whether it's accelerated */
+
+    /* ensure there will be no underflow
+     * when translating a dict index into a local index */
+    assert!(prefixStartIndex as usize >= dictEnd as usize - dictBase as usize);
+
     if (*ms).prefetchCDictTables != 0 {
         let hashTableBytes = ((1 as core::ffi::c_int as size_t) << (*dictCParams).hashLog)
             .wrapping_mul(::core::mem::size_of::<u32>());
@@ -1185,6 +1193,9 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
     let mut step: size_t = 0;
     let mut nextStep = core::ptr::null::<u8>();
     let kStepIncr = ((1) << (kSearchStrength - 1)) as size_t;
+
+    let _ = hasStep; /* not currently specialized on whether it's accelerated */
+
     if prefixStartIndex == dictStartIndex {
         return ZSTD_compressBlock_fast(ms, seqStore, rep, src, srcSize);
     }
