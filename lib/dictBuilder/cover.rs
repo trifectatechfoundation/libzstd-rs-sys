@@ -273,27 +273,7 @@ unsafe extern "C" fn COVER_strict_cmp8(
     result
 }
 
-macro_rules! custom_cfg_select {
-    ({ $($tt:tt)* }) => {{
-        custom_cfg_select! { $($tt)* }
-    }};
-    (_ => { $($output:tt)* }) => {
-        $($output)*
-    };
-    (
-        $cfg:meta => $output:tt
-        $($( $rest:tt )+)?
-    ) => {
-        #[cfg($cfg)]
-        custom_cfg_select! { _ => $output }
-        $(
-            #[cfg(not($cfg))]
-            custom_cfg_select! { $($rest)+ }
-        )?
-    }
-}
-
-custom_cfg_select! {
+crate::cfg_select! {
     target_vendor = "apple" => {
         extern "C" {
             fn qsort_r(
@@ -345,7 +325,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
         COVER_strict_cmp as __compar_d_fn_t
     };
 
-    custom_cfg_select! {
+    crate::cfg_select! {
         target_vendor = "apple" => {
             qsort_r(
                 (*ctx).suffix as *mut core::ffi::c_void,
