@@ -1058,7 +1058,8 @@ unsafe fn ZSTD_checkDictValidity(
         *loadedDictEndPtr = 0;
         *dictMatchStatePtr = core::ptr::null();
     } else {
-        *loadedDictEndPtr != 0;
+        // FIXME: add log
+        // *loadedDictEndPtr != 0;
     };
 }
 #[inline]
@@ -1160,7 +1161,9 @@ use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_buildCTable, ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
     ZSTD_selectEncodingType,
 };
-use crate::lib::compress::zstd_compress_superblock::ZSTD_compressSuperBlock;
+use crate::lib::compress::zstd_compress_superblock::{
+    ZSTD_SequenceLength, ZSTD_compressSuperBlock,
+};
 use crate::lib::compress::zstd_double_fast::{
     ZSTD_compressBlock_doubleFast, ZSTD_compressBlock_doubleFast_dictMatchState,
     ZSTD_compressBlock_doubleFast_extDict, ZSTD_fillDoubleHashTable,
@@ -1211,7 +1214,16 @@ pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const ZSTD_CWKSP_ALIGNMENT_BYTES: core::ffi::c_int = 64;
 #[inline]
-unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: *mut ZSTD_cwksp) {}
+unsafe fn ZSTD_cwksp_assert_internal_consistency(ws: *mut ZSTD_cwksp) {
+    assert!((*ws).workspace <= (*ws).objectEnd);
+    assert!((*ws).objectEnd <= (*ws).tableEnd);
+    assert!((*ws).objectEnd <= (*ws).tableValidEnd);
+    assert!((*ws).tableEnd <= (*ws).allocStart);
+    assert!((*ws).tableValidEnd <= (*ws).allocStart);
+    assert!((*ws).allocStart <= (*ws).workspaceEnd);
+    assert!((*ws).initOnceStart <= ZSTD_cwksp_initialAllocStart(ws));
+    assert!((*ws).workspace <= (*ws).initOnceStart);
+}
 #[inline]
 unsafe fn ZSTD_cwksp_align(size: size_t, align: size_t) -> size_t {
     let mask = align.wrapping_sub(1);
@@ -1892,7 +1904,7 @@ unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, ::core::mem::size_of::<ZSTD_CCtx>());
     (*cctx).customMem = memManager;
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
-    let err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
+    let _err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
@@ -4010,7 +4022,12 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZST
     } else {
         ((*cctx).inBuffPos).wrapping_sub((*cctx).inToCompress)
     };
-    buffered != 0;
+
+    if buffered != 0 {
+        assert!((*cctx).inBuffPos >= (*cctx).inToCompress)
+    }
+    assert!(buffered <= ZSTD_BLOCKSIZE_MAX as usize);
+
     fp.ingested = ((*cctx).consumedSrcSize).wrapping_add(buffered as core::ffi::c_ulonglong);
     fp.consumed = (*cctx).consumedSrcSize;
     fp.produced = (*cctx).producedCSize;
@@ -4030,6 +4047,13 @@ unsafe fn ZSTD_assertEqualCParams(
     cParams1: ZSTD_compressionParameters,
     cParams2: ZSTD_compressionParameters,
 ) {
+    assert_eq!(cParams1.windowLog, cParams2.windowLog);
+    assert_eq!(cParams1.chainLog, cParams2.chainLog);
+    assert_eq!(cParams1.hashLog, cParams2.hashLog);
+    assert_eq!(cParams1.searchLog, cParams2.searchLog);
+    assert_eq!(cParams1.minMatch, cParams2.minMatch);
+    assert_eq!(cParams1.targetLength, cParams2.targetLength);
+    assert_eq!(cParams1.strategy, cParams2.strategy);
 }
 pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState_t) {
     let mut i: core::ffi::c_int = 0;
@@ -5458,10 +5482,45 @@ unsafe fn ZSTD_fastSequenceLengthSum(seqBuf: *const ZSTD_Sequence, seqBufSize: s
     }
     litLenSum.wrapping_add(matchLenSum)
 }
+
+unsafe fn ZSTD_getSequenceLength(
+    seqStore: *const SeqStore_t,
+    seq: *const SeqDef,
+) -> ZSTD_SequenceLength {
+    let mut seqLen = ZSTD_SequenceLength {
+        litLength: u32::from((*seq).litLength),
+        matchLength: u32::from((*seq).mlBase) + MINMATCH as u32,
+    };
+
+    if (*seqStore).longLengthPos == (seq as usize - (*seqStore).sequencesStart as usize) as u32 {
+        if (*seqStore).longLengthType == ZSTD_llt_literalLength {
+            seqLen.litLength += 0x10000;
+        }
+        if (*seqStore).longLengthType == ZSTD_llt_matchLength {
+            seqLen.matchLength += 0x10000;
+        }
+    }
+    return seqLen;
+}
+
 unsafe fn ZSTD_validateSeqStore(
     seqStore: *const SeqStore_t,
     cParams: *const ZSTD_compressionParameters,
 ) {
+    let matchLenLowerBound = match (*cParams).minMatch {
+        3 => 3,
+        _ => 4,
+    };
+
+    let start = (*seqStore).sequences;
+    let end = (*seqStore).sequences;
+
+    if cfg!(debug_assertions) {
+        for n in 0..end as usize - start as usize {
+            let seqLength = ZSTD_getSequenceLength(seqStore, start.add(n));
+            debug_assert!(seqLength.matchLength >= matchLenLowerBound);
+        }
+    }
 }
 unsafe fn ZSTD_buildSeqStore(
     zc: *mut ZSTD_CCtx,
@@ -5495,17 +5554,19 @@ unsafe fn ZSTD_buildSeqStore(
     let base = (*ms).window.base;
     let istart = src as *const u8;
     let curr = istart.offset_from(base) as core::ffi::c_long as u32;
-    ::core::mem::size_of::<ptrdiff_t>();
-    8;
-    if curr > ((*ms).nextToUpdate).wrapping_add(384) {
-        (*ms).nextToUpdate = curr.wrapping_sub(
-            if (192) < curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(384) {
-                192
-            } else {
-                curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(384)
-            },
-        );
+
+    if size_of::<ptrdiff_t>() == 8 {
+        assert!(istart.offset_from(base) < u32::MAX as ptrdiff_t); /* ensure no overflow */
     }
+
+    if curr > ((*ms).nextToUpdate).wrapping_add(384) {
+        (*ms).nextToUpdate = curr.wrapping_sub(Ord::min(
+            192,
+            curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(384),
+        ));
+    }
+
+    /* select and store sequences */
     let dictMode = ZSTD_matchState_dictMode(ms);
     let mut lastLLSize: size_t = 0;
     let mut i: core::ffi::c_int = 0;
@@ -6185,6 +6246,9 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
         wkspSize,
     );
     if type_0 as core::ffi::c_uint == set_basic as core::ffi::c_int as core::ffi::c_uint {
+        /* We selected this encoding type, so it must be valid. */
+        assert!(max <= defaultMax);
+
         cSymbolTypeSizeEstimateInBits =
             ZSTD_crossEntropyCost(defaultNorm, defaultNormLog, countWksp, max);
     } else if type_0 as core::ffi::c_uint == set_rle as core::ffi::c_int as core::ffi::c_uint {
@@ -7465,7 +7529,7 @@ unsafe fn ZSTD_loadDictionaryContent(
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         }) as size_t
     {
-        loadLdmDict != 0;
+        assert!(loadLdmDict != 0);
     }
     ZSTD_window_update(&mut (*ms).window, src, srcSize, 0);
     if loadLdmDict != 0 {
@@ -9800,10 +9864,14 @@ unsafe fn ZSTD_compressStream_generic(
         }
         (*zcs).stableIn_notConsumed = 0;
     }
-    (*zcs).appliedParams.inBufferMode as core::ffi::c_uint
-        == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint;
-    (*zcs).appliedParams.outBufferMode as core::ffi::c_uint
-        == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint;
+    if (*zcs).appliedParams.inBufferMode == ZSTD_bm_buffered {
+        assert!(!(*zcs).inBuff.is_null());
+        assert!((*zcs).inBuffSize > 0);
+    }
+    if (*zcs).appliedParams.outBufferMode == ZSTD_bm_buffered {
+        assert!(!(*zcs).outBuff.is_null());
+        assert!((*zcs).outBuffSize > 0);
+    }
     ((*input).src).is_null();
     ((*output).dst).is_null();
     while someMoreWork != 0 {
@@ -9945,7 +10013,9 @@ unsafe fn ZSTD_compressStream_generic(
                                     (*zcs).inBuffPos = 0;
                                     (*zcs).inBuffTarget = (*zcs).blockSizeMax;
                                 }
-                                lastBlock == 0;
+                                if lastBlock == 0 {
+                                    assert!((*zcs).inBuffTarget <= (*zcs).inBuffSize);
+                                }
                                 (*zcs).inToCompress = (*zcs).inBuffPos;
                             } else {
                                 let lastBlock_0 = (flushMode as core::ffi::c_uint
@@ -9978,7 +10048,9 @@ unsafe fn ZSTD_compressStream_generic(
                                     return err_code_1;
                                 }
                                 (*zcs).frameEnded = lastBlock_0;
-                                lastBlock_0 != 0;
+                                if lastBlock_0 != 0 {
+                                    assert_eq!(ip, iend);
+                                }
                             }
                             if cDst == op as *mut core::ffi::c_void {
                                 op = op.add(cSize_0);
@@ -10075,7 +10147,7 @@ unsafe fn ZSTD_checkBufferStability(
     cctx: *const ZSTD_CCtx,
     output: *const ZSTD_outBuffer,
     input: *const ZSTD_inBuffer,
-    endOp: ZSTD_EndDirective,
+    _endOp: ZSTD_EndDirective,
 ) -> size_t {
     if (*cctx).appliedParams.inBufferMode as core::ffi::c_uint
         == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint
@@ -10587,6 +10659,10 @@ unsafe fn ZSTD_transferSequences_noDelim(
     let mut updatedRepcodes = repcodes_s { rep: [0; 3] };
     let mut bytesAdjustment = 0;
     let mut finalMatchSplit = 0;
+
+    /* TODO(embg) support fast parsing mode in noBlockDelim mode */
+    let _ = externalRepSearch;
+
     if !((*cctx).cdict).is_null() {
         dictSize = (*(*cctx).cdict).dictContentSize;
     } else if !((*cctx).prefixDict.dict).is_null() {

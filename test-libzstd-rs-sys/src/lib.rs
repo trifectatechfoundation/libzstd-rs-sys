@@ -1,4 +1,6 @@
-#[cfg(test)]
+#![cfg(test)]
+
+mod compress;
 mod decompress;
 mod dict_builder;
 
