@@ -38,6 +38,7 @@ pub mod lib {
         mod zstdmt_compress;
     } // mod compress
     pub mod decompress;
+    pub(crate) mod polyfill;
     pub(crate) mod dictBuilder {
         pub(crate) mod cover;
         pub(crate) mod divsufsort;
