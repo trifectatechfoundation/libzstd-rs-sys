@@ -17,7 +17,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
     ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
     ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
-    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
+    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_hasExtDict, ZSTD_window_t,
+    ZSTD_writeLastEmptyBlock,
 };
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
@@ -769,7 +770,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
     (*serialState).cond.notify_all();
 }
 unsafe fn ZSTDMT_serialState_applySequences(
-    serialState: *const SerialState,
+    _serialState: *const SerialState,
     jobCCtx: *mut ZSTD_CCtx,
     seqStore: *const RawSeqStore_t,
 ) {
@@ -780,7 +781,7 @@ unsafe fn ZSTDMT_serialState_applySequences(
 unsafe fn ZSTDMT_serialState_ensureFinished(
     serialState: *mut SerialState,
     jobID: core::ffi::c_uint,
-    cSize: size_t,
+    _cSize: size_t,
 ) {
     let _guard = (*serialState).mutex.lock().unwrap();
     if (*serialState).nextJobID <= jobID {
@@ -959,8 +960,16 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                     let mut op = ostart;
                                     let oend = op.add(dstBuff.capacity);
                                     let mut chunkNb: core::ffi::c_int = 0;
-                                    ::core::mem::size_of::<size_t>();
-                                    ::core::mem::size_of::<core::ffi::c_int>();
+
+                                    if size_of::<size_t>() > size_of::<i32>() {
+                                        /* check overflow */
+                                        assert!(
+                                            ((*job).src.size as u64)
+                                                < i32::MAX as u64 * chunkSize as u64
+                                        );
+                                    }
+                                    assert!((*job).cSize == 0);
+
                                     chunkNb = 1;
                                     loop {
                                         if chunkNb >= nbChunks {
@@ -1045,7 +1054,18 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                             match current_block {
                                                 17100290475540901977 => {}
                                                 _ => {
-                                                    (*job).firstJob == 0;
+                                                    if (*job).firstJob == 0 {
+                                                        // Double check that we don't have an ext-dict, because then our
+                                                        // repcode invalidation doesn't work.
+                                                        assert!(
+                                                            ZSTD_window_hasExtDict(
+                                                                (*cctx)
+                                                                    .blockState
+                                                                    .matchState
+                                                                    .window
+                                                            ) == 0
+                                                        );
+                                                    }
                                                     ZSTD_CCtx_trace(cctx, 0);
                                                 }
                                             }
@@ -1060,7 +1080,6 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
         }
     }
     ZSTDMT_serialState_ensureFinished((*job).serial, (*job).jobID, (*job).cSize);
-    (*job).prefix.size > 0;
     ZSTDMT_releaseSeq((*job).seqPool, rawSeqStore);
     ZSTDMT_releaseCCtx((*job).cctxPool, cctx);
     let _guard = (*job).job_mutex.lock().unwrap();
@@ -1428,7 +1447,9 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
         (*jobPtr).dstFlushed
     };
     toFlush = produced.wrapping_sub(flushed);
-    toFlush == 0;
+    if toFlush == 0 {
+        assert!((*jobPtr).consumed < (*jobPtr).src.size);
+    }
     toFlush
 }
 unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::ffi::c_uint {
