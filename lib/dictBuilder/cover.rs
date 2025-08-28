@@ -1,7 +1,7 @@
 use core::ptr;
 use std::sync::{Condvar, Mutex};
 
-use libc::{free, malloc, memcmp, memcpy, memset, size_t};
+use libc::{free, malloc, memcmp, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
@@ -93,11 +93,7 @@ unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
-    memset(
-        (*map).data as *mut core::ffi::c_void,
-        MAP_EMPTY_VALUE,
-        ((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()),
-    );
+    core::ptr::write_bytes((*map).data as *mut u8, MAP_EMPTY_VALUE as u8, ((*map).size as size_t * core::mem::size_of::<COVER_map_pair_t>()));
 }
 unsafe fn COVER_map_init(map: *mut COVER_map_t, size: u32) -> core::ffi::c_int {
     (*map).sizeLog = (ZSTD_highbit32(size)).wrapping_add(2);
