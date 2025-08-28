@@ -3270,7 +3270,7 @@ unsafe fn sort_typeBstar(
     bucket_A: *mut core::ffi::c_int,
     bucket_B: *mut core::ffi::c_int,
     n: core::ffi::c_int,
-    openMP: core::ffi::c_int,
+    _openMP: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let mut PAb = core::ptr::null_mut::<core::ffi::c_int>();
     let mut ISAb = core::ptr::null_mut::<core::ffi::c_int>();
