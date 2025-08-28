@@ -486,7 +486,13 @@ unsafe fn ZSTD_seqDecompressedSize(
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
         n = n.wrapping_add(1);
     }
-    lastSubBlock == 0;
+
+    if lastSubBlock == 0 {
+        assert!(litLengthSum == litSize);
+    } else {
+        assert!(litLengthSum <= litSize);
+    }
+
     matchLengthSum.wrapping_add(litSize)
 }
 unsafe fn ZSTD_compressSubBlock_sequences(
