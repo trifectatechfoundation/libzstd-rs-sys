@@ -1,4 +1,5 @@
-use std::ffi::CStr;
+use core::sync::atomic::AtomicI32;
+use std::{ffi::CStr, sync::atomic::Ordering};
 
 use libc::{memcpy, size_t, strlen};
 
@@ -263,7 +264,7 @@ static kNbWords: usize = kWords.len();
 static kWeights: [core::ffi::c_int; 6] = [0, 8, 6, 4, 3, 2];
 static kNbWeights: usize = kWeights.len();
 const DISTRIB_MAX_SIZE: core::ffi::c_uint = 650;
-static mut g_distrib: [core::ffi::c_int; DISTRIB_MAX_SIZE as usize] = [0; 650];
+static g_distrib: [AtomicI32; DISTRIB_MAX_SIZE as usize] = [const { AtomicI32::new(0) }; 650];
 static mut g_distribCount: core::ffi::c_uint = 0;
 unsafe fn countFreqs(
     words: *const &CStr,
@@ -309,7 +310,7 @@ unsafe fn init_word_distrib(
         while l < lmax {
             let fresh0 = d;
             d = d.wrapping_add(1);
-            *g_distrib.as_mut_ptr().add(fresh0) = w as core::ffi::c_int;
+            g_distrib[fresh0].store(w as i32, Ordering::Relaxed);
             l += 1;
         }
         w = w.wrapping_add(1);
@@ -392,7 +393,7 @@ unsafe fn generateSentence(nbWords: core::ffi::c_int) {
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < nbWords {
-        let wordID = g_distrib[LOREM_rand(g_distribCount) as usize];
+        let wordID = g_distrib[LOREM_rand(g_distribCount) as usize].load(Ordering::Relaxed);
         let word = kWords[wordID as usize].as_ptr();
         let mut sep = b" \0" as *const u8 as *const core::ffi::c_char;
         if i == commaPos {
