@@ -2,6 +2,7 @@ use crate::assert_eq_rs_c;
 use std::ffi::{c_void, CStr};
 
 #[test]
+#[cfg(not(target_family = "wasm"))]
 fn test_train_from_buffer_cover() {
     let input_data = "The quick brown fox jumps high";
 
