@@ -15,24 +15,10 @@ use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::lib::zdict::ZDICT_params_t;
 
 extern "C" {
-    fn qsort_r(
-        __base: *mut core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
-        __compar: __compar_d_fn_t,
-        __arg: *mut core::ffi::c_void,
-    );
     fn clock() -> clock_t;
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
-type __compar_d_fn_t = Option<
-    unsafe extern "C" fn(
-        *const core::ffi::c_void,
-        *const core::ffi::c_void,
-        *mut core::ffi::c_void,
-    ) -> core::ffi::c_int,
->;
 #[repr(C)]
 struct COVER_map_t {
     data: *mut COVER_map_pair_t,
@@ -205,8 +191,9 @@ pub(super) unsafe fn COVER_sum(
     }
     sum
 }
+
 unsafe extern "C" fn COVER_cmp(
-    ctx: *mut COVER_ctx_t,
+    ctx: *const COVER_ctx_t,
     lp: *const core::ffi::c_void,
     rp: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
@@ -218,8 +205,9 @@ unsafe extern "C" fn COVER_cmp(
         (*ctx).d as size_t,
     )
 }
+
 unsafe extern "C" fn COVER_cmp8(
-    ctx: *mut COVER_ctx_t,
+    ctx: *const COVER_ctx_t,
     lp: *const core::ffi::c_void,
     rp: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
@@ -239,55 +227,158 @@ unsafe extern "C" fn COVER_cmp8(
     }
     (lhs > rhs) as core::ffi::c_int
 }
+
 unsafe extern "C" fn COVER_strict_cmp(
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-    g_coverCtx: *mut core::ffi::c_void,
+    a: *const core::ffi::c_void,
+    b: *const core::ffi::c_void,
+    c: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
-    let mut result = COVER_cmp(g_coverCtx as *mut COVER_ctx_t, lp, rp);
+    let (lp, rp, g_coverCtx) = if cfg!(any(target_vendor = "apple", windows)) {
+        (b, c, a)
+    } else {
+        (a, b, c)
+    };
+
+    let mut result = COVER_cmp(g_coverCtx as *const COVER_ctx_t, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
     }
     result
 }
+
 unsafe extern "C" fn COVER_strict_cmp8(
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-    g_coverCtx: *mut core::ffi::c_void,
+    a: *const core::ffi::c_void,
+    b: *const core::ffi::c_void,
+    c: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
-    let mut result = COVER_cmp8(g_coverCtx as *mut COVER_ctx_t, lp, rp);
+    let (lp, rp, g_coverCtx) = if cfg!(any(target_vendor = "apple", windows)) {
+        (b, c, a)
+    } else {
+        (a, b, c)
+    };
+
+    let ctx = g_coverCtx as *const COVER_ctx_t;
+    let suffix = (*ctx).suffix.cast_const();
+    let suffixSize = (*ctx).suffixSize;
+    let range = suffix..suffix.wrapping_add(suffixSize);
+
+    assert!(range.contains(&lp.cast()));
+    assert!(range.contains(&rp.cast()));
+    assert!(!range.contains(&ctx.cast()));
+
+    let mut result = COVER_cmp8(g_coverCtx as *const COVER_ctx_t, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
     }
     result
 }
-unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
-    qsort_r(
-        (*ctx).suffix as *mut core::ffi::c_void,
-        (*ctx).suffixSize,
-        ::core::mem::size_of::<u32>(),
-        if (*ctx).d <= 8 {
-            Some(
-                COVER_strict_cmp8
-                    as unsafe extern "C" fn(
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                        *mut core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
-        } else {
-            Some(
-                COVER_strict_cmp
-                    as unsafe extern "C" fn(
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                        *mut core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
-        },
-        ctx as *mut core::ffi::c_void,
-    );
+
+macro_rules! custom_cfg_select {
+    ({ $($tt:tt)* }) => {{
+        custom_cfg_select! { $($tt)* }
+    }};
+    (_ => { $($output:tt)* }) => {
+        $($output)*
+    };
+    (
+        $cfg:meta => $output:tt
+        $($( $rest:tt )+)?
+    ) => {
+        #[cfg($cfg)]
+        custom_cfg_select! { _ => $output }
+        $(
+            #[cfg(not($cfg))]
+            custom_cfg_select! { $($rest)+ }
+        )?
+    }
 }
+
+custom_cfg_select! {
+    target_vendor = "apple" => {
+        extern "C" {
+            fn qsort_r(
+                __base: *mut core::ffi::c_void,
+                __nmemb: size_t,
+                __size: size_t,
+                __arg: *mut core::ffi::c_void,
+                __compar: __compar_d_fn_t,
+            );
+        }
+    }
+    windows => {
+        extern "C" {
+            fn qsort_s(
+                __base: *mut core::ffi::c_void,
+                __nmemb: size_t,
+                __size: size_t,
+                __compar: __compar_d_fn_t,
+                __arg: *mut core::ffi::c_void,
+            );
+        }
+    }
+    unix => {
+        extern "C" {
+            fn qsort_r(
+                __base: *mut core::ffi::c_void,
+                __nmemb: size_t,
+                __size: size_t,
+                __compar: __compar_d_fn_t,
+                __arg: *mut core::ffi::c_void,
+            );
+        }
+    }
+    _ => {
+        compile_error!("no qsort implementation available");
+    }
+}
+
+type __compar_d_fn_t = unsafe extern "C" fn(
+    *const core::ffi::c_void,
+    *const core::ffi::c_void,
+    *const core::ffi::c_void,
+) -> core::ffi::c_int;
+
+unsafe extern "C" fn stableSort(ctx: *mut COVER_ctx_t) {
+    let compare_fn = if (*ctx).d <= 8 {
+        COVER_strict_cmp8 as __compar_d_fn_t
+    } else {
+        COVER_strict_cmp as __compar_d_fn_t
+    };
+
+    custom_cfg_select! {
+        target_vendor = "apple" => {
+            qsort_r(
+                (*ctx).suffix as *mut core::ffi::c_void,
+                (*ctx).suffixSize,
+                ::core::mem::size_of::<u32>(),
+                ctx as *mut core::ffi::c_void,
+                compare_fn,
+            );
+        }
+        windows => {
+            qsort_s(
+                (*ctx).suffix as *mut core::ffi::c_void,
+                (*ctx).suffixSize,
+                ::core::mem::size_of::<u32>(),
+                compare_fn,
+                ctx as *mut core::ffi::c_void,
+            );
+        }
+        unix => {
+            qsort_r(
+                (*ctx).suffix as *mut core::ffi::c_void,
+                (*ctx).suffixSize,
+                ::core::mem::size_of::<u32>(),
+                compare_fn,
+                ctx as *mut core::ffi::c_void,
+            );
+        }
+        _ => {
+            compile_error!("no qsort implementation available");
+        }
+    }
+}
+
 unsafe fn COVER_lower_bound(
     mut first: *const size_t,
     last: *const size_t,
@@ -313,16 +404,12 @@ unsafe fn COVER_groupBy(
     count: size_t,
     size: size_t,
     ctx: *mut COVER_ctx_t,
-    cmp: Option<
-        unsafe extern "C" fn(
-            *mut COVER_ctx_t,
-            *const core::ffi::c_void,
-            *const core::ffi::c_void,
-        ) -> core::ffi::c_int,
-    >,
-    grp: Option<
-        unsafe fn(*mut COVER_ctx_t, *const core::ffi::c_void, *const core::ffi::c_void) -> (),
-    >,
+    cmp: unsafe extern "C" fn(
+        *const COVER_ctx_t,
+        *const core::ffi::c_void,
+        *const core::ffi::c_void,
+    ) -> core::ffi::c_int,
+    grp: unsafe fn(*mut COVER_ctx_t, *const core::ffi::c_void, *const core::ffi::c_void) -> (),
 ) {
     let mut ptr = data as *const u8;
     let mut num = 0;
@@ -330,7 +417,7 @@ unsafe fn COVER_groupBy(
         let mut grpEnd = ptr.add(size);
         num = num.wrapping_add(1);
         while num < count
-            && cmp.unwrap_unchecked()(
+            && cmp(
                 ctx,
                 ptr as *const core::ffi::c_void,
                 grpEnd as *const core::ffi::c_void,
@@ -339,7 +426,7 @@ unsafe fn COVER_groupBy(
             grpEnd = grpEnd.add(size);
             num = num.wrapping_add(1);
         }
-        grp.unwrap_unchecked()(
+        grp(
             ctx,
             ptr as *const core::ffi::c_void,
             grpEnd as *const core::ffi::c_void,
@@ -630,32 +717,26 @@ unsafe fn COVER_ctx_init(
         ::core::mem::size_of::<u32>(),
         ctx,
         if (*ctx).d <= 8 {
-            Some(
-                COVER_cmp8
-                    as unsafe extern "C" fn(
-                        *mut COVER_ctx_t,
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
+            COVER_cmp8
+                as unsafe extern "C" fn(
+                    *const COVER_ctx_t,
+                    *const core::ffi::c_void,
+                    *const core::ffi::c_void,
+                ) -> core::ffi::c_int
         } else {
-            Some(
-                COVER_cmp
-                    as unsafe extern "C" fn(
-                        *mut COVER_ctx_t,
-                        *const core::ffi::c_void,
-                        *const core::ffi::c_void,
-                    ) -> core::ffi::c_int,
-            )
+            COVER_cmp
+                as unsafe extern "C" fn(
+                    *const COVER_ctx_t,
+                    *const core::ffi::c_void,
+                    *const core::ffi::c_void,
+                ) -> core::ffi::c_int
         },
-        Some(
-            COVER_group
-                as unsafe fn(
-                    *mut COVER_ctx_t,
-                    *const core::ffi::c_void,
-                    *const core::ffi::c_void,
-                ) -> (),
-        ),
+        COVER_group
+            as unsafe fn(
+                *mut COVER_ctx_t,
+                *const core::ffi::c_void,
+                *const core::ffi::c_void,
+            ) -> (),
     );
     (*ctx).freqs = (*ctx).suffix;
     (*ctx).suffix = core::ptr::null_mut();
