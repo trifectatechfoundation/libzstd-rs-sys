@@ -22,6 +22,7 @@ use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
+use crate::lib::polyfill::{prefetch_read_data, Locality};
 
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
@@ -1951,88 +1952,10 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
-pub const _PREFETCH_LOCALITY2: i32 = 2;
-pub const _PREFETCH_LOCALITY3: i32 = 3;
-
-#[inline(always)]
-#[cfg(target_arch = "aarch64")]
-unsafe fn _prefetch_read<const LOCALITY: i32>(ptr: *const i8) {
-    core::arch::asm!(
-        "prfm {op}, [{addr}]",
-        op = const {
-            match LOCALITY {
-                0 => 0b00000, // pldl1strm
-                1 => 0b00001, // pldl1keep
-                2 => 0b00010, // pldl2keep
-                3 => 0b00011, // pldl3keep
-                _ => panic!(),
-            }
-        },
-        addr = in(reg) ptr,
-        options(nostack, preserves_flags)
-    );
-}
-
-#[inline(always)]
-fn prefetch_l1<T>(ptr: *const T) {
-    if cfg!(feature = "no-prefetch") {
-        return;
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        use core::arch::x86_64;
-        unsafe { x86_64::_mm_prefetch(ptr as *const i8, x86_64::_MM_HINT_T0) };
-        return;
-    }
-
-    #[cfg(target_arch = "x86")]
-    if cfg!(target_feature = "sse") {
-        use core::arch::x86;
-        unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T0) };
-        return;
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    {
-        // emits `prfm pldl1keep`
-        unsafe { _prefetch_read::<_PREFETCH_LOCALITY3>(ptr as *const i8) };
-        return;
-    }
-}
-
-#[inline(always)]
-fn prefetch_l2<T>(ptr: *const T) {
-    if cfg!(feature = "no-prefetch") {
-        return;
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        use core::arch::x86_64;
-        unsafe { x86_64::_mm_prefetch(ptr as *const i8, x86_64::_MM_HINT_T1) };
-        return;
-    }
-
-    #[cfg(target_arch = "x86")]
-    if cfg!(target_feature = "sse") {
-        use core::arch::x86;
-        unsafe { x86::_mm_prefetch(ptr as *const i8, x86::_MM_HINT_T1) };
-        return;
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    {
-        // emits `prfm pldl1keep`
-        unsafe { _prefetch_read::<_PREFETCH_LOCALITY2>(ptr as *const i8) };
-        return;
-    }
-}
-
 #[inline(always)]
 fn prefetch_area<T>(ptr: *const T, bytes: usize) {
     for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
-        prefetch_l2(ptr.wrapping_byte_add(pos));
+        prefetch_read_data(ptr.wrapping_byte_add(pos), Locality::L2);
     }
 }
 
@@ -2058,8 +1981,8 @@ unsafe fn ZSTD_prefetchMatch(
         .wrapping_add(prefetchPos)
         .wrapping_sub(sequence.offset);
 
-    prefetch_l1(match_);
-    prefetch_l1(match_.wrapping_add(64));
+    prefetch_read_data(match_, Locality::L1);
+    prefetch_read_data(match_.wrapping_add(64), Locality::L1);
 
     prefetchPos.wrapping_add(sequence.matchLength)
 }
