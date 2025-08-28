@@ -2,7 +2,6 @@ use crate::assert_eq_rs_c;
 use std::ffi::{c_void, CStr};
 
 #[test]
-#[cfg_attr(target_vendor = "apple", ignore = "test aborted with signal 10")]
 fn test_train_from_buffer_cover() {
     let input_data = "The quick brown fox jumps high";
 
