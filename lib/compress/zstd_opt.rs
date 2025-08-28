@@ -1283,7 +1283,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t
         {
             match_2 = base.offset(matchIndex as isize);
-            matchIndex >= dictLimit;
+            if matchIndex >= dictLimit {
+                assert!(libc::memcmp(match_2.cast(), ip.cast(), matchLength) == 0);
+                /* ensure early section of match is equal as expected */
+            }
             matchLength = matchLength.wrapping_add(ZSTD_count(
                 ip.add(matchLength),
                 match_2.add(matchLength),
