@@ -12,6 +12,8 @@ use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_r
 use crate::lib::compress::zstd_compress::ZSTD_hufCTables_t;
 use crate::lib::zstd::*;
 
+const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
+
 pub type SymbolEncodingType_e = core::ffi::c_uint;
 pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
@@ -82,17 +84,17 @@ pub unsafe fn ZSTD_noCompressLiterals(
     );
     srcSize.wrapping_add(flSize as size_t)
 }
-unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> core::ffi::c_int {
+unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
     let b = *(src as *const u8).offset(0);
     let mut p: size_t = 0;
     p = 1;
     while p < srcSize {
         if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
-            return 0;
+            return false;
         }
         p = p.wrapping_add(1);
     }
-    1
+    true
 }
 pub unsafe fn ZSTD_compressRleLiteralsBlock(
     dst: *mut core::ffi::c_void,
@@ -103,6 +105,10 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     let ostart = dst as *mut u8;
     let flSize =
         (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
+
+    assert!(dstCapacity >= 4);
+    assert!(allBytesIdentical(src, srcSize));
+
     match flSize {
         1 => {
             *ostart.offset(0) =
@@ -264,7 +270,7 @@ pub unsafe fn ZSTD_compressLiterals(
         );
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
-    if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src, srcSize) != 0) {
+    if cLitSize == 1 && (srcSize >= 8 || allBytesIdentical(src, srcSize)) {
         libc::memcpy(
             nextHuf as *mut core::ffi::c_void,
             prevHuf as *const core::ffi::c_void,
@@ -277,7 +283,10 @@ pub unsafe fn ZSTD_compressLiterals(
     }
     match lhSize {
         3 => {
-            singleStream == 0;
+            if singleStream == 0 {
+                assert!(srcSize >= MIN_LITERALS_FOR_4_STREAMS)
+            }
+
             let lhc = (hType as core::ffi::c_uint)
                 .wrapping_add(((singleStream == 0) as core::ffi::c_int as u32) << 2)
                 .wrapping_add((srcSize as u32) << 4)
