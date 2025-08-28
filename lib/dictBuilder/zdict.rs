@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{free, malloc, memcpy, memmove, memset, size_t};
+use libc::{free, malloc, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{HUF_CElt, HUF_WORKSPACE_SIZE};
@@ -667,11 +667,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
         if minRatio < MINRATIO as core::ffi::c_uint {
             minRatio = MINRATIO as core::ffi::c_uint;
         }
-        memset(
-            doneMarks as *mut core::ffi::c_void,
-            0,
-            bufferSize.wrapping_add(16),
-        );
+        core::ptr::write_bytes(doneMarks, 0, bufferSize.wrapping_add(16));
         if bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t && notificationLevel >= 3 {
             eprintln!(
                 "sample set too large : reduced to {} MB ...",
@@ -1382,9 +1378,9 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     let outDictHeader = dictBuffer as *mut u8;
     let outDictPadding = outDictHeader.add(hSize);
     let outDictContent = outDictPadding.add(paddingSize);
-    memmove(
-        outDictContent as *mut core::ffi::c_void,
-        customDictContent,
+    core::ptr::copy(
+        customDictContent.cast::<u8>(),
+        outDictContent,
         dictContentSize,
     );
     memcpy(
@@ -1392,7 +1388,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         header.as_mut_ptr() as *const core::ffi::c_void,
         hSize,
     );
-    memset(outDictPadding as *mut core::ffi::c_void, 0, paddingSize);
+    core::ptr::write_bytes(outDictPadding, 0, paddingSize);
     dictSize
 }
 const HBUFFSIZE: core::ffi::c_int = 256;
@@ -1455,13 +1451,13 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         dictID,
     );
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
-        memmove(
-            (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
+        core::ptr::copy(
             (dictBuffer as *mut core::ffi::c_char)
                 .add(dictBufferCapacity)
-                .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
+                .sub(dictContentSize),
+            (dictBuffer as *mut core::ffi::c_char).add(hSize),
             dictContentSize,
-        );
+        )
     }
     if dictBufferCapacity < hSize.wrapping_add(dictContentSize) {
         dictBufferCapacity
