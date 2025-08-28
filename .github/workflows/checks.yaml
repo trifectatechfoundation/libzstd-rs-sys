@@ -35,43 +35,42 @@ jobs:
             os: ubuntu-latest
             flags: "--workspace"
             codecov: true
+
           - target: "i686-unknown-linux-gnu"
             rust: stable
             os: ubuntu-latest
             flags: "--workspace"
             codecov: true
             packages: gcc-i686-linux-gnu
+
           - target: "s390x-unknown-linux-gnu"
             rust: stable
             os: ubuntu-latest
             flags: "--workspace"
             codecov: false
             packages: gcc-s390x-linux-gnu qemu-user qemu-user-static
-          # FIXME: ubuntu-22.04-arm, ubuntu-24.04-arm and windows-11-arm are not supported yet for private repositories
-          # - rust: stable
-          #   os: ubuntu-24.04-arm
-          #   features: ""
-          #   target: "aarch64-unknown-linux-gnu"
+
+          - target: "aarch64-unknown-linux-gnu"
+            rust: stable
+            os: ubuntu-24.04-arm
+            flags: "--workspace"
+            codecov: true
+
           - target: "aarch64-apple-darwin"
             rust: stable
             os: macos-latest
             flags: "--workspace"
             codecov: true
-            # - rust: msrv
-            #   os: ubuntu-latest
-            #   features: ""
-            #   target: "x86_64-unknown-linux-gnu"
-            # - rust: beta
-            #   os: ubuntu-latest
-            #   features: ""
-            #   target: "x86_64-unknown-linux-gnu"
-            # - rust: "stable"
-            #   os: macos-latest
-            #   features: ""
-            #   target: "x86_64-apple-darwin"
+
           - target: "x86_64-pc-windows-gnu"
-            rust: stable-x86_64-gnu
+            rust: stable 
             os: windows-2022
+            flags: "--workspace"
+            codecov: false
+
+          - target: "aarch64-pc-windows-msvc"
+            rust: stable 
+            os: windows-11-arm
             flags: "--workspace"
             codecov: false
     steps:
