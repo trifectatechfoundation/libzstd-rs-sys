@@ -8,9 +8,8 @@ edition = "2021"
 
 [package]
 name = "libzstd-rs-sys"
-authors = ["C2Rust"]
 version = "0.0.0"
-publish = false
+publish = true
 edition = "2021"
 autobins = false
 
