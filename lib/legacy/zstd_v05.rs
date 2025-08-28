@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{free, malloc, memcpy, memmove, memset, ptrdiff_t, size_t};
+use libc::{free, malloc, memcpy, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
@@ -823,7 +823,7 @@ unsafe fn HUFv05_readStats(
         if iSize >= 242 {
             static l: [core::ffi::c_int; 14] = [1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128];
             oSize = l[iSize.wrapping_sub(242)] as size_t;
-            memset(huffWeight as *mut core::ffi::c_void, 1, hwSize);
+            core::ptr::write_bytes(huffWeight, 1, hwSize);
             iSize = 0;
         } else {
             oSize = iSize.wrapping_sub(127);
@@ -858,11 +858,7 @@ unsafe fn HUFv05_readStats(
             return oSize;
         }
     }
-    memset(
-        rankStats as *mut core::ffi::c_void,
-        0,
-        ((HUFv05_ABSOLUTEMAX_TABLELOG + 1) as size_t).wrapping_mul(::core::mem::size_of::<u32>()),
-    );
+    core::ptr::write_bytes(rankStats, 0, (HUFv05_ABSOLUTEMAX_TABLELOG + 1) as size_t);
     weightTotal = 0;
     n = 0;
     while (n as size_t) < oSize {
@@ -2200,7 +2196,7 @@ unsafe fn HUFv05_decompress(
         return Error::corruption_detected.to_error_code();
     }
     if cSrcSize == 1 {
-        memset(dst, *(cSrc as *const u8) as core::ffi::c_int, dstSize);
+        core::ptr::write_bytes(dst.cast::<u8>(), *(cSrc as *const u8), dstSize);
         return dstSize;
     }
     Q = (cSrcSize * 16 / dstSize) as u32;
@@ -2550,9 +2546,9 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             if litSize_2 > BLOCKSIZE as size_t {
                 return Error::corruption_detected.to_error_code();
             }
-            memset(
-                dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
-                *istart.offset(lhSize_2 as isize) as core::ffi::c_int,
+            core::ptr::write_bytes(
+                dctx.litBuffer.as_mut_ptr(),
+                *istart.offset(lhSize_2 as isize),
                 litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as size_t),
             );
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
@@ -2883,19 +2879,11 @@ unsafe fn ZSTDv05_execSequence(
         }
         match_0 = dictEnd.offset(-(base.offset_from(match_0) as core::ffi::c_long as isize));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            memmove(
-                oLitEnd as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                sequence.matchLength,
-            );
+            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
         let length1 = dictEnd.offset_from(match_0) as size_t;
-        memmove(
-            oLitEnd as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            length1,
-        );
+        core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = base;

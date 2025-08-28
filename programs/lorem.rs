@@ -1,6 +1,6 @@
 use std::ffi::CStr;
 
-use libc::{memcpy, memset, size_t, strlen};
+use libc::{memcpy, size_t, strlen};
 
 static kWords: [&CStr; 255] = [
     c"lorem",
@@ -340,11 +340,7 @@ unsafe fn writeLastCharacters() {
     g_nbChars = g_nbChars.wrapping_add(1);
     *g_ptr.add(fresh1) = '.' as i32 as core::ffi::c_char;
     if lastChars > 2 {
-        memset(
-            g_ptr.add(g_nbChars) as *mut core::ffi::c_void,
-            ' ' as i32,
-            lastChars.wrapping_sub(2),
-        );
+        core::ptr::write_bytes(g_ptr.add(g_nbChars), b' ', lastChars.wrapping_sub(2));
     }
     if lastChars > 1 {
         *g_ptr.add(g_maxChars.wrapping_sub(1)) = '\n' as i32 as core::ffi::c_char;
