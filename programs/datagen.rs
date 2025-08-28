@@ -1,6 +1,6 @@
 use core::ptr;
 
-use libc::{exit, free, fwrite, malloc, memcpy, memset, perror, size_t, FILE};
+use libc::{exit, free, fwrite, malloc, memcpy, perror, size_t, FILE};
 
 extern "C" {
     static mut stdout: *mut FILE;
@@ -89,14 +89,10 @@ unsafe fn RDG_genBlock(
         size0 = (1 as size_t) << (16 as size_t).wrapping_add(size0 * 2);
         size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
         if buffSize < pos.wrapping_add(size0) {
-            memset(
-                buffPtr.add(pos) as *mut core::ffi::c_void,
-                0,
-                buffSize.wrapping_sub(pos),
-            );
+            core::ptr::write_bytes(buffPtr.add(pos), 0, buffSize.wrapping_sub(pos));
             return;
         }
-        memset(buffPtr.add(pos) as *mut core::ffi::c_void, 0, size0);
+        core::ptr::write_bytes(buffPtr.add(pos), 0, size0);
         pos = pos.wrapping_add(size0);
         *buffPtr.add(pos.wrapping_sub(1)) = RDG_genChar(seedPtr, ldt);
     }
