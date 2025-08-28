@@ -9,6 +9,8 @@ edition = "2021"
 [package]
 name = "libzstd-rs-sys"
 version = "0.0.0"
+description = "a rust implementation of zstd compression and decompression"
+license = "BSD-3-Clause"
 publish = true
 edition = "2021"
 autobins = false
