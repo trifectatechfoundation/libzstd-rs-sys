@@ -4161,7 +4161,7 @@ unsafe fn ZSTD_reset_matchState(
             ZSTD_advanceHashSalt(ms);
         } else {
             (*ms).tagTable = ZSTD_cwksp_reserve_aligned64(ws, tagTableSize) as *mut u8;
-            ptr::write_bytes((*ms).tagTable as *mut u8, 0, tagTableSize);
+            ptr::write_bytes((*ms).tagTable, 0, tagTableSize);
             (*ms).hashSalt = 0;
         }
         let rowLog = if 4
@@ -4450,7 +4450,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         let numBuckets =
             (1) << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
         (*zc).ldmState.bucketOffsets = ZSTD_cwksp_reserve_buffer(ws, numBuckets);
-        ptr::write_bytes((*zc).ldmState.bucketOffsets as *mut u8, 0, numBuckets);
+        ptr::write_bytes((*zc).ldmState.bucketOffsets, 0, numBuckets);
     }
     ZSTD_referenceExternalSequences(zc, core::ptr::null_mut(), 0);
     (*zc).seqStore.maxNbSeq = maxNbSeq;
@@ -7602,7 +7602,7 @@ unsafe fn ZSTD_loadDictionaryContent(
                 == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
             {
                 let tagTableSize = (1) << (*params).cParams.hashLog;
-                ptr::write_bytes((*ms).tagTable as *mut u8, 0, tagTableSize as usize);
+                ptr::write_bytes((*ms).tagTable, 0, tagTableSize as usize);
                 ZSTD_row_update(ms, iend.offset(-(HASH_READ_SIZE as isize)));
             } else {
                 ZSTD_insertAndFindFirstIndex(ms, iend.offset(-(HASH_READ_SIZE as isize)));

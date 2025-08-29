@@ -2431,7 +2431,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize;
             ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
+                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2469,7 +2469,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize_0;
             ptr::write_bytes(
-                (dctx.litBuffer).as_mut_ptr().add(dctx.litSize) as *mut u8,
+                (dctx.litBuffer).as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2512,7 +2512,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 dctx.litPtr = dctx.litBuffer.as_mut_ptr();
                 dctx.litSize = litSize_1;
                 ptr::write_bytes(
-                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
+                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
