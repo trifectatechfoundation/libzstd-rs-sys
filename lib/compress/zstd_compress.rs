@@ -11549,13 +11549,22 @@ pub unsafe extern "C" fn ZSTD_endStream(
         .wrapping_add(lastBlockSize)
         .wrapping_add(checksumSize)
 }
-pub const fn ZSTD_maxCLevel() -> core::ffi::c_int {
+
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_maxCLevel))]
+pub const extern "C" fn ZSTD_maxCLevel() -> core::ffi::c_int {
     ZSTD_MAX_CLEVEL
 }
+
+#[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_minCLevel))]
+pub const extern "C" fn ZSTD_minCLevel() -> core::ffi::c_int {
+    -ZSTD_TARGETLENGTH_MAX
+}
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_defaultCLevel))]
-pub unsafe extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
+pub const extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
+
 unsafe fn ZSTD_dedicatedDictSearch_isSupported(
     cParams: *const ZSTD_compressionParameters,
 ) -> core::ffi::c_int {
@@ -12641,9 +12650,6 @@ static ZSTD_defaultCParameters: [[ZSTD_compressionParameters; 23]; 4] = [
     ],
 ];
 
-pub const fn ZSTD_minCLevel() -> core::ffi::c_int {
-    -ZSTD_TARGETLENGTH_MAX
-}
 unsafe fn ZSTD_dedicatedDictSearch_getCParams(
     compressionLevel: core::ffi::c_int,
     dictSize: size_t,
