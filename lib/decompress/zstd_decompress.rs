@@ -1873,7 +1873,7 @@ unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
 ) -> size_t {
     match (*dctx).stage {
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
-            Ord::clamp(1, inputSize, (*dctx).expected)
+            Ord::max(1, Ord::min(inputSize, (*dctx).expected))
         }
         _ => (*dctx).expected,
     }
@@ -3287,7 +3287,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 }
 
                 // control buffer memory usage
-                (*zds).fParams.windowSize = std::cmp::min(
+                (*zds).fParams.windowSize = Ord::max(
                     (*zds).fParams.windowSize,
                     (1 << ZSTD_WINDOWLOG_ABSOLUTEMIN) as core::ffi::c_ulonglong,
                 );
