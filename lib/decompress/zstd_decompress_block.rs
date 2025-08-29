@@ -746,14 +746,14 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         }
     }
 
-    for u in 0..tableSize {
-        let symbol = tableDecode[u].baseValue as usize;
+    for seq_symbol in tableDecode[..tableSize].iter_mut() {
+        let symbol = seq_symbol.baseValue as usize;
         let nextState = wksp.symbols[symbol] as u32;
         wksp.symbols[symbol] += 1;
 
         let nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
 
-        tableDecode[u] = ZSTD_seqSymbol {
+        *seq_symbol = ZSTD_seqSymbol {
             nbBits,
             nextState: (nextState << nbBits).wrapping_sub(tableSize as u32) as u16,
             nbAdditionalBits: nbAdditionalBits[symbol],

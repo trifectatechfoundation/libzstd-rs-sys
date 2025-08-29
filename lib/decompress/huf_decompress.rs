@@ -286,8 +286,8 @@ fn HUF_rescaleStats(
         let scale = targetTableLog as usize - tableLog as usize;
 
         /* Increase the weight for all non-zero probability symbols by scale. */
-        for s in 0..nbSymbols as usize {
-            huffWeight[s] += (if huffWeight[s] == 0 { 0 } else { scale }) as u8;
+        for weight in huffWeight[..nbSymbols as usize].iter_mut() {
+            *weight += (if *weight == 0 { 0 } else { scale }) as u8;
         }
 
         // Update rankVal to reflect the new weights.
