@@ -1056,6 +1056,7 @@ pub(super) unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
         return;
     }
     let mut guard = (*best).mutex.lock().unwrap();
+    #[expect(clippy::while_immutable_condition)]
     while (*best).liveJobs != 0 {
         guard = (*best).cond.wait(guard).unwrap();
     }

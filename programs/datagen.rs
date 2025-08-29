@@ -84,17 +84,19 @@ unsafe fn RDG_genBlock(
     let matchProba32 = (32768.0f64 * matchProba) as u32;
     let mut pos = prefixSize;
     let mut prevOffset = 1;
-    while matchProba >= 1.0f64 {
-        let mut size0 = (RDG_rand(seedPtr) & 3u32) as size_t;
-        size0 = (1 as size_t) << (16 as size_t).wrapping_add(size0 * 2);
-        size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
-        if buffSize < pos.wrapping_add(size0) {
-            core::ptr::write_bytes(buffPtr.add(pos), 0, buffSize.wrapping_sub(pos));
-            return;
+    if matchProba >= 1.0f64 {
+        loop {
+            let mut size0 = (RDG_rand(seedPtr) & 3u32) as size_t;
+            size0 = (1 as size_t) << (16 as size_t).wrapping_add(size0 * 2);
+            size0 = size0.wrapping_add(RDG_rand(seedPtr) as size_t & size0.wrapping_sub(1));
+            if buffSize < pos.wrapping_add(size0) {
+                core::ptr::write_bytes(buffPtr.add(pos), 0, buffSize.wrapping_sub(pos));
+                return;
+            }
+            core::ptr::write_bytes(buffPtr.add(pos), 0, size0);
+            pos = pos.wrapping_add(size0);
+            *buffPtr.add(pos.wrapping_sub(1)) = RDG_genChar(seedPtr, ldt);
         }
-        core::ptr::write_bytes(buffPtr.add(pos), 0, size0);
-        pos = pos.wrapping_add(size0);
-        *buffPtr.add(pos.wrapping_sub(1)) = RDG_genChar(seedPtr, ldt);
     }
     if pos == 0 {
         *buffPtr.offset(0) = RDG_genChar(seedPtr, ldt);
