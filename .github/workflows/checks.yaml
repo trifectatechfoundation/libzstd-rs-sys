@@ -124,6 +124,37 @@ jobs:
           name: test
           verbose: true
 
+  clippy:
+    name: Clippy
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+        features:
+          - ""
+          # - '--no-default-features --features="c-allocator"'
+          # - '--no-default-features --features="std,rust-allocator"'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+          submodules: true
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@be73d7920c329f220ce78e0234b8f96b7ae60248
+        with:
+          toolchain: nightly
+          components: clippy
+          targets: ${{matrix.target}}
+      - name: Rust cache
+        uses: Swatinem/rust-cache@3cf7f8cc28d1b4e7d01e3783be10a97d55d483c8
+        with:
+            shared-key: "stable-${{matrix.target}}"
+
+      - name: Run clippy
+        run: cargo clippy --target ${{matrix.target}} ${{matrix.features}} --workspace --all-targets -- -D warnings
+
   fuzz-decompress:
     name: fuzz-decompress
     runs-on: ubuntu-latest
