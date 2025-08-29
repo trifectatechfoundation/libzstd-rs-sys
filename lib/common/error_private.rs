@@ -6,6 +6,7 @@ use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
+    #[allow(clippy::upper_case_acronyms)]
     GENERIC = 1,
     prefix_unknown = 10,
     version_unsupported = 12,
@@ -171,7 +172,8 @@ pub(crate) fn ERR_getErrorString(code: ERR_enum) -> *const c_char {
                 as *const c_char
         }
         107 => b"External sequences are not valid\0" as *const u8 as *const c_char,
-        120 | _ => b"Unspecified error code\0" as *const u8 as *const c_char,
+        120 => b"Unspecified error code\0" as *const u8 as *const c_char,
+        _ => b"Unspecified error code\0" as *const u8 as *const c_char,
     }
 }
 

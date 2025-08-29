@@ -931,6 +931,7 @@ unsafe fn AIO_ReadPool_enqueueRead(ctx: *mut ReadPoolCtx_t) {
     AIO_IOPool_enqueueJob(job);
 }
 unsafe fn AIO_ReadPool_startReading(ctx: *mut ReadPoolCtx_t) {
+    #[expect(clippy::while_immutable_condition)]
     while (*ctx).base.availableJobsCount != 0 {
         AIO_ReadPool_enqueueRead(ctx);
     }

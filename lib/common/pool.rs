@@ -62,6 +62,7 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     }
     loop {
         let mut guard = (*ctx).queueMutex.lock().unwrap();
+        #[expect(clippy::while_immutable_condition)]
         while (*ctx).queueEmpty != 0 || (*ctx).numThreadsBusy >= (*ctx).threadLimit {
             if (*ctx).shutdown != 0 {
                 return;
@@ -71,14 +72,12 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         let job = *((*ctx).queue).add((*ctx).queueHead);
         (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_add(1);
-        (*ctx).numThreadsBusy;
         (*ctx).queueEmpty = ((*ctx).queueHead == (*ctx).queueTail) as core::ffi::c_int;
         (*ctx).queuePushCond.notify_one();
         drop(guard);
         (job.function).unwrap_unchecked()(job.opaque);
         guard = (*ctx).queueMutex.lock().unwrap();
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_sub(1);
-        (*ctx).numThreadsBusy;
         (*ctx).queuePushCond.notify_one();
     }
 }
@@ -163,6 +162,7 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
 }
 pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
     let mut guard = (*ctx).queueMutex.lock().unwrap();
+    #[expect(clippy::while_immutable_condition)]
     while (*ctx).queueEmpty == 0 || (*ctx).numThreadsBusy > 0 {
         guard = (*ctx).queuePushCond.wait(guard).unwrap();
     }

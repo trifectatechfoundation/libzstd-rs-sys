@@ -182,7 +182,6 @@ unsafe fn ZSTD_storeSeqOnly(
     }
     (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
-    (*seqStorePtr).sequences;
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -827,18 +826,15 @@ unsafe fn ZSTD_updateStats(
     let fresh3 = &mut (*((*optPtr).litLengthFreq).offset(llCode as isize));
     *fresh3 = (*fresh3).wrapping_add(1);
     (*optPtr).litLengthSum = ((*optPtr).litLengthSum).wrapping_add(1);
-    (*optPtr).litLengthSum;
     let offCode = ZSTD_highbit32(offBase);
     let fresh4 = &mut (*((*optPtr).offCodeFreq).offset(offCode as isize));
     *fresh4 = (*fresh4).wrapping_add(1);
     (*optPtr).offCodeSum = ((*optPtr).offCodeSum).wrapping_add(1);
-    (*optPtr).offCodeSum;
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
     let mlCode = ZSTD_MLcode(mlBase);
     let fresh5 = &mut (*((*optPtr).matchLengthFreq).offset(mlCode as isize));
     *fresh5 = (*fresh5).wrapping_add(1);
     (*optPtr).matchLengthSum = ((*optPtr).matchLengthSum).wrapping_add(1);
-    (*optPtr).matchLengthSum;
 }
 #[inline]
 unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u32 {
@@ -1917,7 +1913,6 @@ unsafe fn ZSTD_optLdm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBy
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
-            (*rawSeqStore).pos;
         } else {
             (*rawSeqStore).posInSequence = currPos as size_t;
             break;

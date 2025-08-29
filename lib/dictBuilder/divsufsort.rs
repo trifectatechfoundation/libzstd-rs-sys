@@ -3223,6 +3223,7 @@ unsafe fn trsort(
     let mut unsorted: core::ffi::c_int = 0;
     trbudget_init(&mut budget, tr_ilg(n) * 2 / 3, n);
     ISAd = ISA.offset(depth as isize);
+    #[expect(clippy::while_immutable_condition)]
     while -n < *SA {
         first = SA;
         skip = 0;

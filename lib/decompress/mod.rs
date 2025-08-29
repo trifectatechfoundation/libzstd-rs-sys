@@ -68,11 +68,11 @@ pub struct SymbolTable<const N: usize> {
 
 impl<const N: usize> SymbolTable<N> {
     fn as_mut_ptr(&mut self) -> *mut ZSTD_seqSymbol {
-        unsafe { core::mem::transmute(self) }
+        self as *mut Self as *mut ZSTD_seqSymbol
     }
 
     fn as_ptr(&self) -> *const ZSTD_seqSymbol {
-        unsafe { core::mem::transmute(self) }
+        self as *const Self as *const ZSTD_seqSymbol
     }
 }
 
@@ -125,10 +125,12 @@ pub enum StreamStage {
     Flush,
 }
 
-pub type ZSTD_dictUses_e = core::ffi::c_int;
-pub const ZSTD_use_once: ZSTD_dictUses_e = 1;
-pub const ZSTD_dont_use: ZSTD_dictUses_e = 0;
-pub const ZSTD_use_indefinitely: ZSTD_dictUses_e = -1;
+#[repr(i32)]
+enum DictUses {
+    ZSTD_use_once = 1,
+    ZSTD_dont_use = 0,
+    ZSTD_use_indefinitely = -1,
+}
 
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -253,7 +255,7 @@ pub struct ZSTD_DCtx_s {
     ddict: *const ZSTD_DDict,
     dictID: u32,
     ddictIsCold: core::ffi::c_int,
-    dictUses: ZSTD_dictUses_e,
+    dictUses: DictUses,
     ddictSet: *mut ZSTD_DDictHashSet,
     refMultipleDDicts: MultipleDDicts,
     disableHufAsm: core::ffi::c_int,

@@ -1460,7 +1460,6 @@ pub unsafe fn UTIL_refFilename(fnt: *mut FileNamesTable, filename: *const core::
     let fresh2 = &mut (*((*fnt).fileNames).add((*fnt).tableSize));
     *fresh2 = filename;
     (*fnt).tableSize = ((*fnt).tableSize).wrapping_add(1);
-    (*fnt).tableSize;
 }
 unsafe fn getTotalTableSize(table: *mut FileNamesTable) -> size_t {
     let mut fnb: size_t = 0;

@@ -24,10 +24,10 @@ use crate::lib::decompress::zstd_decompress_block::{
     ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
-    blockProperties_t, BlockType, DecompressStage, LL_base, ML_base, NextInputType, OF_base,
-    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
-    ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e,
-    ZSTD_frame, ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once,
+    blockProperties_t, BlockType, DecompressStage, DictUses, LL_base, ML_base, NextInputType,
+    OF_base, OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
+    ZSTD_d_validateChecksum, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame,
+    ZSTD_skippableFrame,
 };
 use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;
 use crate::lib::zstd::*;
@@ -414,7 +414,7 @@ unsafe fn ZSTD_freeLegacyStreamContext(
         5 => ZBUFFv05_freeDCtx(legacyContext as *mut ZBUFFv05_DCtx),
         6 => ZBUFFv06_freeDCtx(legacyContext as *mut ZBUFFv06_DCtx),
         7 => ZBUFFv07_freeDCtx(legacyContext as *mut ZBUFFv07_DCtx),
-        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
+        _ => Error::version_unsupported.to_error_code(),
     }
 }
 #[inline]
@@ -472,7 +472,7 @@ unsafe fn ZSTD_initLegacyStream(
             *legacyContext = dctx_1 as *mut core::ffi::c_void;
             0
         }
-        1 | 2 | 3 | _ => 0,
+        _ => 0,
     }
 }
 
@@ -543,7 +543,7 @@ unsafe fn ZSTD_decompressLegacyStream(
             input.pos = (input.pos).wrapping_add(readSize_1);
             hintSize_1
         }
-        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
+        _ => Error::version_unsupported.to_error_code(),
     }
 }
 
@@ -579,7 +579,6 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     let fresh1 = &mut (*(hashSet.ddictPtrTable).add(idx));
     *fresh1 = ddict;
     hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
-    hashSet.ddictPtrCount;
     0
 }
 
@@ -722,7 +721,7 @@ unsafe fn ZSTD_initDCtx_internal(dctx: *mut ZSTD_DCtx) {
     (*dctx).ddictLocal = core::ptr::null_mut();
     (*dctx).dictEnd = core::ptr::null();
     (*dctx).ddictIsCold = 0;
-    (*dctx).dictUses = ZSTD_dont_use;
+    (*dctx).dictUses = DictUses::ZSTD_dont_use;
     (*dctx).inBuff = core::ptr::null_mut();
     (*dctx).inBuffSize = 0;
     (*dctx).outBuffSize = 0;
@@ -782,7 +781,7 @@ unsafe fn ZSTD_clearDict(dctx: *mut ZSTD_DCtx) {
     ZSTD_freeDDict((*dctx).ddictLocal);
     (*dctx).ddictLocal = core::ptr::null_mut();
     (*dctx).ddict = core::ptr::null();
-    (*dctx).dictUses = ZSTD_dont_use;
+    (*dctx).dictUses = DictUses::ZSTD_dont_use;
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDCtx))]
 pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
@@ -825,7 +824,7 @@ unsafe fn ZSTD_DCtx_selectFrameDDict(dctx: *mut ZSTD_DCtx) {
             ZSTD_clearDict(dctx);
             (*dctx).dictID = (*dctx).fParams.dictID;
             (*dctx).ddict = frameDDict;
-            (*dctx).dictUses = ZSTD_use_indefinitely;
+            (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
         }
     }
 }
@@ -1560,7 +1559,7 @@ unsafe fn ZSTD_DCtx_trace_end(
         trace.uncompressedSize = uncompressedSize as size_t;
         trace.compressedSize = compressedSize as size_t;
         trace.dctx = dctx;
-        ZSTD_trace_decompress_end((*dctx).traceCtx, &mut trace);
+        ZSTD_trace_decompress_end((*dctx).traceCtx, &trace);
     }
 }
 unsafe fn ZSTD_decompressFrame(
@@ -1684,10 +1683,10 @@ unsafe fn ZSTD_decompressFrame(
             return Error::checksum_wrong.to_error_code();
         };
 
-        if (*dctx).forceIgnoreChecksum == 0 {
-            if u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32 {
-                return Error::checksum_wrong.to_error_code();
-            }
+        if (*dctx).forceIgnoreChecksum == 0
+            && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32
+        {
+            return Error::checksum_wrong.to_error_code();
         }
 
         *ip = &ip[4..];
@@ -1821,13 +1820,13 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
 }
 
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
-    match (*dctx).dictUses as core::ffi::c_int {
-        -1 => (*dctx).ddict,
-        1 => {
-            (*dctx).dictUses = ZSTD_dont_use;
+    match (*dctx).dictUses {
+        DictUses::ZSTD_use_indefinitely => (*dctx).ddict,
+        DictUses::ZSTD_use_once => {
+            (*dctx).dictUses = DictUses::ZSTD_dont_use;
             (*dctx).ddict
         }
-        0 | _ => {
+        DictUses::ZSTD_dont_use => {
             ZSTD_clearDict(dctx);
             core::ptr::null()
         }
@@ -2438,7 +2437,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_advanced(
             return Error::memory_allocation.to_error_code();
         }
         (*dctx).ddict = (*dctx).ddictLocal;
-        (*dctx).dictUses = ZSTD_use_indefinitely;
+        (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
     }
     0
 }
@@ -2475,7 +2474,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    (*dctx).dictUses = ZSTD_use_once;
+    (*dctx).dictUses = DictUses::ZSTD_use_once;
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refPrefix))]
@@ -2550,7 +2549,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
 
     if !ddict.is_null() {
         (*dctx).ddict = ddict;
-        (*dctx).dictUses = ZSTD_use_indefinitely;
+        (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
         if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
             if ((*dctx).ddictSet).is_null() {
                 (*dctx).ddictSet = ZSTD_createDDictHashSet((*dctx).customMem);
@@ -2919,7 +2918,6 @@ unsafe fn ZSTD_DCtx_updateOversizedDuration(
 ) {
     if ZSTD_DCtx_isOverflow(zds, neededInBuffSize, neededOutBuffSize) != 0 {
         (*zds).oversizedDuration = ((*zds).oversizedDuration).wrapping_add(1);
-        (*zds).oversizedDuration;
     } else {
         (*zds).oversizedDuration = 0;
     };
@@ -3099,7 +3097,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
         }
         if current_block == Block::LoadHeader {
-            drop(current_block);
+            let _ = current_block;
 
             if (*zds).legacyVersion != 0 {
                 if (*zds).staticSize != 0 {
@@ -3348,7 +3346,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         }
 
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize =
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
@@ -3383,7 +3381,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         }
 
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize = ZSTD_nextSrcSizeToDecompress(zds);
             let toLoad_0 = neededInSize.wrapping_sub((*zds).inPos);
@@ -3446,7 +3444,6 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if ip == istart && op == ostart {
         // no forward progress
         (*zds).noForwardProgress += 1;
-        (*zds).noForwardProgress;
         if (*zds).noForwardProgress >= ZSTD_NO_FORWARD_PROGRESS_MAX {
             if op == oend {
                 return Error::noForwardProgress_destFull.to_error_code();

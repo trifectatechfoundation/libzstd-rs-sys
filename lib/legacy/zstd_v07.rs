@@ -2514,6 +2514,7 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
             windowSize.wrapping_add((windowSize >> 3) * (wlByte as core::ffi::c_int & 7) as u32);
     }
     match dictIDSizeCode {
+        0 => {}
         1 => {
             dictID = *ip.add(pos) as u32;
             pos = pos.wrapping_add(1);
@@ -2526,9 +2527,14 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
             dictID = MEM_readLE32(ip.add(pos) as *const core::ffi::c_void);
             pos = pos.wrapping_add(4);
         }
-        0 | _ => {}
+        _ => unreachable!(),
     }
     match fcsID {
+        0 => {
+            if directMode != 0 {
+                frameContentSize = *ip.add(pos) as u64;
+            }
+        }
         1 => {
             frameContentSize = (MEM_readLE16(ip.add(pos) as *const core::ffi::c_void)
                 as core::ffi::c_int
@@ -2540,11 +2546,7 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
         3 => {
             frameContentSize = MEM_readLE64(ip.add(pos) as *const core::ffi::c_void);
         }
-        0 | _ => {
-            if directMode != 0 {
-                frameContentSize = *ip.add(pos) as u64;
-            }
-        }
+        _ => unreachable!(),
     }
     if windowSize == 0 {
         windowSize = frameContentSize as u32;
@@ -2655,7 +2657,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(4) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize = 3;
                     singleStream = (*istart.offset(0) as core::ffi::c_int & 16) as size_t;
                     litSize = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
@@ -2665,6 +2667,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2695,7 +2698,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             (*dctx).litSize = litSize;
             (*dctx).litEntropy = 1;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2732,7 +2735,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_0;
             ptr::write_bytes(
-                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2753,10 +2756,11 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_1 = 1;
                     litSize_1 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if (lhSize_1 as size_t)
                 .wrapping_add(litSize_1)
@@ -2774,7 +2778,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
                 (*dctx).litSize = litSize_1;
                 ptr::write_bytes(
-                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize) as *mut u8,
+                    ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
@@ -2802,10 +2806,11 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         return Error::corruption_detected.to_error_code();
                     }
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_2 = 1;
                     litSize_2 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize_2 > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2854,7 +2859,7 @@ unsafe fn ZSTDv07_buildSeqTable(
             }
             0
         }
-        3 | _ => {
+        3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize =
@@ -2868,6 +2873,7 @@ unsafe fn ZSTDv07_buildSeqTable(
             FSEv07_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
             headerSize
         }
+        _ => unreachable!(),
     }
 }
 unsafe fn ZSTDv07_decodeSeqHeaders(
@@ -4069,7 +4075,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             _ => return Error::GENERIC.to_error_code(),
         }
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
             if neededInSize == 0 {
@@ -4113,7 +4119,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
         }
 
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
             let neededInSize_0 = ZSTDv07_nextSrcSizeToDecompress((*zbd).zd);
             // should always be <= remaining space within inBuff
             let toLoad = neededInSize_0.wrapping_sub((*zbd).inPos);
@@ -4158,7 +4164,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
         }
 
         if current_block == Block::Flush {
-            drop(current_block);
+            let _ = current_block;
 
             let toFlushSize = ((*zbd).outEnd).wrapping_sub((*zbd).outStart);
             let flushedSize = ZBUFFv07_limitCopy(

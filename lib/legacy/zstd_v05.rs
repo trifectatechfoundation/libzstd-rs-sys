@@ -2393,7 +2393,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(4) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize = 3;
                     singleStream = (*istart.offset(0) as core::ffi::c_int & 16) as size_t;
                     litSize = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
@@ -2403,6 +2403,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize > BLOCKSIZE as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2430,7 +2431,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize;
             ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
+                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2468,7 +2469,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
             dctx.litSize = litSize_0;
             ptr::write_bytes(
-                (dctx.litBuffer).as_mut_ptr().add(dctx.litSize) as *mut u8,
+                (dctx.litBuffer).as_mut_ptr().add(dctx.litSize),
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
@@ -2489,10 +2490,11 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_1 = 1;
                     litSize_1 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if (lhSize_1 as size_t)
                 .wrapping_add(litSize_1)
@@ -2510,7 +2512,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 dctx.litPtr = dctx.litBuffer.as_mut_ptr();
                 dctx.litSize = litSize_1;
                 ptr::write_bytes(
-                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize) as *mut u8,
+                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
                     0,
                     WILDCOPY_OVERLENGTH as usize,
                 );
@@ -2538,10 +2540,11 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         return Error::corruption_detected.to_error_code();
                     }
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_2 = 1;
                     litSize_2 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize_2 > BLOCKSIZE as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2643,7 +2646,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxLL as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2661,6 +2664,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog);
         }
+        _ => unreachable!(),
     }
     match Offtype {
         1 => {
@@ -2684,7 +2688,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxOff as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2702,6 +2706,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog);
         }
+        _ => unreachable!(),
     }
     match MLtype {
         1 => {
@@ -2722,7 +2727,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxML as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2740,6 +2745,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog);
         }
+        _ => unreachable!(),
     }
     ip.offset_from(istart) as size_t
 }
@@ -3640,7 +3646,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             _ => return Error::GENERIC.to_error_code(),
         }
         if current_block == Block::DecodeHeader {
-            drop(current_block);
+            let _ = current_block;
 
             // apply header to create / resize buffers
             let neededOutSize = 1 << zbc.params.windowLog;
@@ -3678,7 +3684,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             current_block = Block::Read;
         }
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize_0 = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
             if neededInSize_0 == 0 {
@@ -3716,7 +3722,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
         }
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize_1 = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
             // should always be <= remaining space within inBuff
@@ -3761,7 +3767,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
         }
         if current_block == Block::Flush {
-            drop(current_block);
+            let _ = current_block;
 
             let toFlushSize = (zbc.outEnd).wrapping_sub(zbc.outStart);
             let flushedSize = ZBUFFv05_limitCopy(

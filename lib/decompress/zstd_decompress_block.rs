@@ -378,13 +378,13 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
             if dctx.litBufferLocation == LitLocation::ZSTD_split {
                 ptr::write_bytes(
-                    dctx.litBuffer as *mut u8,
+                    dctx.litBuffer,
                     src[lhSize],
                     litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
                 );
                 dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].fill(src[lhSize]);
             } else {
-                ptr::write_bytes(dctx.litBuffer as *mut u8, src[lhSize], litSize);
+                ptr::write_bytes(dctx.litBuffer, src[lhSize], litSize);
             }
             dctx.litPtr = dctx.litBuffer;
             dctx.litSize = litSize;
@@ -746,14 +746,14 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         }
     }
 
-    for u in 0..tableSize {
-        let symbol = tableDecode[u].baseValue as usize;
+    for seq_symbol in tableDecode[..tableSize].iter_mut() {
+        let symbol = seq_symbol.baseValue as usize;
         let nextState = wksp.symbols[symbol] as u32;
         wksp.symbols[symbol] += 1;
 
         let nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
 
-        tableDecode[u] = ZSTD_seqSymbol {
+        *seq_symbol = ZSTD_seqSymbol {
             nbBits,
             nextState: (nextState << nbBits).wrapping_sub(tableSize as u32) as u16,
             nbAdditionalBits: nbAdditionalBits[symbol],
@@ -2546,9 +2546,9 @@ mod test {
         let decompressed_size =
             unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size) };
         if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
-            return (decompressed_size as usize, vec![]);
+            panic!("ZSTD_CONTENTSIZE_ERROR");
         } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
-            return (decompressed_size as usize, vec![]);
+            panic!("ZSTD_CONTENTSIZE_UNKNOWN");
         }
 
         // Allocate buffer for decompressed output

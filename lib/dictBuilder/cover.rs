@@ -1056,6 +1056,7 @@ pub(super) unsafe fn COVER_best_wait(best: *mut COVER_best_t) {
         return;
     }
     let mut guard = (*best).mutex.lock().unwrap();
+    #[expect(clippy::while_immutable_condition)]
     while (*best).liveJobs != 0 {
         guard = (*best).cond.wait(guard).unwrap();
     }
@@ -1072,7 +1073,6 @@ pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
     }
     let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_add(1);
-    (*best).liveJobs;
 }
 pub(super) unsafe fn COVER_best_finish(
     best: *mut COVER_best_t,
@@ -1088,7 +1088,6 @@ pub(super) unsafe fn COVER_best_finish(
     let mut liveJobs: size_t = 0;
     let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_sub(1);
-    (*best).liveJobs;
     liveJobs = (*best).liveJobs;
     if compressedSize < (*best).compressedSize {
         if ((*best).dict).is_null() || (*best).dictSize < dictSize {

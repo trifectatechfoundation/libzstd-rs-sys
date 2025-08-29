@@ -160,6 +160,27 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone)]
+pub enum ParamSwitch {
+    Auto = 0,
+    Enable = 1,
+    Disable = 2,
+}
+
+impl TryFrom<i32> for ParamSwitch {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Auto),
+            1 => Ok(Self::Enable),
+            2 => Ok(Self::Disable),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_compressedBlockState_t {
@@ -245,7 +266,7 @@ pub struct optState_t {
     pub offCodeSumBasePrice: u32,
     pub priceType: ZSTD_OptPrice_e,
     pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
 }
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
@@ -339,7 +360,7 @@ pub struct ZSTD_CCtx_params_s {
     pub targetCBlockSize: size_t,
     pub srcSizeHint: core::ffi::c_int,
     pub attachDictPref: ZSTD_dictAttachPref_e,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub nbWorkers: core::ffi::c_int,
     pub jobSize: size_t,
     pub overlapLog: core::ffi::c_int,
@@ -561,6 +582,11 @@ pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
+pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
+    4 => ZSTD_WINDOWLOG_MAX_32,
+    8 => ZSTD_WINDOWLOG_MAX_64,
+    _ => panic!(),
+};
 pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
@@ -722,10 +748,10 @@ unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
 unsafe fn ZSTD_literalsCompressionIsDisabled(
     cctxParams: *const ZSTD_CCtx_params,
 ) -> core::ffi::c_int {
-    match (*cctxParams).literalCompressionMode as core::ffi::c_uint {
-        1 => 0,
-        2 => 1,
-        0 | _ => {
+    match (*cctxParams).literalCompressionMode {
+        ParamSwitch::Enable => 0,
+        ParamSwitch::Disable => 1,
+        ParamSwitch::Auto => {
             ((*cctxParams).cParams.strategy as core::ffi::c_uint
                 == ZSTD_fast as core::ffi::c_int as core::ffi::c_uint
                 && (*cctxParams).cParams.targetLength > 0) as core::ffi::c_int
@@ -785,7 +811,6 @@ unsafe fn ZSTD_storeSeqOnly(
     }
     (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
-    (*seqStorePtr).sequences;
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -1009,7 +1034,6 @@ unsafe fn ZSTD_window_correctOverflow(
         (*window).dictLimit = ((*window).dictLimit).wrapping_sub(correction);
     }
     (*window).nbOverflowCorrections = ((*window).nbOverflowCorrections).wrapping_add(1);
-    (*window).nbOverflowCorrections;
     correction
 }
 #[inline]
@@ -1537,7 +1561,6 @@ unsafe fn ZSTD_cwksp_check_wasteful(
 unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) {
     if ZSTD_cwksp_check_too_large(ws, additionalNeededSpace) != 0 {
         (*ws).workspaceOversizedDuration += 1;
-        (*ws).workspaceOversizedDuration;
     } else {
         (*ws).workspaceOversizedDuration = 0;
     };
@@ -2207,7 +2230,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -2634,11 +2657,18 @@ unsafe fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: *mut core::ffi
     0
 }
 unsafe fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> core::ffi::c_int {
-    match param as core::ffi::c_uint {
-        100 | 102 | 103 | 104 | 105 | 106 | 107 | 1017 => 1,
-        10 | 101 | 200 | 201 | 202 | 1000 | 400 | 401 | 402 | 500 | 1005 | 160 | 161 | 162
-        | 163 | 164 | 1001 | 1002 | 130 | 1004 | 1006 | 1007 | 1008 | 1009 | 1010 | 1011 | 1012
-        | 1013 | 1014 | 1015 | 1016 | _ => 0,
+    match param {
+        ZSTD_c_compressionLevel
+        | ZSTD_c_hashLog
+        | ZSTD_c_chainLog
+        | ZSTD_c_searchLog
+        | ZSTD_c_minMatch
+        | ZSTD_c_targetLength
+        | ZSTD_c_strategy => 1,
+
+        _ if param as i32 == ZSTD_c_blockSplitterLevel => 1,
+
+        _ => 0,
     }
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParameter))]
@@ -2773,10 +2803,9 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).attachDictPref as size_t
         }
         1002 => {
-            let lcm = value as ZSTD_ParamSwitch_e;
-            if ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam5, lcm as core::ffi::c_int) == 0 {
+            let Ok(lcm) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
+            };
             (*CCtxParams).literalCompressionMode = lcm;
             (*CCtxParams).literalCompressionMode as size_t
         }
@@ -3466,12 +3495,7 @@ pub unsafe extern "C" fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u3
     hashLog.wrapping_sub(btScale)
 }
 unsafe fn ZSTD_dictAndWindowLog(windowLog: u32, srcSize: u64, dictSize: u64) -> u32 {
-    let maxWindowSize = ((1 as core::ffi::c_ulonglong)
-        << (if ::core::mem::size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        })) as u64;
+    let maxWindowSize = 1 << ZSTD_WINDOWLOG_MAX;
     if dictSize == 0 {
         return windowLog;
     }
@@ -4157,7 +4181,7 @@ unsafe fn ZSTD_reset_matchState(
             ZSTD_advanceHashSalt(ms);
         } else {
             (*ms).tagTable = ZSTD_cwksp_reserve_aligned64(ws, tagTableSize) as *mut u8;
-            ptr::write_bytes((*ms).tagTable as *mut u8, 0, tagTableSize);
+            ptr::write_bytes((*ms).tagTable, 0, tagTableSize);
             (*ms).hashSalt = 0;
         }
         let rowLog = if 4
@@ -4446,7 +4470,7 @@ unsafe fn ZSTD_resetCCtx_internal(
         let numBuckets =
             (1) << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
         (*zc).ldmState.bucketOffsets = ZSTD_cwksp_reserve_buffer(ws, numBuckets);
-        ptr::write_bytes((*zc).ldmState.bucketOffsets as *mut u8, 0, numBuckets);
+        ptr::write_bytes((*zc).ldmState.bucketOffsets, 0, numBuckets);
     }
     ZSTD_referenceExternalSequences(zc, core::ptr::null_mut(), 0);
     (*zc).seqStore.maxNbSeq = maxNbSeq;
@@ -5500,7 +5524,8 @@ unsafe fn ZSTD_getSequenceLength(
             seqLen.matchLength += 0x10000;
         }
     }
-    return seqLen;
+
+    seqLen
 }
 
 unsafe fn ZSTD_validateSeqStore(
@@ -6671,7 +6696,6 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
         *((*splits).splitLocations).add((*splits).idx) = midIdx as u32;
         (*splits).idx = ((*splits).idx).wrapping_add(1);
-        (*splits).idx;
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
     }
 }
@@ -7599,7 +7623,7 @@ unsafe fn ZSTD_loadDictionaryContent(
                 == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
             {
                 let tagTableSize = (1) << (*params).cParams.hashLog;
-                ptr::write_bytes((*ms).tagTable as *mut u8, 0, tagTableSize as usize);
+                ptr::write_bytes((*ms).tagTable, 0, tagTableSize as usize);
                 ZSTD_row_update(ms, iend.offset(-(HASH_READ_SIZE as isize)));
             } else {
                 ZSTD_insertAndFindFirstIndex(ms, iend.offset(-(HASH_READ_SIZE as isize)));
@@ -8004,7 +8028,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -8077,7 +8101,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -8229,7 +8253,7 @@ pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
             ((*cctx).producedCSize).wrapping_add(extraCSize as core::ffi::c_ulonglong) as size_t;
         trace.params = &mut (*cctx).appliedParams;
         trace.cctx = cctx;
-        ZSTD_trace_compress_end((*cctx).traceCtx, &mut trace);
+        ZSTD_trace_compress_end((*cctx).traceCtx, &trace);
     }
     (*cctx).traceCtx = 0;
 }
@@ -8418,7 +8442,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8473,7 +8497,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8528,7 +8552,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8681,7 +8705,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                     offCodeSumBasePrice: 0,
                     priceType: zop_dynamic,
                     symbolCosts: core::ptr::null::<ZSTD_entropyCTables_t>(),
-                    literalCompressionMode: ZSTD_ps_auto,
+                    literalCompressionMode: ParamSwitch::Auto,
                 },
                 dictMatchState: core::ptr::null::<ZSTD_MatchState_t>(),
                 cParams: ZSTD_compressionParameters {
@@ -9043,7 +9067,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -9287,7 +9311,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -9404,7 +9428,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,

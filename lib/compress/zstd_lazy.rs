@@ -142,7 +142,6 @@ unsafe fn ZSTD_storeSeqOnly(
     }
     (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
-    (*seqStorePtr).sequences;
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(

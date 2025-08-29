@@ -2,8 +2,11 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
+#![allow(clippy::too_many_arguments)]
 #![cfg_attr(test, feature(test))]
 #![feature(likely_unlikely)]
+// FIXME
+#![allow(clippy::missing_safety_doc)]
 
 pub mod lib {
     pub mod common {
@@ -22,6 +25,11 @@ pub mod lib {
         pub mod zstd_trace;
     } // mod common
     pub mod compress {
+        // FIXME
+        #![allow(clippy::wildcard_in_or_patterns)]
+        #![allow(clippy::if_same_then_else)]
+        #![allow(clippy::collapsible_if)]
+        #![allow(clippy::eq_op)]
         pub mod fse_compress;
         pub mod hist;
         pub mod huf_compress;
@@ -40,6 +48,7 @@ pub mod lib {
     pub mod decompress;
     pub(crate) mod polyfill;
     pub(crate) mod dictBuilder {
+        #![allow(clippy::collapsible_if)]
         pub(crate) mod cover;
         pub(crate) mod divsufsort;
         pub(crate) mod fastcover;

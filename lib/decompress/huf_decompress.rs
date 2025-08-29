@@ -286,8 +286,8 @@ fn HUF_rescaleStats(
         let scale = targetTableLog as usize - tableLog as usize;
 
         /* Increase the weight for all non-zero probability symbols by scale. */
-        for s in 0..nbSymbols as usize {
-            huffWeight[s] += (if huffWeight[s] == 0 { 0 } else { scale }) as u8;
+        for weight in huffWeight[..nbSymbols as usize].iter_mut() {
+            *weight += (if *weight == 0 { 0 } else { scale }) as u8;
         }
 
         // Update rankVal to reflect the new weights.
@@ -871,14 +871,12 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
     } else {
         baseSeq.wrapping_add(symbol << 8)
     };
-    let result = seq
-        .wrapping_add(nbBits << 16)
-        .wrapping_add((level as u32) << 24);
 
     // FIXME: properly encode as big-endian on big-endian targets. This is tricky because in theory
     // the wrapping additons above can influence higher bytes. In practice apparently that does not
     // happen.
-    result
+    seq.wrapping_add(nbBits << 16)
+        .wrapping_add((level as u32) << 24)
 }
 
 fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
