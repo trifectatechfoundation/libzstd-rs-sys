@@ -2,8 +2,11 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
+#![allow(clippy::too_many_arguments)]
 #![cfg_attr(test, feature(test))]
 #![feature(likely_unlikely)]
+// FIXME
+#![allow(clippy::missing_safety_doc)]
 
 pub mod lib {
     pub mod common {
