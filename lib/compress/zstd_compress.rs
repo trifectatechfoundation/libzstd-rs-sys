@@ -5524,7 +5524,8 @@ unsafe fn ZSTD_getSequenceLength(
             seqLen.matchLength += 0x10000;
         }
     }
-    return seqLen;
+
+    seqLen
 }
 
 unsafe fn ZSTD_validateSeqStore(
