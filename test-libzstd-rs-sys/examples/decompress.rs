@@ -87,7 +87,7 @@ fn c(compressed: &[u8]) -> i32 {
             decompressed.as_mut_ptr() as *mut c_void,
             decompressed_size as usize,
             compressed_ptr,
-            compressed_size as usize,
+            compressed_size,
         )
     };
 

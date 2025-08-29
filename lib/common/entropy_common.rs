@@ -549,6 +549,7 @@ mod tests {
                         bmi2,
                     } = input.clone();
 
+                    #[allow(clippy::missing_transmute_annotations)]
                     let mut workspace =  core::mem::transmute(workspace) ;
 
                     // Pull in libzstd.a
@@ -614,6 +615,7 @@ mod tests {
                         bmi2,
                     );
 
+                    #[allow(clippy::missing_transmute_annotations)]
                     (v, huffWeight, rankStats, nbSymbolsPtr, tableLogPtr, core::mem::transmute::<_, [u32; 219]>(workspace))
                 };
                 assert_eq!(expected, actual);
