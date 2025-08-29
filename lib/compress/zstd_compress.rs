@@ -8253,7 +8253,7 @@ pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
             ((*cctx).producedCSize).wrapping_add(extraCSize as core::ffi::c_ulonglong) as size_t;
         trace.params = &mut (*cctx).appliedParams;
         trace.cctx = cctx;
-        ZSTD_trace_compress_end((*cctx).traceCtx, &mut trace);
+        ZSTD_trace_compress_end((*cctx).traceCtx, &trace);
     }
     (*cctx).traceCtx = 0;
 }
