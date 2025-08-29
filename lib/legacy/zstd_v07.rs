@@ -2657,7 +2657,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(4) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize = 3;
                     singleStream = (*istart.offset(0) as core::ffi::c_int & 16) as size_t;
                     litSize = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
@@ -2667,6 +2667,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as size_t {
                 return Error::corruption_detected.to_error_code();

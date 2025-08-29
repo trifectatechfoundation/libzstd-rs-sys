@@ -273,7 +273,7 @@ unsafe fn ZSTD_hashPtr(p: *const core::ffi::c_void, hBits: u32, mls: u32) -> siz
         6 => ZSTD_hash6Ptr(p, hBits),
         7 => ZSTD_hash7Ptr(p, hBits),
         8 => ZSTD_hash8Ptr(p, hBits),
-        4 | _ => ZSTD_hash4Ptr(p, hBits),
+        _ => ZSTD_hash4Ptr(p, hBits),
     }
 }
 #[inline]
@@ -1275,7 +1275,7 @@ pub unsafe fn ZSTD_compressBlock_doubleFast(
         5 => ZSTD_compressBlock_doubleFast_noDict_5(ms, seqStore, rep, src, srcSize),
         6 => ZSTD_compressBlock_doubleFast_noDict_6(ms, seqStore, rep, src, srcSize),
         7 => ZSTD_compressBlock_doubleFast_noDict_7(ms, seqStore, rep, src, srcSize),
-        4 | _ => ZSTD_compressBlock_doubleFast_noDict_4(ms, seqStore, rep, src, srcSize),
+        _ => ZSTD_compressBlock_doubleFast_noDict_4(ms, seqStore, rep, src, srcSize),
     }
 }
 pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
@@ -1290,7 +1290,7 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
         5 => ZSTD_compressBlock_doubleFast_dictMatchState_5(ms, seqStore, rep, src, srcSize),
         6 => ZSTD_compressBlock_doubleFast_dictMatchState_6(ms, seqStore, rep, src, srcSize),
         7 => ZSTD_compressBlock_doubleFast_dictMatchState_7(ms, seqStore, rep, src, srcSize),
-        4 | _ => ZSTD_compressBlock_doubleFast_dictMatchState_4(ms, seqStore, rep, src, srcSize),
+        _ => ZSTD_compressBlock_doubleFast_dictMatchState_4(ms, seqStore, rep, src, srcSize),
     }
 }
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
@@ -1647,6 +1647,6 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
         5 => ZSTD_compressBlock_doubleFast_extDict_5(ms, seqStore, rep, src, srcSize),
         6 => ZSTD_compressBlock_doubleFast_extDict_6(ms, seqStore, rep, src, srcSize),
         7 => ZSTD_compressBlock_doubleFast_extDict_7(ms, seqStore, rep, src, srcSize),
-        4 | _ => ZSTD_compressBlock_doubleFast_extDict_4(ms, seqStore, rep, src, srcSize),
+        _ => ZSTD_compressBlock_doubleFast_extDict_4(ms, seqStore, rep, src, srcSize),
     }
 }

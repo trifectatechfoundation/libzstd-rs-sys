@@ -172,7 +172,8 @@ pub(crate) fn ERR_getErrorString(code: ERR_enum) -> *const c_char {
                 as *const c_char
         }
         107 => b"External sequences are not valid\0" as *const u8 as *const c_char,
-        120 | _ => b"Unspecified error code\0" as *const u8 as *const c_char,
+        120 => b"Unspecified error code\0" as *const u8 as *const c_char,
+        _ => b"Unspecified error code\0" as *const u8 as *const c_char,
     }
 }
 
