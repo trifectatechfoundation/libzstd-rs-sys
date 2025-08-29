@@ -160,6 +160,27 @@ pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
+#[repr(u32)]
+#[derive(Copy, Clone)]
+pub enum ParamSwitch {
+    Auto = 0,
+    Enable = 1,
+    Disable = 2,
+}
+
+impl TryFrom<i32> for ParamSwitch {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::Auto),
+            1 => Ok(Self::Enable),
+            2 => Ok(Self::Disable),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_compressedBlockState_t {
@@ -245,7 +266,7 @@ pub struct optState_t {
     pub offCodeSumBasePrice: u32,
     pub priceType: ZSTD_OptPrice_e,
     pub symbolCosts: *const ZSTD_entropyCTables_t,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
 }
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
@@ -339,7 +360,7 @@ pub struct ZSTD_CCtx_params_s {
     pub targetCBlockSize: size_t,
     pub srcSizeHint: core::ffi::c_int,
     pub attachDictPref: ZSTD_dictAttachPref_e,
-    pub literalCompressionMode: ZSTD_ParamSwitch_e,
+    pub literalCompressionMode: ParamSwitch,
     pub nbWorkers: core::ffi::c_int,
     pub jobSize: size_t,
     pub overlapLog: core::ffi::c_int,
@@ -722,10 +743,10 @@ unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
 unsafe fn ZSTD_literalsCompressionIsDisabled(
     cctxParams: *const ZSTD_CCtx_params,
 ) -> core::ffi::c_int {
-    match (*cctxParams).literalCompressionMode as core::ffi::c_uint {
-        1 => 0,
-        2 => 1,
-        0 | _ => {
+    match (*cctxParams).literalCompressionMode {
+        ParamSwitch::Enable => 0,
+        ParamSwitch::Disable => 1,
+        ParamSwitch::Auto => {
             ((*cctxParams).cParams.strategy as core::ffi::c_uint
                 == ZSTD_fast as core::ffi::c_int as core::ffi::c_uint
                 && (*cctxParams).cParams.targetLength > 0) as core::ffi::c_int
@@ -2204,7 +2225,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -2777,10 +2798,9 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).attachDictPref as size_t
         }
         1002 => {
-            let lcm = value as ZSTD_ParamSwitch_e;
-            if ZSTD_cParam_withinBounds(ZSTD_c_experimentalParam5, lcm as core::ffi::c_int) == 0 {
+            let Ok(lcm) = ParamSwitch::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
+            };
             (*CCtxParams).literalCompressionMode = lcm;
             (*CCtxParams).literalCompressionMode as size_t
         }
@@ -8007,7 +8027,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -8080,7 +8100,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -8421,7 +8441,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8476,7 +8496,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8531,7 +8551,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             targetCBlockSize: 0,
             srcSizeHint: 0,
             attachDictPref: ZSTD_dictDefaultAttach,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
             overlapLog: 0,
@@ -8684,7 +8704,7 @@ pub unsafe extern "C" fn ZSTD_compress(
                     offCodeSumBasePrice: 0,
                     priceType: zop_dynamic,
                     symbolCosts: core::ptr::null::<ZSTD_entropyCTables_t>(),
-                    literalCompressionMode: ZSTD_ps_auto,
+                    literalCompressionMode: ParamSwitch::Auto,
                 },
                 dictMatchState: core::ptr::null::<ZSTD_MatchState_t>(),
                 cParams: ZSTD_compressionParameters {
@@ -9046,7 +9066,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -9290,7 +9310,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
@@ -9407,7 +9427,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         targetCBlockSize: 0,
         srcSizeHint: 0,
         attachDictPref: ZSTD_dictDefaultAttach,
-        literalCompressionMode: ZSTD_ps_auto,
+        literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
         overlapLog: 0,
