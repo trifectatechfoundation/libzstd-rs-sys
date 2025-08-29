@@ -25,6 +25,11 @@ pub mod lib {
         pub mod zstd_trace;
     } // mod common
     pub mod compress {
+        // FIXME
+        #![allow(clippy::wildcard_in_or_patterns)]
+        #![allow(clippy::if_same_then_else)]
+        #![allow(clippy::collapsible_if)]
+        #![allow(clippy::eq_op)]
         pub mod fse_compress;
         pub mod hist;
         pub mod huf_compress;
@@ -43,6 +48,7 @@ pub mod lib {
     pub mod decompress;
     pub(crate) mod polyfill;
     pub(crate) mod dictBuilder {
+        #![allow(clippy::collapsible_if)]
         pub(crate) mod cover;
         pub(crate) mod divsufsort;
         pub(crate) mod fastcover;
