@@ -378,13 +378,13 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
             if dctx.litBufferLocation == LitLocation::ZSTD_split {
                 ptr::write_bytes(
-                    dctx.litBuffer as *mut u8,
+                    dctx.litBuffer,
                     src[lhSize],
                     litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
                 );
                 dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].fill(src[lhSize]);
             } else {
-                ptr::write_bytes(dctx.litBuffer as *mut u8, src[lhSize], litSize);
+                ptr::write_bytes(dctx.litBuffer, src[lhSize], litSize);
             }
             dctx.litPtr = dctx.litBuffer;
             dctx.litSize = litSize;
