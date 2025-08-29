@@ -461,7 +461,7 @@ mod tests {
     fn test_reload_overflow() {
         let mut stream = BIT_DStream_t {
             bitContainer: 0,
-            bitsConsumed: (size_of::<usize>() * 8 + 1) as u32,
+            bitsConsumed: BitContainerType::BITS + 1,
             ptr: core::ptr::null(),
             start: core::ptr::null(),
             limitPtr: core::ptr::null(),

@@ -2502,9 +2502,9 @@ mod test {
         let decompressed_size =
             unsafe { ZSTD_getFrameContentSize(compressed_ptr, compressed_size) };
         if decompressed_size == ZSTD_CONTENTSIZE_ERROR {
-            return (decompressed_size as usize, vec![]);
+            panic!("ZSTD_CONTENTSIZE_ERROR");
         } else if decompressed_size == ZSTD_CONTENTSIZE_UNKNOWN {
-            return (decompressed_size as usize, vec![]);
+            panic!("ZSTD_CONTENTSIZE_UNKNOWN");
         }
 
         // Allocate buffer for decompressed output
