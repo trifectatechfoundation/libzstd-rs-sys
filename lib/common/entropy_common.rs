@@ -310,12 +310,12 @@ fn HUF_readStats_body(
     // Collect weight stats.
     rankStats[..HUF_TABLELOG_MAX + 1].fill(0);
     weightTotal = 0;
-    for n in 0..oSize as usize {
-        let Some(rank_stat) = rankStats.get_mut(usize::from(huffWeight[n])) else {
+    for weight in huffWeight[..oSize as usize].iter() {
+        let Some(rank_stat) = rankStats.get_mut(usize::from(*weight)) else {
             return Err(Error::corruption_detected);
         };
         *rank_stat += 1;
-        weightTotal += (1 << huffWeight[n] >> 1) as u32;
+        weightTotal += (1 << weight >> 1) as u32;
     }
     if weightTotal == 0 {
         return Err(Error::corruption_detected);
