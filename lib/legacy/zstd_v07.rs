@@ -2514,6 +2514,7 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
             windowSize.wrapping_add((windowSize >> 3) * (wlByte as core::ffi::c_int & 7) as u32);
     }
     match dictIDSizeCode {
+        0 => {}
         1 => {
             dictID = *ip.add(pos) as u32;
             pos = pos.wrapping_add(1);
@@ -2526,9 +2527,14 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
             dictID = MEM_readLE32(ip.add(pos) as *const core::ffi::c_void);
             pos = pos.wrapping_add(4);
         }
-        0 | _ => {}
+        _ => unreachable!(),
     }
     match fcsID {
+        0 => {
+            if directMode != 0 {
+                frameContentSize = *ip.add(pos) as u64;
+            }
+        }
         1 => {
             frameContentSize = (MEM_readLE16(ip.add(pos) as *const core::ffi::c_void)
                 as core::ffi::c_int
@@ -2540,11 +2546,7 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
         3 => {
             frameContentSize = MEM_readLE64(ip.add(pos) as *const core::ffi::c_void);
         }
-        0 | _ => {
-            if directMode != 0 {
-                frameContentSize = *ip.add(pos) as u64;
-            }
-        }
+        _ => unreachable!(),
     }
     if windowSize == 0 {
         windowSize = frameContentSize as u32;
@@ -2753,10 +2755,11 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_1 = 1;
                     litSize_1 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if (lhSize_1 as size_t)
                 .wrapping_add(litSize_1)
@@ -2802,10 +2805,11 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                         return Error::corruption_detected.to_error_code();
                     }
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_2 = 1;
                     litSize_2 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize_2 > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2854,7 +2858,7 @@ unsafe fn ZSTDv07_buildSeqTable(
             }
             0
         }
-        3 | _ => {
+        3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize =
@@ -2868,6 +2872,7 @@ unsafe fn ZSTDv07_buildSeqTable(
             FSEv07_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
             headerSize
         }
+        _ => unreachable!(),
     }
 }
 unsafe fn ZSTDv07_decodeSeqHeaders(

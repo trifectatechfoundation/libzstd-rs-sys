@@ -2393,7 +2393,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(4) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize = 3;
                     singleStream = (*istart.offset(0) as core::ffi::c_int & 16) as size_t;
                     litSize = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
@@ -2403,6 +2403,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize > BLOCKSIZE as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2489,10 +2490,11 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_1 = 1;
                     litSize_1 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if (lhSize_1 as size_t)
                 .wrapping_add(litSize_1)
@@ -2538,10 +2540,11 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                         return Error::corruption_detected.to_error_code();
                     }
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_2 = 1;
                     litSize_2 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize_2 > BLOCKSIZE as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2643,7 +2646,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxLL as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2661,6 +2664,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog);
         }
+        _ => unreachable!(),
     }
     match Offtype {
         1 => {
@@ -2684,7 +2688,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxOff as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2702,6 +2706,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog);
         }
+        _ => unreachable!(),
     }
     match MLtype {
         1 => {
@@ -2722,7 +2727,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Error::corruption_detected.to_error_code();
             }
         }
-        3 | _ => {
+        3 => {
             let mut max = MaxML as core::ffi::c_uint;
             headerSize = FSEv05_readNCount(
                 norm.as_mut_ptr(),
@@ -2740,6 +2745,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             ip = ip.add(headerSize);
             FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog);
         }
+        _ => unreachable!(),
     }
     ip.offset_from(istart) as size_t
 }

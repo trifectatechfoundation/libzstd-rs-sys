@@ -2498,7 +2498,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                         + *istart.offset(4) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize = 3;
                     singleStream = (*istart.offset(0) as core::ffi::c_int & 16) as size_t;
                     litSize = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
@@ -2508,6 +2508,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize > ZSTDv06_BLOCKSIZE_MAX as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2593,10 +2594,11 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                         + *istart.offset(2) as core::ffi::c_int)
                         as size_t;
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_1 = 1;
                     litSize_1 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if (lhSize_1 as size_t)
                 .wrapping_add(litSize_1)
@@ -2642,10 +2644,11 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                         return Error::corruption_detected.to_error_code();
                     }
                 }
-                0 | 1 | _ => {
+                0 | 1 => {
                     lhSize_2 = 1;
                     litSize_2 = (*istart.offset(0) as core::ffi::c_int & 31) as size_t;
                 }
+                _ => unreachable!(),
             }
             if litSize_2 > ZSTDv06_BLOCKSIZE_MAX as size_t {
                 return Error::corruption_detected.to_error_code();
@@ -2694,7 +2697,7 @@ unsafe fn ZSTDv06_buildSeqTable(
             }
             0
         }
-        3 | _ => {
+        3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
             let headerSize =
@@ -2708,6 +2711,7 @@ unsafe fn ZSTDv06_buildSeqTable(
             FSEv06_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
             headerSize
         }
+        _ => unreachable!(),
     }
 }
 unsafe fn ZSTDv06_decodeSeqHeaders(

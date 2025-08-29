@@ -414,7 +414,7 @@ unsafe fn ZSTD_freeLegacyStreamContext(
         5 => ZBUFFv05_freeDCtx(legacyContext as *mut ZBUFFv05_DCtx),
         6 => ZBUFFv06_freeDCtx(legacyContext as *mut ZBUFFv06_DCtx),
         7 => ZBUFFv07_freeDCtx(legacyContext as *mut ZBUFFv07_DCtx),
-        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
+        _ => Error::version_unsupported.to_error_code(),
     }
 }
 #[inline]
@@ -472,7 +472,7 @@ unsafe fn ZSTD_initLegacyStream(
             *legacyContext = dctx_1 as *mut core::ffi::c_void;
             0
         }
-        1 | 2 | 3 | _ => 0,
+        _ => 0,
     }
 }
 
@@ -543,7 +543,7 @@ unsafe fn ZSTD_decompressLegacyStream(
             input.pos = (input.pos).wrapping_add(readSize_1);
             hintSize_1
         }
-        1 | 2 | 3 | _ => Error::version_unsupported.to_error_code(),
+        _ => Error::version_unsupported.to_error_code(),
     }
 }
 

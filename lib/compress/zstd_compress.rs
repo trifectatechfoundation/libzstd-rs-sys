@@ -2634,11 +2634,18 @@ unsafe fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: *mut core::ffi
     0
 }
 unsafe fn ZSTD_isUpdateAuthorized(param: ZSTD_cParameter) -> core::ffi::c_int {
-    match param as core::ffi::c_uint {
-        100 | 102 | 103 | 104 | 105 | 106 | 107 | 1017 => 1,
-        10 | 101 | 200 | 201 | 202 | 1000 | 400 | 401 | 402 | 500 | 1005 | 160 | 161 | 162
-        | 163 | 164 | 1001 | 1002 | 130 | 1004 | 1006 | 1007 | 1008 | 1009 | 1010 | 1011 | 1012
-        | 1013 | 1014 | 1015 | 1016 | _ => 0,
+    match param {
+        ZSTD_c_compressionLevel
+        | ZSTD_c_hashLog
+        | ZSTD_c_chainLog
+        | ZSTD_c_searchLog
+        | ZSTD_c_minMatch
+        | ZSTD_c_targetLength
+        | ZSTD_c_strategy => 1,
+
+        _ if param as i32 == ZSTD_c_blockSplitterLevel => 1,
+
+        _ => 0,
     }
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtx_setParameter))]
