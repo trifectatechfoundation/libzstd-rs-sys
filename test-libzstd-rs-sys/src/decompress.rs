@@ -456,3 +456,55 @@ fn test_find_decompressed_size() {
     let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(core::ptr::null(), 0) });
     assert_eq!(v, 0);
 }
+
+#[test]
+#[cfg_attr(miri, ignore = "slow")]
+fn test_decompress_stream_with_dict() {
+    const DICT: &[u8] = include_bytes!("../test-data/decompress-stream-dict.dat");
+    const INPUT: &[u8] = include_bytes!("../test-data/decompress-stream-input.dat");
+
+    unsafe {
+        use std::mem::MaybeUninit;
+
+        use libzstd_rs_sys::lib::decompress::zstd_decompress::{
+            ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_dParameter, ZSTD_initDStream_usingDict,
+        };
+        use libzstd_rs_sys::*;
+
+        let mut zd = MaybeUninit::<ZSTD_DStream>::zeroed();
+        ZSTD_initDStream_usingDict(zd.as_mut_ptr(), DICT.as_ptr().cast(), DICT.len());
+        let zd = zd.assume_init_mut();
+
+        const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+        #[allow(non_snake_case)]
+        let ZSTD_d_windowLogMax: ZSTD_dParameter = std::mem::transmute(100u32);
+        let err = ZSTD_DCtx_setParameter(zd, ZSTD_d_windowLogMax, ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1);
+        if libzstd_rs_sys::ZSTD_isError(err) != 0 {
+            panic!();
+        }
+
+        let mut buffer = vec![0; 10485760];
+
+        let remaining = {
+            let mut out_buf = libzstd_rs_sys::ZSTD_outBuffer {
+                dst: buffer.as_mut_ptr().cast(),
+                size: buffer.len(),
+                pos: 0,
+            };
+
+            let mut in_buf = ZSTD_inBuffer {
+                src: INPUT.as_ptr().cast(),
+                size: INPUT.len(),
+                pos: 204808,
+            };
+
+            ZSTD_decompressStream(zd, &mut out_buf, &mut in_buf)
+        };
+
+        assert_eq!(remaining, 0);
+
+        core::mem::forget(buffer);
+
+        remaining
+    };
+}
