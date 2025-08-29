@@ -1560,7 +1560,7 @@ unsafe fn ZSTD_DCtx_trace_end(
         trace.uncompressedSize = uncompressedSize as size_t;
         trace.compressedSize = compressedSize as size_t;
         trace.dctx = dctx;
-        ZSTD_trace_decompress_end((*dctx).traceCtx, &mut trace);
+        ZSTD_trace_decompress_end((*dctx).traceCtx, &trace);
     }
 }
 unsafe fn ZSTD_decompressFrame(
