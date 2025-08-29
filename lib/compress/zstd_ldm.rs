@@ -184,7 +184,6 @@ unsafe fn ZSTD_storeSeqOnly(
     }
     (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
-    (*seqStorePtr).sequences;
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -398,7 +397,6 @@ unsafe fn ZSTD_window_correctOverflow(
         (*window).dictLimit = ((*window).dictLimit).wrapping_sub(correction);
     }
     (*window).nbOverflowCorrections = ((*window).nbOverflowCorrections).wrapping_add(1);
-    (*window).nbOverflowCorrections;
     correction
 }
 #[inline]
@@ -1383,7 +1381,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
                     (*rawSeqStore).size = ((*rawSeqStore).size).wrapping_add(1);
-                    (*rawSeqStore).size;
                     ZSTD_ldm_insertEntry(
                         ldmState,
                         hash_0 as size_t,
@@ -1516,14 +1513,12 @@ pub unsafe fn ZSTD_ldm_skipSequences(
                     *fresh6 = (*fresh6).wrapping_add((*seq.offset(0)).matchLength);
                 }
                 (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
-                (*rawSeqStore).pos;
             }
             return;
         }
         srcSize = srcSize.wrapping_sub((*seq).matchLength as size_t);
         (*seq).matchLength = 0;
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
-        (*rawSeqStore).pos;
     }
 }
 unsafe fn maybeSplitSequence(
@@ -1534,7 +1529,6 @@ unsafe fn maybeSplitSequence(
     let mut sequence = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
     if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
-        (*rawSeqStore).pos;
         return sequence;
     }
     if remaining <= sequence.litLength {
@@ -1555,7 +1549,6 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
         if currPos >= (currSeq.litLength).wrapping_add(currSeq.matchLength) {
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
-            (*rawSeqStore).pos;
         } else {
             (*rawSeqStore).posInSequence = currPos as size_t;
             break;

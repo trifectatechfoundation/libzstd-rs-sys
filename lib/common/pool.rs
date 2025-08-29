@@ -72,14 +72,12 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         let job = *((*ctx).queue).add((*ctx).queueHead);
         (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_add(1);
-        (*ctx).numThreadsBusy;
         (*ctx).queueEmpty = ((*ctx).queueHead == (*ctx).queueTail) as core::ffi::c_int;
         (*ctx).queuePushCond.notify_one();
         drop(guard);
         (job.function).unwrap_unchecked()(job.opaque);
         guard = (*ctx).queueMutex.lock().unwrap();
         (*ctx).numThreadsBusy = ((*ctx).numThreadsBusy).wrapping_sub(1);
-        (*ctx).numThreadsBusy;
         (*ctx).queuePushCond.notify_one();
     }
 }
