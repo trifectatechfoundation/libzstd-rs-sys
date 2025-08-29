@@ -587,7 +587,6 @@ unsafe fn ZSTDMT_getCCtx(cctxPool: *mut ZSTDMT_CCtxPool) -> *mut ZSTD_CCtx {
     let _guard = (*cctxPool).poolMutex.lock().unwrap();
     if (*cctxPool).availCCtx != 0 {
         (*cctxPool).availCCtx -= 1;
-        (*cctxPool).availCCtx;
         let cctx = *((*cctxPool).cctxs).offset((*cctxPool).availCCtx as isize);
         return cctx;
     }
@@ -767,7 +766,6 @@ unsafe fn ZSTDMT_serialState_genSequences(
         }
     }
     (*serialState).nextJobID = ((*serialState).nextJobID).wrapping_add(1);
-    (*serialState).nextJobID;
     (*serialState).cond.notify_all();
 }
 unsafe fn ZSTDMT_serialState_applySequences(
@@ -1084,8 +1082,9 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
     ZSTDMT_releaseSeq((*job).seqPool, rawSeqStore);
     ZSTDMT_releaseCCtx((*job).cctxPool, cctx);
     let _guard = (*job).job_mutex.lock().unwrap();
-    ERR_isError((*job).cSize);
-    0;
+    if ERR_isError((*job).cSize) {
+        assert_eq!(lastCBlockSize, 0);
+    }
     (*job).cSize = ((*job).cSize).wrapping_add(lastCBlockSize);
     (*job).consumed = (*job).src.size;
     (*job).job_cond.notify_one();
@@ -1756,7 +1755,6 @@ unsafe fn ZSTDMT_createCompressionJob(
         if srcSize == 0 && (*mtctx).nextJobID > 0 {
             ZSTDMT_writeLastEmptyBlock(((*mtctx).jobs).offset(jobID as isize));
             (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
-            (*mtctx).nextJobID;
             return 0;
         }
     }
@@ -1768,7 +1766,6 @@ unsafe fn ZSTDMT_createCompressionJob(
     ) != 0
     {
         (*mtctx).nextJobID = ((*mtctx).nextJobID).wrapping_add(1);
-        (*mtctx).nextJobID;
         (*mtctx).jobReady = 0;
     } else {
         (*mtctx).jobReady = 1;
@@ -1857,7 +1854,6 @@ unsafe fn ZSTDMT_flushProduced(
             (*mtctx).consumed = ((*mtctx).consumed).wrapping_add(srcSize as core::ffi::c_ulonglong);
             (*mtctx).produced = ((*mtctx).produced).wrapping_add(cSize as core::ffi::c_ulonglong);
             (*mtctx).doneJobID = ((*mtctx).doneJobID).wrapping_add(1);
-            (*mtctx).doneJobID;
         }
     }
     if cSize > (*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed {
@@ -2082,8 +2078,12 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     }
     if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
         if ((*mtctx).inBuff.buffer.start).is_null() {
-            ZSTDMT_tryGetInputRange(mtctx);
-            0;
+            if ZSTDMT_tryGetInputRange(mtctx) != 0 {
+                // It is only possible for this operation to fail if there are
+                // still compression jobs ongoing.
+                // DEBUGLOG(5, "ZSTDMT_tryGetInputRange failed");
+                assert_ne!((*mtctx).doneJobID, (*mtctx).nextJobID);
+            }
         }
         if !((*mtctx).inBuff.buffer.start).is_null() {
             let syncPoint = findSynchronizationPoint(mtctx, *input);

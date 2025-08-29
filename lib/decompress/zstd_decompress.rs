@@ -579,7 +579,6 @@ unsafe fn ZSTD_DDictHashSet_emplaceDDict(
     let fresh1 = &mut (*(hashSet.ddictPtrTable).add(idx));
     *fresh1 = ddict;
     hashSet.ddictPtrCount = (hashSet.ddictPtrCount).wrapping_add(1);
-    hashSet.ddictPtrCount;
     0
 }
 
@@ -2924,7 +2923,6 @@ unsafe fn ZSTD_DCtx_updateOversizedDuration(
 ) {
     if ZSTD_DCtx_isOverflow(zds, neededInBuffSize, neededOutBuffSize) != 0 {
         (*zds).oversizedDuration = ((*zds).oversizedDuration).wrapping_add(1);
-        (*zds).oversizedDuration;
     } else {
         (*zds).oversizedDuration = 0;
     };
@@ -3451,7 +3449,6 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if ip == istart && op == ostart {
         // no forward progress
         (*zds).noForwardProgress += 1;
-        (*zds).noForwardProgress;
         if (*zds).noForwardProgress >= ZSTD_NO_FORWARD_PROGRESS_MAX {
             if op == oend {
                 return Error::noForwardProgress_destFull.to_error_code();

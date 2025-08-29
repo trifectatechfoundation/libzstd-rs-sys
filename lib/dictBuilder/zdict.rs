@@ -588,7 +588,6 @@ unsafe fn ZDICT_removeDictItem(table: *mut dictItem, id: u32) {
         u = u.wrapping_add(1);
     }
     (*table).pos = ((*table).pos).wrapping_sub(1);
-    (*table).pos;
 }
 unsafe fn ZDICT_insertDictItem(
     table: *mut dictItem,

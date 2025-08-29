@@ -1073,7 +1073,6 @@ pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
     }
     let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_add(1);
-    (*best).liveJobs;
 }
 pub(super) unsafe fn COVER_best_finish(
     best: *mut COVER_best_t,
@@ -1089,7 +1088,6 @@ pub(super) unsafe fn COVER_best_finish(
     let mut liveJobs: size_t = 0;
     let _guard = (*best).mutex.lock().unwrap();
     (*best).liveJobs = ((*best).liveJobs).wrapping_sub(1);
-    (*best).liveJobs;
     liveJobs = (*best).liveJobs;
     if compressedSize < (*best).compressedSize {
         if ((*best).dict).is_null() || (*best).dictSize < dictSize {

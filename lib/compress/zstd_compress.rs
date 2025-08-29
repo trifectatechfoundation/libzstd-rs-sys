@@ -785,7 +785,6 @@ unsafe fn ZSTD_storeSeqOnly(
     }
     (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
     (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
-    (*seqStorePtr).sequences;
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -1009,7 +1008,6 @@ unsafe fn ZSTD_window_correctOverflow(
         (*window).dictLimit = ((*window).dictLimit).wrapping_sub(correction);
     }
     (*window).nbOverflowCorrections = ((*window).nbOverflowCorrections).wrapping_add(1);
-    (*window).nbOverflowCorrections;
     correction
 }
 #[inline]
@@ -1537,7 +1535,6 @@ unsafe fn ZSTD_cwksp_check_wasteful(
 unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeededSpace: size_t) {
     if ZSTD_cwksp_check_too_large(ws, additionalNeededSpace) != 0 {
         (*ws).workspaceOversizedDuration += 1;
-        (*ws).workspaceOversizedDuration;
     } else {
         (*ws).workspaceOversizedDuration = 0;
     };
@@ -6678,7 +6675,6 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
         ZSTD_deriveBlockSplitsHelper(splits, startIdx, midIdx, zc, origSeqStore);
         *((*splits).splitLocations).add((*splits).idx) = midIdx as u32;
         (*splits).idx = ((*splits).idx).wrapping_add(1);
-        (*splits).idx;
         ZSTD_deriveBlockSplitsHelper(splits, midIdx, endIdx, zc, origSeqStore);
     }
 }

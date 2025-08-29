@@ -6790,11 +6790,9 @@ pub unsafe fn FIO_decompressMultipleFilenames(
             );
             if status == 0 {
                 (*fCtx).nbFilesProcessed += 1;
-                (*fCtx).nbFilesProcessed;
             }
             error |= status;
             (*fCtx).currFileIdx += 1;
-            (*fCtx).currFileIdx;
         }
         if (*prefs).testMode == 0 && AIO_WritePool_closeFile(ress.writeCtx) != 0 {
             if g_display_prefs.displayLevel >= 1 {
@@ -6858,12 +6856,10 @@ pub unsafe fn FIO_decompressMultipleFilenames(
                 status = FIO_decompressSrcFile(fCtx, prefs, ress, dstFileName, srcFileName);
                 if status == 0 {
                     (*fCtx).nbFilesProcessed += 1;
-                    (*fCtx).nbFilesProcessed;
                 }
                 error |= status;
             }
             (*fCtx).currFileIdx += 1;
-            (*fCtx).currFileIdx;
         }
         if !outDirName.is_null() {
             FIO_checkFilenameCollisions(srcNamesTable, (*fCtx).nbFilesTotal as core::ffi::c_uint);
@@ -7145,7 +7141,6 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     }
                 }
                 (*info).numActualFrames += 1;
-                (*info).numActualFrames;
             } else if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
                 == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
             {
@@ -7167,7 +7162,6 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     return info_frame_error;
                 }
                 (*info).numSkippableFrames += 1;
-                (*info).numSkippableFrames;
             } else {
                 return info_not_zstd;
             }
