@@ -1684,10 +1684,10 @@ unsafe fn ZSTD_decompressFrame(
             return Error::checksum_wrong.to_error_code();
         };
 
-        if (*dctx).forceIgnoreChecksum == 0 {
-            if u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32 {
-                return Error::checksum_wrong.to_error_code();
-            }
+        if (*dctx).forceIgnoreChecksum == 0
+            && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32
+        {
+            return Error::checksum_wrong.to_error_code();
         }
 
         *ip = &ip[4..];
