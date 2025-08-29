@@ -1873,7 +1873,8 @@ unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
 ) -> size_t {
     match (*dctx).stage {
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
-            Ord::clamp(1, inputSize, (*dctx).expected)
+            // Apparently it's possible for min > max here, so Ord::clamp would panic.
+            Ord::max(1, Ord::min(inputSize, (*dctx).expected))
         }
         _ => (*dctx).expected,
     }
