@@ -876,7 +876,7 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
         .wrapping_add((level as u32) << 24);
 
     // FIXME: properly encode as big-endian on big-endian targets. This is tricky because in theory
-    // the wrapping additons above can influence higher bytes. In practice apparently that does not
+    // the wrapping additions above can influence higher bytes. In practice apparently that does not
     // happen.
     result
 }
