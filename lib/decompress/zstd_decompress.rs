@@ -24,10 +24,10 @@ use crate::lib::decompress::zstd_decompress_block::{
     ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
-    blockProperties_t, BlockType, DecompressStage, LL_base, ML_base, NextInputType, OF_base,
-    OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
-    ZSTD_d_validateChecksum, ZSTD_dont_use, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e,
-    ZSTD_frame, ZSTD_skippableFrame, ZSTD_use_indefinitely, ZSTD_use_once,
+    blockProperties_t, BlockType, DecompressStage, DictUses, LL_base, ML_base, NextInputType,
+    OF_base, OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
+    ZSTD_d_validateChecksum, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame,
+    ZSTD_skippableFrame,
 };
 use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;
 use crate::lib::zstd::*;
@@ -722,7 +722,7 @@ unsafe fn ZSTD_initDCtx_internal(dctx: *mut ZSTD_DCtx) {
     (*dctx).ddictLocal = core::ptr::null_mut();
     (*dctx).dictEnd = core::ptr::null();
     (*dctx).ddictIsCold = 0;
-    (*dctx).dictUses = ZSTD_dont_use;
+    (*dctx).dictUses = DictUses::ZSTD_dont_use;
     (*dctx).inBuff = core::ptr::null_mut();
     (*dctx).inBuffSize = 0;
     (*dctx).outBuffSize = 0;
@@ -782,7 +782,7 @@ unsafe fn ZSTD_clearDict(dctx: *mut ZSTD_DCtx) {
     ZSTD_freeDDict((*dctx).ddictLocal);
     (*dctx).ddictLocal = core::ptr::null_mut();
     (*dctx).ddict = core::ptr::null();
-    (*dctx).dictUses = ZSTD_dont_use;
+    (*dctx).dictUses = DictUses::ZSTD_dont_use;
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDCtx))]
 pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
@@ -825,7 +825,7 @@ unsafe fn ZSTD_DCtx_selectFrameDDict(dctx: *mut ZSTD_DCtx) {
             ZSTD_clearDict(dctx);
             (*dctx).dictID = (*dctx).fParams.dictID;
             (*dctx).ddict = frameDDict;
-            (*dctx).dictUses = ZSTD_use_indefinitely;
+            (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
         }
     }
 }
@@ -1821,13 +1821,13 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
 }
 
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
-    match (*dctx).dictUses as core::ffi::c_int {
-        -1 => (*dctx).ddict,
-        1 => {
-            (*dctx).dictUses = ZSTD_dont_use;
+    match (*dctx).dictUses {
+        DictUses::ZSTD_use_indefinitely => (*dctx).ddict,
+        DictUses::ZSTD_use_once => {
+            (*dctx).dictUses = DictUses::ZSTD_dont_use;
             (*dctx).ddict
         }
-        0 | _ => {
+        DictUses::ZSTD_dont_use => {
             ZSTD_clearDict(dctx);
             core::ptr::null()
         }
@@ -2443,7 +2443,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_advanced(
             return Error::memory_allocation.to_error_code();
         }
         (*dctx).ddict = (*dctx).ddictLocal;
-        (*dctx).dictUses = ZSTD_use_indefinitely;
+        (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
     }
     0
 }
@@ -2480,7 +2480,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix_advanced(
     if ERR_isError(err_code) {
         return err_code;
     }
-    (*dctx).dictUses = ZSTD_use_once;
+    (*dctx).dictUses = DictUses::ZSTD_use_once;
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refPrefix))]
@@ -2555,7 +2555,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
 
     if !ddict.is_null() {
         (*dctx).ddict = ddict;
-        (*dctx).dictUses = ZSTD_use_indefinitely;
+        (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
         if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple {
             if ((*dctx).ddictSet).is_null() {
                 (*dctx).ddictSet = ZSTD_createDDictHashSet((*dctx).customMem);
