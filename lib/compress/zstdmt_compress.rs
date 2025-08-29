@@ -666,11 +666,7 @@ unsafe fn ZSTDMT_serialState_reset(
             return 1;
         }
         ptr::write_bytes((*serialState).ldmState.hashTable as *mut u8, 0, hashSize);
-        ptr::write_bytes(
-            (*serialState).ldmState.bucketOffsets as *mut u8,
-            0,
-            numBuckets,
-        );
+        ptr::write_bytes((*serialState).ldmState.bucketOffsets, 0, numBuckets);
         (*serialState).ldmState.loadedDictEnd = 0;
         if dictSize > 0
             && dictContentType as core::ffi::c_uint
