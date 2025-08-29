@@ -740,6 +740,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
     jobID: core::ffi::c_uint,
 ) {
     let mut guard = (*serialState).mutex.lock().unwrap();
+    #[expect(clippy::while_immutable_condition)]
     while (*serialState).nextJobID < jobID {
         guard = (*serialState).cond.wait(guard).unwrap();
     }
