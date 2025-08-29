@@ -68,11 +68,11 @@ pub struct SymbolTable<const N: usize> {
 
 impl<const N: usize> SymbolTable<N> {
     fn as_mut_ptr(&mut self) -> *mut ZSTD_seqSymbol {
-        unsafe { core::mem::transmute(self) }
+        self as *mut Self as *mut ZSTD_seqSymbol
     }
 
     fn as_ptr(&self) -> *const ZSTD_seqSymbol {
-        unsafe { core::mem::transmute(self) }
+        self as *const Self as *const ZSTD_seqSymbol
     }
 }
 
