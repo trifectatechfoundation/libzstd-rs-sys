@@ -6,6 +6,7 @@ use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
+    #[allow(clippy::upper_case_acronyms)]
     GENERIC = 1,
     prefix_unknown = 10,
     version_unsupported = 12,
