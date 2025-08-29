@@ -5849,6 +5849,7 @@ unsafe fn FIO_passThrough(ress: *mut dRess_t) -> core::ffi::c_int {
     };
     let mut writeJob = AIO_WritePool_acquireJob((*ress).writeCtx);
     AIO_ReadPool_fillBuffer((*ress).readCtx, blockSize);
+    #[expect(clippy::while_immutable_condition)]
     while (*(*ress).readCtx).srcBufferLoaded != 0 {
         let mut writeSize: size_t = 0;
         writeSize = if blockSize < (*(*ress).readCtx).srcBufferLoaded {
