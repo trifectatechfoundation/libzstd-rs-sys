@@ -3882,7 +3882,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             _ => return Error::GENERIC.to_error_code(),
         }
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize = ZSTDv06_nextSrcSizeToDecompress((*zbd).zd);
             if neededInSize == 0 {
@@ -3922,7 +3922,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             current_block = Block::Load;
         }
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize_0 = ZSTDv06_nextSrcSizeToDecompress((*zbd).zd);
             // should always be <= remaining space within inBuff
@@ -3967,7 +3967,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
             current_block = Block::Flush;
         }
         if current_block == Block::Flush {
-            drop(current_block);
+            let _ = current_block;
 
             let toFlushSize = ((*zbd).outEnd).wrapping_sub((*zbd).outStart);
             let flushedSize = ZBUFFv06_limitCopy(

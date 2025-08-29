@@ -3099,7 +3099,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             }
         }
         if current_block == Block::LoadHeader {
-            drop(current_block);
+            let _ = current_block;
 
             if (*zds).legacyVersion != 0 {
                 if (*zds).staticSize != 0 {
@@ -3348,7 +3348,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         }
 
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize =
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as size_t);
@@ -3383,7 +3383,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         }
 
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize = ZSTD_nextSrcSizeToDecompress(zds);
             let toLoad_0 = neededInSize.wrapping_sub((*zds).inPos);

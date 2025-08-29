@@ -3640,7 +3640,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             _ => return Error::GENERIC.to_error_code(),
         }
         if current_block == Block::DecodeHeader {
-            drop(current_block);
+            let _ = current_block;
 
             // apply header to create / resize buffers
             let neededOutSize = 1 << zbc.params.windowLog;
@@ -3678,7 +3678,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             current_block = Block::Read;
         }
         if current_block == Block::Read {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize_0 = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
             if neededInSize_0 == 0 {
@@ -3716,7 +3716,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
         }
         if current_block == Block::Load {
-            drop(current_block);
+            let _ = current_block;
 
             let neededInSize_1 = ZSTDv05_nextSrcSizeToDecompress(&mut *zbc.zc);
             // should always be <= remaining space within inBuff
@@ -3761,7 +3761,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
         }
         if current_block == Block::Flush {
-            drop(current_block);
+            let _ = current_block;
 
             let toFlushSize = (zbc.outEnd).wrapping_sub(zbc.outStart);
             let flushedSize = ZBUFFv05_limitCopy(
