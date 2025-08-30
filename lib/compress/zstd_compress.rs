@@ -10048,7 +10048,7 @@ unsafe fn ZSTD_compressStream_generic(
                                     return err_code_1;
                                 }
                                 (*zcs).frameEnded = lastBlock_0;
-                                if lastBlock_0 == 0 {
+                                if lastBlock_0 != 0 {
                                     assert_eq!(ip, iend);
                                 }
                             }
