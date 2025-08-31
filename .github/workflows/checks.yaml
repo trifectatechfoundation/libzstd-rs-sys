@@ -41,52 +41,41 @@ jobs:
           - target: "x86_64-unknown-linux-gnu"
             rust: stable
             os: ubuntu-latest
-            flags: "--workspace"
             codecov: true
 
           - target: "i686-unknown-linux-gnu"
             rust: stable
             os: ubuntu-latest
-            flags: "--workspace"
             codecov: true
-            packages: gcc-i686-linux-gnu
+            apt-packages: gcc-i686-linux-gnu
 
           - target: "s390x-unknown-linux-gnu"
             rust: stable
             os: ubuntu-latest
-            flags: "--workspace"
-            codecov: false
-            packages: gcc-s390x-linux-gnu qemu-user qemu-user-static
+            apt-packages: gcc-s390x-linux-gnu qemu-user qemu-user-static
 
           - target: "aarch64-unknown-linux-gnu"
             rust: stable
             os: ubuntu-24.04-arm
-            flags: "--workspace"
             codecov: true
 
           - target: "wasm32-wasip2"
             rust: stable
             os: ubuntu-latest
-            flags: "-p libzstd-rs-sys" # cross-compiling zstd for wasm does not work
-            codecov: false
+            packages: "-p libzstd-rs-sys" # cross-compiling zstd-sys for wasm does not work
 
           - target: "aarch64-apple-darwin"
             rust: stable
             os: macos-latest
-            flags: "--workspace"
             codecov: true
 
           - target: "x86_64-pc-windows-gnu"
             rust: stable 
             os: windows-2022
-            flags: "--workspace"
-            codecov: false
 
           - target: "aarch64-pc-windows-msvc"
             rust: stable 
             os: windows-11-arm
-            flags: "--workspace"
-            codecov: false
     steps:
       - name: Checkout sources
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
@@ -105,10 +94,10 @@ jobs:
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: Cache apt packages
-        if: matrix.packages != ''
+        if: matrix.apt-packages != ''
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: "${{ matrix.packages }}"
+          packages: "${{ matrix.apt-packages }}"
           version: 2
       - name: Download wasmtime & wasi-sdk
         if: matrix.target == 'wasm32-wasip2'
@@ -118,22 +107,22 @@ jobs:
           curl -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz | tar xz --directory /tmp
       - name: cargo llvm-cov nextest
         if: matrix.codecov
-        run: cargo llvm-cov nextest --lcov --output-path lcov.info --ignore-filename-regex "test-" --target ${{matrix.target}} ${{ matrix.flags }}
+        run: cargo llvm-cov nextest --lcov --output-path lcov.info --ignore-filename-regex "test-" --target ${{matrix.target}} ${{ matrix.packages || '--workspace' }}
       - name: cargo llvm-cov nextest
-        if: matrix.codecov == false
-        run: cargo nextest run --target ${{matrix.target}} ${{ matrix.flags }}
-      # - name: Upload coverage to Codecov
-      #   uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
-      #   if: matrix.codecov && matrix.rust == 'stable'
-      #   with:
-      #     files: |
-      #       ./lcov.info
-      #       ./cdylib.lcov.info
-      #     fail_ci_if_error: false
-      #     flags: test-${{matrix.target}}
-      #     token: ${{ secrets.CODECOV_TOKEN }}
-      #     name: test
-      #     verbose: true
+        if: ${{ (matrix.codecov || false) == false }}
+        run: cargo nextest run --target ${{matrix.target}} ${{ matrix.packages || '--workspace' }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
+        if: matrix.codecov
+        with:
+          files: |
+            ./lcov.info
+            ./cdylib.lcov.info
+          fail_ci_if_error: false
+          flags: test-${{matrix.target}}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          name: test
+          verbose: true
 
   fuzz-decompress:
     name: fuzz-decompress
