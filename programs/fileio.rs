@@ -365,12 +365,9 @@ const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
 const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-const stdinmark: [core::ffi::c_char; 10] =
-    unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/*stdin*\\\0") };
-const stdoutmark: [core::ffi::c_char; 11] =
-    unsafe { *::core::mem::transmute::<&[u8; 11], &[core::ffi::c_char; 11]>(b"/*stdout*\\\0") };
-const nulmark: [core::ffi::c_char; 10] =
-    unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/dev/null\0") };
+const stdinmark: &CStr = c"/*stdin*\\";
+const stdoutmark: &CStr = c"/*stdout*\\";
+const nulmark: &CStr = c"/dev/null";
 const LZMA_EXTENSION: &CStr = c".lzma";
 const XZ_EXTENSION: &CStr = c".xz";
 const TXZ_EXTENSION: &CStr = c".txz";
@@ -388,8 +385,7 @@ pub static mut g_display_prefs: FIO_display_prefs_t = {
     }
 };
 static mut g_displayClock: UTIL_time_t = UTIL_time_t { t: 0 };
-const ZLIB_VERSION: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b"1.3\0") };
+const ZLIB_VERSION: &CStr = c"1.3";
 const Z_NO_FLUSH: core::ffi::c_int = 0;
 const Z_FINISH: core::ffi::c_int = 4;
 const Z_OK: core::ffi::c_int = 0;
