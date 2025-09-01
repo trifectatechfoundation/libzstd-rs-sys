@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
@@ -7,6 +9,7 @@ pub(crate) type BitContainerType = usize;
 
 #[repr(C)]
 pub(crate) struct BIT_CStream_t {
+    // FIXME make all fields private to this module
     pub(crate) bitContainer: BitContainerType,
     pub(crate) bitPos: core::ffi::c_uint,
     pub(crate) startPtr: *mut core::ffi::c_char,
@@ -107,12 +110,13 @@ pub(crate) unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
 /// *  Checking if DStream has reached its end can be performed with BIT_endOfDStream().
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub(crate) struct BIT_DStream_t {
+pub(crate) struct BIT_DStream_t<'a> {
     pub(crate) bitContainer: usize,
     pub(crate) bitsConsumed: core::ffi::c_uint,
     pub(crate) ptr: *const core::ffi::c_char,
     pub(crate) start: *const core::ffi::c_char,
     pub(crate) limitPtr: *const core::ffi::c_char,
+    pub(crate) _marker: PhantomData<&'a [u8]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,14 +163,15 @@ const fn get_middle_bits(
     }
 }
 
-impl BIT_DStream_t {
-    pub(crate) fn new(srcBuffer: &[u8]) -> Result<Self, Error> {
+impl<'a> BIT_DStream_t<'a> {
+    pub(crate) fn new(srcBuffer: &'a [u8]) -> Result<Self, Error> {
         let mut bitD = Self {
             bitContainer: 0,
             bitsConsumed: 0,
             ptr: core::ptr::null::<core::ffi::c_char>(),
             start: core::ptr::null::<core::ffi::c_char>(),
             limitPtr: core::ptr::null::<core::ffi::c_char>(),
+            _marker: PhantomData,
         };
 
         if srcBuffer.is_empty() {
@@ -465,6 +470,7 @@ mod tests {
             ptr: core::ptr::null(),
             start: core::ptr::null(),
             limitPtr: core::ptr::null(),
+            _marker: PhantomData,
         };
 
         assert_eq!(stream.reload(), StreamStatus::Overflow);

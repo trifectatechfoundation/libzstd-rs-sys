@@ -1,4 +1,5 @@
 use core::ptr::{self, NonNull};
+use std::marker::PhantomData;
 use std::ops::Bound;
 
 use libc::size_t;
@@ -239,11 +240,11 @@ impl<'a> HUF_DecompressFastArgs<'a> {
     }
 }
 
-unsafe fn init_remaining_dstream(
-    args: &HUF_DecompressFastArgs,
+unsafe fn init_remaining_dstream<'a>(
+    args: &'a HUF_DecompressFastArgs,
     stream: usize,
     segmentEnd: *mut u8,
-) -> Result<BIT_DStream_t, Error> {
+) -> Result<BIT_DStream_t<'a>, Error> {
     if args.op[stream] > segmentEnd {
         return Err(Error::corruption_detected);
     }
@@ -264,6 +265,7 @@ unsafe fn init_remaining_dstream(
         ptr,
         start,
         limitPtr,
+        _marker: PhantomData,
     })
 }
 
