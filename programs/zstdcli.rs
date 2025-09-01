@@ -194,50 +194,29 @@ pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX
 pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
 pub const ZSTD_OVERLAPLOG_MAX: core::ffi::c_int = 9;
 pub const ZSTD_LDM_BUCKETSIZELOG_MAX: core::ffi::c_int = 8;
-pub const stdinmark: [core::ffi::c_char; 10] =
-    unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/*stdin*\\\0") };
-pub const stdoutmark: [core::ffi::c_char; 11] =
-    unsafe { *::core::mem::transmute::<&[u8; 11], &[core::ffi::c_char; 11]>(b"/*stdout*\\\0") };
-pub const nulmark: [core::ffi::c_char; 10] =
-    unsafe { *::core::mem::transmute::<&[u8; 10], &[core::ffi::c_char; 10]>(b"/dev/null\0") };
-pub const LZMA_EXTENSION: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b".lzma\0") };
-pub const XZ_EXTENSION: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b".xz\0") };
-pub const GZ_EXTENSION: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b".gz\0") };
-pub const ZSTD_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".zst\0") };
-pub const LZ4_EXTENSION: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b".lz4\0") };
+const stdinmark: &CStr = c"/*stdin*\\";
+const stdoutmark: &CStr = c"/*stdout*\\";
+const nulmark: &CStr = c"/dev/null";
+const LZMA_EXTENSION: &CStr = c".lzma";
+const XZ_EXTENSION: &CStr = c".xz";
+const GZ_EXTENSION: &CStr = c".gz";
+const ZSTD_EXTENSION: &CStr = c".zst";
+const LZ4_EXTENSION: &CStr = c".lz4";
 pub const ZSTDCLI_CLEVEL_DEFAULT: core::ffi::c_int = 3;
 pub const ZSTDCLI_CLEVEL_MAX: core::ffi::c_int = 19;
-pub const ZSTD_ZSTDMT: [core::ffi::c_char; 7] =
-    unsafe { *::core::mem::transmute::<&[u8; 7], &[core::ffi::c_char; 7]>(b"zstdmt\0") };
-pub const ZSTD_UNZSTD: [core::ffi::c_char; 7] =
-    unsafe { *::core::mem::transmute::<&[u8; 7], &[core::ffi::c_char; 7]>(b"unzstd\0") };
-pub const ZSTD_CAT: [core::ffi::c_char; 8] =
-    unsafe { *::core::mem::transmute::<&[u8; 8], &[core::ffi::c_char; 8]>(b"zstdcat\0") };
-pub const ZSTD_ZCAT: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b"zcat\0") };
-pub const ZSTD_GZ: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b"gzip\0") };
-pub const ZSTD_GUNZIP: [core::ffi::c_char; 7] =
-    unsafe { *::core::mem::transmute::<&[u8; 7], &[core::ffi::c_char; 7]>(b"gunzip\0") };
-pub const ZSTD_GZCAT: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b"gzcat\0") };
-pub const ZSTD_LZMA: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b"lzma\0") };
-pub const ZSTD_UNLZMA: [core::ffi::c_char; 7] =
-    unsafe { *::core::mem::transmute::<&[u8; 7], &[core::ffi::c_char; 7]>(b"unlzma\0") };
-pub const ZSTD_XZ: [core::ffi::c_char; 3] =
-    unsafe { *::core::mem::transmute::<&[u8; 3], &[core::ffi::c_char; 3]>(b"xz\0") };
-pub const ZSTD_UNXZ: [core::ffi::c_char; 5] =
-    unsafe { *::core::mem::transmute::<&[u8; 5], &[core::ffi::c_char; 5]>(b"unxz\0") };
-pub const ZSTD_LZ4: [core::ffi::c_char; 4] =
-    unsafe { *::core::mem::transmute::<&[u8; 4], &[core::ffi::c_char; 4]>(b"lz4\0") };
-pub const ZSTD_UNLZ4: [core::ffi::c_char; 6] =
-    unsafe { *::core::mem::transmute::<&[u8; 6], &[core::ffi::c_char; 6]>(b"unlz4\0") };
+const ZSTD_ZSTDMT: &CStr = c"zstdmt";
+const ZSTD_UNZSTD: &CStr = c"unzstd";
+const ZSTD_CAT: &CStr = c"zstdcat";
+const ZSTD_ZCAT: &CStr = c"zcat";
+const ZSTD_GZ: &CStr = c"gzip";
+const ZSTD_GUNZIP: &CStr = c"gunzip";
+const ZSTD_GZCAT: &CStr = c"gzcat";
+const ZSTD_LZMA: &CStr = c"lzma";
+const ZSTD_UNLZMA: &CStr = c"unlzma";
+const ZSTD_XZ: &CStr = c"xz";
+const ZSTD_UNXZ: &CStr = c"unxz";
+const ZSTD_LZ4: &CStr = c"lz4";
+const ZSTD_UNLZ4: &CStr = c"unlz4";
 pub const DISPLAY_LEVEL_DEFAULT: core::ffi::c_int = 2;
 static mut g_defaultDictName: *const core::ffi::c_char =
     b"dictionary\0" as *const u8 as *const core::ffi::c_char;
@@ -1718,10 +1697,8 @@ unsafe fn printActualCParams(
         actualCParams.strategy as core::ffi::c_uint,
     );
 }
-pub const ENV_CLEVEL: [core::ffi::c_char; 12] =
-    unsafe { *::core::mem::transmute::<&[u8; 12], &[core::ffi::c_char; 12]>(b"ZSTD_CLEVEL\0") };
-pub const ENV_NBWORKERS: [core::ffi::c_char; 15] =
-    unsafe { *::core::mem::transmute::<&[u8; 15], &[core::ffi::c_char; 15]>(b"ZSTD_NBTHREADS\0") };
+const ENV_CLEVEL: &CStr = c"ZSTD_CLEVEL";
+const ENV_NBWORKERS: &CStr = c"ZSTD_NBTHREADS";
 unsafe fn init_cLevel() -> core::ffi::c_int {
     let env: *const core::ffi::c_char = getenv(ENV_CLEVEL.as_ptr());
     if !env.is_null() {

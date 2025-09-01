@@ -62,11 +62,6 @@ pub struct tfs_align {
     pub tfs: BMK_timedFnState_t,
 }
 pub type check_size = [core::ffi::c_char; 1];
-pub const __ASSERT_FUNCTION: [core::ffi::c_char; 75] = unsafe {
-    *::core::mem::transmute::<&[u8; 75], &[core::ffi::c_char; 75]>(
-        b"BMK_runOutcome_t BMK_benchTimedFn(BMK_timedFnState_t *, BMK_benchParams_t)\0",
-    )
-};
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub unsafe fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> core::ffi::c_int {
