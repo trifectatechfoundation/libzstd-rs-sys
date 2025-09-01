@@ -8,6 +8,7 @@
 # Denote files that should not be modified.
 *.odt binary
 *.png binary
+*.dat binary
 
 *.zst binary
 *.tar.zst binary
