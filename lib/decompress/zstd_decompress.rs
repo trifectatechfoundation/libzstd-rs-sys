@@ -201,7 +201,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
                 strategy: ZSTDv05_fast,
             };
 
-            match unsafe { ZSTDv05_getFrameParams(&mut fParams, ptr.cast(), src.len() as _) } {
+            match ZSTDv05_getFrameParams(&mut fParams, src) {
                 0 => Some(fParams.srcSize as core::ffi::c_ulonglong),
                 _ => None,
             }
@@ -238,7 +238,6 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
 unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8]) -> size_t {
     let version = is_legacy(src.as_slice());
     let dstCapacity = dst.capacity();
-    let compressedSize = src.len();
 
     let mut x: core::ffi::c_char = 0;
 
@@ -248,12 +247,6 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
         dst.as_mut_ptr() as *mut core::ffi::c_void
     };
 
-    let src = if src.is_null() {
-        &raw mut x as *const core::ffi::c_void
-    } else {
-        src.as_ptr() as *const core::ffi::c_void
-    };
-
     match version {
         5 => {
             let mut result: size_t = 0;
@@ -261,19 +254,18 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
             if zd.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            result = ZSTDv05_decompress_usingDict(
-                &mut *zd,
-                dst,
-                dstCapacity,
-                src.cast(),
-                compressedSize,
-                dict.as_ptr().cast(),
-                dict.len(),
-            );
+            result = ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict);
             ZSTDv05_freeDCtx(zd);
             result
         }
         6 => {
+            let compressedSize = src.len();
+            let src = if src.is_null() {
+                &raw mut x as *const core::ffi::c_void
+            } else {
+                src.as_ptr() as *const core::ffi::c_void
+            };
+
             let mut result_0: size_t = 0;
             let zd_0 = ZSTDv06_createDCtx();
             if zd_0.is_null() {
@@ -292,6 +284,13 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
             result_0
         }
         7 => {
+            let compressedSize = src.len();
+            let src = if src.is_null() {
+                &raw mut x as *const core::ffi::c_void
+            } else {
+                src.as_ptr() as *const core::ffi::c_void
+            };
+
             let mut result_1: size_t = 0;
             let zd_1 = ZSTDv07_createDCtx();
             if zd_1.is_null() {
@@ -324,8 +323,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     match is_legacy(src) {
         5 => {
             ZSTDv05_findFrameSizeInfoLegacy(
-                src.as_ptr().cast(),
-                src.len(),
+                src,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -403,7 +401,10 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            ZBUFFv05_decompressInitDictionary(dctx, dict.cast(), dictSize);
+            ZBUFFv05_decompressInitDictionary(
+                dctx,
+                core::slice::from_raw_parts(dict.cast(), dictSize),
+            );
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
         }

@@ -84,7 +84,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    pub fn subslice<R: core::ops::RangeBounds<usize>>(&mut self, range: R) -> Self {
+    pub fn subslice<R: core::ops::RangeBounds<usize>>(&self, range: R) -> Self {
         let Some(ptr) = self.ptr else {
             match (range.start_bound(), range.end_bound()) {
                 (Bound::Unbounded, Bound::Unbounded)
