@@ -60,8 +60,8 @@ enum Offset {
 }
 
 #[repr(C)]
-pub struct seqState_t {
-    DStream: BIT_DStream_t,
+pub struct seqState_t<'a> {
+    DStream: BIT_DStream_t<'a>,
     stateLL: ZSTD_fseState,
     stateOffb: ZSTD_fseState,
     stateML: ZSTD_fseState,
@@ -1612,14 +1612,12 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     let vBase = dctx.virtualStart as *const u8;
     let dictEnd = dctx.dictEnd as *const u8;
     if nbSeq != 0 {
+        let DStream = match BIT_DStream_t::new(seq) {
+            Ok(v) => v,
+            Err(_) => return Error::corruption_detected.to_error_code(),
+        };
         let mut seqState = seqState_t {
-            DStream: BIT_DStream_t {
-                bitContainer: 0,
-                bitsConsumed: 0,
-                ptr: core::ptr::null::<core::ffi::c_char>(),
-                start: core::ptr::null::<core::ffi::c_char>(),
-                limitPtr: core::ptr::null::<core::ffi::c_char>(),
-            },
+            DStream,
             stateLL: ZSTD_fseState {
                 state: 0,
                 table: core::ptr::null::<ZSTD_seqSymbol>(),
@@ -1638,10 +1636,6 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as size_t);
 
-        seqState.DStream = match BIT_DStream_t::new(seq) {
-            Ok(v) => v,
-            Err(_) => return Error::corruption_detected.to_error_code(),
-        };
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
         ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
@@ -1808,14 +1802,12 @@ unsafe fn ZSTD_decompressSequences_body(
     let vBase = dctx.virtualStart as *const u8;
     let dictEnd = dctx.dictEnd as *const u8;
     if nbSeq != 0 {
+        let DStream = match BIT_DStream_t::new(seq) {
+            Ok(v) => v,
+            Err(_) => return Error::corruption_detected.to_error_code(),
+        };
         let mut seqState = seqState_t {
-            DStream: BIT_DStream_t {
-                bitContainer: 0,
-                bitsConsumed: 0,
-                ptr: core::ptr::null::<core::ffi::c_char>(),
-                start: core::ptr::null::<core::ffi::c_char>(),
-                limitPtr: core::ptr::null::<core::ffi::c_char>(),
-            },
+            DStream,
             stateLL: ZSTD_fseState {
                 state: 0,
                 table: core::ptr::null::<ZSTD_seqSymbol>(),
@@ -1832,10 +1824,6 @@ unsafe fn ZSTD_decompressSequences_body(
         };
         dctx.fseEntropy = 1;
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
-        seqState.DStream = match BIT_DStream_t::new(seq) {
-            Ok(v) => v,
-            Err(_) => return Error::corruption_detected.to_error_code(),
-        };
 
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
@@ -1973,14 +1961,12 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     let dictEnd = dctx.dictEnd as *const u8;
     if nbSeq != 0 {
         let seqAdvance = if nbSeq < 8 { nbSeq } else { 8 };
+        let DStream = match BIT_DStream_t::new(seq) {
+            Ok(v) => v,
+            Err(_) => return Error::corruption_detected.to_error_code(),
+        };
         let mut seqState = seqState_t {
-            DStream: BIT_DStream_t {
-                bitContainer: 0,
-                bitsConsumed: 0,
-                ptr: core::ptr::null::<core::ffi::c_char>(),
-                start: core::ptr::null::<core::ffi::c_char>(),
-                limitPtr: core::ptr::null::<core::ffi::c_char>(),
-            },
+            DStream,
             stateLL: ZSTD_fseState {
                 state: 0,
                 table: core::ptr::null::<ZSTD_seqSymbol>(),
@@ -1997,10 +1983,6 @@ unsafe fn ZSTD_decompressSequencesLong_body(
         };
         dctx.fseEntropy = 1;
         seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
-        seqState.DStream = match BIT_DStream_t::new(seq) {
-            Ok(v) => v,
-            Err(_) => return Error::corruption_detected.to_error_code(),
-        };
 
         ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
         ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
