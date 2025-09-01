@@ -1507,7 +1507,7 @@ unsafe fn ZSTD_copyRawBlock(
         }
         return Error::dstBuffer_null.to_error_code();
     }
-    libc::memmove(dst, src, srcSize as libc::size_t);
+    core::ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), srcSize);
     srcSize
 }
 unsafe fn ZSTD_setRleBlock(
