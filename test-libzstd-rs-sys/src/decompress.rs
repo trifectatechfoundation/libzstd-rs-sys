@@ -503,3 +503,86 @@ fn test_decompress_stream_with_dict() {
         remaining
     };
 }
+
+#[test]
+#[cfg_attr(miri, ignore = "slow")]
+fn decompression_by_small_increment() {
+    const DICT: &[u8] = include_bytes!("../test-data/decompress-stream-dict.dat");
+    const INPUT: &[u8] = include_bytes!("../test-data/decompress-stream-input.dat");
+
+    let mut buffer = vec![0; 10485760];
+    let mut core_seed = 42;
+
+    #[allow(non_snake_case)]
+    fn FUZ_rand(_: &mut i32) -> usize {
+        0xFFFF
+    }
+
+    const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+
+    unsafe {
+        use libzstd_rs_sys::*;
+
+        let mut zd = Box::new_uninit();
+        ZSTD_initDStream_usingDict(zd.as_mut_ptr(), DICT.as_ptr().cast(), DICT.len());
+
+        let ret = ZSTD_DCtx_setParameter(
+            zd.as_mut_ptr(),
+            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1,
+        );
+        assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
+
+        let mut r = 1;
+
+        let mut out_buf = ZSTD_outBuffer {
+            dst: buffer.as_mut_ptr().cast(),
+            size: 10485760,
+            pos: 0,
+        };
+
+        let mut in_buf = ZSTD_inBuffer {
+            src: INPUT.as_ptr().cast(),
+            size: 3464494,
+            pos: 0,
+        };
+
+        while r != 0 {
+            /* skippable frame */
+            let in_size = (FUZ_rand(&mut core_seed) & 15) + 1;
+            let out_size = (FUZ_rand(&mut core_seed) & 15) + 1;
+            in_buf.size = in_buf.pos + in_size;
+            out_buf.size = out_buf.pos + out_size;
+
+            r = ZSTD_decompressStream(zd.as_mut_ptr(), &mut out_buf, &mut in_buf);
+            if ZSTD_isError(r) != 0 {
+                let err = ZSTD_getErrorName(r);
+                panic!(
+                    "ZSTD_decompressStream failed: {}",
+                    std::ffi::CStr::from_ptr(err).to_string_lossy()
+                );
+            }
+        }
+
+        /* normal frame */
+        ZSTD_initDStream_usingDict(zd.as_mut_ptr(), DICT.as_ptr().cast(), DICT.len());
+
+        r = 1;
+        while r != 0 {
+            let in_size = FUZ_rand(&mut core_seed) & 15;
+            // Avoid having both sizes at 0 => would trigger a no_forward_progress error.
+            let out_size = (FUZ_rand(&mut core_seed) & 15) + ((in_size == 0) as usize);
+            in_buf.size = in_buf.pos + in_size;
+            out_buf.size = out_buf.pos + out_size;
+            r = ZSTD_decompressStream(zd.as_mut_ptr(), &mut out_buf, &mut in_buf);
+            assert_eq!(
+                ZSTD_isError(r),
+                0,
+                "ZSTD_decompressStream failed: {}",
+                std::ffi::CStr::from_ptr(ZSTD_getErrorName(r)).to_string_lossy()
+            )
+        }
+
+        assert_eq!(in_buf.pos, INPUT.len());
+    }
+}
