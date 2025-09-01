@@ -17,6 +17,23 @@ pub(crate) struct XXH64_state_t {
 }
 
 impl XXH64_state_t {
+    #[cfg(test)]
+    fn new(seed: u64) -> Self {
+        let mut state = XXH64_state_t::default();
+        state.reset(seed);
+        state
+    }
+
+    fn reset(&mut self, seed: u64) {
+        // Zero out all fields.
+        *self = XXH64_state_t::default();
+
+        self.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
+        self.v[1] = seed.wrapping_add(XXH_PRIME64_2);
+        self.v[2] = seed.wrapping_add(0);
+        self.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
+    }
+
     fn mem64_as_bytes_ref(&self) -> &[u8; 32] {
         // SAFETY: casting an array of u64 to u8 is valid.
         unsafe { core::mem::transmute::<&[u64; 4], &[u8; 8 * 4]>(&self.mem64) }
@@ -137,12 +154,7 @@ pub unsafe fn ZSTD_XXH64(input: *const core::ffi::c_void, len: usize, seed: u64)
 }
 
 pub(crate) fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) {
-    *state = XXH64_state_t::default();
-
-    state.v[0] = seed.wrapping_add(XXH_PRIME64_1).wrapping_add(XXH_PRIME64_2);
-    state.v[1] = seed.wrapping_add(XXH_PRIME64_2);
-    state.v[2] = seed.wrapping_add(0);
-    state.v[3] = seed.wrapping_sub(XXH_PRIME64_1);
+    state.reset(seed)
 }
 
 pub(crate) unsafe fn ZSTD_XXH64_update(
@@ -161,7 +173,8 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
     if (state.memsize as usize).wrapping_add(slice.len()) < 32 {
-        state.mem64_as_bytes_mut()[..slice.len()].copy_from_slice(slice);
+        let in_use = state.memsize as usize;
+        state.mem64_as_bytes_mut()[in_use..][..slice.len()].copy_from_slice(slice);
         state.memsize = state.memsize.wrapping_add(slice.len() as u32);
         return;
     }
@@ -173,10 +186,10 @@ fn ZSTD_XXH64_update_help(state: &mut XXH64_state_t, mut slice: &[u8]) {
         remainder.copy_from_slice(left);
         slice = right;
 
-        state.v[0] = XXH64_round(state.v[0], state.mem64[0]);
-        state.v[1] = XXH64_round(state.v[1], state.mem64[1]);
-        state.v[2] = XXH64_round(state.v[2], state.mem64[2]);
-        state.v[3] = XXH64_round(state.v[3], state.mem64[3]);
+        state.v[0] = XXH64_round(state.v[0], state.mem64[0].to_le());
+        state.v[1] = XXH64_round(state.v[1], state.mem64[1].to_le());
+        state.v[2] = XXH64_round(state.v[2], state.mem64[2].to_le());
+        state.v[3] = XXH64_round(state.v[3], state.mem64[3].to_le());
 
         state.memsize = 0;
     }
@@ -216,8 +229,11 @@ pub(crate) fn ZSTD_XXH64_digest(state: &mut XXH64_state_t) -> u64 {
 
     h64 = h64.wrapping_add(state.total_len);
 
-    let len = state.total_len as usize % 32;
-    XXH64_finalize(h64, &state.mem64_as_bytes_ref()[..len], Align::Aligned)
+    XXH64_finalize(
+        h64,
+        &state.mem64_as_bytes_ref()[..state.total_len as usize % 32],
+        Align::Aligned,
+    )
 }
 
 #[cfg(test)]
@@ -263,6 +279,76 @@ mod tests {
             let actual = helper_state_u64(&input, seed);
             assert_eq!(expected, actual);
             expected == actual
+        }
+    }
+
+    #[test]
+    fn test_xxh64_state_matches_chunked() {
+        let seed = 0;
+
+        let mut expected = xxhash_rust::xxh64::Xxh64::new(seed);
+        let mut actual = XXH64_state_t::new(seed);
+
+        expected.reset(seed);
+        actual.reset(seed);
+        let input = vec![vec![0], vec![1]];
+        for chunk in input {
+            expected.update(&chunk);
+            ZSTD_XXH64_update_help(&mut actual, &chunk);
+        }
+        assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
+
+        expected.reset(seed);
+        actual.reset(seed);
+        let input = vec![[0u8; 32]];
+        for chunk in input {
+            expected.update(&chunk);
+            ZSTD_XXH64_update_help(&mut actual, &chunk);
+        }
+        assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
+
+        expected.reset(seed);
+        actual.reset(seed);
+        let input = vec![
+            vec![0],
+            vec![
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 1,
+            ],
+        ];
+        for chunk in input {
+            expected.update(&chunk);
+            ZSTD_XXH64_update_help(&mut actual, &chunk);
+        }
+        assert_eq!(
+            expected.digest().to_le_bytes(),
+            ZSTD_XXH64_digest(&mut actual).to_le_bytes()
+        );
+    }
+
+    quickcheck! {
+        fn prop_xxh64_state_matches_chunked(input: Vec<Vec<u8>>, seed: u64) -> bool {
+            let mut expected = xxhash_rust::xxh64::Xxh64::new( seed);
+            let mut actual = {
+                let mut state = XXH64_state_t {
+                    total_len: 0,
+                    v: [0; 4],
+                    mem64: [0; 4],
+                    memsize: 0,
+                    reserved32: 0,
+                    reserved64: 0,
+                };
+                ZSTD_XXH64_reset(&mut state, seed);
+                state
+            };
+
+            for chunk in input {
+                expected.update(&chunk);
+                ZSTD_XXH64_update_help(&mut actual, &chunk);
+            }
+
+            assert_eq!(expected.digest(), ZSTD_XXH64_digest(&mut actual));
+            expected.digest() == ZSTD_XXH64_digest(&mut actual)
         }
     }
 
