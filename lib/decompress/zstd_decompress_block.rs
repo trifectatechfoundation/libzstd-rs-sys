@@ -490,9 +490,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             (dctx.litBufferEnd).sub(ZSTD_LITBUFFEREXTRASIZE) as *const core::ffi::c_void,
             ZSTD_LITBUFFEREXTRASIZE,
         );
-        libc::memmove(
-            (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE).sub(32) as *mut core::ffi::c_void,
-            dctx.litBuffer as *const core::ffi::c_void,
+        core::ptr::copy(
+            dctx.litBuffer,
+            (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE).sub(32),
             litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
         );
         dctx.litBuffer = (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE - WILDCOPY_OVERLENGTH);
@@ -1163,19 +1163,11 @@ unsafe fn ZSTD_execSequenceEnd(
         }
         match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0)));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            libc::memmove(
-                oLitEnd as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                sequence.matchLength as libc::size_t,
-            );
+            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
         let length1 = dictEnd.offset_from(match_0) as size_t;
-        libc::memmove(
-            oLitEnd as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            length1 as libc::size_t,
-        );
+        core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
@@ -1223,19 +1215,11 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
         }
         match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0) as core::ffi::c_long as isize));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            libc::memmove(
-                oLitEnd as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                sequence.matchLength as libc::size_t,
-            );
+            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
         let length1 = dictEnd.offset_from(match_0) as size_t;
-        libc::memmove(
-            oLitEnd as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            length1 as libc::size_t,
-        );
+        core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
@@ -1307,19 +1291,11 @@ unsafe fn ZSTD_execSequence(
         }
         match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
-            libc::memmove(
-                oLitEnd as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                sequence.matchLength as libc::size_t,
-            );
+            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
         let length1 = dictEnd.offset_from(match_0) as size_t;
-        libc::memmove(
-            oLitEnd as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            length1 as libc::size_t,
-        );
+        core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
@@ -1402,19 +1378,11 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         }
         match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
-            libc::memmove(
-                oLitEnd as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                sequence.matchLength as libc::size_t,
-            );
+            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
         let length1 = dictEnd.offset_from(match_0) as size_t;
-        libc::memmove(
-            oLitEnd as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            length1 as libc::size_t,
-        );
+        core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
@@ -1794,11 +1762,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
-            libc::memmove(
-                op as *mut core::ffi::c_void,
-                litPtr as *const core::ffi::c_void,
-                lastLLSize as libc::size_t,
-            );
+            core::ptr::copy(litPtr, op, lastLLSize);
             op = op.add(lastLLSize);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
@@ -2200,11 +2164,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
-            libc::memmove(
-                op as *mut core::ffi::c_void,
-                litPtr as *const core::ffi::c_void,
-                lastLLSize as libc::size_t,
-            );
+            core::ptr::copy(litPtr, op, lastLLSize);
             op = op.add(lastLLSize);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
@@ -2217,11 +2177,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     }
 
     if !op.is_null() {
-        libc::memmove(
-            op as *mut core::ffi::c_void,
-            litPtr as *const core::ffi::c_void,
-            lastLLSize_0 as libc::size_t,
-        );
+        core::ptr::copy(litPtr, op, lastLLSize_0);
         op = op.add(lastLLSize_0);
     }
 

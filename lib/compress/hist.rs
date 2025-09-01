@@ -175,11 +175,7 @@ unsafe fn HIST_count_parallel_wksp(
         return Error::maxSymbolValue_tooSmall.to_error_code();
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    libc::memmove(
-        count as *mut core::ffi::c_void,
-        Counting1 as *const core::ffi::c_void,
-        countSize as libc::size_t,
-    );
+    core::ptr::copy(Counting1, count, countSize as usize);
     max as size_t
 }
 pub unsafe fn HIST_countFast_wksp(
