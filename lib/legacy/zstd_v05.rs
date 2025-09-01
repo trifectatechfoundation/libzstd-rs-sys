@@ -80,7 +80,7 @@ struct FSEv05_DState_t {
     state: size_t,
     table: *const core::ffi::c_void,
 }
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone)]
 #[repr(C)]
 struct BITv05_DStream_t {
     bitContainer: size_t,
@@ -209,26 +209,38 @@ fn BITv05_highbit32(val: u32) -> core::ffi::c_uint {
 
 #[inline]
 unsafe fn BITv05_initDStream(
-    bitD: &mut BITv05_DStream_t,
     srcBuffer: *const u8,
     srcSize: size_t,
-) -> size_t {
+) -> Result<BITv05_DStream_t, Error> {
     if srcSize < 1 {
-        *bitD = BITv05_DStream_t::default();
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     if srcSize >= ::core::mem::size_of::<size_t>() {
         // normal case
-        bitD.start = srcBuffer;
-        bitD.ptr = srcBuffer.add(srcSize).sub(::core::mem::size_of::<size_t>());
+        let mut bitD = BITv05_DStream_t {
+            bitContainer: 0,
+            bitsConsumed: 0,
+            ptr: srcBuffer.add(srcSize).sub(::core::mem::size_of::<size_t>()),
+            start: srcBuffer,
+        };
+
         bitD.bitContainer = MEM_readLEST(bitD.ptr.cast());
         let contain32 = *srcBuffer.add(srcSize.wrapping_sub(1)) as u32;
         if contain32 == 0 {
-            return Error::GENERIC.to_error_code(); // endMark not present
+            return Err(Error::GENERIC); // endMark not present
         }
         bitD.bitsConsumed = 8 - BITv05_highbit32(contain32);
+
+        Ok(bitD)
     } else {
+        let mut bitD = BITv05_DStream_t {
+            bitContainer: 0,
+            bitsConsumed: 0,
+            ptr: srcBuffer,
+            start: srcBuffer,
+        };
+
         bitD.start = srcBuffer;
         bitD.ptr = bitD.start;
         bitD.bitContainer = *bitD.start as size_t;
@@ -263,12 +275,13 @@ unsafe fn BITv05_initDStream(
         let contain32 = *srcBuffer.add(srcSize - 1) as u32;
         if contain32 == 0 {
             // endMark not present
-            return Error::GENERIC.to_error_code();
+            return Err(Error::GENERIC);
         }
         bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv05_highbit32(contain32);
         bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
+
+        Ok(bitD)
     }
-    srcSize
 }
 
 #[inline]
@@ -635,14 +648,12 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
     let mut op = ostart;
     let omax = op.add(maxDstSize);
     let olimit = omax.offset(-(3));
-    let mut bitD = BITv05_DStream_t::default();
     let mut state1 = FSEv05_DState_t::default();
     let mut state2 = FSEv05_DState_t::default();
-    let mut errorCode: size_t = 0;
-    errorCode = BITv05_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD = match BITv05_initDStream(cSrc, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     FSEv05_initDState(&mut state1, &mut bitD, dt);
     FSEv05_initDState(&mut state2, &mut bitD, dt);
     while BITv05_reloadDStream(&mut bitD) as core::ffi::c_uint
@@ -1005,14 +1016,13 @@ unsafe fn HUFv05_decompress1X2_usingDTable(
     let dtLog = *DTable.offset(0) as u32;
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv05_DEltX2).offset(1);
-    let mut bitD = BITv05_DStream_t::default();
     if dstSize <= cSrcSize {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    let errorCode = BITv05_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD = match BITv05_initDStream(cSrc, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     HUFv05_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
     if BITv05_endOfDStream(&bitD) == 0 {
         return Error::corruption_detected.to_error_code();
@@ -1055,11 +1065,6 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv05_DEltX2).offset(1);
     let dtLog = *DTable.offset(0) as u32;
-    let mut errorCode: size_t = 0;
-    let mut bitD1 = BITv05_DStream_t::default();
-    let mut bitD2 = BITv05_DStream_t::default();
-    let mut bitD3 = BITv05_DStream_t::default();
-    let mut bitD4 = BITv05_DStream_t::default();
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
@@ -1086,22 +1091,22 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv05_initDStream(&mut bitD1, istart1, length1);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD2, istart2, length2);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD3, istart3, length3);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD4, istart4, length4);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD1 = match BITv05_initDStream(istart1, length1) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD2 = match BITv05_initDStream(istart2, length2) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD3 = match BITv05_initDStream(istart3, length3) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD4 = match BITv05_initDStream(istart4, length4) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     endSignal = BITv05_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv05_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv05_reloadDStream(&mut bitD3) as core::ffi::c_uint
@@ -1564,12 +1569,10 @@ unsafe fn HUFv05_decompress1X4_usingDTable(
     let dtLog = *DTable.offset(0);
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv05_DEltX4).offset(1);
-    let mut errorCode: size_t = 0;
-    let mut bitD = BITv05_DStream_t::default();
-    errorCode = BITv05_initDStream(&mut bitD, istart, cSrcSize);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD = match BITv05_initDStream(istart, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     HUFv05_decodeStreamX4(ostart, &mut bitD, oend, dt, dtLog);
     if BITv05_endOfDStream(&bitD) == 0 {
         return Error::corruption_detected.to_error_code();
@@ -1592,11 +1595,6 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv05_DEltX4).offset(1);
     let dtLog = *DTable.offset(0);
-    let mut errorCode: size_t = 0;
-    let mut bitD1 = BITv05_DStream_t::default();
-    let mut bitD2 = BITv05_DStream_t::default();
-    let mut bitD3 = BITv05_DStream_t::default();
-    let mut bitD4 = BITv05_DStream_t::default();
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.offset(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.offset(4) as *const core::ffi::c_void) as size_t;
@@ -1623,22 +1621,22 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv05_initDStream(&mut bitD1, istart1, length1);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD2, istart2, length2);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD3, istart3, length3);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
-    errorCode = BITv05_initDStream(&mut bitD4, istart4, length4);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD1 = match BITv05_initDStream(istart1, length1) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD2 = match BITv05_initDStream(istart2, length2) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD3 = match BITv05_initDStream(istart3, length3) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD4 = match BITv05_initDStream(istart4, length4) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     endSignal = BITv05_reloadDStream(&mut bitD1) as core::ffi::c_uint
         | BITv05_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv05_reloadDStream(&mut bitD3) as core::ffi::c_uint
@@ -2940,8 +2938,12 @@ unsafe fn ZSTDv05_decompressSequences(
     }
     ip = ip.add(errorCode);
     if nbSeq != 0 {
+        let DStream = match BITv05_initDStream(ip, iend.offset_from(ip) as size_t) {
+            Ok(bitD) => bitD,
+            Err(_) => return Error::corruption_detected.to_error_code(),
+        };
         let mut seqState = seqState_t {
-            DStream: BITv05_DStream_t::default(),
+            DStream,
             stateLL: FSEv05_DState_t::default(),
             stateOffb: FSEv05_DState_t::default(),
             stateML: FSEv05_DState_t::default(),
@@ -2955,10 +2957,6 @@ unsafe fn ZSTDv05_decompressSequences(
             matchLength: 0,
             offset: REPCODE_STARTVALUE as size_t,
         };
-        errorCode = BITv05_initDStream(&mut seqState.DStream, ip, iend.offset_from(ip) as size_t);
-        if ERR_isError(errorCode) {
-            return Error::corruption_detected.to_error_code();
-        }
         FSEv05_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
         FSEv05_initDState(&mut seqState.stateOffb, &mut seqState.DStream, DTableOffb);
         FSEv05_initDState(&mut seqState.stateML, &mut seqState.DStream, DTableML);
