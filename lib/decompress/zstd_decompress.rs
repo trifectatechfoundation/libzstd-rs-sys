@@ -220,7 +220,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
                 strategy: ZSTDv05_fast,
             };
 
-            match unsafe { ZSTDv05_getFrameParams(&mut fParams, ptr.cast(), src.len() as _) } {
+            match ZSTDv05_getFrameParams(&mut fParams, src) {
                 0 => Some(fParams.srcSize as core::ffi::c_ulonglong),
                 _ => None,
             }
@@ -284,10 +284,8 @@ unsafe fn ZSTD_decompressLegacy(
                 &mut *zd,
                 dst,
                 dstCapacity,
-                src.cast(),
-                compressedSize,
-                dict.cast(),
-                dictSize,
+                core::slice::from_raw_parts(src.cast(), compressedSize),
+                core::slice::from_raw_parts(dict.cast(), dictSize),
             );
             ZSTDv05_freeDCtx(zd);
             result
@@ -354,8 +352,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
     match is_legacy(src) {
         5 => {
             ZSTDv05_findFrameSizeInfoLegacy(
-                src.as_ptr().cast(),
-                src.len(),
+                src,
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );
@@ -442,7 +439,10 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            ZBUFFv05_decompressInitDictionary(dctx, dict.cast(), dictSize);
+            ZBUFFv05_decompressInitDictionary(
+                dctx,
+                core::slice::from_raw_parts(dict.cast(), dictSize),
+            );
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
         }
