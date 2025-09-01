@@ -3559,6 +3559,8 @@ pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
     (*zbc).hPos = (*zbc).inPos;
     ZSTDv05_decompressBegin_usingDict(&mut *(*zbc).zc, dict, dictSize)
 }
+
+#[allow(clippy::drop_non_drop)]
 pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     zbc: &mut ZBUFFv05_DCtx,
     dst: *mut core::ffi::c_void,

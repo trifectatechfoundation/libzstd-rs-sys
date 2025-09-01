@@ -3753,6 +3753,8 @@ unsafe fn ZBUFFv06_limitCopy(
     }
     length
 }
+
+#[allow(clippy::drop_non_drop)]
 pub(crate) unsafe fn ZBUFFv06_decompressContinue(
     zbd: *mut ZBUFFv06_DCtx,
     dst: *mut core::ffi::c_void,
