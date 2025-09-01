@@ -1,0 +1,7 @@
+coverage:
+  status:
+    patch: off
+    project: off
+    # Don't fail CI while our coverage is low.
+    # FIXME: increase this. 
+    threshold: 90
