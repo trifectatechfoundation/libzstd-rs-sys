@@ -1976,11 +1976,7 @@ unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
             return 0;
         }
         ZSTDMT_waitForLdmComplete(mtctx, buffer);
-        libc::memmove(
-            start as *mut core::ffi::c_void,
-            (*mtctx).inBuff.prefix.start,
-            prefixSize as libc::size_t,
-        );
+        core::ptr::copy((*mtctx).inBuff.prefix.start.cast::<u8>(), start, prefixSize);
         (*mtctx).inBuff.prefix.start = start as *const core::ffi::c_void;
         (*mtctx).roundBuff.pos = prefixSize;
     }
