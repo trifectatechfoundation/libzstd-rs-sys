@@ -205,7 +205,7 @@ fn is_legacy(src: &[u8]) -> u32 {
 
 #[inline]
 fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
-    let ptr = src.as_ptr().cast();
+    let ptr = src.as_ptr().cast::<core::ffi::c_void>();
 
     match is_legacy(src) {
         5 => {
@@ -220,7 +220,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
                 strategy: ZSTDv05_fast,
             };
 
-            match unsafe { ZSTDv05_getFrameParams(&mut fParams, ptr, src.len() as _) } {
+            match unsafe { ZSTDv05_getFrameParams(&mut fParams, ptr.cast(), src.len() as _) } {
                 0 => Some(fParams.srcSize as core::ffi::c_ulonglong),
                 _ => None,
             }
@@ -284,9 +284,9 @@ unsafe fn ZSTD_decompressLegacy(
                 &mut *zd,
                 dst,
                 dstCapacity,
-                src,
+                src.cast(),
                 compressedSize,
-                dict,
+                dict.cast(),
                 dictSize,
             );
             ZSTDv05_freeDCtx(zd);
@@ -442,7 +442,7 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            ZBUFFv05_decompressInitDictionary(dctx, dict, dictSize);
+            ZBUFFv05_decompressInitDictionary(dctx, dict.cast(), dictSize);
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
         }
@@ -499,8 +499,13 @@ unsafe fn ZSTD_decompressLegacyStream(
             let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
             let mut decodedSize = (output.size).wrapping_sub(output.pos);
-            let hintSize =
-                ZBUFFv05_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
+            let hintSize = ZBUFFv05_decompressContinue(
+                &mut *dctx,
+                dst,
+                &mut decodedSize,
+                src.cast(),
+                &mut readSize,
+            );
             output.pos = (output.pos).wrapping_add(decodedSize);
             input.pos = (input.pos).wrapping_add(readSize);
             hintSize

@@ -113,8 +113,7 @@ struct HUFv05_DEltX4 {
     nbBits: u8,
     length: u8,
 }
-type decompressionAlgo =
-    Option<unsafe fn(*mut core::ffi::c_void, size_t, *const core::ffi::c_void, size_t) -> size_t>;
+type decompressionAlgo = unsafe fn(*mut core::ffi::c_void, size_t, *const u8, size_t) -> size_t;
 type rankVal_t = [[u32; 17]; 16];
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -190,12 +189,8 @@ unsafe fn ZSTDv05_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_vo
     memcpy(dst, src, 8);
 }
 #[inline]
-unsafe fn ZSTDv05_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
-    length: ptrdiff_t,
-) {
-    let mut ip = src as *const u8;
+unsafe fn ZSTDv05_wildcopy(dst: *mut core::ffi::c_void, src: *const u8, length: ptrdiff_t) {
+    let mut ip = src;
     let mut op = dst as *mut u8;
     let oend = op.offset(length);
     loop {
@@ -215,7 +210,7 @@ fn BITv05_highbit32(val: u32) -> core::ffi::c_uint {
 #[inline]
 unsafe fn BITv05_initDStream(
     bitD: &mut BITv05_DStream_t,
-    srcBuffer: *const core::ffi::c_void,
+    srcBuffer: *const u8,
     srcSize: size_t,
 ) -> size_t {
     if srcSize < 1 {
@@ -230,7 +225,7 @@ unsafe fn BITv05_initDStream(
             .add(srcSize)
             .sub(::core::mem::size_of::<size_t>());
         bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
-        let contain32 = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1)) as u32;
+        let contain32 = *srcBuffer.add(srcSize.wrapping_sub(1)) as u32;
         if contain32 == 0 {
             return Error::GENERIC.to_error_code(); // endMark not present
         }
@@ -267,7 +262,7 @@ unsafe fn BITv05_initDStream(
             bitD.bitContainer += (*(bitD.start as *const u8).offset(1) as size_t) << 8;
         }
 
-        let contain32 = *(srcBuffer as *const u8).add(srcSize - 1) as u32;
+        let contain32 = *srcBuffer.add(srcSize - 1) as u32;
         if contain32 == 0 {
             // endMark not present
             return Error::GENERIC.to_error_code();
@@ -487,10 +482,10 @@ unsafe fn FSEv05_readNCount(
     normalizedCounter: *mut core::ffi::c_short,
     maxSVPtr: *mut core::ffi::c_uint,
     tableLogPtr: *mut core::ffi::c_uint,
-    headerBuffer: *const core::ffi::c_void,
+    headerBuffer: *const u8,
     hbSize: size_t,
 ) -> size_t {
-    let istart = headerBuffer as *const u8;
+    let istart = headerBuffer;
     let iend = istart.add(hbSize);
     let mut ip = istart;
     let mut nbBits: core::ffi::c_int = 0;
@@ -633,7 +628,7 @@ unsafe fn FSEv05_buildDTable_raw(dt: *mut FSEv05_DTable, nbBits: core::ffi::c_ui
 unsafe fn FSEv05_decompress_usingDTable_generic(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     dt: *const FSEv05_DTable,
     fast: core::ffi::c_uint,
@@ -737,7 +732,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic(
 unsafe fn FSEv05_decompress_usingDTable(
     dst: *mut core::ffi::c_void,
     originalSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     dt: *const FSEv05_DTable,
 ) -> size_t {
@@ -752,10 +747,10 @@ unsafe fn FSEv05_decompress_usingDTable(
 unsafe fn FSEv05_decompress(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     mut cSrcSize: size_t,
 ) -> size_t {
-    let istart = cSrc as *const u8;
+    let istart = cSrc;
     let mut ip = istart;
     let mut counting: [core::ffi::c_short; 256] = [0; 256];
     let mut dt: DTable_max_t = [0; 4097];
@@ -769,7 +764,7 @@ unsafe fn FSEv05_decompress(
         counting.as_mut_ptr(),
         &mut maxSymbolValue,
         &mut tableLog,
-        istart as *const core::ffi::c_void,
+        istart,
         cSrcSize,
     );
     if ERR_isError(errorCode) {
@@ -789,13 +784,7 @@ unsafe fn FSEv05_decompress(
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    FSEv05_decompress_usingDTable(
-        dst,
-        maxDstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        dt.as_mut_ptr(),
-    )
+    FSEv05_decompress_usingDTable(dst, maxDstSize, ip, cSrcSize, dt.as_mut_ptr())
 }
 const HUFv05_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
 const HUFv05_MAX_TABLELOG: core::ffi::c_int = 12;
@@ -806,12 +795,12 @@ unsafe fn HUFv05_readStats(
     rankStats: *mut u32,
     nbSymbolsPtr: *mut u32,
     tableLogPtr: *mut u32,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let mut weightTotal: u32 = 0;
     let mut tableLog: u32 = 0;
-    let mut ip = src as *const u8;
+    let mut ip = src;
     let mut iSize: size_t = 0;
     let mut oSize: size_t = 0;
     let mut n: u32 = 0;
@@ -851,7 +840,7 @@ unsafe fn HUFv05_readStats(
         oSize = FSEv05_decompress(
             huffWeight as *mut core::ffi::c_void,
             hwSize.wrapping_sub(1),
-            ip.offset(1) as *const core::ffi::c_void,
+            ip.offset(1),
             iSize,
         );
         if ERR_isError(oSize) {
@@ -895,11 +884,7 @@ unsafe fn HUFv05_readStats(
     *tableLogPtr = tableLog;
     iSize.wrapping_add(1)
 }
-unsafe fn HUFv05_readDTableX2(
-    DTable: *mut u16,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: *const u8, srcSize: size_t) -> size_t {
     let mut huffWeight: [u8; 256] = [0; 256];
     let mut rankVal: [u32; 17] = [0; 17];
     let mut tableLog = 0;
@@ -1013,7 +998,7 @@ unsafe fn HUFv05_decodeStreamX2(
 unsafe fn HUFv05_decompress1X2_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     DTable: *const u16,
 ) -> size_t {
@@ -1039,11 +1024,11 @@ unsafe fn HUFv05_decompress1X2_usingDTable(
 unsafe fn HUFv05_decompress1X2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     mut cSrcSize: size_t,
 ) -> size_t {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
-    let mut ip = cSrc as *const u8;
+    let mut ip = cSrc;
     let mut errorCode: size_t = 0;
     errorCode = HUFv05_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize);
     if ERR_isError(errorCode) {
@@ -1054,25 +1039,19 @@ unsafe fn HUFv05_decompress1X2(
     }
     ip = ip.add(errorCode);
     cSrcSize = cSrcSize.wrapping_sub(errorCode);
-    HUFv05_decompress1X2_usingDTable(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        DTable.as_mut_ptr(),
-    )
+    HUFv05_decompress1X2_usingDTable(dst, dstSize, ip, cSrcSize, DTable.as_mut_ptr())
 }
 unsafe fn HUFv05_decompress4X2_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     DTable: *const u16,
 ) -> size_t {
     if cSrcSize < 10 {
         return Error::corruption_detected.to_error_code();
     }
-    let istart = cSrc as *const u8;
+    let istart = cSrc;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let dtPtr = DTable as *const core::ffi::c_void;
@@ -1109,19 +1088,19 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv05_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
+    errorCode = BITv05_initDStream(&mut bitD1, istart1, length1);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
+    errorCode = BITv05_initDStream(&mut bitD2, istart2, length2);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
+    errorCode = BITv05_initDStream(&mut bitD3, istart3, length3);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
+    errorCode = BITv05_initDStream(&mut bitD4, istart4, length4);
     if ERR_isError(errorCode) {
         return errorCode;
     }
@@ -1234,11 +1213,11 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
 unsafe fn HUFv05_decompress4X2(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     mut cSrcSize: size_t,
 ) -> size_t {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
-    let mut ip = cSrc as *const u8;
+    let mut ip = cSrc;
     let mut errorCode: size_t = 0;
     errorCode = HUFv05_readDTableX2(DTable.as_mut_ptr(), cSrc, cSrcSize);
     if ERR_isError(errorCode) {
@@ -1249,13 +1228,7 @@ unsafe fn HUFv05_decompress4X2(
     }
     ip = ip.add(errorCode);
     cSrcSize = cSrcSize.wrapping_sub(errorCode);
-    HUFv05_decompress4X2_usingDTable(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        DTable.as_mut_ptr(),
-    )
+    HUFv05_decompress4X2_usingDTable(dst, dstSize, ip, cSrcSize, DTable.as_mut_ptr())
 }
 unsafe fn HUFv05_fillDTableX4Level2(
     DTable: *mut HUFv05_DEltX4,
@@ -1394,7 +1367,7 @@ unsafe fn HUFv05_fillDTableX4(
 }
 unsafe fn HUFv05_readDTableX4(
     DTable: *mut core::ffi::c_uint,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let mut weightList: [u8; 256] = [0; 256];
@@ -1583,11 +1556,11 @@ unsafe fn HUFv05_decodeStreamX4(
 unsafe fn HUFv05_decompress1X4_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     DTable: *const core::ffi::c_uint,
 ) -> size_t {
-    let istart = cSrc as *const u8;
+    let istart = cSrc;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let dtLog = *DTable.offset(0);
@@ -1595,7 +1568,7 @@ unsafe fn HUFv05_decompress1X4_usingDTable(
     let dt = (dtPtr as *const HUFv05_DEltX4).offset(1);
     let mut errorCode: size_t = 0;
     let mut bitD = BITv05_DStream_t::default();
-    errorCode = BITv05_initDStream(&mut bitD, istart as *const core::ffi::c_void, cSrcSize);
+    errorCode = BITv05_initDStream(&mut bitD, istart, cSrcSize);
     if ERR_isError(errorCode) {
         return errorCode;
     }
@@ -1608,14 +1581,14 @@ unsafe fn HUFv05_decompress1X4_usingDTable(
 unsafe fn HUFv05_decompress4X4_usingDTable(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
     DTable: *const core::ffi::c_uint,
 ) -> size_t {
     if cSrcSize < 10 {
         return Error::corruption_detected.to_error_code();
     }
-    let istart = cSrc as *const u8;
+    let istart = cSrc;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let dtPtr = DTable as *const core::ffi::c_void;
@@ -1652,19 +1625,19 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    errorCode = BITv05_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
+    errorCode = BITv05_initDStream(&mut bitD1, istart1, length1);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
+    errorCode = BITv05_initDStream(&mut bitD2, istart2, length2);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
+    errorCode = BITv05_initDStream(&mut bitD3, istart3, length3);
     if ERR_isError(errorCode) {
         return errorCode;
     }
-    errorCode = BITv05_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
+    errorCode = BITv05_initDStream(&mut bitD4, istart4, length4);
     if ERR_isError(errorCode) {
         return errorCode;
     }
@@ -1813,11 +1786,11 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
 unsafe fn HUFv05_decompress4X4(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     mut cSrcSize: size_t,
 ) -> size_t {
     let mut DTable: [core::ffi::c_uint; 4097] = [12; 4097];
-    let mut ip = cSrc as *const u8;
+    let mut ip = cSrc;
     let hSize = HUFv05_readDTableX4(DTable.as_mut_ptr(), cSrc, cSrcSize);
     if ERR_isError(hSize) {
         return hSize;
@@ -1827,13 +1800,7 @@ unsafe fn HUFv05_decompress4X4(
     }
     ip = ip.add(hSize);
     cSrcSize = cSrcSize.wrapping_sub(hSize);
-    HUFv05_decompress4X4_usingDTable(
-        dst,
-        dstSize,
-        ip as *const core::ffi::c_void,
-        cSrcSize,
-        DTable.as_mut_ptr(),
-    )
+    HUFv05_decompress4X4_usingDTable(dst, dstSize, ip, cSrcSize, DTable.as_mut_ptr())
 }
 static algoTime: [[algo_time_t; 3]; 16] = [
     [
@@ -2160,29 +2127,14 @@ static algoTime: [[algo_time_t; 3]; 16] = [
 unsafe fn HUFv05_decompress(
     dst: *mut core::ffi::c_void,
     dstSize: size_t,
-    cSrc: *const core::ffi::c_void,
+    cSrc: *const u8,
     cSrcSize: size_t,
 ) -> size_t {
-    static decompress: [decompressionAlgo; 3] = [
-        Some(
-            HUFv05_decompress4X2
-                as unsafe fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                ) -> size_t,
-        ),
-        Some(
-            HUFv05_decompress4X4
-                as unsafe fn(
-                    *mut core::ffi::c_void,
-                    size_t,
-                    *const core::ffi::c_void,
-                    size_t,
-                ) -> size_t,
-        ),
-        None,
+    static decompress: [decompressionAlgo; 2] = [
+        HUFv05_decompress4X2
+            as unsafe fn(*mut core::ffi::c_void, size_t, *const u8, size_t) -> size_t,
+        HUFv05_decompress4X4
+            as unsafe fn(*mut core::ffi::c_void, size_t, *const u8, size_t) -> size_t,
     ];
     let mut Q: u32 = 0;
     let D256 = (dstSize >> 8) as u32;
@@ -2196,7 +2148,7 @@ unsafe fn HUFv05_decompress(
         return Error::corruption_detected.to_error_code();
     }
     if cSrcSize == 1 {
-        core::ptr::write_bytes(dst.cast::<u8>(), *(cSrc as *const u8), dstSize);
+        core::ptr::write_bytes(dst.cast::<u8>(), *cSrc, dstSize);
         return dstSize;
     }
     Q = (cSrcSize * 16 / dstSize) as u32;
@@ -2222,7 +2174,7 @@ unsafe fn HUFv05_decompress(
     if *Dtime.as_mut_ptr().offset(1) < *Dtime.as_mut_ptr().offset(0) {
         algoNb = 1;
     }
-    (*decompress.as_ptr().offset(algoNb as isize)).unwrap_unchecked()(dst, dstSize, cSrc, cSrcSize)
+    decompress[algoNb](dst, dstSize, cSrc, cSrcSize)
 }
 unsafe fn ZSTDv05_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
     memcpy(dst, src, 4);
@@ -2253,14 +2205,14 @@ pub(crate) unsafe fn ZSTDv05_freeDCtx(dctx: *mut ZSTDv05_DCtx) -> size_t {
 }
 unsafe fn ZSTDv05_decodeFrameHeader_Part1(
     zc: &mut ZSTDv05_DCtx,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let mut magicNumber: u32 = 0;
     if srcSize != ZSTDv05_frameHeaderSize_min {
         return Error::srcSize_wrong.to_error_code();
     }
-    magicNumber = MEM_readLE32(src);
+    magicNumber = MEM_readLE32(src.cast());
     if magicNumber != ZSTDv05_MAGICNUMBER {
         return Error::prefix_unknown.to_error_code();
     }
@@ -2269,14 +2221,14 @@ unsafe fn ZSTDv05_decodeFrameHeader_Part1(
 }
 pub(crate) unsafe fn ZSTDv05_getFrameParams(
     params: *mut ZSTDv05_parameters,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let mut magicNumber: u32 = 0;
     if srcSize < ZSTDv05_frameHeaderSize_min {
         return ZSTDv05_frameHeaderSize_max as size_t;
     }
-    magicNumber = MEM_readLE32(src);
+    magicNumber = MEM_readLE32(src.cast());
     if magicNumber != ZSTDv05_MAGICNUMBER {
         return Error::prefix_unknown.to_error_code();
     }
@@ -2285,16 +2237,16 @@ pub(crate) unsafe fn ZSTDv05_getFrameParams(
         0,
         ::core::mem::size_of::<ZSTDv05_parameters>(),
     );
-    (*params).windowLog = ((*(src as *const u8).offset(4) as core::ffi::c_int & 15)
-        + ZSTDv05_WINDOWLOG_ABSOLUTEMIN) as u32;
-    if *(src as *const u8).offset(4) as core::ffi::c_int >> 4 != 0 {
+    (*params).windowLog =
+        ((*src.offset(4) as core::ffi::c_int & 15) + ZSTDv05_WINDOWLOG_ABSOLUTEMIN) as u32;
+    if *src.offset(4) as core::ffi::c_int >> 4 != 0 {
         return Error::frameParameter_unsupported.to_error_code();
     }
     0
 }
 unsafe fn ZSTDv05_decodeFrameHeader_Part2(
     zc: *mut ZSTDv05_DCtx,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let mut result: size_t = 0;
@@ -2308,11 +2260,11 @@ unsafe fn ZSTDv05_decodeFrameHeader_Part2(
     result
 }
 unsafe fn ZSTDv05_getcBlockSize(
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
     bpPtr: *mut blockProperties_t,
 ) -> size_t {
-    let in_0 = src as *const u8;
+    let in_0 = src;
     let mut headerFlags: u8 = 0;
     let mut cSize: u32 = 0;
     if srcSize < 3 {
@@ -2341,7 +2293,7 @@ unsafe fn ZSTDv05_getcBlockSize(
 unsafe fn ZSTDv05_copyRawBlock(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     if dst.is_null() {
@@ -2350,15 +2302,15 @@ unsafe fn ZSTDv05_copyRawBlock(
     if srcSize > maxDstSize {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    memcpy(dst, src, srcSize);
+    memcpy(dst, src.cast(), srcSize);
     srcSize
 }
 unsafe fn ZSTDv05_decodeLiteralsBlock(
     dctx: &mut ZSTDv05_DCtx,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
-    let istart = src as *const u8;
+    let istart = src;
     if srcSize < MIN_CBLOCK_SIZE as size_t {
         return Error::corruption_detected.to_error_code();
     }
@@ -2415,14 +2367,14 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 HUFv05_decompress1X2(
                     dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
-                    istart.offset(lhSize as isize) as *const core::ffi::c_void,
+                    istart.add(lhSize as usize),
                     litCSize,
                 )
             } else {
                 HUFv05_decompress(
                     dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                     litSize,
-                    istart.offset(lhSize as isize) as *const core::ffi::c_void,
+                    istart.add(lhSize as usize),
                     litCSize,
                 )
             }) {
@@ -2441,25 +2393,25 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             let mut errorCode: size_t = 0;
             let mut litSize_0: size_t = 0;
             let mut litCSize_0: size_t = 0;
-            let mut lhSize_0 = (*istart.offset(0) as core::ffi::c_int >> 4 & 3) as u32;
-            if lhSize_0 != 1 {
+            let mut lhSize = (*istart.offset(0) as core::ffi::c_int >> 4 & 3) as u32;
+            if lhSize != 1 {
                 return Error::corruption_detected.to_error_code();
             }
             if dctx.flagStaticTables == 0 {
                 return Error::dictionary_corrupted.to_error_code();
             }
-            lhSize_0 = 3;
+            lhSize = 3;
             litSize_0 = (((*istart.offset(0) as core::ffi::c_int & 15) << 6)
                 + (*istart.offset(1) as core::ffi::c_int >> 2)) as size_t;
             litCSize_0 = (((*istart.offset(1) as core::ffi::c_int & 3) << 8)
                 + *istart.offset(2) as core::ffi::c_int) as size_t;
-            if litCSize_0.wrapping_add(lhSize_0 as size_t) > srcSize {
+            if litCSize_0.wrapping_add(lhSize as size_t) > srcSize {
                 return Error::corruption_detected.to_error_code();
             }
             errorCode = HUFv05_decompress1X4_usingDTable(
                 dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
                 litSize_0,
-                istart.offset(lhSize_0 as isize) as *const core::ffi::c_void,
+                istart.add(lhSize as usize),
                 litCSize_0,
                 dctx.hufTableX4.as_mut_ptr(),
             );
@@ -2473,7 +2425,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 0,
                 WILDCOPY_OVERLENGTH as usize,
             );
-            litCSize_0.wrapping_add(lhSize_0 as size_t)
+            litCSize_0.wrapping_add(lhSize as size_t)
         }
         IS_RAW => {
             let mut litSize_1: size_t = 0;
@@ -2568,11 +2520,11 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
     DTableLL: *mut FSEv05_DTable,
     DTableML: *mut FSEv05_DTable,
     DTableOffb: *mut FSEv05_DTable,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
     flagStaticTable: u32,
 ) -> size_t {
-    let istart = src as *const u8;
+    let istart = src;
     let mut ip = istart;
     let iend = istart.add(srcSize);
     let mut LLtype: u32 = 0;
@@ -2652,7 +2604,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 norm.as_mut_ptr(),
                 &mut max,
                 &mut LLlog,
-                ip as *const core::ffi::c_void,
+                ip,
                 iend.offset_from(ip) as size_t,
             );
             if ERR_isError(headerSize) {
@@ -2694,7 +2646,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 norm.as_mut_ptr(),
                 &mut max,
                 &mut Offlog,
-                ip as *const core::ffi::c_void,
+                ip,
                 iend.offset_from(ip) as size_t,
             );
             if ERR_isError(headerSize) {
@@ -2733,7 +2685,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 norm.as_mut_ptr(),
                 &mut max,
                 &mut MLlog,
-                ip as *const core::ffi::c_void,
+                ip,
                 iend.offset_from(ip) as size_t,
             );
             if ERR_isError(headerSize) {
@@ -2874,7 +2826,7 @@ unsafe fn ZSTDv05_execSequence(
     }
     ZSTDv05_wildcopy(
         op as *mut core::ffi::c_void,
-        *litPtr as *const core::ffi::c_void,
+        *litPtr,
         sequence.litLength as ptrdiff_t,
     );
     op = oLitEnd;
@@ -2928,7 +2880,7 @@ unsafe fn ZSTDv05_execSequence(
         if op < oend_8 {
             ZSTDv05_wildcopy(
                 op as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
+                match_0,
                 oend_8.offset_from(op) as ptrdiff_t,
             );
             match_0 = match_0.offset(oend_8.offset_from(op) as core::ffi::c_long as isize);
@@ -2944,7 +2896,7 @@ unsafe fn ZSTDv05_execSequence(
     } else {
         ZSTDv05_wildcopy(
             op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
+            match_0,
             sequence.matchLength as ptrdiff_t - 8,
         );
     }
@@ -2981,7 +2933,7 @@ unsafe fn ZSTDv05_decompressSequences(
         DTableLL,
         DTableML,
         DTableOffb,
-        ip as *const core::ffi::c_void,
+        ip,
         seqSize,
         dctx.flagStaticTables,
     );
@@ -3005,11 +2957,7 @@ unsafe fn ZSTDv05_decompressSequences(
             matchLength: 0,
             offset: REPCODE_STARTVALUE as size_t,
         };
-        errorCode = BITv05_initDStream(
-            &mut seqState.DStream,
-            ip as *const core::ffi::c_void,
-            iend.offset_from(ip) as size_t,
-        );
+        errorCode = BITv05_initDStream(&mut seqState.DStream, ip, iend.offset_from(ip) as size_t);
         if ERR_isError(errorCode) {
             return Error::corruption_detected.to_error_code();
         }
@@ -3075,10 +3023,10 @@ unsafe fn ZSTDv05_decompressBlock_internal(
     dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     mut srcSize: size_t,
 ) -> size_t {
-    let mut ip = src as *const u8;
+    let mut ip = src;
     let mut litCSize: size_t = 0;
     if srcSize >= BLOCKSIZE as size_t {
         return Error::srcSize_wrong.to_error_code();
@@ -3101,10 +3049,10 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
     dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
-    let mut ip = src as *const u8;
+    let mut ip = src;
     let iend = ip.add(srcSize);
     let ostart = dst as *mut u8;
     let mut op = ostart;
@@ -3138,11 +3086,8 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
     }
     loop {
         let mut decodedSize = 0;
-        let cBlockSize = ZSTDv05_getcBlockSize(
-            ip as *const core::ffi::c_void,
-            iend.offset_from(ip) as size_t,
-            &mut blockProperties,
-        );
+        let cBlockSize =
+            ZSTDv05_getcBlockSize(ip, iend.offset_from(ip) as size_t, &mut blockProperties);
         if ERR_isError(cBlockSize) {
             return cBlockSize;
         }
@@ -3157,7 +3102,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
                     dctx,
                     op as *mut core::ffi::c_void,
                     oend.offset_from(op) as size_t,
-                    ip as *const core::ffi::c_void,
+                    ip,
                     cBlockSize,
                 );
             }
@@ -3165,7 +3110,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
                 decodedSize = ZSTDv05_copyRawBlock(
                     op as *mut core::ffi::c_void,
                     oend.offset_from(op) as size_t,
-                    ip as *const core::ffi::c_void,
+                    ip,
                     cBlockSize,
                 );
             }
@@ -3193,9 +3138,9 @@ pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
     dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
-    dict: *const core::ffi::c_void,
+    dict: *const u8,
     dictSize: size_t,
 ) -> size_t {
     ZSTDv05_decompressBegin_usingDict(dctx, dict, dictSize);
@@ -3211,12 +3156,12 @@ fn ZSTD_errorFrameSizeInfoLegacy(
     *dBound = ZSTD_CONTENTSIZE_ERROR;
 }
 pub(crate) unsafe fn ZSTDv05_findFrameSizeInfoLegacy(
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
     cSize: &mut size_t,
     dBound: &mut core::ffi::c_ulonglong,
 ) {
-    let mut ip = src as *const u8;
+    let mut ip = src;
     let mut remainingSize = srcSize;
     let mut nbBlocks = 0 as size_t;
     let mut blockProperties = blockProperties_t {
@@ -3227,18 +3172,14 @@ pub(crate) unsafe fn ZSTDv05_findFrameSizeInfoLegacy(
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong.to_error_code());
         return;
     }
-    if MEM_readLE32(src) != ZSTDv05_MAGICNUMBER {
+    if MEM_readLE32(src.cast()) != ZSTDv05_MAGICNUMBER {
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown.to_error_code());
         return;
     }
     ip = ip.add(ZSTDv05_frameHeaderSize_min);
     remainingSize = remainingSize.wrapping_sub(ZSTDv05_frameHeaderSize_min);
     loop {
-        let cBlockSize = ZSTDv05_getcBlockSize(
-            ip as *const core::ffi::c_void,
-            remainingSize,
-            &mut blockProperties,
-        );
+        let cBlockSize = ZSTDv05_getcBlockSize(ip, remainingSize, &mut blockProperties);
         if ERR_isError(cBlockSize) {
             ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, cBlockSize);
             return;
@@ -3256,7 +3197,7 @@ pub(crate) unsafe fn ZSTDv05_findFrameSizeInfoLegacy(
         remainingSize = remainingSize.wrapping_sub(cBlockSize);
         nbBlocks = nbBlocks.wrapping_add(1);
     }
-    *cSize = ip.offset_from(src as *const u8) as size_t;
+    *cSize = ip.offset_from(src) as size_t;
     *dBound = (nbBlocks * BLOCKSIZE as size_t) as core::ffi::c_ulonglong;
 }
 fn ZSTDv05_nextSrcSizeToDecompress(dctx: &mut ZSTDv05_DCtx) -> size_t {
@@ -3266,7 +3207,7 @@ unsafe fn ZSTDv05_decompressContinue(
     dctx: &mut ZSTDv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     if srcSize != dctx.expected {
@@ -3285,7 +3226,7 @@ unsafe fn ZSTDv05_decompressContinue(
             }
             memcpy(
                 (dctx.headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                src,
+                src.cast(),
                 ZSTDv05_frameHeaderSize_min,
             );
             if dctx.headerSize > ZSTDv05_frameHeaderSize_min {
@@ -3340,11 +3281,7 @@ unsafe fn ZSTDv05_decompressContinue(
         }
         _ => return Error::GENERIC.to_error_code(),
     }
-    let result = ZSTDv05_decodeFrameHeader_Part2(
-        dctx,
-        (dctx.headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-        dctx.headerSize,
-    );
+    let result = ZSTDv05_decodeFrameHeader_Part2(dctx, dctx.headerBuffer.as_ptr(), dctx.headerSize);
     if ERR_isError(result) {
         return result;
     }
@@ -3352,24 +3289,20 @@ unsafe fn ZSTDv05_decompressContinue(
     dctx.stage = ZSTDv05ds_decodeBlockHeader;
     0
 }
-unsafe fn ZSTDv05_refDictContent(
-    dctx: &mut ZSTDv05_DCtx,
-    dict: *const core::ffi::c_void,
-    dictSize: size_t,
-) {
+unsafe fn ZSTDv05_refDictContent(dctx: &mut ZSTDv05_DCtx, dict: *const u8, dictSize: size_t) {
     dctx.dictEnd = dctx.previousDstEnd;
     dctx.vBase = (dict as *const core::ffi::c_char).offset(
         -((dctx.previousDstEnd as *const core::ffi::c_char)
             .offset_from(dctx.base as *const core::ffi::c_char) as core::ffi::c_long
             as isize),
     ) as *const core::ffi::c_void;
-    dctx.base = dict;
+    dctx.base = dict.cast();
     dctx.previousDstEnd =
         (dict as *const core::ffi::c_char).add(dictSize) as *const core::ffi::c_void;
 }
 unsafe fn ZSTDv05_loadEntropy(
     dctx: &mut ZSTDv05_DCtx,
-    mut dict: *const core::ffi::c_void,
+    mut dict: *const u8,
     mut dictSize: size_t,
 ) -> size_t {
     let mut hSize: size_t = 0;
@@ -3390,7 +3323,7 @@ unsafe fn ZSTDv05_loadEntropy(
     if ERR_isError(hSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dict = (dict as *const core::ffi::c_char).add(hSize) as *const core::ffi::c_void;
+    dict = dict.add(hSize);
     dictSize = dictSize.wrapping_sub(hSize);
     offcodeHeaderSize = FSEv05_readNCount(
         offcodeNCount.as_mut_ptr(),
@@ -3414,7 +3347,7 @@ unsafe fn ZSTDv05_loadEntropy(
     if ERR_isError(errorCode) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dict = (dict as *const core::ffi::c_char).add(offcodeHeaderSize) as *const core::ffi::c_void;
+    dict = dict.add(offcodeHeaderSize);
     dictSize = dictSize.wrapping_sub(offcodeHeaderSize);
     matchlengthHeaderSize = FSEv05_readNCount(
         matchlengthNCount.as_mut_ptr(),
@@ -3438,8 +3371,7 @@ unsafe fn ZSTDv05_loadEntropy(
     if ERR_isError(errorCode) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dict =
-        (dict as *const core::ffi::c_char).add(matchlengthHeaderSize) as *const core::ffi::c_void;
+    dict = dict.add(matchlengthHeaderSize);
     dictSize = dictSize.wrapping_sub(matchlengthHeaderSize);
     litlengthHeaderSize = FSEv05_readNCount(
         litlengthNCount.as_mut_ptr(),
@@ -3471,29 +3403,29 @@ unsafe fn ZSTDv05_loadEntropy(
 }
 unsafe fn ZSTDv05_decompress_insertDictionary(
     dctx: &mut ZSTDv05_DCtx,
-    mut dict: *const core::ffi::c_void,
+    mut dict: *const u8,
     mut dictSize: size_t,
 ) -> size_t {
     let mut eSize: size_t = 0;
-    let magic = MEM_readLE32(dict);
+    let magic = MEM_readLE32(dict.cast());
     if magic != ZSTDv05_DICT_MAGIC {
         ZSTDv05_refDictContent(dctx, dict, dictSize);
         return 0;
     }
-    dict = (dict as *const core::ffi::c_char).offset(4) as *const core::ffi::c_void;
+    dict = dict.add(4);
     dictSize = dictSize.wrapping_sub(4);
     eSize = ZSTDv05_loadEntropy(dctx, dict, dictSize);
     if ERR_isError(eSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dict = (dict as *const core::ffi::c_char).add(eSize) as *const core::ffi::c_void;
+    dict = dict.add(eSize);
     dictSize = dictSize.wrapping_sub(eSize);
     ZSTDv05_refDictContent(dctx, dict, dictSize);
     0
 }
 unsafe fn ZSTDv05_decompressBegin_usingDict(
     dctx: &mut ZSTDv05_DCtx,
-    dict: *const core::ffi::c_void,
+    dict: *const u8,
     dictSize: size_t,
 ) -> size_t {
     let mut errorCode: size_t = 0;
@@ -3513,7 +3445,7 @@ static ZBUFFv05_blockHeaderSize: size_t = 3;
 unsafe fn ZBUFFv05_limitCopy(
     dst: *mut core::ffi::c_void,
     maxDstSize: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let length = if maxDstSize < srcSize {
@@ -3522,7 +3454,7 @@ unsafe fn ZBUFFv05_limitCopy(
         srcSize
     };
     if length > 0 {
-        memcpy(dst, src, length);
+        memcpy(dst, src.cast(), length);
     }
     length
 }
@@ -3549,7 +3481,7 @@ pub(crate) unsafe fn ZBUFFv05_freeDCtx(zbc: *mut ZBUFFv05_DCtx) -> size_t {
 }
 pub(crate) unsafe fn ZBUFFv05_decompressInitDictionary(
     zbc: *mut ZBUFFv05_DCtx,
-    dict: *const core::ffi::c_void,
+    dict: *const u8,
     dictSize: size_t,
 ) -> size_t {
     (*zbc).stage = ZBUFFv05ds_readHeader;
@@ -3565,10 +3497,10 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
     zbc: &mut ZBUFFv05_DCtx,
     dst: *mut core::ffi::c_void,
     maxDstSizePtr: *mut size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSizePtr: *mut size_t,
 ) -> size_t {
-    let istart = src as *const core::ffi::c_char;
+    let istart = src;
     let mut ip = istart;
     let iend = istart.add(*srcSizePtr);
     let ostart = dst as *mut core::ffi::c_char;
@@ -3597,7 +3529,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     // not enough input to decode header : tell how many bytes would be necessary
                     memcpy(
                         (zbc.headerBuffer).as_mut_ptr().add(zbc.hPos) as *mut core::ffi::c_void,
-                        src,
+                        src.cast(),
                         *srcSizePtr,
                     );
                     zbc.hPos = (zbc.hPos).wrapping_add(*srcSizePtr);
@@ -3618,11 +3550,8 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 );
                 zbc.hPos = (zbc.hPos).wrapping_add(headerSize_0);
                 ip = ip.add(headerSize_0);
-                headerSize_0 = ZSTDv05_getFrameParams(
-                    &mut zbc.params,
-                    (zbc.headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                    zbc.hPos,
-                );
+                headerSize_0 =
+                    ZSTDv05_getFrameParams(&mut zbc.params, zbc.headerBuffer.as_ptr(), zbc.hPos);
                 if ERR_isError(headerSize_0) {
                     return headerSize_0;
                 }
@@ -3701,7 +3630,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     &mut *zbc.zc,
                     (zbc.outBuff).add(zbc.outStart) as *mut core::ffi::c_void,
                     (zbc.outBuffSize).wrapping_sub(zbc.outStart),
-                    ip as *const core::ffi::c_void,
+                    ip,
                     neededInSize_0,
                 );
                 if ERR_isError(decodedSize) {
@@ -3736,7 +3665,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             loadedSize = ZBUFFv05_limitCopy(
                 (zbc.inBuff).add(zbc.inPos) as *mut core::ffi::c_void,
                 toLoad,
-                ip as *const core::ffi::c_void,
+                ip,
                 iend.offset_from(ip) as size_t,
             );
             ip = ip.add(loadedSize);
@@ -3750,7 +3679,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                     &mut *zbc.zc,
                     (zbc.outBuff).add(zbc.outStart) as *mut core::ffi::c_void,
                     (zbc.outBuffSize).wrapping_sub(zbc.outStart),
-                    zbc.inBuff as *const core::ffi::c_void,
+                    zbc.inBuff as *const u8,
                     neededInSize_1,
                 );
                 if ERR_isError(decodedSize_0) {
@@ -3775,7 +3704,7 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             let flushedSize = ZBUFFv05_limitCopy(
                 op as *mut core::ffi::c_void,
                 oend.offset_from(op) as size_t,
-                (zbc.outBuff).add(zbc.outStart) as *const core::ffi::c_void,
+                zbc.outBuff.add(zbc.outStart) as *const u8,
                 toFlushSize,
             );
             op = op.add(flushedSize);
