@@ -1505,7 +1505,7 @@ unsafe fn ZSTD_copyRawBlock(
         }
         return Error::dstBuffer_null.to_error_code();
     }
-    libc::memmove(dst, src, srcSize as libc::size_t);
+    core::ptr::copy(src.cast::<u8>(), dst.cast::<u8>(), srcSize);
     srcSize
 }
 unsafe fn ZSTD_setRleBlock(
@@ -3288,7 +3288,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 }
 
                 // control buffer memory usage
-                (*zds).fParams.windowSize = std::cmp::min(
+                (*zds).fParams.windowSize = Ord::max(
                     (*zds).fParams.windowSize,
                     (1 << ZSTD_WINDOWLOG_ABSOLUTEMIN) as core::ffi::c_ulonglong,
                 );

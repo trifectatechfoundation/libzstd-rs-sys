@@ -456,3 +456,50 @@ fn test_find_decompressed_size() {
     let v = assert_eq_rs_c!({ ZSTD_findDecompressedSize(core::ptr::null(), 0) });
     assert_eq!(v, 0);
 }
+
+#[test]
+#[cfg_attr(miri, ignore = "slow")]
+fn test_decompress_stream_with_dict() {
+    const DICT: &[u8] = include_bytes!("../test-data/decompress-stream-dict.dat");
+    const INPUT: &[u8] = include_bytes!("../test-data/decompress-stream-input.dat");
+
+    const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+
+    unsafe {
+        use libzstd_rs_sys::*;
+
+        let mut zd: Box<core::mem::MaybeUninit<ZSTD_DStream>> = Box::new_uninit();
+        core::ptr::write_bytes(zd.as_mut_ptr(), 0u8, 1);
+        let zd = zd.assume_init_mut();
+        ZSTD_initDStream_usingDict(zd, DICT.as_ptr().cast(), DICT.len());
+
+        let ret = ZSTD_DCtx_setParameter(
+            zd,
+            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            (ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
+        );
+        assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
+
+        let mut buffer = vec![0; 10485760];
+
+        let remaining = {
+            let mut out_buf = ZSTD_outBuffer {
+                dst: buffer.as_mut_ptr().cast(),
+                size: buffer.len(),
+                pos: 0,
+            };
+
+            let mut in_buf = ZSTD_inBuffer {
+                src: INPUT.as_ptr().cast(),
+                size: INPUT.len(),
+                pos: 204808,
+            };
+
+            ZSTD_decompressStream(zd, &mut out_buf, &mut in_buf)
+        };
+
+        assert_eq!(remaining, 0);
+
+        remaining
+    };
+}
