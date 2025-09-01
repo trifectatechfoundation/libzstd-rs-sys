@@ -85,8 +85,8 @@ struct FSEv05_DState_t {
 struct BITv05_DStream_t {
     bitContainer: size_t,
     bitsConsumed: core::ffi::c_uint,
-    ptr: *const core::ffi::c_char,
-    start: *const core::ffi::c_char,
+    ptr: *const u8,
+    start: *const u8,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -220,46 +220,44 @@ unsafe fn BITv05_initDStream(
 
     if srcSize >= ::core::mem::size_of::<size_t>() {
         // normal case
-        bitD.start = srcBuffer as *const core::ffi::c_char;
-        bitD.ptr = (srcBuffer as *const core::ffi::c_char)
-            .add(srcSize)
-            .sub(::core::mem::size_of::<size_t>());
-        bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
+        bitD.start = srcBuffer;
+        bitD.ptr = srcBuffer.add(srcSize).sub(::core::mem::size_of::<size_t>());
+        bitD.bitContainer = MEM_readLEST(bitD.ptr.cast());
         let contain32 = *srcBuffer.add(srcSize.wrapping_sub(1)) as u32;
         if contain32 == 0 {
             return Error::GENERIC.to_error_code(); // endMark not present
         }
         bitD.bitsConsumed = 8 - BITv05_highbit32(contain32);
     } else {
-        bitD.start = srcBuffer as *const core::ffi::c_char;
+        bitD.start = srcBuffer;
         bitD.ptr = bitD.start;
-        bitD.bitContainer = *(bitD.start as *const u8) as size_t;
+        bitD.bitContainer = *bitD.start as size_t;
 
         if srcSize == 7 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(6) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 16);
+            bitD.bitContainer +=
+                (*bitD.start.offset(6) as size_t) << (::core::mem::size_of::<size_t>() * 8 - 16);
         }
 
         if srcSize >= 6 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(5) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 24);
+            bitD.bitContainer +=
+                (*bitD.start.offset(5) as size_t) << (::core::mem::size_of::<size_t>() * 8 - 24);
         }
 
         if srcSize >= 5 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(4) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 32);
+            bitD.bitContainer +=
+                (*bitD.start.offset(4) as size_t) << (::core::mem::size_of::<size_t>() * 8 - 32);
         }
 
         if srcSize >= 4 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(3) as size_t) << 24;
+            bitD.bitContainer += (*bitD.start.offset(3) as size_t) << 24;
         }
 
         if srcSize >= 3 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(2) as size_t) << 16;
+            bitD.bitContainer += (*bitD.start.offset(2) as size_t) << 16;
         }
 
         if srcSize >= 2 {
-            bitD.bitContainer += (*(bitD.start as *const u8).offset(1) as size_t) << 8;
+            bitD.bitContainer += (*bitD.start.offset(1) as size_t) << 8;
         }
 
         let contain32 = *srcBuffer.add(srcSize - 1) as u32;
@@ -311,10 +309,10 @@ unsafe fn BITv05_reloadDStream(bitD: &mut BITv05_DStream_t) -> BITv05_DStream_st
     if bitD.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
         return BITv05_DStream_overflow;
     }
-    if bitD.ptr >= (bitD.start).add(::core::mem::size_of::<size_t>()) {
-        bitD.ptr = (bitD.ptr).offset(-((bitD.bitsConsumed >> 3) as isize));
+    if bitD.ptr >= bitD.start.add(::core::mem::size_of::<size_t>()) {
+        bitD.ptr = bitD.ptr.sub((bitD.bitsConsumed >> 3) as usize);
         bitD.bitsConsumed &= 7;
-        bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
+        bitD.bitContainer = MEM_readLEST(bitD.ptr.cast());
         return BITv05_DStream_unfinished;
     }
     if bitD.ptr == bitD.start {
@@ -325,13 +323,13 @@ unsafe fn BITv05_reloadDStream(bitD: &mut BITv05_DStream_t) -> BITv05_DStream_st
     }
     let mut nbBytes = bitD.bitsConsumed >> 3;
     let mut result = BITv05_DStream_unfinished;
-    if (bitD.ptr).offset(-(nbBytes as isize)) < bitD.start {
-        nbBytes = (bitD.ptr).offset_from(bitD.start) as core::ffi::c_long as u32;
+    if bitD.ptr.sub(nbBytes as usize) < bitD.start {
+        nbBytes = bitD.ptr.offset_from(bitD.start) as core::ffi::c_long as u32;
         result = BITv05_DStream_endOfBuffer;
     }
-    bitD.ptr = (bitD.ptr).offset(-(nbBytes as isize));
+    bitD.ptr = bitD.ptr.offset(-(nbBytes as isize));
     bitD.bitsConsumed = (bitD.bitsConsumed).wrapping_sub(nbBytes * 8);
-    bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
+    bitD.bitContainer = MEM_readLEST(bitD.ptr.cast());
     result
 }
 #[inline]
