@@ -2993,6 +2993,7 @@ unsafe fn ZSTD_decompressContinueStream(
     0
 }
 
+#[allow(clippy::drop_non_drop)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressStream))]
 pub unsafe extern "C" fn ZSTD_decompressStream(
     zds: *mut ZSTD_DStream,
