@@ -75,7 +75,7 @@ impl ZSTD_DCtx {
         seqState_t {
             stateLL: ZSTD_fseState::newnew(&mut bit_stream, unsafe { &*self.LLTptr }),
             stateOffb: ZSTD_fseState::newnew(&mut bit_stream, unsafe { &*self.OFTptr }),
-            stateML: ZSTD_fseState::new(&mut bit_stream, self.MLTptr),
+            stateML: ZSTD_fseState::newnew(&mut bit_stream, unsafe { &*self.MLTptr }),
             DStream: bit_stream,
             prevOffset: self.entropy.rep.map(|v| v as size_t),
         }
@@ -1090,7 +1090,7 @@ fn ZSTD_decodeSeqHeaders(
     }
 
     ip += ofhSize as usize;
-    let mlhSize = ZSTD_buildSeqTable(
+    let mlhSize = ZSTD_buildSeqTableNew(
         &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
         MLtype,
