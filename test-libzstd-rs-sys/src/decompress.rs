@@ -608,3 +608,61 @@ fn decompression_by_small_increment() {
         assert_eq!(in_buf.pos, INPUT.len());
     }
 }
+
+#[test]
+#[cfg_attr(miri, ignore = "slow")]
+fn test_multi_fragments_decompression() {
+    const DICT: &[u8] = include_bytes!("../test-data/multi-fragments-dict.dat");
+    const INPUT: &[u8] = include_bytes!("../test-data/multi-fragments-input.dat");
+
+    let mut buffer = vec![0; 10485760];
+    let dst_buffer_size = buffer.len();
+
+    unsafe {
+        use libzstd_rs_sys::*;
+
+        let zd = ZSTD_createDStream();
+        let ret = ZSTD_initDStream_usingDict(zd, DICT.as_ptr().cast(), DICT.len());
+        assert_eq!(ZSTD_isError(ret), 0);
+
+        let ret = ZSTD_DCtx_setParameter(
+            zd,
+            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            (zstd_sys::ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
+        );
+        assert_eq!(ZSTD_isError(ret), 0);
+
+        let mut decompression_result = 1;
+
+        let mut in_buf = ZSTD_inBuffer {
+            src: INPUT.as_ptr().cast(),
+            size: INPUT.len(),
+            pos: 0,
+        };
+
+        let mut out_buf = ZSTD_outBuffer {
+            dst: buffer.as_mut_ptr().cast(),
+            size: buffer.len(),
+            pos: 0,
+        };
+
+        let total_gen_size = 0;
+
+        while decompression_result != 0 {
+            let (read_csrc_size, random_dst_size) = (512, 512);
+            let dst_buf_size = Ord::min(dst_buffer_size - total_gen_size, random_dst_size);
+
+            in_buf.size = in_buf.pos + read_csrc_size;
+            out_buf.size = out_buf.pos + dst_buf_size;
+
+            decompression_result = ZSTD_decompressStream(zd, &mut out_buf, &mut in_buf);
+
+            assert_eq!(
+                ZSTD_isError(decompression_result),
+                0,
+                "ZSTD_decompressStream failed: {}",
+                std::ffi::CStr::from_ptr(ZSTD_getErrorName(decompression_result)).to_string_lossy()
+            );
+        }
+    }
+}
