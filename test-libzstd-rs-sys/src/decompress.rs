@@ -150,6 +150,20 @@ mod fastest_wasm_zlib {
         let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
         assert_eq!(c, rs);
     }
+
+    #[test]
+    fn zstd_v06_10() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.6.1-10.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_v07_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.7.4-19.zst"
+        ));
+    }
 }
 
 macro_rules! decompress_continue {
