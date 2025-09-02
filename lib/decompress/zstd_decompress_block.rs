@@ -74,7 +74,7 @@ impl ZSTD_DCtx {
 
         seqState_t {
             stateLL: ZSTD_fseState::new(&mut bit_stream, self.LLTptr),
-            stateOffb: ZSTD_fseState::new(&mut bit_stream, self.OFTptr),
+            stateOffb: ZSTD_fseState::newnew(&mut bit_stream, unsafe { &*self.OFTptr }),
             stateML: ZSTD_fseState::new(&mut bit_stream, self.MLTptr),
             DStream: bit_stream,
             prevOffset: self.entropy.rep.map(|v| v as size_t),
@@ -98,6 +98,18 @@ impl ZSTD_fseState {
 
         Self { state, table }
     }
+
+    pub(crate) fn newnew<const N: usize>(
+        bit_dstream: &mut BIT_DStream_t,
+        dt: &SymbolTable<N>,
+    ) -> Self {
+        let table = dt.symbols.as_ptr();
+
+        let state = bit_dstream.read_bits(dt.header.tableLog);
+        bit_dstream.reload();
+
+        Self { state, table }
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -108,7 +120,7 @@ pub struct seq_t {
     pub offset: size_t,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_OffsetInfo {
     pub longOffsetShare: core::ffi::c_uint,
@@ -876,6 +888,40 @@ pub fn ZSTD_buildFSETable<const N: usize>(
     }
 }
 
+fn ZSTD_buildSeqTableNew<const N: usize>(
+    DTableSpace: &mut SymbolTable<N>,
+    DTablePtr: &mut *const SymbolTable<N>,
+    type_0: SymbolEncodingType_e,
+    max: core::ffi::c_uint,
+    maxLog: u32,
+    src: &[u8],
+    baseValue: &'static [u32],
+    nbAdditionalBits: &'static [u8],
+    defaultTable: &'static [ZSTD_seqSymbol],
+    flagRepeatTable: u32,
+    ddictIsCold: core::ffi::c_int,
+    nbSeq: core::ffi::c_int,
+    wksp: &mut Workspace,
+    bmi2: bool,
+) -> size_t {
+    ZSTD_buildSeqTable(
+        DTableSpace,
+        unsafe { core::mem::transmute(DTablePtr) },
+        type_0,
+        max,
+        maxLog,
+        src,
+        baseValue,
+        nbAdditionalBits,
+        defaultTable,
+        flagRepeatTable,
+        ddictIsCold,
+        nbSeq,
+        wksp,
+        bmi2,
+    )
+}
+
 fn ZSTD_buildSeqTable<const N: usize>(
     DTableSpace: &mut SymbolTable<N>,
     DTablePtr: &mut *const ZSTD_seqSymbol,
@@ -1023,7 +1069,7 @@ fn ZSTD_decodeSeqHeaders(
     }
 
     ip += llhSize as usize;
-    let ofhSize = ZSTD_buildSeqTable(
+    let ofhSize = ZSTD_buildSeqTableNew(
         &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
         OFtype,
@@ -2224,35 +2270,30 @@ unsafe fn ZSTD_decompressSequencesLong(
     }
 }
 
-unsafe fn ZSTD_getOffsetInfo(
-    offTable: *const ZSTD_seqSymbol,
-    nbSeq: core::ffi::c_int,
-) -> ZSTD_OffsetInfo {
-    let mut info = {
-        ZSTD_OffsetInfo {
-            longOffsetShare: 0,
-            maxNbAdditionalBits: 0,
+impl<const N: usize> SymbolTable<N> {
+    fn get_offset_info(&self, nbSeq: usize) -> ZSTD_OffsetInfo {
+        let mut info = ZSTD_OffsetInfo::default();
+
+        if nbSeq == 0 {
+            return info;
         }
-    };
-    if nbSeq != 0 {
-        let ptr = offTable as *const core::ffi::c_void;
-        let tableLog = (*(ptr as *const ZSTD_seqSymbol_header).offset(0)).tableLog;
-        let table = offTable.offset(1);
+
+        let tableLog = self.header.tableLog;
+        let table = &self.symbols;
         for u in 0..1 << tableLog {
-            info.maxNbAdditionalBits = if info.maxNbAdditionalBits
-                > (*table.add(u)).nbAdditionalBits as core::ffi::c_uint
-            {
-                info.maxNbAdditionalBits
-            } else {
-                (*table.add(u)).nbAdditionalBits as core::ffi::c_uint
-            };
-            if (*table.add(u)).nbAdditionalBits as core::ffi::c_int > 22 {
-                info.longOffsetShare = (info.longOffsetShare).wrapping_add(1);
+            info.maxNbAdditionalBits = Ord::max(
+                info.maxNbAdditionalBits,
+                u32::from(table[u].nbAdditionalBits),
+            );
+
+            if table[u].nbAdditionalBits > 22 {
+                info.longOffsetShare += 1;
             }
         }
         info.longOffsetShare <<= (OffFSELog as u32).wrapping_sub(tableLog);
+
+        info
     }
-    info
 }
 
 /// @returns The maximum offset we can decode in one read of our bitstream, without
@@ -2333,7 +2374,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         Offset::Regular
     };
     let mut use_prefetch_decoder = dctx.ddictIsCold != 0;
-    let mut nbSeq: core::ffi::c_int = 0;
+    let mut nbSeq = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip);
     if ERR_isError(seqHSize) {
         return seqHSize;
@@ -2351,7 +2392,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     if offset == Offset::Long
         || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
     {
-        let info = ZSTD_getOffsetInfo(dctx.OFTptr, nbSeq);
+        let info = (&*dctx.OFTptr).get_offset_info(nbSeq as usize);
         if offset == Offset::Long && info.maxNbAdditionalBits <= STREAM_ACCUMULATOR_MIN as u32 {
             offset = Offset::Regular;
         }
