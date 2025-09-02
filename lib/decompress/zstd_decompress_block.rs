@@ -67,11 +67,39 @@ pub struct seqState_t<'a> {
     stateML: ZSTD_fseState,
     prevOffset: [size_t; 3],
 }
+
+impl ZSTD_DCtx {
+    fn new_seq_state<'a>(&mut self, mut bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
+        self.fseEntropy = 1;
+
+        seqState_t {
+            stateLL: ZSTD_fseState::new(&mut bit_stream, self.LLTptr),
+            stateOffb: ZSTD_fseState::new(&mut bit_stream, self.OFTptr),
+            stateML: ZSTD_fseState::new(&mut bit_stream, self.MLTptr),
+            DStream: bit_stream,
+            prevOffset: self.entropy.rep.map(|v| v as size_t),
+        }
+    }
+}
+
 #[repr(C)]
 pub struct ZSTD_fseState {
     pub state: size_t,
     pub table: *const ZSTD_seqSymbol,
 }
+
+impl ZSTD_fseState {
+    pub(crate) fn new(bit_dstream: &mut BIT_DStream_t, dt: *const ZSTD_seqSymbol) -> Self {
+        let header = unsafe { dt.cast::<ZSTD_seqSymbol_header>().read() };
+        let table = unsafe { dt.offset(1) };
+
+        let state = bit_dstream.read_bits(header.tableLog);
+        bit_dstream.reload();
+
+        Self { state, table }
+    }
+}
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct seq_t {
@@ -1408,18 +1436,6 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     sequenceLength
 }
 
-unsafe fn ZSTD_initFseState(
-    DStatePtr: &mut ZSTD_fseState,
-    bitD: &mut BIT_DStream_t,
-    dt: *const ZSTD_seqSymbol,
-) {
-    let ptr = dt as *const core::ffi::c_void;
-    let DTableH = ptr as *const ZSTD_seqSymbol_header;
-    DStatePtr.state = bitD.read_bits((*DTableH).tableLog) as size_t;
-    bitD.reload();
-    DStatePtr.table = dt.offset(1);
-}
-
 #[inline(always)]
 fn ZSTD_updateFseStateWithDInfo(
     DStatePtr: &mut ZSTD_fseState,
@@ -1616,29 +1632,8 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
-        let mut seqState = seqState_t {
-            DStream,
-            stateLL: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateOffb: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateML: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            prevOffset: [0; 3],
-        };
-        dctx.fseEntropy = 1;
+        let mut seqState = dctx.new_seq_state(DStream);
 
-        seqState.prevOffset = dctx.entropy.rep.map(|v| v as size_t);
-
-        ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
-        ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
-        ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
         let mut sequence = {
             seq_t {
                 litLength: 0,
@@ -1806,28 +1801,7 @@ unsafe fn ZSTD_decompressSequences_body(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
-        let mut seqState = seqState_t {
-            DStream,
-            stateLL: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateOffb: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateML: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            prevOffset: [0; 3],
-        };
-        dctx.fseEntropy = 1;
-        seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
-
-        ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
-        ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
-        ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
+        let mut seqState = dctx.new_seq_state(DStream);
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         if !cfg!(miri) {
@@ -1965,28 +1939,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
-        let mut seqState = seqState_t {
-            DStream,
-            stateLL: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateOffb: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            stateML: ZSTD_fseState {
-                state: 0,
-                table: core::ptr::null::<ZSTD_seqSymbol>(),
-            },
-            prevOffset: [0; 3],
-        };
-        dctx.fseEntropy = 1;
-        seqState.prevOffset = dctx.entropy.rep.map(|v| v as usize);
-
-        ZSTD_initFseState(&mut seqState.stateLL, &mut seqState.DStream, dctx.LLTptr);
-        ZSTD_initFseState(&mut seqState.stateOffb, &mut seqState.DStream, dctx.OFTptr);
-        ZSTD_initFseState(&mut seqState.stateML, &mut seqState.DStream, dctx.MLTptr);
+        let mut seqState = dctx.new_seq_state(DStream);
 
         let mut prefetchPos = op.offset_from(prefixStart) as usize;
         let mut sequences: [seq_t; 8] = [seq_t::default(); 8];
