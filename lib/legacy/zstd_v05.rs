@@ -83,15 +83,6 @@ struct FSEv05_DState_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct BITv05_DStream_t<'a> {
-    bitContainer: size_t,
-    bitsConsumed: core::ffi::c_uint,
-    ptr: *const u8,
-    start: *const u8,
-    _marker: PhantomData<&'a [u8]>,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 struct FSEv05_decode_t {
     newState: core::ffi::c_ushort,
     symbol: core::ffi::c_uchar,
@@ -213,8 +204,18 @@ enum StreamStatus {
 }
 
 #[inline]
-fn BITv05_highbit32(val: u32) -> core::ffi::c_uint {
-    (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
+fn BITv05_highbit32(val: u32) -> u32 {
+    val.leading_zeros() ^ 31
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct BITv05_DStream_t<'a> {
+    bitContainer: usize,
+    bitsConsumed: u32,
+    ptr: *const u8,
+    start: *const u8,
+    _marker: PhantomData<&'a [u8]>,
 }
 
 impl<'a> BITv05_DStream_t<'a> {
@@ -224,21 +225,18 @@ impl<'a> BITv05_DStream_t<'a> {
             return Err(Error::srcSize_wrong);
         }
 
-        let srcBuffer = src.as_ptr();
-        let srcSize = src.len();
-
-        if srcSize >= ::core::mem::size_of::<size_t>() {
+        if src.len() >= size_of::<usize>() {
             // normal case
             let mut bitD = BITv05_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: unsafe { srcBuffer.add(srcSize).sub(::core::mem::size_of::<size_t>()) },
-                start: srcBuffer,
+                ptr: unsafe { src.as_ptr().add(src.len()).sub(size_of::<usize>()) },
+                start: src.as_ptr(),
                 _marker: PhantomData,
             };
 
-            bitD.bitContainer = unsafe { MEM_readLEST(bitD.ptr.cast()) };
-            let contain32 = unsafe { *srcBuffer.add(srcSize.wrapping_sub(1)) } as u32;
+            bitD.bitContainer = usize::from_le_bytes(*src.last_chunk().unwrap());
+            let contain32 = src[src.len() - 1] as u32;
             if contain32 == 0 {
                 return Err(Error::GENERIC); // endMark not present
             }
@@ -249,68 +247,59 @@ impl<'a> BITv05_DStream_t<'a> {
             let mut bitD = BITv05_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: srcBuffer,
-                start: srcBuffer,
+                ptr: src.as_ptr(),
+                start: src.as_ptr(),
                 _marker: PhantomData,
             };
 
-            bitD.start = srcBuffer;
-            bitD.ptr = bitD.start;
-            bitD.bitContainer = unsafe { *bitD.start as size_t };
-
-            if srcSize == 7 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(6) } as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 16);
+            if src.len() == 7 {
+                bitD.bitContainer += usize::from(src[6]) << (usize::BITS - 16);
             }
 
-            if srcSize >= 6 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(5) } as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 24);
+            if src.len() >= 6 {
+                bitD.bitContainer += usize::from(src[5]) << (usize::BITS - 24);
             }
 
-            if srcSize >= 5 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(4) } as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 32);
+            if src.len() >= 5 {
+                bitD.bitContainer += usize::from(src[4]) << (usize::BITS - 32);
             }
 
-            if srcSize >= 4 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(3) } as size_t) << 24;
+            if src.len() >= 4 {
+                bitD.bitContainer += usize::from(src[3]) << 24;
             }
 
-            if srcSize >= 3 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(2) } as size_t) << 16;
+            if src.len() >= 3 {
+                bitD.bitContainer += usize::from(src[2]) << 16;
             }
 
-            if srcSize >= 2 {
-                bitD.bitContainer += (unsafe { *bitD.start.add(1) } as size_t) << 8;
+            if src.len() >= 2 {
+                bitD.bitContainer += usize::from(src[1]) << 8;
             }
 
-            let contain32 = unsafe { *srcBuffer.add(srcSize - 1) } as u32;
+            bitD.bitContainer += usize::from(src[0]);
+
+            let contain32 = src[src.len() - 1] as u32;
             if contain32 == 0 {
                 // endMark not present
                 return Err(Error::GENERIC);
             }
-            bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv05_highbit32(contain32);
-            bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
+            bitD.bitsConsumed = 8 - BITv05_highbit32(contain32);
+            bitD.bitsConsumed += (size_of::<usize>() - src.len()) as u32 * 8;
 
             Ok(bitD)
         }
     }
 
     #[inline]
-    fn look_bits(&self, nbBits: u32) -> size_t {
-        let bitMask = (::core::mem::size_of::<size_t>())
-            .wrapping_mul(8)
-            .wrapping_sub(1) as u32;
+    fn look_bits(&self, nbBits: u32) -> usize {
+        let bitMask = usize::BITS - 1;
         self.bitContainer << (self.bitsConsumed & bitMask)
             >> 1
             >> (bitMask.wrapping_sub(nbBits) & bitMask)
     }
     #[inline]
-    fn look_bits_fast(&self, nbBits: u32) -> size_t {
-        let bitMask = (::core::mem::size_of::<size_t>())
-            .wrapping_mul(8)
-            .wrapping_sub(1) as u32;
+    fn look_bits_fast(&self, nbBits: u32) -> usize {
+        let bitMask = usize::BITS - 1;
         self.bitContainer << (self.bitsConsumed & bitMask)
             >> (bitMask.wrapping_add(1).wrapping_sub(nbBits) & bitMask)
     }
@@ -319,30 +308,32 @@ impl<'a> BITv05_DStream_t<'a> {
         self.bitsConsumed += nbBits;
     }
     #[inline]
-    fn read_bits(&mut self, nbBits: core::ffi::c_uint) -> size_t {
+    fn read_bits(&mut self, nbBits: u32) -> usize {
         let value = self.look_bits(nbBits);
         self.skip_bits(nbBits);
         value
     }
     #[inline]
-    fn read_bits_fast(&mut self, nbBits: core::ffi::c_uint) -> size_t {
+    fn read_bits_fast(&mut self, nbBits: u32) -> usize {
         let value = self.look_bits_fast(nbBits);
         self.skip_bits(nbBits);
         value
     }
     #[inline]
     fn reload(&mut self) -> StreamStatus {
-        if self.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+        if self.bitsConsumed > usize::BITS {
+            // should never happen
             return StreamStatus::Overflow;
         }
-        if self.ptr >= unsafe { self.start.add(::core::mem::size_of::<size_t>()) } {
+
+        if self.ptr >= unsafe { self.start.add(size_of::<usize>()) } {
             self.ptr = unsafe { self.ptr.sub((self.bitsConsumed >> 3) as usize) };
             self.bitsConsumed &= 7;
             self.bitContainer = unsafe { MEM_readLEST(self.ptr.cast()) };
             return StreamStatus::Unfinished;
         }
         if self.ptr == self.start {
-            if (self.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+            if self.bitsConsumed < usize::BITS {
                 return StreamStatus::EndOfBuffer;
             }
             return StreamStatus::Completed;
@@ -360,8 +351,7 @@ impl<'a> BITv05_DStream_t<'a> {
     }
     #[inline]
     fn is_empty(&self) -> bool {
-        self.ptr == self.start
-            && self.bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8)
+        self.ptr == self.start && self.bitsConsumed == usize::BITS
     }
 }
 
@@ -598,8 +588,7 @@ unsafe fn FSEv05_readNCount(
             ip = ip.offset((bitCount >> 3) as isize);
             bitCount &= 7;
         } else {
-            bitCount -=
-                (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
+            bitCount -= (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
             ip = iend.sub(4);
         }
         bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> (bitCount & 31);
@@ -1485,14 +1474,12 @@ unsafe fn HUFv05_decodeLastSymbolX4(
 ) -> u32 {
     let val = DStream.look_bits_fast(dtLog);
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
-    if (*dt.add(val)).length as core::ffi::c_int == 1 {
+    if (*dt.add(val)).length == 1 {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-    } else if (DStream.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-    {
+    } else if DStream.bitsConsumed < usize::BITS {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-        if DStream.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-            DStream.bitsConsumed =
-                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
+        if DStream.bitsConsumed > usize::BITS {
+            DStream.bitsConsumed = usize::BITS;
         }
     }
     1
@@ -2163,8 +2150,7 @@ unsafe fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> size_t {
     (*dctx).base = core::ptr::null();
     (*dctx).vBase = core::ptr::null();
     (*dctx).dictEnd = core::ptr::null();
-    *((*dctx).hufTableX4).as_mut_ptr() =
-        ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
+    *((*dctx).hufTableX4).as_mut_ptr() = ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
     (*dctx).flagStaticTables = 0;
     0
 }
@@ -2539,16 +2525,14 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             return Error::srcSize_wrong.to_error_code();
         }
         dumpsLength = *ip.add(2) as size_t;
-        dumpsLength =
-            dumpsLength.wrapping_add(((*ip.add(1) as core::ffi::c_int) << 8) as size_t);
+        dumpsLength = dumpsLength.wrapping_add(((*ip.add(1) as core::ffi::c_int) << 8) as size_t);
         ip = ip.add(3);
     } else {
         if ip.add(2) > iend {
             return Error::srcSize_wrong.to_error_code();
         }
         dumpsLength = *ip.add(1) as size_t;
-        dumpsLength =
-            dumpsLength.wrapping_add(((*ip as core::ffi::c_int & 1) << 8) as size_t);
+        dumpsLength = dumpsLength.wrapping_add(((*ip as core::ffi::c_int & 1) << 8) as size_t);
         ip = ip.add(2);
     }
     *dumpsPtr = ip;
