@@ -2010,7 +2010,8 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         return Error::dstSize_tooSmall.to_error_code();
                     }
                     ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
-                    sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength += 1;
+                    sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize].litLength -=
+                        leftoverLit;
                     op = op.add(leftoverLit);
                 }
                 litPtr = (dctx.litExtraBuffer).as_mut_ptr();
