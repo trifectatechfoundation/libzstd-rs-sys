@@ -553,109 +553,122 @@ const fn sequence_symbol(
     }
 }
 
+const fn sequence_header(
+    fastMode: u32,
+    tableLog: u32,
+) -> ZSTD_seqSymbol_header {
+    ZSTD_seqSymbol_header { fastMode, tableLog }
+}
+
 /// Default FSE distribution table for Literal Lengths.
 #[rustfmt::skip]
-static LL_defaultDTable: [ZSTD_seqSymbol; (1 << LL_DEFAULTNORMLOG) + 1] = [
+static LL_defaultDTable: SymbolTable< { 1 << LL_DEFAULTNORMLOG }> = SymbolTable {
     /* header : fastMode, tableLog */
-    sequence_symbol(1,  1,  1, LL_DEFAULTNORMLOG),
+    header: sequence_header(0x00010101, LL_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
-    sequence_symbol( 0,  0,  4,    0), sequence_symbol(16,  0,  4,    0),
-    sequence_symbol(32,  0,  5,    1), sequence_symbol( 0,  0,  5,    3),
-    sequence_symbol( 0,  0,  5,    4), sequence_symbol( 0,  0,  5,    6),
-    sequence_symbol( 0,  0,  5,    7), sequence_symbol( 0,  0,  5,    9),
-    sequence_symbol( 0,  0,  5,   10), sequence_symbol( 0,  0,  5,   12),
-    sequence_symbol( 0,  0,  6,   14), sequence_symbol( 0,  1,  5,   16),
-    sequence_symbol( 0,  1,  5,   20), sequence_symbol( 0,  1,  5,   22),
-    sequence_symbol( 0,  2,  5,   28), sequence_symbol( 0,  3,  5,   32),
-    sequence_symbol( 0,  4,  5,   48), sequence_symbol(32,  6,  5,   64),
-    sequence_symbol( 0,  7,  5,  128), sequence_symbol( 0,  8,  6,  256),
-    sequence_symbol( 0, 10,  6, 1024), sequence_symbol( 0, 12,  6, 4096),
-    sequence_symbol(32,  0,  4,    0), sequence_symbol( 0,  0,  4,    1),
-    sequence_symbol( 0,  0,  5,    2), sequence_symbol(32,  0,  5,    4),
-    sequence_symbol( 0,  0,  5,    5), sequence_symbol(32,  0,  5,    7),
-    sequence_symbol( 0,  0,  5,    8), sequence_symbol(32,  0,  5,   10),
-    sequence_symbol( 0,  0,  5,   11), sequence_symbol( 0,  0,  6,   13),
-    sequence_symbol(32,  1,  5,   16), sequence_symbol( 0,  1,  5,   18),
-    sequence_symbol(32,  1,  5,   22), sequence_symbol( 0,  2,  5,   24),
-    sequence_symbol(32,  3,  5,   32), sequence_symbol( 0,  3,  5,   40),
-    sequence_symbol( 0,  6,  4,   64), sequence_symbol(16,  6,  4,   64),
-    sequence_symbol(32,  7,  5,  128), sequence_symbol( 0,  9,  6,  512),
-    sequence_symbol( 0, 11,  6, 2048), sequence_symbol(48,  0,  4,    0),
-    sequence_symbol(16,  0,  4,    1), sequence_symbol(32,  0,  5,    2),
-    sequence_symbol(32,  0,  5,    3), sequence_symbol(32,  0,  5,    5),
-    sequence_symbol(32,  0,  5,    6), sequence_symbol(32,  0,  5,    8),
-    sequence_symbol(32,  0,  5,    9), sequence_symbol(32,  0,  5,   11),
-    sequence_symbol(32,  0,  5,   12), sequence_symbol( 0,  0,  6,   15),
-    sequence_symbol(32,  1,  5,   18), sequence_symbol(32,  1,  5,   20),
-    sequence_symbol(32,  2,  5,   24), sequence_symbol(32,  2,  5,   28),
-    sequence_symbol(32,  3,  5,   40), sequence_symbol(32,  4,  5,   48),
-    sequence_symbol( 0, 16,  6,65536), sequence_symbol( 0, 15,  6,32768),
-    sequence_symbol( 0, 14,  6,16384), sequence_symbol( 0, 13,  6, 8192),
-];
+    symbols: [
+        sequence_symbol( 0,  0,  4,    0), sequence_symbol(16,  0,  4,    0),
+        sequence_symbol(32,  0,  5,    1), sequence_symbol( 0,  0,  5,    3),
+        sequence_symbol( 0,  0,  5,    4), sequence_symbol( 0,  0,  5,    6),
+        sequence_symbol( 0,  0,  5,    7), sequence_symbol( 0,  0,  5,    9),
+        sequence_symbol( 0,  0,  5,   10), sequence_symbol( 0,  0,  5,   12),
+        sequence_symbol( 0,  0,  6,   14), sequence_symbol( 0,  1,  5,   16),
+        sequence_symbol( 0,  1,  5,   20), sequence_symbol( 0,  1,  5,   22),
+        sequence_symbol( 0,  2,  5,   28), sequence_symbol( 0,  3,  5,   32),
+        sequence_symbol( 0,  4,  5,   48), sequence_symbol(32,  6,  5,   64),
+        sequence_symbol( 0,  7,  5,  128), sequence_symbol( 0,  8,  6,  256),
+        sequence_symbol( 0, 10,  6, 1024), sequence_symbol( 0, 12,  6, 4096),
+        sequence_symbol(32,  0,  4,    0), sequence_symbol( 0,  0,  4,    1),
+        sequence_symbol( 0,  0,  5,    2), sequence_symbol(32,  0,  5,    4),
+        sequence_symbol( 0,  0,  5,    5), sequence_symbol(32,  0,  5,    7),
+        sequence_symbol( 0,  0,  5,    8), sequence_symbol(32,  0,  5,   10),
+        sequence_symbol( 0,  0,  5,   11), sequence_symbol( 0,  0,  6,   13),
+        sequence_symbol(32,  1,  5,   16), sequence_symbol( 0,  1,  5,   18),
+        sequence_symbol(32,  1,  5,   22), sequence_symbol( 0,  2,  5,   24),
+        sequence_symbol(32,  3,  5,   32), sequence_symbol( 0,  3,  5,   40),
+        sequence_symbol( 0,  6,  4,   64), sequence_symbol(16,  6,  4,   64),
+        sequence_symbol(32,  7,  5,  128), sequence_symbol( 0,  9,  6,  512),
+        sequence_symbol( 0, 11,  6, 2048), sequence_symbol(48,  0,  4,    0),
+        sequence_symbol(16,  0,  4,    1), sequence_symbol(32,  0,  5,    2),
+        sequence_symbol(32,  0,  5,    3), sequence_symbol(32,  0,  5,    5),
+        sequence_symbol(32,  0,  5,    6), sequence_symbol(32,  0,  5,    8),
+        sequence_symbol(32,  0,  5,    9), sequence_symbol(32,  0,  5,   11),
+        sequence_symbol(32,  0,  5,   12), sequence_symbol( 0,  0,  6,   15),
+        sequence_symbol(32,  1,  5,   18), sequence_symbol(32,  1,  5,   20),
+        sequence_symbol(32,  2,  5,   24), sequence_symbol(32,  2,  5,   28),
+        sequence_symbol(32,  3,  5,   40), sequence_symbol(32,  4,  5,   48),
+        sequence_symbol( 0, 16,  6,65536), sequence_symbol( 0, 15,  6,32768),
+        sequence_symbol( 0, 14,  6,16384), sequence_symbol( 0, 13,  6, 8192),
+    ]
+};
 
 /// Default FSE distribution table for Offset Codes.
 #[rustfmt::skip]
-static OF_defaultDTable: [ZSTD_seqSymbol; (1 << OF_DEFAULTNORMLOG) + 1] = [
+static OF_defaultDTable: SymbolTable<{ 1 << OF_DEFAULTNORMLOG }> = SymbolTable { 
     /* header : fastMode, tableLog */
-    sequence_symbol(1,  1,  1, OF_DEFAULTNORMLOG),
+    header: sequence_header(0x00010101, OF_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
-    sequence_symbol( 0,  0,  5,    0),     sequence_symbol( 0,  6,  4,   61),
-    sequence_symbol( 0,  9,  5,  509),     sequence_symbol( 0, 15,  5,32765),
-    sequence_symbol( 0, 21,  5,2097149),   sequence_symbol( 0,  3,  5,    5),
-    sequence_symbol( 0,  7,  4,  125),     sequence_symbol( 0, 12,  5, 4093),
-    sequence_symbol( 0, 18,  5,262141),    sequence_symbol( 0, 23,  5,8388605),
-    sequence_symbol( 0,  5,  5,   29),     sequence_symbol( 0,  8,  4,  253),
-    sequence_symbol( 0, 14,  5,16381),     sequence_symbol( 0, 20,  5,1048573),
-    sequence_symbol( 0,  2,  5,    1),     sequence_symbol(16,  7,  4,  125),
-    sequence_symbol( 0, 11,  5, 2045),     sequence_symbol( 0, 17,  5,131069),
-    sequence_symbol( 0, 22,  5,4194301),   sequence_symbol( 0,  4,  5,   13),
-    sequence_symbol(16,  8,  4,  253),     sequence_symbol( 0, 13,  5, 8189),
-    sequence_symbol( 0, 19,  5,524285),    sequence_symbol( 0,  1,  5,    1),
-    sequence_symbol(16,  6,  4,   61),     sequence_symbol( 0, 10,  5, 1021),
-    sequence_symbol( 0, 16,  5,65533),     sequence_symbol( 0, 28,  5,268435453),
-    sequence_symbol( 0, 27,  5,134217725), sequence_symbol( 0, 26,  5,67108861),
-    sequence_symbol( 0, 25,  5,33554429),  sequence_symbol( 0, 24,  5,16777213),
-];
+    symbols: [
+        sequence_symbol( 0,  0,  5,    0),     sequence_symbol( 0,  6,  4,   61),
+        sequence_symbol( 0,  9,  5,  509),     sequence_symbol( 0, 15,  5,32765),
+        sequence_symbol( 0, 21,  5,2097149),   sequence_symbol( 0,  3,  5,    5),
+        sequence_symbol( 0,  7,  4,  125),     sequence_symbol( 0, 12,  5, 4093),
+        sequence_symbol( 0, 18,  5,262141),    sequence_symbol( 0, 23,  5,8388605),
+        sequence_symbol( 0,  5,  5,   29),     sequence_symbol( 0,  8,  4,  253),
+        sequence_symbol( 0, 14,  5,16381),     sequence_symbol( 0, 20,  5,1048573),
+        sequence_symbol( 0,  2,  5,    1),     sequence_symbol(16,  7,  4,  125),
+        sequence_symbol( 0, 11,  5, 2045),     sequence_symbol( 0, 17,  5,131069),
+        sequence_symbol( 0, 22,  5,4194301),   sequence_symbol( 0,  4,  5,   13),
+        sequence_symbol(16,  8,  4,  253),     sequence_symbol( 0, 13,  5, 8189),
+        sequence_symbol( 0, 19,  5,524285),    sequence_symbol( 0,  1,  5,    1),
+        sequence_symbol(16,  6,  4,   61),     sequence_symbol( 0, 10,  5, 1021),
+        sequence_symbol( 0, 16,  5,65533),     sequence_symbol( 0, 28,  5,268435453),
+        sequence_symbol( 0, 27,  5,134217725), sequence_symbol( 0, 26,  5,67108861),
+        sequence_symbol( 0, 25,  5,33554429),  sequence_symbol( 0, 24,  5,16777213),
+    ]
+};
 
 /// Default FSE distribution table for Match Lengths.
 #[rustfmt::skip]
-static ML_defaultDTable: [ZSTD_seqSymbol; (1 << ML_DEFAULTNORMLOG) + 1] = [
+static ML_defaultDTable: SymbolTable<{ 1 << ML_DEFAULTNORMLOG }> = SymbolTable {
     /* header : fastMode, tableLog */
-    sequence_symbol(1,  1,  1, ML_DEFAULTNORMLOG),
+    header: sequence_header(0x00010101, ML_DEFAULTNORMLOG),
     /* nextState, nbAddBits, nbBits, baseVal */
-    sequence_symbol( 0,  0,  6,    3),  sequence_symbol( 0,  0,  4,    4),
-    sequence_symbol(32,  0,  5,    5),  sequence_symbol( 0,  0,  5,    6),
-    sequence_symbol( 0,  0,  5,    8),  sequence_symbol( 0,  0,  5,    9),
-    sequence_symbol( 0,  0,  5,   11),  sequence_symbol( 0,  0,  6,   13),
-    sequence_symbol( 0,  0,  6,   16),  sequence_symbol( 0,  0,  6,   19),
-    sequence_symbol( 0,  0,  6,   22),  sequence_symbol( 0,  0,  6,   25),
-    sequence_symbol( 0,  0,  6,   28),  sequence_symbol( 0,  0,  6,   31),
-    sequence_symbol( 0,  0,  6,   34),  sequence_symbol( 0,  1,  6,   37),
-    sequence_symbol( 0,  1,  6,   41),  sequence_symbol( 0,  2,  6,   47),
-    sequence_symbol( 0,  3,  6,   59),  sequence_symbol( 0,  4,  6,   83),
-    sequence_symbol( 0,  7,  6,  131),  sequence_symbol( 0,  9,  6,  515),
-    sequence_symbol(16,  0,  4,    4),  sequence_symbol( 0,  0,  4,    5),
-    sequence_symbol(32,  0,  5,    6),  sequence_symbol( 0,  0,  5,    7),
-    sequence_symbol(32,  0,  5,    9),  sequence_symbol( 0,  0,  5,   10),
-    sequence_symbol( 0,  0,  6,   12),  sequence_symbol( 0,  0,  6,   15),
-    sequence_symbol( 0,  0,  6,   18),  sequence_symbol( 0,  0,  6,   21),
-    sequence_symbol( 0,  0,  6,   24),  sequence_symbol( 0,  0,  6,   27),
-    sequence_symbol( 0,  0,  6,   30),  sequence_symbol( 0,  0,  6,   33),
-    sequence_symbol( 0,  1,  6,   35),  sequence_symbol( 0,  1,  6,   39),
-    sequence_symbol( 0,  2,  6,   43),  sequence_symbol( 0,  3,  6,   51),
-    sequence_symbol( 0,  4,  6,   67),  sequence_symbol( 0,  5,  6,   99),
-    sequence_symbol( 0,  8,  6,  259),  sequence_symbol(32,  0,  4,    4),
-    sequence_symbol(48,  0,  4,    4),  sequence_symbol(16,  0,  4,    5),
-    sequence_symbol(32,  0,  5,    7),  sequence_symbol(32,  0,  5,    8),
-    sequence_symbol(32,  0,  5,   10),  sequence_symbol(32,  0,  5,   11),
-    sequence_symbol( 0,  0,  6,   14),  sequence_symbol( 0,  0,  6,   17),
-    sequence_symbol( 0,  0,  6,   20),  sequence_symbol( 0,  0,  6,   23),
-    sequence_symbol( 0,  0,  6,   26),  sequence_symbol( 0,  0,  6,   29),
-    sequence_symbol( 0,  0,  6,   32),  sequence_symbol( 0, 16,  6,65539),
-    sequence_symbol( 0, 15,  6,32771),  sequence_symbol( 0, 14,  6,16387),
-    sequence_symbol( 0, 13,  6, 8195),  sequence_symbol( 0, 12,  6, 4099),
-    sequence_symbol( 0, 11,  6, 2051),  sequence_symbol( 0, 10,  6, 1027),
-];
+    symbols: [
+        sequence_symbol( 0,  0,  6,    3),  sequence_symbol( 0,  0,  4,    4),
+        sequence_symbol(32,  0,  5,    5),  sequence_symbol( 0,  0,  5,    6),
+        sequence_symbol( 0,  0,  5,    8),  sequence_symbol( 0,  0,  5,    9),
+        sequence_symbol( 0,  0,  5,   11),  sequence_symbol( 0,  0,  6,   13),
+        sequence_symbol( 0,  0,  6,   16),  sequence_symbol( 0,  0,  6,   19),
+        sequence_symbol( 0,  0,  6,   22),  sequence_symbol( 0,  0,  6,   25),
+        sequence_symbol( 0,  0,  6,   28),  sequence_symbol( 0,  0,  6,   31),
+        sequence_symbol( 0,  0,  6,   34),  sequence_symbol( 0,  1,  6,   37),
+        sequence_symbol( 0,  1,  6,   41),  sequence_symbol( 0,  2,  6,   47),
+        sequence_symbol( 0,  3,  6,   59),  sequence_symbol( 0,  4,  6,   83),
+        sequence_symbol( 0,  7,  6,  131),  sequence_symbol( 0,  9,  6,  515),
+        sequence_symbol(16,  0,  4,    4),  sequence_symbol( 0,  0,  4,    5),
+        sequence_symbol(32,  0,  5,    6),  sequence_symbol( 0,  0,  5,    7),
+        sequence_symbol(32,  0,  5,    9),  sequence_symbol( 0,  0,  5,   10),
+        sequence_symbol( 0,  0,  6,   12),  sequence_symbol( 0,  0,  6,   15),
+        sequence_symbol( 0,  0,  6,   18),  sequence_symbol( 0,  0,  6,   21),
+        sequence_symbol( 0,  0,  6,   24),  sequence_symbol( 0,  0,  6,   27),
+        sequence_symbol( 0,  0,  6,   30),  sequence_symbol( 0,  0,  6,   33),
+        sequence_symbol( 0,  1,  6,   35),  sequence_symbol( 0,  1,  6,   39),
+        sequence_symbol( 0,  2,  6,   43),  sequence_symbol( 0,  3,  6,   51),
+        sequence_symbol( 0,  4,  6,   67),  sequence_symbol( 0,  5,  6,   99),
+        sequence_symbol( 0,  8,  6,  259),  sequence_symbol(32,  0,  4,    4),
+        sequence_symbol(48,  0,  4,    4),  sequence_symbol(16,  0,  4,    5),
+        sequence_symbol(32,  0,  5,    7),  sequence_symbol(32,  0,  5,    8),
+        sequence_symbol(32,  0,  5,   10),  sequence_symbol(32,  0,  5,   11),
+        sequence_symbol( 0,  0,  6,   14),  sequence_symbol( 0,  0,  6,   17),
+        sequence_symbol( 0,  0,  6,   20),  sequence_symbol( 0,  0,  6,   23),
+        sequence_symbol( 0,  0,  6,   26),  sequence_symbol( 0,  0,  6,   29),
+        sequence_symbol( 0,  0,  6,   32),  sequence_symbol( 0, 16,  6,65539),
+        sequence_symbol( 0, 15,  6,32771),  sequence_symbol( 0, 14,  6,16387),
+        sequence_symbol( 0, 13,  6, 8195),  sequence_symbol( 0, 12,  6, 4099),
+        sequence_symbol( 0, 11,  6, 2051),  sequence_symbol( 0, 10,  6, 1027),
+    ]
+};
 
 fn ZSTD_buildSeqTable_rle<const N: usize>(dt: &mut SymbolTable<N>, baseValue: u32, nbAddBits: u8) {
     dt.header = ZSTD_seqSymbol_header {
@@ -970,7 +983,7 @@ fn ZSTD_decodeSeqHeaders(
         &src[ip..],
         &LL_base,
         &LL_bits,
-        &LL_defaultDTable,
+        LL_defaultDTable.as_slice(),
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,
@@ -991,7 +1004,7 @@ fn ZSTD_decodeSeqHeaders(
         &src[ip..],
         &OF_base,
         &OF_bits,
-        &OF_defaultDTable,
+        OF_defaultDTable.as_slice(),
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,
@@ -1012,7 +1025,7 @@ fn ZSTD_decodeSeqHeaders(
         &src[ip..],
         &ML_base,
         &ML_bits,
-        &ML_defaultDTable,
+        ML_defaultDTable.as_slice(),
         dctx.fseEntropy,
         dctx.ddictIsCold,
         nbSeq,

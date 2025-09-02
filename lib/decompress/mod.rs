@@ -74,6 +74,11 @@ impl<const N: usize> SymbolTable<N> {
     fn as_ptr(&self) -> *const ZSTD_seqSymbol {
         self as *const Self as *const ZSTD_seqSymbol
     }
+
+    // NOTE: includes the header
+    fn as_slice(&self) -> &[ZSTD_seqSymbol] {
+        unsafe { core::slice::from_raw_parts(self as *const Self as *const ZSTD_seqSymbol, N + 1) }
+    }
 }
 
 pub type ZSTD_dStage = core::ffi::c_uint;
