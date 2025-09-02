@@ -327,6 +327,7 @@ mod tests {
     }
 
     quickcheck! {
+        #[cfg(not(miri))]
         fn prop_xxh64_state_matches_chunked(input: Vec<Vec<u8>>, seed: u64) -> bool {
             let mut expected = xxhash_rust::xxh64::Xxh64::new( seed);
             let mut actual = {
