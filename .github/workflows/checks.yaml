@@ -70,11 +70,11 @@ jobs:
             codecov: true
 
           - target: "x86_64-pc-windows-gnu"
-            rust: stable 
+            rust: stable
             os: windows-2022
 
           - target: "aarch64-pc-windows-msvc"
-            rust: stable 
+            rust: stable
             os: windows-11-arm
     steps:
       - name: Checkout sources
@@ -209,3 +209,40 @@ jobs:
           RUSTFLAGS: "-Awarnings"
         run: |
           cargo +nightly miri nextest run -j4 -p libzstd-rs-sys
+
+  zstreamtest:
+    name: "zstreamtest"
+    runs-on: ubuntu-latest
+    env:
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+          submodules: true
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: nightly
+          targets: x86_64-unknown-linux-gnu
+
+      - name: build staticlib
+        run: cargo build --features=export-symbols --release
+
+      - name: show the symbols
+        run: nm -g --defined-only target/release/liblibzstd_rs_sys.a | grep "T ZSTD_"
+
+      - name: build binary with gcc
+        run: |
+          gcc \
+            -o zstreamtest \
+            -g \
+            tests/zstreamtest.c \
+            programs/timefn.c tests/external_matchfinder.c tests/seqgen.c programs/datagen.c lib/common/xxhash.c lib/common/error_private.c \
+            target/release/liblibzstd_rs_sys.a \
+            -Itests/ -Iprograms/ -Ilib/ -Ilib/common -Ilib/compress
+
+      - name: run test
+        run: ./zstreamtest -T60s
