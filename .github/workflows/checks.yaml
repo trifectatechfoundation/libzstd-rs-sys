@@ -112,7 +112,7 @@ jobs:
         if: ${{ (matrix.codecov || false) == false }}
         run: cargo nextest run --target ${{matrix.target}} ${{ matrix.packages || '--workspace' }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         if: matrix.codecov
         with:
           files: |
