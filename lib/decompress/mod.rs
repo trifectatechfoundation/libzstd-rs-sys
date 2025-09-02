@@ -227,7 +227,7 @@ pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[repr(C)]
 pub struct ZSTD_DCtx_s {
     LLTptr: *const SymbolTable<512>,
-    MLTptr: *const ZSTD_seqSymbol,
+    MLTptr: *const SymbolTable<512>,
     OFTptr: *const SymbolTable<256>,
     HUFptr: *const DTable,
     entropy: ZSTD_entropyDTables_t,

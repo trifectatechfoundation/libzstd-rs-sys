@@ -2269,7 +2269,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
         ::core::mem::size_of::<[u32; 3]>() as libc::size_t,
     );
     (*dctx).LLTptr = &raw const (*dctx).entropy.LLTable;
-    (*dctx).MLTptr = ((*dctx).entropy.MLTable).as_mut_ptr();
+    (*dctx).MLTptr = &raw const (*dctx).entropy.MLTable;
     (*dctx).OFTptr = &raw const (*dctx).entropy.OFTable;
     (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
     0
