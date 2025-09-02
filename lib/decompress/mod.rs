@@ -224,7 +224,7 @@ impl Workspace {
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[repr(C)]
 pub struct ZSTD_DCtx_s {
-    LLTptr: *const ZSTD_seqSymbol,
+    LLTptr: *const SymbolTable<512>,
     MLTptr: *const ZSTD_seqSymbol,
     OFTptr: *const SymbolTable<256>,
     HUFptr: *const DTable,
