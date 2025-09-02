@@ -1,4 +1,4 @@
-use core::ptr;
+use core::ptr::{self, NonNull};
 
 use libc::{calloc, free, malloc, size_t};
 
@@ -2243,9 +2243,10 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
         repStartValue.as_ptr() as *const core::ffi::c_void,
         ::core::mem::size_of::<[u32; 3]>() as libc::size_t,
     );
-    (*dctx).LLTptr = &raw const (*dctx).entropy.LLTable;
-    (*dctx).MLTptr = &raw const (*dctx).entropy.MLTable;
-    (*dctx).OFTptr = &raw const (*dctx).entropy.OFTable;
+    (*dctx).LLTptr = NonNull::new((&raw const (*dctx).entropy.LLTable).cast_mut());
+    (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
+    (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
+
     (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
     0
 }
