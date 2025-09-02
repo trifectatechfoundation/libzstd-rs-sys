@@ -30,11 +30,11 @@ macro_rules! decompress_stream {
                 pos: 0,
             };
 
-            let size =
+            let mut size =
                 ZSTD_getFrameContentSize($compressed.as_ptr() as *const c_void, $compressed.len());
 
             if size == ZSTD_CONTENTSIZE_UNKNOWN as _ {
-                panic!("ZSTD_CONTENTSIZE_UNKNOWN")
+                size = 16_000; // use default size of 16kb
             }
 
             if size == ZSTD_CONTENTSIZE_ERROR as _ {
@@ -47,6 +47,7 @@ macro_rules! decompress_stream {
                 size: output_buf.len(),
                 pos: 0,
             };
+            let mut size = 0; // recount size in case default size was used
 
             loop {
                 let remaining = ZSTD_decompressStream(dctx, &mut output, &mut input);
@@ -59,6 +60,7 @@ macro_rules! decompress_stream {
                 }
 
                 if output.pos > 0 {
+                    size += output.pos;
                     // print!("{}", String::from_utf8_lossy(&output_buf[..output.pos]));
                     output.pos = 0; // reset for next chunk
                 }
@@ -70,7 +72,7 @@ macro_rules! decompress_stream {
 
             ZSTD_freeDCtx(dctx);
 
-            output_buf.truncate(output.size);
+            output_buf.truncate(size);
 
             output_buf
         }
@@ -104,7 +106,6 @@ mod fastest_wasm_zlib {
             assert_eq!(DECOMPRESSED, c);
 
             let rs = decompress_stream_rs(compressed, None);
-
             assert_eq!(c, rs);
         }
     }
@@ -149,6 +150,13 @@ mod fastest_wasm_zlib {
 
         let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
         assert_eq!(c, rs);
+    }
+
+    #[test]
+    fn zstd_v05_5() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.5.1-5.zst"
+        ));
     }
 
     #[test]
