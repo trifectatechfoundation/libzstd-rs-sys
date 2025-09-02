@@ -1,3 +1,4 @@
+use core::ptr::NonNull;
 use libc::{free, malloc, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -94,9 +95,9 @@ pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: *const ZSTD_
     if (*ddict).entropyPresent != 0 {
         (*dctx).litEntropy = 1;
         (*dctx).fseEntropy = 1;
-        (*dctx).LLTptr = &raw const (*ddict).entropy.LLTable;
-        (*dctx).MLTptr = &raw const (*ddict).entropy.MLTable;
-        (*dctx).OFTptr = &raw const (*ddict).entropy.OFTable;
+        (*dctx).LLTptr = NonNull::new((&raw const (*ddict).entropy.LLTable).cast_mut());
+        (*dctx).MLTptr = NonNull::new((&raw const (*ddict).entropy.MLTable).cast_mut());
+        (*dctx).OFTptr = NonNull::new((&raw const (*ddict).entropy.OFTable).cast_mut());
         (*dctx).HUFptr = &raw const (*ddict).entropy.hufTable;
         *((*dctx).entropy.rep).as_mut_ptr().offset(0) = *((*ddict).entropy.rep).as_ptr().offset(0);
         *((*dctx).entropy.rep).as_mut_ptr().offset(1) = *((*ddict).entropy.rep).as_ptr().offset(1);

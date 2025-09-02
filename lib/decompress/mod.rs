@@ -1,3 +1,4 @@
+use core::ptr::NonNull;
 use libc::size_t;
 
 use crate::lib::common::xxhash::XXH64_state_t;
@@ -67,15 +68,7 @@ pub struct SymbolTable<const N: usize> {
 }
 
 impl<const N: usize> SymbolTable<N> {
-    fn as_mut_ptr(&mut self) -> *mut ZSTD_seqSymbol {
-        self as *mut Self as *mut ZSTD_seqSymbol
-    }
-
-    fn as_ptr(&self) -> *const ZSTD_seqSymbol {
-        self as *const Self as *const ZSTD_seqSymbol
-    }
-
-    // NOTE: includes the header
+    /// The full symbol table (including the header) as a slice.
     fn as_slice(&self) -> &[ZSTD_seqSymbol] {
         unsafe { core::slice::from_raw_parts(self as *const Self as *const ZSTD_seqSymbol, N + 1) }
     }
@@ -226,9 +219,9 @@ impl Workspace {
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
 #[repr(C)]
 pub struct ZSTD_DCtx_s {
-    LLTptr: *const SymbolTable<512>,
-    MLTptr: *const SymbolTable<512>,
-    OFTptr: *const SymbolTable<256>,
+    LLTptr: Option<NonNull<SymbolTable<512>>>,
+    MLTptr: Option<NonNull<SymbolTable<512>>>,
+    OFTptr: Option<NonNull<SymbolTable<256>>>,
     HUFptr: *const DTable,
     entropy: ZSTD_entropyDTables_t,
     workspace: Workspace,
