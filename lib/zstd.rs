@@ -341,3 +341,29 @@ impl TryFrom<i32> for ZSTD_dictAttachPref_e {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ZSTD_ParamSwitch_e {
+    ZSTD_ps_auto = 0,
+    ZSTD_ps_enable = 1,
+    ZSTD_ps_disable = 2,
+}
+
+impl ZSTD_ParamSwitch_e {
+    pub fn to_i32(self) -> i32 {
+        self as i32
+    }
+}
+
+impl TryFrom<i32> for ZSTD_ParamSwitch_e {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::ZSTD_ps_auto),
+            1 => Ok(Self::ZSTD_ps_enable),
+            2 => Ok(Self::ZSTD_ps_disable),
+            _ => Err(()),
+        }
+    }
+}

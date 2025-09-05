@@ -108,10 +108,6 @@ pub type ZSTD_DStream = ZSTD_DCtx;
 pub type C2RustUnnamed_0 = core::ffi::c_uint;
 pub const ZSTD_f_zstd1_magicless: C2RustUnnamed_0 = 1;
 pub const ZSTD_f_zstd1: C2RustUnnamed_0 = 0;
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FIO_display_prefs_s {
@@ -454,7 +450,7 @@ pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     (*ret).targetCBlockSize = 0;
     (*ret).srcSizeHint = 0;
     (*ret).testMode = 0;
-    (*ret).literalCompressionMode = ZSTD_ps_auto;
+    (*ret).literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
     (*ret).excludeCompressedFiles = 0;
     (*ret).allowBlockDevices = 0;
     (*ret).asyncIO = AIO_supported();
@@ -1917,12 +1913,9 @@ unsafe fn FIO_createCResources(
     cLevel: core::ffi::c_int,
     mut comprParams: ZSTD_compressionParameters,
 ) -> cRess_t {
-    let mut useMMap = ((*prefs).mmapDict as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
-        == ZSTD_ps_disable as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+    let forceNoUseMMap =
+        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
     let mut dictBufferType = FIO_mallocDict;
     let mut ress = cRess_t {
         dict: FIO_Dict_t {
@@ -2924,7 +2917,7 @@ unsafe fn FIO_createCResources(
     err_18 = ZSTD_CCtx_setParameter(
         ress.cctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam5,
-        (*prefs).literalCompressionMode as core::ffi::c_int,
+        (*prefs).literalCompressionMode.to_i32(),
     );
     if ZSTD_isError(err_18) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -5103,7 +5096,7 @@ pub unsafe fn FIO_displayCompressionParameters(prefs: *const FIO_prefs_t) {
     fprintf(
         stderr,
         b"%s\0" as *const u8 as *const core::ffi::c_char,
-        compressLiteralsOptions[(*prefs).literalCompressionMode as usize].as_ptr(),
+        compressLiteralsOptions[(*prefs).literalCompressionMode.to_i32() as usize].as_ptr(),
     );
     fprintf(
         stderr,
@@ -5453,12 +5446,9 @@ unsafe fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
     dictFileName: *const core::ffi::c_char,
 ) -> dRess_t {
-    let mut useMMap = ((*prefs).mmapDict as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let forceNoUseMMap = ((*prefs).mmapDict as core::ffi::c_uint
-        == ZSTD_ps_disable as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+    let forceNoUseMMap =
+        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,

@@ -32,10 +32,6 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct BMK_benchResult_t {
@@ -191,7 +187,7 @@ pub unsafe fn BMK_initAdvancedParams() -> BMK_advancedParams_t {
             ldmHashLog: 0,
             ldmBucketSizeLog: 0,
             ldmHashRateLog: 0,
-            literalCompressionMode: ZSTD_ps_auto,
+            literalCompressionMode: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
             useRowMatchFinder: 0,
         }
     }
@@ -538,7 +534,7 @@ unsafe fn BMK_initCCtx(
     let zerr_14 = ZSTD_CCtx_setParameter(
         ctx,
         ZSTD_cParameter::ZSTD_c_experimentalParam5,
-        (*adv).literalCompressionMode as core::ffi::c_int,
+        (*adv).literalCompressionMode.to_i32(),
     );
     if ZSTD_isError(zerr_14) != 0 {
         fprintf(
