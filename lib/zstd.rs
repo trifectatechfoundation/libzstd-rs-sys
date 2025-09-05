@@ -308,3 +308,12 @@ impl ZSTD_cParameter {
     pub const ZSTD_c_jobSize: Self = Self(401);
     pub const ZSTD_c_overlapLog: Self = Self(402);
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZSTD_ResetDirective(pub(crate) u32);
+impl ZSTD_ResetDirective {
+    pub const ZSTD_reset_session_only: Self = Self(1);
+    pub const ZSTD_reset_parameters: Self = Self(2);
+    pub const ZSTD_reset_session_and_parameters: Self = Self(3);
+}

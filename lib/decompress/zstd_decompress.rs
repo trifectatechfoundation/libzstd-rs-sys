@@ -87,10 +87,6 @@ pub struct ZSTD_bounds {
     pub lowerBound: core::ffi::c_int,
     pub upperBound: core::ffi::c_int,
 }
-pub type ZSTD_ResetDirective = core::ffi::c_uint;
-pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
-pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
-pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
 pub type ZSTD_DStream = ZSTD_DCtx;
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 pub const ZSTDnit_skippableFrame: ZSTD_nextInputType_e = 5;
@@ -2476,7 +2472,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let err_code = ZSTD_DCtx_reset(zds, ZSTD_reset_session_only);
+    let err_code = ZSTD_DCtx_reset(zds, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -2488,7 +2484,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream))]
 pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
-    let err_code = ZSTD_DCtx_reset(zds, ZSTD_reset_session_only);
+    let err_code = ZSTD_DCtx_reset(zds, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -2503,7 +2499,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     dctx: *mut ZSTD_DStream,
     ddict: *const ZSTD_DDict,
 ) -> size_t {
-    let err_code = ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    let err_code = ZSTD_DCtx_reset(dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -2515,7 +2511,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetDStream))]
 pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
-    let err_code = ZSTD_DCtx_reset(dctx, ZSTD_reset_session_only);
+    let err_code = ZSTD_DCtx_reset(dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -2758,25 +2754,28 @@ pub unsafe extern "C" fn ZSTD_DCtx_reset(
     dctx: *mut ZSTD_DCtx,
     reset: ZSTD_ResetDirective,
 ) -> size_t {
-    if reset as core::ffi::c_uint
-        == ZSTD_reset_session_only as core::ffi::c_int as core::ffi::c_uint
-        || reset as core::ffi::c_uint
-            == ZSTD_reset_session_and_parameters as core::ffi::c_int as core::ffi::c_uint
-    {
+    if matches!(
+        reset,
+        ZSTD_ResetDirective::ZSTD_reset_session_only
+            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+    ) {
         (*dctx).streamStage = StreamStage::Init;
         (*dctx).noForwardProgress = 0;
         (*dctx).isFrameDecompression = 1;
     }
-    if reset as core::ffi::c_uint == ZSTD_reset_parameters as core::ffi::c_int as core::ffi::c_uint
-        || reset as core::ffi::c_uint
-            == ZSTD_reset_session_and_parameters as core::ffi::c_int as core::ffi::c_uint
-    {
+
+    if matches!(
+        reset,
+        ZSTD_ResetDirective::ZSTD_reset_parameters
+            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+    ) {
         if (*dctx).streamStage != StreamStage::Init {
             return Error::stage_wrong.to_error_code();
         }
         ZSTD_clearDict(dctx);
         ZSTD_DCtx_resetParameters(dctx);
     }
+
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DStream))]

@@ -3,7 +3,7 @@
 fn test_compress_stream_2() {
     use libzstd_rs_sys::lib::compress::zstd_compress::*;
     use libzstd_rs_sys::lib::decompress::zstd_decompress::ZSTD_decompress;
-    use libzstd_rs_sys::{ZSTD_cParameter, ZSTD_inBuffer, ZSTD_outBuffer};
+    use libzstd_rs_sys::{ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_inBuffer, ZSTD_outBuffer};
 
     const INPUT: &[u8] = include_bytes!("../test-data/compress-input.dat");
 
@@ -28,10 +28,7 @@ fn test_compress_stream_2() {
         let cctx = ZSTD_createCCtx();
         assert!(!cctx.is_null());
 
-        let err = ZSTD_CCtx_reset(
-            cctx,
-            zstd_sys::ZSTD_ResetDirective::ZSTD_reset_session_and_parameters as _,
-        );
+        let err = ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_and_parameters);
         assert_eq!(libzstd_rs_sys::ZSTD_isError(err), 0);
 
         let err = ZSTD_CCtx_setParameter(cctx, ZSTD_cParameter::ZSTD_c_checksumFlag, 1);

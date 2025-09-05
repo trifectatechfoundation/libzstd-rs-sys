@@ -32,10 +32,6 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
 }
-pub type ZSTD_ResetDirective = core::ffi::c_uint;
-pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
-pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
-pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
 pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
 pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
 pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
@@ -208,7 +204,7 @@ unsafe fn BMK_initCCtx(
     comprParams: *const ZSTD_compressionParameters,
     adv: *const BMK_advancedParams_t,
 ) {
-    ZSTD_CCtx_reset(ctx, ZSTD_reset_session_and_parameters);
+    ZSTD_CCtx_reset(ctx, ZSTD_ResetDirective::ZSTD_reset_session_and_parameters);
     if (*adv).nbWorkers == 1 {
         let zerr = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0);
         if ZSTD_isError(zerr) != 0 {
@@ -633,7 +629,7 @@ unsafe fn BMK_initDCtx(
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
 ) {
-    let zerr = ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters);
+    let zerr = ZSTD_DCtx_reset(dctx, ZSTD_ResetDirective::ZSTD_reset_session_and_parameters);
     if ZSTD_isError(zerr) != 0 {
         fprintf(
             stderr,
