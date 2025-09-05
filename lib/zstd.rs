@@ -199,3 +199,71 @@ pub mod experimental {
         ZSTD_createThreadPool, ZSTD_freeThreadPool, ZSTD_threadPool,
     };
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZSTD_cParameter(pub(crate) u32);
+
+impl ZSTD_cParameter {
+    pub const ZSTD_c_experimentalParam1: Self = Self(500);
+    pub const ZSTD_c_experimentalParam2: Self = Self(10);
+    pub const ZSTD_c_experimentalParam3: Self = Self(1000);
+    pub const ZSTD_c_experimentalParam4: Self = Self(1001);
+    pub const ZSTD_c_experimentalParam5: Self = Self(1002);
+    pub const ZSTD_c_experimentalParam7: Self = Self(1004);
+    pub const ZSTD_c_experimentalParam8: Self = Self(1005);
+    pub const ZSTD_c_experimentalParam9: Self = Self(1006);
+    pub const ZSTD_c_experimentalParam10: Self = Self(1007);
+    pub const ZSTD_c_experimentalParam11: Self = Self(1008);
+    pub const ZSTD_c_experimentalParam12: Self = Self(1009);
+    pub const ZSTD_c_experimentalParam13: Self = Self(1010);
+    pub const ZSTD_c_experimentalParam14: Self = Self(1011);
+    pub const ZSTD_c_experimentalParam15: Self = Self(1012);
+    pub const ZSTD_c_experimentalParam16: Self = Self(1013);
+    pub const ZSTD_c_experimentalParam17: Self = Self(1014);
+    pub const ZSTD_c_experimentalParam18: Self = Self(1015);
+    pub const ZSTD_c_experimentalParam19: Self = Self(1016);
+    pub const ZSTD_c_experimentalParam20: Self = Self(1017);
+
+    pub const ZSTD_c_rsyncable: Self = Self::ZSTD_c_experimentalParam1;
+    pub const ZSTD_c_format: Self = Self::ZSTD_c_experimentalParam2;
+    pub const ZSTD_c_forceMaxWindow: Self = Self::ZSTD_c_experimentalParam3;
+    pub const ZSTD_c_forceAttachDict: Self = Self::ZSTD_c_experimentalParam4;
+    pub const ZSTD_c_literalCompressionMode: Self = Self::ZSTD_c_experimentalParam5;
+    pub const ZSTD_c_srcSizeHint: Self = Self::ZSTD_c_experimentalParam7;
+    pub const ZSTD_c_enableDedicatedDictSearch: Self = Self::ZSTD_c_experimentalParam8;
+    pub const ZSTD_c_stableInBuffer: Self = Self::ZSTD_c_experimentalParam9;
+    pub const ZSTD_c_stableOutBuffer: Self = Self::ZSTD_c_experimentalParam10;
+    pub const ZSTD_c_blockDelimiters: Self = Self::ZSTD_c_experimentalParam11;
+    pub const ZSTD_c_validateSequences: Self = Self::ZSTD_c_experimentalParam12;
+    pub const ZSTD_c_blockSplitterLevel: Self = Self::ZSTD_c_experimentalParam20;
+    pub const ZSTD_c_splitAfterSequences: Self = Self::ZSTD_c_experimentalParam13;
+    pub const ZSTD_c_useRowMatchFinder: Self = Self::ZSTD_c_experimentalParam14;
+    pub const ZSTD_c_deterministicRefPrefix: Self = Self::ZSTD_c_experimentalParam15;
+    pub const ZSTD_c_prefetchCDictTables: Self = Self::ZSTD_c_experimentalParam16;
+    pub const ZSTD_c_enableSeqProducerFallback: Self = Self::ZSTD_c_experimentalParam17;
+    pub const ZSTD_c_maxBlockSize: Self = Self::ZSTD_c_experimentalParam18;
+    pub const ZSTD_c_repcodeResolution: Self = Self::ZSTD_c_experimentalParam19;
+    pub const ZSTD_c_searchForExternalRepcodes: Self = Self::ZSTD_c_experimentalParam19;
+
+    pub const ZSTD_c_compressionLevel: Self = Self(100);
+    pub const ZSTD_c_windowLog: Self = Self(101);
+    pub const ZSTD_c_hashLog: Self = Self(102);
+    pub const ZSTD_c_chainLog: Self = Self(103);
+    pub const ZSTD_c_searchLog: Self = Self(104);
+    pub const ZSTD_c_minMatch: Self = Self(105);
+    pub const ZSTD_c_targetLength: Self = Self(106);
+    pub const ZSTD_c_strategy: Self = Self(107);
+    pub const ZSTD_c_targetCBlockSize: Self = Self(130);
+    pub const ZSTD_c_enableLongDistanceMatching: Self = Self(160);
+    pub const ZSTD_c_ldmHashLog: Self = Self(161);
+    pub const ZSTD_c_ldmMinMatch: Self = Self(162);
+    pub const ZSTD_c_ldmBucketSizeLog: Self = Self(163);
+    pub const ZSTD_c_ldmHashRateLog: Self = Self(164);
+    pub const ZSTD_c_contentSizeFlag: Self = Self(200);
+    pub const ZSTD_c_checksumFlag: Self = Self(201);
+    pub const ZSTD_c_dictIDFlag: Self = Self(202);
+    pub const ZSTD_c_nbWorkers: Self = Self(400);
+    pub const ZSTD_c_jobSize: Self = Self(401);
+    pub const ZSTD_c_overlapLog: Self = Self(402);
+}

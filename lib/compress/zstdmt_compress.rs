@@ -140,10 +140,6 @@ struct ZSTDMT_jobDescription {
 type ZSTD_dictContentType_e = core::ffi::c_uint;
 const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-type ZSTD_cParameter = core::ffi::c_uint;
-const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
 type ZSTD_EndDirective = core::ffi::c_uint;
 const ZSTD_e_end: ZSTD_EndDirective = 2;
@@ -165,9 +161,8 @@ const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as core::ffi::c_int;
-const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
-    ZSTD_c_experimentalParam15 as core::ffi::c_int;
+const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
+const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 const HASH_READ_SIZE: core::ffi::c_int = 8;
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
@@ -1164,7 +1159,11 @@ unsafe fn ZSTDMT_CCtxParam_setNbWorkers(
     params: *mut ZSTD_CCtx_params,
     nbWorkers: core::ffi::c_uint,
 ) -> size_t {
-    ZSTD_CCtxParams_setParameter(params, ZSTD_c_nbWorkers, nbWorkers as core::ffi::c_int)
+    ZSTD_CCtxParams_setParameter(
+        params,
+        ZSTD_cParameter::ZSTD_c_nbWorkers,
+        nbWorkers as core::ffi::c_int,
+    )
 }
 #[inline]
 unsafe fn ZSTDMT_createCCtx_advanced_internal(
