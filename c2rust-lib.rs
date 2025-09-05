@@ -63,30 +63,50 @@ pub mod lib {
     pub mod zstd;
 } // mod lib
 
-pub use crate::lib::zstd::{ZSTD_inBuffer, ZSTD_outBuffer};
-
-pub use crate::lib::decompress::{
-    zstd_ddict::{ZSTD_DDict, ZSTD_createDDict, ZSTD_getDictID_fromDDict},
-    zstd_decompress::{
-        ZSTD_DCtx_refDDict, ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_createDCtx,
-        ZSTD_createDStream, ZSTD_dParameter, ZSTD_decompressBegin, ZSTD_decompressBegin_usingDDict,
-        ZSTD_decompressBegin_usingDict, ZSTD_decompressContinue, ZSTD_decompressStream,
-        ZSTD_decompress_usingDict, ZSTD_findDecompressedSize, ZSTD_freeDCtx,
-        ZSTD_getDictID_fromDict, ZSTD_getFrameContentSize, ZSTD_initDStream_usingDict,
-        ZSTD_nextSrcSizeToDecompress, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
-    },
+pub use crate::lib::zstd::{
+    ZSTD_inBuffer, ZSTD_outBuffer, ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX,
+    ZSTD_CLEVEL_DEFAULT, ZSTD_MAGICNUMBER, ZSTD_MAGIC_DICTIONARY, ZSTD_MAGIC_SKIPPABLE_MASK,
+    ZSTD_MAGIC_SKIPPABLE_START, ZSTD_VERSION_MAJOR, ZSTD_VERSION_MINOR, ZSTD_VERSION_NUMBER,
+    ZSTD_VERSION_RELEASE,
 };
 
-pub use crate::lib::common::zstd_common::{ZSTD_getErrorName, ZSTD_isError};
+pub use crate::lib::decompress::{
+    zstd_ddict::{
+        ZSTD_DDict, ZSTD_createDDict, ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
+    },
+    zstd_decompress::{
+        ZSTD_DCtx_loadDictionary, ZSTD_DCtx_refDDict, ZSTD_DCtx_refPrefix, ZSTD_DCtx_reset,
+        ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_DStreamInSize, ZSTD_DStreamOutSize,
+        ZSTD_createDCtx, ZSTD_createDStream, ZSTD_decompress, ZSTD_decompressBegin,
+        ZSTD_decompressBegin_usingDDict, ZSTD_decompressBegin_usingDict, ZSTD_decompressContinue,
+        ZSTD_decompressDCtx, ZSTD_decompressStream, ZSTD_decompress_usingDDict,
+        ZSTD_decompress_usingDict, ZSTD_findDecompressedSize, ZSTD_findFrameCompressedSize,
+        ZSTD_freeDCtx, ZSTD_getDecompressedSize, ZSTD_getDictID_fromDict, ZSTD_getDictID_fromFrame,
+        ZSTD_getFrameContentSize, ZSTD_initDStream, ZSTD_initDStream_usingDict,
+        ZSTD_nextSrcSizeToDecompress, ZSTD_sizeof_DCtx, ZSTD_CONTENTSIZE_ERROR,
+        ZSTD_CONTENTSIZE_UNKNOWN,
+    },
+    ZSTD_DCtx,
+};
+
+pub use crate::lib::common::zstd_common::{
+    ZSTD_getErrorName, ZSTD_isError, ZSTD_versionNumber, ZSTD_versionString,
+};
 
 pub use crate::lib::dictBuilder::cover::ZDICT_trainFromBuffer_cover;
 pub use crate::lib::zdict::{
-    experimental::ZDICT_cover_params_t, ZDICT_getErrorName, ZDICT_isError, ZDICT_params_t,
-    ZDICT_trainFromBuffer,
+    experimental::ZDICT_cover_params_t, ZDICT_getDictID, ZDICT_getErrorName, ZDICT_isError,
+    ZDICT_params_t, ZDICT_trainFromBuffer,
 };
 
 pub use crate::lib::compress::zstd_compress::{
-    ZSTD_compressBound, ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_freeCCtx,
+    ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_refCDict, ZSTD_CCtx_refPrefix, ZSTD_CCtx_reset,
+    ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize, ZSTD_CDict, ZSTD_CStreamInSize,
+    ZSTD_CStreamOutSize, ZSTD_EndDirective, ZSTD_compress, ZSTD_compress2, ZSTD_compressBound,
+    ZSTD_compressCCtx, ZSTD_compressStream, ZSTD_compressStream2, ZSTD_compress_usingCDict,
+    ZSTD_compress_usingDict, ZSTD_createCCtx, ZSTD_createCDict, ZSTD_endStream, ZSTD_flushStream,
+    ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getDictID_fromCDict, ZSTD_initCStream, ZSTD_maxCLevel,
+    ZSTD_minCLevel, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict,
 };
 
 pub mod internal {

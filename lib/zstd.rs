@@ -1,9 +1,19 @@
+use core::ffi::c_uint;
 use libc::size_t;
 
-pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
-pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
-pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
-pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
+pub const ZSTD_BLOCKSIZELOG_MAX: c_uint = 17;
+pub const ZSTD_BLOCKSIZE_MAX: c_uint = (1) << ZSTD_BLOCKSIZELOG_MAX;
+
+pub const ZSTD_CLEVEL_DEFAULT: c_uint = 3;
+pub const ZSTD_MAGICNUMBER: c_uint = 0xfd2fb528;
+pub const ZSTD_MAGIC_DICTIONARY: c_uint = 0xec30a437;
+pub const ZSTD_MAGIC_SKIPPABLE_START: c_uint = 0x184d2a50;
+pub const ZSTD_MAGIC_SKIPPABLE_MASK: c_uint = 0xfffffff0;
+
+pub const ZSTD_VERSION_MAJOR: c_uint = 1;
+pub const ZSTD_VERSION_MINOR: c_uint = 5;
+pub const ZSTD_VERSION_RELEASE: c_uint = 8;
+pub const ZSTD_VERSION_NUMBER: c_uint =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
 
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
