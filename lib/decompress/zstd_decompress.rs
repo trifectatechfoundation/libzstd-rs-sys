@@ -25,9 +25,8 @@ use crate::lib::decompress::zstd_decompress_block::{
 };
 use crate::lib::decompress::{
     blockProperties_t, BlockType, DecompressStage, DictUses, LL_base, ML_base, NextInputType,
-    OF_base, OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_d_ignoreChecksum,
-    ZSTD_d_validateChecksum, ZSTD_entropyDTables_t, ZSTD_forceIgnoreChecksum_e, ZSTD_frame,
-    ZSTD_skippableFrame,
+    OF_base, OF_bits, StreamStage, ZSTD_DCtx, ZSTD_DCtx_s, ZSTD_FrameHeader, ZSTD_entropyDTables_t,
+    ZSTD_frame, ZSTD_skippableFrame,
 };
 use crate::lib::zstd::experimental::ZSTD_FRAMEHEADERSIZE_MIN;
 use crate::lib::zstd::*;
@@ -92,14 +91,6 @@ pub type ZSTD_ResetDirective = core::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
 pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
-pub type ZSTD_dParameter = core::ffi::c_uint;
-pub const ZSTD_d_experimentalParam6: ZSTD_dParameter = 1005;
-pub const ZSTD_d_experimentalParam5: ZSTD_dParameter = 1004;
-pub const ZSTD_d_experimentalParam4: ZSTD_dParameter = 1003;
-pub const ZSTD_d_experimentalParam3: ZSTD_dParameter = 1002;
-pub const ZSTD_d_experimentalParam2: ZSTD_dParameter = 1001;
-pub const ZSTD_d_experimentalParam1: ZSTD_dParameter = 1000;
-pub const ZSTD_d_windowLogMax: ZSTD_dParameter = 100;
 pub type ZSTD_DStream = ZSTD_DCtx;
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 pub const ZSTDnit_skippableFrame: ZSTD_nextInputType_e = 5;
@@ -137,12 +128,6 @@ pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-pub const ZSTD_d_format: core::ffi::c_int = 1000;
-pub const ZSTD_d_stableOutBuffer: core::ffi::c_int = 1001;
-pub const ZSTD_d_forceIgnoreChecksum: core::ffi::c_int = 1002;
-pub const ZSTD_d_refMultipleDDicts: core::ffi::c_int = 1003;
-pub const ZSTD_d_disableHuffmanAssembly: core::ffi::c_int = 1004;
-pub const ZSTD_d_maxBlockSize: core::ffi::c_int = 1005;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 #[inline]
@@ -714,7 +699,7 @@ unsafe fn ZSTD_DCtx_resetParameters(dctx: *mut ZSTD_DCtx) {
     (*dctx).format = Format::ZSTD_f_zstd1;
     (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
     (*dctx).outBufferMode = BufferMode::Buffered;
-    (*dctx).forceIgnoreChecksum = ZSTD_d_validateChecksum;
+    (*dctx).forceIgnoreChecksum = ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum;
     (*dctx).refMultipleDDicts = MultipleDDicts::Single;
     (*dctx).disableHufAsm = 0;
     (*dctx).maxBlockSizeParam = 0;
@@ -1689,7 +1674,7 @@ unsafe fn ZSTD_decompressFrame(
             return Error::checksum_wrong.to_error_code();
         };
 
-        if (*dctx).forceIgnoreChecksum == 0
+        if (*dctx).forceIgnoreChecksum == ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
             && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32
         {
             return Error::checksum_wrong.to_error_code();
@@ -2585,7 +2570,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
     dctx: *mut ZSTD_DCtx,
     maxWindowSize: size_t,
 ) -> size_t {
-    let bounds = ZSTD_dParam_getBounds(ZSTD_d_windowLogMax);
+    let bounds = ZSTD_dParam_getBounds(ZSTD_dParameter::ZSTD_d_windowLogMax);
     let min = (1) << bounds.lowerBound;
     let max = (1) << bounds.upperBound;
     if (*dctx).streamStage != StreamStage::Init {
@@ -2607,7 +2592,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
 ) -> size_t {
     ZSTD_DCtx_setParameter(
         dctx,
-        ZSTD_d_format as ZSTD_dParameter,
+        ZSTD_dParameter::ZSTD_d_format as ZSTD_dParameter,
         format as core::ffi::c_int,
     )
 }
@@ -2620,8 +2605,8 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
             upperBound: 0,
         }
     };
-    match dParam as core::ffi::c_uint {
-        100 => {
+    match dParam {
+        ZSTD_dParameter::ZSTD_d_windowLogMax => {
             bounds.lowerBound = ZSTD_WINDOWLOG_ABSOLUTEMIN;
             bounds.upperBound = if ::core::mem::size_of::<size_t>() == 4 {
                 ZSTD_WINDOWLOG_MAX_32
@@ -2630,32 +2615,34 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
             };
             return bounds;
         }
-        1000 => {
+        ZSTD_dParameter::ZSTD_d_format => {
             bounds.lowerBound = Format::ZSTD_f_zstd1 as core::ffi::c_int;
             bounds.upperBound = Format::ZSTD_f_zstd1_magicless as core::ffi::c_int;
             return bounds;
         }
-        1001 => {
+        ZSTD_dParameter::ZSTD_d_stableOutBuffer => {
             bounds.lowerBound = BufferMode::Buffered as core::ffi::c_int;
             bounds.upperBound = BufferMode::Stable as core::ffi::c_int;
             return bounds;
         }
-        1002 => {
-            bounds.lowerBound = ZSTD_d_validateChecksum as core::ffi::c_int;
-            bounds.upperBound = ZSTD_d_ignoreChecksum as core::ffi::c_int;
+        ZSTD_dParameter::ZSTD_d_forceIgnoreChecksum => {
+            bounds.lowerBound =
+                ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum as core::ffi::c_int;
+            bounds.upperBound =
+                ZSTD_forceIgnoreChecksum_e::ZSTD_d_ignoreChecksum as core::ffi::c_int;
             return bounds;
         }
-        1003 => {
+        ZSTD_dParameter::ZSTD_d_refMultipleDDicts => {
             bounds.lowerBound = MultipleDDicts::Single as core::ffi::c_int;
             bounds.upperBound = MultipleDDicts::Multiple as core::ffi::c_int;
             return bounds;
         }
-        1004 => {
+        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => {
             bounds.lowerBound = 0;
             bounds.upperBound = 1;
             return bounds;
         }
-        1005 => {
+        ZSTD_dParameter::ZSTD_d_maxBlockSize => {
             bounds.lowerBound = ZSTD_BLOCKSIZE_MAX_MIN;
             bounds.upperBound = ZSTD_BLOCKSIZE_MAX;
             return bounds;
@@ -2688,37 +2675,20 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
     param: ZSTD_dParameter,
     value: *mut core::ffi::c_int,
 ) -> size_t {
-    match param as core::ffi::c_uint {
-        100 => {
-            *value = (*dctx).maxWindowSize.ilog2() as i32;
-            0
+    *value = match param {
+        ZSTD_dParameter::ZSTD_d_windowLogMax => (*dctx).maxWindowSize.ilog2() as i32,
+        ZSTD_dParameter::ZSTD_d_format => (*dctx).format as core::ffi::c_int,
+        ZSTD_dParameter::ZSTD_d_stableOutBuffer => (*dctx).outBufferMode as core::ffi::c_int,
+        ZSTD_dParameter::ZSTD_d_forceIgnoreChecksum => {
+            (*dctx).forceIgnoreChecksum as core::ffi::c_int
         }
-        1000 => {
-            *value = (*dctx).format as core::ffi::c_int;
-            0
-        }
-        1001 => {
-            *value = (*dctx).outBufferMode as core::ffi::c_int;
-            0
-        }
-        1002 => {
-            *value = (*dctx).forceIgnoreChecksum as core::ffi::c_int;
-            0
-        }
-        1003 => {
-            *value = (*dctx).refMultipleDDicts as core::ffi::c_int;
-            0
-        }
-        1004 => {
-            *value = (*dctx).disableHufAsm;
-            0
-        }
-        1005 => {
-            *value = (*dctx).maxBlockSizeParam;
-            0
-        }
-        _ => Error::parameter_unsupported.to_error_code(),
-    }
+        ZSTD_dParameter::ZSTD_d_refMultipleDDicts => (*dctx).refMultipleDDicts as core::ffi::c_int,
+        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => (*dctx).disableHufAsm,
+        ZSTD_dParameter::ZSTD_d_maxBlockSize => (*dctx).maxBlockSizeParam,
+        _ => return Error::parameter_unsupported.to_error_code(),
+    };
+
+    0
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setParameter))]
@@ -2730,18 +2700,18 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
     if (*dctx).streamStage != StreamStage::Init {
         return Error::stage_wrong.to_error_code();
     }
-    match dParam as core::ffi::c_uint {
-        100 => {
+    match dParam {
+        ZSTD_dParameter::ZSTD_d_windowLogMax => {
             if value == 0 {
                 value = ZSTD_WINDOWLOG_LIMIT_DEFAULT;
             }
-            if ZSTD_dParam_withinBounds(ZSTD_d_windowLogMax, value) == 0 {
+            if ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_windowLogMax, value) == 0 {
                 return Error::parameter_outOfBound.to_error_code();
             }
             (*dctx).maxWindowSize = (1) << value;
             return 0;
         }
-        1000 => {
+        ZSTD_dParameter::ZSTD_d_experimentalParam1 => {
             let Ok(format) = Format::try_from(value as ZSTD_format_e) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
@@ -2750,21 +2720,21 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
 
             return 0;
         }
-        1001 => {
+        ZSTD_dParameter::ZSTD_d_stableOutBuffer => {
             let Ok(value) = BufferMode::try_from(value as u32) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
             (*dctx).outBufferMode = value;
             return 0;
         }
-        1002 => {
-            if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam3, value) == 0 {
+        ZSTD_dParameter::ZSTD_d_forceIgnoreChecksum => {
+            let Ok(value) = ZSTD_forceIgnoreChecksum_e::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
-            (*dctx).forceIgnoreChecksum = value as ZSTD_forceIgnoreChecksum_e;
+            };
+            (*dctx).forceIgnoreChecksum = value;
             return 0;
         }
-        1003 => {
+        ZSTD_dParameter::ZSTD_d_refMultipleDDicts => {
             let Ok(value) = MultipleDDicts::try_from(value as u32) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
@@ -2774,15 +2744,17 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             (*dctx).refMultipleDDicts = value;
             return 0;
         }
-        1004 => {
-            if ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam5, value) == 0 {
+        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => {
+            if ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam5, value) == 0 {
                 return Error::parameter_outOfBound.to_error_code();
             }
             (*dctx).disableHufAsm = (value != 0) as core::ffi::c_int;
             return 0;
         }
-        1005 => {
-            if value != 0 && ZSTD_dParam_withinBounds(ZSTD_d_experimentalParam6, value) == 0 {
+        ZSTD_dParameter::ZSTD_d_maxBlockSize => {
+            if value != 0
+                && ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam6, value) == 0
+            {
                 return Error::parameter_outOfBound.to_error_code();
             }
             (*dctx).maxBlockSizeParam = value;
