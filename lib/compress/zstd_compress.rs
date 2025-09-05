@@ -399,11 +399,6 @@ pub type ZSTD_sequenceProducer_F = Option<
 pub type ZSTD_SequenceFormat_e = core::ffi::c_uint;
 pub const ZSTD_sf_explicitBlockDelimiters: ZSTD_SequenceFormat_e = 1;
 pub const ZSTD_sf_noBlockDelimiters: ZSTD_SequenceFormat_e = 0;
-pub type ZSTD_dictAttachPref_e = core::ffi::c_uint;
-pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
-pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
-pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
-pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
 pub type ZSTD_compressionStage_e = core::ffi::c_uint;
 pub const ZSTDcs_ending: ZSTD_compressionStage_e = 3;
 pub const ZSTDcs_ongoing: ZSTD_compressionStage_e = 2;
@@ -2185,7 +2180,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
@@ -2519,8 +2514,8 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_b
             bounds
         }
         1001 => {
-            bounds.lowerBound = ZSTD_dictDefaultAttach as core::ffi::c_int;
-            bounds.upperBound = ZSTD_dictForceLoad as core::ffi::c_int;
+            bounds.lowerBound = ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach.0 as core::ffi::c_int;
+            bounds.upperBound = ZSTD_dictAttachPref_e::ZSTD_dictForceLoad.0 as core::ffi::c_int;
             bounds
         }
         1002 => {
@@ -2795,16 +2790,11 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
             (*CCtxParams).forceWindow as size_t
         }
         1001 => {
-            let pref = value as ZSTD_dictAttachPref_e;
-            if ZSTD_cParam_withinBounds(
-                ZSTD_cParameter::ZSTD_c_experimentalParam4,
-                pref as core::ffi::c_int,
-            ) == 0
-            {
+            let Ok(pref) = ZSTD_dictAttachPref_e::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
-            }
+            };
             (*CCtxParams).attachDictPref = pref;
-            (*CCtxParams).attachDictPref as size_t
+            (*CCtxParams).attachDictPref.0 as size_t
         }
         1002 => {
             let Ok(lcm) = ParamSwitch::try_from(value) else {
@@ -3062,7 +3052,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_getParameter(
             *value = (*CCtxParams).forceWindow;
         }
         1001 => {
-            *value = (*CCtxParams).attachDictPref as core::ffi::c_int;
+            *value = (*CCtxParams).attachDictPref.0 as core::ffi::c_int;
         }
         1002 => {
             *value = (*CCtxParams).literalCompressionMode as core::ffi::c_int;
@@ -4576,10 +4566,8 @@ unsafe fn ZSTD_shouldAttachDict(
     (dedicatedDictSearch != 0
         || (pledgedSrcSize <= cutoff as u64
             || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-            || (*params).attachDictPref as core::ffi::c_uint
-                == ZSTD_dictForceAttach as core::ffi::c_int as core::ffi::c_uint)
-            && (*params).attachDictPref as core::ffi::c_uint
-                != ZSTD_dictForceCopy as core::ffi::c_int as core::ffi::c_uint
+            || (*params).attachDictPref == ZSTD_dictAttachPref_e::ZSTD_dictForceAttach)
+            && (*params).attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceCopy
             && (*params).forceWindow == 0) as core::ffi::c_int
 }
 unsafe fn ZSTD_resetCCtx_byAttachingCDict(
@@ -7983,8 +7971,7 @@ unsafe fn ZSTD_compressBegin_internal(
                     .wrapping_mul(ZSTD_USE_CDICT_PARAMS_DICTSIZE_MULTIPLIER)
             || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
             || (*cdict).compressionLevel == 0)
-        && (*params).attachDictPref as core::ffi::c_uint
-            != ZSTD_dictForceLoad as core::ffi::c_int as core::ffi::c_uint
+        && (*params).attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceLoad
     {
         return ZSTD_resetCCtx_usingCDict(cctx, cdict, params, pledgedSrcSize, zbuff);
     }
@@ -8090,7 +8077,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
@@ -8163,7 +8150,7 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
@@ -8504,7 +8491,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             forceWindow: 0,
             targetCBlockSize: 0,
             srcSizeHint: 0,
-            attachDictPref: ZSTD_dictDefaultAttach,
+            attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
             literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
@@ -8559,7 +8546,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             forceWindow: 0,
             targetCBlockSize: 0,
             srcSizeHint: 0,
-            attachDictPref: ZSTD_dictDefaultAttach,
+            attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
             literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
@@ -8614,7 +8601,7 @@ pub unsafe extern "C" fn ZSTD_compress(
             forceWindow: 0,
             targetCBlockSize: 0,
             srcSizeHint: 0,
-            attachDictPref: ZSTD_dictDefaultAttach,
+            attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
             literalCompressionMode: ParamSwitch::Auto,
             nbWorkers: 0,
             jobSize: 0,
@@ -9129,7 +9116,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
@@ -9373,7 +9360,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,
@@ -9490,7 +9477,7 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
         forceWindow: 0,
         targetCBlockSize: 0,
         srcSizeHint: 0,
-        attachDictPref: ZSTD_dictDefaultAttach,
+        attachDictPref: ZSTD_dictAttachPref_e::ZSTD_dictDefaultAttach,
         literalCompressionMode: ParamSwitch::Auto,
         nbWorkers: 0,
         jobSize: 0,

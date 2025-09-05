@@ -317,3 +317,27 @@ impl ZSTD_ResetDirective {
     pub const ZSTD_reset_parameters: Self = Self(2);
     pub const ZSTD_reset_session_and_parameters: Self = Self(3);
 }
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZSTD_dictAttachPref_e(pub(crate) u32);
+impl ZSTD_dictAttachPref_e {
+    pub const ZSTD_dictDefaultAttach: Self = Self(0);
+    pub const ZSTD_dictForceAttach: Self = Self(1);
+    pub const ZSTD_dictForceCopy: Self = Self(2);
+    pub const ZSTD_dictForceLoad: Self = Self(3);
+}
+
+impl TryFrom<i32> for ZSTD_dictAttachPref_e {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::ZSTD_dictDefaultAttach),
+            1 => Ok(Self::ZSTD_dictForceAttach),
+            2 => Ok(Self::ZSTD_dictForceCopy),
+            3 => Ok(Self::ZSTD_dictForceLoad),
+            _ => Err(()),
+        }
+    }
+}
