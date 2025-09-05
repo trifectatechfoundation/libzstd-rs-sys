@@ -32,46 +32,6 @@ extern "C" {
     static mut stdout: *mut FILE;
     static mut stderr: *mut FILE;
 }
-pub type ZSTD_cParameter = core::ffi::c_uint;
-pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
-pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
-pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
-pub const ZSTD_c_experimentalParam17: ZSTD_cParameter = 1014;
-pub const ZSTD_c_experimentalParam16: ZSTD_cParameter = 1013;
-pub const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-pub const ZSTD_c_experimentalParam14: ZSTD_cParameter = 1011;
-pub const ZSTD_c_experimentalParam13: ZSTD_cParameter = 1010;
-pub const ZSTD_c_experimentalParam12: ZSTD_cParameter = 1009;
-pub const ZSTD_c_experimentalParam11: ZSTD_cParameter = 1008;
-pub const ZSTD_c_experimentalParam10: ZSTD_cParameter = 1007;
-pub const ZSTD_c_experimentalParam9: ZSTD_cParameter = 1006;
-pub const ZSTD_c_experimentalParam8: ZSTD_cParameter = 1005;
-pub const ZSTD_c_experimentalParam7: ZSTD_cParameter = 1004;
-pub const ZSTD_c_experimentalParam5: ZSTD_cParameter = 1002;
-pub const ZSTD_c_experimentalParam4: ZSTD_cParameter = 1001;
-pub const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-pub const ZSTD_c_experimentalParam2: ZSTD_cParameter = 10;
-pub const ZSTD_c_experimentalParam1: ZSTD_cParameter = 500;
-pub const ZSTD_c_overlapLog: ZSTD_cParameter = 402;
-pub const ZSTD_c_jobSize: ZSTD_cParameter = 401;
-pub const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
-pub const ZSTD_c_dictIDFlag: ZSTD_cParameter = 202;
-pub const ZSTD_c_checksumFlag: ZSTD_cParameter = 201;
-pub const ZSTD_c_contentSizeFlag: ZSTD_cParameter = 200;
-pub const ZSTD_c_ldmHashRateLog: ZSTD_cParameter = 164;
-pub const ZSTD_c_ldmBucketSizeLog: ZSTD_cParameter = 163;
-pub const ZSTD_c_ldmMinMatch: ZSTD_cParameter = 162;
-pub const ZSTD_c_ldmHashLog: ZSTD_cParameter = 161;
-pub const ZSTD_c_enableLongDistanceMatching: ZSTD_cParameter = 160;
-pub const ZSTD_c_targetCBlockSize: ZSTD_cParameter = 130;
-pub const ZSTD_c_strategy: ZSTD_cParameter = 107;
-pub const ZSTD_c_targetLength: ZSTD_cParameter = 106;
-pub const ZSTD_c_minMatch: ZSTD_cParameter = 105;
-pub const ZSTD_c_searchLog: ZSTD_cParameter = 104;
-pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
-pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
-pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
-pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_ResetDirective = core::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
@@ -250,7 +210,7 @@ unsafe fn BMK_initCCtx(
 ) {
     ZSTD_CCtx_reset(ctx, ZSTD_reset_session_and_parameters);
     if (*adv).nbWorkers == 1 {
-        let zerr = ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, 0);
+        let zerr = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0);
         if ZSTD_isError(zerr) != 0 {
             fprintf(
                 stderr,
@@ -260,7 +220,7 @@ unsafe fn BMK_initCCtx(
             fprintf(
                 stderr,
                 b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, 0)\0" as *const u8
+                b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0)\0" as *const u8
                     as *const core::ffi::c_char,
                 ZSTD_getErrorName(zerr),
             );
@@ -270,7 +230,8 @@ unsafe fn BMK_initCCtx(
             exit(1);
         }
     } else {
-        let zerr_0 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, (*adv).nbWorkers);
+        let zerr_0 =
+            ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, (*adv).nbWorkers);
         if ZSTD_isError(zerr_0) != 0 {
             fprintf(
                 stderr,
@@ -280,8 +241,8 @@ unsafe fn BMK_initCCtx(
             fprintf(
                 stderr,
                 b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_nbWorkers, adv->nbWorkers)\0" as *const u8
-                    as *const core::ffi::c_char,
+                b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, adv->nbWorkers)\0"
+                    as *const u8 as *const core::ffi::c_char,
                 ZSTD_getErrorName(zerr_0),
             );
             fflush(core::ptr::null_mut());
@@ -290,7 +251,7 @@ unsafe fn BMK_initCCtx(
             exit(1);
         }
     }
-    let zerr_1 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_compressionLevel, cLevel);
+    let zerr_1 = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel);
     if ZSTD_isError(zerr_1) != 0 {
         fprintf(
             stderr,
@@ -300,8 +261,8 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_compressionLevel, cLevel)\0" as *const u8
-                as *const core::ffi::c_char,
+            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel)\0"
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_1),
         );
         fflush(core::ptr::null_mut());
@@ -309,7 +270,11 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_2 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_experimentalParam14, (*adv).useRowMatchFinder);
+    let zerr_2 = ZSTD_CCtx_setParameter(
+        ctx,
+        ZSTD_cParameter::ZSTD_c_experimentalParam14,
+        (*adv).useRowMatchFinder,
+    );
     if ZSTD_isError(zerr_2) != 0 {
         fprintf(
             stderr,
@@ -319,7 +284,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_useRowMatchFinder, adv->useRowMatchFinder)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_useRowMatchFinder, adv->useRowMatchFinder)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_2),
         );
@@ -328,7 +293,11 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_3 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_enableLongDistanceMatching, (*adv).ldmFlag);
+    let zerr_3 = ZSTD_CCtx_setParameter(
+        ctx,
+        ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching,
+        (*adv).ldmFlag,
+    );
     if ZSTD_isError(zerr_3) != 0 {
         fprintf(
             stderr,
@@ -338,7 +307,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_enableLongDistanceMatching, adv->ldmFlag)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching, adv->ldmFlag)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_3),
         );
@@ -347,7 +316,8 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_4 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmMinMatch, (*adv).ldmMinMatch);
+    let zerr_4 =
+        ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, (*adv).ldmMinMatch);
     if ZSTD_isError(zerr_4) != 0 {
         fprintf(
             stderr,
@@ -357,8 +327,8 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmMinMatch, adv->ldmMinMatch)\0" as *const u8
-                as *const core::ffi::c_char,
+            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, adv->ldmMinMatch)\0"
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_4),
         );
         fflush(core::ptr::null_mut());
@@ -366,7 +336,7 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_5 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmHashLog, (*adv).ldmHashLog);
+    let zerr_5 = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, (*adv).ldmHashLog);
     if ZSTD_isError(zerr_5) != 0 {
         fprintf(
             stderr,
@@ -376,8 +346,8 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmHashLog, adv->ldmHashLog)\0" as *const u8
-                as *const core::ffi::c_char,
+            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, adv->ldmHashLog)\0"
+                as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_5),
         );
         fflush(core::ptr::null_mut());
@@ -385,7 +355,11 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_6 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmBucketSizeLog, (*adv).ldmBucketSizeLog);
+    let zerr_6 = ZSTD_CCtx_setParameter(
+        ctx,
+        ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog,
+        (*adv).ldmBucketSizeLog,
+    );
     if ZSTD_isError(zerr_6) != 0 {
         fprintf(
             stderr,
@@ -395,7 +369,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_ldmBucketSizeLog, adv->ldmBucketSizeLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog, adv->ldmBucketSizeLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_6),
         );
@@ -404,7 +378,11 @@ unsafe fn BMK_initCCtx(
         fflush(core::ptr::null_mut());
         exit(1);
     }
-    let zerr_7 = ZSTD_CCtx_setParameter(ctx, ZSTD_c_ldmHashRateLog, (*adv).ldmHashRateLog);
+    let zerr_7 = ZSTD_CCtx_setParameter(
+        ctx,
+        ZSTD_cParameter::ZSTD_c_ldmHashRateLog,
+        (*adv).ldmHashRateLog,
+    );
     if ZSTD_isError(zerr_7) != 0 {
         fprintf(
             stderr,
@@ -414,7 +392,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_ldmHashRateLog, adv->ldmHashRateLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmHashRateLog, adv->ldmHashRateLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_7),
         );
@@ -425,7 +403,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_8 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_windowLog,
+        ZSTD_cParameter::ZSTD_c_windowLog,
         (*comprParams).windowLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_8) != 0 {
@@ -437,7 +415,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_windowLog, (int)comprParams->windowLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_windowLog, (int)comprParams->windowLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_8),
         );
@@ -448,7 +426,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_9 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_hashLog,
+        ZSTD_cParameter::ZSTD_c_hashLog,
         (*comprParams).hashLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_9) != 0 {
@@ -460,7 +438,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_hashLog, (int)comprParams->hashLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_hashLog, (int)comprParams->hashLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_9),
         );
@@ -471,7 +449,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_10 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_chainLog,
+        ZSTD_cParameter::ZSTD_c_chainLog,
         (*comprParams).chainLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_10) != 0 {
@@ -483,7 +461,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_chainLog, (int)comprParams->chainLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_chainLog, (int)comprParams->chainLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_10),
         );
@@ -494,7 +472,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_11 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_searchLog,
+        ZSTD_cParameter::ZSTD_c_searchLog,
         (*comprParams).searchLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_11) != 0 {
@@ -506,7 +484,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_searchLog, (int)comprParams->searchLog)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_searchLog, (int)comprParams->searchLog)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_11),
         );
@@ -517,7 +495,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_12 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_minMatch,
+        ZSTD_cParameter::ZSTD_c_minMatch,
         (*comprParams).minMatch as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_12) != 0 {
@@ -529,7 +507,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_minMatch, (int)comprParams->minMatch)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_minMatch, (int)comprParams->minMatch)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_12),
         );
@@ -540,7 +518,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_13 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_targetLength,
+        ZSTD_cParameter::ZSTD_c_targetLength,
         (*comprParams).targetLength as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_13) != 0 {
@@ -552,7 +530,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_targetLength, (int)comprParams->targetLength)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetLength, (int)comprParams->targetLength)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_13),
         );
@@ -563,7 +541,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_14 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_experimentalParam5,
+        ZSTD_cParameter::ZSTD_c_experimentalParam5,
         (*adv).literalCompressionMode as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_14) != 0 {
@@ -575,7 +553,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_literalCompressionMode, (int)adv->literalCompressionMode)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_literalCompressionMode, (int)adv->literalCompressionMode)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_14),
         );
@@ -586,7 +564,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_15 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_strategy,
+        ZSTD_cParameter::ZSTD_c_strategy,
         (*comprParams).strategy as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_15) != 0 {
@@ -598,7 +576,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_strategy, (int)comprParams->strategy)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_strategy, (int)comprParams->strategy)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_15),
         );
@@ -609,7 +587,7 @@ unsafe fn BMK_initCCtx(
     }
     let zerr_16 = ZSTD_CCtx_setParameter(
         ctx,
-        ZSTD_c_targetCBlockSize,
+        ZSTD_cParameter::ZSTD_c_targetCBlockSize,
         (*adv).targetCBlockSize as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_16) != 0 {
@@ -621,7 +599,7 @@ unsafe fn BMK_initCCtx(
         fprintf(
             stderr,
             b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_c_targetCBlockSize, (int)adv->targetCBlockSize)\0"
+            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetCBlockSize, (int)adv->targetCBlockSize)\0"
                 as *const u8 as *const core::ffi::c_char,
             ZSTD_getErrorName(zerr_16),
         );

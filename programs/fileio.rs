@@ -100,46 +100,6 @@ extern "C" {
 type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
-pub type ZSTD_cParameter = core::ffi::c_uint;
-pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
-pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
-pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
-pub const ZSTD_c_experimentalParam17: ZSTD_cParameter = 1014;
-pub const ZSTD_c_experimentalParam16: ZSTD_cParameter = 1013;
-pub const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-pub const ZSTD_c_experimentalParam14: ZSTD_cParameter = 1011;
-pub const ZSTD_c_experimentalParam13: ZSTD_cParameter = 1010;
-pub const ZSTD_c_experimentalParam12: ZSTD_cParameter = 1009;
-pub const ZSTD_c_experimentalParam11: ZSTD_cParameter = 1008;
-pub const ZSTD_c_experimentalParam10: ZSTD_cParameter = 1007;
-pub const ZSTD_c_experimentalParam9: ZSTD_cParameter = 1006;
-pub const ZSTD_c_experimentalParam8: ZSTD_cParameter = 1005;
-pub const ZSTD_c_experimentalParam7: ZSTD_cParameter = 1004;
-pub const ZSTD_c_experimentalParam5: ZSTD_cParameter = 1002;
-pub const ZSTD_c_experimentalParam4: ZSTD_cParameter = 1001;
-pub const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-pub const ZSTD_c_experimentalParam2: ZSTD_cParameter = 10;
-pub const ZSTD_c_experimentalParam1: ZSTD_cParameter = 500;
-pub const ZSTD_c_overlapLog: ZSTD_cParameter = 402;
-pub const ZSTD_c_jobSize: ZSTD_cParameter = 401;
-pub const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
-pub const ZSTD_c_dictIDFlag: ZSTD_cParameter = 202;
-pub const ZSTD_c_checksumFlag: ZSTD_cParameter = 201;
-pub const ZSTD_c_contentSizeFlag: ZSTD_cParameter = 200;
-pub const ZSTD_c_ldmHashRateLog: ZSTD_cParameter = 164;
-pub const ZSTD_c_ldmBucketSizeLog: ZSTD_cParameter = 163;
-pub const ZSTD_c_ldmMinMatch: ZSTD_cParameter = 162;
-pub const ZSTD_c_ldmHashLog: ZSTD_cParameter = 161;
-pub const ZSTD_c_enableLongDistanceMatching: ZSTD_cParameter = 160;
-pub const ZSTD_c_targetCBlockSize: ZSTD_cParameter = 130;
-pub const ZSTD_c_strategy: ZSTD_cParameter = 107;
-pub const ZSTD_c_targetLength: ZSTD_cParameter = 106;
-pub const ZSTD_c_minMatch: ZSTD_cParameter = 105;
-pub const ZSTD_c_searchLog: ZSTD_cParameter = 104;
-pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
-pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
-pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
-pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 pub type ZSTD_ResetDirective = core::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
@@ -2118,13 +2078,17 @@ unsafe fn FIO_createCResources(
         comprParams.windowLog = ADAPT_WINDOWLOG_DEFAULT as core::ffi::c_uint;
     }
     let mut err: size_t = 0;
-    err = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_contentSizeFlag, (*prefs).contentSize);
+    err = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_contentSizeFlag,
+        (*prefs).contentSize,
+    );
     if ZSTD_isError(err) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_contentSizeFlag, prefs->contentSize)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_contentSizeFlag, prefs->contentSize)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2159,13 +2123,17 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_0: size_t = 0;
-    err_0 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_dictIDFlag, (*prefs).dictIDFlag);
+    err_0 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_dictIDFlag,
+        (*prefs).dictIDFlag,
+    );
     if ZSTD_isError(err_0) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_dictIDFlag, prefs->dictIDFlag)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_dictIDFlag, prefs->dictIDFlag)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2200,13 +2168,17 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_1: size_t = 0;
-    err_1 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_checksumFlag, (*prefs).checksumFlag);
+    err_1 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_checksumFlag,
+        (*prefs).checksumFlag,
+    );
     if ZSTD_isError(err_1) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_checksumFlag, prefs->checksumFlag)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_checksumFlag, prefs->checksumFlag)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2241,13 +2213,13 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_2: size_t = 0;
-    err_2 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_compressionLevel, cLevel);
+    err_2 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel);
     if ZSTD_isError(err_2) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_compressionLevel, cLevel)\0" as *const u8
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel)\0" as *const u8
                     as *const core::ffi::c_char,
             );
         }
@@ -2284,7 +2256,7 @@ unsafe fn FIO_createCResources(
     let mut err_3: size_t = 0;
     err_3 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_targetCBlockSize,
+        ZSTD_cParameter::ZSTD_c_targetCBlockSize,
         (*prefs).targetCBlockSize as core::ffi::c_int,
     );
     if ZSTD_isError(err_3) != 0 {
@@ -2292,7 +2264,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_targetCBlockSize, (int)prefs->targetCBlockSize)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_targetCBlockSize, (int)prefs->targetCBlockSize)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2327,13 +2299,17 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_4: size_t = 0;
-    err_4 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam7, (*prefs).srcSizeHint);
+    err_4 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_experimentalParam7,
+        (*prefs).srcSizeHint,
+    );
     if ZSTD_isError(err_4) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam7, (int)prefs->srcSizeHint)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam7, (int)prefs->srcSizeHint)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2370,7 +2346,7 @@ unsafe fn FIO_createCResources(
     let mut err_5: size_t = 0;
     err_5 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_enableLongDistanceMatching,
+        ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching,
         (*prefs).ldmFlag,
     );
     if ZSTD_isError(err_5) != 0 {
@@ -2378,7 +2354,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_enableLongDistanceMatching, prefs->ldmFlag)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching, prefs->ldmFlag)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2413,13 +2389,17 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_6: size_t = 0;
-    err_6 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmHashLog, (*prefs).ldmHashLog);
+    err_6 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_ldmHashLog,
+        (*prefs).ldmHashLog,
+    );
     if ZSTD_isError(err_6) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmHashLog, prefs->ldmHashLog)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, prefs->ldmHashLog)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2454,13 +2434,17 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_7: size_t = 0;
-    err_7 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmMinMatch, (*prefs).ldmMinMatch);
+    err_7 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_ldmMinMatch,
+        (*prefs).ldmMinMatch,
+    );
     if ZSTD_isError(err_7) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmMinMatch, prefs->ldmMinMatch)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, prefs->ldmMinMatch)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2498,7 +2482,7 @@ unsafe fn FIO_createCResources(
         let mut err_8: size_t = 0;
         err_8 = ZSTD_CCtx_setParameter(
             ress.cctx,
-            ZSTD_c_ldmBucketSizeLog,
+            ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog,
             (*prefs).ldmBucketSizeLog,
         );
         if ZSTD_isError(err_8) != 0 {
@@ -2506,7 +2490,7 @@ unsafe fn FIO_createCResources(
                 fprintf(
                     stderr,
                     b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmBucketSizeLog, prefs->ldmBucketSizeLog)\0"
+                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog, prefs->ldmBucketSizeLog)\0"
                         as *const u8 as *const core::ffi::c_char,
                 );
             }
@@ -2543,13 +2527,17 @@ unsafe fn FIO_createCResources(
     }
     if (*prefs).ldmHashRateLog != FIO_LDM_PARAM_NOTSET {
         let mut err_9: size_t = 0;
-        err_9 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmHashRateLog, (*prefs).ldmHashRateLog);
+        err_9 = ZSTD_CCtx_setParameter(
+            ress.cctx,
+            ZSTD_cParameter::ZSTD_c_ldmHashRateLog,
+            (*prefs).ldmHashRateLog,
+        );
         if ZSTD_isError(err_9) != 0 {
             if g_display_prefs.displayLevel >= 5 {
                 fprintf(
                     stderr,
                     b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_ldmHashRateLog, prefs->ldmHashRateLog)\0"
+                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_ldmHashRateLog, prefs->ldmHashRateLog)\0"
                         as *const u8 as *const core::ffi::c_char,
                 );
             }
@@ -2587,7 +2575,7 @@ unsafe fn FIO_createCResources(
     let mut err_10: size_t = 0;
     err_10 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_experimentalParam14,
+        ZSTD_cParameter::ZSTD_c_experimentalParam14,
         (*prefs).useRowMatchFinder,
     );
     if ZSTD_isError(err_10) != 0 {
@@ -2595,7 +2583,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam14, prefs->useRowMatchFinder)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam14, prefs->useRowMatchFinder)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2632,7 +2620,7 @@ unsafe fn FIO_createCResources(
     let mut err_11: size_t = 0;
     err_11 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_windowLog,
+        ZSTD_cParameter::ZSTD_c_windowLog,
         comprParams.windowLog as core::ffi::c_int,
     );
     if ZSTD_isError(err_11) != 0 {
@@ -2640,7 +2628,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_windowLog, (int)comprParams.windowLog)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_windowLog, (int)comprParams.windowLog)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2677,7 +2665,7 @@ unsafe fn FIO_createCResources(
     let mut err_12: size_t = 0;
     err_12 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_chainLog,
+        ZSTD_cParameter::ZSTD_c_chainLog,
         comprParams.chainLog as core::ffi::c_int,
     );
     if ZSTD_isError(err_12) != 0 {
@@ -2685,7 +2673,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_chainLog, (int)comprParams.chainLog)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_chainLog, (int)comprParams.chainLog)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2722,7 +2710,7 @@ unsafe fn FIO_createCResources(
     let mut err_13: size_t = 0;
     err_13 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_hashLog,
+        ZSTD_cParameter::ZSTD_c_hashLog,
         comprParams.hashLog as core::ffi::c_int,
     );
     if ZSTD_isError(err_13) != 0 {
@@ -2730,7 +2718,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_hashLog, (int)comprParams.hashLog)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_hashLog, (int)comprParams.hashLog)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2767,7 +2755,7 @@ unsafe fn FIO_createCResources(
     let mut err_14: size_t = 0;
     err_14 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_searchLog,
+        ZSTD_cParameter::ZSTD_c_searchLog,
         comprParams.searchLog as core::ffi::c_int,
     );
     if ZSTD_isError(err_14) != 0 {
@@ -2775,7 +2763,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_searchLog, (int)comprParams.searchLog)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_searchLog, (int)comprParams.searchLog)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2812,7 +2800,7 @@ unsafe fn FIO_createCResources(
     let mut err_15: size_t = 0;
     err_15 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_minMatch,
+        ZSTD_cParameter::ZSTD_c_minMatch,
         comprParams.minMatch as core::ffi::c_int,
     );
     if ZSTD_isError(err_15) != 0 {
@@ -2820,7 +2808,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_minMatch, (int)comprParams.minMatch)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_minMatch, (int)comprParams.minMatch)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2857,7 +2845,7 @@ unsafe fn FIO_createCResources(
     let mut err_16: size_t = 0;
     err_16 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_targetLength,
+        ZSTD_cParameter::ZSTD_c_targetLength,
         comprParams.targetLength as core::ffi::c_int,
     );
     if ZSTD_isError(err_16) != 0 {
@@ -2865,7 +2853,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_targetLength, (int)comprParams.targetLength)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_targetLength, (int)comprParams.targetLength)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2902,7 +2890,7 @@ unsafe fn FIO_createCResources(
     let mut err_17: size_t = 0;
     err_17 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_strategy,
+        ZSTD_cParameter::ZSTD_c_strategy,
         comprParams.strategy as core::ffi::c_int,
     );
     if ZSTD_isError(err_17) != 0 {
@@ -2910,7 +2898,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_strategy, (int)comprParams.strategy)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_strategy, (int)comprParams.strategy)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2947,7 +2935,7 @@ unsafe fn FIO_createCResources(
     let mut err_18: size_t = 0;
     err_18 = ZSTD_CCtx_setParameter(
         ress.cctx,
-        ZSTD_c_experimentalParam5,
+        ZSTD_cParameter::ZSTD_c_experimentalParam5,
         (*prefs).literalCompressionMode as core::ffi::c_int,
     );
     if ZSTD_isError(err_18) != 0 {
@@ -2955,7 +2943,7 @@ unsafe fn FIO_createCResources(
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam5, (int)prefs->literalCompressionMode)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam5, (int)prefs->literalCompressionMode)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -2990,13 +2978,13 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_19: size_t = 0;
-    err_19 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam8, 1);
+    err_19 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam8, 1);
     if ZSTD_isError(err_19) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam8, 1)\0" as *const u8
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam8, 1)\0" as *const u8
                     as *const core::ffi::c_char,
             );
         }
@@ -3038,13 +3026,17 @@ unsafe fn FIO_createCResources(
         );
     }
     let mut err_20: size_t = 0;
-    err_20 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_nbWorkers, (*prefs).nbWorkers);
+    err_20 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_nbWorkers,
+        (*prefs).nbWorkers,
+    );
     if ZSTD_isError(err_20) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_nbWorkers, prefs->nbWorkers)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_nbWorkers, prefs->nbWorkers)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -3079,13 +3071,13 @@ unsafe fn FIO_createCResources(
         exit(11);
     }
     let mut err_21: size_t = 0;
-    err_21 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_jobSize, (*prefs).jobSize);
+    err_21 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_jobSize, (*prefs).jobSize);
     if ZSTD_isError(err_21) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_jobSize, prefs->jobSize)\0" as *const u8
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_jobSize, prefs->jobSize)\0" as *const u8
                     as *const core::ffi::c_char,
             );
         }
@@ -3128,13 +3120,17 @@ unsafe fn FIO_createCResources(
             );
         }
         let mut err_22: size_t = 0;
-        err_22 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_overlapLog, (*prefs).overlapLog);
+        err_22 = ZSTD_CCtx_setParameter(
+            ress.cctx,
+            ZSTD_cParameter::ZSTD_c_overlapLog,
+            (*prefs).overlapLog,
+        );
         if ZSTD_isError(err_22) != 0 {
             if g_display_prefs.displayLevel >= 5 {
                 fprintf(
                     stderr,
                     b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_overlapLog, prefs->overlapLog)\0"
+                    b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_overlapLog, prefs->overlapLog)\0"
                         as *const u8 as *const core::ffi::c_char,
                 );
             }
@@ -3170,13 +3166,17 @@ unsafe fn FIO_createCResources(
         }
     }
     let mut err_23: size_t = 0;
-    err_23 = ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam1, (*prefs).rsyncable);
+    err_23 = ZSTD_CCtx_setParameter(
+        ress.cctx,
+        ZSTD_cParameter::ZSTD_c_experimentalParam1,
+        (*prefs).rsyncable,
+    );
     if ZSTD_isError(err_23) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_c_experimentalParam1, prefs->rsyncable)\0"
+                b"ZSTD_CCtx_setParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_experimentalParam1, prefs->rsyncable)\0"
                     as *const u8 as *const core::ffi::c_char,
             );
         }
@@ -4006,13 +4006,13 @@ unsafe fn FIO_compressZstdFrame(
         suffix: core::ptr::null::<core::ffi::c_char>(),
     };
     let mut err_1: size_t = 0;
-    err_1 = ZSTD_CCtx_getParameter(ress.cctx, ZSTD_c_windowLog, &mut windowLog);
+    err_1 = ZSTD_CCtx_getParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_windowLog, &mut windowLog);
     if ZSTD_isError(err_1) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_getParameter(ress.cctx, ZSTD_c_windowLog, &windowLog)\0" as *const u8
+                b"ZSTD_CCtx_getParameter(ress.cctx, ZSTD_cParameter::ZSTD_c_windowLog, &windowLog)\0" as *const u8
                     as *const core::ffi::c_char,
             );
         }
@@ -4298,7 +4298,7 @@ unsafe fn FIO_compressZstdFrame(
                         compressionLevel += (compressionLevel == 0) as core::ffi::c_int;
                         ZSTD_CCtx_setParameter(
                             ress.cctx,
-                            ZSTD_c_compressionLevel,
+                            ZSTD_cParameter::ZSTD_c_compressionLevel,
                             compressionLevel,
                         );
                     }
@@ -4319,7 +4319,7 @@ unsafe fn FIO_compressZstdFrame(
                         compressionLevel -= (compressionLevel == 0) as core::ffi::c_int;
                         ZSTD_CCtx_setParameter(
                             ress.cctx,
-                            ZSTD_c_compressionLevel,
+                            ZSTD_cParameter::ZSTD_c_compressionLevel,
                             compressionLevel,
                         );
                     }
