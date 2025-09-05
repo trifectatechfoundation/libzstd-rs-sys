@@ -202,6 +202,47 @@ pub mod experimental {
 
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZSTD_dParameter(u32);
+
+impl ZSTD_dParameter {
+    pub const ZSTD_d_experimentalParam1: Self = Self(1000);
+    pub const ZSTD_d_experimentalParam2: Self = Self(1001);
+    pub const ZSTD_d_experimentalParam3: Self = Self(1002);
+    pub const ZSTD_d_experimentalParam4: Self = Self(1003);
+    pub const ZSTD_d_experimentalParam5: Self = Self(1004);
+    pub const ZSTD_d_experimentalParam6: Self = Self(1005);
+
+    pub const ZSTD_d_format: Self = Self::ZSTD_d_experimentalParam1;
+    pub const ZSTD_d_stableOutBuffer: Self = Self::ZSTD_d_experimentalParam2;
+    pub const ZSTD_d_forceIgnoreChecksum: Self = Self::ZSTD_d_experimentalParam3;
+    pub const ZSTD_d_refMultipleDDicts: Self = Self::ZSTD_d_experimentalParam4;
+    pub const ZSTD_d_disableHuffmanAssembly: Self = Self::ZSTD_d_experimentalParam5;
+    pub const ZSTD_d_maxBlockSize: Self = Self::ZSTD_d_experimentalParam6;
+
+    pub const ZSTD_d_windowLogMax: Self = Self(100);
+}
+
+#[repr(u32)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ZSTD_forceIgnoreChecksum_e {
+    ZSTD_d_validateChecksum = 0,
+    ZSTD_d_ignoreChecksum = 1,
+}
+
+impl TryFrom<i32> for ZSTD_forceIgnoreChecksum_e {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::ZSTD_d_validateChecksum),
+            1 => Ok(Self::ZSTD_d_ignoreChecksum),
+            _ => Err(()),
+        }
+    }
+}
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ZSTD_cParameter(pub(crate) u32);
 
 impl ZSTD_cParameter {

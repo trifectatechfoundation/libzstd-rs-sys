@@ -104,14 +104,6 @@ pub type ZSTD_ResetDirective = core::ffi::c_uint;
 pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
 pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
 pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
-pub type ZSTD_dParameter = core::ffi::c_uint;
-pub const ZSTD_d_experimentalParam6: ZSTD_dParameter = 1005;
-pub const ZSTD_d_experimentalParam5: ZSTD_dParameter = 1004;
-pub const ZSTD_d_experimentalParam4: ZSTD_dParameter = 1003;
-pub const ZSTD_d_experimentalParam3: ZSTD_dParameter = 1002;
-pub const ZSTD_d_experimentalParam2: ZSTD_dParameter = 1001;
-pub const ZSTD_d_experimentalParam1: ZSTD_dParameter = 1000;
-pub const ZSTD_d_windowLogMax: ZSTD_dParameter = 100;
 pub type ZSTD_EndDirective = core::ffi::c_uint;
 pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
@@ -5595,7 +5587,7 @@ unsafe fn FIO_createDResources(
     let mut err_0: size_t = 0;
     err_0 = ZSTD_DCtx_setParameter(
         ress.dctx,
-        ZSTD_d_experimentalParam3,
+        ZSTD_dParameter::ZSTD_d_experimentalParam3,
         ((*prefs).checksumFlag == 0) as core::ffi::c_int,
     );
     if ZSTD_isError(err_0) != 0 {
