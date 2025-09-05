@@ -100,10 +100,6 @@ extern "C" {
 type __compar_fn_t = Option<
     unsafe extern "C" fn(*const core::ffi::c_void, *const core::ffi::c_void) -> core::ffi::c_int,
 >;
-pub type ZSTD_ResetDirective = core::ffi::c_uint;
-pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
-pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
-pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
 pub type ZSTD_EndDirective = core::ffi::c_uint;
 pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
@@ -5642,14 +5638,14 @@ unsafe fn FIO_createDResources(
         dictBufferType,
     );
     let mut err_1: size_t = 0;
-    err_1 = ZSTD_DCtx_reset(ress.dctx, ZSTD_reset_session_only);
+    err_1 = ZSTD_DCtx_reset(ress.dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ZSTD_isError(err_1) != 0 {
         if g_display_prefs.displayLevel >= 5 {
             fprintf(
                 stderr,
                 b"%s \n\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_DCtx_reset(ress.dctx, ZSTD_reset_session_only)\0" as *const u8
-                    as *const core::ffi::c_char,
+                b"ZSTD_DCtx_reset(ress.dctx, ZSTD_ResetDirective::ZSTD_reset_session_only)\0"
+                    as *const u8 as *const core::ffi::c_char,
             );
         }
         if g_display_prefs.displayLevel >= 1 {
@@ -5959,7 +5955,7 @@ unsafe fn FIO_decompressZstdFrame(
     if srcFileLength > 20 && g_display_prefs.displayLevel < 3 {
         srcFName20 = srcFName20.add(srcFileLength.wrapping_sub(20));
     }
-    ZSTD_DCtx_reset((*ress).dctx, ZSTD_reset_session_only);
+    ZSTD_DCtx_reset((*ress).dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     AIO_ReadPool_fillBuffer((*ress).readCtx, ZSTD_FRAMEHEADERSIZE_MAX as size_t);
     loop {
         let mut inBuff = setInBuffer(

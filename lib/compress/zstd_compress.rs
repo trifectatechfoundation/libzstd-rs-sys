@@ -480,10 +480,6 @@ pub const ZSTD_cpm_unknown: ZSTD_CParamMode_e = 3;
 pub const ZSTD_cpm_createCDict: ZSTD_CParamMode_e = 2;
 pub const ZSTD_cpm_attachDict: ZSTD_CParamMode_e = 1;
 pub const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-pub type ZSTD_ResetDirective = core::ffi::c_uint;
-pub const ZSTD_reset_session_and_parameters: ZSTD_ResetDirective = 3;
-pub const ZSTD_reset_parameters: ZSTD_ResetDirective = 2;
-pub const ZSTD_reset_session_only: ZSTD_ResetDirective = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -1887,7 +1883,7 @@ unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, ::core::mem::size_of::<ZSTD_CCtx>());
     (*cctx).customMem = memManager;
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
-    let _err = ZSTD_CCtx_reset(cctx, ZSTD_reset_parameters);
+    let _err = ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_parameters);
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
@@ -3429,18 +3425,20 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
     cctx: *mut ZSTD_CCtx,
     reset: ZSTD_ResetDirective,
 ) -> size_t {
-    if reset as core::ffi::c_uint
-        == ZSTD_reset_session_only as core::ffi::c_int as core::ffi::c_uint
-        || reset as core::ffi::c_uint
-            == ZSTD_reset_session_and_parameters as core::ffi::c_int as core::ffi::c_uint
-    {
+    if matches!(
+        reset,
+        ZSTD_ResetDirective::ZSTD_reset_session_only
+            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+    ) {
         (*cctx).streamStage = zcss_init;
         (*cctx).pledgedSrcSizePlusOne = 0;
     }
-    if reset as core::ffi::c_uint == ZSTD_reset_parameters as core::ffi::c_int as core::ffi::c_uint
-        || reset as core::ffi::c_uint
-            == ZSTD_reset_session_and_parameters as core::ffi::c_int as core::ffi::c_uint
-    {
+
+    if matches!(
+        reset,
+        ZSTD_ResetDirective::ZSTD_reset_parameters
+            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+    ) {
         if (*cctx).streamStage as core::ffi::c_uint
             != zcss_init as core::ffi::c_int as core::ffi::c_uint
         {
@@ -3449,6 +3447,7 @@ pub unsafe extern "C" fn ZSTD_CCtx_reset(
         ZSTD_clearAllDicts(cctx);
         return ZSTD_CCtxParams_reset(&mut (*cctx).requestedParams);
     }
+
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_checkCParams))]
@@ -9724,7 +9723,7 @@ pub unsafe extern "C" fn ZSTD_resetCStream(
     } else {
         pss
     };
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9742,7 +9741,7 @@ pub unsafe fn ZSTD_initCStream_internal(
     params: *const ZSTD_CCtx_params,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9771,7 +9770,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     fParams: ZSTD_frameParameters,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9791,7 +9790,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     zcs: *mut ZSTD_CStream,
     cdict: *const ZSTD_CDict,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9814,7 +9813,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     } else {
         pss
     };
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9840,7 +9839,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     dictSize: size_t,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9869,7 +9868,7 @@ pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     } else {
         pss
     };
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -9896,7 +9895,7 @@ pub unsafe extern "C" fn ZSTD_initCStream(
     zcs: *mut ZSTD_CStream,
     compressionLevel: core::ffi::c_int,
 ) -> size_t {
-    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+    let err_code = ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
     if ERR_isError(err_code) {
         return err_code;
     }
@@ -10001,7 +10000,7 @@ unsafe fn ZSTD_compressStream_generic(
                     ip = iend;
                     op = op.add(cSize);
                     (*zcs).frameEnded = 1;
-                    ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+                    ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
                     someMoreWork = 0;
                     current_block_156 = 16754622181974910496;
                 } else {
@@ -10156,7 +10155,10 @@ unsafe fn ZSTD_compressStream_generic(
                                 op = op.add(cSize_0);
                                 if (*zcs).frameEnded != 0 {
                                     someMoreWork = 0;
-                                    ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+                                    ZSTD_CCtx_reset(
+                                        zcs,
+                                        ZSTD_ResetDirective::ZSTD_reset_session_only,
+                                    );
                                 }
                                 current_block_156 = 16754622181974910496;
                             } else {
@@ -10195,7 +10197,7 @@ unsafe fn ZSTD_compressStream_generic(
                 (*zcs).outBuffContentSize = (*zcs).outBuffFlushedSize;
                 if (*zcs).frameEnded != 0 {
                     someMoreWork = 0;
-                    ZSTD_CCtx_reset(zcs, ZSTD_reset_session_only);
+                    ZSTD_CCtx_reset(zcs, ZSTD_ResetDirective::ZSTD_reset_session_only);
                 } else {
                     (*zcs).streamStage = zcss_load;
                 }
@@ -10479,7 +10481,7 @@ pub unsafe extern "C" fn ZSTD_compressStream2(
                 if flushMin == 0 {
                     ZSTD_CCtx_trace(cctx, 0);
                 }
-                ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+                ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
             }
             let err_code_1 = flushMin;
             if ERR_isError(err_code_1) {
@@ -10551,7 +10553,7 @@ pub unsafe extern "C" fn ZSTD_compress2(
 ) -> size_t {
     let originalInBufferMode = (*cctx).requestedParams.inBufferMode;
     let originalOutBufferMode = (*cctx).requestedParams.outBufferMode;
-    ZSTD_CCtx_reset(cctx, ZSTD_reset_session_only);
+    ZSTD_CCtx_reset(cctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
     (*cctx).requestedParams.inBufferMode = ZSTD_bm_stable;
     (*cctx).requestedParams.outBufferMode = ZSTD_bm_stable;
     let mut oPos = 0;
