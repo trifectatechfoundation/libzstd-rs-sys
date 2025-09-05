@@ -3,10 +3,6 @@ pub type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
@@ -87,8 +83,8 @@ use crate::lib::common::zstd_internal::{
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
 use crate::lib::compress::zstd_compress::{
-    optState_t, rawSeq, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
-    ZSTD_resetSeqStore,
+    optState_t, rawSeq, ParamSwitch, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t,
+    ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::zstd::*;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
@@ -449,8 +445,7 @@ unsafe fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     BWeight.wrapping_add(FWeight)
 }
 unsafe fn ZSTD_compressedLiterals(optPtr: *const optState_t) -> core::ffi::c_int {
-    ((*optPtr).literalCompressionMode as core::ffi::c_uint
-        != ZSTD_ps_disable as core::ffi::c_int as core::ffi::c_uint) as core::ffi::c_int
+    ((*optPtr).literalCompressionMode != ParamSwitch::Disable) as core::ffi::c_int
 }
 unsafe fn ZSTD_setBasePrices(optPtr: *mut optState_t, optLevel: core::ffi::c_int) {
     if ZSTD_compressedLiterals(optPtr) != 0 {

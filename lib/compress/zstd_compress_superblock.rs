@@ -25,6 +25,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
+use crate::lib::zstd::ZSTD_ParamSwitch_e;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -113,10 +114,6 @@ pub struct optState_t {
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 pub type ZSTD_OptPrice_e = core::ffi::c_uint;
 pub const zop_predef: ZSTD_OptPrice_e = 1;
 pub const zop_dynamic: ZSTD_OptPrice_e = 0;
@@ -219,11 +216,6 @@ pub struct ldmParams_t {
     pub hashRateLog: u32,
     pub windowLog: u32,
 }
-pub type ZSTD_dictAttachPref_e = core::ffi::c_uint;
-pub const ZSTD_dictForceLoad: ZSTD_dictAttachPref_e = 3;
-pub const ZSTD_dictForceCopy: ZSTD_dictAttachPref_e = 2;
-pub const ZSTD_dictForceAttach: ZSTD_dictAttachPref_e = 1;
-pub const ZSTD_dictDefaultAttach: ZSTD_dictAttachPref_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameParameters {

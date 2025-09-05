@@ -51,46 +51,6 @@ pub struct FileNamesTable {
     pub tableSize: size_t,
     pub tableCapacity: size_t,
 }
-pub type ZSTD_cParameter = core::ffi::c_uint;
-pub const ZSTD_c_experimentalParam20: ZSTD_cParameter = 1017;
-pub const ZSTD_c_experimentalParam19: ZSTD_cParameter = 1016;
-pub const ZSTD_c_experimentalParam18: ZSTD_cParameter = 1015;
-pub const ZSTD_c_experimentalParam17: ZSTD_cParameter = 1014;
-pub const ZSTD_c_experimentalParam16: ZSTD_cParameter = 1013;
-pub const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-pub const ZSTD_c_experimentalParam14: ZSTD_cParameter = 1011;
-pub const ZSTD_c_experimentalParam13: ZSTD_cParameter = 1010;
-pub const ZSTD_c_experimentalParam12: ZSTD_cParameter = 1009;
-pub const ZSTD_c_experimentalParam11: ZSTD_cParameter = 1008;
-pub const ZSTD_c_experimentalParam10: ZSTD_cParameter = 1007;
-pub const ZSTD_c_experimentalParam9: ZSTD_cParameter = 1006;
-pub const ZSTD_c_experimentalParam8: ZSTD_cParameter = 1005;
-pub const ZSTD_c_experimentalParam7: ZSTD_cParameter = 1004;
-pub const ZSTD_c_experimentalParam5: ZSTD_cParameter = 1002;
-pub const ZSTD_c_experimentalParam4: ZSTD_cParameter = 1001;
-pub const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-pub const ZSTD_c_experimentalParam2: ZSTD_cParameter = 10;
-pub const ZSTD_c_experimentalParam1: ZSTD_cParameter = 500;
-pub const ZSTD_c_overlapLog: ZSTD_cParameter = 402;
-pub const ZSTD_c_jobSize: ZSTD_cParameter = 401;
-pub const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
-pub const ZSTD_c_dictIDFlag: ZSTD_cParameter = 202;
-pub const ZSTD_c_checksumFlag: ZSTD_cParameter = 201;
-pub const ZSTD_c_contentSizeFlag: ZSTD_cParameter = 200;
-pub const ZSTD_c_ldmHashRateLog: ZSTD_cParameter = 164;
-pub const ZSTD_c_ldmBucketSizeLog: ZSTD_cParameter = 163;
-pub const ZSTD_c_ldmMinMatch: ZSTD_cParameter = 162;
-pub const ZSTD_c_ldmHashLog: ZSTD_cParameter = 161;
-pub const ZSTD_c_enableLongDistanceMatching: ZSTD_cParameter = 160;
-pub const ZSTD_c_targetCBlockSize: ZSTD_cParameter = 130;
-pub const ZSTD_c_strategy: ZSTD_cParameter = 107;
-pub const ZSTD_c_targetLength: ZSTD_cParameter = 106;
-pub const ZSTD_c_minMatch: ZSTD_cParameter = 105;
-pub const ZSTD_c_searchLog: ZSTD_cParameter = 104;
-pub const ZSTD_c_chainLog: ZSTD_cParameter = 103;
-pub const ZSTD_c_hashLog: ZSTD_cParameter = 102;
-pub const ZSTD_c_windowLog: ZSTD_cParameter = 101;
-pub const ZSTD_c_compressionLevel: ZSTD_cParameter = 100;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_bounds {
@@ -98,10 +58,6 @@ pub struct ZSTD_bounds {
     pub lowerBound: core::ffi::c_int,
     pub upperBound: core::ffi::c_int,
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 pub type FIO_progressSetting_e = core::ffi::c_uint;
 pub const FIO_ps_always: FIO_progressSetting_e = 2;
 pub const FIO_ps_never: FIO_progressSetting_e = 1;
@@ -1827,8 +1783,8 @@ unsafe fn main_0(
     let mut cLevelLast = MINCLEVEL - 1;
     let mut setThreads_non1 = 0;
     let mut nbWorkers = init_nbWorkers();
-    let mut mmapDict = ZSTD_ps_auto;
-    let mut useRowMatchFinder = ZSTD_ps_auto;
+    let mut mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
+    let mut useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
     let mut cType = FIO_zstdCompression;
     let mut compressibility = -1.0f64;
     let mut bench_nbSeconds = 3;
@@ -1869,7 +1825,7 @@ unsafe fn main_0(
     let mut fastCoverParams = defaultFastCoverParams();
     let mut dict = fastCover;
     let mut benchParams = BMK_initAdvancedParams();
-    let mut literalCompressionMode = ZSTD_ps_auto;
+    let mut literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
     checkLibVersion();
     assert!(argCount >= 1);
     if filenames.is_null() || file_of_names.is_null() {
@@ -2232,13 +2188,13 @@ unsafe fn main_0(
                             b"--no-row-match-finder\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            useRowMatchFinder = ZSTD_ps_disable;
+                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                         } else if strcmp(
                             argument,
                             b"--row-match-finder\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            useRowMatchFinder = ZSTD_ps_enable;
+                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                         } else if longCommandWArg(
                             &mut argument,
                             b"--adapt=\0" as *const u8 as *const core::ffi::c_char,
@@ -2269,13 +2225,13 @@ unsafe fn main_0(
                             b"--mmap-dict\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            mmapDict = ZSTD_ps_enable;
+                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                         } else if strcmp(
                             argument,
                             b"--no-mmap-dict\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            mmapDict = ZSTD_ps_disable;
+                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                         } else if strcmp(
                             argument,
                             b"--format=gzip\0" as *const u8 as *const core::ffi::c_char,
@@ -2326,14 +2282,14 @@ unsafe fn main_0(
                                 b"--compress-literals\0" as *const u8 as *const core::ffi::c_char,
                             ) == 0
                             {
-                                literalCompressionMode = ZSTD_ps_enable;
+                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                             } else if strcmp(
                                 argument,
                                 b"--no-compress-literals\0" as *const u8
                                     as *const core::ffi::c_char,
                             ) == 0
                             {
-                                literalCompressionMode = ZSTD_ps_disable;
+                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                             } else if strcmp(
                                 argument,
                                 b"--no-progress\0" as *const u8 as *const core::ffi::c_char,
@@ -3026,7 +2982,7 @@ unsafe fn main_0(
                 benchParams.ldmFlag = ldmFlag;
                 benchParams.ldmMinMatch = g_ldmMinMatch as core::ffi::c_int;
                 benchParams.ldmHashLog = g_ldmHashLog as core::ffi::c_int;
-                benchParams.useRowMatchFinder = useRowMatchFinder as core::ffi::c_int;
+                benchParams.useRowMatchFinder = useRowMatchFinder.to_i32();
                 if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
                     benchParams.ldmBucketSizeLog = g_ldmBucketSizeLog as core::ffi::c_int;
                 }
@@ -3373,7 +3329,7 @@ unsafe fn main_0(
                             FIO_setLdmHashRateLog(prefs, g_ldmHashRateLog as core::ffi::c_int);
                         }
                         FIO_setAdaptiveMode(prefs, adapt);
-                        FIO_setUseRowMatchFinder(prefs, useRowMatchFinder as core::ffi::c_int);
+                        FIO_setUseRowMatchFinder(prefs, useRowMatchFinder.to_i32());
                         FIO_setAdaptMin(prefs, adaptMin);
                         FIO_setAdaptMax(prefs, adaptMax);
                         FIO_setRsyncable(prefs, rsyncable);
@@ -3388,7 +3344,8 @@ unsafe fn main_0(
                         if adaptMax < cLevel {
                             cLevel = adaptMax;
                         }
-                        let strategyBounds = ZSTD_cParam_getBounds(ZSTD_c_strategy);
+                        let strategyBounds =
+                            ZSTD_cParam_getBounds(ZSTD_cParameter::ZSTD_c_strategy);
                         assert!(
                             ZSTD_NB_STRATEGIES as core::ffi::c_int == strategyBounds.upperBound
                         );

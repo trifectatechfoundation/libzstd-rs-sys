@@ -497,7 +497,7 @@ fn test_decompress_stream_with_dict() {
 
         let ret = ZSTD_DCtx_setParameter(
             zd,
-            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             (ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
         );
         assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
@@ -550,7 +550,7 @@ fn decompression_by_small_increment() {
 
         let ret = ZSTD_DCtx_setParameter(
             zd.as_mut_ptr(),
-            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1,
         );
         assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
@@ -627,7 +627,7 @@ fn test_multi_fragments_decompression() {
 
         let ret = ZSTD_DCtx_setParameter(
             zd,
-            zstd_sys::ZSTD_dParameter::ZSTD_d_windowLogMax as _,
+            ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             (zstd_sys::ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
         );
         assert_eq!(ZSTD_isError(ret), 0);

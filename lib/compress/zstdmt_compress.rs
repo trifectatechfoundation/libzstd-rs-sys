@@ -70,9 +70,6 @@ struct SerialState {
     ldmWindowCond: Condvar,
     ldmWindow: ZSTD_window_t,
 }
-type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct RoundBuff_t {
@@ -140,10 +137,6 @@ struct ZSTDMT_jobDescription {
 type ZSTD_dictContentType_e = core::ffi::c_uint;
 const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-type ZSTD_cParameter = core::ffi::c_uint;
-const ZSTD_c_experimentalParam15: ZSTD_cParameter = 1012;
-const ZSTD_c_experimentalParam3: ZSTD_cParameter = 1000;
-const ZSTD_c_nbWorkers: ZSTD_cParameter = 400;
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
 type ZSTD_EndDirective = core::ffi::c_uint;
 const ZSTD_e_end: ZSTD_EndDirective = 2;
@@ -165,9 +158,8 @@ const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-const ZSTD_c_forceMaxWindow: core::ffi::c_int = ZSTD_c_experimentalParam3 as core::ffi::c_int;
-const ZSTD_c_deterministicRefPrefix: core::ffi::c_int =
-    ZSTD_c_experimentalParam15 as core::ffi::c_int;
+const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
+const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 const HASH_READ_SIZE: core::ffi::c_int = 8;
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
@@ -615,9 +607,7 @@ unsafe fn ZSTDMT_serialState_reset(
     dictSize: size_t,
     dictContentType: ZSTD_dictContentType_e,
 ) -> core::ffi::c_int {
-    if params.ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         ZSTD_ldm_adjustParameters(&mut params.ldmParams, &params.cParams);
     } else {
         ptr::write_bytes(
@@ -630,9 +620,7 @@ unsafe fn ZSTDMT_serialState_reset(
     if params.fParams.checksumFlag != 0 {
         ZSTD_XXH64_reset(&mut (*serialState).xxhState, 0);
     }
-    if params.ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
         let hashSize =
@@ -740,9 +728,7 @@ unsafe fn ZSTDMT_serialState_genSequences(
         guard = (*serialState).cond.wait(guard).unwrap();
     }
     if (*serialState).nextJobID == jobID {
-        if (*serialState).params.ldmParams.enableLdm as core::ffi::c_uint
-            == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-        {
+        if (*serialState).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
             ZSTD_window_update(&mut (*serialState).ldmState.window, src.start, src.size, 0);
             let error = ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
@@ -821,8 +807,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
         match current_block {
             17100290475540901977 => {}
             _ => {
-                if jobParams.ldmParams.enableLdm as core::ffi::c_uint
-                    == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
+                if jobParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
                     && (rawSeqStore.seq).is_null()
                 {
                     let guard = (*job).job_mutex.lock().unwrap();
@@ -832,7 +817,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                     if (*job).jobID != 0 {
                         jobParams.fParams.checksumFlag = 0;
                     }
-                    jobParams.ldmParams.enableLdm = ZSTD_ps_disable;
+                    jobParams.ldmParams.enableLdm = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                     jobParams.nbWorkers = 0;
                     ZSTDMT_serialState_genSequences(
                         (*job).serial,
@@ -1164,7 +1149,11 @@ unsafe fn ZSTDMT_CCtxParam_setNbWorkers(
     params: *mut ZSTD_CCtx_params,
     nbWorkers: core::ffi::c_uint,
 ) -> size_t {
-    ZSTD_CCtxParams_setParameter(params, ZSTD_c_nbWorkers, nbWorkers as core::ffi::c_int)
+    ZSTD_CCtxParams_setParameter(
+        params,
+        ZSTD_cParameter::ZSTD_c_nbWorkers,
+        nbWorkers as core::ffi::c_int,
+    )
 }
 #[inline]
 unsafe fn ZSTDMT_createCCtx_advanced_internal(
@@ -1450,9 +1439,7 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
 }
 unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::ffi::c_uint {
     let mut jobLog: core::ffi::c_uint = 0;
-    if (*params).ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         jobLog = if 21
             > (ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy))
                 .wrapping_add(3)
@@ -1496,9 +1483,7 @@ unsafe fn ZSTDMT_computeOverlapSize(params: *const ZSTD_CCtx_params) -> size_t {
     } else {
         ((*params).cParams.windowLog).wrapping_sub(overlapRLog as core::ffi::c_uint)
     }) as core::ffi::c_int;
-    if (*params).ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         ovLog = (if (*params).cParams.windowLog
             < (ZSTDMT_computeTargetJobLog(params)).wrapping_sub(2)
         {
@@ -1590,9 +1575,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         (*mtctx).bufPool,
         ZSTD_compressBound((*mtctx).targetSectionSize),
     );
-    let windowSize = (if (*mtctx).params.ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    let windowSize = (if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         (1) << (*mtctx).params.cParams.windowLog
     } else {
         0
@@ -1934,9 +1917,7 @@ unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> cor
         as core::ffi::c_int
 }
 unsafe fn ZSTDMT_waitForLdmComplete(mtctx: *mut ZSTDMT_CCtx, buffer: Buffer) {
-    if (*mtctx).params.ldmParams.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         let mut guard = (*mtctx).serial.ldmWindowMutex.lock().unwrap();
         while ZSTDMT_doesOverlapWindow(buffer, (*mtctx).serial.ldmWindow) != 0 {
             guard = (*mtctx).serial.ldmWindowCond.wait(guard).unwrap();
