@@ -53,7 +53,7 @@ fn rs(compressed: &[u8]) -> i32 {
     };
 
     // Check for errors
-    if unsafe { ZSTD_isError(result) } != 0 {
+    if ZSTD_isError(result) != 0 {
         let err_msg = unsafe {
             let ptr = ZSTD_getErrorName(result);
             core::ffi::CStr::from_ptr(ptr)
