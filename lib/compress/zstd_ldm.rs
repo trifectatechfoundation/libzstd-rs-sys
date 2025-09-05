@@ -22,10 +22,6 @@ pub struct optState_t {
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
@@ -1015,18 +1011,14 @@ pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>()),
     ));
-    if params.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         totalSize
     } else {
         0
     }
 }
 pub unsafe fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
-    if params.enableLdm as core::ffi::c_uint
-        == ZSTD_ps_enable as core::ffi::c_int as core::ffi::c_uint
-    {
+    if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         maxChunkSize / params.minMatchLength as size_t
     } else {
         0

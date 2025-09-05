@@ -58,10 +58,6 @@ pub struct ZSTD_bounds {
     pub lowerBound: core::ffi::c_int,
     pub upperBound: core::ffi::c_int,
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 pub type FIO_progressSetting_e = core::ffi::c_uint;
 pub const FIO_ps_always: FIO_progressSetting_e = 2;
 pub const FIO_ps_never: FIO_progressSetting_e = 1;
@@ -1787,8 +1783,8 @@ unsafe fn main_0(
     let mut cLevelLast = MINCLEVEL - 1;
     let mut setThreads_non1 = 0;
     let mut nbWorkers = init_nbWorkers();
-    let mut mmapDict = ZSTD_ps_auto;
-    let mut useRowMatchFinder = ZSTD_ps_auto;
+    let mut mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
+    let mut useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
     let mut cType = FIO_zstdCompression;
     let mut compressibility = -1.0f64;
     let mut bench_nbSeconds = 3;
@@ -1829,7 +1825,7 @@ unsafe fn main_0(
     let mut fastCoverParams = defaultFastCoverParams();
     let mut dict = fastCover;
     let mut benchParams = BMK_initAdvancedParams();
-    let mut literalCompressionMode = ZSTD_ps_auto;
+    let mut literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_auto;
     checkLibVersion();
     assert!(argCount >= 1);
     if filenames.is_null() || file_of_names.is_null() {
@@ -2192,13 +2188,13 @@ unsafe fn main_0(
                             b"--no-row-match-finder\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            useRowMatchFinder = ZSTD_ps_disable;
+                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                         } else if strcmp(
                             argument,
                             b"--row-match-finder\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            useRowMatchFinder = ZSTD_ps_enable;
+                            useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                         } else if longCommandWArg(
                             &mut argument,
                             b"--adapt=\0" as *const u8 as *const core::ffi::c_char,
@@ -2229,13 +2225,13 @@ unsafe fn main_0(
                             b"--mmap-dict\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            mmapDict = ZSTD_ps_enable;
+                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                         } else if strcmp(
                             argument,
                             b"--no-mmap-dict\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
                         {
-                            mmapDict = ZSTD_ps_disable;
+                            mmapDict = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                         } else if strcmp(
                             argument,
                             b"--format=gzip\0" as *const u8 as *const core::ffi::c_char,
@@ -2286,14 +2282,14 @@ unsafe fn main_0(
                                 b"--compress-literals\0" as *const u8 as *const core::ffi::c_char,
                             ) == 0
                             {
-                                literalCompressionMode = ZSTD_ps_enable;
+                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
                             } else if strcmp(
                                 argument,
                                 b"--no-compress-literals\0" as *const u8
                                     as *const core::ffi::c_char,
                             ) == 0
                             {
-                                literalCompressionMode = ZSTD_ps_disable;
+                                literalCompressionMode = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
                             } else if strcmp(
                                 argument,
                                 b"--no-progress\0" as *const u8 as *const core::ffi::c_char,
@@ -2986,7 +2982,7 @@ unsafe fn main_0(
                 benchParams.ldmFlag = ldmFlag;
                 benchParams.ldmMinMatch = g_ldmMinMatch as core::ffi::c_int;
                 benchParams.ldmHashLog = g_ldmHashLog as core::ffi::c_int;
-                benchParams.useRowMatchFinder = useRowMatchFinder as core::ffi::c_int;
+                benchParams.useRowMatchFinder = useRowMatchFinder.to_i32();
                 if g_ldmBucketSizeLog != LDM_PARAM_DEFAULT as u32 {
                     benchParams.ldmBucketSizeLog = g_ldmBucketSizeLog as core::ffi::c_int;
                 }
@@ -3333,7 +3329,7 @@ unsafe fn main_0(
                             FIO_setLdmHashRateLog(prefs, g_ldmHashRateLog as core::ffi::c_int);
                         }
                         FIO_setAdaptiveMode(prefs, adapt);
-                        FIO_setUseRowMatchFinder(prefs, useRowMatchFinder as core::ffi::c_int);
+                        FIO_setUseRowMatchFinder(prefs, useRowMatchFinder.to_i32());
                         FIO_setAdaptMin(prefs, adaptMin);
                         FIO_setAdaptMax(prefs, adaptMax);
                         FIO_setRsyncable(prefs, rsyncable);

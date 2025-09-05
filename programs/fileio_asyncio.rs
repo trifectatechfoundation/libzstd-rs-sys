@@ -9,16 +9,13 @@ use libc::{
 use libzstd_rs_sys::internal::{
     POOL_add, POOL_create, POOL_ctx, POOL_free, POOL_function, POOL_joinJobs,
 };
+use libzstd_rs_sys::ZSTD_ParamSwitch_e;
 
 use crate::fileio::g_display_prefs;
 
 extern "C" {
     static mut stderr: *mut FILE;
 }
-pub type ZSTD_ParamSwitch_e = core::ffi::c_uint;
-pub const ZSTD_ps_disable: ZSTD_ParamSwitch_e = 2;
-pub const ZSTD_ps_enable: ZSTD_ParamSwitch_e = 1;
-pub const ZSTD_ps_auto: ZSTD_ParamSwitch_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct FIO_display_prefs_s {
