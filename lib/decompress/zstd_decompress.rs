@@ -884,7 +884,7 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
 }
 
 fn is_skippable_frame(src: &[u8]) -> bool {
-    let [a, b, c, d] = *src else {
+    let [a, b, c, d, ..] = *src else {
         return false;
     };
 
@@ -986,9 +986,7 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
         {
             let mut hbuf = ZSTD_MAGIC_SKIPPABLE_START.to_le_bytes();
             hbuf[..src.len()].copy_from_slice(src);
-            if u32::from_le_bytes(hbuf) & ZSTD_MAGIC_SKIPPABLE_MASK
-                != ZSTD_MAGIC_SKIPPABLE_START as u32
-            {
+            if !is_skippable_frame(&hbuf) {
                 return Error::prefix_unknown.to_error_code();
             }
         }
@@ -998,13 +996,12 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
     if format != Format::ZSTD_f_zstd1_magicless
         && u32::from_le_bytes(*src.first_chunk().unwrap()) != ZSTD_MAGICNUMBER
     {
-        let first_word = u32::from_le_bytes(*src.first_chunk().unwrap());
-        if first_word & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as std::ffi::c_uint
-        {
+        if is_skippable_frame(src) {
             if src.len() < ZSTD_SKIPPABLEHEADERSIZE as usize {
                 return ZSTD_SKIPPABLEHEADERSIZE as size_t;
             }
 
+            let first_word = u32::from_le_bytes(*src.first_chunk().unwrap());
             let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
             let frameContentSize =
                 u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap());
@@ -1219,11 +1216,8 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
 fn find_decompressed_size(mut src: &[u8]) -> u64 {
     let mut totalDstSize = 0u64;
 
-    while let [a, b, c, d, _, ..] = *src {
-        let magicNumber = u32::from_le_bytes([a, b, c, d]);
-        if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
-            == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
-        {
+    while src.len() >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
+        if is_skippable_frame(src) {
             let skippableSize = read_skippable_frame_size(src);
             if ERR_isError(skippableSize) {
                 return ZSTD_CONTENTSIZE_ERROR;
@@ -1310,8 +1304,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
 
     if format == Format::ZSTD_f_zstd1
         && src.len() >= ZSTD_SKIPPABLEHEADERSIZE as usize
-        && u32::from_le_bytes(*src.first_chunk().unwrap()) & ZSTD_MAGIC_SKIPPABLE_MASK
-            == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
+        && is_skippable_frame(src)
     {
         frameSizeInfo.compressedSize = read_skippable_frame_size(src);
         frameSizeInfo
@@ -1759,20 +1752,16 @@ unsafe fn ZSTD_decompressMultiFrame(
             }
             src = &src[frameSize..];
         } else {
-            if (*dctx).format == Format::ZSTD_f_zstd1 && src.len() >= 4 {
-                let magicNumber = u32::from_le_bytes(*src.first_chunk().unwrap());
-                if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
-                    == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
-                {
-                    let skippableSize = read_skippable_frame_size(src);
-                    let err_code = skippableSize;
-                    if ERR_isError(err_code) {
-                        return err_code;
-                    }
-                    src = &src[skippableSize..];
-                    continue;
+            if (*dctx).format == Format::ZSTD_f_zstd1 && is_skippable_frame(src) {
+                let skippableSize = read_skippable_frame_size(src);
+                let err_code = skippableSize;
+                if ERR_isError(err_code) {
+                    return err_code;
                 }
+                src = &src[skippableSize..];
+                continue;
             }
+
             if let Some(ddict) = ddict {
                 let err_code_0 = ZSTD_decompressBegin_usingDDict(dctx, ddict);
                 if ERR_isError(err_code_0) {
@@ -3277,9 +3266,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return err_code;
                 }
                 if (*zds).format == Format::ZSTD_f_zstd1
-                    && MEM_readLE32(((*zds).headerBuffer).as_mut_ptr() as *const core::ffi::c_void)
-                        & ZSTD_MAGIC_SKIPPABLE_MASK
-                        == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
+                    && is_skippable_frame(&((*zds).headerBuffer))
                 {
                     // skippable frame
                     (*zds).expected =
