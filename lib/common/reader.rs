@@ -39,10 +39,10 @@ impl<'a> Reader<'a> {
         }
     }
 
-    //    #[inline]
-    //    pub fn is_null(&self) -> bool {
-    //        self.ptr.is_none()
-    //    }
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        self.ptr.is_none()
+    }
 
     #[inline]
     pub fn is_empty(&self) -> bool {
