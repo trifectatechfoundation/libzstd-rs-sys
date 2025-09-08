@@ -128,8 +128,11 @@ enum DictUses {
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LitLocation {
+    /// Split between litExtraBuffer and dst.
     ZSTD_split = 2,
+    /// Stored entirely within dst (in memory after current output write).
     ZSTD_in_dst = 1,
+    /// Stored entirely within litExtraBuffer.
     ZSTD_not_in_dst = 0,
 }
 
