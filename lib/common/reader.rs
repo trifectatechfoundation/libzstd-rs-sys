@@ -1,4 +1,4 @@
-use core::ops::Bound;
+use core::ops::{Bound, Range};
 use core::ptr::NonNull;
 
 /// Bounds checks like a slice, but without the aliasing requirements.
@@ -58,6 +58,11 @@ impl<'a> Reader<'a> {
             None => core::ptr::null_mut(),
             Some(ptr) => ptr.as_ptr(),
         }
+    }
+
+    #[inline]
+    pub fn as_ptr_range(&self) -> Range<*const u8> {
+        self.as_ptr()..self.as_ptr().wrapping_add(self.len())
     }
 
     //    #[inline]

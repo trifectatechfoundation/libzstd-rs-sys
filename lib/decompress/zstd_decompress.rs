@@ -1445,9 +1445,9 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
 ) -> size_t {
-    ZSTD_checkContinuity(dctx, blockStart, blockSize);
-    (*dctx).previousDstEnd =
-        (blockStart as *const core::ffi::c_char).add(blockSize) as *const core::ffi::c_void;
+    let src = Reader::from_raw_parts(blockStart.cast::<u8>(), blockSize);
+    ZSTD_checkContinuity(dctx.as_mut().unwrap(), src.as_ptr_range());
+    (*dctx).previousDstEnd = (blockStart).byte_add(blockSize);
     blockSize
 }
 
@@ -1756,7 +1756,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
                     return err_code_1;
                 }
             }
-            ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
+            ZSTD_checkContinuity(dctx.as_mut().unwrap(), dst.as_ptr_range());
             let res = ZSTD_decompressFrame(dctx, dst.subslice(..), &mut src);
             if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
                 return Error::srcSize_wrong.to_error_code();
@@ -1899,7 +1899,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
     if src.len() != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, src.len()) {
         return Error::srcSize_wrong.to_error_code();
     }
-    ZSTD_checkContinuity(dctx, dst.as_mut_ptr().cast(), dst.capacity());
+    ZSTD_checkContinuity(dctx, dst.as_ptr_range());
     dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
     match dctx.stage {
         DecompressStage::GetFrameHeaderSize => {
