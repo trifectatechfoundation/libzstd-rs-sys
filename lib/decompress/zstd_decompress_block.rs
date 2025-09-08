@@ -1815,10 +1815,9 @@ unsafe fn ZSTD_decompressSequences_body(
     offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
-    let oend = if dctx.litBufferLocation == LitLocation::ZSTD_not_in_dst {
-        ZSTD_maybeNullPtrAdd(ostart as *mut core::ffi::c_void, maxDstSize as ptrdiff_t) as *mut u8
-    } else {
-        dctx.litBuffer
+    let oend = match dctx.litBufferLocation {
+        LitLocation::ZSTD_not_in_dst => ostart.wrapping_add(maxDstSize),
+        LitLocation::ZSTD_split | LitLocation::ZSTD_in_dst => dctx.litBuffer,
     };
     let mut op = ostart;
     let mut litPtr = dctx.litPtr;
