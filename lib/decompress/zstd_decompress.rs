@@ -237,21 +237,29 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
 }
 #[inline]
 unsafe fn ZSTD_decompressLegacy(
-    mut dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    mut src: *const core::ffi::c_void,
-    compressedSize: size_t,
+    mut dst: Writer<'_>,
+    src: Reader<'_>,
     mut dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let version = ZSTD_isLegacy(src, compressedSize);
+    let version = is_legacy(src.as_slice());
+    let dstCapacity = dst.capacity();
+    let compressedSize = src.len();
+
     let mut x: core::ffi::c_char = 0;
-    if dst.is_null() {
-        dst = &mut x as *mut core::ffi::c_char as *mut core::ffi::c_void;
-    }
-    if src.is_null() {
-        src = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
-    }
+
+    let dst = if dst.is_null() {
+        &raw mut x as *mut core::ffi::c_void
+    } else {
+        dst.as_mut_ptr() as *mut core::ffi::c_void
+    };
+
+    let src = if src.is_null() {
+        &raw mut x as *const core::ffi::c_void
+    } else {
+        src.as_ptr() as *const core::ffi::c_void
+    };
+
     if dict.is_null() {
         dict = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
     }
@@ -1719,14 +1727,8 @@ unsafe fn ZSTD_decompressMultiFrame(
                 return Error::memory_allocation.to_error_code();
             }
 
-            let decodedSize = ZSTD_decompressLegacy(
-                dst.as_mut_ptr().cast(),
-                dst.capacity(),
-                src.as_ptr().cast(),
-                frameSize,
-                dict,
-                dictSize,
-            );
+            let decodedSize =
+                ZSTD_decompressLegacy(dst.subslice(..), src.subslice(..frameSize), dict, dictSize);
             if ERR_isError(decodedSize) {
                 return decodedSize;
             }
