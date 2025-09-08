@@ -559,31 +559,6 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     litCSize.wrapping_add(lhSize)
 }
 
-pub unsafe fn ZSTD_decodeLiteralsBlock_wrapper(
-    dctx: *mut ZSTD_DCtx,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-) -> size_t {
-    let Some(dctx) = dctx.as_mut() else {
-        return Error::GENERIC.to_error_code();
-    };
-
-    let src = if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
-    };
-
-    // NOTE: already handles the `dst.is_null()` case.
-    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
-
-    dctx.isFrameDecompression = 0;
-
-    ZSTD_decodeLiteralsBlock(dctx, src, dst, StreamingOperation::NotStreaming)
-}
-
 const fn sequence_symbol(
     nextState: u16,
     nbAdditionalBits: u8,
