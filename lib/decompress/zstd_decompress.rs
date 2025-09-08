@@ -236,12 +236,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
     }
 }
 #[inline]
-unsafe fn ZSTD_decompressLegacy(
-    mut dst: Writer<'_>,
-    src: Reader<'_>,
-    mut dict: *const core::ffi::c_void,
-    dictSize: size_t,
-) -> size_t {
+unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8]) -> size_t {
     let version = is_legacy(src.as_slice());
     let dstCapacity = dst.capacity();
     let compressedSize = src.len();
@@ -260,9 +255,6 @@ unsafe fn ZSTD_decompressLegacy(
         src.as_ptr() as *const core::ffi::c_void
     };
 
-    if dict.is_null() {
-        dict = &mut x as *mut core::ffi::c_char as *const core::ffi::c_void;
-    }
     match version {
         5 => {
             let mut result: size_t = 0;
@@ -276,8 +268,8 @@ unsafe fn ZSTD_decompressLegacy(
                 dstCapacity,
                 src.cast(),
                 compressedSize,
-                dict.cast(),
-                dictSize,
+                dict.as_ptr().cast(),
+                dict.len(),
             );
             ZSTDv05_freeDCtx(zd);
             result
@@ -294,8 +286,8 @@ unsafe fn ZSTD_decompressLegacy(
                 dstCapacity,
                 src,
                 compressedSize,
-                dict,
-                dictSize,
+                dict.as_ptr().cast(),
+                dict.len(),
             );
             ZSTDv06_freeDCtx(zd_0);
             result_0
@@ -312,8 +304,8 @@ unsafe fn ZSTD_decompressLegacy(
                 dstCapacity,
                 src,
                 compressedSize,
-                dict,
-                dictSize,
+                dict.as_ptr().cast(),
+                dict.len(),
             );
             ZSTDv07_freeDCtx(zd_1);
             result_1
@@ -1699,20 +1691,18 @@ unsafe fn ZSTD_decompressFrame(
     start_capacity - op.capacity()
 }
 
-unsafe fn ZSTD_decompressMultiFrame(
+unsafe fn ZSTD_decompressMultiFrame<'a>(
     dctx: *mut ZSTD_DCtx,
     mut dst: Writer<'_>,
     mut src: Reader<'_>,
-    mut dict: *const core::ffi::c_void,
-    mut dictSize: size_t,
-    ddict: Option<&ZSTD_DDict>,
+    mut dict: &'a [u8],
+    ddict: Option<&'a ZSTD_DDict>,
 ) -> size_t {
     let start_capacity = dst.capacity();
     let mut more_than_one_frame = false;
 
     if let Some(ddict) = ddict {
-        dict = ZSTD_DDict_dictContent(ddict);
-        dictSize = ZSTD_DDict_dictSize(ddict);
+        dict = ddict.as_slice();
     }
 
     while src.len() >= ZSTD_startingInputLength((*dctx).format) {
@@ -1728,7 +1718,7 @@ unsafe fn ZSTD_decompressMultiFrame(
             }
 
             let decodedSize =
-                ZSTD_decompressLegacy(dst.subslice(..), src.subslice(..frameSize), dict, dictSize);
+                ZSTD_decompressLegacy(dst.subslice(..), src.subslice(..frameSize), dict);
             if ERR_isError(decodedSize) {
                 return decodedSize;
             }
@@ -1761,7 +1751,7 @@ unsafe fn ZSTD_decompressMultiFrame(
                     return err_code_0;
                 }
             } else {
-                let err_code_1 = ZSTD_decompressBegin_usingDict(dctx, dict, dictSize);
+                let err_code_1 = ZSTD_decompressBegin_usingDict_slice(dctx, dict);
                 if ERR_isError(err_code_1) {
                     return err_code_1;
                 }
@@ -1800,7 +1790,13 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
-    ZSTD_decompressMultiFrame(dctx, dst, src, dict, dictSize, None)
+    let dict = if dict.is_null() {
+        &[]
+    } else {
+        core::slice::from_raw_parts(dict.cast::<u8>(), dictSize)
+    };
+
+    ZSTD_decompressMultiFrame(dctx, dst, src, dict, None)
 }
 
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
@@ -2276,6 +2272,23 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     0
 }
 
+unsafe fn ZSTD_decompressBegin_usingDict_slice(dctx: *mut ZSTD_DCtx, dict: &[u8]) -> size_t {
+    let err_code = ZSTD_decompressBegin(dctx);
+    if ERR_isError(err_code) {
+        return err_code;
+    }
+
+    if dict.is_empty() {
+        return 0;
+    }
+
+    if ERR_isError(ZSTD_decompress_insertDictionary(dctx, dict)) {
+        return Error::dictionary_corrupted.to_error_code();
+    }
+
+    0
+}
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDDict))]
 pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2349,7 +2362,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
     let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
-    ZSTD_decompressMultiFrame(dctx, dst, src, core::ptr::null(), 0, ddict.as_ref())
+    ZSTD_decompressMultiFrame(dctx, dst, src, &[], ddict.as_ref())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
