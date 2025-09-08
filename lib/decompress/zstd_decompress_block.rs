@@ -62,9 +62,9 @@ enum Offset {
 #[repr(C)]
 pub struct seqState_t<'a> {
     DStream: BIT_DStream_t<'a>,
-    stateLL: ZSTD_fseState,
-    stateOffb: ZSTD_fseState,
-    stateML: ZSTD_fseState,
+    stateLL: ZSTD_fseState<'a>,
+    stateOffb: ZSTD_fseState<'a>,
+    stateML: ZSTD_fseState<'a>,
     prevOffset: [size_t; 3],
 }
 
@@ -98,17 +98,17 @@ impl ZSTD_DCtx {
 }
 
 #[repr(C)]
-pub struct ZSTD_fseState {
+pub struct ZSTD_fseState<'a> {
     pub state: size_t,
-    pub table: *const ZSTD_seqSymbol,
+    pub table: &'a [ZSTD_seqSymbol],
 }
 
-impl ZSTD_fseState {
+impl<'a> ZSTD_fseState<'a> {
     pub(crate) fn new<const N: usize>(
         bit_dstream: &mut BIT_DStream_t,
-        dt: &SymbolTable<N>,
+        dt: &'a SymbolTable<N>,
     ) -> Self {
-        let table = dt.symbols.as_ptr();
+        let table = &dt.symbols;
 
         let state = bit_dstream.read_bits(dt.header.tableLog);
         bit_dstream.reload();
@@ -1480,7 +1480,7 @@ const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =
     ZSTD_WINDOWLOG_MAX_32.saturating_sub(STREAM_ACCUMULATOR_MIN_32);
 
 #[inline(always)]
-unsafe fn ZSTD_decodeSequence(
+fn ZSTD_decodeSequence(
     seqState: &mut seqState_t,
     longOffsets: Offset,
     is_last_sequence: bool,
@@ -1490,24 +1490,29 @@ unsafe fn ZSTD_decodeSequence(
         matchLength: 0,
         offset: 0,
     };
-    let llDInfo = (seqState.stateLL.table).add(seqState.stateLL.state);
-    let mlDInfo = (seqState.stateML.table).add(seqState.stateML.state);
-    let ofDInfo = (seqState.stateOffb.table).add(seqState.stateOffb.state);
-    seq.matchLength = (*mlDInfo).baseValue as size_t;
-    seq.litLength = (*llDInfo).baseValue as size_t;
-    let ofBase = (*ofDInfo).baseValue;
-    let llBits = (*llDInfo).nbAdditionalBits;
-    let mlBits = (*mlDInfo).nbAdditionalBits;
-    let ofBits = (*ofDInfo).nbAdditionalBits;
+    let llDInfo = seqState.stateLL.table[seqState.stateLL.state];
+    let mlDInfo = seqState.stateML.table[seqState.stateML.state];
+    let ofDInfo = seqState.stateOffb.table[seqState.stateOffb.state];
+
+    seq.matchLength = mlDInfo.baseValue as size_t;
+    seq.litLength = llDInfo.baseValue as size_t;
+    let ofBase = ofDInfo.baseValue;
+
+    let llBits = llDInfo.nbAdditionalBits;
+    let mlBits = mlDInfo.nbAdditionalBits;
+    let ofBits = ofDInfo.nbAdditionalBits;
+
     let totalBits = (llBits as core::ffi::c_int
         + mlBits as core::ffi::c_int
         + ofBits as core::ffi::c_int) as u8;
-    let llNext = (*llDInfo).nextState;
-    let mlNext = (*mlDInfo).nextState;
-    let ofNext = (*ofDInfo).nextState;
-    let llnbBits = (*llDInfo).nbBits as u32;
-    let mlnbBits = (*mlDInfo).nbBits as u32;
-    let ofnbBits = (*ofDInfo).nbBits as u32;
+
+    let llNext = llDInfo.nextState;
+    let mlNext = mlDInfo.nextState;
+    let ofNext = ofDInfo.nextState;
+
+    let llnbBits = llDInfo.nbBits as u32;
+    let mlnbBits = mlDInfo.nbBits as u32;
+    let ofnbBits = ofDInfo.nbBits as u32;
 
     assert!(llBits <= MaxLLBits);
     assert!(mlBits <= MaxMLBits);
@@ -1549,7 +1554,7 @@ unsafe fn ZSTD_decodeSequence(
         seqState.prevOffset[1] = seqState.prevOffset[0];
         seqState.prevOffset[0] = offset;
     } else {
-        let ll0 = usize::from((*llDInfo).baseValue == 0);
+        let ll0 = usize::from(llDInfo.baseValue == 0);
         if core::hint::likely(ofBits == 0) {
             offset = seqState.prevOffset[ll0];
             seqState.prevOffset[1] = seqState.prevOffset[usize::from(ll0 == 0)];
