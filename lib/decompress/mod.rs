@@ -67,13 +67,6 @@ pub struct SymbolTable<const N: usize> {
     symbols: [ZSTD_seqSymbol; N],
 }
 
-impl<const N: usize> SymbolTable<N> {
-    /// The full symbol table (including the header) as a slice.
-    fn as_slice(&self) -> &[ZSTD_seqSymbol] {
-        unsafe { core::slice::from_raw_parts(self as *const Self as *const ZSTD_seqSymbol, N + 1) }
-    }
-}
-
 pub type ZSTD_dStage = core::ffi::c_uint;
 
 #[repr(u32)]
