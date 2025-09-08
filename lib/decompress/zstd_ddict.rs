@@ -42,6 +42,18 @@ pub struct ZSTD_DDict {
     entropyPresent: u32,
     cMem: ZSTD_customMem,
 }
+
+impl ZSTD_DDict {
+    pub fn as_slice(&self) -> &[u8] {
+        if self.dictContent.is_null() {
+            debug_assert_eq!(self.dictSize, 0);
+            &[]
+        } else {
+            unsafe { core::slice::from_raw_parts(self.dictContent.cast::<u8>(), self.dictSize) }
+        }
+    }
+}
+
 pub type ZSTD_dictContentType_e = core::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
