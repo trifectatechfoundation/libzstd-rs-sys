@@ -1,6 +1,6 @@
+use core::marker::PhantomData;
+use core::ops::{Bound, Range};
 use core::ptr::{self, NonNull};
-use std::marker::PhantomData;
-use std::ops::Bound;
 
 use libc::size_t;
 
@@ -2094,6 +2094,19 @@ impl<'a> Writer<'a> {
             None => true,
             Some(ptr) => ptr.as_ptr() == self.end,
         }
+    }
+
+    #[inline]
+    pub fn as_ptr(&self) -> *const u8 {
+        match self.ptr {
+            None => core::ptr::null(),
+            Some(ptr) => ptr.as_ptr(),
+        }
+    }
+
+    #[inline]
+    pub fn as_ptr_range(&self) -> Range<*const u8> {
+        self.as_ptr()..self.as_ptr().wrapping_add(self.capacity())
     }
 
     #[inline]

@@ -1,4 +1,6 @@
 use core::arch::asm;
+use core::ffi::c_void;
+use core::ops::Range;
 use core::ptr::{self, NonNull};
 
 use libc::{ptrdiff_t, size_t};
@@ -8,6 +10,7 @@ use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
+use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
     MaxSeq, OffFSELog, Overlap, ZSTD_copy16, ZSTD_wildcopy, LL_DEFAULTNORMLOG, ML_DEFAULTNORMLOG,
@@ -2378,36 +2381,37 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
 }
 
-pub unsafe fn ZSTD_checkContinuity(
-    dctx: *mut ZSTD_DCtx,
-    dst: *const core::ffi::c_void,
-    dstSize: size_t,
-) {
-    if dst != (*dctx).previousDstEnd && dstSize > 0 {
-        (*dctx).dictEnd = (*dctx).previousDstEnd;
-        (*dctx).virtualStart =
-            dst.byte_offset(-(((*dctx).previousDstEnd).byte_offset_from((*dctx).prefixStart)));
-        (*dctx).prefixStart = dst;
-        (*dctx).previousDstEnd = dst;
+pub fn ZSTD_checkContinuity(dctx: &mut ZSTD_DCtx, range: Range<*const u8>) {
+    if range.start.cast() != dctx.previousDstEnd && !range.is_empty() {
+        dctx.dictEnd = dctx.previousDstEnd;
+        let delta = dctx.previousDstEnd.addr() - dctx.prefixStart.addr();
+        dctx.virtualStart = range.start.wrapping_sub(delta).cast();
+        dctx.prefixStart = range.start.cast();
+        dctx.previousDstEnd = range.start.cast();
     }
 }
 
 unsafe fn ZSTD_decompressBlock_deprecated(
-    dctx: *mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    dctx: &mut ZSTD_DCtx,
+    mut dst: Writer<'_>,
+    src: Reader<'_>,
 ) -> size_t {
-    let mut dSize: size_t = 0;
-    (*dctx).isFrameDecompression = 0;
-    ZSTD_checkContinuity(dctx, dst, dstCapacity);
-    dSize = ZSTD_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize, not_streaming);
-    let err_code = dSize;
-    if ERR_isError(err_code) {
-        return err_code;
+    dctx.isFrameDecompression = 0;
+    ZSTD_checkContinuity(dctx, dst.as_ptr_range());
+
+    // FIXME: can src and dst overlap in this case?
+    let dSize = ZSTD_decompressBlock_internal_help(
+        dctx,
+        dst.subslice(..),
+        src.as_slice(),
+        StreamingOperation::NotStreaming,
+    );
+
+    if ERR_isError(dSize) {
+        return dSize;
     }
-    (*dctx).previousDstEnd = dst.byte_add(dSize);
+
+    dctx.previousDstEnd = dst.as_ptr().byte_add(dSize).cast::<c_void>();
     dSize
 }
 
@@ -2419,7 +2423,10 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_decompressBlock_deprecated(dctx, dst, dstCapacity, src, srcSize)
+    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
+    let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
+
+    ZSTD_decompressBlock_deprecated(dctx.as_mut().unwrap(), dst, src)
 }
 
 #[cfg(test)]
