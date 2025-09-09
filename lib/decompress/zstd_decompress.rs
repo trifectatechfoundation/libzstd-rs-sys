@@ -1150,10 +1150,10 @@ pub unsafe extern "C" fn ZSTD_readSkippableFrame(
         return Error::dstSize_tooSmall.to_error_code();
     }
     if skippableContentSize > 0 && !dst.is_null() {
-        libc::memcpy(
-            dst,
-            (src as *const u8).offset(8) as *const core::ffi::c_void,
-            skippableContentSize as libc::size_t,
+        core::ptr::copy_nonoverlapping(
+            src.cast::<u8>().add(8),
+            dst.cast::<u8>(),
+            skippableContentSize,
         );
     }
     if !magicVariant.is_null() {
@@ -2234,11 +2234,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
     (*dctx).dictID = 0;
     (*dctx).bType = BlockType::Reserved;
     (*dctx).isFrameDecompression = 1;
-    libc::memcpy(
-        ((*dctx).entropy.rep).as_mut_ptr() as *mut core::ffi::c_void,
-        repStartValue.as_ptr() as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 3]>() as libc::size_t,
-    );
+    (*dctx).entropy.rep = repStartValue;
     (*dctx).LLTptr = NonNull::new((&raw const (*dctx).entropy.LLTable).cast_mut());
     (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
     (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
@@ -3148,11 +3144,10 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if toLoad > remainingInput {
                     // not enough input to load full header
                     if remainingInput > 0 {
-                        libc::memcpy(
-                            ((*zds).headerBuffer).as_mut_ptr().add((*zds).lhSize)
-                                as *mut core::ffi::c_void,
-                            ip as *const core::ffi::c_void,
-                            remainingInput as libc::size_t,
+                        core::ptr::copy_nonoverlapping(
+                            ip.cast::<u8>(),
+                            (*zds).headerBuffer.as_mut_ptr().add((*zds).lhSize),
+                            remainingInput,
                         );
                         (*zds).lhSize = ((*zds).lhSize).wrapping_add(remainingInput);
                     }
@@ -3167,15 +3162,15 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         return err_code;
                     }
                     // remaining header bytes + next block header
-                    return std::cmp::max(ZSTD_FRAMEHEADERSIZE_MIN((*zds).format), hSize)
+                    return Ord::max(ZSTD_FRAMEHEADERSIZE_MIN((*zds).format), hSize)
                         .wrapping_sub((*zds).lhSize)
                         .wrapping_add(ZSTD_blockHeaderSize);
                 }
                 assert!(!ip.is_null());
-                libc::memcpy(
-                    ((*zds).headerBuffer).as_mut_ptr().add((*zds).lhSize) as *mut core::ffi::c_void,
-                    ip as *const core::ffi::c_void,
-                    toLoad as libc::size_t,
+                core::ptr::copy_nonoverlapping(
+                    ip.cast::<u8>(),
+                    (*zds).headerBuffer.as_mut_ptr().add((*zds).lhSize),
+                    toLoad,
                 );
                 (*zds).lhSize = hSize;
                 ip = ip.add(toLoad);
