@@ -2,6 +2,174 @@ use std::ffi::{c_void, CStr};
 
 use crate::assert_eq_rs_c;
 
+macro_rules! decompress {
+    ($compressed:expr, $dict:expr) => {
+        unsafe {
+            // Allocate and initialize a decompression context
+            let dctx = ZSTD_createDCtx();
+            if dctx.is_null() {
+                panic!("Failed to create DCtx");
+            }
+
+            if let Some(dict) = $dict {
+                // Initialize decompression with the dictionary
+                let ddict = ZSTD_createDDict(dict.as_ptr() as *const c_void, dict.len());
+                if ddict.is_null() {
+                    panic!("Failed to create DDict");
+                }
+
+                // Reference the dictionary in the decompression context
+                let res = ZSTD_DCtx_refDDict(dctx, ddict);
+                assert_eq!(ZSTD_isError(res), 0, "Failed to reference DDict");
+            }
+
+            let mut size =
+                ZSTD_getFrameContentSize($compressed.as_ptr() as *const c_void, $compressed.len());
+
+            if size == ZSTD_CONTENTSIZE_UNKNOWN as _ {
+                size = 16_000; // use default size of 16kb
+            }
+
+            if size == ZSTD_CONTENTSIZE_ERROR as _ {
+                panic!("ZSTD_CONTENTSIZE_ERROR")
+            };
+
+            let mut output_buf = vec![0u8; size as usize];
+
+            let size = ZSTD_decompressDCtx(
+                dctx,
+                output_buf.as_mut_ptr() as *mut c_void,
+                size as usize,
+                $compressed.as_ptr() as *const c_void,
+                $compressed.len(),
+            );
+
+            if ZSTD_isError(size) != 0 {
+                let err = ZSTD_getErrorName(size);
+                panic!(
+                    "ZSTD_decompressStream failed: {}",
+                    std::ffi::CStr::from_ptr(err).to_string_lossy()
+                );
+            }
+
+            ZSTD_freeDCtx(dctx);
+
+            output_buf.truncate(size);
+
+            output_buf
+        }
+    };
+}
+
+fn decompress_c(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use zstd_sys::*;
+
+    decompress!(compressed, dict)
+}
+
+fn decompress_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use libzstd_rs_sys::*;
+
+    decompress!(compressed, dict)
+}
+
+mod fastest_wasm_zlib {
+    use super::*;
+
+    const DECOMPRESSED: &[u8] = include_bytes!("../test-data/The fastest WASM zlib.md");
+
+    #[track_caller]
+    fn helper(compressed: &[u8]) {
+        if cfg!(miri) {
+            // Just check that the rust implementation does not have UB.
+            decompress_rs(compressed, None);
+        } else {
+            let c = decompress_c(compressed, None);
+            assert_eq!(DECOMPRESSED, c);
+
+            let rs = decompress_rs(compressed, None);
+            assert_eq!(c, rs);
+        }
+    }
+
+    #[test]
+    fn zstd_1() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-1.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long27_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-long27-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long_ultra_22() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-ultra-22.zst"
+        ));
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
+    fn zstd_custom_dict() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
+        const COMPRESSED: &[u8] =
+            include_bytes!("../test-data/The fastest WASM zlib.md.zstd-custom-dict.zst");
+
+        let c = decompress_stream_c(COMPRESSED, Some(DICT));
+        assert_eq!(DECOMPRESSED, c);
+
+        let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        assert_eq!(c, rs);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
+    fn zstd_custom_dict_v07() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus-0.7.4.zstd");
+        const COMPRESSED: &[u8] =
+            include_bytes!("../test-data/The fastest WASM zlib.md.zstd-0.7.4-custom-dict.zst");
+
+        let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        assert_eq!(DECOMPRESSED, rs);
+
+        let c = decompress_stream_c(COMPRESSED, Some(DICT));
+        assert_eq!(c, rs);
+    }
+
+    #[test]
+    fn zstd_v05_5() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.5.1-5.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_v06_10() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.6.1-10.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_v07_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-0.7.4-19.zst"
+        ));
+    }
+}
+
 macro_rules! decompress_stream {
     ($compressed:expr, $dict:expr) => {
         unsafe {
@@ -91,7 +259,7 @@ fn decompress_stream_rs(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
     decompress_stream!(compressed, dict)
 }
 
-mod fastest_wasm_zlib {
+mod fastest_wasm_zlib_stream {
     use super::*;
 
     const DECOMPRESSED: &[u8] = include_bytes!("../test-data/The fastest WASM zlib.md");
@@ -149,6 +317,20 @@ mod fastest_wasm_zlib {
         assert_eq!(DECOMPRESSED, c);
 
         let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        assert_eq!(c, rs);
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore = "we use the C api for dictionary creation")]
+    fn zstd_custom_dict_v07() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus-0.7.4.zstd");
+        const COMPRESSED: &[u8] =
+            include_bytes!("../test-data/The fastest WASM zlib.md.zstd-0.7.4-custom-dict.zst");
+
+        let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        assert_eq!(DECOMPRESSED, rs);
+
+        let c = decompress_stream_c(COMPRESSED, Some(DICT));
         assert_eq!(c, rs);
     }
 
@@ -277,11 +459,10 @@ mod fastest_wasm_zlib_continue {
             // Just check that the rust implementation does not have UB.
             decompress_continue_rs(compressed, None);
         } else {
-            let c = decompress_continue_c(compressed, None);
-            assert_eq!(DECOMPRESSED, c);
-
             let rs = decompress_continue_rs(compressed, None);
+            assert_eq!(DECOMPRESSED, rs);
 
+            let c = decompress_continue_c(compressed, None);
             assert_eq!(c, rs);
         }
     }
