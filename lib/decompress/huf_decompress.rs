@@ -2110,6 +2110,14 @@ impl<'a> Writer<'a> {
     }
 
     #[inline]
+    pub unsafe fn as_slice(&self) -> &[u8] {
+        match self.ptr {
+            None => &[],
+            Some(ptr) => unsafe { core::slice::from_raw_parts(ptr.as_ptr(), self.capacity()) },
+        }
+    }
+
+    #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
         match self.ptr {
             None => core::ptr::null_mut(),
