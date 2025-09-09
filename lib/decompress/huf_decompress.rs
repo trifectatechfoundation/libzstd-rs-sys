@@ -14,7 +14,7 @@ use crate::lib::common::huf::{
 use crate::lib::common::mem::{MEM_read64, MEM_readLEST, MEM_write16};
 use crate::lib::decompress::Workspace;
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(unix, target_arch = "x86_64"))]
 extern "C" {
     fn HUF_decompress4X1_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
     fn HUF_decompress4X2_usingDTable_internal_fast_asm_loop(args: &mut HUF_DecompressFastArgs);
@@ -812,7 +812,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal(
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as i32 {
-            #[cfg(target_arch = "x86_64")]
+            #[cfg(all(unix, target_arch = "x86_64"))]
             0 => HUF_decompress4X1_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
             _ => HUF_decompress4X1_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
         };
@@ -1614,7 +1614,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal(
 ) -> size_t {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as core::ffi::c_int {
-            #[cfg(target_arch = "x86_64")]
+            #[cfg(all(unix, target_arch = "x86_64"))]
             0 => HUF_decompress4X2_usingDTable_internal_fast_asm_loop as HUF_DecompressFastLoopFn,
             _ => HUF_decompress4X2_usingDTable_internal_fast_c_loop as HUF_DecompressFastLoopFn,
         };
