@@ -320,10 +320,10 @@ mod fastest_wasm_zlib_continue {
         const COMPRESSED: &[u8] =
             include_bytes!("../test-data/The fastest WASM zlib.md.zstd-custom-dict.zst");
 
-        let c = decompress_stream_c(COMPRESSED, Some(DICT));
+        let c = decompress_continue_c(COMPRESSED, Some(DICT));
         assert_eq!(DECOMPRESSED, c);
 
-        let rs = decompress_stream_rs(COMPRESSED, Some(DICT));
+        let rs = decompress_continue_rs(COMPRESSED, Some(DICT));
         assert_eq!(c, rs);
     }
 }
