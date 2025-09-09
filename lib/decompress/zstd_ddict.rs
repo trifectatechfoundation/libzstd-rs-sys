@@ -189,7 +189,7 @@ unsafe fn ZSTD_initDDict_internal(
         if internalBuffer.is_null() {
             return Error::dictionary_corrupted.to_error_code();
         }
-        libc::memcpy(internalBuffer, dict, dictSize as libc::size_t);
+        core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
     }
 
     (*ddict).dictSize = dictSize;
@@ -283,7 +283,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
 
     let ddict = sBuffer as *mut ZSTD_DDict;
     if dictLoadMethod == DictLoadMethod::ByCopy as ZSTD_dictLoadMethod_e {
-        libc::memcpy(ddict.add(1) as *mut core::ffi::c_void, dict, dictSize);
+        core::ptr::copy_nonoverlapping(dict.cast::<u8>(), ddict.add(1).cast::<u8>(), dictSize);
         dict = ddict.add(1) as *const core::ffi::c_void;
     }
 
