@@ -772,17 +772,18 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
     ZSTD_customFree(dctx as *mut core::ffi::c_void, cMem);
     0
 }
+
+/// No longer useful.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyDCtx))]
 pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const ZSTD_DCtx) {
-    let toCopy = (&mut (*dstDCtx).inBuff as *mut *mut core::ffi::c_char as *mut core::ffi::c_char)
-        .offset_from(dstDCtx as *mut core::ffi::c_char) as core::ffi::c_long
-        as size_t;
-    libc::memcpy(
-        dstDCtx as *mut core::ffi::c_void,
-        srcDCtx as *const core::ffi::c_void,
-        toCopy as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        srcDCtx.cast::<u8>(),
+        dstDCtx.cast::<u8>(),
+        // No need to copy workspace.
+        core::mem::offset_of!(ZSTD_DCtx, inBuff),
     );
 }
+
 unsafe fn ZSTD_DCtx_selectFrameDDict(dctx: *mut ZSTD_DCtx) {
     if !((*dctx).ddict).is_null() {
         let frameDDict =
