@@ -7,7 +7,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
 use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
-    ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update,
+    ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::common::zstd_internal::{
@@ -1645,7 +1645,9 @@ unsafe fn ZSTD_decompressFrame(
         }
 
         if (*dctx).validateChecksum != 0 {
-            ZSTD_XXH64_update(&mut (*dctx).xxhState, op.as_mut_ptr().cast(), decodedSize);
+            let written = op.subslice(..decodedSize);
+            let slice = unsafe { written.as_slice() };
+            ZSTD_XXH64_update_slice(&mut (*dctx).xxhState, slice);
         }
 
         // Adding 0 to NULL is not UB in rust.
@@ -2000,7 +2002,9 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             }
             dctx.decodedSize = (dctx.decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
             if dctx.validateChecksum != 0 {
-                ZSTD_XXH64_update(&mut dctx.xxhState, dst.as_mut_ptr().cast(), rSize as usize);
+                let written = dst.subslice(..rSize);
+                let slice = unsafe { written.as_slice() };
+                ZSTD_XXH64_update_slice(&mut dctx.xxhState, slice);
             }
             dctx.previousDstEnd = dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>();
             if dctx.expected > 0 {
