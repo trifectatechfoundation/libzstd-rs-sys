@@ -1486,22 +1486,20 @@ fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> size_t {
     src.len()
 }
 
-unsafe fn ZSTD_setRleBlock(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    b: u8,
-    regenSize: size_t,
-) -> size_t {
-    if regenSize > dstCapacity {
+fn ZSTD_setRleBlock(mut dst: Writer<'_>, b: u8, regenSize: size_t) -> size_t {
+    if regenSize > dst.capacity() {
         return Error::dstSize_tooSmall.to_error_code();
     }
+
     if dst.is_null() {
         if regenSize == 0 {
             return 0;
         }
         return Error::dstBuffer_null.to_error_code();
     }
-    ptr::write_bytes(dst, b, regenSize);
+
+    unsafe { ptr::write_bytes(dst.as_mut_ptr(), b, regenSize) };
+
     regenSize
 }
 
@@ -1620,9 +1618,9 @@ unsafe fn ZSTD_decompressFrame(
                 decodedSize = copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize));
             }
             BlockType::Rle => {
+                let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
                 decodedSize = ZSTD_setRleBlock(
-                    op.as_mut_ptr().cast(),
-                    oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
+                    op.subslice(..capacity),
                     ip.as_slice()[0],
                     blockProperties.origSize as size_t,
                 );
@@ -1986,12 +1984,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                     dctx.expected = (dctx.expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
-                    rSize = ZSTD_setRleBlock(
-                        dst.as_mut_ptr().cast(),
-                        dst.capacity(),
-                        src[0],
-                        dctx.rleSize,
-                    );
+                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize);
                     dctx.expected = 0;
                 }
                 BlockType::Reserved => {
