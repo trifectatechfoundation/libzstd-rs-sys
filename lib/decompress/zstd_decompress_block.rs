@@ -362,9 +362,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                     return Error::corruption_detected.to_error_code();
                 }
                 if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                    libc::memcpy(
-                        dctx.litBuffer as *mut core::ffi::c_void,
-                        src[lhSize..].as_ptr().cast(),
+                    core::ptr::copy_nonoverlapping(
+                        src[lhSize..].as_ptr(),
+                        dctx.litBuffer,
                         litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
                     );
 
@@ -373,11 +373,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                             [..ZSTD_LITBUFFEREXTRASIZE],
                     );
                 } else {
-                    libc::memcpy(
-                        dctx.litBuffer as *mut core::ffi::c_void,
-                        src[lhSize..].as_ptr().cast(),
-                        litSize as libc::size_t,
-                    );
+                    core::ptr::copy_nonoverlapping(src[lhSize..].as_ptr(), dctx.litBuffer, litSize);
                 }
                 dctx.litPtr = dctx.litBuffer;
                 dctx.litSize = litSize;
@@ -533,9 +529,9 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     };
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        libc::memcpy(
-            (dctx.litExtraBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-            (dctx.litBufferEnd).sub(ZSTD_LITBUFFEREXTRASIZE) as *const core::ffi::c_void,
+        core::ptr::copy_nonoverlapping(
+            dctx.litBufferEnd.sub(ZSTD_LITBUFFEREXTRASIZE),
+            dctx.litExtraBuffer.as_mut_ptr(),
             ZSTD_LITBUFFEREXTRASIZE,
         );
         core::ptr::copy(
@@ -1773,11 +1769,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     }
 
     if !op.is_null() {
-        libc::memcpy(
-            op as *mut core::ffi::c_void,
-            litPtr as *const core::ffi::c_void,
-            lastLLSize_0 as libc::size_t,
-        );
+        core::ptr::copy_nonoverlapping(litPtr, op, lastLLSize_0);
         op = op.add(lastLLSize_0);
     }
     op.offset_from(ostart) as size_t
@@ -1852,11 +1844,7 @@ unsafe fn ZSTD_decompressSequences_body(
     }
 
     if !op.is_null() {
-        libc::memcpy(
-            op as *mut core::ffi::c_void,
-            litPtr as *const core::ffi::c_void,
-            lastLLSize as libc::size_t,
-        );
+        core::ptr::copy_nonoverlapping(litPtr, op, lastLLSize);
         op = op.add(lastLLSize);
     }
 
