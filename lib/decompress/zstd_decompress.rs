@@ -2061,7 +2061,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
     }
 }
 
-pub unsafe fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> size_t {
+pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> size_t {
     let Some((_, mut dictPtr)) = dict.split_at_checked(8) else {
         return Error::dictionary_corrupted.to_error_code();
     };
@@ -2205,7 +2205,7 @@ fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> size_t
         return ZSTD_refDictContent(dctx, dict);
     }
     dctx.dictID = u32::from_le_bytes(*dict_id);
-    let eSize = unsafe { ZSTD_loadDEntropy(&mut dctx.entropy, dict) };
+    let eSize = ZSTD_loadDEntropy(&mut dctx.entropy, dict);
     if ERR_isError(eSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
