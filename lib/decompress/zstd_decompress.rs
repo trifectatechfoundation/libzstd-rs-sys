@@ -2288,7 +2288,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     dctx: *mut ZSTD_DCtx,
     ddict: *const ZSTD_DDict,
 ) -> size_t {
-    if !ddict.is_null() {
+    if let Some(ddict) = ddict.as_ref() {
         let dictStart = ZSTD_DDict_dictContent(ddict) as *const core::ffi::c_char;
         let dictSize = ZSTD_DDict_dictSize(ddict);
         let dictEnd = dictStart.add(dictSize) as *const core::ffi::c_void;
@@ -2298,7 +2298,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     if ERR_isError(err_code) {
         return err_code;
     }
-    if !ddict.is_null() {
+    if let Some(ddict) = ddict.as_ref() {
         ZSTD_copyDDictParameters(dctx, ddict);
     }
     0

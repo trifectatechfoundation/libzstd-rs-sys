@@ -97,28 +97,27 @@ pub unsafe fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const core::f
 pub unsafe fn ZSTD_DDict_dictSize(ddict: *const ZSTD_DDict) -> size_t {
     (*ddict).dictSize
 }
-pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: *const ZSTD_DDict) {
-    (*dctx).dictID = (*ddict).dictID;
-    (*dctx).prefixStart = (*ddict).dictContent;
-    (*dctx).virtualStart = (*ddict).dictContent;
-    (*dctx).dictEnd =
-        ((*ddict).dictContent as *const u8).add((*ddict).dictSize) as *const core::ffi::c_void;
+
+pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: &ZSTD_DDict) {
+    (*dctx).dictID = ddict.dictID;
+    (*dctx).prefixStart = ddict.dictContent;
+    (*dctx).virtualStart = ddict.dictContent;
+    (*dctx).dictEnd = (ddict.dictContent).byte_add(ddict.dictSize);
     (*dctx).previousDstEnd = (*dctx).dictEnd;
-    if (*ddict).entropyPresent != 0 {
+    if ddict.entropyPresent != 0 {
         (*dctx).litEntropy = 1;
         (*dctx).fseEntropy = 1;
-        (*dctx).LLTptr = NonNull::new((&raw const (*ddict).entropy.LLTable).cast_mut());
-        (*dctx).MLTptr = NonNull::new((&raw const (*ddict).entropy.MLTable).cast_mut());
-        (*dctx).OFTptr = NonNull::new((&raw const (*ddict).entropy.OFTable).cast_mut());
-        (*dctx).HUFptr = &raw const (*ddict).entropy.hufTable;
-        *((*dctx).entropy.rep).as_mut_ptr().offset(0) = *((*ddict).entropy.rep).as_ptr().offset(0);
-        *((*dctx).entropy.rep).as_mut_ptr().offset(1) = *((*ddict).entropy.rep).as_ptr().offset(1);
-        *((*dctx).entropy.rep).as_mut_ptr().offset(2) = *((*ddict).entropy.rep).as_ptr().offset(2);
+        (*dctx).LLTptr = NonNull::new((&raw const ddict.entropy.LLTable).cast_mut());
+        (*dctx).MLTptr = NonNull::new((&raw const ddict.entropy.MLTable).cast_mut());
+        (*dctx).OFTptr = NonNull::new((&raw const ddict.entropy.OFTable).cast_mut());
+        (*dctx).HUFptr = &raw const ddict.entropy.hufTable;
+        (*dctx).entropy.rep = ddict.entropy.rep;
     } else {
         (*dctx).litEntropy = 0;
         (*dctx).fseEntropy = 0;
     };
 }
+
 unsafe fn ZSTD_loadEntropy_intoDDict(
     ddict: *mut ZSTD_DDict,
     dictContentType: ZSTD_dictContentType_e,
