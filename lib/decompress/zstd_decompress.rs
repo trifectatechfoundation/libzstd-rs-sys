@@ -2220,29 +2220,38 @@ unsafe fn ZSTD_decompress_insertDictionary(dctx: *mut ZSTD_DCtx, dict: &[u8]) ->
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin))]
 pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
-    (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
-    (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
-    (*dctx).stage = DecompressStage::GetFrameHeaderSize;
-    (*dctx).processedCSize = 0;
-    (*dctx).decodedSize = 0;
-    (*dctx).previousDstEnd = core::ptr::null();
-    (*dctx).prefixStart = core::ptr::null();
-    (*dctx).virtualStart = core::ptr::null();
-    (*dctx).dictEnd = core::ptr::null();
-    (*dctx).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
-    (*dctx).fseEntropy = 0;
-    (*dctx).litEntropy = (*dctx).fseEntropy;
-    (*dctx).dictID = 0;
-    (*dctx).bType = BlockType::Reserved;
-    (*dctx).isFrameDecompression = 1;
-    (*dctx).entropy.rep = repStartValue;
-    (*dctx).LLTptr = NonNull::new((&raw const (*dctx).entropy.LLTable).cast_mut());
-    (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
-    (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
-
-    (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
-
+    let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
+    decompress_begin(dctx);
     0
+}
+
+fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
+    let dctx = dctx.as_mut_ptr();
+
+    // SAFETY: the type of dctx guarantees that we're allowed to write to this memory.
+    unsafe {
+        (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
+        (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
+        (*dctx).stage = DecompressStage::GetFrameHeaderSize;
+        (*dctx).processedCSize = 0;
+        (*dctx).decodedSize = 0;
+        (*dctx).previousDstEnd = core::ptr::null();
+        (*dctx).prefixStart = core::ptr::null();
+        (*dctx).virtualStart = core::ptr::null();
+        (*dctx).dictEnd = core::ptr::null();
+        (*dctx).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
+        (*dctx).fseEntropy = 0;
+        (*dctx).litEntropy = (*dctx).fseEntropy;
+        (*dctx).dictID = 0;
+        (*dctx).bType = BlockType::Reserved;
+        (*dctx).isFrameDecompression = 1;
+        (*dctx).entropy.rep = repStartValue;
+        (*dctx).LLTptr = NonNull::new((&raw const (*dctx).entropy.LLTable).cast_mut());
+        (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
+        (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
+
+        (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
+    }
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDict))]
@@ -2251,17 +2260,15 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let err_code = ZSTD_decompressBegin(dctx);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
+    decompress_begin(dctx);
 
     if dict.is_null() || dictSize == 0 {
         return 0;
     }
 
     let dict = core::slice::from_raw_parts(dict.cast::<u8>(), dictSize);
-    if ERR_isError(ZSTD_decompress_insertDictionary(dctx, dict)) {
+    if ERR_isError(ZSTD_decompress_insertDictionary(dctx.as_mut_ptr(), dict)) {
         return Error::dictionary_corrupted.to_error_code();
     }
 
@@ -2269,16 +2276,14 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
 }
 
 unsafe fn ZSTD_decompressBegin_usingDict_slice(dctx: *mut ZSTD_DCtx, dict: &[u8]) -> size_t {
-    let err_code = ZSTD_decompressBegin(dctx);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
+    decompress_begin(dctx);
 
     if dict.is_empty() {
         return 0;
     }
 
-    if ERR_isError(ZSTD_decompress_insertDictionary(dctx, dict)) {
+    if ERR_isError(ZSTD_decompress_insertDictionary(dctx.as_mut_ptr(), dict)) {
         return Error::dictionary_corrupted.to_error_code();
     }
 
@@ -2300,10 +2305,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
         (*dctx.as_mut_ptr()).ddictIsCold = ((*dctx.as_mut_ptr()).dictEnd != dictEnd) as _;
     }
 
-    let err_code = ZSTD_decompressBegin(dctx.as_mut_ptr());
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    decompress_begin(dctx);
 
     if let Some(ddict) = ddict.as_ref() {
         ZSTD_copyDDictParameters(dctx, ddict);
