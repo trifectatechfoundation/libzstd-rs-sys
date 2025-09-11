@@ -1,3 +1,4 @@
+use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
 use libc::{calloc, free, malloc, size_t};
@@ -1530,9 +1531,9 @@ unsafe fn ZSTD_DCtx_trace_end(
         );
         trace.version = ZSTD_VERSION_NUMBER as core::ffi::c_uint;
         trace.streaming = streaming;
-        if !((*dctx).ddict).is_null() {
-            trace.dictionaryID = ZSTD_getDictID_fromDDict((*dctx).ddict);
-            trace.dictionarySize = ZSTD_DDict_dictSize((*dctx).ddict);
+        if let Some(ddict) = (*dctx).ddict.as_ref() {
+            trace.dictionaryID = ZSTD_getDictID_fromDDict(ddict);
+            trace.dictionarySize = ZSTD_DDict_dictSize(ddict);
             trace.dictionaryIsCold = (*dctx).ddictIsCold;
         }
         trace.uncompressedSize = uncompressedSize as size_t;
@@ -2240,6 +2241,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
     (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
 
     (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
+
     0
 }
 
@@ -2288,19 +2290,25 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     dctx: *mut ZSTD_DCtx,
     ddict: *const ZSTD_DDict,
 ) -> size_t {
+    // The C version does not check for NULL, we panic instead.
+    let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
+
     if let Some(ddict) = ddict.as_ref() {
         let dictStart = ZSTD_DDict_dictContent(ddict) as *const core::ffi::c_char;
         let dictSize = ZSTD_DDict_dictSize(ddict);
         let dictEnd = dictStart.add(dictSize) as *const core::ffi::c_void;
-        (*dctx).ddictIsCold = ((*dctx).dictEnd != dictEnd) as core::ffi::c_int;
+        (*dctx.as_mut_ptr()).ddictIsCold = ((*dctx.as_mut_ptr()).dictEnd != dictEnd) as _;
     }
-    let err_code = ZSTD_decompressBegin(dctx);
+
+    let err_code = ZSTD_decompressBegin(dctx.as_mut_ptr());
     if ERR_isError(err_code) {
         return err_code;
     }
+
     if let Some(ddict) = ddict.as_ref() {
         ZSTD_copyDDictParameters(dctx, ddict);
     }
+
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromDict))]
@@ -3095,16 +3103,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     iend.offset_from(istart) as size_t,
                 );
                 if legacyVersion != 0 {
-                    let ddict = ZSTD_getDDict(zds);
-                    let dict = if !ddict.is_null() {
-                        ZSTD_DDict_dictContent(ddict)
-                    } else {
-                        core::ptr::null()
-                    };
-                    let dictSize = if !ddict.is_null() {
-                        ZSTD_DDict_dictSize(ddict)
-                    } else {
-                        0
+                    let (dict, dictSize) = match ZSTD_getDDict(zds).as_ref() {
+                        Some(ddict) => (ZSTD_DDict_dictContent(ddict), ZSTD_DDict_dictSize(ddict)),
+                        None => (core::ptr::null(), 0),
                     };
                     if (*zds).staticSize != 0 {
                         return Error::memory_allocation.to_error_code();
