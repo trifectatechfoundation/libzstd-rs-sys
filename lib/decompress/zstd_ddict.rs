@@ -1,3 +1,4 @@
+use core::mem::MaybeUninit;
 use core::ptr::NonNull;
 use libc::{free, malloc, size_t};
 
@@ -81,6 +82,7 @@ unsafe extern "C" fn ZSTD_customMalloc(
     }
     malloc(size)
 }
+
 #[inline]
 unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
     if !ptr.is_null() {
@@ -91,31 +93,40 @@ unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZST
         }
     }
 }
-pub unsafe fn ZSTD_DDict_dictContent(ddict: *const ZSTD_DDict) -> *const core::ffi::c_void {
-    (*ddict).dictContent
-}
-pub unsafe fn ZSTD_DDict_dictSize(ddict: *const ZSTD_DDict) -> size_t {
-    (*ddict).dictSize
+
+pub fn ZSTD_DDict_dictContent(ddict: &ZSTD_DDict) -> *const core::ffi::c_void {
+    ddict.dictContent
 }
 
-pub unsafe fn ZSTD_copyDDictParameters(dctx: *mut ZSTD_DCtx, ddict: &ZSTD_DDict) {
-    (*dctx).dictID = ddict.dictID;
-    (*dctx).prefixStart = ddict.dictContent;
-    (*dctx).virtualStart = ddict.dictContent;
-    (*dctx).dictEnd = (ddict.dictContent).byte_add(ddict.dictSize);
-    (*dctx).previousDstEnd = (*dctx).dictEnd;
-    if ddict.entropyPresent != 0 {
-        (*dctx).litEntropy = 1;
-        (*dctx).fseEntropy = 1;
-        (*dctx).LLTptr = NonNull::new((&raw const ddict.entropy.LLTable).cast_mut());
-        (*dctx).MLTptr = NonNull::new((&raw const ddict.entropy.MLTable).cast_mut());
-        (*dctx).OFTptr = NonNull::new((&raw const ddict.entropy.OFTable).cast_mut());
-        (*dctx).HUFptr = &raw const ddict.entropy.hufTable;
-        (*dctx).entropy.rep = ddict.entropy.rep;
-    } else {
-        (*dctx).litEntropy = 0;
-        (*dctx).fseEntropy = 0;
-    };
+pub fn ZSTD_DDict_dictSize(ddict: &ZSTD_DDict) -> size_t {
+    ddict.dictSize
+}
+
+pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_DDict) {
+    let dctx = dctx.as_mut_ptr();
+
+    // SAFETY: we only write to the raw pointer, never read from it. The types guarantee that the
+    // writes are in-bounds and that we are allowed to write to this memory.
+    unsafe {
+        (*dctx).dictID = ddict.dictID;
+        (*dctx).prefixStart = ddict.dictContent;
+        (*dctx).virtualStart = ddict.dictContent;
+        (*dctx).dictEnd = (ddict.dictContent).wrapping_byte_add(ddict.dictSize);
+        (*dctx).previousDstEnd = (*dctx).dictEnd;
+
+        if ddict.entropyPresent != 0 {
+            (*dctx).litEntropy = 1;
+            (*dctx).fseEntropy = 1;
+            (*dctx).LLTptr = NonNull::new((&raw const ddict.entropy.LLTable).cast_mut());
+            (*dctx).MLTptr = NonNull::new((&raw const ddict.entropy.MLTable).cast_mut());
+            (*dctx).OFTptr = NonNull::new((&raw const ddict.entropy.OFTable).cast_mut());
+            (*dctx).HUFptr = &raw const ddict.entropy.hufTable;
+            (*dctx).entropy.rep = ddict.entropy.rep;
+        } else {
+            (*dctx).litEntropy = 0;
+            (*dctx).fseEntropy = 0;
+        };
+    }
 }
 
 unsafe fn ZSTD_loadEntropy_intoDDict(
