@@ -673,34 +673,42 @@ const fn ZSTD_startingInputLength(format: Format) -> size_t {
     }
 }
 
-unsafe fn ZSTD_DCtx_resetParameters(dctx: *mut ZSTD_DCtx) {
-    (*dctx).format = Format::ZSTD_f_zstd1;
-    (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
-    (*dctx).outBufferMode = BufferMode::Buffered;
-    (*dctx).forceIgnoreChecksum = ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum;
-    (*dctx).refMultipleDDicts = MultipleDDicts::Single;
-    (*dctx).disableHufAsm = 0;
-    (*dctx).maxBlockSizeParam = 0;
+fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
+    unsafe {
+        let dctx = dctx.as_mut_ptr();
+        (*dctx).format = Format::ZSTD_f_zstd1;
+        (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
+        (*dctx).outBufferMode = BufferMode::Buffered;
+        (*dctx).forceIgnoreChecksum = ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum;
+        (*dctx).refMultipleDDicts = MultipleDDicts::Single;
+        (*dctx).disableHufAsm = 0;
+        (*dctx).maxBlockSizeParam = 0;
+    }
 }
 
-unsafe fn ZSTD_initDCtx_internal(dctx: *mut ZSTD_DCtx) {
-    (*dctx).staticSize = 0;
-    (*dctx).ddict = core::ptr::null();
-    (*dctx).ddictLocal = core::ptr::null_mut();
-    (*dctx).dictEnd = core::ptr::null();
-    (*dctx).ddictIsCold = 0;
-    (*dctx).dictUses = DictUses::ZSTD_dont_use;
-    (*dctx).inBuff = core::ptr::null_mut();
-    (*dctx).inBuffSize = 0;
-    (*dctx).outBuffSize = 0;
-    (*dctx).streamStage = StreamStage::Init;
-    (*dctx).legacyContext = core::ptr::null_mut();
-    (*dctx).previousLegacyVersion = 0;
-    (*dctx).noForwardProgress = 0;
-    (*dctx).oversizedDuration = 0;
-    (*dctx).isFrameDecompression = 1;
-    (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
-    (*dctx).ddictSet = core::ptr::null_mut();
+fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
+    unsafe {
+        let dctx = dctx.as_mut_ptr();
+
+        (*dctx).staticSize = 0;
+        (*dctx).ddict = core::ptr::null();
+        (*dctx).ddictLocal = core::ptr::null_mut();
+        (*dctx).dictEnd = core::ptr::null();
+        (*dctx).ddictIsCold = 0;
+        (*dctx).dictUses = DictUses::ZSTD_dont_use;
+        (*dctx).inBuff = core::ptr::null_mut();
+        (*dctx).inBuffSize = 0;
+        (*dctx).outBuffSize = 0;
+        (*dctx).streamStage = StreamStage::Init;
+        (*dctx).legacyContext = core::ptr::null_mut();
+        (*dctx).previousLegacyVersion = 0;
+        (*dctx).noForwardProgress = 0;
+        (*dctx).oversizedDuration = 0;
+        (*dctx).isFrameDecompression = 1;
+        (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
+        (*dctx).ddictSet = core::ptr::null_mut();
+    }
+
     ZSTD_DCtx_resetParameters(dctx);
 }
 
@@ -709,17 +717,19 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     workspace: *mut core::ffi::c_void,
     workspaceSize: size_t,
 ) -> *mut ZSTD_DCtx {
-    let dctx = workspace as *mut ZSTD_DCtx;
     if workspace as size_t & 7 != 0 {
         return core::ptr::null_mut();
     }
     if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() {
         return core::ptr::null_mut();
     }
+
+    let dctx = workspace.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
     ZSTD_initDCtx_internal(dctx);
-    (*dctx).staticSize = workspaceSize;
-    (*dctx).inBuff = dctx.offset(1) as *mut core::ffi::c_char;
-    dctx
+
+    (*dctx.as_mut_ptr()).staticSize = workspaceSize;
+    (*dctx.as_mut_ptr()).inBuff = dctx.as_mut_ptr().add(1) as *mut core::ffi::c_char;
+    dctx.as_mut_ptr()
 }
 
 unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
@@ -727,30 +737,33 @@ unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx 
         return core::ptr::null_mut();
     }
 
-    let dctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>(), customMem) as *mut ZSTD_DCtx;
-    if dctx.is_null() {
+    let alloc = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>(), customMem);
+    let Some(dctx) = alloc.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut() else {
         return core::ptr::null_mut();
-    }
+    };
 
-    (*dctx).customMem = customMem;
+    (*dctx.as_mut_ptr()).customMem = customMem;
     ZSTD_initDCtx_internal(dctx);
-    dctx
+    dctx.as_mut_ptr()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createDCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
     ZSTD_createDCtx_internal(customMem)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx))]
 pub unsafe extern "C" fn ZSTD_createDCtx() -> *mut ZSTD_DCtx {
     ZSTD_createDCtx_internal(ZSTD_defaultCMem)
 }
+
 unsafe fn ZSTD_clearDict(dctx: *mut ZSTD_DCtx) {
     ZSTD_freeDDict((*dctx).ddictLocal);
     (*dctx).ddictLocal = core::ptr::null_mut();
     (*dctx).ddict = core::ptr::null();
     (*dctx).dictUses = DictUses::ZSTD_dont_use;
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDCtx))]
 pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
@@ -2757,35 +2770,58 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
     }
     Error::parameter_unsupported.to_error_code()
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_reset))]
 pub unsafe extern "C" fn ZSTD_DCtx_reset(
     dctx: *mut ZSTD_DCtx,
     reset: ZSTD_ResetDirective,
 ) -> size_t {
-    if matches!(
-        reset,
-        ZSTD_ResetDirective::ZSTD_reset_session_only
-            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
-    ) {
-        (*dctx).streamStage = StreamStage::Init;
-        (*dctx).noForwardProgress = 0;
-        (*dctx).isFrameDecompression = 1;
-    }
+    let dctx = dctx.as_mut().unwrap();
 
-    if matches!(
-        reset,
-        ZSTD_ResetDirective::ZSTD_reset_parameters
-            | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
-    ) {
-        if (*dctx).streamStage != StreamStage::Init {
-            return Error::stage_wrong.to_error_code();
-        }
-        ZSTD_clearDict(dctx);
-        ZSTD_DCtx_resetParameters(dctx);
+    match dctx.reset(reset) {
+        Ok(()) => 0,
+        Err(err) => err.to_error_code(),
     }
-
-    0
 }
+
+impl ZSTD_DCtx_s {
+    fn reset(&mut self, reset: ZSTD_ResetDirective) -> Result<(), Error> {
+        if matches!(
+            reset,
+            ZSTD_ResetDirective::ZSTD_reset_session_only
+                | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+        ) {
+            self.streamStage = StreamStage::Init;
+            self.noForwardProgress = 0;
+            self.isFrameDecompression = 1;
+        }
+
+        if matches!(
+            reset,
+            ZSTD_ResetDirective::ZSTD_reset_parameters
+                | ZSTD_ResetDirective::ZSTD_reset_session_and_parameters
+        ) {
+            if self.streamStage != StreamStage::Init {
+                return Err(Error::stage_wrong);
+            }
+            self.clear_dict();
+            ZSTD_DCtx_resetParameters(unsafe {
+                &mut *(self as *mut _ as *mut MaybeUninit<ZSTD_DCtx>)
+            });
+        }
+
+        Ok(())
+    }
+
+    fn clear_dict(&mut self) {
+        unsafe { ZSTD_freeDDict(self.ddictLocal) };
+
+        self.ddictLocal = core::ptr::null_mut();
+        self.ddict = core::ptr::null();
+        self.dictUses = DictUses::ZSTD_dont_use;
+    }
+}
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DStream))]
 pub unsafe extern "C" fn ZSTD_sizeof_DStream(dctx: *const ZSTD_DStream) -> size_t {
     ZSTD_sizeof_DCtx(dctx)
