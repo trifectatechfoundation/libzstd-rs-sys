@@ -122,8 +122,6 @@ pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
-pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
@@ -2865,12 +2863,7 @@ pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let windowSizeMax = (1)
-        << (if ::core::mem::size_of::<size_t>() == 4 {
-            ZSTD_WINDOWLOG_MAX_32
-        } else {
-            ZSTD_WINDOWLOG_MAX_64
-        });
+    let windowSizeMax = 1 << ZSTD_WINDOWLOG_MAX;
     let mut zfh = ZSTD_FrameHeader::default();
     let err = ZSTD_getFrameHeader(&mut zfh, src, srcSize);
     if ERR_isError(err) {
