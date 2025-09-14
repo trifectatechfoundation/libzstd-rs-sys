@@ -661,9 +661,10 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
         .wrapping_add((*dctx).inBuffSize)
         .wrapping_add((*dctx).outBuffSize)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDCtxSize))]
-pub unsafe extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
-    ::core::mem::size_of::<ZSTD_DCtx>()
+pub const extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
+    size_of::<ZSTD_DCtx>()
 }
 
 const fn ZSTD_startingInputLength(format: Format) -> size_t {
@@ -2806,7 +2807,8 @@ impl ZSTD_DCtx_s {
 pub unsafe extern "C" fn ZSTD_sizeof_DStream(dctx: *const ZSTD_DStream) -> size_t {
     ZSTD_sizeof_DCtx(dctx)
 }
-unsafe fn ZSTD_decodingBufferSize_internal(
+
+fn ZSTD_decodingBufferSize_internal(
     windowSize: core::ffi::c_ulonglong,
     frameContentSize: core::ffi::c_ulonglong,
     blockSizeMax: size_t,
@@ -2840,15 +2842,17 @@ unsafe fn ZSTD_decodingBufferSize_internal(
     }
     minRBSize
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decodingBufferSize_min))]
-pub unsafe extern "C" fn ZSTD_decodingBufferSize_min(
+pub extern "C" fn ZSTD_decodingBufferSize_min(
     windowSize: core::ffi::c_ulonglong,
     frameContentSize: core::ffi::c_ulonglong,
 ) -> size_t {
     ZSTD_decodingBufferSize_internal(windowSize, frameContentSize, ZSTD_BLOCKSIZE_MAX as size_t)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize))]
-pub unsafe extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
+pub extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
     let blockSize = if windowSize < ((1) << 17) as size_t {
         windowSize
     } else {
@@ -2863,6 +2867,7 @@ pub unsafe extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t 
         .wrapping_add(inBuffSize)
         .wrapping_add(outBuffSize)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize_fromFrame))]
 pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
     src: *const core::ffi::c_void,
