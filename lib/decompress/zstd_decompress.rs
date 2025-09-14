@@ -2382,14 +2382,17 @@ pub unsafe extern "C" fn ZSTD_createDStream_advanced(
 pub unsafe extern "C" fn ZSTD_freeDStream(zds: *mut ZSTD_DStream) -> size_t {
     ZSTD_freeDCtx(zds)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DStreamInSize))]
-pub unsafe extern "C" fn ZSTD_DStreamInSize() -> size_t {
+pub const extern "C" fn ZSTD_DStreamInSize() -> size_t {
     (ZSTD_BLOCKSIZE_MAX as size_t).wrapping_add(ZSTD_blockHeaderSize)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DStreamOutSize))]
-pub unsafe extern "C" fn ZSTD_DStreamOutSize() -> size_t {
+pub const extern "C" fn ZSTD_DStreamOutSize() -> size_t {
     ZSTD_BLOCKSIZE_MAX as size_t
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_loadDictionary_advanced))]
 pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_advanced(
     dctx: *mut ZSTD_DCtx,
@@ -2578,7 +2581,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_dParam_getBounds))]
-pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds {
+pub extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds {
     let mut bounds = {
         ZSTD_bounds {
             error: 0,
@@ -2633,10 +2636,8 @@ pub unsafe extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_
     bounds.error = Error::parameter_unsupported.to_error_code();
     bounds
 }
-unsafe fn ZSTD_dParam_withinBounds(
-    dParam: ZSTD_dParameter,
-    value: core::ffi::c_int,
-) -> core::ffi::c_int {
+
+fn ZSTD_dParam_withinBounds(dParam: ZSTD_dParameter, value: core::ffi::c_int) -> core::ffi::c_int {
     let bounds = ZSTD_dParam_getBounds(dParam);
     if ERR_isError(bounds.error) {
         return 0;
@@ -2647,6 +2648,7 @@ unsafe fn ZSTD_dParam_withinBounds(
     if value > bounds.upperBound {
         return 0;
     }
+
     1
 }
 
