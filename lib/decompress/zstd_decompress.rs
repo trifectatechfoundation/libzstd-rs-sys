@@ -1289,17 +1289,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         let mut ip = 0;
         let mut remainingSize = src.len();
         let mut nbBlocks = 0usize;
-        let mut zfh = ZSTD_FrameHeader {
-            frameContentSize: 0,
-            windowSize: 0,
-            blockSizeMax: 0,
-            frameType: ZSTD_frame,
-            headerSize: 0,
-            dictID: 0,
-            checksumFlag: 0,
-            _reserved1: 0,
-            _reserved2: 0,
-        };
+        let mut zfh = ZSTD_FrameHeader::default();
         let ret = get_frame_header_advanced(&mut zfh, src, format);
         if ERR_isError(ret) {
             return ZSTD_errorFrameSizeInfo(ret);
@@ -2350,23 +2340,13 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromFrame(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> core::ffi::c_uint {
-    let mut zfp = {
-        ZSTD_FrameHeader {
-            frameContentSize: 0,
-            windowSize: 0,
-            blockSizeMax: 0,
-            frameType: ZSTD_frame,
-            headerSize: 0,
-            dictID: 0,
-            checksumFlag: 0,
-            _reserved1: 0,
-            _reserved2: 0,
-        }
-    };
+    let mut zfp = ZSTD_FrameHeader::default();
+
     let hError = ZSTD_getFrameHeader(&mut zfp, src, srcSize);
     if ERR_isError(hError) {
         return 0;
     }
+
     zfp.dictID
 }
 
@@ -2894,17 +2874,7 @@ pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
         } else {
             ZSTD_WINDOWLOG_MAX_64
         });
-    let mut zfh = ZSTD_FrameHeader {
-        frameContentSize: 0,
-        windowSize: 0,
-        blockSizeMax: 0,
-        frameType: ZSTD_frame,
-        headerSize: 0,
-        dictID: 0,
-        checksumFlag: 0,
-        _reserved1: 0,
-        _reserved2: 0,
-    };
+    let mut zfh = ZSTD_FrameHeader::default();
     let err = ZSTD_getFrameHeader(&mut zfh, src, srcSize);
     if ERR_isError(err) {
         return err;
