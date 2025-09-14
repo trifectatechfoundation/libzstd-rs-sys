@@ -116,7 +116,7 @@ pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437;
 pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50;
 pub const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
+pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
@@ -1066,7 +1066,7 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
     *zfhPtr = ZSTD_FrameHeader {
         frameContentSize: frameContentSize as core::ffi::c_ulonglong,
         windowSize: windowSize as core::ffi::c_ulonglong,
-        blockSizeMax: Ord::min(windowSize, 1 << 17) as u32,
+        blockSizeMax: Ord::min(windowSize, ZSTD_BLOCKSIZE_MAX as u64) as u32,
         frameType: ZSTD_frame,
         headerSize: fhsize as u32,
         dictID,
@@ -2813,21 +2813,17 @@ fn ZSTD_decodingBufferSize_internal(
     frameContentSize: core::ffi::c_ulonglong,
     blockSizeMax: size_t,
 ) -> size_t {
-    let blockSize = if ((if windowSize < ((1) << 17) as core::ffi::c_ulonglong {
-        windowSize
-    } else {
-        ((1) << 17) as core::ffi::c_ulonglong
-    }) as size_t)
-        < blockSizeMax
-    {
-        (if windowSize < ((1) << 17) as core::ffi::c_ulonglong {
-            windowSize
-        } else {
-            ((1) << 17) as core::ffi::c_ulonglong
-        }) as size_t
-    } else {
-        blockSizeMax
-    };
+    let blockSize = Ord::min(
+        Ord::min(windowSize, ZSTD_BLOCKSIZE_MAX as core::ffi::c_ulonglong) as size_t,
+        blockSizeMax,
+    );
+
+    // We need blockSize + WILDCOPY_OVERLENGTH worth of buffer so that if a block
+    // ends at windowSize + WILDCOPY_OVERLENGTH + 1 bytes, we can start writing
+    // the block at the beginning of the output buffer, and maintain a full window.
+    //
+    // We need another blockSize worth of buffer so that we can store split
+    // literals at the end of the block without overwriting the extDict window.
     let neededRBSize = windowSize
         .wrapping_add((blockSize * 2) as core::ffi::c_ulonglong)
         .wrapping_add((WILDCOPY_OVERLENGTH * 2) as core::ffi::c_ulonglong);
@@ -2853,11 +2849,7 @@ pub extern "C" fn ZSTD_decodingBufferSize_min(
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize))]
 pub extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
-    let blockSize = if windowSize < ((1) << 17) as size_t {
-        windowSize
-    } else {
-        ((1) << 17) as size_t
-    };
+    let blockSize = Ord::min(windowSize, ZSTD_BLOCKSIZE_MAX as size_t);
     let inBuffSize = blockSize;
     let outBuffSize = ZSTD_decodingBufferSize_min(
         windowSize as core::ffi::c_ulonglong,
