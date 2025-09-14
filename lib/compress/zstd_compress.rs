@@ -528,13 +528,6 @@ pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
-pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
-pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
-    4 => ZSTD_WINDOWLOG_MAX_32,
-    8 => ZSTD_WINDOWLOG_MAX_64,
-    _ => panic!(),
-};
 pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;

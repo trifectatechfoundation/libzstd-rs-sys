@@ -26,6 +26,7 @@ use crate::lib::decompress::{
     ZSTD_seqSymbol, ZSTD_seqSymbol_header,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
+use crate::lib::zstd::{ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
@@ -181,14 +182,6 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-
-pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
-    4 => ZSTD_WINDOWLOG_MAX_32,
-    8 => ZSTD_WINDOWLOG_MAX_64,
-    _ => unreachable!(),
-};
-pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 
 #[inline]
 unsafe fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
