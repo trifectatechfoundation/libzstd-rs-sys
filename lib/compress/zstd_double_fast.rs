@@ -66,15 +66,14 @@ use libc::size_t;
 use crate::lib::common::bits::ZSTD_NbCommonBytes;
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
-use crate::lib::common::mem::{
-    MEM_64bits, MEM_read16, MEM_read32, MEM_read64, MEM_readLE32, MEM_readLE64, MEM_readST,
-};
+use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_read64, MEM_readST};
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
 use crate::lib::compress::zstd_compress::{
     SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t, ZSTD_optimal_t,
 };
+use crate::lib::compress::zstd_compress_internal::ZSTD_hashPtr;
 use crate::lib::zstd::*;
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
@@ -226,51 +225,6 @@ unsafe fn ZSTD_count_2segments(
         return matchLength;
     }
     matchLength.wrapping_add(ZSTD_count(ip.add(matchLength), iStart, iEnd))
-}
-static prime4bytes: u32 = 2654435761;
-unsafe fn ZSTD_hash4(u: u32, h: u32, s: u32) -> u32 {
-    ((u.wrapping_mul(prime4bytes)) ^ s) >> 32u32.wrapping_sub(h)
-}
-unsafe fn ZSTD_hash4Ptr(ptr: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash4(MEM_readLE32(ptr), h, 0) as size_t
-}
-static prime5bytes: u64 = 889523592379;
-unsafe fn ZSTD_hash5(u: u64, h: u32, s: u64) -> size_t {
-    ((((u << (64 - 40)).wrapping_mul(prime5bytes)) ^ s) >> 64u32.wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash5Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash5(MEM_readLE64(p), h, 0)
-}
-static prime6bytes: u64 = 227718039650203;
-unsafe fn ZSTD_hash6(u: u64, h: u32, s: u64) -> size_t {
-    ((((u << (64 - 48)).wrapping_mul(prime6bytes)) ^ s) >> 64u32.wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash6Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash6(MEM_readLE64(p), h, 0)
-}
-static prime7bytes: u64 = 58295818150454627;
-unsafe fn ZSTD_hash7(u: u64, h: u32, s: u64) -> size_t {
-    ((((u << (64 - 56)).wrapping_mul(prime7bytes)) ^ s) >> (64u32).wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash7Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash7(MEM_readLE64(p), h, 0)
-}
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
-unsafe fn ZSTD_hash8(u: u64, h: u32, s: u64) -> size_t {
-    (((u.wrapping_mul(prime8bytes)) ^ s) >> 64u32.wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash8(MEM_readLE64(p), h, 0)
-}
-#[inline(always)]
-unsafe fn ZSTD_hashPtr(p: *const core::ffi::c_void, hBits: u32, mls: u32) -> size_t {
-    match mls {
-        5 => ZSTD_hash5Ptr(p, hBits),
-        6 => ZSTD_hash6Ptr(p, hBits),
-        7 => ZSTD_hash7Ptr(p, hBits),
-        8 => ZSTD_hash8Ptr(p, hBits),
-        _ => ZSTD_hash4Ptr(p, hBits),
-    }
 }
 #[inline]
 unsafe fn ZSTD_getLowestMatchIndex(
