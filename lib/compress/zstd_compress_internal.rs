@@ -44,8 +44,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
         != 0
     {
         seqStorePtr.longLengthType = ZSTD_llt_literalLength;
-        seqStorePtr.longLengthPos = (seqStorePtr.sequences)
-            .offset_from(seqStorePtr.sequencesStart)
+        seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
     (*(seqStorePtr.sequences)).litLength = litLength as u16;
@@ -54,8 +53,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     if (mlBase > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long != 0
     {
         seqStorePtr.longLengthType = ZSTD_llt_matchLength;
-        seqStorePtr.longLengthPos = (seqStorePtr.sequences)
-            .offset_from(seqStorePtr.sequencesStart)
+        seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
     (*(seqStorePtr.sequences)).mlBase = mlBase as u16;
