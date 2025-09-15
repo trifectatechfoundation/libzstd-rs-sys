@@ -197,18 +197,14 @@ jobs:
         uses: taiki-e/install-action@57511bcdf8cdb0eab6448cb7fa632952d9f25742 # v2.59.1
         with:
           tool: cargo-nextest
-      #      - name: Test public C api with miri
-      #        env:
-      #          QUICKCHECK_TESTS: 10
-      #          RUSTFLAGS: "-Awarnings"
-      #        run: |
-      #          cargo +nightly miri nextest run -j4 -p test-libzstd-rs-sys
       - name: Run unit tests with miri
         env:
           QUICKCHECK_TESTS: 10
           RUSTFLAGS: "-Awarnings"
         run: |
           cargo +nightly miri nextest run -j4 -p libzstd-rs-sys
+          MIRIFLAGS="-Zmiri-tree-borrows" cargo +nightly miri nextest run -j4 --workspace decompress::fastest_wasm_zlib
+
 
   zstreamtest:
     name: "zstreamtest"
