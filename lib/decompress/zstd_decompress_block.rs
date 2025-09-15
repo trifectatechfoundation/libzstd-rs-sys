@@ -22,8 +22,8 @@ use crate::lib::decompress::huf_decompress::{
 use crate::lib::decompress::huf_decompress::{HUF_decompress4X_hufOnly_wksp, Writer};
 use crate::lib::decompress::{blockProperties_t, BlockType, SymbolTable};
 use crate::lib::decompress::{
-    LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_DCtx_s,
-    ZSTD_seqSymbol, ZSTD_seqSymbol_header,
+    LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
+    ZSTD_seqSymbol_header,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
 use crate::lib::zstd::{ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
@@ -183,11 +183,6 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 
-#[inline]
-unsafe fn ZSTD_DCtx_get_bmi2(dctx: *const ZSTD_DCtx_s) -> core::ffi::c_int {
-    (*dctx).bmi2
-}
-
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
@@ -202,15 +197,11 @@ impl ZSTD_DCtx {
     }
 }
 
-pub unsafe fn ZSTD_getcBlockSize(
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    bpPtr: &mut blockProperties_t,
-) -> size_t {
-    if srcSize < ZSTD_blockHeaderSize {
+pub fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> size_t {
+    if src.len() < ZSTD_blockHeaderSize {
         return Error::srcSize_wrong.to_error_code();
     }
-    let cBlockHeader = MEM_readLE24(src);
+    let cBlockHeader = unsafe { MEM_readLE24(src.as_ptr().cast()) };
     let cSize = cBlockHeader >> 3;
 
     bpPtr.lastBlock = cBlockHeader & 1;
@@ -435,7 +426,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
     let flags = {
-        let bmi_flag = match ZSTD_DCtx_get_bmi2(dctx) {
+        let bmi_flag = match dctx.bmi2 {
             0 => 0,
             _ => HUF_flags_bmi2 as core::ffi::c_int,
         };
@@ -2161,7 +2152,7 @@ unsafe fn ZSTD_decompressSequences(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if ZSTD_DCtx_get_bmi2(dctx) != 0 {
+    if dctx.bmi2 != 0 {
         ZSTD_decompressSequences_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequences_default(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
@@ -2176,7 +2167,7 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if ZSTD_DCtx_get_bmi2(dctx) != 0 {
+    if dctx.bmi2 != 0 {
         ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequencesSplitLitBuffer_default(
@@ -2192,7 +2183,7 @@ unsafe fn ZSTD_decompressSequencesLong(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if ZSTD_DCtx_get_bmi2(dctx) != 0 {
+    if dctx.bmi2 != 0 {
         ZSTD_decompressSequencesLong_bmi2(dctx, dst, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequencesLong_default(dctx, dst, seqStart, nbSeq, offset)

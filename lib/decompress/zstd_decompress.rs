@@ -1304,13 +1304,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
                 lastBlock: 0,
                 origSize: 0,
             };
-            let cBlockSize = unsafe {
-                ZSTD_getcBlockSize(
-                    src[ip..].as_ptr().cast(),
-                    remainingSize,
-                    &mut blockProperties,
-                )
-            };
+            let cBlockSize = ZSTD_getcBlockSize(&src[ip..], &mut blockProperties);
             if ERR_isError(cBlockSize) {
                 return ZSTD_errorFrameSizeInfo(cBlockSize);
             }
