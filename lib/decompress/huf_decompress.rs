@@ -1081,21 +1081,23 @@ pub fn HUF_readDTableX2_wksp(
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0u32;
 
-    for w_1 in 1..maxW.wrapping_add(1) {
-        let curr_0 = nextRankVal;
-        nextRankVal = nextRankVal
-            .wrapping_add(wksp.rankStats[w_1 as usize] << w_1.wrapping_add(rescale as u32));
+    // Zero the memory to prevent uninitialized memory.
+    wksp.rankVal = [[0u32; 13]; 12];
 
-        wksp.rankVal[0][w_1 as usize] = curr_0;
+    for w in 1..maxW.wrapping_add(1) {
+        let curr = nextRankVal;
+        nextRankVal =
+            nextRankVal.wrapping_add(wksp.rankStats[w as usize] << w.wrapping_add(rescale as u32));
+
+        wksp.rankVal[0][w as usize] = curr;
     }
 
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
     let mut consumed: u32 = 0;
     consumed = minBits;
     while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
-        for w_2 in 0..maxW.wrapping_add(1) {
-            wksp.rankVal[consumed as usize][w_2 as usize] =
-                wksp.rankVal[0][w_2 as usize] >> consumed;
+        for w in 1..maxW.wrapping_add(1) as usize {
+            wksp.rankVal[consumed as usize][w] = wksp.rankVal[0][w] >> consumed;
         }
         consumed = consumed.wrapping_add(1);
     }
