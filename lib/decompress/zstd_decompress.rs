@@ -2633,19 +2633,13 @@ pub extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds 
     bounds
 }
 
-fn ZSTD_dParam_withinBounds(dParam: ZSTD_dParameter, value: core::ffi::c_int) -> core::ffi::c_int {
+fn ZSTD_dParam_withinBounds(dParam: ZSTD_dParameter, value: core::ffi::c_int) -> bool {
     let bounds = ZSTD_dParam_getBounds(dParam);
     if ERR_isError(bounds.error) {
-        return 0;
-    }
-    if value < bounds.lowerBound {
-        return 0;
-    }
-    if value > bounds.upperBound {
-        return 0;
+        return false;
     }
 
-    1
+    (bounds.lowerBound..=bounds.upperBound).contains(&value)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_getParameter))]
@@ -2684,7 +2678,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             if value == 0 {
                 value = ZSTD_WINDOWLOG_LIMIT_DEFAULT;
             }
-            if ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_windowLogMax, value) == 0 {
+            if !ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_windowLogMax, value) {
                 return Error::parameter_outOfBound.to_error_code();
             }
             (*dctx).maxWindowSize = (1) << value;
@@ -2724,7 +2718,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0;
         }
         ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => {
-            if ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam5, value) == 0 {
+            if !ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam5, value) {
                 return Error::parameter_outOfBound.to_error_code();
             }
             (*dctx).disableHufAsm = (value != 0) as core::ffi::c_int;
@@ -2732,7 +2726,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
         }
         ZSTD_dParameter::ZSTD_d_maxBlockSize => {
             if value != 0
-                && ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam6, value) == 0
+                && !ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam6, value)
             {
                 return Error::parameter_outOfBound.to_error_code();
             }
