@@ -2592,11 +2592,7 @@ pub extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds 
     match dParam {
         ZSTD_dParameter::ZSTD_d_windowLogMax => {
             bounds.lowerBound = ZSTD_WINDOWLOG_ABSOLUTEMIN;
-            bounds.upperBound = if ::core::mem::size_of::<size_t>() == 4 {
-                ZSTD_WINDOWLOG_MAX_32
-            } else {
-                ZSTD_WINDOWLOG_MAX_64
-            };
+            bounds.upperBound = ZSTD_WINDOWLOG_MAX;
             return bounds;
         }
         ZSTD_dParameter::ZSTD_d_format => {
