@@ -73,9 +73,7 @@ pub struct seqState_t<'a> {
 }
 
 impl ZSTD_DCtx {
-    fn new_seq_state<'a>(&mut self, mut bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
-        self.fseEntropy = true;
-
+    fn new_seq_state<'a>(&self, mut bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
         let stateLL = match self.LLTptr {
             None => ZSTD_fseState::new(&mut bit_stream, &LL_defaultDTable),
             Some(table) => ZSTD_fseState::new(&mut bit_stream, unsafe { &*table.as_ptr() }),
@@ -1620,6 +1618,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
+        dctx.fseEntropy = true;
         let mut seqState = dctx.new_seq_state(DStream);
 
         let mut sequence = {
@@ -1781,6 +1780,7 @@ unsafe fn ZSTD_decompressSequences_body(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
+        dctx.fseEntropy = true;
         let mut seqState = dctx.new_seq_state(DStream);
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -1915,6 +1915,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             Ok(v) => v,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
+        dctx.fseEntropy = true;
         let mut seqState = dctx.new_seq_state(DStream);
 
         let mut prefetchPos = op.offset_from(prefixStart) as usize;
