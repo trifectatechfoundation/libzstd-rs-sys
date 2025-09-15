@@ -1727,10 +1727,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             return Error::corruption_detected.to_error_code();
         }
 
-        for i_0 in 0..ZSTD_REP_NUM {
-            *(dctx.entropy.rep).as_mut_ptr().offset(i_0 as isize) =
-                *(seqState.prevOffset).as_mut_ptr().offset(i_0 as isize) as u32;
-        }
+        dctx.entropy.rep = seqState.prevOffset.map(|v| v as u32);
     }
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
