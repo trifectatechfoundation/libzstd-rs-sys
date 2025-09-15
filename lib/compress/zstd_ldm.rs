@@ -92,7 +92,7 @@ pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
 pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
 pub type ZSTD_BlockCompressor_f = Option<
     unsafe fn(
-        *mut ZSTD_MatchState_t,
+        &mut ZSTD_MatchState_t,
         &mut SeqStore_t,
         *mut u32,
         *const core::ffi::c_void,
@@ -902,11 +902,11 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     matchLength
 }
 unsafe fn ZSTD_ldm_fillFastTables(
-    ms: *mut ZSTD_MatchState_t,
+    ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
 ) -> size_t {
     let iend = end as *const u8;
-    match (*ms).cParams.strategy as core::ffi::c_uint {
+    match ms.cParams.strategy as core::ffi::c_uint {
         1 => {
             ZSTD_fillHashTable(
                 ms,
@@ -981,14 +981,14 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         ip = ip.add(hashed);
     }
 }
-unsafe fn ZSTD_ldm_limitTableUpdate(ms: *mut ZSTD_MatchState_t, anchor: *const u8) {
-    let curr = anchor.offset_from((*ms).window.base) as core::ffi::c_long as u32;
-    if curr > ((*ms).nextToUpdate).wrapping_add(1024) {
-        (*ms).nextToUpdate = curr.wrapping_sub(
-            if (512) < curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(1024) {
+unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u8) {
+    let curr = anchor.offset_from(ms.window.base) as core::ffi::c_long as u32;
+    if curr > (ms.nextToUpdate).wrapping_add(1024) {
+        ms.nextToUpdate = curr.wrapping_sub(
+            if (512) < curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024) {
                 512
             } else {
-                curr.wrapping_sub((*ms).nextToUpdate).wrapping_sub(1024)
+                curr.wrapping_sub(ms.nextToUpdate).wrapping_sub(1024)
             },
         );
     }
@@ -1373,14 +1373,14 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
 }
 pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: *mut RawSeqStore_t,
-    ms: *mut ZSTD_MatchState_t,
+    ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let cParams: *const ZSTD_compressionParameters = &mut (*ms).cParams;
+    let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let minMatch = (*cParams).minMatch;
     let blockCompressor = ZSTD_selectBlockCompressor(
         (*cParams).strategy,
@@ -1394,7 +1394,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
     {
         let mut lastLLSize: size_t = 0;
-        (*ms).ldmSeqStore = rawSeqStore;
+        ms.ldmSeqStore = rawSeqStore;
         lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
         return lastLLSize;
