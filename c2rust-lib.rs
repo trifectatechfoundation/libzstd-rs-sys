@@ -109,13 +109,13 @@ pub use crate::lib::zdict::{
 };
 
 pub use crate::lib::compress::zstd_compress::{
-    ZSTD_CCtx, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_refCDict, ZSTD_CCtx_refPrefix, ZSTD_CCtx_reset,
-    ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize, ZSTD_CDict, ZSTD_CStreamInSize,
-    ZSTD_CStreamOutSize, ZSTD_EndDirective, ZSTD_compress, ZSTD_compress2, ZSTD_compressBlock,
-    ZSTD_compressBound, ZSTD_compressCCtx, ZSTD_compressStream, ZSTD_compressStream2,
-    ZSTD_compress_usingCDict, ZSTD_compress_usingDict, ZSTD_copyCCtx, ZSTD_createCCtx,
-    ZSTD_createCDict, ZSTD_createCDict_byReference, ZSTD_endStream, ZSTD_flushStream,
-    ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getBlockSize, ZSTD_getDictID_fromCDict,
+    ZSTD_CCtx, ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_refCDict,
+    ZSTD_CCtx_refPrefix, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize,
+    ZSTD_CDict, ZSTD_CStreamInSize, ZSTD_CStreamOutSize, ZSTD_EndDirective, ZSTD_cParam_getBounds,
+    ZSTD_compress, ZSTD_compress2, ZSTD_compressBlock, ZSTD_compressBound, ZSTD_compressCCtx,
+    ZSTD_compressStream, ZSTD_compressStream2, ZSTD_compress_usingCDict, ZSTD_compress_usingDict,
+    ZSTD_copyCCtx, ZSTD_createCCtx, ZSTD_createCDict, ZSTD_createCDict_byReference, ZSTD_endStream,
+    ZSTD_flushStream, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getBlockSize, ZSTD_getDictID_fromCDict,
     ZSTD_getFrameProgression, ZSTD_initCStream, ZSTD_initCStream_srcSize,
     ZSTD_initCStream_usingCDict, ZSTD_initCStream_usingDict, ZSTD_maxCLevel, ZSTD_minCLevel,
     ZSTD_sequenceBound, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict,
