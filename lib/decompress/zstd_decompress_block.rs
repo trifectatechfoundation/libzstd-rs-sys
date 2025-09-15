@@ -74,7 +74,7 @@ pub struct seqState_t<'a> {
 
 impl ZSTD_DCtx {
     fn new_seq_state<'a>(&mut self, mut bit_stream: BIT_DStream_t<'a>) -> seqState_t<'a> {
-        self.fseEntropy = 1;
+        self.fseEntropy = true;
 
         let stateLL = match self.LLTptr {
             None => ZSTD_fseState::new(&mut bit_stream, &LL_defaultDTable),
@@ -310,7 +310,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
     match litEncType {
-        SymbolEncodingType_e::set_repeat if dctx.litEntropy == 0 => {
+        SymbolEncodingType_e::set_repeat if !dctx.litEntropy => {
             return Error::dictionary_corrupted.to_error_code();
         }
         SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
@@ -533,7 +533,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
 
     dctx.litPtr = dctx.litBuffer;
     dctx.litSize = litSize;
-    dctx.litEntropy = 1;
+    dctx.litEntropy = true;
 
     if let SymbolEncodingType_e::set_compressed = litEncType {
         dctx.HUFptr = &raw const dctx.entropy.hufTable;
@@ -857,7 +857,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     src: &[u8],
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
-    flagRepeatTable: u32,
+    flagRepeatTable: bool,
     ddictIsCold: core::ffi::c_int,
     nbSeq: core::ffi::c_int,
     wksp: &mut Workspace,
@@ -885,7 +885,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
             0
         }
         SymbolEncodingType_e::set_repeat => {
-            if flagRepeatTable == 0 {
+            if !flagRepeatTable {
                 return Error::corruption_detected.to_error_code();
             }
             if ddictIsCold != 0 && nbSeq > 24 {

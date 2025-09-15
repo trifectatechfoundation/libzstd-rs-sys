@@ -115,16 +115,16 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
         (*dctx).previousDstEnd = (*dctx).dictEnd;
 
         if ddict.entropyPresent != 0 {
-            (*dctx).litEntropy = 1;
-            (*dctx).fseEntropy = 1;
+            (*dctx).litEntropy = true;
+            (*dctx).fseEntropy = true;
             (*dctx).LLTptr = NonNull::new((&raw const ddict.entropy.LLTable).cast_mut());
             (*dctx).MLTptr = NonNull::new((&raw const ddict.entropy.MLTable).cast_mut());
             (*dctx).OFTptr = NonNull::new((&raw const ddict.entropy.OFTable).cast_mut());
             (*dctx).HUFptr = &raw const ddict.entropy.hufTable;
             (*dctx).entropy.rep = ddict.entropy.rep;
         } else {
-            (*dctx).litEntropy = 0;
-            (*dctx).fseEntropy = 0;
+            (*dctx).litEntropy = false;
+            (*dctx).fseEntropy = false;
         };
     }
 }

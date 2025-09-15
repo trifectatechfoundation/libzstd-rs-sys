@@ -2207,7 +2207,7 @@ fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> size_t
         return Error::dictionary_corrupted.to_error_code();
     }
 
-    dctx.fseEntropy = 1;
+    dctx.fseEntropy = true;
     dctx.litEntropy = dctx.fseEntropy;
 
     ZSTD_refDictContent(dctx, &dict[eSize..])
@@ -2235,7 +2235,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).virtualStart = core::ptr::null();
         (*dctx).dictEnd = core::ptr::null();
         (*dctx).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
-        (*dctx).fseEntropy = 0;
+        (*dctx).fseEntropy = false;
         (*dctx).litEntropy = (*dctx).fseEntropy;
         (*dctx).dictID = 0;
         (*dctx).bType = BlockType::Reserved;
