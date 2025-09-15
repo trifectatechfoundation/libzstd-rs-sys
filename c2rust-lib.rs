@@ -81,9 +81,10 @@ pub use crate::lib::decompress::{
         ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
     },
     zstd_decompress::{
-        ZSTD_DCtx_loadDictionary, ZSTD_DCtx_refDDict, ZSTD_DCtx_refPrefix, ZSTD_DCtx_reset,
-        ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_DStreamInSize, ZSTD_DStreamOutSize,
-        ZSTD_copyDCtx, ZSTD_createDCtx, ZSTD_createDStream, ZSTD_decompress, ZSTD_decompressBegin,
+        ZSTD_DCtx_getParameter, ZSTD_DCtx_loadDictionary, ZSTD_DCtx_refDDict, ZSTD_DCtx_refPrefix,
+        ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DStream, ZSTD_DStreamInSize,
+        ZSTD_DStreamOutSize, ZSTD_copyDCtx, ZSTD_createDCtx, ZSTD_createDStream,
+        ZSTD_dParam_getBounds, ZSTD_decompress, ZSTD_decompressBegin,
         ZSTD_decompressBegin_usingDDict, ZSTD_decompressBegin_usingDict, ZSTD_decompressBound,
         ZSTD_decompressContinue, ZSTD_decompressDCtx, ZSTD_decompressStream,
         ZSTD_decompress_usingDDict, ZSTD_decompress_usingDict, ZSTD_decompressionMargin,
