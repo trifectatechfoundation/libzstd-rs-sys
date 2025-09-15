@@ -464,7 +464,7 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     entropyWritten: *mut core::ffi::c_int,
 ) -> size_t {
     let longOffsets = ((*cctxParams).cParams.windowLog
-        > (if MEM_32bits() != 0 {
+        > (if MEM_32bits() {
             STREAM_ACCUMULATOR_MIN_32
         } else {
             STREAM_ACCUMULATOR_MIN_64

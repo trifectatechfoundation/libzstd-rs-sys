@@ -1,20 +1,19 @@
-use core::ffi::{c_uint, c_void};
-use core::mem;
+use core::ffi::c_void;
 
 use libc::size_t;
 
 #[inline]
-pub(crate) fn MEM_32bits() -> c_uint {
-    (::core::mem::size_of::<usize>() == 4) as _
+pub(crate) fn MEM_32bits() -> bool {
+    size_of::<usize>() == 4
 }
 #[inline]
-pub(crate) fn MEM_64bits() -> c_uint {
-    (::core::mem::size_of::<usize>() == 8) as _
+pub(crate) fn MEM_64bits() -> bool {
+    size_of::<usize>() == 8
 }
 
 #[inline]
-pub(crate) const fn MEM_isLittleEndian() -> c_uint {
-    cfg!(target_endian = "little") as _
+pub(crate) const fn MEM_isLittleEndian() -> bool {
+    cfg!(target_endian = "little")
 }
 
 #[inline]
@@ -128,7 +127,7 @@ pub(crate) unsafe fn MEM_writeLE64(memPtr: *mut c_void, val64: u64) {
 
 #[inline]
 pub(crate) unsafe fn MEM_readLEST(memPtr: *const c_void) -> size_t {
-    match mem::size_of::<size_t>() {
+    match size_of::<size_t>() {
         4 => MEM_readLE32(memPtr) as size_t,
         8 => MEM_readLE64(memPtr) as size_t,
         _ => unreachable!(),
@@ -137,7 +136,7 @@ pub(crate) unsafe fn MEM_readLEST(memPtr: *const c_void) -> size_t {
 
 #[inline]
 pub(crate) unsafe fn MEM_writeLEST(memPtr: *mut c_void, val: size_t) {
-    match mem::size_of::<size_t>() {
+    match size_of::<size_t>() {
         4 => MEM_writeLE32(memPtr, val as u32),
         8 => MEM_writeLE64(memPtr, val as u64),
         _ => unreachable!(),
@@ -145,5 +144,5 @@ pub(crate) unsafe fn MEM_writeLEST(memPtr: *mut c_void, val: size_t) {
 }
 
 const _: () = {
-    assert!(mem::size_of::<size_t>() == 4 || mem::size_of::<size_t>() == 8);
+    assert!(size_of::<size_t>() == 4 || size_of::<size_t>() == 8);
 };

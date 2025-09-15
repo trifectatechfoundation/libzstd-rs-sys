@@ -1424,10 +1424,10 @@ unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::f
             ((*params).cParams.windowLog).wrapping_add(2)
         };
     }
-    if jobLog < (if MEM_32bits() != 0 { 29 } else { 30 }) as core::ffi::c_uint {
+    if jobLog < (if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint {
         jobLog
     } else {
-        (if MEM_32bits() != 0 { 29 } else { 30 }) as core::ffi::c_uint
+        (if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint
     }
 }
 unsafe fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
@@ -1487,13 +1487,13 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         params.jobSize = ZSTDMT_JOBSIZE_MIN as size_t;
     }
     if params.jobSize
-        > (if MEM_32bits() != 0 {
-            512 * ((1) << 20)
+        > (if MEM_32bits() {
+            512 * (1 << 20)
         } else {
-            1024 * ((1) << 20)
+            1024 * (1 << 20)
         }) as size_t
     {
-        params.jobSize = (if MEM_32bits() != 0 {
+        params.jobSize = (if MEM_32bits() {
             512 * ((1) << 20)
         } else {
             1024 * ((1) << 20)

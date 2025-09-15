@@ -1262,7 +1262,7 @@ unsafe fn ZSTD_execSequence(
     let mut match_0: *const u8 = oLitEnd.wrapping_offset(-(sequence.offset as isize));
     if (iLitEnd > litLimit
         || oMatchEnd > oend_w
-        || MEM_32bits() != 0 && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32))
+        || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32))
         as core::ffi::c_int as core::ffi::c_long
         != 0
     {
@@ -1348,7 +1348,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     let mut match_0: *const u8 = oLitEnd.offset(-(sequence.offset as isize));
     if (iLitEnd > litLimit
         || oMatchEnd > oend_w as *mut u8
-        || MEM_32bits() != 0 && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32))
+        || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32))
         as core::ffi::c_int as core::ffi::c_long
         != 0
     {
@@ -1481,7 +1481,7 @@ fn ZSTD_decodeSequence(
         const { assert!(STREAM_ACCUMULATOR_MIN_32 > LONG_OFFSETS_MAX_EXTRA_BITS_32) };
         const { assert!(STREAM_ACCUMULATOR_MIN_32 - LONG_OFFSETS_MAX_EXTRA_BITS_32 >= MaxMLBits as i32) };
 
-        if MEM_32bits() != 0
+        if MEM_32bits()
             && longOffsets != Offset::Regular
             && ofBits as core::ffi::c_int >= STREAM_ACCUMULATOR_MIN_32
         {
@@ -1501,7 +1501,7 @@ fn ZSTD_decodeSequence(
             offset = (ofBase as size_t).wrapping_add(
                 seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as size_t,
             );
-            if MEM_32bits() != 0 {
+            if MEM_32bits() {
                 seqState.DStream.reload();
             }
         }
@@ -1562,7 +1562,7 @@ fn ZSTD_decodeSequence(
         seq.litLength = (seq.litLength)
             .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as size_t);
     }
-    if MEM_32bits() != 0 {
+    if MEM_32bits() {
         seqState.DStream.reload();
     }
 
@@ -1580,7 +1580,7 @@ fn ZSTD_decodeSequence(
             mlNext,
             mlnbBits,
         );
-        if MEM_32bits() != 0 {
+        if MEM_32bits() {
             seqState.DStream.reload();
         }
         ZSTD_updateFseStateWithDInfo(
@@ -2285,7 +2285,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     let blockSizeMax = Ord::min(dst.capacity(), dctx.block_size_max());
     let totalHistorySize =
         dst.as_mut_ptr().wrapping_add(blockSizeMax) as usize - dctx.virtualStart as usize;
-    let mut offset = if MEM_32bits() != 0 && totalHistorySize > ZSTD_maxShortOffset() {
+    let mut offset = if MEM_32bits() && totalHistorySize > ZSTD_maxShortOffset() {
         Offset::Long
     } else {
         Offset::Regular
@@ -2300,7 +2300,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     if dst.is_empty() && nbSeq > 0 {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if MEM_64bits() != 0
+    if MEM_64bits()
         && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
         && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
@@ -2319,7 +2319,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         }
 
         if !use_prefetch_decoder {
-            let minShare = (if MEM_64bits() != 0 { 7 } else { 20 }) as u32;
+            let minShare = (if MEM_64bits() { 7 } else { 20 }) as u32;
             use_prefetch_decoder = info.longOffsetShare >= minShare;
         }
     }

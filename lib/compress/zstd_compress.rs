@@ -765,7 +765,7 @@ unsafe fn ZSTD_window_needOverflowCorrection(
         }
     }
     (curr
-        > (if MEM_64bits() != 0 {
+        > (if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {
@@ -2210,10 +2210,10 @@ pub unsafe extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_b
         }
         401 => {
             bounds.lowerBound = 0;
-            bounds.upperBound = if MEM_32bits() != 0 {
-                512 * ((1) << 20)
+            bounds.upperBound = if MEM_32bits() {
+                512 * (1 << 20)
             } else {
-                1024 * ((1) << 20)
+                1024 * (1 << 20)
             };
             bounds
         }
@@ -4053,7 +4053,7 @@ unsafe fn ZSTD_reset_matchState(
 pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * ((1) << 20);
 unsafe fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> core::ffi::c_int {
     ((w.nextSrc).offset_from(w.base) as size_t
-        > (if MEM_64bits() != 0 {
+        > (if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {
@@ -4065,7 +4065,7 @@ unsafe fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> core::ffi::c_int {
 }
 unsafe fn ZSTD_dictTooBig(loadedDictSize: size_t) -> core::ffi::c_int {
     (loadedDictSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() != 0 {
+        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {
@@ -4676,9 +4676,9 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_in
         *llCodeTable.offset(u as isize) = ZSTD_LLcode(llv) as u8;
         *ofCodeTable.offset(u as isize) = ofCode as u8;
         *mlCodeTable.offset(u as isize) = ZSTD_MLcode(mlv) as u8;
-        if MEM_32bits() != 0
+        if MEM_32bits()
             && ofCode
-                >= (if MEM_32bits() != 0 {
+                >= (if MEM_32bits() {
                     STREAM_ACCUMULATOR_MIN_32
                 } else {
                     STREAM_ACCUMULATOR_MIN_64
@@ -7278,7 +7278,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     let loadLdmDict = ((*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
         && !ls.is_null()) as core::ffi::c_int;
     ZSTD_assertEqualCParams((*params).cParams, ms.cParams);
-    let mut maxDictSize = (if MEM_64bits() != 0 {
+    let mut maxDictSize = (if MEM_64bits() {
         (3500 as core::ffi::c_uint)
             .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
     } else {
@@ -7304,7 +7304,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         srcSize = maxDictSize as size_t;
     }
     if srcSize
-        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() != 0 {
+        > (-(1 as core::ffi::c_int) as u32).wrapping_sub(if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {
@@ -10988,9 +10988,8 @@ pub unsafe fn ZSTD_convertBlockSequences(
 }
 #[inline(always)]
 unsafe fn matchLengthHalfIsZero(litMatchLength: u64) -> core::ffi::c_int {
-    if MEM_isLittleEndian() != 0 {
-        (litMatchLength as core::ffi::c_ulonglong <= 0xffffffff as core::ffi::c_ulonglong)
-            as core::ffi::c_int
+    if MEM_isLittleEndian() {
+        (litMatchLength <= 0xffffffff) as core::ffi::c_int
     } else {
         (litMatchLength as u32 == 0) as core::ffi::c_int
     }
@@ -11068,7 +11067,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                     litSize: 0,
                 };
                 bs_0.nbSequences = n.wrapping_add(1);
-                if MEM_isLittleEndian() != 0 {
+                if MEM_isLittleEndian() {
                     bs_0.litSize = litMatchSize0 as u32 as size_t;
                     bs_0.blockSize =
                         (bs_0.litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize;

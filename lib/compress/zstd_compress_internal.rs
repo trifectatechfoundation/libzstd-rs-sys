@@ -173,7 +173,7 @@ pub(crate) unsafe fn ZSTD_count(
             }
         }
     }
-    if MEM_64bits() != 0
+    if MEM_64bits()
         && pIn < pInLimit.sub(3)
         && MEM_read32(pMatch as *const core::ffi::c_void)
             == MEM_read32(pIn as *const core::ffi::c_void)
