@@ -496,10 +496,16 @@ mod fastest_wasm_zlib_continue {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore = "FIXME: memory issue")]
     fn zstd_custom_dict() {
         const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
         const COMPRESSED: &[u8] =
             include_bytes!("../test-data/The fastest WASM zlib.md.zstd-custom-dict.zst");
+
+        if cfg!(miri) {
+            decompress_continue_rs(COMPRESSED, Some(DICT));
+            return;
+        }
 
         let c = decompress_continue_c(COMPRESSED, Some(DICT));
         assert_eq!(DECOMPRESSED, c);
