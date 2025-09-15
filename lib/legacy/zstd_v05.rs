@@ -2241,7 +2241,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(dctx: &mut ZSTDv05_DCtx, src: Reader<'_>) 
             }) {
                 return Error::corruption_detected.to_error_code();
             }
-            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litPtr = (&raw mut dctx.litBuffer).cast();
             dctx.litSize = litSize;
             ptr::write_bytes(
                 dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
@@ -2365,7 +2365,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(dctx: &mut ZSTDv05_DCtx, src: Reader<'_>) 
                 *istart.offset(lhSize_2 as isize),
                 litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as size_t),
             );
-            dctx.litPtr = dctx.litBuffer.as_mut_ptr();
+            dctx.litPtr = (&raw mut dctx.litBuffer).cast();
             dctx.litSize = litSize_2;
             lhSize_2.wrapping_add(1) as size_t
         }
@@ -2850,10 +2850,9 @@ unsafe fn ZSTDv05_decompressSequences(
 unsafe fn ZSTDv05_checkContinuity(dctx: &mut ZSTDv05_DCtx, dst: *const core::ffi::c_void) {
     if dst != dctx.previousDstEnd {
         dctx.dictEnd = dctx.previousDstEnd;
-        dctx.vBase = (dst as *const core::ffi::c_char).offset(
-            -((dctx.previousDstEnd as *const core::ffi::c_char)
-                .offset_from(dctx.base as *const core::ffi::c_char)
-                as core::ffi::c_long as isize),
+        dctx.vBase = (dst as *const core::ffi::c_char).wrapping_sub(
+            (dctx.previousDstEnd as *const core::ffi::c_char)
+                .offset_from(dctx.base as *const core::ffi::c_char) as usize,
         ) as *const core::ffi::c_void;
         dctx.base = dst;
         dctx.previousDstEnd = dst;

@@ -2330,9 +2330,6 @@ static OF_defaultNorm: [i16; 29] = [
     1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
 ];
 static OF_defaultNormLog: u32 = 5;
-unsafe fn ZSTDv07_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    memcpy(dst, src, 8);
-}
 const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 #[inline]
 unsafe fn ZSTDv07_wildcopy(
@@ -2344,7 +2341,7 @@ unsafe fn ZSTDv07_wildcopy(
     let mut op = dst as *mut u8;
     let oend = op.offset(length);
     loop {
-        ZSTDv07_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
+        core::ptr::copy_nonoverlapping(ip, op, 8);
         op = op.add(8);
         ip = ip.add(8);
         if op >= oend {
@@ -2686,7 +2683,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             }) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
+            (*dctx).litPtr = (&raw mut (*dctx).litBuffer).cast();
             (*dctx).litSize = litSize;
             (*dctx).litEntropy = 1;
             ptr::write_bytes(
@@ -3121,10 +3118,7 @@ unsafe fn ZSTDv07_execSequence(
         );
         match_0 = match_0.offset(-(sub2 as isize));
     } else {
-        ZSTDv07_copy8(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-        );
+        core::ptr::copy_nonoverlapping(match_0, op, 8);
     }
     op = op.add(8);
     match_0 = match_0.add(8);
