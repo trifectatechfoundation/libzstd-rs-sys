@@ -1086,8 +1086,9 @@ unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> core::ffi::c_in
     ((*params).extSeqProdFunc).is_some() as core::ffi::c_int
 }
 
-use libc::{calloc, free, malloc, ptrdiff_t, size_t};
+use libc::{ptrdiff_t, size_t};
 
+use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -1507,32 +1508,7 @@ unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeed
     };
 }
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
-#[inline]
-unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-    }
-    malloc(size)
-}
-#[inline]
-unsafe fn ZSTD_customCalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        ptr::write_bytes(ptr, 0, size);
-        return ptr;
-    }
-    calloc(1, size)
-}
-#[inline]
-unsafe fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
-    if !ptr.is_null() {
-        if (customMem.customFree).is_some() {
-            (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
-        } else {
-            free(ptr);
-        }
-    }
-}
+
 #[inline]
 unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
     val.trailing_zeros() as i32 as core::ffi::c_uint
