@@ -4,8 +4,8 @@ use std::sync::{Condvar, Mutex};
 use libc::{calloc, free, malloc, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
+use crate::lib::compress::zstd_compress_internal::{ZSTD_hash6Ptr, ZSTD_hash8Ptr};
 use crate::lib::dictBuilder::cover::{
     COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_start, COVER_best_t,
     COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
@@ -50,21 +50,7 @@ struct FASTCOVER_tryParameters_data_t {
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
 }
-static prime6bytes: u64 = 227718039650203;
-unsafe fn ZSTD_hash6(u: u64, h: u32, s: u64) -> size_t {
-    ((((u << (64 as core::ffi::c_int - 48 as core::ffi::c_int)) * prime6bytes) ^ s)
-        >> 64u32.wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash6Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash6(MEM_readLE64(p), h, 0)
-}
-static prime8bytes: u64 = 0xcf1bbcdcb7a56463;
-unsafe fn ZSTD_hash8(u: u64, h: u32, s: u64) -> size_t {
-    (((u.wrapping_mul(prime8bytes)) ^ s) >> 64u32.wrapping_sub(h)) as size_t
-}
-unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> size_t {
-    ZSTD_hash8(MEM_readLE64(p), h, 0)
-}
+
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const FASTCOVER_MAX_F: core::ffi::c_int = 31;
 const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
