@@ -1,8 +1,8 @@
-use libzstd_rs_sys::*;
+use crate::assert_eq_rs_c;
 
 #[test]
 fn dctx_parameter_set_reset() {
-    unsafe {
+    assert_eq_rs_c!({
         let dctx = ZSTD_createDCtx();
         if dctx.is_null() {
             panic!("Failed to create DCtx");
@@ -25,7 +25,7 @@ fn dctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_DCtx_getParameter failed: {}",
+                    "ZSTD_DCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -41,7 +41,7 @@ fn dctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_DCtx_setParameter failed: {}",
+                    "ZSTD_DCtx_setParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -51,7 +51,7 @@ fn dctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_DCtx_getParameter failed: {}",
+                    "ZSTD_DCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -62,7 +62,7 @@ fn dctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_DCtx_reset failed: {}",
+                    "ZSTD_DCtx_reset failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -72,18 +72,18 @@ fn dctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_DCtx_getParameter failed: {}",
+                    "ZSTD_DCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
             assert_eq!(value, initial_value);
         }
-    }
+    });
 }
 
 #[test]
 fn cctx_parameter_set_reset() {
-    unsafe {
+    assert_eq_rs_c!({
         let cctx = ZSTD_createCCtx();
         if cctx.is_null() {
             panic!("Failed to create DCtx");
@@ -138,7 +138,7 @@ fn cctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_CCtx_getParameter failed: {}",
+                    "ZSTD_CCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -154,7 +154,7 @@ fn cctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_CCtx_setParameter failed: {}",
+                    "ZSTD_CCtx_setParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -164,7 +164,7 @@ fn cctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_CCtx_getParameter failed: {}",
+                    "ZSTD_CCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -175,7 +175,7 @@ fn cctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_CCtx_reset failed: {}",
+                    "ZSTD_CCtx_reset failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
@@ -185,11 +185,11 @@ fn cctx_parameter_set_reset() {
             if ZSTD_isError(size) != 0 {
                 let err = ZSTD_getErrorName(size);
                 panic!(
-                    "ZSTD_CCtx_getParameter failed: {}",
+                    "ZSTD_CCtx_getParameter failed for {param:?}: {}",
                     std::ffi::CStr::from_ptr(err).to_string_lossy()
                 );
             }
             assert_eq!(value, initial_value);
         }
-    }
+    });
 }
