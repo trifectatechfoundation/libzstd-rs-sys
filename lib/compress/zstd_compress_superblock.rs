@@ -7,7 +7,7 @@ use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writ
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
     ML_defaultNorm, ML_defaultNormLog, MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog,
-    MINMATCH, ZSTD_REP_NUM,
+    MINMATCH,
 };
 use crate::lib::compress::hist::{HIST_countFast_wksp, HIST_count_wksp};
 use crate::lib::compress::huf_compress::{
@@ -18,6 +18,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_buildBlockEntropyStats, ZSTD_compressedBlockState_t, ZSTD_entropyCTablesMetadata_t,
     ZSTD_entropyCTables_t, ZSTD_fseCTablesMetadata_t, ZSTD_fseCTables_t, ZSTD_hufCTablesMetadata_t,
     ZSTD_hufCTables_t, ZSTD_match_t, ZSTD_optimal_t,
+};
+use crate::lib::compress::zstd_compress_internal::{
+    ZSTD_llt_literalLength, ZSTD_llt_matchLength, ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::{
     ZSTD_compressRleLiteralsBlock, ZSTD_noCompressLiterals,
@@ -51,10 +54,6 @@ pub const set_repeat: SymbolEncodingType_e = 3;
 pub const set_compressed: SymbolEncodingType_e = 2;
 pub const set_rle: SymbolEncodingType_e = 1;
 pub const set_basic: SymbolEncodingType_e = 0;
-pub type ZSTD_longLengthType_e = core::ffi::c_uint;
-pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
-pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
-pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
 pub type ZSTD_prefixDict = ZSTD_prefixDict_s;
 #[repr(C)]
 pub struct ZSTD_prefixDict_s {
@@ -261,14 +260,10 @@ unsafe fn ZSTD_getSequenceLength(
     if (*seqStore).longLengthPos
         == seq.offset_from((*seqStore).sequencesStart) as core::ffi::c_long as u32
     {
-        if (*seqStore).longLengthType as core::ffi::c_uint
-            == ZSTD_llt_literalLength as core::ffi::c_int as core::ffi::c_uint
-        {
+        if (*seqStore).longLengthType == ZSTD_llt_literalLength {
             seqLen.litLength = (seqLen.litLength).wrapping_add(0x10000 as core::ffi::c_int as u32);
         }
-        if (*seqStore).longLengthType as core::ffi::c_uint
-            == ZSTD_llt_matchLength as core::ffi::c_int as core::ffi::c_uint
-        {
+        if (*seqStore).longLengthType == ZSTD_llt_matchLength {
             seqLen.matchLength =
                 (seqLen.matchLength).wrapping_add(0x10000 as core::ffi::c_int as u32);
         }
@@ -297,30 +292,7 @@ unsafe fn ZSTD_noCompressBlock(
     );
     ZSTD_blockHeaderSize.wrapping_add(srcSize)
 }
-#[inline]
-unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
-    if offBase > ZSTD_REP_NUM as u32 {
-        *rep.add(2) = *rep.add(1);
-        *rep.add(1) = *rep;
-        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
-    } else {
-        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
-        if repCode > 0 {
-            let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep).wrapping_sub(1)
-            } else {
-                *rep.offset(repCode as isize)
-            };
-            *rep.add(2) = if repCode >= 2 {
-                *rep.add(1)
-            } else {
-                *rep.add(2)
-            };
-            *rep.add(1) = *rep;
-            *rep = currentOffset;
-        }
-    };
-}
+
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;

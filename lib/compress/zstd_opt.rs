@@ -1,8 +1,4 @@
 use core::ptr;
-pub type ZSTD_longLengthType_e = core::ffi::c_uint;
-pub const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
-pub const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
-pub const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
@@ -69,15 +65,14 @@ pub const base_0possible: base_directive_e = 0;
 
 use libc::size_t;
 
-use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_getMaxNbBits, FSE_initCState, FSE_repeat,
 };
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_repeat_valid};
-use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
+use crate::lib::common::mem::{MEM_isLittleEndian, MEM_read32};
 use crate::lib::common::zstd_internal::{
-    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH,
-    WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
+    LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
 };
 use crate::lib::compress::hist::HIST_count_simple;
 use crate::lib::compress::huf_compress::HUF_getNbBitsFromCTable;
@@ -85,7 +80,10 @@ use crate::lib::compress::zstd_compress::{
     optState_t, rawSeq, ParamSwitch, RawSeqStore_t, SeqStore_t, ZSTD_MatchState_t, ZSTD_match_t,
     ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
-use crate::lib::compress::zstd_compress_internal::{ZSTD_hash3Ptr, ZSTD_hashPtr};
+use crate::lib::compress::zstd_compress_internal::{
+    ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr,
+    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
+};
 use crate::lib::zstd::*;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
@@ -127,112 +125,7 @@ unsafe fn ZSTD_MLcode(mlBase: u32) -> u32 {
         *ML_Code.as_ptr().offset(mlBase as isize) as core::ffi::c_uint
     }
 }
-unsafe fn ZSTD_safecopyLiterals(
-    mut op: *mut u8,
-    mut ip: *const u8,
-    iend: *const u8,
-    ilimit_w: *const u8,
-) {
-    if ip <= ilimit_w {
-        ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            ip as *const core::ffi::c_void,
-            ilimit_w.offset_from(ip) as size_t,
-            Overlap::NoOverlap,
-        );
-        op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
-        ip = ilimit_w;
-    }
-    while ip < iend {
-        let fresh0 = ip;
-        ip = ip.add(1);
-        let fresh1 = op;
-        op = op.add(1);
-        *fresh1 = *fresh0;
-    }
-}
-#[inline(always)]
-unsafe fn ZSTD_storeSeqOnly(
-    seqStorePtr: *mut SeqStore_t,
-    litLength: size_t,
-    offBase: u32,
-    matchLength: size_t,
-) {
-    if (litLength > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long
-        != 0
-    {
-        (*seqStorePtr).longLengthType = ZSTD_llt_literalLength;
-        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
-            .offset_from((*seqStorePtr).sequencesStart)
-            as core::ffi::c_long as u32;
-    }
-    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
-    (*((*seqStorePtr).sequences)).offBase = offBase;
-    let mlBase = matchLength.wrapping_sub(MINMATCH as size_t);
-    if (mlBase > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long != 0
-    {
-        (*seqStorePtr).longLengthType = ZSTD_llt_matchLength;
-        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
-            .offset_from((*seqStorePtr).sequencesStart)
-            as core::ffi::c_long as u32;
-    }
-    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
-    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
-}
-#[inline(always)]
-unsafe fn ZSTD_storeSeq(
-    seqStorePtr: *mut SeqStore_t,
-    litLength: size_t,
-    literals: *const u8,
-    litLimit: *const u8,
-    offBase: u32,
-    matchLength: size_t,
-) {
-    let litLimit_w = litLimit.sub(WILDCOPY_OVERLENGTH);
-    let litEnd = literals.add(litLength);
-    if litEnd <= litLimit_w {
-        ZSTD_copy16(
-            (*seqStorePtr).lit as *mut core::ffi::c_void,
-            literals as *const core::ffi::c_void,
-        );
-        if litLength > 16 {
-            ZSTD_wildcopy(
-                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
-                literals.add(16) as *const core::ffi::c_void,
-                litLength.wrapping_sub(16),
-                Overlap::NoOverlap,
-            );
-        }
-    } else {
-        ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
-    }
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
-    ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
-}
-#[inline]
-unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
-    if offBase > ZSTD_REP_NUM as u32 {
-        *rep.add(2) = *rep.add(1);
-        *rep.add(1) = *rep;
-        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
-    } else {
-        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
-        if repCode > 0 {
-            let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep).wrapping_sub(1)
-            } else {
-                *rep.offset(repCode as isize)
-            };
-            *rep.add(2) = if repCode >= 2 {
-                *rep.add(1)
-            } else {
-                *rep.add(2)
-            };
-            *rep.add(1) = *rep;
-            *rep = currentOffset;
-        }
-    };
-}
+
 #[inline]
 unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     let mut newReps = repcodes_s { rep: [0; 3] };
@@ -243,98 +136,6 @@ unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     );
     ZSTD_updateRep((newReps.rep).as_mut_ptr(), offBase, ll0);
     newReps
-}
-#[inline]
-unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const u8) -> size_t {
-    let pStart = pIn;
-    let pInLoopLimit = pInLimit.offset(
-        -((::core::mem::size_of::<size_t>() as core::ffi::c_ulong).wrapping_sub(1) as isize),
-    );
-    if pIn < pInLoopLimit {
-        let diff = MEM_readST(pMatch as *const core::ffi::c_void)
-            ^ MEM_readST(pIn as *const core::ffi::c_void);
-        if diff != 0 {
-            return ZSTD_NbCommonBytes(diff) as size_t;
-        }
-        pIn = pIn.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
-        pMatch = pMatch.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
-        while pIn < pInLoopLimit {
-            let diff_0 = MEM_readST(pMatch as *const core::ffi::c_void)
-                ^ MEM_readST(pIn as *const core::ffi::c_void);
-            if diff_0 == 0 {
-                pIn = pIn.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
-                pMatch =
-                    pMatch.offset(::core::mem::size_of::<size_t>() as core::ffi::c_ulong as isize);
-            } else {
-                pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
-                return pIn.offset_from(pStart) as size_t;
-            }
-        }
-    }
-    if MEM_64bits() != 0
-        && pIn < pInLimit.sub(3)
-        && MEM_read32(pMatch as *const core::ffi::c_void)
-            == MEM_read32(pIn as *const core::ffi::c_void)
-    {
-        pIn = pIn.add(4);
-        pMatch = pMatch.add(4);
-    }
-    if pIn < pInLimit.sub(1)
-        && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
-    {
-        pIn = pIn.add(2);
-        pMatch = pMatch.add(2);
-    }
-    if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
-        pIn = pIn.add(1);
-    }
-    pIn.offset_from(pStart) as size_t
-}
-#[inline]
-unsafe fn ZSTD_count_2segments(
-    ip: *const u8,
-    match_0: *const u8,
-    iEnd: *const u8,
-    mEnd: *const u8,
-    iStart: *const u8,
-) -> size_t {
-    let vEnd = if ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd {
-        ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize)
-    } else {
-        iEnd
-    };
-    let matchLength = ZSTD_count(ip, match_0, vEnd);
-    if match_0.add(matchLength) != mEnd {
-        return matchLength;
-    }
-    matchLength.wrapping_add(ZSTD_count(ip.add(matchLength), iStart, iEnd))
-}
-
-#[inline]
-unsafe fn ZSTD_getLowestMatchIndex(
-    ms: *const ZSTD_MatchState_t,
-    curr: u32,
-    windowLog: core::ffi::c_uint,
-) -> u32 {
-    let maxDistance = (1) << windowLog;
-    let lowestValid = (*ms).window.lowLimit;
-    let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
-        curr.wrapping_sub(maxDistance)
-    } else {
-        lowestValid
-    };
-    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
-
-    if isDictionary != 0 {
-        lowestValid
-    } else {
-        withinWindow
-    }
-}
-#[inline]
-unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
-    (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
 
 pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)

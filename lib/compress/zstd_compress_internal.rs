@@ -1,5 +1,216 @@
 use crate::internal::MEM_readLE32;
-use crate::lib::common::mem::MEM_readLE64;
+use crate::lib::common::bits::ZSTD_NbCommonBytes;
+use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST};
+use crate::lib::common::zstd_internal::{
+    Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
+};
+use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t};
+use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
+
+pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
+pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
+pub(crate) const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
+pub(crate) const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
+
+pub(crate) unsafe fn ZSTD_getSequenceLength(
+    seqStore: *const SeqStore_t,
+    seq: *const SeqDef,
+) -> ZSTD_SequenceLength {
+    let mut seqLen = ZSTD_SequenceLength {
+        litLength: u32::from((*seq).litLength),
+        matchLength: u32::from((*seq).mlBase) + MINMATCH as u32,
+    };
+
+    if (*seqStore).longLengthPos == (seq as usize - (*seqStore).sequencesStart as usize) as u32 {
+        if (*seqStore).longLengthType == ZSTD_llt_literalLength {
+            seqLen.litLength += 0x10000;
+        }
+        if (*seqStore).longLengthType == ZSTD_llt_matchLength {
+            seqLen.matchLength += 0x10000;
+        }
+    }
+
+    seqLen
+}
+
+#[inline(always)]
+pub(crate) unsafe fn ZSTD_storeSeqOnly(
+    seqStorePtr: *mut SeqStore_t,
+    litLength: usize,
+    offBase: u32,
+    matchLength: usize,
+) {
+    if (litLength > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long
+        != 0
+    {
+        (*seqStorePtr).longLengthType = ZSTD_llt_literalLength;
+        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
+            .offset_from((*seqStorePtr).sequencesStart)
+            as core::ffi::c_long as u32;
+    }
+    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
+    (*((*seqStorePtr).sequences)).offBase = offBase;
+    let mlBase = matchLength.wrapping_sub(MINMATCH as usize);
+    if (mlBase > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long != 0
+    {
+        (*seqStorePtr).longLengthType = ZSTD_llt_matchLength;
+        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
+            .offset_from((*seqStorePtr).sequencesStart)
+            as core::ffi::c_long as u32;
+    }
+    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
+    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
+}
+#[inline(always)]
+pub(crate) unsafe fn ZSTD_storeSeq(
+    seqStorePtr: *mut SeqStore_t,
+    litLength: usize,
+    literals: *const u8,
+    litLimit: *const u8,
+    offBase: u32,
+    matchLength: usize,
+) {
+    let litLimit_w = litLimit.sub(WILDCOPY_OVERLENGTH);
+    let litEnd = literals.add(litLength);
+    if litEnd <= litLimit_w {
+        ZSTD_copy16(
+            (*seqStorePtr).lit as *mut core::ffi::c_void,
+            literals as *const core::ffi::c_void,
+        );
+        if litLength > 16 {
+            ZSTD_wildcopy(
+                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
+                literals.add(16) as *const core::ffi::c_void,
+                litLength.wrapping_sub(16),
+                Overlap::NoOverlap,
+            );
+        }
+    } else {
+        ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
+    }
+    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
+    ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
+}
+
+#[inline]
+pub(crate) unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
+    if offBase > ZSTD_REP_NUM as u32 {
+        *rep.add(2) = *rep.add(1);
+        *rep.add(1) = *rep;
+        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+    } else {
+        let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
+        if repCode > 0 {
+            let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
+                (*rep).wrapping_sub(1)
+            } else {
+                *rep.offset(repCode as isize)
+            };
+            *rep.add(2) = if repCode >= 2 {
+                *rep.add(1)
+            } else {
+                *rep.add(2)
+            };
+            *rep.add(1) = *rep;
+            *rep = currentOffset;
+        }
+    };
+}
+
+pub(crate) unsafe fn ZSTD_safecopyLiterals(
+    mut op: *mut u8,
+    mut ip: *const u8,
+    iend: *const u8,
+    ilimit_w: *const u8,
+) {
+    if ip <= ilimit_w {
+        ZSTD_wildcopy(
+            op as *mut core::ffi::c_void,
+            ip as *const core::ffi::c_void,
+            ilimit_w.offset_from(ip) as usize,
+            Overlap::NoOverlap,
+        );
+        op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
+        ip = ilimit_w;
+    }
+    while ip < iend {
+        let fresh0 = ip;
+        ip = ip.add(1);
+        let fresh1 = op;
+        op = op.add(1);
+        *fresh1 = *fresh0;
+    }
+}
+
+#[inline]
+pub(crate) unsafe fn ZSTD_count(
+    mut pIn: *const u8,
+    mut pMatch: *const u8,
+    pInLimit: *const u8,
+) -> usize {
+    let pStart = pIn;
+    let pInLoopLimit =
+        pInLimit.offset(-((::core::mem::size_of::<usize>()).wrapping_sub(1) as isize));
+    if pIn < pInLoopLimit {
+        let diff = MEM_readST(pMatch as *const core::ffi::c_void)
+            ^ MEM_readST(pIn as *const core::ffi::c_void);
+        if diff != 0 {
+            return ZSTD_NbCommonBytes(diff) as usize;
+        }
+        pIn = pIn.add(::core::mem::size_of::<usize>());
+        pMatch = pMatch.add(::core::mem::size_of::<usize>());
+        while pIn < pInLoopLimit {
+            let diff_0 = MEM_readST(pMatch as *const core::ffi::c_void)
+                ^ MEM_readST(pIn as *const core::ffi::c_void);
+            if diff_0 == 0 {
+                pIn = pIn.add(::core::mem::size_of::<usize>());
+                pMatch = pMatch.add(::core::mem::size_of::<usize>());
+            } else {
+                pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
+                return pIn.offset_from(pStart) as usize;
+            }
+        }
+    }
+    if MEM_64bits() != 0
+        && pIn < pInLimit.sub(3)
+        && MEM_read32(pMatch as *const core::ffi::c_void)
+            == MEM_read32(pIn as *const core::ffi::c_void)
+    {
+        pIn = pIn.add(4);
+        pMatch = pMatch.add(4);
+    }
+    if pIn < pInLimit.sub(1)
+        && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
+            == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
+    {
+        pIn = pIn.add(2);
+        pMatch = pMatch.add(2);
+    }
+    if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
+        pIn = pIn.add(1);
+    }
+    pIn.offset_from(pStart) as usize
+}
+
+#[inline]
+pub(crate) unsafe fn ZSTD_count_2segments(
+    ip: *const u8,
+    match_0: *const u8,
+    iEnd: *const u8,
+    mEnd: *const u8,
+    iStart: *const u8,
+) -> usize {
+    let vEnd = if ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd {
+        ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize)
+    } else {
+        iEnd
+    };
+    let matchLength = ZSTD_count(ip, match_0, vEnd);
+    if match_0.add(matchLength) != mEnd {
+        return matchLength;
+    }
+    matchLength.wrapping_add(ZSTD_count(ip.add(matchLength), iStart, iEnd))
+}
 
 const prime3bytes: u32 = 506832829;
 const fn ZSTD_hash3(u: u32, h: u32, s: u32) -> u32 {
@@ -91,4 +302,53 @@ pub(crate) unsafe fn ZSTD_hashPtrSalted(
         8 => ZSTD_hash8PtrS(p, hBits, hashSalt),
         4 | _ => ZSTD_hash4PtrS(p, hBits, hashSalt as u32),
     }
+}
+
+#[inline]
+pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
+    ms: *const ZSTD_MatchState_t,
+    curr: u32,
+    windowLog: core::ffi::c_uint,
+) -> u32 {
+    let maxDistance = (1) << windowLog;
+    let lowestValid = (*ms).window.lowLimit;
+    let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
+        curr.wrapping_sub(maxDistance)
+    } else {
+        lowestValid
+    };
+    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
+
+    if isDictionary != 0 {
+        lowestValid
+    } else {
+        withinWindow
+    }
+}
+
+#[inline]
+pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
+    ms: *const ZSTD_MatchState_t,
+    curr: u32,
+    windowLog: core::ffi::c_uint,
+) -> u32 {
+    let maxDistance = (1) << windowLog;
+    let lowestValid = (*ms).window.dictLimit;
+    let withinWindow = if curr.wrapping_sub(lowestValid) > maxDistance {
+        curr.wrapping_sub(maxDistance)
+    } else {
+        lowestValid
+    };
+    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
+
+    if isDictionary != 0 {
+        lowestValid
+    } else {
+        withinWindow
+    }
+}
+
+#[inline]
+pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
+    (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
