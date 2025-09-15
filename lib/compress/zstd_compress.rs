@@ -261,9 +261,6 @@ pub struct optState_t {
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ParamSwitch,
 }
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_optimal_t {
@@ -970,8 +967,9 @@ use crate::lib::compress::huf_compress::{
     HUF_validateCTable, HUF_writeCTable_wksp,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength, ZSTD_llt_matchLength,
-    ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep,
+    zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
+    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_storeSeq, ZSTD_storeSeqOnly,
+    ZSTD_updateRep,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -3983,9 +3981,8 @@ unsafe fn ZSTD_reset_matchState(
     ms.chainTable =
         ZSTD_cwksp_reserve_table(ws, chainSize.wrapping_mul(::core::mem::size_of::<u32>()))
             as *mut u32;
-    ms.hashTable3 =
-        ZSTD_cwksp_reserve_table(ws, h3Size.wrapping_mul(::core::mem::size_of::<u32>()))
-            as *mut u32;
+    ms.hashTable3 = ZSTD_cwksp_reserve_table(ws, h3Size.wrapping_mul(::core::mem::size_of::<u32>()))
+        as *mut u32;
     if ZSTD_cwksp_reserve_failed(ws) != 0 {
         return Error::memory_allocation.to_error_code();
     }
@@ -6203,8 +6200,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         seqStore.ofCode,
         seqStore.llCode,
         seqStore.mlCode,
-        (seqStore.sequences).offset_from(seqStore.sequencesStart) as core::ffi::c_long
-            as size_t,
+        (seqStore.sequences).offset_from(seqStore.sequencesStart) as core::ffi::c_long as size_t,
         &(*(*zc).blockState.nextCBlock).entropy,
         entropyMetadata,
         (*zc).tmpWorkspace,
@@ -6807,14 +6803,8 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
 ) {
     let cycleLog = ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy);
     let maxDist = (1) << (*params).cParams.windowLog;
-    if ZSTD_window_needOverflowCorrection(
-        ms.window,
-        cycleLog,
-        maxDist,
-        ms.loadedDictEnd,
-        ip,
-        iend,
-    ) != 0
+    if ZSTD_window_needOverflowCorrection(ms.window, cycleLog, maxDist, ms.loadedDictEnd, ip, iend)
+        != 0
     {
         let correction = ZSTD_window_correctOverflow(&mut ms.window, cycleLog, maxDist, ip);
         ZSTD_cwksp_mark_tables_dirty(ws);

@@ -33,6 +33,10 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqLen
 }
 
+pub type ZSTD_OptPrice_e = core::ffi::c_uint;
+pub const zop_predef: ZSTD_OptPrice_e = 1;
+pub const zop_dynamic: ZSTD_OptPrice_e = 0;
+
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeqOnly(
     seqStorePtr: &mut SeqStore_t,
