@@ -18,18 +18,7 @@ pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
     pub repeatMode: HUF_repeat,
 }
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
-#[repr(C)]
-pub struct ZSTD_window_t {
-    pub nextSrc: *const u8,
-    pub base: *const u8,
-    pub dictBase: *const u8,
-    pub dictLimit: u32,
-    pub lowLimit: u32,
-    pub nbOverflowCorrections: u32,
-}
+
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -81,8 +70,8 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_optimal_t, ZSTD_resetSeqStore,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_hash3Ptr, ZSTD_hashPtr,
-    ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
+    zop_dynamic, zop_predef, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
+    ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::zstd::*;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
@@ -417,9 +406,7 @@ unsafe fn ZSTD_rawLiteralsCost(
     if ZSTD_compressedLiterals(optPtr) == 0 {
         return (litLength << 3) * BITCOST_MULTIPLIER as u32;
     }
-    if (*optPtr).priceType as core::ffi::c_uint
-        == zop_predef as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*optPtr).priceType == zop_predef {
         return litLength * 6 * BITCOST_MULTIPLIER as u32;
     }
     let mut price = (*optPtr).litSumBasePrice * litLength;
@@ -445,9 +432,7 @@ unsafe fn ZSTD_litLengthPrice(
     optPtr: *const optState_t,
     optLevel: core::ffi::c_int,
 ) -> u32 {
-    if (*optPtr).priceType as core::ffi::c_uint
-        == zop_predef as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*optPtr).priceType == zop_predef {
         return if optLevel != 0 {
             ZSTD_fracWeight(litLength)
         } else {
@@ -480,9 +465,7 @@ unsafe fn ZSTD_getMatchPrice(
     let mut price: u32 = 0;
     let offCode = ZSTD_highbit32(offBase);
     let mlBase = matchLength.wrapping_sub(MINMATCH as u32);
-    if (*optPtr).priceType as core::ffi::c_uint
-        == zop_predef as core::ffi::c_int as core::ffi::c_uint
-    {
+    if (*optPtr).priceType == zop_predef {
         return (if optLevel != 0 {
             ZSTD_fracWeight(mlBase)
         } else {

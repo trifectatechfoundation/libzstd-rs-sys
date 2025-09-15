@@ -38,23 +38,12 @@ pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
     pub repeatMode: HUF_repeat,
 }
-pub type ZSTD_OptPrice_e = core::ffi::c_uint;
-pub const zop_predef: ZSTD_OptPrice_e = 1;
-pub const zop_dynamic: ZSTD_OptPrice_e = 0;
 #[repr(C)]
 pub struct ZSTD_match_t {
     pub off: u32,
     pub len: u32,
 }
-#[repr(C)]
-pub struct ZSTD_window_t {
-    pub nextSrc: *const u8,
-    pub base: *const u8,
-    pub dictBase: *const u8,
-    pub dictLimit: u32,
-    pub lowLimit: u32,
-    pub nbOverflowCorrections: u32,
-}
+
 pub type ZSTD_dictMode_e = core::ffi::c_uint;
 pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
@@ -75,8 +64,9 @@ use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{SeqStore_t, ZSTD_MatchState_t, ZSTD_optimal_t};
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex, ZSTD_getLowestPrefixIndex,
-    ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check, ZSTD_storeSeq,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
+    ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_hashPtrSalted, ZSTD_index_overlap_check,
+    ZSTD_storeSeq,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
 use crate::lib::zstd::*;
@@ -518,8 +508,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     } else {
         chainAttempts
     };
-    let hashLog =
-        (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+    let hashLog = (ms.cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
     let tmpHashTable = hashTable;
     let tmpChainTable = hashTable.offset(((1) << hashLog) as isize);
     let tmpChainSize = ((((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) - 1) as u32) << hashLog;
@@ -2578,8 +2567,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                         let step =
                             (ip.offset_from(anchor) as size_t >> kSearchStrength).wrapping_add(1);
                         ip = ip.add(step);
-                        ms.lazySkipping =
-                            (step > kLazySkippingStep as size_t) as core::ffi::c_int;
+                        ms.lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
                         continue;
                     } else {
                         if depth >= 1 {
