@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 mod compress;
+mod parameters;
 mod decompress;
 mod dict_builder;
 
