@@ -99,7 +99,7 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
             (*dctx).LLTptr = NonNull::new((&raw const ddict.entropy.LLTable).cast_mut());
             (*dctx).MLTptr = NonNull::new((&raw const ddict.entropy.MLTable).cast_mut());
             (*dctx).OFTptr = NonNull::new((&raw const ddict.entropy.OFTable).cast_mut());
-            (*dctx).HUFptr = &raw const ddict.entropy.hufTable;
+            (*dctx).HUFptr = NonNull::new((&raw const ddict.entropy.hufTable).cast_mut());
             (*dctx).entropy.rep = ddict.entropy.rep;
         } else {
             (*dctx).litEntropy = false;

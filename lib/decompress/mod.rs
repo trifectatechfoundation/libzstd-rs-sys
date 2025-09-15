@@ -216,7 +216,7 @@ pub struct ZSTD_DCtx_s {
     LLTptr: Option<NonNull<SymbolTable<512>>>,
     MLTptr: Option<NonNull<SymbolTable<512>>>,
     OFTptr: Option<NonNull<SymbolTable<256>>>,
-    HUFptr: *const DTable,
+    HUFptr: Option<NonNull<DTable>>, // None encodes dctx.entropy.hufTable
     entropy: ZSTD_entropyDTables_t,
     workspace: Workspace,
     previousDstEnd: *const core::ffi::c_void,
