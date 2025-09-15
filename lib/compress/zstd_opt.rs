@@ -2114,8 +2114,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
         } else {
             (*opt).mlen = 0;
             (*opt).litlen = litlen;
-            (*opt).price =
-                ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
+            (*opt).price = ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
             libc::memcpy(
                 &mut (*opt).rep as *mut [u32; 3] as *mut core::ffi::c_void,
                 rep as *const core::ffi::c_void,

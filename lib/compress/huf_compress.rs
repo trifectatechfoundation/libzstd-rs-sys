@@ -360,8 +360,7 @@ pub unsafe fn HUF_readCTable(
     if ERR_isError(readSize) {
         return readSize;
     }
-    *hasZeroWeights =
-        (*rankVal.as_mut_ptr() > 0) as core::ffi::c_int as core::ffi::c_uint;
+    *hasZeroWeights = (*rankVal.as_mut_ptr() > 0) as core::ffi::c_int as core::ffi::c_uint;
     if tableLog > HUF_TABLELOG_MAX as u32 {
         return Error::tableLog_tooLarge.to_error_code();
     }
@@ -930,8 +929,7 @@ unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
 unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
     *((*bitC).bitContainer).as_mut_ptr() >>=
         *((*bitC).bitPos).as_mut_ptr().add(1) & 0xff as core::ffi::c_int as size_t;
-    *((*bitC).bitContainer).as_mut_ptr() |=
-        *((*bitC).bitContainer).as_mut_ptr().add(1);
+    *((*bitC).bitContainer).as_mut_ptr() |= *((*bitC).bitContainer).as_mut_ptr().add(1);
     let fresh22 = &mut (*((*bitC).bitPos).as_mut_ptr());
     *fresh22 = (*fresh22).wrapping_add(*((*bitC).bitPos).as_mut_ptr().add(1));
 }
@@ -939,8 +937,8 @@ unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
 unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: core::ffi::c_int) {
     let nbBits = *((*bitC).bitPos).as_mut_ptr() & 0xff as core::ffi::c_int as size_t;
     let nbBytes = nbBits >> 3;
-    let bitContainer = *((*bitC).bitContainer).as_mut_ptr()
-        >> HUF_BITS_IN_CONTAINER.wrapping_sub(nbBits);
+    let bitContainer =
+        *((*bitC).bitContainer).as_mut_ptr() >> HUF_BITS_IN_CONTAINER.wrapping_sub(nbBits);
     *((*bitC).bitPos).as_mut_ptr() &= 7;
     MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, bitContainer);
     (*bitC).ptr = ((*bitC).ptr).add(nbBytes);

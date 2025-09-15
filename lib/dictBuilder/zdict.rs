@@ -258,8 +258,7 @@ unsafe fn ZDICT_analyzePos(
     loop {
         length_0 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(start as isize).sub(1) as isize)
-                as *const core::ffi::c_void,
+            b.offset(*suffix.offset(start as isize).sub(1) as isize) as *const core::ffi::c_void,
         );
         if length_0 >= MINMATCHLENGTH as size_t {
             start = start.wrapping_sub(1);
@@ -1334,10 +1333,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     } else {
         compliantID
     };
-    MEM_writeLE32(
-        header.as_mut_ptr().add(4) as *mut core::ffi::c_void,
-        dictID,
-    );
+    MEM_writeLE32(header.as_mut_ptr().add(4) as *mut core::ffi::c_void, dictID);
     hSize = 8;
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", "");

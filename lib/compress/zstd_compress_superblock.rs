@@ -917,13 +917,12 @@ unsafe fn sizeBlockSequences(
     let mut inSize = 0;
     let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
     budget = budget.wrapping_add(headerSize);
-    budget = budget
-        .wrapping_add(((*sp).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
+    budget = budget.wrapping_add(((*sp).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
     if budget > targetBudget {
         return 1;
     }
-    inSize = ((*sp).litLength as core::ffi::c_int
-        + ((*sp).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
+    inSize = ((*sp).litLength as core::ffi::c_int + ((*sp).mlBase as core::ffi::c_int + MINMATCH))
+        as size_t;
     n = 1;
     while n < nbSeqs {
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);

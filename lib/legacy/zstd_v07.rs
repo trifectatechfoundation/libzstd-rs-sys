@@ -497,8 +497,7 @@ unsafe fn FSEv07_readNCount(
             ip = ip.offset((bitCount >> 3) as isize);
             bitCount &= 7;
         } else {
-            bitCount -=
-                (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
+            bitCount -= (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
             ip = iend.sub(4);
         }
         bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> (bitCount & 31);
@@ -1176,9 +1175,7 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
         | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32
-        && op4 < oend.sub(7)
-    {
+    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() != 0 {
             let fresh18 = op1;
             op1 = op1.add(1);
@@ -1763,9 +1760,7 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
         | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32
-        && op4 < oend.sub(7)
-    {
+    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() != 0 {
             op1 = op1.offset(HUFv07_decodeSymbolX4(
                 op1 as *mut core::ffi::c_void,
@@ -2252,9 +2247,7 @@ unsafe fn HUFv07_selectDecoder(dstSize: size_t, cSrcSize: size_t) -> u32 {
     let Q = (cSrcSize * 16 / dstSize) as u32;
     let D256 = (dstSize >> 8) as u32;
     let DTime0 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr()).tableTime)
-        .wrapping_add(
-            (*(*algoTime.as_ptr().offset(Q as isize)).as_ptr()).decode256Time * D256,
-        );
+        .wrapping_add((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr()).decode256Time * D256);
     let mut DTime1 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().add(1)).tableTime)
         .wrapping_add(
             (*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().add(1)).decode256Time * D256,
@@ -2380,8 +2373,7 @@ unsafe fn ZSTDv07_decompressBegin(dctx: *mut ZSTDv07_DCtx) -> size_t {
     (*dctx).base = core::ptr::null();
     (*dctx).vBase = core::ptr::null();
     (*dctx).dictEnd = core::ptr::null();
-    *((*dctx).hufTable).as_mut_ptr() =
-        (12 * 0x1000001 as core::ffi::c_int) as HUFv07_DTable;
+    *((*dctx).hufTable).as_mut_ptr() = (12 * 0x1000001 as core::ffi::c_int) as HUFv07_DTable;
     (*dctx).fseEntropy = 0;
     (*dctx).litEntropy = (*dctx).fseEntropy;
     (*dctx).dictID = 0;
@@ -2465,9 +2457,9 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
             if srcSize < ZSTDv07_skippableHeaderSize {
                 return ZSTDv07_skippableHeaderSize;
             }
-            (*fparamsPtr).frameContentSize = MEM_readLE32(
-                (src as *const core::ffi::c_char).add(4) as *const core::ffi::c_void,
-            ) as core::ffi::c_ulonglong;
+            (*fparamsPtr).frameContentSize =
+                MEM_readLE32((src as *const core::ffi::c_char).add(4) as *const core::ffi::c_void)
+                    as core::ffi::c_ulonglong;
             (*fparamsPtr).windowSize = 0;
             return 0;
         }
@@ -3016,8 +3008,7 @@ unsafe fn ZSTDv07_decodeSequence(seqState: *mut seqState_t) -> seq_t {
                 *((*seqState).prevOffset).as_mut_ptr().add(2) =
                     *((*seqState).prevOffset).as_mut_ptr().add(1);
             }
-            *((*seqState).prevOffset).as_mut_ptr().add(1) =
-                *((*seqState).prevOffset).as_mut_ptr();
+            *((*seqState).prevOffset).as_mut_ptr().add(1) = *((*seqState).prevOffset).as_mut_ptr();
             offset = temp;
             *((*seqState).prevOffset).as_mut_ptr() = offset;
         } else {
@@ -3026,8 +3017,7 @@ unsafe fn ZSTDv07_decodeSequence(seqState: *mut seqState_t) -> seq_t {
     } else {
         *((*seqState).prevOffset).as_mut_ptr().add(2) =
             *((*seqState).prevOffset).as_mut_ptr().add(1);
-        *((*seqState).prevOffset).as_mut_ptr().add(1) =
-            *((*seqState).prevOffset).as_mut_ptr();
+        *((*seqState).prevOffset).as_mut_ptr().add(1) = *((*seqState).prevOffset).as_mut_ptr();
         *((*seqState).prevOffset).as_mut_ptr() = offset;
     }
     seq.offset = offset;
@@ -3782,22 +3772,17 @@ unsafe fn ZSTDv07_loadEntropy(
     if dictPtr.add(12) > dictEnd {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr() =
-        MEM_readLE32(dictPtr as *const core::ffi::c_void);
-    if *((*dctx).rep).as_mut_ptr() == 0
-        || *((*dctx).rep).as_mut_ptr() as size_t >= dictSize
-    {
+    *((*dctx).rep).as_mut_ptr() = MEM_readLE32(dictPtr as *const core::ffi::c_void);
+    if *((*dctx).rep).as_mut_ptr() == 0 || *((*dctx).rep).as_mut_ptr() as size_t >= dictSize {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr().add(1) =
-        MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
+    *((*dctx).rep).as_mut_ptr().add(1) = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
     if *((*dctx).rep).as_mut_ptr().add(1) == 0
         || *((*dctx).rep).as_mut_ptr().add(1) as size_t >= dictSize
     {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr().add(2) =
-        MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
+    *((*dctx).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
     if *((*dctx).rep).as_mut_ptr().add(2) == 0
         || *((*dctx).rep).as_mut_ptr().add(2) as size_t >= dictSize
     {
