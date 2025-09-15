@@ -496,7 +496,6 @@ mod fastest_wasm_zlib_continue {
     }
 
     #[test]
-    #[cfg_attr(miri, ignore = "FIXME: memory issue")]
     fn zstd_custom_dict() {
         const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
         const COMPRESSED: &[u8] =
