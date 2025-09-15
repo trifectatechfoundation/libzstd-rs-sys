@@ -93,7 +93,7 @@ pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
 pub type ZSTD_BlockCompressor_f = Option<
     unsafe fn(
         *mut ZSTD_MatchState_t,
-        *mut SeqStore_t,
+        &mut SeqStore_t,
         *mut u32,
         *const core::ffi::c_void,
         size_t,
@@ -1374,7 +1374,7 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
 pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: *mut RawSeqStore_t,
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     src: *const core::ffi::c_void,

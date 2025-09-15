@@ -423,7 +423,7 @@ pub const ZSTDbss_compress: C2RustUnnamed_2 = 0;
 pub type ZSTD_BlockCompressor_f = Option<
     unsafe fn(
         *mut ZSTD_MatchState_t,
-        *mut SeqStore_t,
+        &mut SeqStore_t,
         *mut u32,
         *const core::ffi::c_void,
         size_t,
@@ -1362,21 +1362,21 @@ pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_doubleFast;
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_doubleFast_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
@@ -1385,238 +1385,238 @@ pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_COMPRESSBLOCK_GREEDY: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_row;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_DICTMATCHSTATE_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_dictMatchState_row;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_dedicatedDictSearch;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_DEDICATEDDICTSEARCH_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_dedicatedDictSearch_row;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_extDict;
 pub const ZSTD_COMPRESSBLOCK_GREEDY_EXTDICT_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_greedy_extDict_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy;
 pub const ZSTD_COMPRESSBLOCK_LAZY_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_LAZY_DICTMATCHSTATE_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_dictMatchState_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_dedicatedDictSearch;
 pub const ZSTD_COMPRESSBLOCK_LAZY_DEDICATEDDICTSEARCH_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_dedicatedDictSearch_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_extDict;
 pub const ZSTD_COMPRESSBLOCK_LAZY_EXTDICT_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy_extDict_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY2: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_DICTMATCHSTATE_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_dictMatchState_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_dedicatedDictSearch;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_dedicatedDictSearch_row;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_extDict;
 pub const ZSTD_COMPRESSBLOCK_LAZY2_EXTDICT_ROW: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_lazy2_extDict_row;
 pub const ZSTD_COMPRESSBLOCK_BTLAZY2: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btlazy2;
 pub const ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btlazy2_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_BTLAZY2_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btlazy2_extDict;
 pub const ZSTD_COMPRESSBLOCK_BTOPT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btopt;
 pub const ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btopt_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_BTOPT_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btopt_extDict;
 pub const ZSTD_COMPRESSBLOCK_BTULTRA: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btultra;
 pub const ZSTD_COMPRESSBLOCK_BTULTRA_DICTMATCHSTATE: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btultra_dictMatchState;
 pub const ZSTD_COMPRESSBLOCK_BTULTRA_EXTDICT: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
 ) -> size_t = ZSTD_compressBlock_btultra_extDict;
 pub const ZSTD_COMPRESSBLOCK_BTULTRA2: unsafe fn(
     *mut ZSTD_MatchState_t,
-    *mut SeqStore_t,
+    &mut SeqStore_t,
     *mut u32,
     *const core::ffi::c_void,
     size_t,
@@ -5111,7 +5111,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5121,7 +5121,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5141,7 +5141,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast_extDict
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5151,7 +5151,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast_extDict
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5171,7 +5171,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast_dictMatchState
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5181,7 +5181,7 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 ZSTD_compressBlock_fast_dictMatchState
                     as unsafe fn(
                         *mut ZSTD_MatchState_t,
-                        *mut SeqStore_t,
+                        &mut SeqStore_t,
                         *mut u32,
                         *const core::ffi::c_void,
                         size_t,
@@ -5248,21 +5248,21 @@ pub unsafe fn ZSTD_selectBlockCompressor(
     selectedCompressor
 }
 unsafe fn ZSTD_storeLastLiterals(
-    seqStorePtr: *mut SeqStore_t,
+    seqStorePtr: &mut SeqStore_t,
     anchor: *const u8,
     lastLLSize: size_t,
 ) {
     libc::memcpy(
-        (*seqStorePtr).lit as *mut core::ffi::c_void,
+        seqStorePtr.lit as *mut core::ffi::c_void,
         anchor as *const core::ffi::c_void,
         lastLLSize as libc::size_t,
     );
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(lastLLSize);
+    seqStorePtr.lit = (seqStorePtr.lit).add(lastLLSize);
 }
-pub unsafe fn ZSTD_resetSeqStore(ssPtr: *mut SeqStore_t) {
-    (*ssPtr).lit = (*ssPtr).litStart;
-    (*ssPtr).sequences = (*ssPtr).sequencesStart;
-    (*ssPtr).longLengthType = ZSTD_llt_none;
+pub unsafe fn ZSTD_resetSeqStore(ssPtr: &mut SeqStore_t) {
+    ssPtr.lit = ssPtr.litStart;
+    ssPtr.sequences = ssPtr.sequencesStart;
+    ssPtr.longLengthType = ZSTD_llt_none;
 }
 unsafe fn ZSTD_postProcessSequenceProducerResult(
     outSeqs: *mut ZSTD_Sequence,
@@ -6180,7 +6180,7 @@ unsafe fn ZSTD_estimateBlockSize(
         .wrapping_add(ZSTD_blockHeaderSize)
 }
 unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     zc: *mut ZSTD_CCtx,
 ) -> size_t {
     let entropyMetadata: *mut ZSTD_entropyCTablesMetadata_t =
@@ -6198,12 +6198,12 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
         return err_code;
     }
     ZSTD_estimateBlockSize(
-        (*seqStore).litStart,
-        ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t,
-        (*seqStore).ofCode,
-        (*seqStore).llCode,
-        (*seqStore).mlCode,
-        ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as core::ffi::c_long
+        seqStore.litStart,
+        (seqStore.lit).offset_from(seqStore.litStart) as size_t,
+        seqStore.ofCode,
+        seqStore.llCode,
+        seqStore.mlCode,
+        (seqStore.sequences).offset_from(seqStore.sequencesStart) as core::ffi::c_long
             as size_t,
         &(*(*zc).blockState.nextCBlock).entropy,
         entropyMetadata,
@@ -6249,38 +6249,38 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
     matchBytes
 }
 unsafe fn ZSTD_deriveSeqStoreChunk(
-    resultSeqStore: *mut SeqStore_t,
+    resultSeqStore: &mut SeqStore_t,
     originalSeqStore: *const SeqStore_t,
     startIdx: size_t,
     endIdx: size_t,
 ) {
     *resultSeqStore = *originalSeqStore;
     if startIdx > 0 {
-        (*resultSeqStore).sequences = ((*originalSeqStore).sequencesStart).add(startIdx);
-        (*resultSeqStore).litStart =
-            ((*resultSeqStore).litStart).add(ZSTD_countSeqStoreLiteralsBytes(resultSeqStore));
+        resultSeqStore.sequences = ((*originalSeqStore).sequencesStart).add(startIdx);
+        resultSeqStore.litStart =
+            (resultSeqStore.litStart).add(ZSTD_countSeqStoreLiteralsBytes(resultSeqStore));
     }
     if (*originalSeqStore).longLengthType != ZSTD_llt_none {
         if ((*originalSeqStore).longLengthPos as size_t) < startIdx
             || (*originalSeqStore).longLengthPos as size_t > endIdx
         {
-            (*resultSeqStore).longLengthType = ZSTD_llt_none;
+            resultSeqStore.longLengthType = ZSTD_llt_none;
         } else {
-            (*resultSeqStore).longLengthPos =
-                ((*resultSeqStore).longLengthPos).wrapping_sub(startIdx as u32);
+            resultSeqStore.longLengthPos =
+                (resultSeqStore.longLengthPos).wrapping_sub(startIdx as u32);
         }
     }
-    (*resultSeqStore).sequencesStart = ((*originalSeqStore).sequencesStart).add(startIdx);
-    (*resultSeqStore).sequences = ((*originalSeqStore).sequencesStart).add(endIdx);
+    resultSeqStore.sequencesStart = ((*originalSeqStore).sequencesStart).add(startIdx);
+    resultSeqStore.sequences = ((*originalSeqStore).sequencesStart).add(endIdx);
     if endIdx
         != ((*originalSeqStore).sequences).offset_from((*originalSeqStore).sequencesStart) as size_t
     {
         let literalsBytes = ZSTD_countSeqStoreLiteralsBytes(resultSeqStore);
-        (*resultSeqStore).lit = ((*resultSeqStore).litStart).add(literalsBytes);
+        resultSeqStore.lit = (resultSeqStore.litStart).add(literalsBytes);
     }
-    (*resultSeqStore).llCode = ((*resultSeqStore).llCode).add(startIdx);
-    (*resultSeqStore).mlCode = ((*resultSeqStore).mlCode).add(startIdx);
-    (*resultSeqStore).ofCode = ((*resultSeqStore).ofCode).add(startIdx);
+    resultSeqStore.llCode = (resultSeqStore.llCode).add(startIdx);
+    resultSeqStore.mlCode = (resultSeqStore.mlCode).add(startIdx);
+    resultSeqStore.ofCode = (resultSeqStore.ofCode).add(startIdx);
 }
 unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: *const u32, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
@@ -6442,9 +6442,9 @@ unsafe fn ZSTD_deriveBlockSplitsHelper(
     zc: *mut ZSTD_CCtx,
     origSeqStore: *const SeqStore_t,
 ) {
-    let fullSeqStoreChunk: *mut SeqStore_t = &mut (*zc).blockSplitCtx.fullSeqStoreChunk;
-    let firstHalfSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.firstHalfSeqStore;
-    let secondHalfSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.secondHalfSeqStore;
+    let fullSeqStoreChunk: &mut SeqStore_t = &mut (*zc).blockSplitCtx.fullSeqStoreChunk;
+    let firstHalfSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.firstHalfSeqStore;
+    let secondHalfSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.secondHalfSeqStore;
     let mut estimatedOriginalSize: size_t = 0;
     let mut estimatedFirstHalfSize: size_t = 0;
     let mut estimatedSecondHalfSize: size_t = 0;
@@ -6505,8 +6505,8 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     let mut i = 0;
     let mut srcBytesTotal = 0 as size_t;
     let partitions = ((*zc).blockSplitCtx.partitions).as_mut_ptr();
-    let nextSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
-    let currSeqStore: *mut SeqStore_t = &mut (*zc).blockSplitCtx.currSeqStore;
+    let nextSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
+    let currSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.currSeqStore;
     let numSplits = ZSTD_deriveBlockSplits(zc, partitions, nbSeq);
     let mut dRep = repcodes_s { rep: [0; 3] };
     let mut cRep = repcodes_s { rep: [0; 3] };
@@ -6521,7 +6521,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         ::core::mem::size_of::<Repcodes_t>(),
     );
     ptr::write_bytes(
-        nextSeqStore as *mut u8,
+        nextSeqStore as *mut SeqStore_t as *mut u8,
         0,
         ::core::mem::size_of::<SeqStore_t>(),
     );

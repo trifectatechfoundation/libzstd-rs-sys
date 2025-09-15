@@ -1735,7 +1735,7 @@ unsafe fn ZSTD_optLdm_processMatchCandidate(
 #[inline(always)]
 unsafe fn ZSTD_compressBlock_opt_generic(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2160,7 +2160,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
 }
 unsafe fn ZSTD_compressBlock_opt0(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2170,7 +2170,7 @@ unsafe fn ZSTD_compressBlock_opt0(
 }
 unsafe fn ZSTD_compressBlock_opt2(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2180,7 +2180,7 @@ unsafe fn ZSTD_compressBlock_opt2(
 }
 pub unsafe fn ZSTD_compressBlock_btopt(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2189,7 +2189,7 @@ pub unsafe fn ZSTD_compressBlock_btopt(
 }
 unsafe fn ZSTD_initStats_ultra(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2209,7 +2209,7 @@ unsafe fn ZSTD_initStats_ultra(
 }
 pub unsafe fn ZSTD_compressBlock_btultra(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2218,14 +2218,14 @@ pub unsafe fn ZSTD_compressBlock_btultra(
 }
 pub unsafe fn ZSTD_compressBlock_btultra2(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
     let curr = (src as *const u8).offset_from((*ms).window.base) as core::ffi::c_long as u32;
     if (*ms).opt.litLengthSum == 0
-        && (*seqStore).sequences == (*seqStore).sequencesStart
+        && seqStore.sequences == seqStore.sequencesStart
         && (*ms).window.dictLimit == (*ms).window.lowLimit
         && curr == (*ms).window.dictLimit
         && srcSize > ZSTD_PREDEF_THRESHOLD as size_t
@@ -2236,7 +2236,7 @@ pub unsafe fn ZSTD_compressBlock_btultra2(
 }
 pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2245,7 +2245,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_dictMatchState(
 }
 pub unsafe fn ZSTD_compressBlock_btopt_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2254,7 +2254,7 @@ pub unsafe fn ZSTD_compressBlock_btopt_extDict(
 }
 pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2263,7 +2263,7 @@ pub unsafe fn ZSTD_compressBlock_btultra_dictMatchState(
 }
 pub unsafe fn ZSTD_compressBlock_btultra_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,

@@ -35,7 +35,7 @@ pub(crate) unsafe fn ZSTD_getSequenceLength(
 
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeqOnly(
-    seqStorePtr: *mut SeqStore_t,
+    seqStorePtr: &mut SeqStore_t,
     litLength: usize,
     offBase: u32,
     matchLength: usize,
@@ -43,27 +43,27 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     if (litLength > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long
         != 0
     {
-        (*seqStorePtr).longLengthType = ZSTD_llt_literalLength;
-        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
-            .offset_from((*seqStorePtr).sequencesStart)
+        seqStorePtr.longLengthType = ZSTD_llt_literalLength;
+        seqStorePtr.longLengthPos = (seqStorePtr.sequences)
+            .offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
-    (*((*seqStorePtr).sequences)).offBase = offBase;
+    (*(seqStorePtr.sequences)).litLength = litLength as u16;
+    (*(seqStorePtr.sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as usize);
     if (mlBase > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long != 0
     {
-        (*seqStorePtr).longLengthType = ZSTD_llt_matchLength;
-        (*seqStorePtr).longLengthPos = ((*seqStorePtr).sequences)
-            .offset_from((*seqStorePtr).sequencesStart)
+        seqStorePtr.longLengthType = ZSTD_llt_matchLength;
+        seqStorePtr.longLengthPos = (seqStorePtr.sequences)
+            .offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
-    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
+    (*(seqStorePtr.sequences)).mlBase = mlBase as u16;
+    seqStorePtr.sequences = (seqStorePtr.sequences).add(1);
 }
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_storeSeq(
-    seqStorePtr: *mut SeqStore_t,
+    seqStorePtr: &mut SeqStore_t,
     litLength: usize,
     literals: *const u8,
     litLimit: *const u8,
@@ -74,21 +74,21 @@ pub(crate) unsafe fn ZSTD_storeSeq(
     let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
-            (*seqStorePtr).lit as *mut core::ffi::c_void,
+            seqStorePtr.lit as *mut core::ffi::c_void,
             literals as *const core::ffi::c_void,
         );
         if litLength > 16 {
             ZSTD_wildcopy(
-                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
+                (seqStorePtr.lit).add(16) as *mut core::ffi::c_void,
                 literals.add(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
                 Overlap::NoOverlap,
             );
         }
     } else {
-        ZSTD_safecopyLiterals((*seqStorePtr).lit, literals, litEnd, litLimit_w);
+        ZSTD_safecopyLiterals(seqStorePtr.lit, literals, litEnd, litLimit_w);
     }
-    (*seqStorePtr).lit = ((*seqStorePtr).lit).add(litLength);
+    seqStorePtr.lit = (seqStorePtr.lit).add(litLength);
     ZSTD_storeSeqOnly(seqStorePtr, litLength, offBase, matchLength);
 }
 
