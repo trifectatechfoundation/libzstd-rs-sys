@@ -401,7 +401,7 @@ unsafe fn ZSTD_encodeSequences_body(
             .as_ptr()
             .offset(*llCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
     );
-    if MEM_32bits() != 0 {
+    if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
     }
     BIT_addBits(
@@ -411,16 +411,16 @@ unsafe fn ZSTD_encodeSequences_body(
             .as_ptr()
             .offset(*mlCodeTable.add(nbSeq.wrapping_sub(1)) as isize) as core::ffi::c_uint,
     );
-    if MEM_32bits() != 0 {
+    if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
     }
     if longOffsets != 0 {
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
         let extraBits = ofBits.wrapping_sub(
-            if ofBits < ((if MEM_32bits() != 0 { 25 } else { 57 }) as u32).wrapping_sub(1) {
+            if ofBits < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
                 ofBits
             } else {
-                ((if MEM_32bits() != 0 { 25 } else { 57 }) as u32).wrapping_sub(1)
+                ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)
             },
         );
         if extraBits != 0 {
@@ -463,7 +463,7 @@ unsafe fn ZSTD_encodeSequences_body(
             &mut stateMatchLength,
             mlCode as core::ffi::c_uint,
         );
-        if MEM_32bits() != 0 {
+        if MEM_32bits() {
             BIT_flushBits(&mut blockStream);
         }
         FSE_encodeSymbol(
@@ -471,7 +471,7 @@ unsafe fn ZSTD_encodeSequences_body(
             &mut stateLitLength,
             llCode as core::ffi::c_uint,
         );
-        if MEM_32bits() != 0
+        if MEM_32bits()
             || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits)
                 >= (64 - 7 - (LLFSELog + MLFSELog + OffFSELog)) as u32
         {
@@ -482,7 +482,7 @@ unsafe fn ZSTD_encodeSequences_body(
             (*sequences.add(n)).litLength as BitContainerType,
             llBits,
         );
-        if MEM_32bits() != 0 && llBits.wrapping_add(mlBits) > 24 {
+        if MEM_32bits() && llBits.wrapping_add(mlBits) > 24 {
             BIT_flushBits(&mut blockStream);
         }
         BIT_addBits(
@@ -490,15 +490,15 @@ unsafe fn ZSTD_encodeSequences_body(
             (*sequences.add(n)).mlBase as BitContainerType,
             mlBits,
         );
-        if MEM_32bits() != 0 || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
+        if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
             BIT_flushBits(&mut blockStream);
         }
         if longOffsets != 0 {
             let extraBits_0 = ofBits_0.wrapping_sub(
-                if ofBits_0 < ((if MEM_32bits() != 0 { 25 } else { 57 }) as u32).wrapping_sub(1) {
+                if ofBits_0 < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
                     ofBits_0
                 } else {
-                    ((if MEM_32bits() != 0 { 25 } else { 57 }) as u32).wrapping_sub(1)
+                    ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)
                 },
             );
             if extraBits_0 != 0 {

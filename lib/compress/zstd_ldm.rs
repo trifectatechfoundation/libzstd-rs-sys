@@ -187,7 +187,7 @@ unsafe fn ZSTD_window_needOverflowCorrection(
         }
     }
     (curr
-        > (if MEM_64bits() != 0 {
+        > (if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
         } else {

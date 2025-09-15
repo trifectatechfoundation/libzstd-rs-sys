@@ -533,7 +533,7 @@ unsafe fn ZSTD_updateStats(
 unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u32 {
     match length {
         3 => {
-            if MEM_isLittleEndian() != 0 {
+            if MEM_isLittleEndian() {
                 MEM_read32(memPtr) << 8
             } else {
                 MEM_read32(memPtr) >> 8

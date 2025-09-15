@@ -1083,11 +1083,11 @@ unsafe fn HUF_compress1X_usingCTable_internal_body(
             ip,
             srcSize,
             ct,
-            if MEM_32bits() != 0 { 2 } else { 4 },
+            if MEM_32bits() { 2 } else { 4 },
             0,
             0,
         );
-    } else if MEM_32bits() != 0 {
+    } else if MEM_32bits() {
         match tableLog {
             11 => {
                 HUF_compress1X_usingCTable_internal_body_loop(&mut bitC, ip, srcSize, ct, 2, 1, 0);
