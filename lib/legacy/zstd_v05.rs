@@ -863,8 +863,7 @@ unsafe fn HUFv05_readStats(
     iSize.wrapping_add(1)
 }
 unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> size_t {
-    let mut huffWeight: [u8; HUFv05_MAX_SYMBOL_VALUE as usize + 1] =
-        [0; HUFv05_MAX_SYMBOL_VALUE as usize + 1];
+    let mut huffWeight = [0; HUFv05_MAX_SYMBOL_VALUE as usize + 1];
     let mut rankVal: [u32; 17] = [0; 17];
     let mut tableLog = 0;
     let mut iSize: size_t = 0;
@@ -1307,8 +1306,7 @@ unsafe fn HUFv05_fillDTableX4(
     }
 }
 unsafe fn HUFv05_readDTableX4(DTable: *mut core::ffi::c_uint, src: &[u8]) -> size_t {
-    let mut weightList: [u8; HUFv05_MAX_SYMBOL_VALUE as usize + 1] =
-        [0; HUFv05_MAX_SYMBOL_VALUE as usize + 1];
+    let mut weightList = [0; HUFv05_MAX_SYMBOL_VALUE as usize + 1];
     let mut sortedSymbol: [sortedSymbol_t; 256] = [sortedSymbol_t {
         symbol: 0,
         weight: 0,
@@ -1523,7 +1521,7 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
     let istart2 = istart1.add(length1);
     let istart3 = istart2.add(length2);
     let istart4 = istart3.add(length3);
-    let segmentSize = dst.capacity().wrapping_add(3) / 4;
+    let segmentSize = dst.capacity().div_ceil(4);
     let opStart2 = ostart.add(segmentSize);
     let opStart3 = opStart2.add(segmentSize);
     let opStart4 = opStart3.add(segmentSize);
@@ -2110,11 +2108,10 @@ fn ZSTDv05_decodeFrameHeader_Part1(zc: &mut ZSTDv05_DCtx, src: Reader<'_>) -> si
     zc.headerSize
 }
 pub(crate) fn ZSTDv05_getFrameParams(params: &mut ZSTDv05_parameters, src: &[u8]) -> size_t {
-    let mut magicNumber: u32 = 0;
     if src.len() < ZSTDv05_frameHeaderSize_min {
         return ZSTDv05_frameHeaderSize_max as size_t;
     }
-    magicNumber = unsafe { MEM_readLE32(src.as_ptr().cast()) };
+    let magicNumber = u32::from_le_bytes(src[..4].try_into().unwrap());
     if magicNumber != ZSTDv05_MAGICNUMBER {
         return Error::prefix_unknown.to_error_code();
     }
@@ -3073,10 +3070,8 @@ unsafe fn ZSTDv05_decompressContinue(
                 blockType: bt_compressed,
                 origSize: 0,
             };
-            let blockSize = ZSTDv05_getcBlockSize(
-                core::slice::from_raw_parts(src.as_ptr(), ZSTDv05_blockHeaderSize),
-                &mut bp,
-            );
+            let blockSize =
+                ZSTDv05_getcBlockSize(src.subslice(..ZSTDv05_blockHeaderSize).as_slice(), &mut bp);
             if ERR_isError(blockSize) {
                 return blockSize;
             }

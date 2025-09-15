@@ -403,7 +403,11 @@ unsafe fn ZSTD_initLegacyStream(
             }
             ZBUFFv05_decompressInitDictionary(
                 dctx,
-                core::slice::from_raw_parts(dict.cast(), dictSize),
+                if dictSize != 0 {
+                    core::slice::from_raw_parts(dict.cast(), dictSize)
+                } else {
+                    &[]
+                },
             );
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
