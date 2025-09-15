@@ -98,7 +98,7 @@ pub(crate) unsafe fn ZSTD_wildcopy(
     length: size_t,
     ovtype: Overlap,
 ) {
-    let diff = dst.byte_offset_from(src);
+    let diff = dst as isize - src as isize;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
     let oend = op.add(length);

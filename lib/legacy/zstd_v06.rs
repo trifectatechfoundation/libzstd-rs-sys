@@ -2526,7 +2526,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
             }) {
                 return Error::corruption_detected.to_error_code();
             }
-            (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
+            (*dctx).litPtr = (&raw mut (*dctx).litBuffer).cast();
             (*dctx).litSize = litSize;
             ptr::write_bytes(
                 ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
