@@ -6793,12 +6793,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         }
         return cSizeSingleBlock;
     }
-    ZSTD_deriveSeqStoreChunk(
-        currSeqStore,
-        &(*zc).seqStore,
-        0,
-        *partitions as size_t,
-    );
+    ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as size_t);
     i = 0;
     while i <= numSplits {
         let mut cSizeChunk: size_t = 0;
@@ -7796,12 +7791,9 @@ pub unsafe fn ZSTD_loadCEntropy(
     if dictPtr.add(12) > dictEnd {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*bs).rep).as_mut_ptr() =
-        MEM_readLE32(dictPtr as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().add(1) =
-        MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().add(2) =
-        MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
+    *((*bs).rep).as_mut_ptr() = MEM_readLE32(dictPtr as *const core::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().add(1) = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
     dictPtr = dictPtr.add(12);
     let dictContentSize = dictEnd.offset_from(dictPtr) as size_t;
     let mut offcodeMax = MaxOff as u32;
@@ -11196,9 +11188,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
             inSeqs,
             nbSequences.wrapping_sub(1),
         );
-        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart)
-            .add(nbSequences)
-            .sub(1);
+        (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart).add(nbSequences).sub(1);
         if longl != 0 {
             if longl <= nbSequences.wrapping_sub(1) {
                 (*cctx).seqStore.longLengthType = ZSTD_llt_matchLength;

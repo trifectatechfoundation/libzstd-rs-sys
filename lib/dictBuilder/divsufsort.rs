@@ -1709,21 +1709,10 @@ unsafe fn ss_swapmerge(
                         }) as isize,
                     ),
                     PA.offset(
-                        (if 0
-                            <= *middle
-                                .offset(-(m as isize))
-                                .offset(-(half as isize))
-                                .sub(1)
-                        {
-                            *middle
-                                .offset(-(m as isize))
-                                .offset(-(half as isize))
-                                .sub(1)
+                        (if 0 <= *middle.offset(-(m as isize)).offset(-(half as isize)).sub(1) {
+                            *middle.offset(-(m as isize)).offset(-(half as isize)).sub(1)
                         } else {
-                            !*middle
-                                .offset(-(m as isize))
-                                .offset(-(half as isize))
-                                .sub(1)
+                            !*middle.offset(-(m as isize)).offset(-(half as isize)).sub(1)
                         }) as isize,
                     ),
                     depth,
@@ -1960,14 +1949,7 @@ unsafe fn sssort(
         a = first;
         i = *first.sub(1);
         while a < last
-            && (*a < 0
-                || (0)
-                    < ss_compare(
-                        T,
-                        &*PAi.as_mut_ptr(),
-                        PA.offset(*a as isize),
-                        depth,
-                    ))
+            && (*a < 0 || (0) < ss_compare(T, &*PAi.as_mut_ptr(), PA.offset(*a as isize), depth))
         {
             *a.sub(1) = *a;
             a = a.add(1);
@@ -3598,8 +3580,7 @@ pub(super) unsafe fn divsufsort(
         *SA = 0;
         return 0;
     } else if n == 2 {
-        m = ((*T as core::ffi::c_int) < *T.add(1) as core::ffi::c_int)
-            as core::ffi::c_int;
+        m = ((*T as core::ffi::c_int) < *T.add(1) as core::ffi::c_int) as core::ffi::c_int;
         *SA.offset((m ^ 1) as isize) = 0;
         *SA.offset(m as isize) = 1;
         return 0;

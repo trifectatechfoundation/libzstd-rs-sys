@@ -614,9 +614,9 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
         if matchLength > bestLength {
             let matchIndex = dictMatchIndex.wrapping_add(dictIndexDelta);
             if 4 * matchLength.wrapping_sub(bestLength) as core::ffi::c_int
-                > (ZSTD_highbit32(curr.wrapping_sub(matchIndex).wrapping_add(1))).wrapping_sub(
-                    ZSTD_highbit32((*offsetPtr as u32).wrapping_add(1)),
-                ) as core::ffi::c_int
+                > (ZSTD_highbit32(curr.wrapping_sub(matchIndex).wrapping_add(1)))
+                    .wrapping_sub(ZSTD_highbit32((*offsetPtr as u32).wrapping_add(1)))
+                    as core::ffi::c_int
             {
                 bestLength = matchLength;
                 *offsetPtr = curr
@@ -1009,14 +1009,9 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
             == MEM_read32(ip as *const core::ffi::c_void)
         {
             /* assumption : matchIndex <= dictLimit-4 (by table construction) */
-            currentMl = (ZSTD_count_2segments(
-                ip.add(4),
-                match_0.add(4),
-                iLimit,
-                ddsEnd,
-                prefixStart,
-            ))
-            .wrapping_add(4);
+            currentMl =
+                (ZSTD_count_2segments(ip.add(4), match_0.add(4), iLimit, ddsEnd, prefixStart))
+                    .wrapping_add(4);
         }
         if currentMl > ml {
             ml = currentMl;
@@ -1053,14 +1048,9 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
         if MEM_read32(match_1 as *const core::ffi::c_void)
             == MEM_read32(ip as *const core::ffi::c_void)
         {
-            currentMl_0 = (ZSTD_count_2segments(
-                ip.add(4),
-                match_1.add(4),
-                iLimit,
-                ddsEnd,
-                prefixStart,
-            ))
-            .wrapping_add(4);
+            currentMl_0 =
+                (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, ddsEnd, prefixStart))
+                    .wrapping_add(4);
         }
         if currentMl_0 > ml {
             ml = currentMl_0;
@@ -1190,14 +1180,9 @@ unsafe fn ZSTD_HcFindBestMatch(
             if MEM_read32(match_1 as *const core::ffi::c_void)
                 == MEM_read32(ip as *const core::ffi::c_void)
             {
-                currentMl = (ZSTD_count_2segments(
-                    ip.add(4),
-                    match_1.add(4),
-                    iLimit,
-                    dictEnd,
-                    prefixStart,
-                ))
-                .wrapping_add(4);
+                currentMl =
+                    (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, dictEnd, prefixStart))
+                        .wrapping_add(4);
             }
         }
         if currentMl > ml {
@@ -1260,14 +1245,9 @@ unsafe fn ZSTD_HcFindBestMatch(
             if MEM_read32(match_2 as *const core::ffi::c_void)
                 == MEM_read32(ip as *const core::ffi::c_void)
             {
-                currentMl_0 = (ZSTD_count_2segments(
-                    ip.add(4),
-                    match_2.add(4),
-                    iLimit,
-                    dmsEnd,
-                    prefixStart,
-                ))
-                .wrapping_add(4);
+                currentMl_0 =
+                    (ZSTD_count_2segments(ip.add(4), match_2.add(4), iLimit, dmsEnd, prefixStart))
+                        .wrapping_add(4);
             }
             if currentMl_0 > ml {
                 ml = currentMl_0;
@@ -1751,14 +1731,9 @@ unsafe fn ZSTD_RowFindBestMatch(
             if MEM_read32(match_1 as *const core::ffi::c_void)
                 == MEM_read32(ip as *const core::ffi::c_void)
             {
-                currentMl = (ZSTD_count_2segments(
-                    ip.add(4),
-                    match_1.add(4),
-                    iLimit,
-                    dictEnd,
-                    prefixStart,
-                ))
-                .wrapping_add(4);
+                currentMl =
+                    (ZSTD_count_2segments(ip.add(4), match_1.add(4), iLimit, dictEnd, prefixStart))
+                        .wrapping_add(4);
             }
         }
         if currentMl > ml {
@@ -1823,14 +1798,9 @@ unsafe fn ZSTD_RowFindBestMatch(
             if MEM_read32(match_2 as *const core::ffi::c_void)
                 == MEM_read32(ip as *const core::ffi::c_void)
             {
-                currentMl_0 = (ZSTD_count_2segments(
-                    ip.add(4),
-                    match_2.add(4),
-                    iLimit,
-                    dmsEnd,
-                    prefixStart,
-                ))
-                .wrapping_add(4);
+                currentMl_0 =
+                    (ZSTD_count_2segments(ip.add(4), match_2.add(4), iLimit, dmsEnd, prefixStart))
+                        .wrapping_add(4);
             }
             if currentMl_0 > ml {
                 ml = currentMl_0;
@@ -2744,8 +2714,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let ilimit = if searchMethod as core::ffi::c_uint
         == search_rowHash as core::ffi::c_int as core::ffi::c_uint
     {
-        iend.sub(8)
-            .offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
+        iend.sub(8).offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
     } else {
         iend.sub(8)
     };
@@ -3265,12 +3234,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                 && MEM_read32(ip as *const core::ffi::c_void)
                     == MEM_read32(ip.offset(-(offset_2 as isize)) as *const core::ffi::c_void)
             {
-                matchLength = (ZSTD_count(
-                    ip.add(4),
-                    ip.add(4).offset(-(offset_2 as isize)),
-                    iend,
-                ))
-                .wrapping_add(4);
+                matchLength = (ZSTD_count(ip.add(4), ip.add(4).offset(-(offset_2 as isize)), iend))
+                    .wrapping_add(4);
                 offBase = offset_2 as size_t;
                 offset_2 = offset_1;
                 offset_1 = offBase as u32;
@@ -3681,8 +3646,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     let ilimit = if searchMethod as core::ffi::c_uint
         == search_rowHash as core::ffi::c_int as core::ffi::c_uint
     {
-        iend.sub(8)
-            .offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
+        iend.sub(8).offset(-(ZSTD_ROW_HASH_CACHE_SIZE as isize))
     } else {
         iend.sub(8)
     };
@@ -3945,8 +3909,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                     };
                     while start > anchor
                         && match_0 > mStart
-                        && *start.sub(1) as core::ffi::c_int
-                            == *match_0.sub(1) as core::ffi::c_int
+                        && *start.sub(1) as core::ffi::c_int == *match_0.sub(1) as core::ffi::c_int
                     {
                         start = start.sub(1);
                         match_0 = match_0.sub(1);
@@ -4002,14 +3965,9 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
             } else {
                 iend
             };
-            matchLength = (ZSTD_count_2segments(
-                ip.add(4),
-                repMatch_2.add(4),
-                iend,
-                repEnd_2,
-                prefixStart,
-            ))
-            .wrapping_add(4);
+            matchLength =
+                (ZSTD_count_2segments(ip.add(4), repMatch_2.add(4), iend, repEnd_2, prefixStart))
+                    .wrapping_add(4);
             offBase = offset_2 as size_t;
             offset_2 = offset_1;
             offset_1 = offBase as u32;

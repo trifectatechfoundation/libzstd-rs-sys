@@ -527,8 +527,7 @@ unsafe fn FSEv06_readNCount(
             ip = ip.offset((bitCount >> 3) as isize);
             bitCount &= 7;
         } else {
-            bitCount -=
-                (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
+            bitCount -= (8 * iend.sub(4).offset_from(ip) as core::ffi::c_long) as core::ffi::c_int;
             ip = iend.sub(4);
         }
         bitStream = MEM_readLE32(ip as *const core::ffi::c_void) >> (bitCount & 31);
@@ -1189,9 +1188,7 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32
-        && op4 < oend.sub(7)
-    {
+    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() != 0 {
             let fresh18 = op1;
             op1 = op1.add(1);
@@ -1757,9 +1754,7 @@ unsafe fn HUFv06_decompress4X4_usingDTable(
         | BITv06_reloadDStream(&mut bitD2) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD3) as core::ffi::c_uint
         | BITv06_reloadDStream(&mut bitD4) as core::ffi::c_uint;
-    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32
-        && op4 < oend.sub(7)
-    {
+    while endSignal == BITv06_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() != 0 {
             op1 = op1.offset(HUFv06_decodeSymbolX4(
                 op1 as *mut core::ffi::c_void,
@@ -2322,8 +2317,7 @@ unsafe fn ZSTDv06_decompressBegin(dctx: *mut ZSTDv06_DCtx) -> size_t {
     (*dctx).base = core::ptr::null();
     (*dctx).vBase = core::ptr::null();
     (*dctx).dictEnd = core::ptr::null();
-    *((*dctx).hufTableX4).as_mut_ptr() =
-        ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
+    *((*dctx).hufTableX4).as_mut_ptr() = ZSTD_HUFFDTABLE_CAPACITY_LOG as core::ffi::c_uint;
     (*dctx).flagRepeatTable = 0;
     0
 }
@@ -2390,9 +2384,8 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
         0 => (*fparamsPtr).frameContentSize = 0,
         1 => (*fparamsPtr).frameContentSize = *ip.add(5) as core::ffi::c_ulonglong,
         2 => {
-            (*fparamsPtr).frameContentSize = MEM_readLE16(ip.add(5) as *const core::ffi::c_void)
-                as core::ffi::c_ulonglong
-                + 256;
+            (*fparamsPtr).frameContentSize =
+                MEM_readLE16(ip.add(5) as *const core::ffi::c_void) as core::ffi::c_ulonglong + 256;
         }
         3 => {
             (*fparamsPtr).frameContentSize =
@@ -2959,8 +2952,7 @@ unsafe fn ZSTDv06_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
                 *((*seqState).prevOffset).as_mut_ptr().add(2) =
                     *((*seqState).prevOffset).as_mut_ptr().add(1);
             }
-            *((*seqState).prevOffset).as_mut_ptr().add(1) =
-                *((*seqState).prevOffset).as_mut_ptr();
+            *((*seqState).prevOffset).as_mut_ptr().add(1) = *((*seqState).prevOffset).as_mut_ptr();
             offset = temp;
             *((*seqState).prevOffset).as_mut_ptr() = offset;
         } else {
@@ -2970,8 +2962,7 @@ unsafe fn ZSTDv06_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
         offset = offset.wrapping_sub(ZSTDv06_REP_MOVE as size_t);
         *((*seqState).prevOffset).as_mut_ptr().add(2) =
             *((*seqState).prevOffset).as_mut_ptr().add(1);
-        *((*seqState).prevOffset).as_mut_ptr().add(1) =
-            *((*seqState).prevOffset).as_mut_ptr();
+        *((*seqState).prevOffset).as_mut_ptr().add(1) = *((*seqState).prevOffset).as_mut_ptr();
         *((*seqState).prevOffset).as_mut_ptr() = offset;
     }
     (*seq).offset = offset;
