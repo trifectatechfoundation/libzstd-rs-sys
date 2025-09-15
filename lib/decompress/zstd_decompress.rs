@@ -2195,10 +2195,10 @@ pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
 }
 
 fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
-    let dctx = dctx.as_mut_ptr();
-
     // SAFETY: the type of dctx guarantees that we're allowed to write to this memory.
     unsafe {
+        let dctx = dctx.as_mut_ptr();
+
         (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
         (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
         (*dctx).stage = DecompressStage::GetFrameHeaderSize;
@@ -2219,7 +2219,8 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
         (*dctx).OFTptr = NonNull::new((&raw const (*dctx).entropy.OFTable).cast_mut());
 
-        (*dctx).HUFptr = &raw const (*dctx).entropy.hufTable;
+        // None encodes dctx.entropy.hufTable.
+        (*dctx).HUFptr = None;
     }
 }
 
