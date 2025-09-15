@@ -1,8 +1,9 @@
 use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
-use libc::{calloc, free, malloc, size_t};
+use libc::size_t;
 
+use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE32;
@@ -125,33 +126,6 @@ pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
-
-#[inline]
-unsafe fn ZSTD_customMalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-    }
-    malloc(size)
-}
-#[inline]
-unsafe fn ZSTD_customCalloc(size: size_t, customMem: ZSTD_customMem) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        ptr::write_bytes(ptr, 0, size);
-        return ptr;
-    }
-    calloc(1, size)
-}
-#[inline]
-unsafe fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
-    if !ptr.is_null() {
-        if (customMem.customFree).is_some() {
-            (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
-        } else {
-            free(ptr);
-        }
-    }
-}
 
 const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 

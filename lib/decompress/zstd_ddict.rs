@@ -1,7 +1,8 @@
 use core::mem::MaybeUninit;
 use core::ptr::NonNull;
-use libc::{free, malloc, size_t};
+use libc::size_t;
 
+use crate::lib::common::allocations::{ZSTD_customFree, ZSTD_customMalloc};
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::decompress::huf_decompress::DTableDesc;
 use crate::lib::decompress::zstd_decompress::ZSTD_loadDEntropy;
@@ -71,28 +72,6 @@ pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = DictLoadMethod::ByCopy as _;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = DictLoadMethod::ByRef as _;
 
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-
-#[inline]
-unsafe extern "C" fn ZSTD_customMalloc(
-    size: size_t,
-    customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        return (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-    }
-    malloc(size)
-}
-
-#[inline]
-unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
-    if !ptr.is_null() {
-        if (customMem.customFree).is_some() {
-            (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
-        } else {
-            free(ptr);
-        }
-    }
-}
 
 pub fn ZSTD_DDict_dictContent(ddict: &ZSTD_DDict) -> *const core::ffi::c_void {
     ddict.dictContent
