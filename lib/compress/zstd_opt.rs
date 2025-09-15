@@ -69,6 +69,7 @@ pub const base_0possible: base_directive_e = 0;
 
 use libc::size_t;
 
+use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_getMaxNbBits, FSE_initCState, FSE_repeat,
 };
@@ -389,40 +390,7 @@ unsafe fn ZSTD_getLowestMatchIndex(
 unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
-#[inline]
-unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
-    val.trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
-    if MEM_isLittleEndian() != 0 {
-        if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val as u64) >> 3
-        } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3
-        }
-    } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val as u64) >> 3
-    } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3
-    }
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
+
 pub const UINT_MAX: core::ffi::c_uint = (__INT_MAX__ as core::ffi::c_uint)
     .wrapping_mul(2)
     .wrapping_add(1);

@@ -2,11 +2,10 @@ use core::ptr;
 
 use libc::{free, malloc, memcpy, size_t};
 
+use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{HUF_CElt, HUF_WORKSPACE_SIZE};
-use crate::lib::common::mem::{
-    MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32,
-};
+use crate::lib::common::mem::{MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -62,40 +61,6 @@ const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 #[expect(deprecated)]
 const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
-#[inline]
-unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
-    val.trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
-    if MEM_isLittleEndian() != 0 {
-        if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val as u64) >> 3
-        } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3
-        }
-    } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val as u64) >> 3
-    } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3
-    }
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
 const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;

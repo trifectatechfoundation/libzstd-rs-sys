@@ -2,6 +2,7 @@ use core::ptr;
 
 use libc::size_t;
 
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
@@ -79,14 +80,7 @@ pub union C2RustUnnamed_1 {
     pub writeCTable_wksp: HUF_WriteCTableWksp,
     pub hist_wksp: [u32; 1024],
 }
-#[inline]
-const fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-const fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
+
 unsafe fn HUF_alignUpWorkspace(
     workspace: *mut core::ffi::c_void,
     workspaceSizePtr: *mut size_t,

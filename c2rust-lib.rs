@@ -10,6 +10,8 @@
 
 pub mod lib {
     pub mod common {
+        pub(crate) mod allocations;
+        pub(crate) mod bits;
         pub(crate) mod bitstream;
         pub mod debug;
         pub(crate) mod entropy_common;

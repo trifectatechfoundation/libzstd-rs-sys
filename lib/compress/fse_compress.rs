@@ -1,5 +1,6 @@
 use libc::{ptrdiff_t, size_t};
 
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
     BIT_CStream_t, BIT_addBits, BIT_closeCStream, BIT_flushBits, BIT_flushBitsFast,
     BIT_initCStream, BitContainerType,
@@ -11,14 +12,6 @@ use crate::lib::common::fse::{
 };
 use crate::lib::common::mem::{MEM_read16, MEM_write64};
 
-#[inline]
-fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 #[inline]
 unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let ptr = ct as *const core::ffi::c_void;

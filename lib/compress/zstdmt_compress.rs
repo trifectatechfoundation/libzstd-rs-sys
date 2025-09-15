@@ -4,6 +4,7 @@ use std::sync::{Condvar, Mutex};
 use libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE32};
 use crate::lib::common::pool::{
@@ -279,14 +280,6 @@ unsafe fn ZSTD_window_update(
 }
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
 static mut g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
     capacity: 0,

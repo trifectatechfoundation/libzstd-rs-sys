@@ -72,10 +72,11 @@ pub type ZSTD_VecMask = u64;
 
 use libc::size_t;
 
+use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
 use crate::lib::common::mem::{
-    MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
+    MEM_64bits, MEM_read16, MEM_read32, MEM_readLE32, MEM_readLE64, MEM_readST,
 };
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
@@ -355,60 +356,6 @@ unsafe fn ZSTD_getLowestPrefixIndex(
 #[inline]
 unsafe fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
-    val.trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
-    if MEM_isLittleEndian() != 0 {
-        if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val as u64) >> 3
-        } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3
-        }
-    } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val as u64) >> 3
-    } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3
-    }
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
-#[inline]
-unsafe fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
-    count &= 0x3f as core::ffi::c_int as u32;
-    value >> count
-        | value << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0x3f as core::ffi::c_uint)
-}
-#[inline]
-unsafe fn ZSTD_rotateRight_U32(value: u32, mut count: u32) -> u32 {
-    count &= 0x1f as core::ffi::c_int as u32;
-    value >> count
-        | value << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0x1f as core::ffi::c_uint)
-}
-#[inline]
-unsafe fn ZSTD_rotateRight_U16(value: u16, mut count: u32) -> u16 {
-    count &= 0xf as core::ffi::c_int as u32;
-    (value as core::ffi::c_int >> count
-        | ((value as core::ffi::c_int)
-            << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0xf as core::ffi::c_uint))
-            as u16 as core::ffi::c_int) as u16
 }
 pub const ZSTD_LAZY_DDSS_BUCKET_LOG: core::ffi::c_int = 2;
 pub const ZSTD_ROW_HASH_TAG_BITS: core::ffi::c_int = 8;
@@ -1272,7 +1219,7 @@ pub const ZSTD_ROW_HASH_TAG_MASK: core::ffi::c_uint =
 pub const ZSTD_ROW_HASH_CACHE_MASK: core::ffi::c_int = ZSTD_ROW_HASH_CACHE_SIZE - 1;
 #[inline]
 unsafe fn ZSTD_VecMask_next(val: ZSTD_VecMask) -> u32 {
-    ZSTD_countTrailingZeros64(val)
+    val.trailing_zeros()
 }
 #[inline(always)]
 unsafe fn ZSTD_row_nextIndex(tagRow: *mut u8, rowMask: u32) -> u32 {
@@ -1480,7 +1427,6 @@ unsafe fn ZSTD_row_getSSEMask(
     let comparisonMask = _mm_set1_epi8(tag as core::ffi::c_char);
     let mut matches: [core::ffi::c_int; 4] = [0; 4];
     let mut i: core::ffi::c_int = 0;
-    i = 0;
     while i < nbChunks {
         let chunk = _mm_loadu_si128(
             src.offset((16 * i) as isize) as *const core::ffi::c_void as *const __m128i
@@ -1490,21 +1436,16 @@ unsafe fn ZSTD_row_getSSEMask(
         i += 1;
     }
     if nbChunks == 1 {
-        return ZSTD_rotateRight_U16(*matches.as_mut_ptr() as u16, head) as ZSTD_VecMask;
+        return (matches[0] as u16).rotate_right(head) as ZSTD_VecMask;
     }
     if nbChunks == 2 {
-        return ZSTD_rotateRight_U32(
-            (*matches.as_mut_ptr().add(1) as u32) << 16 | *matches.as_mut_ptr() as u32,
-            head,
-        ) as ZSTD_VecMask;
+        return ((matches[1] as u32) << 16 | matches[0] as u32).rotate_right(head) as ZSTD_VecMask;
     }
-    ZSTD_rotateRight_U64(
-        (*matches.as_mut_ptr().add(3) as u64) << 48
-            | (*matches.as_mut_ptr().add(2) as u64) << 32
-            | (*matches.as_mut_ptr().add(1) as u64) << 16
-            | *matches.as_mut_ptr() as u64,
-        head,
-    )
+    ((matches[3] as u64) << 48
+        | (matches[2] as u64) << 32
+        | (matches[1] as u64) << 16
+        | matches[0] as u64)
+        .rotate_right(head)
 }
 #[inline(always)]
 unsafe fn ZSTD_row_getMatchMask(

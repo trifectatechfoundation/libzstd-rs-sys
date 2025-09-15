@@ -1089,6 +1089,7 @@ unsafe fn ZSTD_hasExtSeqProd(params: *const ZSTD_CCtx_params) -> core::ffi::c_in
 use libc::{ptrdiff_t, size_t};
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree, ZSTD_customMalloc};
+use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::entropy_common::FSE_readNCount;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{
@@ -1509,45 +1510,6 @@ unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeed
 }
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 
-#[inline]
-unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
-    val.trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
-    if MEM_isLittleEndian() != 0 {
-        if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val as u64) >> 3
-        } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3
-        }
-    } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val as u64) >> 3
-    } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3
-    }
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
-#[inline]
-unsafe fn ZSTD_rotateRight_U64(value: u64, mut count: u32) -> u64 {
-    count &= 0x3f;
-    value >> count | value << ((0 as core::ffi::c_uint).wrapping_sub(count) & 0x3f)
-}
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 pub const ZSTD_COMPRESSBLOCK_DOUBLEFAST: unsafe fn(
@@ -4109,7 +4071,7 @@ unsafe fn ZSTD_invalidateMatchState(ms: *mut ZSTD_MatchState_t) {
     (*ms).dictMatchState = core::ptr::null();
 }
 unsafe fn ZSTD_bitmix(mut val: u64, len: u64) -> u64 {
-    val ^= ZSTD_rotateRight_U64(val, 49) ^ ZSTD_rotateRight_U64(val, 24);
+    val ^= val.rotate_right(49) ^ val.rotate_right(24);
     val = val.wrapping_mul(0x9fb21c651e98df25u64);
     val ^= (val >> 35).wrapping_add(len);
     val = val.wrapping_mul(0x9fb21c651e98df25u64);

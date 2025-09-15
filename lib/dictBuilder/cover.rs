@@ -3,6 +3,7 @@ use std::sync::{Condvar, Mutex};
 
 use libc::{free, malloc, memcmp, memcpy, size_t};
 
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
@@ -82,14 +83,7 @@ pub(super) struct COVER_dictSelection_t {
     totalCompressedSize: size_t,
 }
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_highbit32(val: u32) -> core::ffi::c_uint {
-    (31 as core::ffi::c_uint).wrapping_sub(ZSTD_countLeadingZeros32(val))
-}
+
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
