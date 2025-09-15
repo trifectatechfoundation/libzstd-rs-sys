@@ -1177,15 +1177,15 @@ unsafe fn ZSTD_execSequenceEnd(
     op = oLitEnd;
     *litPtr = iLitEnd;
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
-        if sequence.offset > oLitEnd.offset_from(virtualStart) as size_t {
+        if sequence.offset > (oLitEnd.addr() - virtualStart.addr()) {
             return Error::corruption_detected.to_error_code();
         }
-        match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0)));
+        match_0 = dictEnd.sub(prefixStart.addr() - match_0.addr());
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
-        let length1 = dictEnd.offset_from(match_0) as size_t;
+        let length1 = dictEnd.addr() - match_0.addr();
         core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
@@ -1302,13 +1302,10 @@ unsafe fn ZSTD_execSequence(
     op = oLitEnd;
     *litPtr = iLitEnd;
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
-        if (sequence.offset > oLitEnd.offset_from(virtualStart) as size_t) as core::ffi::c_int
-            as core::ffi::c_long
-            != 0
-        {
+        if sequence.offset > (oLitEnd.addr() - virtualStart.addr()) {
             return Error::corruption_detected.to_error_code();
         }
-        match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
+        match_0 = dictEnd.offset(match_0.addr() as isize - prefixStart.addr() as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
