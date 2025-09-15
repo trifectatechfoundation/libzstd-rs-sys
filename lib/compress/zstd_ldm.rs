@@ -111,10 +111,11 @@ pub struct ldmRollingHashState_t {
 
 use libc::size_t;
 
+use crate::lib::common::bits::ZSTD_NbCommonBytes;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
-use crate::lib::common::mem::{MEM_64bits, MEM_isLittleEndian, MEM_read16, MEM_read32, MEM_readST};
+use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readST};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
@@ -433,36 +434,7 @@ unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     }
     size
 }
-#[inline]
-unsafe fn ZSTD_countTrailingZeros32(val: u32) -> core::ffi::c_uint {
-    val.trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros32(val: u32) -> core::ffi::c_uint {
-    val.leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countTrailingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).trailing_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_countLeadingZeros64(val: u64) -> core::ffi::c_uint {
-    (val as core::ffi::c_ulonglong).leading_zeros() as i32 as core::ffi::c_uint
-}
-#[inline]
-unsafe fn ZSTD_NbCommonBytes(val: size_t) -> core::ffi::c_uint {
-    if MEM_isLittleEndian() != 0 {
-        if MEM_64bits() != 0 {
-            ZSTD_countTrailingZeros64(val as u64) >> 3
-        } else {
-            ZSTD_countTrailingZeros32(val as u32) >> 3
-        }
-    } else if MEM_64bits() != 0 {
-        ZSTD_countLeadingZeros64(val as u64) >> 3
-    } else {
-        ZSTD_countLeadingZeros32(val as u32) >> 3
-    }
-}
+
 static ZSTD_ldm_gearTab: [u64; 256] = [
     0xf5b8f72c5f77775c,
     0x84935f266b7ac412,

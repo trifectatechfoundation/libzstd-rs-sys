@@ -13,7 +13,7 @@ pub(crate) fn MEM_64bits() -> c_uint {
 }
 
 #[inline]
-pub(crate) fn MEM_isLittleEndian() -> c_uint {
+pub(crate) const fn MEM_isLittleEndian() -> c_uint {
     cfg!(target_endian = "little") as _
 }
 
