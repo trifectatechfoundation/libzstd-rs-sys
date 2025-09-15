@@ -1,9 +1,9 @@
 #![cfg(test)]
 
 mod compress;
-mod parameters;
 mod decompress;
 mod dict_builder;
+mod parameters;
 
 #[macro_export]
 macro_rules! assert_eq_rs_c {
