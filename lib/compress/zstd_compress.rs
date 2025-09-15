@@ -672,7 +672,7 @@ unsafe fn ZSTD_rleCompressBlock(
         return Error::dstSize_tooSmall.to_error_code();
     }
     MEM_writeLE24(op as *mut core::ffi::c_void, cBlockHeader);
-    *op.offset(3) = src;
+    *op.add(3) = src;
     4
 }
 #[inline]
@@ -717,9 +717,9 @@ unsafe fn ZSTD_safecopyLiterals(
     }
     while ip < iend {
         let fresh0 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh1 = op;
-        op = op.offset(1);
+        op = op.add(1);
         *fresh1 = *fresh0;
     }
 }
@@ -740,8 +740,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).litLength = litLength as u16;
-    (*((*seqStorePtr).sequences).offset(0)).offBase = offBase;
+    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
+    (*((*seqStorePtr).sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as size_t);
     if (mlBase > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long != 0
     {
@@ -750,8 +750,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
-    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
+    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
+    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -771,8 +771,8 @@ unsafe fn ZSTD_storeSeq(
         );
         if litLength > 16 {
             ZSTD_wildcopy(
-                ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
-                literals.offset(16) as *const core::ffi::c_void,
+                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
+                literals.add(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
                 Overlap::NoOverlap,
             );
@@ -786,24 +786,24 @@ unsafe fn ZSTD_storeSeq(
 #[inline]
 unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.offset(2) = *rep.offset(1);
-        *rep.offset(1) = *rep.offset(0);
-        *rep.offset(0) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        *rep.add(2) = *rep.add(1);
+        *rep.add(1) = *rep;
+        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
         let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
         if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep.offset(0)).wrapping_sub(1)
+                (*rep).wrapping_sub(1)
             } else {
                 *rep.offset(repCode as isize)
             };
-            *rep.offset(2) = if repCode >= 2 {
-                *rep.offset(1)
+            *rep.add(2) = if repCode >= 2 {
+                *rep.add(1)
             } else {
-                *rep.offset(2)
+                *rep.add(2)
             };
-            *rep.offset(1) = *rep.offset(0);
-            *rep.offset(0) = currentOffset;
+            *rep.add(1) = *rep;
+            *rep = currentOffset;
         }
     };
 }
@@ -833,22 +833,22 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
         }
     }
     if MEM_64bits() != 0
-        && pIn < pInLimit.offset(-(3))
+        && pIn < pInLimit.sub(3)
         && MEM_read32(pMatch as *const core::ffi::c_void)
             == MEM_read32(pIn as *const core::ffi::c_void)
     {
-        pIn = pIn.offset(4);
-        pMatch = pMatch.offset(4);
+        pIn = pIn.add(4);
+        pMatch = pMatch.add(4);
     }
-    if pIn < pInLimit.offset(-(1))
+    if pIn < pInLimit.sub(1)
         && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
             == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
     {
-        pIn = pIn.offset(2);
-        pMatch = pMatch.offset(2);
+        pIn = pIn.add(2);
+        pMatch = pMatch.add(2);
     }
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
-        pIn = pIn.offset(1);
+        pIn = pIn.add(1);
     }
     pIn.offset_from(pStart) as size_t
 }
@@ -5174,19 +5174,19 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     }
     if nbSeq < 128 {
         let fresh2 = op;
-        op = op.offset(1);
+        op = op.add(1);
         *fresh2 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op.offset(0) = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
-        *op.offset(1) = nbSeq as u8;
-        op = op.offset(2);
+        *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
+        *op.add(1) = nbSeq as u8;
+        op = op.add(2);
     } else {
-        *op.offset(0) = 0xff as core::ffi::c_int as u8;
+        *op = 0xff as core::ffi::c_int as u8;
         MEM_writeLE16(
-            op.offset(1) as *mut core::ffi::c_void,
+            op.add(1) as *mut core::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,
         );
-        op = op.offset(3);
+        op = op.add(3);
     }
     if nbSeq == 0 {
         libc::memcpy(
@@ -5197,7 +5197,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         return op.offset_from(ostart) as size_t;
     }
     let fresh3 = op;
-    op = op.offset(1);
+    op = op.add(1);
     let seqHead = fresh3;
     let stats = ZSTD_buildSequencesStatistics(
         seqStorePtr,
@@ -5496,7 +5496,7 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
     }
     if srcSize == 0 {
         ptr::write_bytes(
-            &mut *outSeqs.offset(0) as *mut ZSTD_Sequence as *mut u8,
+            &mut *outSeqs as *mut ZSTD_Sequence as *mut u8,
             0,
             ::core::mem::size_of::<ZSTD_Sequence>(),
         );
@@ -5804,7 +5804,7 @@ unsafe fn ZSTD_copyBlockSequences(
                     .as_mut_ptr()
                     .offset(repcode.wrapping_sub(1) as isize);
             } else if repcode == 3 {
-                rawOffset = (*(repcodes.rep).as_mut_ptr().offset(0)).wrapping_sub(1);
+                rawOffset = (*(repcodes.rep).as_mut_ptr()).wrapping_sub(1);
             } else {
                 rawOffset = *(repcodes.rep).as_mut_ptr().offset(repcode as isize);
             }
@@ -5909,7 +5909,7 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
 }
 unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> core::ffi::c_int {
     let ip = src;
-    let value = *ip.offset(0);
+    let value = *ip;
     let valueST = (value as u64 as core::ffi::c_ulonglong)
         .wrapping_mul(0x101010101010101 as core::ffi::c_ulonglong) as size_t;
     let unrollSize = ::core::mem::size_of::<size_t>().wrapping_mul(4);
@@ -5920,7 +5920,7 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> core::ffi::c_int {
         return 1;
     }
     if prefixLength != 0
-        && ZSTD_count(ip.offset(1), ip, ip.add(prefixLength)) != prefixLength.wrapping_sub(1)
+        && ZSTD_count(ip.add(1), ip, ip.add(prefixLength)) != prefixLength.wrapping_sub(1)
     {
         return 0;
     }
@@ -6320,7 +6320,7 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
             cSymbolTypeSizeEstimateInBits =
                 cSymbolTypeSizeEstimateInBits.wrapping_add(*ctp as size_t);
         }
-        ctp = ctp.offset(1);
+        ctp = ctp.add(1);
     }
     cSymbolTypeSizeEstimateInBits >> 3
 }
@@ -6532,7 +6532,7 @@ unsafe fn ZSTD_deriveSeqStoreChunk(
 unsafe fn ZSTD_resolveRepcodeToRawOffset(rep: *const u32, offBase: u32, ll0: u32) -> u32 {
     let adjustedRepCode = offBase.wrapping_sub(1).wrapping_add(ll0);
     if adjustedRepCode == ZSTD_REP_NUM as u32 {
-        return (*rep.offset(0)).wrapping_sub(1);
+        return (*rep).wrapping_sub(1);
     }
     *rep.offset(adjustedRepCode as isize)
 }
@@ -6797,7 +6797,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         currSeqStore,
         &(*zc).seqStore,
         0,
-        *partitions.offset(0) as size_t,
+        *partitions as size_t,
     );
     i = 0;
     while i <= numSplits {
@@ -6955,7 +6955,7 @@ unsafe fn ZSTD_compressBlock_internal(
             && ZSTD_isRLE(ip, srcSize) != 0
         {
             cSize = 1;
-            *op.offset(0) = *ip.offset(0);
+            *op = *ip;
         }
     }
     if !ERR_isError(cSize) && cSize > 1 {
@@ -7371,9 +7371,9 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
         op as *mut core::ffi::c_void,
         (ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint).wrapping_add(magicVariant),
     );
-    MEM_writeLE32(op.offset(4) as *mut core::ffi::c_void, srcSize as u32);
+    MEM_writeLE32(op.add(4) as *mut core::ffi::c_void, srcSize as u32);
     libc::memcpy(
-        op.offset(8) as *mut core::ffi::c_void,
+        op.add(8) as *mut core::ffi::c_void,
         src,
         srcSize as libc::size_t,
     );
@@ -7686,7 +7686,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
-    dictPtr = dictPtr.offset(8);
+    dictPtr = dictPtr.add(8);
     (*bs).entropy.huf.repeatMode = HUF_repeat_check;
     let mut maxSymbolValue = 255;
     let mut hasZeroWeights = 1;
@@ -7793,16 +7793,16 @@ pub unsafe fn ZSTD_loadCEntropy(
         MaxLL as core::ffi::c_uint,
     );
     dictPtr = dictPtr.add(litlengthHeaderSize);
-    if dictPtr.offset(12) > dictEnd {
+    if dictPtr.add(12) > dictEnd {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*bs).rep).as_mut_ptr().offset(0) =
-        MEM_readLE32(dictPtr.offset(0) as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().offset(1) =
-        MEM_readLE32(dictPtr.offset(4) as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().offset(2) =
-        MEM_readLE32(dictPtr.offset(8) as *const core::ffi::c_void);
-    dictPtr = dictPtr.offset(12);
+    *((*bs).rep).as_mut_ptr() =
+        MEM_readLE32(dictPtr as *const core::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().add(1) =
+        MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
+    *((*bs).rep).as_mut_ptr().add(2) =
+        MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
+    dictPtr = dictPtr.add(12);
     let dictContentSize = dictEnd.offset_from(dictPtr) as size_t;
     let mut offcodeMax = MaxOff as u32;
     if dictContentSize
@@ -7849,7 +7849,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     dictID = (if (*params).fParams.noDictIDFlag != 0 {
         0
     } else {
-        MEM_readLE32(dictPtr.offset(4) as *const core::ffi::c_void)
+        MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void)
     }) as size_t;
     eSize = ZSTD_loadCEntropy(bs, workspace, dict, dictSize);
     let err_code = eSize;
@@ -8237,7 +8237,7 @@ unsafe fn ZSTD_writeEpilogue(
             return Error::dstSize_tooSmall.to_error_code();
         }
         MEM_writeLE32(op as *mut core::ffi::c_void, checksum);
-        op = op.offset(4);
+        op = op.add(4);
     }
     (*cctx).stage = ZSTDcs_created;
     op.offset_from(ostart) as size_t
@@ -10567,13 +10567,13 @@ unsafe fn ZSTD_validateSequence(
 }
 unsafe fn ZSTD_finalizeOffBase(rawOffset: u32, rep: *const u32, ll0: u32) -> u32 {
     let mut offBase = rawOffset.wrapping_add(ZSTD_REP_NUM as u32);
-    if ll0 == 0 && rawOffset == *rep.offset(0) {
+    if ll0 == 0 && rawOffset == *rep {
         offBase = REPCODE1_TO_OFFBASE as u32;
-    } else if rawOffset == *rep.offset(1) {
+    } else if rawOffset == *rep.add(1) {
         offBase = 2u32.wrapping_sub(ll0);
-    } else if rawOffset == *rep.offset(2) {
+    } else if rawOffset == *rep.add(2) {
         offBase = 3u32.wrapping_sub(ll0);
-    } else if ll0 != 0 && rawOffset == (*rep.offset(0)).wrapping_sub(1) {
+    } else if ll0 != 0 && rawOffset == (*rep).wrapping_sub(1) {
         offBase = REPCODE3_TO_OFFBASE as u32;
     }
     offBase
@@ -10661,17 +10661,17 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
         let rep = (updatedRepcodes.rep).as_mut_ptr();
         let lastSeqIdx = idx.wrapping_sub(1);
         if lastSeqIdx >= startIdx.wrapping_add(2) {
-            *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
-            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            *rep.add(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else if lastSeqIdx == startIdx.wrapping_add(1) {
-            *rep.offset(2) = *rep.offset(0);
-            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            *rep.add(2) = *rep;
+            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else {
-            *rep.offset(2) = *rep.offset(1);
-            *rep.offset(1) = *rep.offset(0);
-            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            *rep.add(2) = *rep.add(1);
+            *rep.add(1) = *rep;
+            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         }
     }
     libc::memcpy(
@@ -11198,7 +11198,7 @@ pub unsafe fn ZSTD_convertBlockSequences(
         );
         (*cctx).seqStore.sequences = ((*cctx).seqStore.sequencesStart)
             .add(nbSequences)
-            .offset(-(1));
+            .sub(1);
         if longl != 0 {
             if longl <= nbSequences.wrapping_sub(1) {
                 (*cctx).seqStore.longLengthType = ZSTD_llt_matchLength;
@@ -11235,17 +11235,17 @@ pub unsafe fn ZSTD_convertBlockSequences(
         let rep = (updatedRepcodes.rep).as_mut_ptr();
         if nbSequences >= 4 {
             let lastSeqIdx = (nbSequences as u32).wrapping_sub(2);
-            *rep.offset(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
-            *rep.offset(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep.offset(0) = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            *rep.add(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else if nbSequences == 3 {
-            *rep.offset(2) = *rep.offset(0);
-            *rep.offset(1) = (*inSeqs.offset(0)).offset;
-            *rep.offset(0) = (*inSeqs.offset(1)).offset;
+            *rep.add(2) = *rep;
+            *rep.add(1) = (*inSeqs).offset;
+            *rep = (*inSeqs.add(1)).offset;
         } else {
-            *rep.offset(2) = *rep.offset(1);
-            *rep.offset(1) = *rep.offset(0);
-            *rep.offset(0) = (*inSeqs.offset(0)).offset;
+            *rep.add(2) = *rep.add(1);
+            *rep.add(1) = *rep;
+            *rep = (*inSeqs).offset;
         }
     }
     libc::memcpy(
@@ -11391,7 +11391,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     if nbSequences == 0 {
         return Error::externalSequences_invalid.to_error_code();
     }
-    if nbSequences == 1 && (*inSeqs.offset(0)).litLength == 0 {
+    if nbSequences == 1 && (*inSeqs).litLength == 0 {
         let cBlockHeader24 = 1u32.wrapping_add((bt_raw as core::ffi::c_int as u32) << 1);
         if dstCapacity < 3 {
             return Error::dstSize_tooSmall.to_error_code();

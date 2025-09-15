@@ -377,7 +377,7 @@ unsafe fn COVER_lower_bound(
         let mut ptr = first;
         ptr = ptr.add(step);
         if *ptr < value {
-            ptr = ptr.offset(1);
+            ptr = ptr.add(1);
             first = ptr;
             count = count.wrapping_sub(step.wrapping_add(1));
         } else {
@@ -432,18 +432,18 @@ unsafe fn COVER_group(
     let mut freq = 0u32;
     let mut curOffsetPtr: *const size_t = (*ctx).offsets;
     let offsetsEnd: *const size_t = ((*ctx).offsets).add((*ctx).nbSamples);
-    let mut curSampleEnd = *((*ctx).offsets).offset(0);
+    let mut curSampleEnd = *((*ctx).offsets);
     while grpPtr != grpEnd {
         *((*ctx).dmerAt).offset(*grpPtr as isize) = dmerId;
         if (*grpPtr as size_t) >= curSampleEnd {
             freq = freq.wrapping_add(1);
-            if grpPtr.offset(1) != grpEnd {
+            if grpPtr.add(1) != grpEnd {
                 let sampleEndPtr = COVER_lower_bound(curOffsetPtr, offsetsEnd, *grpPtr as size_t);
                 curSampleEnd = *sampleEndPtr;
-                curOffsetPtr = sampleEndPtr.offset(1);
+                curOffsetPtr = sampleEndPtr.add(1);
             }
         }
-        grpPtr = grpPtr.offset(1);
+        grpPtr = grpPtr.add(1);
     }
     *((*ctx).suffix).offset(dmerId as isize) = freq;
 }
@@ -679,7 +679,7 @@ unsafe fn COVER_ctx_init(
     ctx.freqs = core::ptr::null_mut();
     ctx.d = d;
     let mut i: u32 = 0;
-    *(ctx.offsets).offset(0) = 0;
+    *(ctx.offsets) = 0;
     i = 1;
     while i <= nbSamples {
         *(ctx.offsets).offset(i as isize) = (*(ctx.offsets).offset(i.wrapping_sub(1) as isize))

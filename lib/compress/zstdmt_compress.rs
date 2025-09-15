@@ -536,9 +536,9 @@ unsafe fn ZSTDMT_createCCtxPool(
         return core::ptr::null_mut();
     }
     (*cctxPool).cMem = cMem;
-    let fresh1 = &mut (*((*cctxPool).cctxs).offset(0));
+    let fresh1 = &mut (*((*cctxPool).cctxs));
     *fresh1 = ZSTD_createCCtx_advanced(cMem);
-    if (*((*cctxPool).cctxs).offset(0)).is_null() {
+    if (*((*cctxPool).cctxs)).is_null() {
         ZSTDMT_freeCCtxPool(cctxPool);
         return core::ptr::null_mut();
     }

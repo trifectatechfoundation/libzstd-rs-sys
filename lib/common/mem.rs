@@ -66,7 +66,7 @@ pub(crate) unsafe fn MEM_readLE16(memPtr: *const c_void) -> u16 {
         MEM_read16(memPtr)
     } else {
         let p = memPtr as *const u8;
-        (*p.offset(0) as core::ffi::c_int + ((*p.offset(1) as core::ffi::c_int) << 8)) as u16
+        (*p as core::ffi::c_int + ((*p.add(1) as core::ffi::c_int) << 8)) as u16
     }
 }
 
@@ -81,13 +81,13 @@ pub(crate) unsafe fn MEM_writeLE16(memPtr: *mut c_void, val32: u16) {
 
 #[inline]
 pub unsafe fn MEM_readLE24(memPtr: *const c_void) -> u32 {
-    (MEM_readLE16(memPtr) as u32).wrapping_add((*(memPtr as *const u8).offset(2) as u32) << 16)
+    (MEM_readLE16(memPtr) as u32).wrapping_add((*(memPtr as *const u8).add(2) as u32) << 16)
 }
 
 #[inline]
 pub(crate) unsafe fn MEM_writeLE24(memPtr: *mut c_void, val: u32) {
     MEM_writeLE16(memPtr, val as u16);
-    *(memPtr as *mut u8).offset(2) = (val >> 16) as u8;
+    *(memPtr as *mut u8).add(2) = (val >> 16) as u8;
 }
 
 #[inline]

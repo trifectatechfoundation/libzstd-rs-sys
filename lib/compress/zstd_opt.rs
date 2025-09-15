@@ -145,9 +145,9 @@ unsafe fn ZSTD_safecopyLiterals(
     }
     while ip < iend {
         let fresh0 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh1 = op;
-        op = op.offset(1);
+        op = op.add(1);
         *fresh1 = *fresh0;
     }
 }
@@ -166,8 +166,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).litLength = litLength as u16;
-    (*((*seqStorePtr).sequences).offset(0)).offBase = offBase;
+    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
+    (*((*seqStorePtr).sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as size_t);
     if (mlBase > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long != 0
     {
@@ -176,8 +176,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
-    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
+    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
+    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -197,8 +197,8 @@ unsafe fn ZSTD_storeSeq(
         );
         if litLength > 16 {
             ZSTD_wildcopy(
-                ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
-                literals.offset(16) as *const core::ffi::c_void,
+                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
+                literals.add(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
                 Overlap::NoOverlap,
             );
@@ -212,24 +212,24 @@ unsafe fn ZSTD_storeSeq(
 #[inline]
 unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.offset(2) = *rep.offset(1);
-        *rep.offset(1) = *rep.offset(0);
-        *rep.offset(0) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        *rep.add(2) = *rep.add(1);
+        *rep.add(1) = *rep;
+        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
         let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
         if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep.offset(0)).wrapping_sub(1)
+                (*rep).wrapping_sub(1)
             } else {
                 *rep.offset(repCode as isize)
             };
-            *rep.offset(2) = if repCode >= 2 {
-                *rep.offset(1)
+            *rep.add(2) = if repCode >= 2 {
+                *rep.add(1)
             } else {
-                *rep.offset(2)
+                *rep.add(2)
             };
-            *rep.offset(1) = *rep.offset(0);
-            *rep.offset(0) = currentOffset;
+            *rep.add(1) = *rep;
+            *rep = currentOffset;
         }
     };
 }
@@ -272,22 +272,22 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
         }
     }
     if MEM_64bits() != 0
-        && pIn < pInLimit.offset(-(3))
+        && pIn < pInLimit.sub(3)
         && MEM_read32(pMatch as *const core::ffi::c_void)
             == MEM_read32(pIn as *const core::ffi::c_void)
     {
-        pIn = pIn.offset(4);
-        pMatch = pMatch.offset(4);
+        pIn = pIn.add(4);
+        pMatch = pMatch.add(4);
     }
-    if pIn < pInLimit.offset(-(1))
+    if pIn < pInLimit.sub(1)
         && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
             == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
     {
-        pIn = pIn.offset(2);
-        pMatch = pMatch.offset(2);
+        pIn = pIn.add(2);
+        pMatch = pMatch.add(2);
     }
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
-        pIn = pIn.offset(1);
+        pIn = pIn.add(1);
     }
     pIn.offset_from(pStart) as size_t
 }
@@ -896,7 +896,7 @@ unsafe fn ZSTD_insertBt1(
         curr.wrapping_sub(btMask)
     };
     let mut smallerPtr = bt.offset((2 * (curr & btMask)) as isize);
-    let mut largerPtr = smallerPtr.offset(1);
+    let mut largerPtr = smallerPtr.add(1);
     let mut dummy32: u32 = 0;
     let windowLow = ZSTD_getLowestMatchIndex(ms, target, (*cParams).windowLog);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
@@ -948,8 +948,8 @@ unsafe fn ZSTD_insertBt1(
                     smallerPtr = &mut dummy32;
                     break;
                 } else {
-                    smallerPtr = nextPtr.offset(1);
-                    matchIndex = *nextPtr.offset(1);
+                    smallerPtr = nextPtr.add(1);
+                    matchIndex = *nextPtr.add(1);
                 }
             } else {
                 *largerPtr = matchIndex;
@@ -959,7 +959,7 @@ unsafe fn ZSTD_insertBt1(
                     break;
                 } else {
                     largerPtr = nextPtr;
-                    matchIndex = *nextPtr.offset(0);
+                    matchIndex = *nextPtr;
                 }
             }
             nbCompares = nbCompares.wrapping_sub(1);
@@ -1052,7 +1052,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     let windowLow = ZSTD_getLowestMatchIndex(ms, curr, (*cParams).windowLog);
     let matchLow = if windowLow != 0 { windowLow } else { 1 };
     let mut smallerPtr = bt.offset((2 * (curr & btMask)) as isize);
-    let mut largerPtr = bt.offset((2 * (curr & btMask)) as isize).offset(1);
+    let mut largerPtr = bt.offset((2 * (curr & btMask)) as isize).add(1);
     let mut matchEndIdx = curr.wrapping_add(8).wrapping_add(1);
     let mut dummy32: u32 = 0;
     let mut mnum = 0u32;
@@ -1141,7 +1141,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     repCode = ll0;
     while repCode < lastR {
         let repOffset = if repCode == ZSTD_REP_NUM as u32 {
-            (*rep.offset(0)).wrapping_sub(1)
+            (*rep).wrapping_sub(1)
         } else {
             *rep.offset(repCode as isize)
         };
@@ -1244,10 +1244,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             }
             if mlen >= mls as size_t {
                 bestLength = mlen;
-                (*matches.offset(0)).off = curr
+                (*matches).off = curr
                     .wrapping_sub(matchIndex3)
                     .wrapping_add(ZSTD_REP_NUM as u32);
-                (*matches.offset(0)).len = mlen as u32;
+                (*matches).len = mlen as u32;
                 mnum = 1;
                 if (mlen > sufficient_len as size_t) as core::ffi::c_int
                     | (ip.add(mlen) == iLimit) as core::ffi::c_int
@@ -1327,8 +1327,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 smallerPtr = &mut dummy32;
                 break;
             } else {
-                smallerPtr = nextPtr.offset(1);
-                matchIndex = *nextPtr.offset(1);
+                smallerPtr = nextPtr.add(1);
+                matchIndex = *nextPtr.add(1);
             }
         } else {
             *largerPtr = matchIndex;
@@ -1338,7 +1338,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 break;
             } else {
                 largerPtr = nextPtr;
-                matchIndex = *nextPtr.offset(0);
+                matchIndex = *nextPtr;
             }
         }
         nbCompares = nbCompares.wrapping_sub(1);
@@ -1398,10 +1398,10 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 < *ip.add(matchLength_0) as core::ffi::c_int
             {
                 commonLengthSmaller = matchLength_0;
-                dictMatchIndex = *nextPtr_0.offset(1);
+                dictMatchIndex = *nextPtr_0.add(1);
             } else {
                 commonLengthLarger = matchLength_0;
-                dictMatchIndex = *nextPtr_0.offset(0);
+                dictMatchIndex = *nextPtr_0;
             }
             nbCompares = nbCompares.wrapping_sub(1);
         }
@@ -2033,7 +2033,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     let mut ip = istart;
     let mut anchor = istart;
     let iend = istart.add(srcSize);
-    let ilimit = iend.offset(-(8));
+    let ilimit = iend.sub(8);
     let base = (*ms).window.base;
     let prefixStart = base.offset((*ms).window.dictLimit as isize);
     let cParams: *const ZSTD_compressionParameters = &mut (*ms).cParams;
@@ -2110,14 +2110,14 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             minMatch,
         );
         if nbMatches == 0 {
-            ip = ip.offset(1);
+            ip = ip.add(1);
         } else {
-            (*opt.offset(0)).mlen = 0;
-            (*opt.offset(0)).litlen = litlen;
-            (*opt.offset(0)).price =
+            (*opt).mlen = 0;
+            (*opt).litlen = litlen;
+            (*opt).price =
                 ZSTD_litLengthPrice(litlen, optStatePtr, optLevel) as core::ffi::c_int;
             libc::memcpy(
-                &mut (*opt.offset(0)).rep as *mut [u32; 3] as *mut core::ffi::c_void,
+                &mut (*opt).rep as *mut [u32; 3] as *mut core::ffi::c_void,
                 rep as *const core::ffi::c_void,
                 ::core::mem::size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
             );
@@ -2146,7 +2146,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                     while pos <= end {
                         let matchPrice = ZSTD_getMatchPrice(offBase, pos, optStatePtr, optLevel)
                             as core::ffi::c_int;
-                        let sequencePrice = (*opt.offset(0)).price + matchPrice;
+                        let sequencePrice = (*opt).price + matchPrice;
                         (*opt.offset(pos as isize)).mlen = pos;
                         (*opt.offset(pos as isize)).off = offBase;
                         (*opt.offset(pos as isize)).litlen = 0;
@@ -2169,7 +2169,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                         ((*opt.offset(cur.wrapping_sub(1) as isize)).litlen).wrapping_add(1);
                     let price = (*opt.offset(cur.wrapping_sub(1) as isize)).price
                         + ZSTD_rawLiteralsCost(
-                            ip.offset(cur as isize).offset(-(1)),
+                            ip.offset(cur as isize).sub(1),
                             1,
                             optStatePtr,
                             optLevel,

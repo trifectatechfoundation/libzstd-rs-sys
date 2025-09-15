@@ -23,7 +23,7 @@ pub unsafe fn HIST_add(
     let end = ip.add(srcSize);
     while ip < end {
         let fresh0 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh1 = &mut (*count.offset(*fresh0 as isize));
         *fresh1 = (*fresh1).wrapping_add(1);
     }
@@ -51,7 +51,7 @@ pub unsafe fn HIST_count_simple(
     }
     while ip < end {
         let fresh2 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh3 = &mut (*count.offset(*fresh2 as isize));
         *fresh3 = (*fresh3).wrapping_add(1);
     }
@@ -83,9 +83,9 @@ unsafe fn HIST_count_parallel_wksp(
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
     let mut max = 0;
     let Counting1 = workSpace;
-    let Counting2 = Counting1.offset(256);
-    let Counting3 = Counting2.offset(256);
-    let Counting4 = Counting3.offset(256);
+    let Counting2 = Counting1.add(256);
+    let Counting3 = Counting2.add(256);
+    let Counting4 = Counting3.add(256);
     if sourceSize == 0 {
         ptr::write_bytes(count as *mut u8, 0, countSize as libc::size_t);
         *maxSymbolValuePtr = 0;
@@ -99,11 +99,11 @@ unsafe fn HIST_count_parallel_wksp(
             as libc::size_t,
     );
     let mut cached = MEM_read32(ip as *const core::ffi::c_void);
-    ip = ip.offset(4);
-    while ip < iend.offset(-(15)) {
+    ip = ip.add(4);
+    while ip < iend.sub(15) {
         let mut c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.offset(4);
+        ip = ip.add(4);
         let fresh4 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh4 = (*fresh4).wrapping_add(1);
         let fresh5 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
@@ -114,7 +114,7 @@ unsafe fn HIST_count_parallel_wksp(
         *fresh7 = (*fresh7).wrapping_add(1);
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.offset(4);
+        ip = ip.add(4);
         let fresh8 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh8 = (*fresh8).wrapping_add(1);
         let fresh9 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
@@ -125,7 +125,7 @@ unsafe fn HIST_count_parallel_wksp(
         *fresh11 = (*fresh11).wrapping_add(1);
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.offset(4);
+        ip = ip.add(4);
         let fresh12 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh12 = (*fresh12).wrapping_add(1);
         let fresh13 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
@@ -136,7 +136,7 @@ unsafe fn HIST_count_parallel_wksp(
         *fresh15 = (*fresh15).wrapping_add(1);
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
-        ip = ip.offset(4);
+        ip = ip.add(4);
         let fresh16 = &mut (*Counting1.offset(c as u8 as isize));
         *fresh16 = (*fresh16).wrapping_add(1);
         let fresh17 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
@@ -146,10 +146,10 @@ unsafe fn HIST_count_parallel_wksp(
         let fresh19 = &mut (*Counting4.offset((c >> 24) as isize));
         *fresh19 = (*fresh19).wrapping_add(1);
     }
-    ip = ip.offset(-(4));
+    ip = ip.sub(4);
     while ip < iend {
         let fresh20 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh21 = &mut (*Counting1.offset(*fresh20 as isize));
         *fresh21 = (*fresh21).wrapping_add(1);
     }

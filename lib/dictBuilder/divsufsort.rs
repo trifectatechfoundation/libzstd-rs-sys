@@ -381,11 +381,11 @@ unsafe fn ss_compare(
     let mut U2n = core::ptr::null::<core::ffi::c_uchar>();
     U1 = T.offset(depth as isize).offset(*p1 as isize);
     U2 = T.offset(depth as isize).offset(*p2 as isize);
-    U1n = T.offset(*p1.offset(1) as isize).offset(2);
-    U2n = T.offset(*p2.offset(1) as isize).offset(2);
+    U1n = T.offset(*p1.add(1) as isize).add(2);
+    U2n = T.offset(*p2.add(1) as isize).add(2);
     while U1 < U1n && U2 < U2n && *U1 as core::ffi::c_int == *U2 as core::ffi::c_int {
-        U1 = U1.offset(1);
-        U2 = U2.offset(1);
+        U1 = U1.add(1);
+        U2 = U2.add(1);
     }
     if U1 < U1n {
         if U2 < U2n {
@@ -410,18 +410,18 @@ unsafe fn ss_insertionsort(
     let mut j = core::ptr::null_mut::<core::ffi::c_int>();
     let mut t: core::ffi::c_int = 0;
     let mut r: core::ffi::c_int = 0;
-    i = last.offset(-(2));
+    i = last.sub(2);
     while first <= i {
         t = *i;
-        j = i.offset(1);
+        j = i.add(1);
         loop {
             r = ss_compare(T, PA.offset(t as isize), PA.offset(*j as isize), depth);
             if (0) >= r {
                 break;
             }
             loop {
-                *j.offset(-(1)) = *j;
-                j = j.offset(1);
+                *j.sub(1) = *j;
+                j = j.add(1);
                 if !(j < last && *j < 0) {
                     break;
                 }
@@ -433,8 +433,8 @@ unsafe fn ss_insertionsort(
         if r == 0 {
             *j = !*j;
         }
-        *j.offset(-(1)) = t;
-        i = i.offset(-1);
+        *j.sub(1) = t;
+        i = i.sub(1);
     }
 }
 #[inline]
@@ -502,15 +502,15 @@ unsafe fn ss_heapsort(
         i -= 1;
     }
     if size % 2 == 0 {
-        t = *SA.offset(0);
-        *SA.offset(0) = *SA.offset(m as isize);
+        t = *SA;
+        *SA = *SA.offset(m as isize);
         *SA.offset(m as isize) = t;
         ss_fixdown(Td, PA, SA, 0, m);
     }
     i = m - 1;
     while (0) < i {
-        t = *SA.offset(0);
-        *SA.offset(0) = *SA.offset(i as isize);
+        t = *SA;
+        *SA = *SA.offset(i as isize);
         ss_fixdown(Td, PA, SA, 0, i);
         *SA.offset(i as isize) = t;
         i -= 1;
@@ -617,7 +617,7 @@ unsafe fn ss_pivot(
     middle = first.offset((t / 2) as isize);
     if t <= 512 {
         if t <= 32 {
-            return ss_median3(Td, PA, first, middle, last.offset(-(1)));
+            return ss_median3(Td, PA, first, middle, last.sub(1));
         } else {
             t >>= 2;
             return ss_median5(
@@ -626,8 +626,8 @@ unsafe fn ss_pivot(
                 first,
                 first.offset(t as isize),
                 middle,
-                last.offset(-(1)).offset(-(t as isize)),
-                last.offset(-(1)),
+                last.sub(1).offset(-(t as isize)),
+                last.sub(1),
             );
         }
     }
@@ -649,9 +649,9 @@ unsafe fn ss_pivot(
     last = ss_median3(
         Td,
         PA,
-        last.offset(-(1)).offset(-((t << 1) as isize)),
-        last.offset(-(1)).offset(-(t as isize)),
-        last.offset(-(1)),
+        last.sub(1).offset(-((t << 1) as isize)),
+        last.sub(1).offset(-(t as isize)),
+        last.sub(1),
     );
     ss_median3(Td, PA, first, middle, last)
 }
@@ -665,18 +665,18 @@ unsafe fn ss_partition(
     let mut a = core::ptr::null_mut::<core::ffi::c_int>();
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
     let mut t: core::ffi::c_int = 0;
-    a = first.offset(-(1));
+    a = first.sub(1);
     b = last;
     loop {
         loop {
-            a = a.offset(1);
+            a = a.add(1);
             if !(a < b && *PA.offset(*a as isize) + depth >= *PA.offset((*a + 1) as isize) + 1) {
                 break;
             }
             *a = !*a;
         }
         loop {
-            b = b.offset(-1);
+            b = b.sub(1);
             if !(a < b && *PA.offset(*b as isize) + depth < *PA.offset((*b + 1) as isize) + 1) {
                 break;
             }
@@ -752,7 +752,7 @@ unsafe fn ss_mintrosort(
                 );
             }
             if limit < 0 {
-                a = first.offset(1);
+                a = first.add(1);
                 v = *Td.offset(*PA.offset(*first as isize) as isize) as core::ffi::c_int;
                 while a < last {
                     x = *Td.offset(*PA.offset(*a as isize) as isize) as core::ffi::c_int;
@@ -763,7 +763,7 @@ unsafe fn ss_mintrosort(
                         v = x;
                         first = a;
                     }
-                    a = a.offset(1);
+                    a = a.add(1);
                 }
                 if (*Td.offset((*PA.offset(*first as isize) - 1) as isize) as core::ffi::c_int) < v
                 {
@@ -816,7 +816,7 @@ unsafe fn ss_mintrosort(
                 *a = t;
                 b = first;
                 loop {
-                    b = b.offset(1);
+                    b = b.add(1);
                     if !(b < last && {
                         x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                         x == v
@@ -827,7 +827,7 @@ unsafe fn ss_mintrosort(
                 a = b;
                 if a < last && x < v {
                     loop {
-                        b = b.offset(1);
+                        b = b.add(1);
                         if !(b < last && {
                             x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                             x <= v
@@ -838,13 +838,13 @@ unsafe fn ss_mintrosort(
                             t = *b;
                             *b = *a;
                             *a = t;
-                            a = a.offset(1);
+                            a = a.add(1);
                         }
                     }
                 }
                 c = last;
                 loop {
-                    c = c.offset(-1);
+                    c = c.sub(1);
                     if !(b < c && {
                         x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                         x == v
@@ -855,7 +855,7 @@ unsafe fn ss_mintrosort(
                 d = c;
                 if b < d && x > v {
                     loop {
-                        c = c.offset(-1);
+                        c = c.sub(1);
                         if !(b < c && {
                             x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                             x >= v
@@ -866,7 +866,7 @@ unsafe fn ss_mintrosort(
                             t = *c;
                             *c = *d;
                             *d = t;
-                            d = d.offset(-1);
+                            d = d.sub(1);
                         }
                     }
                 }
@@ -875,7 +875,7 @@ unsafe fn ss_mintrosort(
                     *b = *c;
                     *c = t;
                     loop {
-                        b = b.offset(1);
+                        b = b.add(1);
                         if !(b < c && {
                             x = *Td.offset(*PA.offset(*b as isize) as isize) as core::ffi::c_int;
                             x <= v
@@ -886,11 +886,11 @@ unsafe fn ss_mintrosort(
                             t = *b;
                             *b = *a;
                             *a = t;
-                            a = a.offset(1);
+                            a = a.add(1);
                         }
                     }
                     loop {
-                        c = c.offset(-1);
+                        c = c.sub(1);
                         if !(b < c && {
                             x = *Td.offset(*PA.offset(*c as isize) as isize) as core::ffi::c_int;
                             x >= v
@@ -901,12 +901,12 @@ unsafe fn ss_mintrosort(
                             t = *c;
                             *c = *d;
                             *d = t;
-                            d = d.offset(-1);
+                            d = d.sub(1);
                         }
                     }
                 }
                 if a <= d {
-                    c = b.offset(-(1));
+                    c = b.sub(1);
                     s = a.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
                     t = b.offset_from(a) as core::ffi::c_long as core::ffi::c_int;
                     if s > t {
@@ -919,8 +919,8 @@ unsafe fn ss_mintrosort(
                         *e = *f;
                         *f = t;
                         s -= 1;
-                        e = e.offset(1);
-                        f = f.offset(1);
+                        e = e.add(1);
+                        f = f.add(1);
                     }
                     s = d.offset_from(c) as core::ffi::c_long as core::ffi::c_int;
                     t = (last.offset_from(d) as core::ffi::c_long - 1) as core::ffi::c_int;
@@ -934,8 +934,8 @@ unsafe fn ss_mintrosort(
                         *e = *f;
                         *f = t;
                         s -= 1;
-                        e = e.offset(1);
-                        f = f.offset(1);
+                        e = e.add(1);
+                        f = f.add(1);
                     }
                     a = first.offset(b.offset_from(a) as core::ffi::c_long as isize);
                     c = last.offset(-(d.offset_from(c) as core::ffi::c_long as isize));
@@ -1118,8 +1118,8 @@ unsafe fn ss_blockswap(
         *a = *b;
         *b = t;
         n -= 1;
-        a = a.offset(1);
-        b = b.offset(1);
+        a = a.add(1);
+        b = b.add(1);
     }
 }
 #[inline]
@@ -1140,15 +1140,15 @@ unsafe fn ss_rotate(
             ss_blockswap(first, middle, l);
             break;
         } else if l < r {
-            a = last.offset(-(1));
-            b = middle.offset(-(1));
+            a = last.sub(1);
+            b = middle.sub(1);
             t = *a;
             loop {
                 let fresh44 = a;
-                a = a.offset(-1);
+                a = a.sub(1);
                 *fresh44 = *b;
                 let fresh45 = b;
-                b = b.offset(-1);
+                b = b.sub(1);
                 *fresh45 = *a;
                 if b >= first {
                     continue;
@@ -1159,8 +1159,8 @@ unsafe fn ss_rotate(
                 if r <= l {
                     break;
                 }
-                a = a.offset(-(1));
-                b = middle.offset(-(1));
+                a = a.sub(1);
+                b = middle.sub(1);
                 t = *a;
             }
         } else {
@@ -1169,21 +1169,21 @@ unsafe fn ss_rotate(
             t = *a;
             loop {
                 let fresh46 = a;
-                a = a.offset(1);
+                a = a.add(1);
                 *fresh46 = *b;
                 let fresh47 = b;
-                b = b.offset(1);
+                b = b.add(1);
                 *fresh47 = *a;
                 if last > b {
                     continue;
                 }
                 *a = t;
-                first = a.offset(1);
+                first = a.add(1);
                 l -= r + 1;
                 if l <= r {
                     break;
                 }
-                a = a.offset(1);
+                a = a.add(1);
                 b = middle;
                 t = *a;
             }
@@ -1207,12 +1207,12 @@ unsafe fn ss_inplacemerge(
     let mut r: core::ffi::c_int = 0;
     let mut x: core::ffi::c_int = 0;
     loop {
-        if *last.offset(-(1)) < 0 {
+        if *last.sub(1) < 0 {
             x = 1;
-            p = PA.offset(!*last.offset(-(1)) as isize);
+            p = PA.offset(!*last.sub(1) as isize);
         } else {
             x = 0;
-            p = PA.offset(*last.offset(-(1)) as isize);
+            p = PA.offset(*last.sub(1) as isize);
         }
         a = first;
         len = middle.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
@@ -1227,7 +1227,7 @@ unsafe fn ss_inplacemerge(
                 depth,
             );
             if q < 0 {
-                a = b.offset(1);
+                a = b.add(1);
                 half -= len & 1 ^ 1;
             } else {
                 r = q;
@@ -1246,10 +1246,10 @@ unsafe fn ss_inplacemerge(
                 break;
             }
         }
-        last = last.offset(-1);
+        last = last.sub(1);
         if x != 0 {
             loop {
-                last = last.offset(-1);
+                last = last.sub(1);
                 if *last >= 0 {
                     break;
                 }
@@ -1277,7 +1277,7 @@ unsafe fn ss_mergeforward(
     let mut r: core::ffi::c_int = 0;
     bufend = buf
         .offset(middle.offset_from(first) as core::ffi::c_long as isize)
-        .offset(-(1));
+        .sub(1);
     ss_blockswap(
         buf,
         first,
@@ -1292,14 +1292,14 @@ unsafe fn ss_mergeforward(
         if r < 0 {
             loop {
                 let fresh48 = a;
-                a = a.offset(1);
+                a = a.add(1);
                 *fresh48 = *b;
                 if bufend <= b {
                     *bufend = t;
                     return;
                 }
                 let fresh49 = b;
-                b = b.offset(1);
+                b = b.add(1);
                 *fresh49 = *a;
                 if *b >= 0 {
                     break;
@@ -1308,18 +1308,18 @@ unsafe fn ss_mergeforward(
         } else if r > 0 {
             loop {
                 let fresh50 = a;
-                a = a.offset(1);
+                a = a.add(1);
                 *fresh50 = *c;
                 let fresh51 = c;
-                c = c.offset(1);
+                c = c.add(1);
                 *fresh51 = *a;
                 if last <= c {
                     while b < bufend {
                         let fresh52 = a;
-                        a = a.offset(1);
+                        a = a.add(1);
                         *fresh52 = *b;
                         let fresh53 = b;
-                        b = b.offset(1);
+                        b = b.add(1);
                         *fresh53 = *a;
                     }
                     *a = *b;
@@ -1334,14 +1334,14 @@ unsafe fn ss_mergeforward(
             *c = !*c;
             loop {
                 let fresh54 = a;
-                a = a.offset(1);
+                a = a.add(1);
                 *fresh54 = *b;
                 if bufend <= b {
                     *bufend = t;
                     return;
                 }
                 let fresh55 = b;
-                b = b.offset(1);
+                b = b.add(1);
                 *fresh55 = *a;
                 if *b >= 0 {
                     break;
@@ -1349,18 +1349,18 @@ unsafe fn ss_mergeforward(
             }
             loop {
                 let fresh56 = a;
-                a = a.offset(1);
+                a = a.add(1);
                 *fresh56 = *c;
                 let fresh57 = c;
-                c = c.offset(1);
+                c = c.add(1);
                 *fresh57 = *a;
                 if last <= c {
                     while b < bufend {
                         let fresh58 = a;
-                        a = a.offset(1);
+                        a = a.add(1);
                         *fresh58 = *b;
                         let fresh59 = b;
-                        b = b.offset(1);
+                        b = b.add(1);
                         *fresh59 = *a;
                     }
                     *a = *b;
@@ -1394,7 +1394,7 @@ unsafe fn ss_mergebackward(
     let mut x: core::ffi::c_int = 0;
     bufend = buf
         .offset(last.offset_from(middle) as core::ffi::c_long as isize)
-        .offset(-(1));
+        .sub(1);
     ss_blockswap(
         buf,
         middle,
@@ -1407,26 +1407,26 @@ unsafe fn ss_mergebackward(
     } else {
         p1 = PA.offset(*bufend as isize);
     }
-    if *middle.offset(-(1)) < 0 {
-        p2 = PA.offset(!*middle.offset(-(1)) as isize);
+    if *middle.sub(1) < 0 {
+        p2 = PA.offset(!*middle.sub(1) as isize);
         x |= 2;
     } else {
-        p2 = PA.offset(*middle.offset(-(1)) as isize);
+        p2 = PA.offset(*middle.sub(1) as isize);
     }
-    a = last.offset(-(1));
+    a = last.sub(1);
     t = *a;
     b = bufend;
-    c = middle.offset(-(1));
+    c = middle.sub(1);
     loop {
         r = ss_compare(T, p1, p2, depth);
         if (0) < r {
             if x & 1 != 0 {
                 loop {
                     let fresh60 = a;
-                    a = a.offset(-1);
+                    a = a.sub(1);
                     *fresh60 = *b;
                     let fresh61 = b;
-                    b = b.offset(-1);
+                    b = b.sub(1);
                     *fresh61 = *a;
                     if *b >= 0 {
                         break;
@@ -1435,14 +1435,14 @@ unsafe fn ss_mergebackward(
                 x ^= 1;
             }
             let fresh62 = a;
-            a = a.offset(-1);
+            a = a.sub(1);
             *fresh62 = *b;
             if b <= buf {
                 *buf = t;
                 break;
             } else {
                 let fresh63 = b;
-                b = b.offset(-1);
+                b = b.sub(1);
                 *fresh63 = *a;
                 if *b < 0 {
                     p1 = PA.offset(!*b as isize);
@@ -1455,10 +1455,10 @@ unsafe fn ss_mergebackward(
             if x & 2 != 0 {
                 loop {
                     let fresh64 = a;
-                    a = a.offset(-1);
+                    a = a.sub(1);
                     *fresh64 = *c;
                     let fresh65 = c;
-                    c = c.offset(-1);
+                    c = c.sub(1);
                     *fresh65 = *a;
                     if *c >= 0 {
                         break;
@@ -1467,18 +1467,18 @@ unsafe fn ss_mergebackward(
                 x ^= 2;
             }
             let fresh66 = a;
-            a = a.offset(-1);
+            a = a.sub(1);
             *fresh66 = *c;
             let fresh67 = c;
-            c = c.offset(-1);
+            c = c.sub(1);
             *fresh67 = *a;
             if c < first {
                 while buf < b {
                     let fresh68 = a;
-                    a = a.offset(-1);
+                    a = a.sub(1);
                     *fresh68 = *b;
                     let fresh69 = b;
-                    b = b.offset(-1);
+                    b = b.sub(1);
                     *fresh69 = *a;
                 }
                 *a = *b;
@@ -1494,10 +1494,10 @@ unsafe fn ss_mergebackward(
             if x & 1 != 0 {
                 loop {
                     let fresh70 = a;
-                    a = a.offset(-1);
+                    a = a.sub(1);
                     *fresh70 = *b;
                     let fresh71 = b;
-                    b = b.offset(-1);
+                    b = b.sub(1);
                     *fresh71 = *a;
                     if *b >= 0 {
                         break;
@@ -1506,22 +1506,22 @@ unsafe fn ss_mergebackward(
                 x ^= 1;
             }
             let fresh72 = a;
-            a = a.offset(-1);
+            a = a.sub(1);
             *fresh72 = !*b;
             if b <= buf {
                 *buf = t;
                 break;
             } else {
                 let fresh73 = b;
-                b = b.offset(-1);
+                b = b.sub(1);
                 *fresh73 = *a;
                 if x & 2 != 0 {
                     loop {
                         let fresh74 = a;
-                        a = a.offset(-1);
+                        a = a.sub(1);
                         *fresh74 = *c;
                         let fresh75 = c;
-                        c = c.offset(-1);
+                        c = c.sub(1);
                         *fresh75 = *a;
                         if *c >= 0 {
                             break;
@@ -1530,18 +1530,18 @@ unsafe fn ss_mergebackward(
                     x ^= 2;
                 }
                 let fresh76 = a;
-                a = a.offset(-1);
+                a = a.sub(1);
                 *fresh76 = *c;
                 let fresh77 = c;
-                c = c.offset(-1);
+                c = c.sub(1);
                 *fresh77 = *a;
                 if c < first {
                     while buf < b {
                         let fresh78 = a;
-                        a = a.offset(-1);
+                        a = a.sub(1);
                         *fresh78 = *b;
                         let fresh79 = b;
-                        b = b.offset(-1);
+                        b = b.sub(1);
                         *fresh79 = *a;
                     }
                     *a = *b;
@@ -1605,10 +1605,10 @@ unsafe fn ss_swapmerge(
                     && ss_compare(
                         T,
                         PA.offset(
-                            (if 0 <= *first.offset(-(1)) {
-                                *first.offset(-(1))
+                            (if 0 <= *first.sub(1) {
+                                *first.sub(1)
                             } else {
-                                !*first.offset(-(1))
+                                !*first.sub(1)
                             }) as isize,
                         ),
                         PA.offset(*first as isize),
@@ -1621,10 +1621,10 @@ unsafe fn ss_swapmerge(
                 && ss_compare(
                     T,
                     PA.offset(
-                        (if 0 <= *last.offset(-(1)) {
-                            *last.offset(-(1))
+                        (if 0 <= *last.sub(1) {
+                            *last.sub(1)
                         } else {
-                            !*last.offset(-(1))
+                            !*last.sub(1)
                         }) as isize,
                     ),
                     PA.offset(*last as isize),
@@ -1651,10 +1651,10 @@ unsafe fn ss_swapmerge(
                     && ss_compare(
                         T,
                         PA.offset(
-                            (if 0 <= *first.offset(-(1)) {
-                                *first.offset(-(1))
+                            (if 0 <= *first.sub(1) {
+                                *first.sub(1)
                             } else {
-                                !*first.offset(-(1))
+                                !*first.sub(1)
                             }) as isize,
                         ),
                         PA.offset(*first as isize),
@@ -1667,10 +1667,10 @@ unsafe fn ss_swapmerge(
                 && ss_compare(
                     T,
                     PA.offset(
-                        (if 0 <= *last.offset(-(1)) {
-                            *last.offset(-(1))
+                        (if 0 <= *last.sub(1) {
+                            *last.sub(1)
                         } else {
-                            !*last.offset(-(1))
+                            !*last.sub(1)
                         }) as isize,
                     ),
                     PA.offset(*last as isize),
@@ -1713,17 +1713,17 @@ unsafe fn ss_swapmerge(
                             <= *middle
                                 .offset(-(m as isize))
                                 .offset(-(half as isize))
-                                .offset(-(1))
+                                .sub(1)
                         {
                             *middle
                                 .offset(-(m as isize))
                                 .offset(-(half as isize))
-                                .offset(-(1))
+                                .sub(1)
                         } else {
                             !*middle
                                 .offset(-(m as isize))
                                 .offset(-(half as isize))
-                                .offset(-(1))
+                                .sub(1)
                         }) as isize,
                     ),
                     depth,
@@ -1747,7 +1747,7 @@ unsafe fn ss_swapmerge(
                         *rm = !*rm;
                         if first < lm {
                             loop {
-                                l = l.offset(-1);
+                                l = l.sub(1);
                                 if *l >= 0 {
                                     break;
                                 }
@@ -1757,7 +1757,7 @@ unsafe fn ss_swapmerge(
                         next |= 1;
                     } else if first < lm {
                         while *r < 0 {
-                            r = r.offset(1);
+                            r = r.add(1);
                         }
                         next |= 2;
                     }
@@ -1800,10 +1800,10 @@ unsafe fn ss_swapmerge(
                 if ss_compare(
                     T,
                     PA.offset(
-                        (if 0 <= *middle.offset(-(1)) {
-                            *middle.offset(-(1))
+                        (if 0 <= *middle.sub(1) {
+                            *middle.sub(1)
                         } else {
-                            !*middle.offset(-(1))
+                            !*middle.sub(1)
                         }) as isize,
                     ),
                     PA.offset(*middle as isize),
@@ -1817,10 +1817,10 @@ unsafe fn ss_swapmerge(
                         && ss_compare(
                             T,
                             PA.offset(
-                                (if 0 <= *first.offset(-(1)) {
-                                    *first.offset(-(1))
+                                (if 0 <= *first.sub(1) {
+                                    *first.sub(1)
                                 } else {
-                                    !*first.offset(-(1))
+                                    !*first.sub(1)
                                 }) as isize,
                             ),
                             PA.offset(*first as isize),
@@ -1833,10 +1833,10 @@ unsafe fn ss_swapmerge(
                     && ss_compare(
                         T,
                         PA.offset(
-                            (if 0 <= *last.offset(-(1)) {
-                                *last.offset(-(1))
+                            (if 0 <= *last.sub(1) {
+                                *last.sub(1)
                             } else {
-                                !*last.offset(-(1))
+                                !*last.sub(1)
                             }) as isize,
                         ),
                         PA.offset(*last as isize),
@@ -1879,7 +1879,7 @@ unsafe fn sssort(
     let mut limit: core::ffi::c_int = 0;
     let mut i: core::ffi::c_int = 0;
     if lastsuffix != 0 {
-        first = first.offset(1);
+        first = first.add(1);
     }
     if bufsize < SS_BLOCKSIZE
         && (bufsize as core::ffi::c_long) < last.offset_from(first) as core::ffi::c_long
@@ -1955,24 +1955,24 @@ unsafe fn sssort(
     }
     if lastsuffix != 0 {
         let mut PAi: [core::ffi::c_int; 2] = [0; 2];
-        *PAi.as_mut_ptr().offset(0) = *PA.offset(*first.offset(-(1)) as isize);
-        *PAi.as_mut_ptr().offset(1) = n - 2;
+        *PAi.as_mut_ptr() = *PA.offset(*first.sub(1) as isize);
+        *PAi.as_mut_ptr().add(1) = n - 2;
         a = first;
-        i = *first.offset(-(1));
+        i = *first.sub(1);
         while a < last
             && (*a < 0
                 || (0)
                     < ss_compare(
                         T,
-                        &*PAi.as_mut_ptr().offset(0),
+                        &*PAi.as_mut_ptr(),
                         PA.offset(*a as isize),
                         depth,
                     ))
         {
-            *a.offset(-(1)) = *a;
-            a = a.offset(1);
+            *a.sub(1) = *a;
+            a = a.add(1);
         }
-        *a.offset(-(1)) = i;
+        *a.sub(1) = i;
     }
 }
 #[inline]
@@ -2006,18 +2006,18 @@ unsafe fn tr_insertionsort(
     let mut b = core::ptr::null_mut::<core::ffi::c_int>();
     let mut t: core::ffi::c_int = 0;
     let mut r: core::ffi::c_int = 0;
-    a = first.offset(1);
+    a = first.add(1);
     while a < last {
         t = *a;
-        b = a.offset(-(1));
+        b = a.sub(1);
         loop {
             r = *ISAd.offset(t as isize) - *ISAd.offset(*b as isize);
             if 0 <= r {
                 break;
             }
             loop {
-                *b.offset(1) = *b;
-                b = b.offset(-1);
+                *b.add(1) = *b;
+                b = b.sub(1);
                 if !(first <= b && *b < 0) {
                     break;
                 }
@@ -2029,8 +2029,8 @@ unsafe fn tr_insertionsort(
         if r == 0 {
             *b = !*b;
         }
-        *b.offset(1) = t;
-        a = a.offset(1);
+        *b.add(1) = t;
+        a = a.add(1);
     }
 }
 #[inline]
@@ -2095,15 +2095,15 @@ unsafe fn tr_heapsort(
         i -= 1;
     }
     if size % 2 == 0 {
-        t = *SA.offset(0);
-        *SA.offset(0) = *SA.offset(m as isize);
+        t = *SA;
+        *SA = *SA.offset(m as isize);
         *SA.offset(m as isize) = t;
         tr_fixdown(ISAd, SA, 0, m);
     }
     i = m - 1;
     while (0) < i {
-        t = *SA.offset(0);
-        *SA.offset(0) = *SA.offset(i as isize);
+        t = *SA;
+        *SA = *SA.offset(i as isize);
         tr_fixdown(ISAd, SA, 0, i);
         *SA.offset(i as isize) = t;
         i -= 1;
@@ -2189,7 +2189,7 @@ unsafe fn tr_pivot(
     middle = first.offset((t / 2) as isize);
     if t <= 512 {
         if t <= 32 {
-            return tr_median3(ISAd, first, middle, last.offset(-(1)));
+            return tr_median3(ISAd, first, middle, last.sub(1));
         } else {
             t >>= 2;
             return tr_median5(
@@ -2197,8 +2197,8 @@ unsafe fn tr_pivot(
                 first,
                 first.offset(t as isize),
                 middle,
-                last.offset(-(1)).offset(-(t as isize)),
-                last.offset(-(1)),
+                last.sub(1).offset(-(t as isize)),
+                last.sub(1),
             );
         }
     }
@@ -2217,9 +2217,9 @@ unsafe fn tr_pivot(
     );
     last = tr_median3(
         ISAd,
-        last.offset(-(1)).offset(-((t << 1) as isize)),
-        last.offset(-(1)).offset(-(t as isize)),
-        last.offset(-(1)),
+        last.sub(1).offset(-((t << 1) as isize)),
+        last.sub(1).offset(-(t as isize)),
+        last.sub(1),
     );
     tr_median3(ISAd, first, middle, last)
 }
@@ -2266,9 +2266,9 @@ unsafe fn tr_partition(
     let mut t: core::ffi::c_int = 0;
     let mut s: core::ffi::c_int = 0;
     let mut x = 0;
-    b = middle.offset(-(1));
+    b = middle.sub(1);
     loop {
-        b = b.offset(1);
+        b = b.add(1);
         if !(b < last && {
             x = *ISAd.offset(*b as isize);
             x == v
@@ -2279,7 +2279,7 @@ unsafe fn tr_partition(
     a = b;
     if a < last && x < v {
         loop {
-            b = b.offset(1);
+            b = b.add(1);
             if !(b < last && {
                 x = *ISAd.offset(*b as isize);
                 x <= v
@@ -2290,13 +2290,13 @@ unsafe fn tr_partition(
                 t = *b;
                 *b = *a;
                 *a = t;
-                a = a.offset(1);
+                a = a.add(1);
             }
         }
     }
     c = last;
     loop {
-        c = c.offset(-1);
+        c = c.sub(1);
         if !(b < c && {
             x = *ISAd.offset(*c as isize);
             x == v
@@ -2307,7 +2307,7 @@ unsafe fn tr_partition(
     d = c;
     if b < d && x > v {
         loop {
-            c = c.offset(-1);
+            c = c.sub(1);
             if !(b < c && {
                 x = *ISAd.offset(*c as isize);
                 x >= v
@@ -2318,7 +2318,7 @@ unsafe fn tr_partition(
                 t = *c;
                 *c = *d;
                 *d = t;
-                d = d.offset(-1);
+                d = d.sub(1);
             }
         }
     }
@@ -2327,7 +2327,7 @@ unsafe fn tr_partition(
         *b = *c;
         *c = t;
         loop {
-            b = b.offset(1);
+            b = b.add(1);
             if !(b < c && {
                 x = *ISAd.offset(*b as isize);
                 x <= v
@@ -2338,11 +2338,11 @@ unsafe fn tr_partition(
                 t = *b;
                 *b = *a;
                 *a = t;
-                a = a.offset(1);
+                a = a.add(1);
             }
         }
         loop {
-            c = c.offset(-1);
+            c = c.sub(1);
             if !(b < c && {
                 x = *ISAd.offset(*c as isize);
                 x >= v
@@ -2353,12 +2353,12 @@ unsafe fn tr_partition(
                 t = *c;
                 *c = *d;
                 *d = t;
-                d = d.offset(-1);
+                d = d.sub(1);
             }
         }
     }
     if a <= d {
-        c = b.offset(-(1));
+        c = b.sub(1);
         s = a.offset_from(first) as core::ffi::c_long as core::ffi::c_int;
         t = b.offset_from(a) as core::ffi::c_long as core::ffi::c_int;
         if s > t {
@@ -2371,8 +2371,8 @@ unsafe fn tr_partition(
             *e = *f;
             *f = t;
             s -= 1;
-            e = e.offset(1);
-            f = f.offset(1);
+            e = e.add(1);
+            f = f.add(1);
         }
         s = d.offset_from(c) as core::ffi::c_long as core::ffi::c_int;
         t = (last.offset_from(d) as core::ffi::c_long - 1) as core::ffi::c_int;
@@ -2386,8 +2386,8 @@ unsafe fn tr_partition(
             *e = *f;
             *f = t;
             s -= 1;
-            e = e.offset(1);
-            f = f.offset(1);
+            e = e.add(1);
+            f = f.add(1);
         }
         first = first.offset(b.offset_from(a) as core::ffi::c_long as isize);
         last = last.offset(-(d.offset_from(c) as core::ffi::c_long as isize));
@@ -2411,27 +2411,27 @@ unsafe fn tr_copy(
     let mut v: core::ffi::c_int = 0;
     v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
     c = first;
-    d = a.offset(-(1));
+    d = a.sub(1);
     while c <= d {
         s = *c - depth;
         if 0 <= s && *ISA.offset(s as isize) == v {
-            d = d.offset(1);
+            d = d.add(1);
             *d = s;
             *ISA.offset(s as isize) = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
-        c = c.offset(1);
+        c = c.add(1);
     }
-    c = last.offset(-(1));
-    e = d.offset(1);
+    c = last.sub(1);
+    e = d.add(1);
     d = b;
     while e < d {
         s = *c - depth;
         if 0 <= s && *ISA.offset(s as isize) == v {
-            d = d.offset(-1);
+            d = d.sub(1);
             *d = s;
             *ISA.offset(s as isize) = d.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
         }
-        c = c.offset(-1);
+        c = c.sub(1);
     }
 }
 unsafe fn tr_partialcopy(
@@ -2454,11 +2454,11 @@ unsafe fn tr_partialcopy(
     v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
     lastrank = -(1);
     c = first;
-    d = a.offset(-(1));
+    d = a.sub(1);
     while c <= d {
         s = *c - depth;
         if 0 <= s && *ISA.offset(s as isize) == v {
-            d = d.offset(1);
+            d = d.add(1);
             *d = s;
             rank = *ISA.offset((s + depth) as isize);
             if lastrank != rank {
@@ -2467,7 +2467,7 @@ unsafe fn tr_partialcopy(
             }
             *ISA.offset(s as isize) = newrank;
         }
-        c = c.offset(1);
+        c = c.add(1);
     }
     lastrank = -(1);
     e = d;
@@ -2480,16 +2480,16 @@ unsafe fn tr_partialcopy(
         if newrank != rank {
             *ISA.offset(*e as isize) = newrank;
         }
-        e = e.offset(-1);
+        e = e.sub(1);
     }
     lastrank = -(1);
-    c = last.offset(-(1));
-    e = d.offset(1);
+    c = last.sub(1);
+    e = d.add(1);
     d = b;
     while e < d {
         s = *c - depth;
         if 0 <= s && *ISA.offset(s as isize) == v {
-            d = d.offset(-1);
+            d = d.sub(1);
             *d = s;
             rank = *ISA.offset((s + depth) as isize);
             if lastrank != rank {
@@ -2498,7 +2498,7 @@ unsafe fn tr_partialcopy(
             }
             *ISA.offset(s as isize) = newrank;
         }
-        c = c.offset(-1);
+        c = c.sub(1);
     }
 }
 unsafe fn tr_introsort(
@@ -2548,7 +2548,7 @@ unsafe fn tr_introsort(
                     v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < a {
                         *ISA.offset(*c as isize) = v;
-                        c = c.offset(1);
+                        c = c.add(1);
                     }
                 }
                 if b < last {
@@ -2556,7 +2556,7 @@ unsafe fn tr_introsort(
                     v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < b {
                         *ISA.offset(*c as isize) = v;
-                        c = c.offset(1);
+                        c = c.add(1);
                     }
                 }
                 if (1) < b.offset_from(a) as core::ffi::c_long {
@@ -2693,7 +2693,7 @@ unsafe fn tr_introsort(
                     loop {
                         *ISA.offset(*a as isize) =
                             a.offset_from(SA) as core::ffi::c_long as core::ffi::c_int;
-                        a = a.offset(1);
+                        a = a.add(1);
                         if !(a < last && 0 <= *a) {
                             break;
                         }
@@ -2704,7 +2704,7 @@ unsafe fn tr_introsort(
                     a = first;
                     loop {
                         *a = !*a;
-                        a = a.offset(1);
+                        a = a.add(1);
                         if *a >= 0 {
                             break;
                         }
@@ -2714,13 +2714,13 @@ unsafe fn tr_introsort(
                     } else {
                         -(1)
                     };
-                    a = a.offset(1);
+                    a = a.add(1);
                     if a < last {
                         b = first;
                         v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                         while b < a {
                             *ISA.offset(*b as isize) = v;
-                            b = b.offset(1);
+                            b = b.add(1);
                         }
                     }
                     if trbudget_check(
@@ -2811,13 +2811,13 @@ unsafe fn tr_introsort(
                     first,
                     last.offset_from(first) as core::ffi::c_long as core::ffi::c_int,
                 );
-                a = last.offset(-(1));
+                a = last.sub(1);
                 while first < a {
                     x = *ISAd.offset(*a as isize);
-                    b = a.offset(-(1));
+                    b = a.sub(1);
                     while first <= b && *ISAd.offset(*b as isize) == x {
                         *b = !*b;
-                        b = b.offset(-1);
+                        b = b.sub(1);
                     }
                     a = b;
                 }
@@ -2828,7 +2828,7 @@ unsafe fn tr_introsort(
                 *first = *a;
                 *a = t;
                 v = *ISAd.offset(*first as isize);
-                tr_partition(ISAd, first, first.offset(1), last, &mut a, &mut b, v);
+                tr_partition(ISAd, first, first.add(1), last, &mut a, &mut b, v);
                 if last.offset_from(first) as core::ffi::c_long
                     != b.offset_from(a) as core::ffi::c_long
                 {
@@ -2841,14 +2841,14 @@ unsafe fn tr_introsort(
                     v = (a.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                     while c < a {
                         *ISA.offset(*c as isize) = v;
-                        c = c.offset(1);
+                        c = c.add(1);
                     }
                     if b < last {
                         c = a;
                         v = (b.offset_from(SA) as core::ffi::c_long - 1) as core::ffi::c_int;
                         while c < b {
                             *ISA.offset(*c as isize) = v;
-                            c = c.offset(1);
+                            c = c.add(1);
                         }
                     }
                     if (1) < b.offset_from(a) as core::ffi::c_long
@@ -3238,7 +3238,7 @@ unsafe fn trsort(
                     *first.offset(skip as isize) = skip;
                     skip = 0;
                 }
-                last = SA.offset(*ISA.offset(t as isize) as isize).offset(1);
+                last = SA.offset(*ISA.offset(t as isize) as isize).add(1);
                 if (1) < last.offset_from(first) as core::ffi::c_long {
                     budget.count = 0;
                     tr_introsort(ISA, ISAd, SA, first, last, &mut budget);
@@ -3496,7 +3496,7 @@ unsafe fn construct_SA(
             i = SA.offset(*bucket_B.offset(((c1 << 8) | (c1 + 1)) as isize) as isize);
             j = SA
                 .offset(*bucket_A.offset((c1 + 1) as isize) as isize)
-                .offset(-(1));
+                .sub(1);
             k = core::ptr::null_mut();
             c2 = -(1);
             while i <= j {
@@ -3529,13 +3529,13 @@ unsafe fn construct_SA(
                     assert!(k < j);
                     assert!(!k.is_null());
                     let fresh192 = k;
-                    k = k.offset(-1);
+                    k = k.sub(1);
                     *fresh192 = s;
                 } else {
                     assert!(s == 0 && *T.offset(s as isize) as core::ffi::c_int == c1 || s < 0);
                     *j = !s;
                 }
-                j = j.offset(-1);
+                j = j.sub(1);
             }
             c1 -= 1;
         }
@@ -3543,7 +3543,7 @@ unsafe fn construct_SA(
     c2 = *T.offset((n - 1) as isize) as core::ffi::c_int;
     k = SA.offset(*bucket_A.offset(c2 as isize) as isize);
     let fresh193 = k;
-    k = k.offset(1);
+    k = k.add(1);
     *fresh193 = if (*T.offset((n - 2) as isize) as core::ffi::c_int) < c2 {
         !(n - 1)
     } else {
@@ -3571,13 +3571,13 @@ unsafe fn construct_SA(
             }
             assert!(i < k);
             let fresh194 = k;
-            k = k.offset(1);
+            k = k.add(1);
             *fresh194 = s;
         } else {
             assert!(s < 0);
             *i = !s;
         }
-        i = i.offset(1);
+        i = i.add(1);
     }
 }
 pub(super) unsafe fn divsufsort(
@@ -3595,10 +3595,10 @@ pub(super) unsafe fn divsufsort(
     } else if n == 0 {
         return 0;
     } else if n == 1 {
-        *SA.offset(0) = 0;
+        *SA = 0;
         return 0;
     } else if n == 2 {
-        m = ((*T.offset(0) as core::ffi::c_int) < *T.offset(1) as core::ffi::c_int)
+        m = ((*T as core::ffi::c_int) < *T.add(1) as core::ffi::c_int)
             as core::ffi::c_int;
         *SA.offset((m ^ 1) as isize) = 0;
         *SA.offset(m as isize) = 1;

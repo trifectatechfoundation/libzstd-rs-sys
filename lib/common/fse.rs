@@ -55,8 +55,8 @@ pub(crate) unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_
     let u16ptr = ptr as *const u16;
     let tableLog = MEM_read16(ptr) as u32;
     (*statePtr).value = (1) << tableLog;
-    (*statePtr).stateTable = u16ptr.offset(2) as *const core::ffi::c_void;
-    (*statePtr).symbolTT = ct.offset(1).offset(
+    (*statePtr).stateTable = u16ptr.add(2) as *const core::ffi::c_void;
+    (*statePtr).symbolTT = ct.add(1).offset(
         (if tableLog != 0 {
             (1) << tableLog.wrapping_sub(1)
         } else {

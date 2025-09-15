@@ -138,7 +138,7 @@ pub unsafe extern "C" fn ZDICT_getDictID(
     if MEM_readLE32(dictBuffer) != ZSTD_MAGIC_DICTIONARY {
         return 0;
     }
-    MEM_readLE32((dictBuffer as *const core::ffi::c_char).offset(4) as *const core::ffi::c_void)
+    MEM_readLE32((dictBuffer as *const core::ffi::c_char).add(4) as *const core::ffi::c_void)
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictHeaderSize))]
 pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
@@ -215,14 +215,14 @@ unsafe fn ZDICT_analyzePos(
         ::core::mem::size_of::<dictItem>(),
     );
     *doneMarks.add(pos) = 1;
-    if MEM_read16(b.add(pos).offset(0) as *const core::ffi::c_void) as core::ffi::c_int
-        == MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void) as core::ffi::c_int
-        || MEM_read16(b.add(pos).offset(1) as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(b.add(pos).offset(3) as *const core::ffi::c_void) as core::ffi::c_int
-        || MEM_read16(b.add(pos).offset(2) as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void) as core::ffi::c_int
+    if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
+        == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
+        || MEM_read16(b.add(pos).add(1) as *const core::ffi::c_void) as core::ffi::c_int
+            == MEM_read16(b.add(pos).add(3) as *const core::ffi::c_void) as core::ffi::c_int
+        || MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
+            == MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void) as core::ffi::c_int
     {
-        let pattern16 = MEM_read16(b.add(pos).offset(4) as *const core::ffi::c_void);
+        let pattern16 = MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void);
         let mut u: u32 = 0;
         let mut patternEnd = 6u32;
         while MEM_read16(b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void)
@@ -258,7 +258,7 @@ unsafe fn ZDICT_analyzePos(
     loop {
         length_0 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(start as isize).offset(-(1)) as isize)
+            b.offset(*suffix.offset(start as isize).sub(1) as isize)
                 as *const core::ffi::c_void,
         );
         if length_0 >= MINMATCHLENGTH as size_t {
@@ -408,7 +408,7 @@ unsafe fn ZDICT_analyzePos(
     if maxLength < MINMATCHLENGTH as size_t {
         return solution;
     }
-    *savings.as_mut_ptr().offset(5) = 0;
+    *savings.as_mut_ptr().add(5) = 0;
     let mut u_1: core::ffi::c_uint = 0;
     u_1 = MINMATCHLENGTH as core::ffi::c_uint;
     while u_1 as size_t <= maxLength {
@@ -544,11 +544,11 @@ unsafe fn ZDICT_tryMerge(
             }
             if MEM_read64(
                 buf.offset((*table.offset(u as isize)).pos as isize) as *const core::ffi::c_void
-            ) == MEM_read64(buf.offset(elt.pos as isize).offset(1) as *const core::ffi::c_void)
+            ) == MEM_read64(buf.offset(elt.pos as isize).add(1) as *const core::ffi::c_void)
                 && isIncluded(
                     buf.offset((*table.offset(u as isize)).pos as isize)
                         as *const core::ffi::c_void,
-                    buf.offset(elt.pos as isize).offset(1) as *const core::ffi::c_void,
+                    buf.offset(elt.pos as isize).add(1) as *const core::ffi::c_void,
                     (*table.offset(u as isize)).length as size_t,
                 ) != 0
             {
@@ -577,7 +577,7 @@ unsafe fn ZDICT_tryMerge(
     0
 }
 unsafe fn ZDICT_removeDictItem(table: *mut dictItem, id: u32) {
-    let max = (*table.offset(0)).pos;
+    let max = (*table).pos;
     let mut u: u32 = 0;
     if id == 0 {
         return;
@@ -624,7 +624,7 @@ unsafe fn ZDICT_dictSize(dictList: *const dictItem) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
-    while u < (*dictList.offset(0)).pos {
+    while u < (*dictList).pos {
         dictSize = dictSize.wrapping_add((*dictList.offset(u as isize)).length);
         u = u.wrapping_add(1);
     }
@@ -645,7 +645,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             .wrapping_add(2)
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>()),
     ) as *mut core::ffi::c_uint;
-    let suffix = suffix0.offset(1);
+    let suffix = suffix0.add(1);
     let reverseSuffix = malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let doneMarks = malloc(
         bufferSize
@@ -694,14 +694,14 @@ unsafe fn ZDICT_trainBuffer_legacy(
             result = Error::GENERIC.to_error_code();
         } else {
             *suffix.add(bufferSize) = bufferSize as core::ffi::c_uint;
-            *suffix0.offset(0) = bufferSize as core::ffi::c_uint;
+            *suffix0 = bufferSize as core::ffi::c_uint;
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
                 *reverseSuffix.offset(*suffix.add(pos) as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
             }
-            *filePos.offset(0) = 0;
+            *filePos = 0;
             pos = 1;
             while pos < nbFiles as size_t {
                 *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1)) as size_t)
@@ -822,7 +822,7 @@ unsafe fn ZDICT_countEStats(
         while bytePtr < (*seqStorePtr).lit as *const u8 {
             let fresh9 = &mut (*countLit.offset(*bytePtr as isize));
             *fresh9 = (*fresh9).wrapping_add(1);
-            bytePtr = bytePtr.offset(1);
+            bytePtr = bytePtr.add(1);
         }
         let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
@@ -853,8 +853,8 @@ unsafe fn ZDICT_countEStats(
         }
         if nbSeq >= 2 {
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
-            let mut offset1 = ((*seq.offset(0)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
-            let mut offset2 = ((*seq.offset(1)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
+            let mut offset1 = ((*seq).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
+            let mut offset2 = ((*seq.add(1)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
             if offset1 >= MAXREPOFFSET as u32 {
                 offset1 = 0;
             }
@@ -904,9 +904,9 @@ unsafe fn ZDICT_flatLit(countLit: *mut core::ffi::c_uint) {
         *countLit.offset(u as isize) = 2;
         u += 1;
     }
-    *countLit.offset(0) = 4;
-    *countLit.offset(253) = 1;
-    *countLit.offset(254) = 1;
+    *countLit = 4;
+    *countLit.add(253) = 1;
+    *countLit.add(254) = 1;
 }
 const OFFCODE_MAX: core::ffi::c_int = 30;
 unsafe fn ZDICT_analyzeEntropy(
@@ -998,11 +998,11 @@ unsafe fn ZDICT_analyzeEntropy(
             0,
             ::core::mem::size_of::<[u32; 1024]>(),
         );
-        let fresh15 = &mut (*repOffset.as_mut_ptr().offset(8));
+        let fresh15 = &mut (*repOffset.as_mut_ptr().add(8));
         *fresh15 = 1;
-        let fresh16 = &mut (*repOffset.as_mut_ptr().offset(4));
+        let fresh16 = &mut (*repOffset.as_mut_ptr().add(4));
         *fresh16 = *fresh15;
-        *repOffset.as_mut_ptr().offset(1) = *fresh16;
+        *repOffset.as_mut_ptr().add(1) = *fresh16;
         ptr::write_bytes(
             bestRepOffset.as_mut_ptr() as *mut u8,
             0,
@@ -1253,16 +1253,16 @@ unsafe fn ZDICT_analyzeEntropy(
                                                 }
                                             } else {
                                                 MEM_writeLE32(
-                                                    dstPtr.offset(0) as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr().offset(0),
+                                                    dstPtr as *mut core::ffi::c_void,
+                                                    *repStartValue.as_ptr(),
                                                 );
                                                 MEM_writeLE32(
-                                                    dstPtr.offset(4) as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr().offset(1),
+                                                    dstPtr.add(4) as *mut core::ffi::c_void,
+                                                    *repStartValue.as_ptr().add(1),
                                                 );
                                                 MEM_writeLE32(
-                                                    dstPtr.offset(8) as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr().offset(2),
+                                                    dstPtr.add(8) as *mut core::ffi::c_void,
+                                                    *repStartValue.as_ptr().add(2),
                                                 );
                                                 eSize = eSize.wrapping_add(12);
                                             }
@@ -1282,7 +1282,7 @@ unsafe fn ZDICT_analyzeEntropy(
     eSize
 }
 unsafe fn ZDICT_maxRep(reps: *const u32) -> u32 {
-    let mut maxRep = *reps.offset(0);
+    let mut maxRep = *reps;
     let mut r: core::ffi::c_int = 0;
     r = 1;
     while r < ZSTD_REP_NUM {
@@ -1335,7 +1335,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         compliantID
     };
     MEM_writeLE32(
-        header.as_mut_ptr().offset(4) as *mut core::ffi::c_void,
+        header.as_mut_ptr().add(4) as *mut core::ffi::c_void,
         dictID,
     );
     hSize = 8;
@@ -1446,7 +1446,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         compliantID
     };
     MEM_writeLE32(
-        (dictBuffer as *mut core::ffi::c_char).offset(4) as *mut core::ffi::c_void,
+        (dictBuffer as *mut core::ffi::c_char).add(4) as *mut core::ffi::c_void,
         dictID,
     );
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
@@ -1521,17 +1521,17 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         notificationLevel,
     );
     if params.zParams.notificationLevel >= 3 {
-        let nb = if (25) < (*dictList.offset(0)).pos {
+        let nb = if (25) < (*dictList).pos {
             25
         } else {
-            (*dictList.offset(0)).pos
+            (*dictList).pos
         };
         let dictContentSize = ZDICT_dictSize(dictList);
         let mut u: core::ffi::c_uint = 0;
         if notificationLevel >= 3 {
             eprintln!(
                 "\n {} segments found, of total size {} ",
-                ((*dictList.offset(0)).pos).wrapping_sub(1),
+                ((*dictList).pos).wrapping_sub(1),
                 dictContentSize,
             );
         }
