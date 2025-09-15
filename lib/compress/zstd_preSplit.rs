@@ -27,7 +27,7 @@ pub const KNUTH: core::ffi::c_uint = 0x9e3779b9;
 #[inline(always)]
 unsafe fn hash2(p: *const core::ffi::c_void, hashLog: core::ffi::c_uint) -> core::ffi::c_uint {
     if hashLog == 8 {
-        return *(p as *const u8).offset(0) as u32;
+        return *(p as *const u8) as u32;
     }
     (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as core::ffi::c_uint).wrapping_sub(hashLog)
 }

@@ -136,7 +136,7 @@ pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 
 unsafe fn HUF_initFastDStream(ip: *const u8) -> size_t {
-    let lastByte = *ip.offset(7);
+    let lastByte = *ip.add(7);
     let bitsConsumed = match lastByte.checked_ilog2() {
         Some(v) => 8 - v,
         None => 0,

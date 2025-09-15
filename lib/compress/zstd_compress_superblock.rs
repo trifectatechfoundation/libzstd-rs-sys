@@ -300,24 +300,24 @@ unsafe fn ZSTD_noCompressBlock(
 #[inline]
 unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
     if offBase > ZSTD_REP_NUM as u32 {
-        *rep.offset(2) = *rep.offset(1);
-        *rep.offset(1) = *rep.offset(0);
-        *rep.offset(0) = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
+        *rep.add(2) = *rep.add(1);
+        *rep.add(1) = *rep;
+        *rep = offBase.wrapping_sub(ZSTD_REP_NUM as u32);
     } else {
         let repCode = offBase.wrapping_sub(1).wrapping_add(ll0);
         if repCode > 0 {
             let currentOffset = if repCode == ZSTD_REP_NUM as u32 {
-                (*rep.offset(0)).wrapping_sub(1)
+                (*rep).wrapping_sub(1)
             } else {
                 *rep.offset(repCode as isize)
             };
-            *rep.offset(2) = if repCode >= 2 {
-                *rep.offset(1)
+            *rep.add(2) = if repCode >= 2 {
+                *rep.add(1)
             } else {
-                *rep.offset(2)
+                *rep.add(2)
             };
-            *rep.offset(1) = *rep.offset(0);
-            *rep.offset(0) = currentOffset;
+            *rep.add(1) = *rep;
+            *rep = currentOffset;
         }
     };
 }
@@ -454,7 +454,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
                 .wrapping_add((litSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);
-            *ostart.offset(4) = (cLitSize >> 10) as u8;
+            *ostart.add(4) = (cLitSize >> 10) as u8;
         }
         _ => {}
     }
@@ -518,25 +518,25 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     }
     if nbSeq < 128 {
         let fresh0 = op;
-        op = op.offset(1);
+        op = op.add(1);
         *fresh0 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
-        *op.offset(0) = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
-        *op.offset(1) = nbSeq as u8;
-        op = op.offset(2);
+        *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
+        *op.add(1) = nbSeq as u8;
+        op = op.add(2);
     } else {
-        *op.offset(0) = 0xff as core::ffi::c_int as u8;
+        *op = 0xff as core::ffi::c_int as u8;
         MEM_writeLE16(
-            op.offset(1) as *mut core::ffi::c_void,
+            op.add(1) as *mut core::ffi::c_void,
             nbSeq.wrapping_sub(LONGNBSEQ as size_t) as u16,
         );
-        op = op.offset(3);
+        op = op.add(3);
     }
     if nbSeq == 0 {
         return op.offset_from(ostart) as size_t;
     }
     let fresh1 = op;
-    op = op.offset(1);
+    op = op.add(1);
     seqHead = fresh1;
     if writeEntropy != 0 {
         let LLtype = (*fseMetadata).llType;
@@ -756,7 +756,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
             cSymbolTypeSizeEstimateInBits =
                 cSymbolTypeSizeEstimateInBits.wrapping_add(*ctp as size_t);
         }
-        ctp = ctp.offset(1);
+        ctp = ctp.add(1);
     }
     cSymbolTypeSizeEstimateInBits / 8
 }
@@ -918,12 +918,12 @@ unsafe fn sizeBlockSequences(
     let headerSize = firstSubBlock as size_t * 120 * BYTESCALE as size_t;
     budget = budget.wrapping_add(headerSize);
     budget = budget
-        .wrapping_add(((*sp.offset(0)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
+        .wrapping_add(((*sp).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost));
     if budget > targetBudget {
         return 1;
     }
-    inSize = ((*sp.offset(0)).litLength as core::ffi::c_int
-        + ((*sp.offset(0)).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
+    inSize = ((*sp).litLength as core::ffi::c_int
+        + ((*sp).mlBase as core::ffi::c_int + MINMATCH)) as size_t;
     n = 1;
     while n < nbSeqs {
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
@@ -1160,7 +1160,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                     ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0) as core::ffi::c_int
                         as u32,
                 );
-                seq = seq.offset(1);
+                seq = seq.add(1);
             }
             libc::memcpy(
                 ((*nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,

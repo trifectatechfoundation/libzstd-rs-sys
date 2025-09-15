@@ -147,9 +147,9 @@ unsafe fn ZSTD_safecopyLiterals(
     }
     while ip < iend {
         let fresh0 = ip;
-        ip = ip.offset(1);
+        ip = ip.add(1);
         let fresh1 = op;
-        op = op.offset(1);
+        op = op.add(1);
         *fresh1 = *fresh0;
     }
 }
@@ -168,8 +168,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).litLength = litLength as u16;
-    (*((*seqStorePtr).sequences).offset(0)).offBase = offBase;
+    (*((*seqStorePtr).sequences)).litLength = litLength as u16;
+    (*((*seqStorePtr).sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as size_t);
     if (mlBase > 0xffff as core::ffi::c_int as size_t) as core::ffi::c_int as core::ffi::c_long != 0
     {
@@ -178,8 +178,8 @@ unsafe fn ZSTD_storeSeqOnly(
             .offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
     }
-    (*((*seqStorePtr).sequences).offset(0)).mlBase = mlBase as u16;
-    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).offset(1);
+    (*((*seqStorePtr).sequences)).mlBase = mlBase as u16;
+    (*seqStorePtr).sequences = ((*seqStorePtr).sequences).add(1);
 }
 #[inline(always)]
 unsafe fn ZSTD_storeSeq(
@@ -199,8 +199,8 @@ unsafe fn ZSTD_storeSeq(
         );
         if litLength > 16 {
             ZSTD_wildcopy(
-                ((*seqStorePtr).lit).offset(16) as *mut core::ffi::c_void,
-                literals.offset(16) as *const core::ffi::c_void,
+                ((*seqStorePtr).lit).add(16) as *mut core::ffi::c_void,
+                literals.add(16) as *const core::ffi::c_void,
                 litLength.wrapping_sub(16),
                 Overlap::NoOverlap,
             );
@@ -239,22 +239,22 @@ unsafe fn ZSTD_count(mut pIn: *const u8, mut pMatch: *const u8, pInLimit: *const
         }
     }
     if MEM_64bits() != 0
-        && pIn < pInLimit.offset(-(3))
+        && pIn < pInLimit.sub(3)
         && MEM_read32(pMatch as *const core::ffi::c_void)
             == MEM_read32(pIn as *const core::ffi::c_void)
     {
-        pIn = pIn.offset(4);
-        pMatch = pMatch.offset(4);
+        pIn = pIn.add(4);
+        pMatch = pMatch.add(4);
     }
-    if pIn < pInLimit.offset(-(1))
+    if pIn < pInLimit.sub(1)
         && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
             == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
     {
-        pIn = pIn.offset(2);
-        pMatch = pMatch.offset(2);
+        pIn = pIn.add(2);
+        pMatch = pMatch.add(2);
     }
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
-        pIn = pIn.offset(1);
+        pIn = pIn.add(1);
     }
     pIn.offset_from(pStart) as size_t
 }
@@ -1052,10 +1052,10 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     let mut matchLength = 0 as size_t;
     while pIn > pAnchor
         && pMatch > pMatchBase
-        && *pIn.offset(-1_isize) as core::ffi::c_int == *pMatch.offset(-1_isize) as core::ffi::c_int
+        && *pIn.sub(1) as core::ffi::c_int == *pMatch.sub(1) as core::ffi::c_int
     {
-        pIn = pIn.offset(-1);
-        pMatch = pMatch.offset(-1);
+        pIn = pIn.sub(1);
+        pMatch = pMatch.sub(1);
         matchLength = matchLength.wrapping_add(1);
     }
     matchLength
@@ -1349,7 +1349,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                             }
                         }
                     }
-                    cur = cur.offset(1);
+                    cur = cur.add(1);
                 }
                 if bestEntry.is_null() {
                     ZSTD_ldm_insertEntry(
@@ -1501,8 +1501,8 @@ pub unsafe fn ZSTD_ldm_skipSequences(
             (*seq).matchLength = ((*seq).matchLength).wrapping_sub(srcSize as u32);
             if (*seq).matchLength < minMatch {
                 if ((*rawSeqStore).pos).wrapping_add(1) < (*rawSeqStore).size {
-                    let fresh6 = &mut (*seq.offset(1)).litLength;
-                    *fresh6 = (*fresh6).wrapping_add((*seq.offset(0)).matchLength);
+                    let fresh6 = &mut (*seq.add(1)).litLength;
+                    *fresh6 = (*fresh6).wrapping_add((*seq).matchLength);
                 }
                 (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
             }
@@ -1603,7 +1603,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             *rep.offset(i as isize) = *rep.offset((i - 1) as isize);
             i -= 1;
         }
-        *rep.offset(0) = sequence.offset;
+        *rep = sequence.offset;
         ZSTD_storeSeq(
             seqStore,
             newLitLength,

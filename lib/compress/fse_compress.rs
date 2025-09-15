@@ -25,8 +25,8 @@ unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let u16ptr = ptr as *const u16;
     let tableLog = MEM_read16(ptr) as u32;
     (*statePtr).value = (1) << tableLog;
-    (*statePtr).stateTable = u16ptr.offset(2) as *const core::ffi::c_void;
-    (*statePtr).symbolTT = ct.offset(1).offset(
+    (*statePtr).stateTable = u16ptr.add(2) as *const core::ffi::c_void;
+    (*statePtr).symbolTT = ct.add(1).offset(
         (if tableLog != 0 {
             (1) << tableLog.wrapping_sub(1)
         } else {
@@ -67,9 +67,9 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     let tableSize = ((1) << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
     let ptr = ct as *mut core::ffi::c_void;
-    let tableU16 = (ptr as *mut u16).offset(2);
+    let tableU16 = (ptr as *mut u16).add(2);
     let FSCT = (ptr as *mut u32)
-        .offset(1)
+        .add(1)
         .offset((if tableLog != 0 { tableSize >> 1 } else { 1 }) as isize)
         as *mut core::ffi::c_void;
     let symbolTT = FSCT as *mut FSE_symbolCompressionTransform;
@@ -95,10 +95,10 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     {
         return Error::tableLog_tooLarge.to_error_code();
     }
-    *tableU16.offset(-2) = tableLog as u16;
-    *tableU16.offset(-1) = maxSymbolValue as u16;
+    *tableU16.sub(2) = tableLog as u16;
+    *tableU16.sub(1) = maxSymbolValue as u16;
     let mut u: u32 = 0;
-    *cumul.offset(0) = 0;
+    *cumul = 0;
     u = 1;
     while u <= maxSV1 {
         if *normalizedCounter.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int == -(1) {
@@ -274,12 +274,12 @@ unsafe fn FSE_writeNCount_generic(
                 start = start.wrapping_add(24);
                 bitStream = (bitStream as core::ffi::c_uint)
                     .wrapping_add((0xffff as core::ffi::c_uint) << bitCount);
-                if writeIsSafe == 0 && out > oend.offset(-(2)) {
+                if writeIsSafe == 0 && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code();
                 }
-                *out.offset(0) = bitStream as u8;
-                *out.offset(1) = (bitStream >> 8) as u8;
-                out = out.offset(2);
+                *out = bitStream as u8;
+                *out.add(1) = (bitStream >> 8) as u8;
+                out = out.add(2);
                 bitStream >>= 16;
             }
             while symbol >= start.wrapping_add(3) {
@@ -291,12 +291,12 @@ unsafe fn FSE_writeNCount_generic(
                 .wrapping_add(symbol.wrapping_sub(start) << bitCount);
             bitCount += 2;
             if bitCount > 16 {
-                if writeIsSafe == 0 && out > oend.offset(-(2)) {
+                if writeIsSafe == 0 && out > oend.sub(2) {
                     return Error::dstSize_tooSmall.to_error_code();
                 }
-                *out.offset(0) = bitStream as u8;
-                *out.offset(1) = (bitStream >> 8) as u8;
-                out = out.offset(2);
+                *out = bitStream as u8;
+                *out.add(1) = (bitStream >> 8) as u8;
+                out = out.add(2);
                 bitStream >>= 16;
                 bitCount -= 16;
             }
@@ -322,12 +322,12 @@ unsafe fn FSE_writeNCount_generic(
             threshold >>= 1;
         }
         if bitCount > 16 {
-            if writeIsSafe == 0 && out > oend.offset(-(2)) {
+            if writeIsSafe == 0 && out > oend.sub(2) {
                 return Error::dstSize_tooSmall.to_error_code();
             }
-            *out.offset(0) = bitStream as u8;
-            *out.offset(1) = (bitStream >> 8) as u8;
-            out = out.offset(2);
+            *out = bitStream as u8;
+            *out.add(1) = (bitStream >> 8) as u8;
+            out = out.add(2);
             bitStream >>= 16;
             bitCount -= 16;
         }
@@ -335,11 +335,11 @@ unsafe fn FSE_writeNCount_generic(
     if remaining != 1 {
         return Error::GENERIC.to_error_code();
     }
-    if writeIsSafe == 0 && out > oend.offset(-(2)) {
+    if writeIsSafe == 0 && out > oend.sub(2) {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    *out.offset(0) = bitStream as u8;
-    *out.offset(1) = (bitStream >> 8) as u8;
+    *out = bitStream as u8;
+    *out.add(1) = (bitStream >> 8) as u8;
     out = out.offset(((bitCount + 7) / 8) as isize);
     out.offset_from(ostart) as size_t
 }
@@ -599,13 +599,13 @@ pub(crate) unsafe fn FSE_normalizeCount(
 }
 pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> size_t {
     let ptr = ct as *mut core::ffi::c_void;
-    let tableU16 = (ptr as *mut u16).offset(2);
-    let FSCTptr = (ptr as *mut u32).offset(2) as *mut core::ffi::c_void;
+    let tableU16 = (ptr as *mut u16).add(2);
+    let FSCTptr = (ptr as *mut u32).add(2) as *mut core::ffi::c_void;
     let symbolTT = FSCTptr as *mut FSE_symbolCompressionTransform;
-    *tableU16.offset(-2) = 0;
-    *tableU16.offset(-1) = symbolValue as u16;
-    *tableU16.offset(0) = 0;
-    *tableU16.offset(1) = 0;
+    *tableU16.sub(2) = 0;
+    *tableU16.sub(1) = symbolValue as u16;
+    *tableU16 = 0;
+    *tableU16.add(1) = 0;
     (*symbolTT.offset(symbolValue as isize)).deltaNbBits = 0;
     (*symbolTT.offset(symbolValue as isize)).deltaFindState = 0;
     0
@@ -648,11 +648,11 @@ unsafe fn FSE_compress_usingCTable_generic(
         return 0;
     }
     if srcSize & 1 != 0 {
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_initCState2(&mut CState1, ct, *ip as u32);
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_initCState2(&mut CState2, ct, *ip as u32);
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         if fast != 0 {
             BIT_flushBitsFast(&mut bitC);
@@ -660,9 +660,9 @@ unsafe fn FSE_compress_usingCTable_generic(
             BIT_flushBits(&mut bitC);
         };
     } else {
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_initCState2(&mut CState2, ct, *ip as u32);
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_initCState2(&mut CState1, ct, *ip as u32);
     }
     srcSize = srcSize.wrapping_sub(2);
@@ -670,9 +670,9 @@ unsafe fn FSE_compress_usingCTable_generic(
         > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
         && srcSize & 2 != 0
     {
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         if fast != 0 {
             BIT_flushBitsFast(&mut bitC);
@@ -681,7 +681,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         };
     }
     while ip > istart {
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
         if (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
             < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
@@ -692,14 +692,14 @@ unsafe fn FSE_compress_usingCTable_generic(
                 BIT_flushBits(&mut bitC);
             };
         }
-        ip = ip.offset(-1);
+        ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         if (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
             > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
         {
-            ip = ip.offset(-1);
+            ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-            ip = ip.offset(-1);
+            ip = ip.sub(1);
             FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
         }
         if fast != 0 {

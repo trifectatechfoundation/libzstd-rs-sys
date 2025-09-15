@@ -58,7 +58,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
     }
     match flSize {
         1 => {
-            *ostart.offset(0) =
+            *ostart =
                 (set_basic as core::ffi::c_int as u32 as size_t).wrapping_add(srcSize << 3) as u8;
         }
         2 => {
@@ -85,7 +85,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
     srcSize.wrapping_add(flSize as size_t)
 }
 unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> bool {
-    let b = *(src as *const u8).offset(0);
+    let b = *(src as *const u8);
     let mut p: size_t = 0;
     p = 1;
     while p < srcSize {
@@ -111,7 +111,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
 
     match flSize {
         1 => {
-            *ostart.offset(0) =
+            *ostart =
                 (set_rle as core::ffi::c_int as u32 as size_t).wrapping_add(srcSize << 3) as u8;
         }
         2 => {
@@ -306,7 +306,7 @@ pub unsafe fn ZSTD_compressLiterals(
                 .wrapping_add((srcSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 22);
             MEM_writeLE32(ostart as *mut core::ffi::c_void, lhc_1);
-            *ostart.offset(4) = (cLitSize >> 10) as u8;
+            *ostart.add(4) = (cLitSize >> 10) as u8;
         }
         _ => {}
     }

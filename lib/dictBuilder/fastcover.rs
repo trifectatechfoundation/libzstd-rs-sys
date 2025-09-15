@@ -407,7 +407,7 @@ unsafe fn FASTCOVER_ctx_init(
         return Error::memory_allocation.to_error_code();
     }
     let mut i: u32 = 0;
-    *((*ctx).offsets).offset(0) = 0;
+    *((*ctx).offsets) = 0;
     i = 1;
     while i <= nbSamples {
         *((*ctx).offsets).offset(i as isize) = (*((*ctx).offsets)
