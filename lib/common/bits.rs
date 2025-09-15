@@ -11,6 +11,5 @@ pub(crate) const fn ZSTD_NbCommonBytes(val: usize) -> u32 {
 
 #[inline]
 pub(crate) const fn ZSTD_highbit32(val: u32) -> u32 {
-    assert!(val != 0);
-    31 - val.leading_zeros()
+    val.ilog2()
 }
