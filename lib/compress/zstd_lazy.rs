@@ -2368,7 +2368,7 @@ unsafe fn ZSTD_searchMax(
 #[inline(always)]
 unsafe fn ZSTD_compressBlock_lazy_generic(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2941,7 +2941,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
 }
 pub unsafe fn ZSTD_compressBlock_greedy(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2959,7 +2959,7 @@ pub unsafe fn ZSTD_compressBlock_greedy(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2977,7 +2977,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -2995,7 +2995,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3013,7 +3013,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_row(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3031,7 +3031,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dictMatchState_row(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3049,7 +3049,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_dedicatedDictSearch_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3067,7 +3067,7 @@ pub unsafe fn ZSTD_compressBlock_lazy(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3085,7 +3085,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3103,7 +3103,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3121,7 +3121,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3139,7 +3139,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dictMatchState_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3157,7 +3157,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_dedicatedDictSearch_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3175,7 +3175,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3193,7 +3193,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3211,7 +3211,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3229,7 +3229,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3247,7 +3247,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dictMatchState_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3265,7 +3265,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_dedicatedDictSearch_row(
 }
 pub unsafe fn ZSTD_compressBlock_btlazy2(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3283,7 +3283,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2(
 }
 pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3302,7 +3302,7 @@ pub unsafe fn ZSTD_compressBlock_btlazy2_dictMatchState(
 #[inline(always)]
 unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3659,7 +3659,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3668,7 +3668,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict(
 }
 pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3677,7 +3677,7 @@ pub unsafe fn ZSTD_compressBlock_greedy_extDict_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3686,7 +3686,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict(
 }
 pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3695,7 +3695,7 @@ pub unsafe fn ZSTD_compressBlock_lazy_extDict_row(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3704,7 +3704,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict(
 }
 pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -3713,7 +3713,7 @@ pub unsafe fn ZSTD_compressBlock_lazy2_extDict_row(
 }
 pub unsafe fn ZSTD_compressBlock_btlazy2_extDict(
     ms: *mut ZSTD_MatchState_t,
-    seqStore: *mut SeqStore_t,
+    seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
     srcSize: size_t,
