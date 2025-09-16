@@ -2991,11 +2991,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     toFlushSize,
                 );
 
-                op = if !op.is_null() {
-                    op.add(flushedSize)
-                } else {
-                    op
-                };
+                op = op.add(flushedSize);
 
                 zds.outStart = (zds.outStart).wrapping_add(flushedSize);
                 if flushedSize == toFlushSize {
@@ -3038,7 +3034,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
 
             let hSize = get_frame_header_advanced(
                 &mut zds.fParams,
-                &(&zds.headerBuffer)[..zds.lhSize],
+                &zds.headerBuffer[..zds.lhSize],
                 zds.format,
             );
             if zds.refMultipleDDicts != MultipleDDicts::Single && !zds.ddictSet.is_null() {
@@ -3318,7 +3314,6 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 );
             }
             if loadedSize != 0 {
-                // ip may be NULL
                 ip = ip.add(loadedSize);
                 zds.inPos = (zds.inPos).wrapping_add(loadedSize);
             }
@@ -3344,8 +3339,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
 
     // result
-    input.pos = ip.offset_from(input.src as *const core::ffi::c_char) as size_t;
-    output.pos = op.offset_from(output.dst as *mut core::ffi::c_char) as size_t;
+    input.pos = ip.byte_offset_from(input.src) as size_t;
+    output.pos = op.byte_offset_from(output.dst) as size_t;
 
     // Update the expected output buffer for ZSTD_obm_stable.
     zds.expectedOutBuffer = *output;
