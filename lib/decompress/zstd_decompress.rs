@@ -3285,7 +3285,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         if current_block == Block::Load {
             drop(current_block);
 
-            let neededInSize = ZSTD_nextSrcSizeToDecompress(zds);
+            let neededInSize = zds.expected;
             let toLoad_0 = neededInSize.wrapping_sub(zds.inPos);
             let isSkipFrame = matches!(zds.stage, DecompressStage::SkipFrame);
             // At this point we shouldn't be decompressing a block that we can stream.
@@ -3355,7 +3355,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
         zds.noForwardProgress = 0;
     }
 
-    let mut nextSrcSizeHint = ZSTD_nextSrcSizeToDecompress(zds);
+    let mut nextSrcSizeHint = zds.expected;
     if nextSrcSizeHint == 0 {
         // frame fully decoded
         if zds.outEnd == zds.outStart {
