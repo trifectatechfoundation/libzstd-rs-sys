@@ -12,6 +12,12 @@ pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
 pub(crate) const ZSTD_llt_literalLength: ZSTD_longLengthType_e = 1;
 pub(crate) const ZSTD_llt_none: ZSTD_longLengthType_e = 0;
 
+pub(crate) const ZSTD_CURRENT_MAX: usize = if MEM_64bits() {
+    3500 * (1 << 20)
+} else {
+    2000 * (1 << 20)
+};
+
 pub(crate) unsafe fn ZSTD_getSequenceLength(
     seqStore: *const SeqStore_t,
     seq: *const SeqDef,
