@@ -78,7 +78,7 @@ pub(crate) unsafe fn ZSTD_storeSeq(
     offBase: u32,
     matchLength: usize,
 ) {
-    let litLimit_w = litLimit.sub(WILDCOPY_OVERLENGTH);
+    let litLimit_w = litLimit.wrapping_sub(WILDCOPY_OVERLENGTH);
     let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
         ZSTD_copy16(
@@ -208,7 +208,8 @@ pub(crate) unsafe fn ZSTD_count_2segments(
     mEnd: *const u8,
     iStart: *const u8,
 ) -> usize {
-    let vEnd = if ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd {
+    let vEnd = if ip.wrapping_offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize) < iEnd
+    {
         ip.offset(mEnd.offset_from(match_0) as core::ffi::c_long as isize)
     } else {
         iEnd

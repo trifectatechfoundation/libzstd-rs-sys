@@ -1,5 +1,7 @@
 use core::ptr;
 
+use crate::lib::polyfill::PointerExt;
+
 pub type ZSTD_CCtx = ZSTD_CCtx_s;
 #[repr(C)]
 pub struct ZSTD_CCtx_s {
@@ -696,7 +698,7 @@ pub const REPCODE3_TO_OFFBASE: core::ffi::c_int = 3;
 
 #[inline]
 unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
-    let endT = ((*window).nextSrc).offset_from((*window).base) as size_t;
+    let endT = ((*window).nextSrc).wrapping_offset_from((*window).base) as size_t;
     let end = endT as u32;
     (*window).lowLimit = end;
     (*window).dictLimit = end;
@@ -776,7 +778,7 @@ unsafe fn ZSTD_window_enforceMaxDist(
     dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
-        (blockEnd as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
+        (blockEnd as *const u8).wrapping_offset_from((*window).base) as core::ffi::c_long as u32;
     let loadedDictEnd = if !loadedDictEndPtr.is_null() {
         *loadedDictEndPtr
     } else {
@@ -807,7 +809,7 @@ unsafe fn ZSTD_checkDictValidity(
     dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
-        (blockEnd as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
+        (blockEnd as *const u8).wrapping_offset_from((*window).base) as core::ffi::c_long as u32;
     let loadedDictEnd = *loadedDictEndPtr;
     if blockEndIdx > loadedDictEnd.wrapping_add(maxDist) || loadedDictEnd != (*window).dictLimit {
         *loadedDictEndPtr = 0;
@@ -844,21 +846,19 @@ unsafe fn ZSTD_window_update(
         return contiguous;
     }
     if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous != 0 {
-        let distanceFromBase = ((*window).nextSrc).offset_from((*window).base) as size_t;
+        let distanceFromBase = ((*window).nextSrc).wrapping_offset_from((*window).base) as size_t;
         (*window).lowLimit = (*window).dictLimit;
         (*window).dictLimit = distanceFromBase as u32;
         (*window).dictBase = (*window).base;
-        (*window).base = ip.offset(-(distanceFromBase as isize));
+        (*window).base = ip.wrapping_sub(distanceFromBase);
         if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
             (*window).lowLimit = (*window).dictLimit;
         }
         contiguous = 0;
     }
     (*window).nextSrc = ip.add(srcSize);
-    if (ip.add(srcSize) > ((*window).dictBase).offset((*window).lowLimit as isize))
-        as core::ffi::c_int
-        & (ip < ((*window).dictBase).offset((*window).dictLimit as isize)) as core::ffi::c_int
-        != 0
+    if (ip.add(srcSize) > ((*window).dictBase).wrapping_offset((*window).lowLimit as isize))
+        && (ip < ((*window).dictBase).wrapping_offset((*window).dictLimit as isize))
     {
         let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as size_t;
         let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
@@ -4000,7 +4000,7 @@ unsafe fn ZSTD_reset_matchState(
 }
 pub const ZSTD_INDEXOVERFLOW_MARGIN: core::ffi::c_int = 16 * ((1) << 20);
 unsafe fn ZSTD_indexTooCloseToMax(w: ZSTD_window_t) -> core::ffi::c_int {
-    ((w.nextSrc).offset_from(w.base) as size_t
+    ((w.nextSrc).wrapping_offset_from(w.base) as size_t
         > (if MEM_64bits() {
             (3500 as core::ffi::c_uint)
                 .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
@@ -4312,7 +4312,7 @@ unsafe fn ZSTD_resetCCtx_byAttachingCDict(
         (*cctx).blockState.matchState.dictMatchState = &(*cdict).matchState;
         if (*cctx).blockState.matchState.window.dictLimit < cdictEnd {
             (*cctx).blockState.matchState.window.nextSrc =
-                ((*cctx).blockState.matchState.window.base).offset(cdictEnd as isize);
+                ((*cctx).blockState.matchState.window.base).wrapping_offset(cdictEnd as isize);
             ZSTD_window_clear(&mut (*cctx).blockState.matchState.window);
         }
         (*cctx).blockState.matchState.loadedDictEnd =
@@ -4853,9 +4853,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
 ) -> size_t {
     let strategy = (*cctxParams).cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
-    let CTable_LitLength = ((*nextEntropy).fse.litlengthCTable).as_mut_ptr();
-    let CTable_OffsetBits = ((*nextEntropy).fse.offcodeCTable).as_mut_ptr();
-    let CTable_MatchLength = ((*nextEntropy).fse.matchlengthCTable).as_mut_ptr();
+    let CTable_LitLength = (&raw const ((*nextEntropy).fse.litlengthCTable)).cast::<u32>();
+    let CTable_OffsetBits = (&raw const ((*nextEntropy).fse.offcodeCTable)).cast::<u32>();
+    let CTable_MatchLength = (&raw const ((*nextEntropy).fse.matchlengthCTable)).cast::<u32>();
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
@@ -5308,10 +5308,10 @@ unsafe fn ZSTD_buildSeqStore(
     ms.opt.literalCompressionMode = (*zc).appliedParams.literalCompressionMode;
     let base = ms.window.base;
     let istart = src as *const u8;
-    let curr = istart.offset_from(base) as core::ffi::c_long as u32;
+    let curr = istart.wrapping_offset_from(base) as core::ffi::c_long as u32;
 
     if size_of::<ptrdiff_t>() == 8 {
-        assert!(istart.offset_from(base) < u32::MAX as ptrdiff_t); /* ensure no overflow */
+        assert!(istart.wrapping_offset_from(base) < u32::MAX as ptrdiff_t); /* ensure no overflow */
     }
 
     if curr > (ms.nextToUpdate).wrapping_add(384) {
