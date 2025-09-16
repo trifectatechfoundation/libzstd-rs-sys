@@ -1,3 +1,5 @@
+use crate::lib::polyfill::PointerExt;
+
 #[repr(C)]
 pub struct optState_t {
     pub litFreq: *mut core::ffi::c_uint,
@@ -494,9 +496,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
-    let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
-    let prefixLowest = base.offset(prefixLowestIndex as isize);
+    let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
     let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
     let mut offset_1 = *rep;
@@ -552,16 +554,16 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
             ZSTD_comparePackedTags(dictMatchIndexAndTagL as size_t, dictHashAndTagL);
         let dictTagsMatchS =
             ZSTD_comparePackedTags(dictMatchIndexAndTagS as size_t, dictHashAndTagS);
-        let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+        let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let matchIndexL = *hashLong.add(h2);
         let mut matchIndexS = *hashSmall.add(h);
-        let mut matchLong = base.offset(matchIndexL as isize);
-        let mut match_0 = base.offset(matchIndexS as isize);
+        let mut matchLong = base.wrapping_offset(matchIndexL as isize);
+        let mut match_0 = base.wrapping_offset(matchIndexS as isize);
         let repIndex = curr.wrapping_add(1).wrapping_sub(offset_1);
         let repMatch = if repIndex < prefixLowestIndex {
             dictBase.offset(repIndex.wrapping_sub(dictIndexDelta) as isize)
         } else {
-            base.offset(repIndex as isize)
+            base.wrapping_offset(repIndex as isize)
         };
         let fresh3 = &mut (*hashSmall.add(h));
         *fresh3 = curr;
@@ -820,7 +822,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         if ip <= ilimit {
             let indexToInsert = curr.wrapping_add(2);
             *hashLong.add(ZSTD_hashPtr(
-                base.offset(indexToInsert as isize) as *const core::ffi::c_void,
+                base.wrapping_add(indexToInsert as usize) as *const core::ffi::c_void,
                 hBitsL,
                 8,
             )) = indexToInsert;
@@ -828,9 +830,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 ip.sub(2) as *const core::ffi::c_void,
                 hBitsL,
                 8,
-            )) = ip.sub(2).offset_from(base) as core::ffi::c_long as u32;
+            )) = ip.sub(2).wrapping_offset_from(base) as core::ffi::c_long as u32;
             *hashSmall.add(ZSTD_hashPtr(
-                base.offset(indexToInsert as isize) as *const core::ffi::c_void,
+                base.wrapping_offset(indexToInsert as isize) as *const core::ffi::c_void,
                 hBitsS,
                 mls,
             )) = indexToInsert;
@@ -838,16 +840,16 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 ip.sub(1) as *const core::ffi::c_void,
                 hBitsS,
                 mls,
-            )) = ip.sub(1).offset_from(base) as core::ffi::c_long as u32;
+            )) = ip.sub(1).wrapping_offset_from(base) as core::ffi::c_long as u32;
             while ip <= ilimit {
-                let current2 = ip.offset_from(base) as core::ffi::c_long as u32;
+                let current2 = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
                 let repIndex2 = current2.wrapping_sub(offset_2);
                 let repMatch2 = if repIndex2 < prefixLowestIndex {
                     dictBase
                         .offset(repIndex2 as isize)
                         .offset(-(dictIndexDelta as isize))
                 } else {
-                    base.offset(repIndex2 as isize)
+                    base.wrapping_offset(repIndex2 as isize)
                 };
                 if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex2) != 0
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
@@ -1010,7 +1012,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(8);
     let base = ms.window.base;
-    let endIndex = (istart.offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
     let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
@@ -1019,10 +1021,10 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     } else {
         lowLimit
     };
-    let prefixStart = base.offset(prefixStartIndex as isize);
+    let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let dictBase = ms.window.dictBase;
-    let dictStart = dictBase.offset(dictStartIndex as isize);
-    let dictEnd = dictBase.offset(prefixStartIndex as isize);
+    let dictStart = dictBase.wrapping_offset(dictStartIndex as isize);
+    let dictEnd = dictBase.wrapping_offset(prefixStartIndex as isize);
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
     if prefixStartIndex == dictStartIndex {
@@ -1045,14 +1047,14 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             base
         };
         let mut matchLong = matchLongBase.offset(matchLongIndex as isize);
-        let curr = ip.offset_from(base) as core::ffi::c_long as u32;
+        let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let repIndex = curr.wrapping_add(1).wrapping_sub(offset_1);
         let repBase = if repIndex < prefixStartIndex {
             dictBase
         } else {
             base
         };
-        let repMatch = repBase.offset(repIndex as isize);
+        let repMatch = repBase.wrapping_offset(repIndex as isize);
         let mut mLength: size_t = 0;
         let fresh4 = &mut (*hashLong.add(hLong));
         *fresh4 = curr;
