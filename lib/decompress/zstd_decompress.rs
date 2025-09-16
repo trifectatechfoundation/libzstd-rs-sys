@@ -559,21 +559,30 @@ unsafe fn ZSTD_DDictHashSet_expand(
     0
 }
 
+/// Fetches a DDict with the given dictID
+/// Returns the ZSTD_DDict* with the requested dictID. If it doesn't exist, then returns NULL.
 unsafe fn ZSTD_DDictHashSet_getDDict(
     hashSet: &mut ZSTD_DDictHashSet,
     dictID: u32,
 ) -> *const ZSTD_DDict {
     let mut idx = ZSTD_DDictHashSet_getIndex(hashSet, dictID);
-    let idxRangeMask = (hashSet.ddictPtrTableSize).wrapping_sub(1);
+    let idxRangeMask = hashSet.ddictPtrTableSize - 1;
     loop {
-        let currDictID = ZSTD_getDictID_fromDDict(*(hashSet.ddictPtrTable).add(idx)) as size_t;
+        let currDictID = match hashSet.as_slice()[idx].as_ref() {
+            Some(ddict) => ddict.dictID as size_t,
+            None => 0,
+        };
+
         if currDictID == dictID as size_t || currDictID == 0 {
+            /* currDictID == 0 implies a NULL ddict entry */
             break;
         }
-        idx &= idxRangeMask;
-        idx = idx.wrapping_add(1);
+
+        idx &= idxRangeMask; /* Goes to start of table when we reach the end */
+        idx += 1;
     }
-    *(hashSet.ddictPtrTable).add(idx)
+
+    hashSet.as_slice()[idx]
 }
 
 unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
