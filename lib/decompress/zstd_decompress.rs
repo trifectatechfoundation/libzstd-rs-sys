@@ -3172,13 +3172,13 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 }
                 if zds.format == Format::ZSTD_f_zstd1 && is_skippable_frame(&(zds.headerBuffer)) {
                     // skippable frame
-                    zds.expected =
-                        MEM_readLE32((zds.headerBuffer).as_mut_ptr().add(ZSTD_FRAMEIDSIZE)
-                            as *const core::ffi::c_void) as size_t;
+                    zds.expected = {
+                        let [_, _, _, _, a, b, c, d, ..] = zds.headerBuffer;
+                        u32::from_le_bytes([a, b, c, d]) as usize
+                    };
                     zds.stage = DecompressStage::SkipFrame;
                 } else {
-                    let err_code =
-                        ZSTD_decodeFrameHeader(zds, &((&zds.headerBuffer)[..zds.lhSize]));
+                    let err_code = ZSTD_decodeFrameHeader(zds, &zds.headerBuffer[..zds.lhSize]);
                     if ERR_isError(err_code) {
                         return err_code;
                     }
