@@ -1518,7 +1518,7 @@ unsafe fn ZSTD_DCtx_trace_end(
     }
 }
 unsafe fn ZSTD_decompressFrame(
-    dctx: *mut ZSTD_DCtx,
+    dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
     srcPtr: &mut Reader<'_>,
 ) -> size_t {
@@ -1530,12 +1530,12 @@ unsafe fn ZSTD_decompressFrame(
     let oend = op.as_mut_ptr_range().end;
 
     /* check */
-    if ip.len() < (*dctx).format.frame_header_size_min() + ZSTD_blockHeaderSize {
+    if ip.len() < dctx.format.frame_header_size_min() + ZSTD_blockHeaderSize {
         return Error::srcSize_wrong.to_error_code();
     }
 
     /* Frame Header */
-    let frameHeaderSize = frame_header_size_internal(ip.as_slice(), (*dctx).format);
+    let frameHeaderSize = frame_header_size_internal(ip.as_slice(), dctx.format);
     if ERR_isError(frameHeaderSize) {
         return frameHeaderSize;
     }
@@ -1549,10 +1549,10 @@ unsafe fn ZSTD_decompressFrame(
     *ip = ip.subslice(frameHeaderSize..);
 
     /* Shrink the blockSizeMax if enabled */
-    if (*dctx).maxBlockSizeParam != 0 {
-        (*dctx).fParams.blockSizeMax = Ord::min(
-            (*dctx).fParams.blockSizeMax,
-            (*dctx).maxBlockSizeParam as core::ffi::c_uint,
+    if dctx.maxBlockSizeParam != 0 {
+        dctx.fParams.blockSizeMax = Ord::min(
+            dctx.fParams.blockSizeMax,
+            dctx.maxBlockSizeParam as core::ffi::c_uint,
         );
     }
 
@@ -1621,10 +1621,10 @@ unsafe fn ZSTD_decompressFrame(
             return decodedSize;
         }
 
-        if (*dctx).validateChecksum != 0 {
+        if dctx.validateChecksum != 0 {
             let written = op.subslice(..decodedSize);
             let slice = unsafe { written.as_slice() };
-            ZSTD_XXH64_update_slice(&mut (*dctx).xxhState, slice);
+            ZSTD_XXH64_update_slice(&mut dctx.xxhState, slice);
         }
 
         // Adding 0 to NULL is not UB in rust.
@@ -1635,21 +1635,21 @@ unsafe fn ZSTD_decompressFrame(
             break;
         }
     }
-    if (*dctx).fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
+    if dctx.fParams.frameContentSize != ZSTD_CONTENTSIZE_UNKNOWN
         && (start_capacity - op.capacity()) as core::ffi::c_ulonglong
-            != (*dctx).fParams.frameContentSize
+            != dctx.fParams.frameContentSize
     {
         return Error::corruption_detected.to_error_code();
     }
 
     /* Frame content checksum verification */
-    if (*dctx).fParams.checksumFlag != 0 {
+    if dctx.fParams.checksumFlag != 0 {
         let [a, b, c, d, ..] = *ip.as_slice() else {
             return Error::checksum_wrong.to_error_code();
         };
 
-        if (*dctx).forceIgnoreChecksum == ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
-            && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut (*dctx).xxhState) as u32
+        if dctx.forceIgnoreChecksum == ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
+            && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut dctx.xxhState) as u32
         {
             return Error::checksum_wrong.to_error_code();
         }
@@ -1734,7 +1734,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
                 }
             }
             ZSTD_checkContinuity(dctx.as_mut().unwrap(), dst.as_ptr_range());
-            let res = ZSTD_decompressFrame(dctx, dst.subslice(..), &mut src);
+            let res = ZSTD_decompressFrame(dctx.as_mut().unwrap(), dst.subslice(..), &mut src);
             if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
                 return Error::srcSize_wrong.to_error_code();
             }
