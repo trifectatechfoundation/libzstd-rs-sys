@@ -34,13 +34,20 @@ pub struct ZSTD_DDictHashSet {
     pub ddictPtrTableSize: size_t,
     pub ddictPtrCount: size_t,
 }
+
+impl ZSTD_DDictHashSet {
+    pub fn as_slice(&mut self) -> &[*const ZSTD_DDict] {
+        unsafe { core::slice::from_raw_parts(self.ddictPtrTable, self.ddictPtrCount) }
+    }
+}
+
 #[repr(C)]
 pub struct ZSTD_DDict {
     dictBuffer: *mut core::ffi::c_void,
     dictContent: *const core::ffi::c_void,
     dictSize: size_t,
     entropy: ZSTD_entropyDTables_t,
-    dictID: u32,
+    pub(crate) dictID: u32,
     entropyPresent: u32,
     cMem: ZSTD_customMem,
 }
