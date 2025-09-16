@@ -4,7 +4,7 @@ use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, 
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
-use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t};
+use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_window_t};
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 
 pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
@@ -359,4 +359,56 @@ pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
 #[inline]
 pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
+}
+
+pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
+
+#[inline]
+pub(crate) unsafe fn ZSTD_window_needOverflowCorrection(
+    window: ZSTD_window_t,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
+    srcEnd: *const core::ffi::c_void,
+) -> bool {
+    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
+        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) != 0 {
+            return true;
+        }
+    }
+
+    let curr = srcEnd.addr() - window.base.addr();
+    curr > ZSTD_CURRENT_MAX
+}
+
+pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
+
+#[inline]
+unsafe fn ZSTD_window_canOverflowCorrect(
+    window: ZSTD_window_t,
+    cycleLog: u32,
+    maxDist: u32,
+    loadedDictEnd: u32,
+    src: *const core::ffi::c_void,
+) -> u32 {
+    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
+    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
+    let minIndexToOverflowCorrect = cycleSize
+        .wrapping_add(if maxDist > cycleSize {
+            maxDist
+        } else {
+            cycleSize
+        })
+        .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
+    let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
+    let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
+        minIndexToOverflowCorrect * adjustment
+    } else {
+        minIndexToOverflowCorrect
+    };
+    let indexLargeEnough = (curr > adjustedIndex) as core::ffi::c_int as u32;
+    let dictionaryInvalidated =
+        (curr > maxDist.wrapping_add(loadedDictEnd)) as core::ffi::c_int as u32;
+    (indexLargeEnough != 0 && dictionaryInvalidated != 0) as core::ffi::c_int as u32
 }

@@ -107,7 +107,6 @@ use libc::size_t;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
-use crate::lib::common::mem::MEM_64bits;
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::ZSTD_REP_NUM;
 use crate::lib::compress::zstd_compress::{
@@ -116,6 +115,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_storeSeq,
+    ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -141,59 +141,6 @@ unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMod
     } else {
         ZSTD_noDict as core::ffi::c_int
     }) as ZSTD_dictMode_e
-}
-pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
-#[inline]
-unsafe fn ZSTD_window_canOverflowCorrect(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-) -> u32 {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    let minIndexToOverflowCorrect = cycleSize
-        .wrapping_add(if maxDist > cycleSize {
-            maxDist
-        } else {
-            cycleSize
-        })
-        .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-    let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
-    let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
-        minIndexToOverflowCorrect * adjustment
-    } else {
-        minIndexToOverflowCorrect
-    };
-    let indexLargeEnough = (curr > adjustedIndex) as core::ffi::c_int as u32;
-    let dictionaryInvalidated =
-        (curr > maxDist.wrapping_add(loadedDictEnd)) as core::ffi::c_int as u32;
-    (indexLargeEnough != 0 && dictionaryInvalidated != 0) as core::ffi::c_int as u32
-}
-#[inline]
-unsafe fn ZSTD_window_needOverflowCorrection(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-    srcEnd: *const core::ffi::c_void,
-) -> u32 {
-    let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
-        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) != 0 {
-            return 1;
-        }
-    }
-    (curr
-        > (if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        })) as core::ffi::c_int as u32
 }
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
@@ -1262,8 +1209,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             (*ldmState).loadedDictEnd,
             chunkStart as *const core::ffi::c_void,
             chunkEnd as *const core::ffi::c_void,
-        ) != 0
-        {
+        ) {
             let ldmHSize = (1) << (*params).hashLog;
             let correction = ZSTD_window_correctOverflow(
                 &mut (*ldmState).window,
