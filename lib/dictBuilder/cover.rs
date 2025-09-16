@@ -268,6 +268,9 @@ unsafe extern "C" fn COVER_strict_cmp8(
 }
 
 crate::cfg_select! {
+    miri => {
+        /* a fallback implementation is used */
+    }
     target_vendor = "apple" => {
         extern "C" {
             fn qsort_r(
@@ -320,7 +323,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
     };
 
     crate::cfg_select! {
-        target_vendor = "apple" => {
+        all(not(miri), target_vendor = "apple") => {
             qsort_r(
                 (*ctx).suffix as *mut core::ffi::c_void,
                 (*ctx).suffixSize,
@@ -329,7 +332,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
                 compare_fn,
             );
         }
-        windows => {
+        all(not(miri), windows) => {
             qsort_s(
                 (*ctx).suffix as *mut core::ffi::c_void,
                 (*ctx).suffixSize,
@@ -338,7 +341,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
                 &raw mut *ctx as *mut core::ffi::c_void,
             );
         }
-        unix => {
+        all(not(miri), unix) => {
             qsort_r(
                 ctx.suffix as *mut core::ffi::c_void,
                 ctx.suffixSize,
