@@ -170,6 +170,137 @@ mod fastest_wasm_zlib {
     }
 }
 
+macro_rules! decompress_overlapping {
+    ($compressed:expr, $dict:expr) => {
+        unsafe {
+            // Allocate and initialize a decompression context
+            let dctx = ZSTD_createDCtx();
+            if dctx.is_null() {
+                panic!("Failed to create DCtx");
+            }
+
+            if let Some(dict) = $dict {
+                // Initialize decompression with the dictionary
+                let ddict = ZSTD_createDDict(dict.as_ptr() as *const c_void, dict.len());
+                if ddict.is_null() {
+                    panic!("Failed to create DDict");
+                }
+
+                // Reference the dictionary in the decompression context
+                let res = ZSTD_DCtx_refDDict(dctx, ddict);
+                assert_eq!(ZSTD_isError(res), 0, "Failed to reference DDict");
+            }
+
+            let mut size =
+                ZSTD_getFrameContentSize($compressed.as_ptr() as *const c_void, $compressed.len());
+
+            if size == ZSTD_CONTENTSIZE_UNKNOWN as _ {
+                size = 16_000; // use default size of 16kb
+            }
+
+            if size == ZSTD_CONTENTSIZE_ERROR as _ {
+                panic!("ZSTD_CONTENTSIZE_ERROR")
+            };
+
+            // Allocate buffer for decompressed output
+            let margin = ZSTD_decompressionMargin($compressed.as_ptr().cast(), $compressed.len());
+            assert_eq!(ZSTD_isError(margin), 0, "could not determine margin");
+
+            size += margin as u64;
+            size = Ord::max(size, $compressed.len() as u64);
+            let mut output_buf = vec![0u8; size as usize];
+
+            output_buf[size as usize - $compressed.len()..].copy_from_slice($compressed);
+
+            let size = ZSTD_decompressDCtx(
+                dctx,
+                output_buf.as_mut_ptr() as *mut c_void,
+                output_buf.len(),
+                output_buf
+                    .as_mut_ptr()
+                    .add(size as usize)
+                    .sub($compressed.len())
+                    .cast(),
+                $compressed.len(),
+            );
+
+            if ZSTD_isError(size) != 0 {
+                let err = ZSTD_getErrorName(size);
+                panic!(
+                    "ZSTD_decompressStream failed: {}",
+                    std::ffi::CStr::from_ptr(err).to_string_lossy()
+                );
+            }
+
+            ZSTD_freeDCtx(dctx);
+
+            output_buf.truncate(size);
+
+            output_buf
+        }
+    };
+}
+
+fn decompress_c_overlapping(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use zstd_sys::*;
+
+    decompress_overlapping!(compressed, dict)
+}
+
+fn decompress_rs_overlapping(compressed: &[u8], dict: Option<&[u8]>) -> Vec<u8> {
+    use libzstd_rs_sys::*;
+
+    decompress_overlapping!(compressed, dict)
+}
+
+mod fastest_wasm_zlib_overlapping {
+    use super::*;
+
+    const DECOMPRESSED: &[u8] = include_bytes!("../test-data/The fastest WASM zlib.md");
+
+    #[track_caller]
+    fn helper(compressed: &[u8]) {
+        if cfg!(miri) {
+            // Just check that the rust implementation does not have UB.
+            decompress_rs_overlapping(compressed, None);
+        } else {
+            let c = decompress_c_overlapping(compressed, None);
+            assert_eq!(DECOMPRESSED, c);
+
+            let rs = decompress_rs_overlapping(compressed, None);
+            assert_eq!(c, rs);
+        }
+    }
+
+    #[test]
+    fn zstd_1() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-1.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long27_19() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-long27-19.zst"
+        ));
+    }
+
+    #[test]
+    fn zstd_long_ultra_22() {
+        helper(include_bytes!(
+            "../test-data/The fastest WASM zlib.md.zstd-ultra-22.zst"
+        ));
+    }
+}
+
 macro_rules! decompress_stream {
     ($compressed:expr, $dict:expr) => {
         unsafe {
