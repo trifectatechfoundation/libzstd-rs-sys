@@ -2965,8 +2965,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             Read,
             Load,
         }
-        let mut current_block: Block;
-        match zds.streamStage {
+
+        let mut current_block = match zds.streamStage {
             StreamStage::Init => {
                 zds.streamStage = StreamStage::LoadHeader;
                 zds.outEnd = 0;
@@ -2976,17 +2976,12 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 zds.legacyVersion = 0;
                 zds.hostageByte = 0;
                 zds.expectedOutBuffer = *output;
-                current_block = Block::LoadHeader;
+
+                Block::LoadHeader
             }
-            StreamStage::LoadHeader => {
-                current_block = Block::LoadHeader;
-            }
-            StreamStage::Read => {
-                current_block = Block::Read;
-            }
-            StreamStage::Load => {
-                current_block = Block::Load;
-            }
+            StreamStage::LoadHeader => Block::LoadHeader,
+            StreamStage::Read => Block::Read,
+            StreamStage::Load => Block::Load,
             StreamStage::Flush => {
                 let toFlushSize = (zds.outEnd).wrapping_sub(zds.outStart);
                 let flushedSize = ZSTD_limitCopy(
@@ -3020,7 +3015,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 some_more_work = false;
                 continue;
             }
-        }
+        };
+
         if current_block == Block::LoadHeader {
             drop(current_block);
 
