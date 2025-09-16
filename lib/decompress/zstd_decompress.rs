@@ -2938,28 +2938,12 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     let input = input.as_mut().unwrap();
 
     let src = input.src as *const core::ffi::c_char;
-    let istart = if input.pos != 0 {
-        src.add(input.pos)
-    } else {
-        src
-    };
-    let iend = if input.size != 0 {
-        src.add(input.size)
-    } else {
-        src
-    };
+    let istart = src.add(input.pos);
+    let iend = src.add(input.size);
     let mut ip = istart;
     let dst = output.dst as *mut core::ffi::c_char;
-    let ostart = if output.pos != 0 {
-        dst.add(output.pos)
-    } else {
-        dst
-    };
-    let oend = if output.size != 0 {
-        dst.add(output.size)
-    } else {
-        dst
-    };
+    let ostart = dst.add(output.pos);
+    let oend = dst.add(output.size);
     let mut op = ostart;
     let mut some_more_work = true;
     if input.pos > input.size {
