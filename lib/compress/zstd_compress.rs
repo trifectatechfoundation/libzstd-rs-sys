@@ -577,7 +577,6 @@ static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     capacity: 0,
 };
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
-pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: core::ffi::c_int = 196;
 #[inline]
 unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
@@ -720,59 +719,7 @@ unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMod
         ZSTD_noDict as core::ffi::c_int
     }) as ZSTD_dictMode_e
 }
-pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
-#[inline]
-unsafe fn ZSTD_window_canOverflowCorrect(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-) -> u32 {
-    let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
-    let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    let minIndexToOverflowCorrect = cycleSize
-        .wrapping_add(if maxDist > cycleSize {
-            maxDist
-        } else {
-            cycleSize
-        })
-        .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
-    let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
-    let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
-        minIndexToOverflowCorrect * adjustment
-    } else {
-        minIndexToOverflowCorrect
-    };
-    let indexLargeEnough = (curr > adjustedIndex) as core::ffi::c_int as u32;
-    let dictionaryInvalidated =
-        (curr > maxDist.wrapping_add(loadedDictEnd)) as core::ffi::c_int as u32;
-    (indexLargeEnough != 0 && dictionaryInvalidated != 0) as core::ffi::c_int as u32
-}
-#[inline]
-unsafe fn ZSTD_window_needOverflowCorrection(
-    window: ZSTD_window_t,
-    cycleLog: u32,
-    maxDist: u32,
-    loadedDictEnd: u32,
-    src: *const core::ffi::c_void,
-    srcEnd: *const core::ffi::c_void,
-) -> u32 {
-    let curr = (srcEnd as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
-    if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
-        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) != 0 {
-            return 1;
-        }
-    }
-    (curr
-        > (if MEM_64bits() {
-            (3500 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        } else {
-            (2000 as core::ffi::c_uint)
-                .wrapping_mul(((1 as core::ffi::c_int) << 20) as core::ffi::c_uint)
-        })) as core::ffi::c_int as u32
-}
+
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
     window: *mut ZSTD_window_t,
@@ -969,7 +916,8 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress_internal::{
     zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
     ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_updateRep,
+    ZSTD_updateRep, ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{
@@ -6804,7 +6752,6 @@ unsafe fn ZSTD_overflowCorrectIfNeeded(
     let cycleLog = ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy);
     let maxDist = (1) << (*params).cParams.windowLog;
     if ZSTD_window_needOverflowCorrection(ms.window, cycleLog, maxDist, ms.loadedDictEnd, ip, iend)
-        != 0
     {
         let correction = ZSTD_window_correctOverflow(&mut ms.window, cycleLog, maxDist, ip);
         ZSTD_cwksp_mark_tables_dirty(ws);
