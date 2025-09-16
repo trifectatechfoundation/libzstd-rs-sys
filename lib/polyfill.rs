@@ -76,3 +76,20 @@ unsafe fn prefetch_read_data_internal<T, const LOCALITY: i32>(ptr: *const T) {
         }
     }
 }
+
+pub trait PointerExt {
+    fn wrapping_offset_from(self, other: Self) -> isize;
+}
+
+impl<T> PointerExt for *const T {
+    fn wrapping_offset_from(self, base: Self) -> isize {
+        ((self as isize) - (base as isize)) / size_of::<T>() as isize
+    }
+}
+
+impl<T> PointerExt for *mut T {
+    /// Like `offset_from`, but without the UB.
+    fn wrapping_offset_from(self, base: Self) -> isize {
+        ((self as isize) - (base as isize)) / size_of::<T>() as isize
+    }
+}
