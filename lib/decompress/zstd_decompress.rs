@@ -1823,20 +1823,17 @@ pub unsafe extern "C" fn ZSTD_nextSrcSizeToDecompress(dctx: *mut ZSTD_DCtx) -> s
     (*dctx).expected
 }
 
-unsafe fn ZSTD_nextSrcSizeToDecompressWithInputSize(
-    dctx: *mut ZSTD_DCtx,
-    inputSize: size_t,
-) -> size_t {
-    match (*dctx).stage {
+fn ZSTD_nextSrcSizeToDecompressWithInputSize(dctx: &mut ZSTD_DCtx, inputSize: size_t) -> size_t {
+    match dctx.stage {
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
-            if (*dctx).bType != BlockType::Raw {
-                return (*dctx).expected;
+            if dctx.bType != BlockType::Raw {
+                return dctx.expected;
             }
 
             // Apparently it's possible for min > max here, so Ord::clamp would panic.
-            Ord::max(1, Ord::min(inputSize, (*dctx).expected))
+            Ord::max(1, Ord::min(inputSize, dctx.expected))
         }
-        _ => (*dctx).expected,
+        _ => dctx.expected,
     }
 }
 
@@ -3293,12 +3290,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             let isSkipFrame = matches!(zds.stage, DecompressStage::SkipFrame);
             let mut loadedSize: size_t = 0;
             // At this point we shouldn't be decompressing a block that we can stream.
-            assert!(
-                neededInSize
-                    == ZSTD_nextSrcSizeToDecompressWithInputSize(
-                        zds,
-                        iend.offset_from(ip) as usize
-                    )
+            assert_eq!(
+                neededInSize,
+                ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as usize)
             );
             if isSkipFrame {
                 loadedSize = std::cmp::min(toLoad_0, iend.offset_from(ip) as size_t);
