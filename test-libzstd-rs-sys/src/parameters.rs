@@ -108,9 +108,10 @@ fn cctx_parameter_set_reset() {
             ZSTD_cParameter::ZSTD_c_checksumFlag,
             ZSTD_cParameter::ZSTD_c_dictIDFlag,
             ZSTD_cParameter::ZSTD_c_nbWorkers,
-            ZSTD_cParameter::ZSTD_c_jobSize,
-            ZSTD_cParameter::ZSTD_c_overlapLog,
-            ZSTD_cParameter::ZSTD_c_experimentalParam1,
+            // The following 3 parameters give an "Unsupported parameter" error for the C implementation
+            // ZSTD_cParameter::ZSTD_c_jobSize,
+            // ZSTD_cParameter::ZSTD_c_overlapLog,
+            // ZSTD_cParameter::ZSTD_c_experimentalParam1,
             ZSTD_cParameter::ZSTD_c_experimentalParam2,
             ZSTD_cParameter::ZSTD_c_experimentalParam3,
             ZSTD_cParameter::ZSTD_c_experimentalParam4,
