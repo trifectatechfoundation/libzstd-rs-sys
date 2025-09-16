@@ -202,8 +202,7 @@ jobs:
           QUICKCHECK_TESTS: 10
           RUSTFLAGS: "-Awarnings"
         run: |
-          cargo +nightly miri nextest run -j4 -p libzstd-rs-sys
-          MIRIFLAGS="-Zmiri-tree-borrows" cargo +nightly miri nextest run -j4 --workspace decompress::fastest_wasm_zlib
+          MIRIFLAGS="-Zmiri-tree-borrows" cargo +nightly miri nextest run -j4 --workspace
 
 
   zstreamtest:
@@ -237,7 +236,7 @@ jobs:
           toolchain: nightly
           targets: "${{ matrix.target }}"
 
-      # NOTE: explicitly specifying the target is required on windows where we build for gnu, but the system is msvc. 
+      # NOTE: explicitly specifying the target is required on windows where we build for gnu, but the system is msvc.
       - name: build staticlib
         run: |
           cargo build --target ${{ matrix.target }} --features=export-symbols -p libzstd-rs-sys --release --lib
