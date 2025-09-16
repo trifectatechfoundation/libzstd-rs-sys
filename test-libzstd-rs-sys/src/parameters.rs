@@ -78,6 +78,8 @@ fn dctx_parameter_set_reset() {
             }
             assert_eq!(value, initial_value);
         }
+
+        ZSTD_freeDCtx(dctx);
     });
 }
 
@@ -192,5 +194,7 @@ fn cctx_parameter_set_reset() {
             }
             assert_eq!(value, initial_value);
         }
+
+        ZSTD_freeCCtx(cctx);
     });
 }
