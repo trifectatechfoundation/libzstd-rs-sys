@@ -3,11 +3,11 @@ use core::ffi::c_void;
 use libc::size_t;
 
 #[inline]
-pub(crate) fn MEM_32bits() -> bool {
+pub(crate) const fn MEM_32bits() -> bool {
     size_of::<usize>() == 4
 }
 #[inline]
-pub(crate) fn MEM_64bits() -> bool {
+pub(crate) const fn MEM_64bits() -> bool {
     size_of::<usize>() == 8
 }
 
