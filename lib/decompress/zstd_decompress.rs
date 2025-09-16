@@ -3288,29 +3288,29 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             let neededInSize = ZSTD_nextSrcSizeToDecompress(zds);
             let toLoad_0 = neededInSize.wrapping_sub(zds.inPos);
             let isSkipFrame = matches!(zds.stage, DecompressStage::SkipFrame);
-            let mut loadedSize: size_t = 0;
             // At this point we shouldn't be decompressing a block that we can stream.
             assert_eq!(
                 neededInSize,
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from(ip) as usize)
             );
-            if isSkipFrame {
-                loadedSize = std::cmp::min(toLoad_0, iend.offset_from(ip) as size_t);
+
+            let loadedSize = if isSkipFrame {
+                Ord::min(toLoad_0, iend.offset_from(ip) as size_t)
             } else {
-                if toLoad_0 > (zds.inBuffSize).wrapping_sub(zds.inPos) {
+                if toLoad_0 > zds.inBuffSize.wrapping_sub(zds.inPos) {
                     return Error::corruption_detected.to_error_code();
                 }
-                loadedSize = ZSTD_limitCopy(
-                    (zds.inBuff).add(zds.inPos) as *mut core::ffi::c_void,
+                ZSTD_limitCopy(
+                    zds.inBuff.add(zds.inPos) as *mut core::ffi::c_void,
                     toLoad_0,
                     ip as *const core::ffi::c_void,
                     iend.offset_from(ip) as size_t,
-                );
-            }
-            if loadedSize != 0 {
-                ip = ip.add(loadedSize);
-                zds.inPos = (zds.inPos).wrapping_add(loadedSize);
-            }
+                )
+            };
+
+            ip = ip.add(loadedSize);
+            zds.inPos = zds.inPos.wrapping_add(loadedSize);
+
             if loadedSize < toLoad_0 {
                 // not enough input, wait for more
                 some_more_work = false;
