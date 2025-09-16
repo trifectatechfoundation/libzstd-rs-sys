@@ -694,6 +694,9 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).isFrameDecompression = 1;
         (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
         (*dctx).ddictSet = core::ptr::null_mut();
+
+        // Prevent issues with uninitialized memory.
+        (*dctx).headerBuffer = [0u8; 18];
     }
 
     ZSTD_DCtx_resetParameters(dctx);
@@ -785,15 +788,17 @@ pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const 
     );
 }
 
-unsafe fn ZSTD_DCtx_selectFrameDDict(dctx: *mut ZSTD_DCtx) {
-    if !((*dctx).ddict).is_null() {
-        let frameDDict =
-            ZSTD_DDictHashSet_getDDict((*dctx).ddictSet.as_mut().unwrap(), (*dctx).fParams.dictID);
+fn ZSTD_DCtx_selectFrameDDict(dctx: &mut ZSTD_DCtx) {
+    if !(dctx.ddict).is_null() {
+        // FIXME: make safe
+        let frameDDict = unsafe {
+            ZSTD_DDictHashSet_getDDict(dctx.ddictSet.as_mut().unwrap(), dctx.fParams.dictID)
+        };
         if !frameDDict.is_null() {
-            ZSTD_clearDict(dctx);
-            (*dctx).dictID = (*dctx).fParams.dictID;
-            (*dctx).ddict = frameDDict;
-            (*dctx).dictUses = DictUses::ZSTD_use_indefinitely;
+            unsafe { ZSTD_clearDict(dctx) };
+            dctx.dictID = dctx.fParams.dictID;
+            dctx.ddict = frameDDict;
+            dctx.dictUses = DictUses::ZSTD_use_indefinitely;
         }
     }
 }
@@ -1224,26 +1229,26 @@ pub unsafe extern "C" fn ZSTD_getDecompressedSize(
     }
 }
 
-unsafe fn ZSTD_decodeFrameHeader(dctx: *mut ZSTD_DCtx, src: &[u8]) -> size_t {
-    let result = get_frame_header_advanced(&mut (*dctx).fParams, src, (*dctx).format);
+fn ZSTD_decodeFrameHeader(dctx: &mut ZSTD_DCtx, src: &[u8]) -> size_t {
+    let result = get_frame_header_advanced(&mut dctx.fParams, src, dctx.format);
     if ERR_isError(result) {
         return result;
     }
     if result > 0 {
         return Error::srcSize_wrong.to_error_code();
     }
-    if (*dctx).refMultipleDDicts == MultipleDDicts::Multiple && !((*dctx).ddictSet).is_null() {
+    if dctx.refMultipleDDicts == MultipleDDicts::Multiple && !(dctx.ddictSet).is_null() {
         ZSTD_DCtx_selectFrameDDict(dctx);
     }
-    if (*dctx).fParams.dictID != 0 && (*dctx).dictID != (*dctx).fParams.dictID {
+    if dctx.fParams.dictID != 0 && dctx.dictID != dctx.fParams.dictID {
         return Error::dictionary_wrong.to_error_code();
     }
-    (*dctx).validateChecksum =
-        ((*dctx).fParams.checksumFlag != 0 && (*dctx).forceIgnoreChecksum as u64 == 0) as u32;
-    if (*dctx).validateChecksum != 0 {
-        ZSTD_XXH64_reset(&mut (*dctx).xxhState, 0);
+    dctx.validateChecksum =
+        (dctx.fParams.checksumFlag != 0 && dctx.forceIgnoreChecksum as u64 == 0) as u32;
+    if dctx.validateChecksum != 0 {
+        ZSTD_XXH64_reset(&mut dctx.xxhState, 0);
     }
-    (*dctx).processedCSize = ((*dctx).processedCSize as size_t).wrapping_add(src.len()) as u64;
+    dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
     0
 }
 
@@ -1880,6 +1885,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
     }
     ZSTD_checkContinuity(dctx, dst.as_ptr_range());
     dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
+
     match dctx.stage {
         DecompressStage::GetFrameHeaderSize => {
             if dctx.format == Format::ZSTD_f_zstd1 && is_skippable_frame(src) {
@@ -1900,7 +1906,8 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
         }
         DecompressStage::DecodeFrameHeader => {
             dctx.headerBuffer[(dctx.headerSize) - src.len()..][..src.len()].copy_from_slice(src);
-            let err_code = ZSTD_decodeFrameHeader(dctx, &dctx.headerBuffer[..dctx.headerSize]);
+            let header_buffer = dctx.headerBuffer;
+            let err_code = ZSTD_decodeFrameHeader(dctx, &header_buffer[..dctx.headerSize]);
             if ERR_isError(err_code) {
                 return err_code;
             }
@@ -3187,7 +3194,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     };
                     zds.stage = DecompressStage::SkipFrame;
                 } else {
-                    let err_code = ZSTD_decodeFrameHeader(zds, &zds.headerBuffer[..zds.lhSize]);
+                    let header_buffer = zds.headerBuffer;
+                    let err_code = ZSTD_decodeFrameHeader(zds, &header_buffer[..zds.lhSize]);
                     if ERR_isError(err_code) {
                         return err_code;
                     }
