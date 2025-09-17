@@ -3418,21 +3418,15 @@ pub unsafe extern "C" fn ZSTD_decompressStream_simpleArgs(
     srcPos: *mut size_t,
 ) -> size_t {
     let mut output = ZSTD_outBuffer_s {
-        dst: core::ptr::null_mut::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
+        dst,
+        size: dstCapacity,
+        pos: *dstPos,
     };
     let mut input = ZSTD_inBuffer_s {
-        src: core::ptr::null::<core::ffi::c_void>(),
-        size: 0,
-        pos: 0,
+        src,
+        size: srcSize,
+        pos: *srcPos,
     };
-    output.dst = dst;
-    output.size = dstCapacity;
-    output.pos = *dstPos;
-    input.src = src;
-    input.size = srcSize;
-    input.pos = *srcPos;
     let cErr = ZSTD_decompressStream(dctx, &mut output, &mut input);
     *dstPos = output.pos;
     *srcPos = input.pos;
