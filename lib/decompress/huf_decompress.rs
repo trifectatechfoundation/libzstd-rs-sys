@@ -1259,7 +1259,7 @@ fn HUF_decompress1X2_usingDTable_internal_body(
 }
 
 #[inline(always)]
-unsafe fn HUF_decompress4X2_usingDTable_internal_body(
+fn HUF_decompress4X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1401,7 +1401,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
-unsafe fn HUF_decompress4X2_usingDTable_internal_bmi2(
+fn HUF_decompress4X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1409,7 +1409,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_bmi2(
     HUF_decompress4X2_usingDTable_internal_body(dst, src, DTable)
 }
 
-unsafe fn HUF_decompress4X2_usingDTable_internal_default(
+fn HUF_decompress4X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1612,7 +1612,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
     dst.capacity()
 }
 
-unsafe fn HUF_decompress4X2_usingDTable_internal(
+fn HUF_decompress4X2_usingDTable_internal(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1626,14 +1626,16 @@ unsafe fn HUF_decompress4X2_usingDTable_internal(
         };
 
         if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
-            let ret =
-                HUF_decompress4X2_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn);
+            let ret = unsafe {
+                HUF_decompress4X2_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
+            };
             if ret != 0 {
                 return ret;
             }
         }
 
-        HUF_decompress4X2_usingDTable_internal_bmi2(dst, src, DTable)
+        // SAFETY: the bmi2 feature is enabled.
+        unsafe { HUF_decompress4X2_usingDTable_internal_bmi2(dst, src, DTable) }
     } else {
         HUF_decompress4X2_usingDTable_internal_default(dst, src, DTable)
     }
@@ -1685,7 +1687,7 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     HUF_decompress1X2_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
 }
 
-unsafe fn HUF_decompress4X2_DCtx_wksp(
+fn HUF_decompress4X2_DCtx_wksp(
     dctx: &mut DTable,
     dst: Writer<'_>,
     src: &[u8],
@@ -1990,7 +1992,7 @@ pub fn HUF_decompress1X1_DCtx_wksp(
     HUF_decompress1X1_usingDTable_internal(dst, &src[hSize as usize..], dctx, flags)
 }
 
-pub unsafe fn HUF_decompress4X_usingDTable(
+pub fn HUF_decompress4X_usingDTable(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -2002,7 +2004,7 @@ pub unsafe fn HUF_decompress4X_usingDTable(
     }
 }
 
-pub unsafe fn HUF_decompress4X_hufOnly_wksp(
+pub fn HUF_decompress4X_hufOnly_wksp(
     dctx: &mut DTable,
     dst: Writer<'_>,
     src: &[u8],
