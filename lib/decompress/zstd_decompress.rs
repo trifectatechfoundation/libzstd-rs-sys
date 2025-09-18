@@ -2847,17 +2847,17 @@ unsafe fn ZSTD_DCtx_isOverflow(
     zds: *mut ZSTD_DStream,
     neededInBuffSize: size_t,
     neededOutBuffSize: size_t,
-) -> core::ffi::c_int {
-    (((*zds).inBuffSize).wrapping_add((*zds).outBuffSize)
+) -> bool {
+    ((*zds).inBuffSize).wrapping_add((*zds).outBuffSize)
         >= neededInBuffSize.wrapping_add(neededOutBuffSize)
-            * ZSTD_WORKSPACETOOLARGE_FACTOR as size_t) as core::ffi::c_int
+            * ZSTD_WORKSPACETOOLARGE_FACTOR as size_t
 }
 unsafe fn ZSTD_DCtx_updateOversizedDuration(
     zds: *mut ZSTD_DStream,
     neededInBuffSize: size_t,
     neededOutBuffSize: size_t,
 ) {
-    if ZSTD_DCtx_isOverflow(zds, neededInBuffSize, neededOutBuffSize) != 0 {
+    if ZSTD_DCtx_isOverflow(zds, neededInBuffSize, neededOutBuffSize) {
         (*zds).oversizedDuration = ((*zds).oversizedDuration).wrapping_add(1);
     } else {
         (*zds).oversizedDuration = 0;
