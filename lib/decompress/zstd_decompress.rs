@@ -2863,8 +2863,8 @@ unsafe fn ZSTD_DCtx_updateOversizedDuration(
         (*zds).oversizedDuration = 0;
     };
 }
-unsafe fn ZSTD_DCtx_isOversizedTooLong(zds: *mut ZSTD_DStream) -> bool {
-    (*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t
+fn ZSTD_DCtx_isOversizedTooLong(zds: &ZSTD_DStream) -> bool {
+    zds.oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t
 }
 unsafe fn ZSTD_checkOutBuffer(zds: *const ZSTD_DStream, output: *const ZSTD_outBuffer) -> size_t {
     if (*zds).outBufferMode != BufferMode::Stable {
