@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 use core::ops::{Bound, Range};
-use core::ptr::{self, NonNull};
+use core::ptr::NonNull;
 
 use libc::size_t;
 

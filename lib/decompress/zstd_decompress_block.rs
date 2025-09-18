@@ -281,7 +281,7 @@ const ZSTD_LBMAX: usize = 128 << 10;
 
 const ZSTD_DECODER_INTERNAL_BUFFER: usize = 1 << 16;
 
-const ZSTD_LITBUFFEREXTRASIZE: usize = {
+pub(crate) const ZSTD_LITBUFFEREXTRASIZE: usize = {
     // just a const clamp
     if ZSTD_DECODER_INTERNAL_BUFFER < ZSTD_LBMIN {
         ZSTD_LBMIN
@@ -344,18 +344,23 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                     return Error::corruption_detected.to_error_code();
                 }
                 if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                    core::ptr::copy_nonoverlapping(
-                        src[lhSize..].as_ptr(),
-                        dctx.litBuffer,
-                        litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
-                    );
+                    unsafe {
+                        let len = litSize - ZSTD_LITBUFFEREXTRASIZE;
+                        let src = &src[lhSize..][..len];
+
+                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, len)
+                    };
 
                     dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].copy_from_slice(
                         &src[lhSize + litSize - ZSTD_LITBUFFEREXTRASIZE..]
                             [..ZSTD_LITBUFFEREXTRASIZE],
                     );
                 } else {
-                    core::ptr::copy_nonoverlapping(src[lhSize..].as_ptr(), dctx.litBuffer, litSize);
+                    unsafe {
+                        let src = &src[lhSize..][..litSize];
+
+                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, litSize)
+                    };
                 }
                 dctx.litPtr = dctx.litBuffer;
                 dctx.litSize = litSize;
@@ -403,14 +408,19 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
 
             if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                ptr::write_bytes(
-                    dctx.litBuffer,
-                    src[lhSize],
-                    litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
-                );
+                unsafe {
+                    ptr::write_bytes(
+                        dctx.litBuffer,
+                        src[lhSize],
+                        litSize - ZSTD_LITBUFFEREXTRASIZE,
+                    )
+                };
+
                 dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].fill(src[lhSize]);
             } else {
-                ptr::write_bytes(dctx.litBuffer, src[lhSize], litSize);
+                unsafe {
+                    ptr::write_bytes(dctx.litBuffer, src[lhSize], litSize);
+                }
             }
             dctx.litPtr = dctx.litBuffer;
             dctx.litSize = litSize;
@@ -480,47 +490,41 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         prefetch_val(ptr);
     }
 
+    let writer = unsafe { Writer::from_raw_parts(dctx.litBuffer, litSize as _) };
+    let huf_src = &src[lhSize..][..litCSize];
+
     let hufSuccess = if let SymbolEncodingType_e::set_repeat = litEncType {
+        let dtable = match dctx.HUFptr {
+            None => &dctx.entropy.hufTable,
+            Some(ptr) => unsafe { ptr.as_ref() },
+        };
+
         if singleStream {
-            HUF_decompress1X_usingDTable(
-                Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-                &src[lhSize..][..litCSize],
-                match dctx.HUFptr {
-                    None => &dctx.entropy.hufTable,
-                    Some(ptr) => ptr.as_ref(),
-                },
-                flags,
-            )
+            HUF_decompress1X_usingDTable(writer, huf_src, dtable, flags)
         } else {
-            HUF_decompress4X_usingDTable(
-                Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-                &src[lhSize..][..litCSize],
-                match dctx.HUFptr {
-                    None => &dctx.entropy.hufTable,
-                    Some(ptr) => ptr.as_ref(),
-                },
-                flags,
-            )
+            HUF_decompress4X_usingDTable(writer, huf_src, dtable, flags)
         }
     } else if singleStream {
         HUF_decompress1X1_DCtx_wksp(
             &mut dctx.entropy.hufTable,
-            Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-            &src[lhSize..][..litCSize],
+            writer,
+            huf_src,
             &mut dctx.workspace,
             flags,
         )
     } else {
         HUF_decompress4X_hufOnly_wksp(
             &mut dctx.entropy.hufTable,
-            Writer::from_raw_parts(dctx.litBuffer, litSize as _),
-            &src[lhSize..][..litCSize],
+            writer,
+            huf_src,
             &mut dctx.workspace,
             flags,
         )
     };
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
+        debug_assert!(litSize > ZSTD_LITBUFFEREXTRASIZE);
+
         core::ptr::copy_nonoverlapping(
             dctx.litBufferEnd.sub(ZSTD_LITBUFFEREXTRASIZE),
             dctx.litExtraBuffer.as_mut_ptr(),
@@ -528,7 +532,8 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         );
         core::ptr::copy(
             dctx.litBuffer,
-            (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE).sub(32),
+            dctx.litBuffer
+                .add(ZSTD_LITBUFFEREXTRASIZE - WILDCOPY_OVERLENGTH),
             litSize.wrapping_sub(ZSTD_LITBUFFEREXTRASIZE),
         );
         dctx.litBuffer = (dctx.litBuffer).add(ZSTD_LITBUFFEREXTRASIZE - WILDCOPY_OVERLENGTH);

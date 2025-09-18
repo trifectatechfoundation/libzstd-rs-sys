@@ -3,10 +3,11 @@ use libc::size_t;
 
 use crate::lib::common::xxhash::XXH64_state_t;
 
+use crate::lib::common::zstd_internal::WILDCOPY_OVERLENGTH;
 use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
-use crate::lib::decompress::zstd_decompress_block::FseWorkspace;
+use crate::lib::decompress::zstd_decompress_block::{FseWorkspace, ZSTD_LITBUFFEREXTRASIZE};
 use crate::lib::zstd::{
     BufferMode, Format, ZSTD_customMem, ZSTD_forceIgnoreChecksum_e, ZSTD_outBuffer,
 };
@@ -274,7 +275,8 @@ pub struct ZSTD_DCtx_s {
     litBuffer: *mut u8,
     litBufferEnd: *const u8,
     litBufferLocation: LitLocation,
-    litExtraBuffer: [u8; 65568],
+    // literal buffer can be split between storage within dst and within this scratch buffer.
+    litExtraBuffer: [u8; ZSTD_LITBUFFEREXTRASIZE + WILDCOPY_OVERLENGTH],
     headerBuffer: [u8; 18],
     oversizedDuration: size_t,
     traceCtx: ZSTD_TraceCtx,
