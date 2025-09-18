@@ -576,6 +576,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     dst.capacity()
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn HUF_decompress4X1_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
@@ -775,6 +776,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     dst.capacity()
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 fn HUF_decompress1X1_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
@@ -797,14 +799,13 @@ fn HUF_decompress1X1_usingDTable_internal(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
-        HUF_decompress1X1_usingDTable_internal_bmi2(dst, src, DTable)
-    } else {
-        HUF_decompress1X1_usingDTable_internal_default(dst, src, DTable)
+    match flags & HUF_flags_bmi2 as i32 {
+        0 => HUF_decompress1X1_usingDTable_internal_default(dst, src, DTable),
+        _ => unsafe { HUF_decompress1X1_usingDTable_internal_bmi2(dst, src, DTable) },
     }
 }
 
-unsafe fn HUF_decompress4X1_usingDTable_internal(
+fn HUF_decompress4X1_usingDTable_internal(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -818,20 +819,22 @@ unsafe fn HUF_decompress4X1_usingDTable_internal(
         };
 
         if HUF_ENABLE_FAST_DECODE != 0 && flags & HUF_flags_disableFast as core::ffi::c_int == 0 {
-            let ret =
-                HUF_decompress4X1_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn);
+            let ret = unsafe {
+                HUF_decompress4X1_usingDTable_internal_fast(dst.subslice(..), src, DTable, loopFn)
+            };
             if ret != 0 {
                 return ret;
             }
         }
 
-        HUF_decompress4X1_usingDTable_internal_bmi2(dst, src, DTable)
+        // SAFETY: bmi2 is enabled.
+        unsafe { HUF_decompress4X1_usingDTable_internal_bmi2(dst, src, DTable) }
     } else {
         HUF_decompress4X1_usingDTable_internal_default(dst, src, DTable)
     }
 }
 
-unsafe fn HUF_decompress4X1_DCtx_wksp(
+fn HUF_decompress4X1_DCtx_wksp(
     dctx: &mut DTable,
     dst: Writer<'_>,
     src: &[u8],
@@ -1397,6 +1400,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_body(
     dst.capacity()
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn HUF_decompress4X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
@@ -1962,10 +1966,9 @@ pub fn HUF_decompress1X_usingDTable(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    if DTable.description.tableType != 0 {
-        HUF_decompress1X2_usingDTable_internal(dst, src, DTable, flags)
-    } else {
-        HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags)
+    match DTable.description.tableType {
+        0 => HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags),
+        _ => HUF_decompress1X2_usingDTable_internal(dst, src, DTable, flags),
     }
 }
 
@@ -1993,10 +1996,9 @@ pub unsafe fn HUF_decompress4X_usingDTable(
     DTable: &DTable,
     flags: core::ffi::c_int,
 ) -> size_t {
-    if DTable.description.tableType != 0 {
-        HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags)
-    } else {
-        HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags)
+    match DTable.description.tableType {
+        0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags),
+        _ => HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags),
     }
 }
 
