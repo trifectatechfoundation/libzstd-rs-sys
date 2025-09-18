@@ -2863,8 +2863,8 @@ unsafe fn ZSTD_DCtx_updateOversizedDuration(
         (*zds).oversizedDuration = 0;
     };
 }
-unsafe fn ZSTD_DCtx_isOversizedTooLong(zds: *mut ZSTD_DStream) -> core::ffi::c_int {
-    ((*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t) as core::ffi::c_int
+unsafe fn ZSTD_DCtx_isOversizedTooLong(zds: *mut ZSTD_DStream) -> bool {
+    (*zds).oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t
 }
 unsafe fn ZSTD_checkOutBuffer(zds: *const ZSTD_DStream, output: *const ZSTD_outBuffer) -> size_t {
     if (*zds).outBufferMode != BufferMode::Stable {
@@ -3222,12 +3222,11 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
 
                 ZSTD_DCtx_updateOversizedDuration(zds, neededInBuffSize, neededOutBuffSize);
 
-                let tooSmall = (zds.inBuffSize < neededInBuffSize
-                    || zds.outBuffSize < neededOutBuffSize)
-                    as core::ffi::c_int;
+                let tooSmall =
+                    zds.inBuffSize < neededInBuffSize || zds.outBuffSize < neededOutBuffSize;
                 let tooLarge = ZSTD_DCtx_isOversizedTooLong(zds);
 
-                if tooSmall != 0 || tooLarge != 0 {
+                if tooSmall || tooLarge {
                     let bufferSize = neededInBuffSize.wrapping_add(neededOutBuffSize);
                     if zds.staticSize != 0 {
                         // static DCtx
