@@ -147,19 +147,19 @@ const fn get_middle_bits(
     start: u32,
     nbBits: u32,
 ) -> BitContainerType {
+    const REG_MASK: u32 = BitContainerType::BITS - 1;
+
     // if start > regMask, the bitstream is corrupted, and the result is undefined.
     assert!(nbBits < MASK.len() as u32);
-
-    const REG_MASK: usize = BitContainerType::BITS as usize - 1;
 
     if cfg!(target_arch = "x86_64") {
         // x86 transform & ((1 << nbBits) - 1) to bzhi instruction, it is better
         // than accessing memory. When bmi2 instruction is not present, we consider
         // such cpus old (pre-Haswell, 2013) and their performance is not of that
         // importance.
-        bitContainer >> (start & REG_MASK as u32) & (1usize << nbBits).wrapping_sub(1)
+        bitContainer >> (start & REG_MASK) & ((1usize << nbBits) - 1)
     } else {
-        bitContainer >> (start & REG_MASK as u32) & MASK[nbBits as usize] as usize
+        bitContainer >> (start & REG_MASK) & MASK[nbBits as usize] as BitContainerType
     }
 }
 
@@ -249,10 +249,9 @@ impl<'a> BIT_DStream_t<'a> {
     const fn look_bits(&self, nbBits: u32) -> BitContainerType {
         get_middle_bits(
             self.bitContainer,
-            (size_of::<BitContainerType>() as u64)
-                .wrapping_mul(8)
-                .wrapping_sub(self.bitsConsumed as u64)
-                .wrapping_sub(nbBits as u64) as u32,
+            BitContainerType::BITS
+                .wrapping_sub(self.bitsConsumed)
+                .wrapping_sub(nbBits),
             nbBits,
         )
     }
@@ -326,7 +325,7 @@ impl<'a> BIT_DStream_t<'a> {
     /// the internal register is filled with at least 25 or 57 bits.
     #[inline(always)]
     pub(crate) fn reload(&mut self) -> StreamStatus {
-        if self.bitsConsumed > (size_of::<BitContainerType>() as u32) * 8 {
+        if self.bitsConsumed > BitContainerType::BITS {
             static zeroFilled: BitContainerType = 0;
             self.ptr = &zeroFilled as *const BitContainerType as *const core::ffi::c_char;
 
@@ -340,7 +339,7 @@ impl<'a> BIT_DStream_t<'a> {
         }
 
         if self.ptr == self.start {
-            return if self.bitsConsumed < size_of::<BitContainerType>() as u32 * 8 {
+            return if self.bitsConsumed < BitContainerType::BITS {
                 StreamStatus::EndOfBuffer
             } else {
                 StreamStatus::Completed
@@ -364,8 +363,7 @@ impl<'a> BIT_DStream_t<'a> {
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.ptr == self.start
-            && self.bitsConsumed as usize == size_of::<BitContainerType>().wrapping_mul(8)
+        self.ptr == self.start && self.bitsConsumed == BitContainerType::BITS
     }
 }
 
