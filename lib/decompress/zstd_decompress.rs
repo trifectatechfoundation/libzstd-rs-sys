@@ -451,42 +451,32 @@ unsafe fn ZSTD_decompressLegacyStream(
             hintSize
         }
         6 => {
-            let dctx_0 = legacyContext as *mut ZBUFFv06_DCtx;
-            let src_0 =
+            let dctx = legacyContext as *mut ZBUFFv06_DCtx;
+            let src =
                 (input.src as *const core::ffi::c_char).add(input.pos) as *const core::ffi::c_void;
-            let mut readSize_0 = (input.size).wrapping_sub(input.pos);
-            let dst_0 =
+            let mut readSize = (input.size).wrapping_sub(input.pos);
+            let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
-            let mut decodedSize_0 = (output.size).wrapping_sub(output.pos);
-            let hintSize_0 = ZBUFFv06_decompressContinue(
-                dctx_0,
-                dst_0,
-                &mut decodedSize_0,
-                src_0,
-                &mut readSize_0,
-            );
-            output.pos = (output.pos).wrapping_add(decodedSize_0);
-            input.pos = (input.pos).wrapping_add(readSize_0);
-            hintSize_0
+            let mut decodedSize = (output.size).wrapping_sub(output.pos);
+            let hintSize =
+                ZBUFFv06_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
+            output.pos = (output.pos).wrapping_add(decodedSize);
+            input.pos = (input.pos).wrapping_add(readSize);
+            hintSize
         }
         7 => {
-            let dctx_1 = legacyContext as *mut ZBUFFv07_DCtx;
-            let src_1 =
+            let dctx = legacyContext as *mut ZBUFFv07_DCtx;
+            let src =
                 (input.src as *const core::ffi::c_char).add(input.pos) as *const core::ffi::c_void;
-            let mut readSize_1 = (input.size).wrapping_sub(input.pos);
-            let dst_1 =
+            let mut readSize = (input.size).wrapping_sub(input.pos);
+            let dst =
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
-            let mut decodedSize_1 = (output.size).wrapping_sub(output.pos);
-            let hintSize_1 = ZBUFFv07_decompressContinue(
-                dctx_1,
-                dst_1,
-                &mut decodedSize_1,
-                src_1,
-                &mut readSize_1,
-            );
-            output.pos = (output.pos).wrapping_add(decodedSize_1);
-            input.pos = (input.pos).wrapping_add(readSize_1);
-            hintSize_1
+            let mut decodedSize = (output.size).wrapping_sub(output.pos);
+            let hintSize =
+                ZBUFFv07_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
+            output.pos = (output.pos).wrapping_add(decodedSize);
+            input.pos = (input.pos).wrapping_add(readSize);
+            hintSize
         }
         _ => Error::version_unsupported.to_error_code(),
     }
