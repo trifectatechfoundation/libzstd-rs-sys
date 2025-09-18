@@ -2866,18 +2866,18 @@ fn ZSTD_DCtx_updateOversizedDuration(
 fn ZSTD_DCtx_isOversizedTooLong(zds: &ZSTD_DStream) -> bool {
     zds.oversizedDuration >= ZSTD_WORKSPACETOOLARGE_MAXDURATION as size_t
 }
-fn ZSTD_checkOutBuffer(zds: &ZSTD_DStream, output: &ZSTD_outBuffer) -> size_t {
+fn ZSTD_checkOutBuffer(zds: &ZSTD_DStream, output: &ZSTD_outBuffer) -> Result<(), Error> {
     if zds.outBufferMode != BufferMode::Stable {
-        return 0;
+        return Ok(());
     }
     if zds.streamStage == StreamStage::Init {
-        return 0;
+        return Ok(());
     }
     let expect = zds.expectedOutBuffer;
     if expect.dst == output.dst && expect.pos == output.pos && expect.size == output.size {
-        return 0;
+        return Ok(());
     }
-    Error::dstBuffer_wrong.to_error_code()
+    Err(Error::dstBuffer_wrong)
 }
 
 unsafe fn ZSTD_decompressContinueStream(
@@ -2956,9 +2956,8 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     if output.pos > output.size {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    let err_code = ZSTD_checkOutBuffer(zds, output);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_checkOutBuffer(zds, output) {
+        return err.to_error_code();
     }
 
     while some_more_work {
