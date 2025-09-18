@@ -745,14 +745,14 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     assert!(args.op[3] <= oend);
 
     assert_eq!(istart, args.ilowest);
-    assert_eq!(istart.add(6), args.iend[0]);
+    assert_eq!(istart.wrapping_add(6), args.iend[0]);
 
     let segmentSize = dst.capacity().div_ceil(4);
     let mut segmentEnd = dst.as_mut_ptr_range().start;
 
     // Finish bit streams one by one.
     for (i, op) in args.op.iter().copied().enumerate() {
-        segmentEnd = Ord::min(segmentEnd.add(segmentSize), oend);
+        segmentEnd = Ord::min(segmentEnd.wrapping_add(segmentSize), oend);
 
         let mut bit = match init_remaining_dstream(&args, i, segmentEnd) {
             Ok(v) => v,
@@ -767,7 +767,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
             HUF_DECODER_FAST_TABLELOG as u32,
         );
 
-        if op.add(length as usize) != segmentEnd {
+        if op.wrapping_add(length as usize) != segmentEnd {
             return Error::corruption_detected.to_error_code();
         }
     }
