@@ -2843,24 +2843,24 @@ pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
     ZSTD_estimateDStreamSize(zfh.windowSize as size_t)
 }
 
-unsafe fn ZSTD_DCtx_isOverflow(
-    zds: *mut ZSTD_DStream,
+fn ZSTD_DCtx_isOverflow(
+    zds: &ZSTD_DStream,
     neededInBuffSize: size_t,
     neededOutBuffSize: size_t,
 ) -> bool {
-    ((*zds).inBuffSize).wrapping_add((*zds).outBuffSize)
+    zds.inBuffSize.wrapping_add(zds.outBuffSize)
         >= neededInBuffSize.wrapping_add(neededOutBuffSize)
             * ZSTD_WORKSPACETOOLARGE_FACTOR as size_t
 }
-unsafe fn ZSTD_DCtx_updateOversizedDuration(
-    zds: *mut ZSTD_DStream,
+fn ZSTD_DCtx_updateOversizedDuration(
+    zds: &mut ZSTD_DStream,
     neededInBuffSize: size_t,
     neededOutBuffSize: size_t,
 ) {
     if ZSTD_DCtx_isOverflow(zds, neededInBuffSize, neededOutBuffSize) {
-        (*zds).oversizedDuration = ((*zds).oversizedDuration).wrapping_add(1);
+        zds.oversizedDuration = zds.oversizedDuration.wrapping_add(1);
     } else {
-        (*zds).oversizedDuration = 0;
+        zds.oversizedDuration = 0;
     };
 }
 fn ZSTD_DCtx_isOversizedTooLong(zds: &ZSTD_DStream) -> bool {
