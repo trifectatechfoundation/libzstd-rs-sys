@@ -1121,7 +1121,7 @@ pub fn HUF_readDTableX2_wksp(
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeSymbolX2(
+fn HUF_decodeSymbolX2(
     w: &mut Writer<'_>,
     DStream: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
@@ -1183,7 +1183,7 @@ macro_rules! HUF_DECODE_SYMBOLX2_2 {
 }
 
 #[inline(always)]
-unsafe fn HUF_decodeStreamX2(
+fn HUF_decodeStreamX2(
     mut p: Writer<'_>,
     bitDPtr: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
@@ -1235,7 +1235,7 @@ unsafe fn HUF_decodeStreamX2(
 }
 
 #[inline(always)]
-unsafe fn HUF_decompress1X2_usingDTable_internal_body(
+fn HUF_decompress1X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1635,14 +1635,14 @@ unsafe fn HUF_decompress4X2_usingDTable_internal(
     }
 }
 
-unsafe fn HUF_decompress1X2_usingDTable_internal_bmi2(
+fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
 ) -> size_t {
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
-unsafe fn HUF_decompress1X2_usingDTable_internal_default(
+fn HUF_decompress1X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1650,7 +1650,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal_default(
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
 
-unsafe fn HUF_decompress1X2_usingDTable_internal(
+fn HUF_decompress1X2_usingDTable_internal(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1663,7 +1663,7 @@ unsafe fn HUF_decompress1X2_usingDTable_internal(
     }
 }
 
-pub unsafe fn HUF_decompress1X2_DCtx_wksp(
+pub fn HUF_decompress1X2_DCtx_wksp(
     dctx: &mut DTable,
     dst: Writer<'_>,
     src: &[u8],
@@ -1956,35 +1956,7 @@ fn HUF_selectDecoder(dst_size: usize, src_size: usize) -> Decoder {
     }
 }
 
-pub unsafe fn HUF_decompress1X_DCtx_wksp(
-    dctx: &mut DTable,
-    mut dst: Writer<'_>,
-    src: &[u8],
-    workSpace: &mut Workspace,
-    flags: core::ffi::c_int,
-) -> size_t {
-    if dst.capacity() == 0 {
-        return Error::dstSize_tooSmall.to_error_code();
-    }
-    if src.len() > dst.capacity() {
-        return Error::corruption_detected.to_error_code();
-    }
-    if src.len() == dst.capacity() {
-        ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), dst.capacity());
-        return dst.capacity();
-    }
-    if src.len() == 1 {
-        ptr::write_bytes(dst.as_mut_ptr(), src[0], dst.capacity());
-        return dst.capacity();
-    }
-
-    match HUF_selectDecoder(dst.capacity(), src.len()) {
-        Decoder::A1 => HUF_decompress1X1_DCtx_wksp(dctx, dst, src, workSpace, flags),
-        Decoder::A2 => HUF_decompress1X2_DCtx_wksp(dctx, dst, src, workSpace, flags),
-    }
-}
-
-pub unsafe fn HUF_decompress1X_usingDTable(
+pub fn HUF_decompress1X_usingDTable(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
@@ -1997,7 +1969,7 @@ pub unsafe fn HUF_decompress1X_usingDTable(
     }
 }
 
-pub unsafe fn HUF_decompress1X1_DCtx_wksp(
+pub fn HUF_decompress1X1_DCtx_wksp(
     dctx: &mut DTable,
     dst: Writer<'_>,
     src: &[u8],
