@@ -1,7 +1,7 @@
 use core::ptr;
 use std::marker::PhantomData;
 
-use libc::{free, malloc, memcpy, ptrdiff_t, size_t};
+use libc::{free, malloc, ptrdiff_t, size_t};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{
@@ -29,7 +29,7 @@ pub(crate) struct ZSTDv05_DCtx {
     litPtr: *const u8,
     litSize: size_t,
     litBuffer: [u8; 131080],
-    headerBuffer: [u8; 5],
+    headerBuffer: [u8; ZSTDv05_frameHeaderSize_min],
 }
 type ZSTDv05_dStage = core::ffi::c_uint;
 const ZSTDv05ds_decompressBlock: ZSTDv05_dStage = 3;
@@ -102,7 +102,7 @@ struct HUFv05_DEltX4 {
     nbBits: u8,
     length: u8,
 }
-type rankVal_t = [[u32; 17]; 16];
+type rankVal_t = [[u32; HUFv05_ABSOLUTEMAX_TABLELOG + 1]; HUFv05_ABSOLUTEMAX_TABLELOG];
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct sortedSymbol_t {
@@ -479,11 +479,7 @@ unsafe fn FSEv05_buildDTable(
         i_0 = i_0.wrapping_add(1);
     }
     DTableH.fastMode = noLarge as u16;
-    memcpy(
-        dt as *mut core::ffi::c_void,
-        &mut DTableH as *mut FSEv05_DTableHeader as *const core::ffi::c_void,
-        ::core::mem::size_of::<FSEv05_DTableHeader>(),
-    );
+    dt.cast::<FSEv05_DTableHeader>().write(DTableH);
     Ok(())
 }
 
@@ -756,7 +752,7 @@ unsafe fn FSEv05_decompress(dst: &mut [u8], cSrc: &[u8]) -> Result<size_t, Error
     )?;
     FSEv05_decompress_usingDTable(dst, &cSrc[headerSize..], dt.as_mut_ptr())
 }
-const HUFv05_ABSOLUTEMAX_TABLELOG: core::ffi::c_int = 16;
+const HUFv05_ABSOLUTEMAX_TABLELOG: usize = 16;
 const HUFv05_MAX_TABLELOG: core::ffi::c_int = 12;
 const HUFv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 unsafe fn HUFv05_readStats(
@@ -806,10 +802,10 @@ unsafe fn HUFv05_readStats(
             core::slice::from_raw_parts(ip.add(1), iSize),
         )?;
     }
-    core::ptr::write_bytes(rankStats, 0, (HUFv05_ABSOLUTEMAX_TABLELOG + 1) as size_t);
+    core::ptr::write_bytes(rankStats, 0, HUFv05_ABSOLUTEMAX_TABLELOG + 1);
     let mut weightTotal: u32 = 0;
     for &w in &huffWeight[..oSize] {
-        if w as core::ffi::c_int >= HUFv05_ABSOLUTEMAX_TABLELOG {
+        if usize::from(w) >= HUFv05_ABSOLUTEMAX_TABLELOG {
             return Err(Error::corruption_detected);
         }
         let fresh7 = &mut (*rankStats.offset(w as isize));
@@ -1122,7 +1118,7 @@ unsafe fn HUFv05_fillDTableX4Level2(
     DTable: *mut HUFv05_DEltX4,
     sizeLog: u32,
     consumed: u32,
-    rankValOrigin: *const u32,
+    rankValOrigin: &[u32; 17],
     minWeight: core::ffi::c_int,
     sortedSymbols: *const sortedSymbol_t,
     sortedListSize: u32,
@@ -1134,15 +1130,10 @@ unsafe fn HUFv05_fillDTableX4Level2(
         nbBits: 0,
         length: 0,
     };
-    let mut rankVal: [u32; 17] = [0; 17];
-    memcpy(
-        rankVal.as_mut_ptr() as *mut core::ffi::c_void,
-        rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>(),
-    );
+    let mut rankVal: [u32; 17] = *rankValOrigin;
     if minWeight > 1 {
         let mut i: u32 = 0;
-        let skipSize = *rankVal.as_mut_ptr().offset(minWeight as isize);
+        let skipSize = rankVal[minWeight as usize];
         MEM_writeLE16(
             &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
             baseSeq,
@@ -1161,7 +1152,7 @@ unsafe fn HUFv05_fillDTableX4Level2(
         let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
-        let start = *rankVal.as_mut_ptr().offset(weight as isize);
+        let start = rankVal[weight as usize];
         let mut i_0 = start;
         let end = start.wrapping_add(length);
         MEM_writeLE16(
@@ -1178,7 +1169,7 @@ unsafe fn HUFv05_fillDTableX4Level2(
                 break;
             }
         }
-        let fresh33 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
+        let fresh33 = &mut rankVal[weight as usize];
         *fresh33 = (*fresh33).wrapping_add(length);
         s = s.wrapping_add(1);
     }
@@ -1189,24 +1180,19 @@ unsafe fn HUFv05_fillDTableX4(
     sortedList: *const sortedSymbol_t,
     sortedListSize: u32,
     rankStart: *const u32,
-    rankValOrigin: *mut [u32; 17],
+    rankValOrigin: &mut [[u32; HUFv05_ABSOLUTEMAX_TABLELOG + 1]; HUFv05_ABSOLUTEMAX_TABLELOG],
     maxWeight: u32,
     nbBitsBaseline: u32,
 ) {
-    let mut rankVal: [u32; 17] = [0; 17];
+    let mut rankVal = rankValOrigin[0];
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
-    memcpy(
-        rankVal.as_mut_ptr() as *mut core::ffi::c_void,
-        rankValOrigin as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 17]>(),
-    );
     let mut s = 0;
     while s < sortedListSize {
         let symbol = (*sortedList.offset(s as isize)).symbol as u16;
         let weight = (*sortedList.offset(s as isize)).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
-        let start = *rankVal.as_mut_ptr().offset(weight as isize);
+        let start: u32 = rankVal[weight as usize];
         let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
@@ -1218,7 +1204,7 @@ unsafe fn HUFv05_fillDTableX4(
                 DTable.offset(start as isize),
                 targetLog.wrapping_sub(nbBits),
                 nbBits,
-                (*rankValOrigin.offset(nbBits as isize)).as_mut_ptr(),
+                &rankValOrigin[nbBits as usize],
                 minWeight,
                 sortedList.offset(sortedRank as isize),
                 sortedListSize.wrapping_sub(sortedRank),
@@ -1245,7 +1231,7 @@ unsafe fn HUFv05_fillDTableX4(
                 i = i.wrapping_add(1);
             }
         }
-        let fresh34 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
+        let fresh34 = &mut rankVal[weight as usize];
         *fresh34 = (*fresh34).wrapping_add(length);
         s = s.wrapping_add(1);
     }
@@ -1259,7 +1245,8 @@ unsafe fn HUFv05_readDTableX4(DTable: *mut core::ffi::c_uint, src: &[u8]) -> Res
     let mut rankStats: [u32; 17] = [0; 17];
     let mut rankStart0: [u32; 18] = [0; 18];
     let rankStart = rankStart0.as_mut_ptr().add(1);
-    let mut rankVal: rankVal_t = [[0; 17]; 16];
+    let mut rankVal: rankVal_t =
+        [[0; HUFv05_ABSOLUTEMAX_TABLELOG + 1]; HUFv05_ABSOLUTEMAX_TABLELOG];
     let mut tableLog: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let memLog = *DTable;
@@ -1334,7 +1321,7 @@ unsafe fn HUFv05_readDTableX4(DTable: *mut core::ffi::c_uint, src: &[u8]) -> Res
         sortedSymbol.as_mut_ptr(),
         sizeOfSort,
         rankStart0.as_mut_ptr(),
-        rankVal.as_mut_ptr(),
+        &mut rankVal,
         maxW,
         tableLog.wrapping_add(1),
     );
@@ -1347,7 +1334,7 @@ unsafe fn HUFv05_decodeSymbolX4(
     dtLog: u32,
 ) -> u32 {
     let val = DStream.look_bits_fast(dtLog);
-    memcpy(op, dt.add(val) as *const core::ffi::c_void, 2);
+    op.cast::<u16>().write((*dt.add(val)).sequence);
     DStream.skip_bits((*dt.add(val)).nbBits as u32);
     (*dt.add(val)).length as u32
 }
@@ -1358,7 +1345,7 @@ unsafe fn HUFv05_decodeLastSymbolX4(
     dtLog: u32,
 ) -> u32 {
     let val = DStream.look_bits_fast(dtLog);
-    memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
+    ptr::copy_nonoverlapping(dt.add(val).cast::<u8>(), op.cast::<u8>(), 1);
     if (*dt.add(val)).length == 1 {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
     } else if DStream.bitsConsumed < usize::BITS {
@@ -2086,7 +2073,7 @@ unsafe fn ZSTDv05_copyRawBlock(
     if src.len() > maxDstSize {
         return Err(Error::dstSize_tooSmall);
     }
-    memcpy(dst, src.as_ptr().cast(), src.len());
+    ptr::copy_nonoverlapping(src.as_ptr().cast(), dst, src.len());
     Ok(src.len())
 }
 unsafe fn ZSTDv05_decodeLiteralsBlock(
@@ -2230,9 +2217,9 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 if litSize_1.wrapping_add(lhSize_1 as size_t) > src.len() {
                     return Err(Error::corruption_detected);
                 }
-                memcpy(
-                    dctx.litBuffer.as_mut_ptr() as *mut core::ffi::c_void,
-                    istart.offset(lhSize_1 as isize) as *const core::ffi::c_void,
+                ptr::copy_nonoverlapping(
+                    istart.add(lhSize_1 as usize),
+                    dctx.litBuffer.as_mut_ptr(),
                     litSize_1,
                 );
                 dctx.litPtr = dctx.litBuffer.as_mut_ptr();
@@ -2632,7 +2619,7 @@ unsafe fn ZSTDv05_execSequence(
     }
     op = op.add(8);
     match_0 = match_0.add(8);
-    if oMatchEnd > oend.offset(-((16 - MINMATCH) as isize)) {
+    if oMatchEnd > oend.sub((16 - MINMATCH) as usize) {
         if op < oend_8 {
             ZSTDv05_wildcopy(
                 op as *mut core::ffi::c_void,
@@ -2737,11 +2724,7 @@ unsafe fn ZSTDv05_decompressSequences(
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
-        memcpy(
-            op as *mut core::ffi::c_void,
-            litPtr as *const core::ffi::c_void,
-            lastLLSize,
-        );
+        ptr::copy_nonoverlapping(litPtr, op, lastLLSize);
         op = op.add(lastLLSize);
     }
     Ok(op.offset_from(ostart) as size_t)
@@ -2937,11 +2920,9 @@ unsafe fn ZSTDv05_decompressContinue(
             }
             dctx.headerSize =
                 ZSTDv05_decodeFrameHeader_Part1(dctx, src.subslice(..ZSTDv05_frameHeaderSize_min))?;
-            memcpy(
-                (dctx.headerBuffer).as_mut_ptr() as *mut core::ffi::c_void,
-                src.as_ptr().cast(),
-                ZSTDv05_frameHeaderSize_min,
-            );
+            dctx.headerBuffer = src.as_slice()[..ZSTDv05_frameHeaderSize_min]
+                .try_into()
+                .unwrap();
             if dctx.headerSize > ZSTDv05_frameHeaderSize_min {
                 return Err(Error::GENERIC);
             }
@@ -3179,9 +3160,9 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
                 )?;
                 if headerSize != 0 {
                     // not enough input to decode header : tell how many bytes would be necessary
-                    memcpy(
-                        (zbc.headerBuffer).as_mut_ptr().add(zbc.hPos) as *mut core::ffi::c_void,
-                        src.cast(),
+                    ptr::copy_nonoverlapping(
+                        src,
+                        (zbc.headerBuffer).as_mut_ptr().add(zbc.hPos),
                         *srcSizePtr,
                     );
                     zbc.hPos = (zbc.hPos).wrapping_add(*srcSizePtr);
@@ -3248,9 +3229,9 @@ pub(crate) unsafe fn ZBUFFv05_decompressContinue(
             }
             if zbc.hPos != 0 {
                 // some data already loaded into headerBuffer : transfer into inBuff
-                memcpy(
-                    zbc.inBuff as *mut core::ffi::c_void,
-                    (zbc.headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
+                ptr::copy_nonoverlapping(
+                    (zbc.headerBuffer).as_ptr(),
+                    zbc.inBuff.cast::<u8>(),
                     zbc.hPos,
                 );
                 zbc.inPos = zbc.hPos;
