@@ -2100,6 +2100,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
 pub const STORED_SEQS: core::ffi::c_int = 8;
 pub const STORED_SEQS_MASK: core::ffi::c_int = STORED_SEQS - 1;
 pub const ADVANCED_SEQS: core::ffi::c_int = STORED_SEQS;
+
 unsafe fn ZSTD_decompressSequencesLong_default(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
@@ -2110,6 +2111,7 @@ unsafe fn ZSTD_decompressSequencesLong_default(
     ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset)
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_decompressSequences_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
@@ -2121,6 +2123,7 @@ unsafe fn ZSTD_decompressSequences_bmi2(
     ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
@@ -2132,6 +2135,7 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
 }
 
+#[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_decompressSequencesLong_bmi2(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
