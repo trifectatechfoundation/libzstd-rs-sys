@@ -158,18 +158,6 @@ impl TryFrom<u8> for SymbolEncodingType_e {
 
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
-#[inline]
-unsafe fn ZSTD_maybeNullPtrAdd(
-    ptr: *mut core::ffi::c_void,
-    add: ptrdiff_t,
-) -> *mut core::ffi::c_void {
-    if add > 0 {
-        (ptr as *mut core::ffi::c_char).offset(add) as *mut core::ffi::c_void
-    } else {
-        ptr
-    }
-}
-
 pub const STREAM_ACCUMULATOR_MIN: core::ffi::c_int = match size_of::<usize>() {
     4 => STREAM_ACCUMULATOR_MIN_32,
     8 => STREAM_ACCUMULATOR_MIN_64,
@@ -1617,8 +1605,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     offset: Offset,
 ) -> size_t {
     let ostart = dst as *mut u8;
-    let oend =
-        ZSTD_maybeNullPtrAdd(ostart as *mut core::ffi::c_void, maxDstSize as ptrdiff_t) as *mut u8;
+    let oend = ostart.wrapping_byte_add(maxDstSize);
     let mut op = ostart;
     let mut litPtr = dctx.litPtr;
     let mut litBufferEnd = dctx.litBufferEnd;
