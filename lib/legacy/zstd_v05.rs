@@ -1367,7 +1367,7 @@ unsafe fn HUFv05_decodeStreamX4(
         p = p.offset(HUFv05_decodeSymbolX4(p as *mut [u8; 2], bitDPtr, dt, dtLog) as isize);
     }
     if p < pEnd {
-        p = p.offset(HUFv05_decodeLastSymbolX4(p as *mut u8, bitDPtr, dt, dtLog) as isize);
+        p = p.offset(HUFv05_decodeLastSymbolX4(p, bitDPtr, dt, dtLog) as isize);
     }
     p.offset_from(pStart) as size_t
 }
@@ -1846,6 +1846,7 @@ static algoTime: [[algo_time_t; 3]; 16] = [
     ],
 ];
 unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
+    #[allow(clippy::type_complexity)]
     static decompress: [unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>; 2] = [
         HUFv05_decompress4X2 as unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
         HUFv05_decompress4X4 as unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
