@@ -150,7 +150,7 @@ const fn get_middle_bits(
     const REG_MASK: u32 = BitContainerType::BITS - 1;
 
     // if start > regMask, the bitstream is corrupted, and the result is undefined.
-    assert!(nbBits < MASK.len() as u32);
+    debug_assert!(nbBits < MASK.len() as u32);
 
     if cfg!(target_arch = "x86_64") {
         // x86 transform & ((1 << nbBits) - 1) to bzhi instruction, it is better
