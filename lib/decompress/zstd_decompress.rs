@@ -176,7 +176,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
             };
 
             match ZSTDv05_getFrameParams(&mut fParams, src) {
-                0 => Some(fParams.srcSize as core::ffi::c_ulonglong),
+                Ok(0) => Some(fParams.srcSize as core::ffi::c_ulonglong),
                 _ => None,
             }
         }
@@ -223,14 +223,13 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
 
     match version {
         5 => {
-            let mut result: size_t = 0;
             let zd = ZSTDv05_createDCtx();
             if zd.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            result = ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict);
+            let result = ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict);
             ZSTDv05_freeDCtx(zd);
-            result
+            result.unwrap_or_else(|err| err.to_error_code())
         }
         6 => {
             let compressedSize = src.len();
@@ -448,7 +447,7 @@ unsafe fn ZSTD_decompressLegacyStream(
             );
             output.pos = (output.pos).wrapping_add(decodedSize);
             input.pos = (input.pos).wrapping_add(readSize);
-            hintSize
+            hintSize.unwrap_or_else(|err| err.to_error_code())
         }
         6 => {
             let dctx = legacyContext as *mut ZBUFFv06_DCtx;
