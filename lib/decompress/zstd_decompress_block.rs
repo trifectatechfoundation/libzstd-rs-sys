@@ -422,9 +422,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
     let flags = {
-        let bmi_flag = match dctx.bmi2 {
-            0 => 0,
-            _ => HUF_flags_bmi2 as core::ffi::c_int,
+        let bmi_flag = if dctx.bmi2 {
+            HUF_flags_bmi2 as core::ffi::c_int
+        } else {
+            0
         };
 
         let disable_asm_flag = match dctx.disableHufAsm {
@@ -989,7 +990,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2 != 0,
+        dctx.bmi2,
     );
     if ERR_isError(llhSize) {
         return Error::corruption_detected.to_error_code();
@@ -1009,7 +1010,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2 != 0,
+        dctx.bmi2,
     );
     if ERR_isError(ofhSize) {
         return Error::corruption_detected.to_error_code();
@@ -1029,7 +1030,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.ddictIsCold,
         nbSeq,
         &mut dctx.workspace,
-        dctx.bmi2 != 0,
+        dctx.bmi2,
     );
     if ERR_isError(mlhSize) {
         return Error::corruption_detected.to_error_code();
@@ -2149,7 +2150,7 @@ unsafe fn ZSTD_decompressSequences(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if dctx.bmi2 != 0 {
+    if dctx.bmi2 {
         ZSTD_decompressSequences_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequences_default(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
@@ -2164,7 +2165,7 @@ unsafe fn ZSTD_decompressSequencesSplitLitBuffer(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if dctx.bmi2 != 0 {
+    if dctx.bmi2 {
         ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequencesSplitLitBuffer_default(
@@ -2180,7 +2181,7 @@ unsafe fn ZSTD_decompressSequencesLong(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    if dctx.bmi2 != 0 {
+    if dctx.bmi2 {
         ZSTD_decompressSequencesLong_bmi2(dctx, dst, seqStart, nbSeq, offset)
     } else {
         ZSTD_decompressSequencesLong_default(dctx, dst, seqStart, nbSeq, offset)
