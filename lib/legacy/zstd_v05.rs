@@ -1419,7 +1419,7 @@ unsafe fn HUFv05_decompress1X4_usingDTable(
     mut dst: Writer<'_>,
     cSrc: &[u8],
     DTable: *const core::ffi::c_uint,
-) -> Result<size_t, Error> {
+) -> Result<(), Error> {
     let ostart = dst.as_mut_ptr();
     let oend = ostart.add(dst.capacity());
     let dtLog = *DTable.add(0);
@@ -1430,7 +1430,7 @@ unsafe fn HUFv05_decompress1X4_usingDTable(
     if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
-    Ok(dst.capacity())
+    Ok(())
 }
 unsafe fn HUFv05_decompress4X4_usingDTable(
     mut dst: Writer<'_>,
@@ -2169,7 +2169,6 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             Ok(litCSize.wrapping_add(lhSize as size_t))
         }
         IS_PCH => {
-            let mut errorCode: size_t = 0;
             let mut litSize_0: size_t = 0;
             let mut litCSize_0: size_t = 0;
             let mut lhSize = (*istart as core::ffi::c_int >> 4 & 3) as u32;
@@ -2187,7 +2186,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
             if litCSize_0.wrapping_add(lhSize as size_t) > src.len() {
                 return Err(Error::corruption_detected);
             }
-            errorCode = HUFv05_decompress1X4_usingDTable(
+            HUFv05_decompress1X4_usingDTable(
                 Writer::from_raw_parts(dctx.litBuffer.as_mut_ptr(), litSize_0),
                 core::slice::from_raw_parts(istart.add(lhSize as usize), litCSize_0),
                 dctx.hufTableX4.as_mut_ptr(),
@@ -2361,7 +2360,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             LLlog = LLbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableLL, LLbits as core::ffi::c_uint);
+            FSEv05_buildDTable_raw(DTableLL, LLbits as core::ffi::c_uint)?;
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2381,7 +2380,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Err(Error::corruption_detected);
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog);
+            FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog)?;
         }
         _ => unreachable!(),
     }
@@ -2400,7 +2399,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             Offlog = Offbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableOffb, Offbits as core::ffi::c_uint);
+            FSEv05_buildDTable_raw(DTableOffb, Offbits as core::ffi::c_uint)?;
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2420,7 +2419,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Err(Error::corruption_detected);
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog);
+            FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog)?;
         }
         _ => unreachable!(),
     }
@@ -2436,7 +2435,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             MLlog = MLbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableML, MLbits as core::ffi::c_uint);
+            FSEv05_buildDTable_raw(DTableML, MLbits as core::ffi::c_uint)?;
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2456,7 +2455,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Err(Error::corruption_detected);
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog);
+            FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog)?;
         }
         _ => unreachable!(),
     }
@@ -2857,7 +2856,7 @@ pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
     src: Reader<'_>,
     dict: &[u8],
 ) -> Result<size_t, Error> {
-    ZSTDv05_decompressBegin_usingDict(dctx, dict);
+    ZSTDv05_decompressBegin_usingDict(dctx, dict)?;
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src)
 }

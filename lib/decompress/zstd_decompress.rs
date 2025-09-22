@@ -374,14 +374,16 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            ZBUFFv05_decompressInitDictionary(
+            if let Err(err) = ZBUFFv05_decompressInitDictionary(
                 dctx,
                 if dictSize != 0 {
                     core::slice::from_raw_parts(dict.cast(), dictSize)
                 } else {
                     &[]
                 },
-            );
+            ) {
+                return err.to_error_code();
+            }
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
         }
