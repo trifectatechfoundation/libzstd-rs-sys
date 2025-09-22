@@ -1763,12 +1763,14 @@ unsafe fn ZSTD_decompressSequences_body(
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    let ostart = dst.as_mut_ptr();
+    let capacity = dst.capacity();
+
     let oend = match dctx.litBufferLocation {
-        LitLocation::ZSTD_not_in_dst => ostart.wrapping_add(dst.capacity()),
+        LitLocation::ZSTD_not_in_dst => dst.as_mut_ptr_range().end,
         LitLocation::ZSTD_split | LitLocation::ZSTD_in_dst => dctx.litBuffer,
     };
-    let mut op = ostart;
+
+    let mut op = dst;
     let mut litPtr = dctx.litPtr;
     let litEnd = litPtr.add(dctx.litSize);
     let prefixStart = dctx.prefixStart as *const u8;
@@ -1794,7 +1796,7 @@ unsafe fn ZSTD_decompressSequences_body(
         for nbSeq in (1..=nbSeq).rev() {
             let sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
             let oneSeqSize = ZSTD_execSequence(
-                op,
+                op.as_mut_ptr(),
                 oend,
                 sequence,
                 &mut litPtr,
@@ -1804,11 +1806,11 @@ unsafe fn ZSTD_decompressSequences_body(
                 dictEnd,
             );
 
-            if ERR_isError(oneSeqSize) as core::ffi::c_long != 0 {
+            if ERR_isError(oneSeqSize) {
                 return oneSeqSize;
             }
 
-            op = op.add(oneSeqSize);
+            op = op.subslice(oneSeqSize..);
         }
 
         if !seqState.DStream.is_empty() {
@@ -1819,16 +1821,16 @@ unsafe fn ZSTD_decompressSequences_body(
     }
 
     let lastLLSize = litEnd.offset_from(litPtr) as size_t;
-    if lastLLSize > oend.offset_from(op) as size_t {
+    if lastLLSize > oend.offset_from(op.as_mut_ptr()) as size_t {
         return Error::dstSize_tooSmall.to_error_code();
     }
 
     if !op.is_null() {
-        core::ptr::copy_nonoverlapping(litPtr, op, lastLLSize);
-        op = op.add(lastLLSize);
+        core::ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize);
+        op = op.subslice(lastLLSize..);
     }
 
-    op.offset_from(ostart) as size_t
+    capacity - op.capacity()
 }
 
 unsafe fn ZSTD_decompressSequences_default(
