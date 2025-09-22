@@ -241,6 +241,8 @@ jobs:
         run: |
           cargo build --target ${{ matrix.target }} --features=export-symbols -p libzstd-rs-sys --release --lib
           ls target/${{ matrix.target }}/release
+        env:
+          RUSTFLAGS: "-C debug-assertions=true"
 
       - name: show the symbols
         run: nm -g --defined-only target/${{ matrix.target }}/release/liblibzstd_rs_sys.a | grep "T ZSTD_"
