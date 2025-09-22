@@ -234,7 +234,7 @@ pub fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), Error> 
     }
 }
 
-unsafe fn ZSTD_allocateLiteralsBuffer(
+fn ZSTD_allocateLiteralsBuffer(
     dctx: &mut ZSTD_DCtx,
     mut dst: Writer<'_>,
     litSize: usize,
@@ -248,29 +248,29 @@ unsafe fn ZSTD_allocateLiteralsBuffer(
     let blockSizeMax = dctx.block_size_max();
     if streaming == StreamingOperation::NotStreaming
         && dstCapacity
-            > blockSizeMax
-                .wrapping_add(WILDCOPY_OVERLENGTH)
-                .wrapping_add(litSize)
-                .wrapping_add(WILDCOPY_OVERLENGTH)
+            > blockSizeMax.wrapping_add(WILDCOPY_OVERLENGTH + litSize + WILDCOPY_OVERLENGTH)
     {
-        dctx.litBuffer = dst.add(blockSizeMax).add(WILDCOPY_OVERLENGTH);
-        dctx.litBufferEnd = dctx.litBuffer.add(litSize);
+        dctx.litBuffer = dst.wrapping_add(blockSizeMax + WILDCOPY_OVERLENGTH);
+        dctx.litBufferEnd = dctx.litBuffer.wrapping_add(litSize);
         dctx.litBufferLocation = LitLocation::ZSTD_in_dst;
     } else if litSize <= ZSTD_LITBUFFEREXTRASIZE {
         dctx.litBuffer = (dctx.litExtraBuffer).as_mut_ptr();
-        dctx.litBufferEnd = dctx.litBuffer.add(litSize);
+        dctx.litBufferEnd = dctx.litBuffer.wrapping_add(litSize);
         dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
     } else {
         if split_immediately {
             dctx.litBuffer = dst
-                .add(expectedWriteSize)
-                .sub(litSize)
-                .add(ZSTD_LITBUFFEREXTRASIZE)
-                .sub(WILDCOPY_OVERLENGTH);
-            dctx.litBufferEnd = dctx.litBuffer.add(litSize).sub(ZSTD_LITBUFFEREXTRASIZE);
+                .wrapping_add(expectedWriteSize)
+                .wrapping_sub(litSize)
+                .wrapping_add(ZSTD_LITBUFFEREXTRASIZE)
+                .wrapping_sub(WILDCOPY_OVERLENGTH);
+            dctx.litBufferEnd = dctx
+                .litBuffer
+                .wrapping_add(litSize)
+                .wrapping_sub(ZSTD_LITBUFFEREXTRASIZE);
         } else {
-            dctx.litBuffer = dst.add(expectedWriteSize).sub(litSize);
-            dctx.litBufferEnd = dst.add(expectedWriteSize);
+            dctx.litBuffer = dst.wrapping_add(expectedWriteSize).wrapping_sub(litSize);
+            dctx.litBufferEnd = dst.wrapping_add(expectedWriteSize);
         }
         dctx.litBufferLocation = LitLocation::ZSTD_split;
     };
