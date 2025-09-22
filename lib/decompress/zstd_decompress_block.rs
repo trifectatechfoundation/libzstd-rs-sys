@@ -1867,7 +1867,7 @@ fn prefetch_val<T>(ptr: *const T) {
 }
 
 #[inline(always)]
-unsafe fn ZSTD_prefetchMatch(
+fn ZSTD_prefetchMatch(
     prefetchPos: size_t,
     sequence: seq_t,
     prefixStart: *const u8,
