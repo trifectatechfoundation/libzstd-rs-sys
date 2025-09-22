@@ -1758,15 +1758,14 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 #[inline(always)]
 unsafe fn ZSTD_decompressSequences_body(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    mut dst: Writer<'_>,
     seq: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    let ostart = dst as *mut u8;
+    let ostart = dst.as_mut_ptr();
     let oend = match dctx.litBufferLocation {
-        LitLocation::ZSTD_not_in_dst => ostart.wrapping_add(maxDstSize),
+        LitLocation::ZSTD_not_in_dst => ostart.wrapping_add(dst.capacity()),
         LitLocation::ZSTD_split | LitLocation::ZSTD_in_dst => dctx.litBuffer,
     };
     let mut op = ostart;
@@ -1834,13 +1833,12 @@ unsafe fn ZSTD_decompressSequences_body(
 
 unsafe fn ZSTD_decompressSequences_default(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+    ZSTD_decompressSequences_body(dctx, dst, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
@@ -2114,13 +2112,12 @@ unsafe fn ZSTD_decompressSequencesLong_default(
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_decompressSequences_bmi2(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_body(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+    ZSTD_decompressSequences_body(dctx, dst, seqStart, nbSeq, offset)
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -2148,16 +2145,15 @@ unsafe fn ZSTD_decompressSequencesLong_bmi2(
 
 unsafe fn ZSTD_decompressSequences(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
     if dctx.bmi2 {
-        ZSTD_decompressSequences_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+        ZSTD_decompressSequences_bmi2(dctx, dst, seqStart, nbSeq, offset)
     } else {
-        ZSTD_decompressSequences_default(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+        ZSTD_decompressSequences_default(dctx, dst, seqStart, nbSeq, offset)
     }
 }
 
@@ -2344,14 +2340,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
             offset,
         )
     } else {
-        ZSTD_decompressSequences(
-            dctx,
-            dst.as_mut_ptr().cast(),
-            dst.capacity(),
-            ip,
-            nbSeq,
-            offset,
-        )
+        ZSTD_decompressSequences(dctx, dst, ip, nbSeq, offset)
     }
 }
 
