@@ -223,7 +223,7 @@ pub(crate) unsafe fn ZSTD_count_2segments(
 
 const prime3bytes: u32 = 506832829;
 const fn ZSTD_hash3(u: u32, h: u32, s: u32) -> u32 {
-    (((u << (32 as core::ffi::c_int - 24 as core::ffi::c_int)) * prime3bytes) ^ s)
+    (((u << (32 as core::ffi::c_int - 24 as core::ffi::c_int)).wrapping_mul(prime3bytes)) ^ s)
         >> 32u32.wrapping_sub(h)
 }
 #[inline]

@@ -1203,7 +1203,7 @@ unsafe fn ZSTD_row_getMatchMask(
             chunk ^= splatChar;
             chunk = (((chunk | x80) - x01) | chunk) & x80;
             matches <<= chunkSize;
-            matches |= ((chunk * extractMagic) >> shiftAmount) as ZSTD_VecMask;
+            matches |= ((chunk.wrapping_mul(extractMagic)) >> shiftAmount) as ZSTD_VecMask;
             i -= chunkSize as isize;
 
             if i < 0 {
