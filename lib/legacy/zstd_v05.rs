@@ -174,16 +174,14 @@ const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
 const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-unsafe fn ZSTDv05_copy8(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    memcpy(dst, src, 8);
-}
+
 #[inline]
 unsafe fn ZSTDv05_wildcopy(dst: *mut core::ffi::c_void, src: *const u8, length: ptrdiff_t) {
     let mut ip = src;
     let mut op = dst as *mut u8;
     let oend = op.offset(length);
     loop {
-        ZSTDv05_copy8(op as *mut core::ffi::c_void, ip as *const core::ffi::c_void);
+        ptr::copy_nonoverlapping(ip, op.cast::<u8>(), 8);
         op = op.add(8);
         ip = ip.add(8);
         if op >= oend {
@@ -490,9 +488,7 @@ unsafe fn FSEv05_buildDTable(
     );
     0
 }
-fn FSEv05_abs(a: core::ffi::c_short) -> core::ffi::c_short {
-    a.abs()
-}
+
 unsafe fn FSEv05_readNCount(
     normalizedCounter: *mut core::ffi::c_short,
     maxSVPtr: *mut core::ffi::c_uint,
@@ -574,7 +570,7 @@ unsafe fn FSEv05_readNCount(
             bitCount += nbBits;
         }
         count -= 1;
-        remaining -= FSEv05_abs(count) as core::ffi::c_int;
+        remaining -= count.abs() as core::ffi::c_int;
         let fresh4 = charnum;
         charnum = charnum.wrapping_add(1);
         *normalizedCounter.offset(fresh4 as isize) = count;
@@ -2069,9 +2065,6 @@ unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> size_t {
     }
     decompress[algoNb](dst, cSrc)
 }
-unsafe fn ZSTDv05_copy4(dst: *mut core::ffi::c_void, src: *const core::ffi::c_void) {
-    memcpy(dst, src, 4);
-}
 unsafe fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) -> size_t {
     (*dctx).expected = ZSTDv05_frameHeaderSize_min;
     (*dctx).stage = ZSTDv05ds_getFrameHeaderSize;
@@ -2714,16 +2707,12 @@ unsafe fn ZSTDv05_execSequence(
         *op.add(2) = *match_0.add(2);
         *op.add(3) = *match_0.add(3);
         match_0 = match_0.offset(*dec32table.as_ptr().add(sequence.offset) as isize);
-        ZSTDv05_copy4(
-            op.add(4) as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-        );
+        {
+            ptr::copy_nonoverlapping(match_0, op.add(4), 4);
+        };
         match_0 = match_0.offset(-(sub2 as isize));
     } else {
-        ZSTDv05_copy8(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-        );
+        ptr::copy_nonoverlapping(match_0, op, 8);
     }
     op = op.add(8);
     match_0 = match_0.add(8);
@@ -3257,9 +3246,7 @@ unsafe fn ZBUFFv05_limitCopy(
     src: &[u8],
 ) -> size_t {
     let length = Ord::min(maxDstSize, src.len());
-    if length > 0 {
-        memcpy(dst, src.as_ptr().cast(), length);
-    }
+    ptr::copy_nonoverlapping(src.as_ptr(), dst.cast::<u8>(), length);
     length
 }
 const ZSTDv05_frameHeaderSize_max_0: core::ffi::c_int = 5;
