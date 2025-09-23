@@ -1093,21 +1093,11 @@ unsafe fn ZSTD_safecopy(
         length = length.wrapping_sub(8);
     }
     if oend <= oend_w as *mut u8 {
-        ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            ip as *const core::ffi::c_void,
-            length,
-            ovtype,
-        );
+        ZSTD_wildcopy(op, ip, length, ovtype);
         return;
     }
     if op <= oend_w as *mut u8 {
-        ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            ip as *const core::ffi::c_void,
-            oend_w.offset_from(op) as size_t,
-            ovtype,
-        );
+        ZSTD_wildcopy(op, ip, oend_w.offset_from(op) as size_t, ovtype);
         ip = ip.offset(oend_w.offset_from(op));
         op = op.offset(oend_w.offset_from(op));
     }
@@ -1131,8 +1121,8 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
     }
     if op <= oend.sub(WILDCOPY_OVERLENGTH) && diff < -WILDCOPY_VECLEN as ptrdiff_t {
         ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            ip as *const core::ffi::c_void,
+            op,
+            ip,
             oend.sub(WILDCOPY_OVERLENGTH).offset_from(op) as size_t,
             Overlap::NoOverlap,
         );
@@ -1306,8 +1296,8 @@ unsafe fn ZSTD_execSequence(
     ZSTD_copy16(op, *litPtr);
     if (sequence.litLength > 16) as core::ffi::c_int as core::ffi::c_long != 0 {
         ZSTD_wildcopy(
-            op.add(16) as *mut core::ffi::c_void,
-            (*litPtr).add(16) as *const core::ffi::c_void,
+            op.add(16),
+            (*litPtr).add(16),
             (sequence.litLength).wrapping_sub(16),
             Overlap::NoOverlap,
         );
@@ -1330,19 +1320,14 @@ unsafe fn ZSTD_execSequence(
         match_0 = prefixStart;
     }
     if (sequence.offset >= 16) as core::ffi::c_int as core::ffi::c_long != 0 {
-        ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            sequence.matchLength,
-            Overlap::NoOverlap,
-        );
+        ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
         return sequenceLength;
     }
     ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
     if sequence.matchLength > 8 {
         ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
+            op,
+            match_0,
             (sequence.matchLength).wrapping_sub(8),
             Overlap::OverlapSrcBeforeDst,
         );
@@ -1387,8 +1372,8 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     ZSTD_copy16(op, *litPtr);
     if sequence.litLength > 16 {
         ZSTD_wildcopy(
-            op.add(16) as *mut core::ffi::c_void,
-            (*litPtr).add(16) as *const core::ffi::c_void,
+            op.add(16),
+            (*litPtr).add(16),
             (sequence.litLength).wrapping_sub(16),
             Overlap::NoOverlap,
         );
@@ -1414,19 +1399,14 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         match_0 = prefixStart;
     }
     if sequence.offset >= 16 {
-        ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            sequence.matchLength,
-            Overlap::NoOverlap,
-        );
+        ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
         return sequenceLength;
     }
     ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
     if sequence.matchLength > 8 {
         ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
+            op,
+            match_0,
             (sequence.matchLength).wrapping_sub(8),
             Overlap::OverlapSrcBeforeDst,
         );

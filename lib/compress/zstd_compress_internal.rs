@@ -84,8 +84,8 @@ pub(crate) unsafe fn ZSTD_storeSeq(
         ZSTD_copy16(seqStorePtr.lit, literals);
         if litLength > 16 {
             ZSTD_wildcopy(
-                (seqStorePtr.lit).add(16) as *mut core::ffi::c_void,
-                literals.add(16) as *const core::ffi::c_void,
+                seqStorePtr.lit.add(16),
+                literals.add(16),
                 litLength.wrapping_sub(16),
                 Overlap::NoOverlap,
             );
@@ -130,12 +130,12 @@ pub(crate) unsafe fn ZSTD_safecopyLiterals(
 ) {
     if ip <= ilimit_w {
         ZSTD_wildcopy(
-            op as *mut core::ffi::c_void,
-            ip as *const core::ffi::c_void,
+            op,
+            ip,
             ilimit_w.offset_from(ip) as usize,
             Overlap::NoOverlap,
         );
-        op = op.offset(ilimit_w.offset_from(ip) as core::ffi::c_long as isize);
+        op = op.offset(ilimit_w.offset_from(ip));
         ip = ilimit_w;
     }
     while ip < iend {
