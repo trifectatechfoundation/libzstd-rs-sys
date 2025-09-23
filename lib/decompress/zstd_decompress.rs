@@ -1,3 +1,4 @@
+use core::ffi::c_char;
 use core::mem::MaybeUninit;
 use core::ptr::{self, NonNull};
 
@@ -706,7 +707,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     ZSTD_initDCtx_internal(dctx);
 
     (*dctx.as_mut_ptr()).staticSize = workspaceSize;
-    (*dctx.as_mut_ptr()).inBuff = dctx.as_mut_ptr().add(1) as *mut core::ffi::c_char;
+    (*dctx.as_mut_ptr()).inBuff = dctx.as_mut_ptr().add(1).cast::<u8>();
     dctx.as_mut_ptr()
 }
 
@@ -2921,11 +2922,11 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     let output = output.as_mut().unwrap();
     let input = input.as_mut().unwrap();
 
-    let src = input.src as *const core::ffi::c_char;
+    let src = input.src as *const c_char;
     let istart = src.add(input.pos);
     let iend = src.add(input.size);
     let mut ip = istart;
-    let dst = output.dst as *mut core::ffi::c_char;
+    let dst = output.dst as *mut c_char;
     let ostart = dst.add(output.pos);
     let oend = dst.add(output.size);
     let mut op = ostart;
@@ -2967,9 +2968,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             StreamStage::Flush => {
                 let toFlushSize = (zds.outEnd).wrapping_sub(zds.outStart);
                 let flushedSize = ZSTD_limitCopy(
-                    op as *mut core::ffi::c_void,
+                    op.cast::<u8>(),
                     oend.offset_from(op) as size_t,
-                    (zds.outBuff).add(zds.outStart) as *const core::ffi::c_void,
+                    (zds.outBuff).add(zds.outStart),
                     toFlushSize,
                 );
 
@@ -3217,8 +3218,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         ZSTD_customFree(zds.inBuff as *mut core::ffi::c_void, zds.customMem);
                         zds.inBuffSize = 0;
                         zds.outBuffSize = 0;
-                        zds.inBuff =
-                            ZSTD_customMalloc(bufferSize, zds.customMem) as *mut core::ffi::c_char;
+                        zds.inBuff = ZSTD_customMalloc(bufferSize, zds.customMem).cast::<u8>();
                         if zds.inBuff.is_null() {
                             return Error::dictionary_corrupted.to_error_code();
                         }
@@ -3286,9 +3286,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return Error::corruption_detected.to_error_code();
                 }
                 ZSTD_limitCopy(
-                    zds.inBuff.add(zds.inPos) as *mut core::ffi::c_void,
+                    zds.inBuff.add(zds.inPos),
                     toLoad_0,
-                    ip as *const core::ffi::c_void,
+                    ip.cast::<u8>(),
                     iend.offset_from(ip) as size_t,
                 )
             };
