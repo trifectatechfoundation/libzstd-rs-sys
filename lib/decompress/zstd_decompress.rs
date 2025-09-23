@@ -1283,11 +1283,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         ip += zfh.headerSize as usize;
         remainingSize = remainingSize.wrapping_sub(zfh.headerSize as size_t);
         loop {
-            let mut blockProperties = blockProperties_t {
-                blockType: BlockType::Raw,
-                lastBlock: 0,
-                origSize: 0,
-            };
+            let mut blockProperties = blockProperties_t::default();
             let cBlockSize = ZSTD_getcBlockSize(&src[ip..], &mut blockProperties);
             if ERR_isError(cBlockSize) {
                 return ZSTD_errorFrameSizeInfo(cBlockSize);
@@ -1299,7 +1295,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
             remainingSize =
                 remainingSize.wrapping_sub(ZSTD_blockHeaderSize.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
-            if blockProperties.lastBlock != 0 {
+            if blockProperties.lastBlock {
                 break;
             }
         }
@@ -1620,7 +1616,7 @@ unsafe fn ZSTD_decompressFrame(
         op = op.subslice(decodedSize..);
 
         *ip = ip.subslice(cBlockSize..);
-        if blockProperties.lastBlock != 0 {
+        if blockProperties.lastBlock {
             break;
         }
     }
@@ -1903,13 +1899,14 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             dctx.bType = bp.blockType;
             dctx.rleSize = bp.origSize as size_t;
             if cBlockSize != 0 {
-                dctx.stage = match bp.lastBlock {
-                    0 => DecompressStage::DecompressBlock,
-                    _ => DecompressStage::DecompressLastBlock,
+                dctx.stage = if bp.lastBlock {
+                    DecompressStage::DecompressLastBlock
+                } else {
+                    DecompressStage::DecompressBlock
                 };
                 return 0;
             }
-            if bp.lastBlock != 0 {
+            if bp.lastBlock {
                 if dctx.fParams.checksumFlag != 0 {
                     dctx.expected = 4;
                     dctx.stage = DecompressStage::CheckChecksum;

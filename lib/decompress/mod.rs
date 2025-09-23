@@ -139,17 +139,17 @@ pub type ZSTD_FrameType_e = core::ffi::c_uint;
 pub const ZSTD_skippableFrame: ZSTD_FrameType_e = 1;
 pub const ZSTD_frame: ZSTD_FrameType_e = 0;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct blockProperties_t {
+pub(crate) struct blockProperties_t {
     pub blockType: BlockType,
-    pub lastBlock: u32,
+    pub lastBlock: bool,
     pub origSize: u32,
 }
 
-#[repr(u32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BlockType {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum BlockType {
+    #[default]
     Raw = 0,
     Rle = 1,
     Compressed = 2,
