@@ -93,14 +93,12 @@ pub(crate) enum Overlap {
 ///   The src buffer must be before the dst buffer.
 #[inline(always)]
 pub(crate) unsafe fn ZSTD_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
+    mut op: *mut u8,
+    mut ip: *const u8,
     length: size_t,
     ovtype: Overlap,
 ) {
-    let diff = dst as isize - src as isize;
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
+    let diff = op as isize - ip as isize;
     let oend = op.add(length);
     if ovtype == Overlap::OverlapSrcBeforeDst && diff < WILDCOPY_VECLEN as isize {
         debug_assert!(ip <= op.wrapping_sub(8).cast_const());
@@ -118,7 +116,7 @@ pub(crate) unsafe fn ZSTD_wildcopy(
             }
         }
     } else {
-        assert!(diff.abs() >= WILDCOPY_VECLEN as isize);
+        debug_assert!(diff.abs() >= WILDCOPY_VECLEN as isize);
 
         // NOTE: ip and op are at least 8 apart, but may be less than 16 apart, so we cannot use
         // `copy_nonoverlapping` when copying more than 8 bytes.
