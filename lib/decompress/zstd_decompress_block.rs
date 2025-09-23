@@ -1287,12 +1287,10 @@ unsafe fn ZSTD_execSequence(
     let oMatchEnd = op.add(sequenceLength);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     let iLitEnd = (*litPtr).add(sequence.litLength);
-    let mut match_0: *const u8 = oLitEnd.wrapping_offset(-(sequence.offset as isize));
-    if (iLitEnd > litLimit
+    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
+    if iLitEnd > litLimit
         || oMatchEnd > oend_w
-        || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32))
-        as core::ffi::c_int as core::ffi::c_long
-        != 0
+        || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32)
     {
         return ZSTD_execSequenceEnd(
             op,
