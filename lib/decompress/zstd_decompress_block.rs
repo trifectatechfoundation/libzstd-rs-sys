@@ -1051,6 +1051,7 @@ fn ZSTD_decodeSeqHeaders(
 #[inline(always)]
 unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t) {
     if offset < 8 {
+        /* close range match, overlap */
         *(*op).add(0) = *(*ip).add(0);
         *(*op).add(1) = *(*ip).add(1);
         *(*op).add(2) = *(*ip).add(2);
@@ -1072,6 +1073,15 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t
     assert!(unsafe { (*op).offset_from(*ip) } >= 8);
 }
 
+/// Specialized version of memcpy() that is allowed to READ up to WILDCOPY_OVERLENGTH past the input buffer
+/// and write up to 16 bytes past oend_w (op >= oend_w is allowed).
+/// This function is only called in the uncommon case where the sequence is near the end of the block. It
+/// should be fast for a single long sequence, but can be slow for several short sequences.
+///
+/// @param ovtype controls the overlap detection
+///     - Overlap::NoOverlap: The source and destination are guaranteed to be at least WILDCOPY_VECLEN bytes apart.
+///     - Overlap::OverlapSrcBeforeDst: The src and dst may overlap and may be any distance apart.
+///     The src buffer must be before the dst buffer.
 unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
     oend_w: *const u8,
@@ -1081,7 +1091,14 @@ unsafe fn ZSTD_safecopy(
 ) {
     let diff = op as isize - ip as isize;
     let oend = op.add(length);
+
+    debug_assert!(match ovtype {
+        Overlap::NoOverlap => diff <= -8 || diff >= 8 || op >= oend_w.cast_mut(),
+        Overlap::OverlapSrcBeforeDst => diff >= 0,
+    });
+
     if length < 8 {
+        /* Handle short lengths. */
         while op < oend {
             *op = *ip;
             ip = ip.add(1);
@@ -1090,18 +1107,27 @@ unsafe fn ZSTD_safecopy(
         return;
     }
     if ovtype == Overlap::OverlapSrcBeforeDst {
+        /* Copy 8 bytes and ensure the offset >= 8 when there can be overlap. */
+        debug_assert!(length >= 8);
+        debug_assert!(diff > 0);
         ZSTD_overlapCopy8(&mut op, &mut ip, diff as size_t);
         length = length.wrapping_sub(8);
+        debug_assert!(op.offset_from(ip) >= 8);
+        debug_assert!(op <= oend);
     }
     if oend <= oend_w as *mut u8 {
+        /* No risk of overwrite. */
         ZSTD_wildcopy(op, ip, length, ovtype);
         return;
     }
     if op <= oend_w as *mut u8 {
+        /* Wildcopy until we get close to the end. */
         ZSTD_wildcopy(op, ip, oend_w.offset_from(op) as size_t, ovtype);
         ip = ip.offset(oend_w.offset_from(op));
         op = op.offset(oend_w.offset_from(op));
     }
+
+    /* Handle the leftovers. */
     while op < oend {
         *op = *ip;
         ip = ip.add(1);
@@ -1109,10 +1135,13 @@ unsafe fn ZSTD_safecopy(
     }
 }
 
+/// This version allows overlap with dst before src, or handles the non-overlap case with dst after src
+/// Kept separate from more common ZSTD_safecopy case to avoid performance impact to the safecopy common case */
 unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
     let diff = op.offset_from(ip) as ptrdiff_t;
     let oend = op.add(length);
-    if length < 8 || diff > -8 as ptrdiff_t {
+    if length < 8 || diff > -8 {
+        /* Handle short lengths, close overlaps, and dst not before src. */
         while op < oend {
             *op = *ip;
             ip = ip.add(1);
@@ -1130,6 +1159,8 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
         ip = ip.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
         op = op.offset(oend.sub(WILDCOPY_OVERLENGTH).offset_from(op));
     }
+
+    /* Handle the leftovers. */
     while op < oend {
         *op = *ip;
         ip = ip.add(1);
@@ -1137,6 +1168,12 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
     }
 }
 
+/// This version handles cases that are near the end of the output buffer. It requires
+/// more careful checks to make sure there is no overflow. By separating out these hard
+/// and unlikely cases, we can speed up the common cases.
+///
+/// NOTE: This function needs to be fast for a single long sequence, but doesn't need
+/// to be optimized for many small sequences, since those fall into ZSTD_execSequence().
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEnd(
     mut op: *mut u8,
@@ -1154,16 +1191,25 @@ unsafe fn ZSTD_execSequenceEnd(
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
 
+    /* bounds checks : careful of address space overflow in 32-bit mode */
     if sequenceLength > oend.offset_from(op) as size_t {
         return Error::dstSize_tooSmall.to_error_code();
     }
     if sequence.litLength > litLimit.offset_from(*litPtr) as size_t {
         return Error::corruption_detected.to_error_code();
     }
+
+    debug_assert!(op < op.wrapping_add(sequenceLength));
+    debug_assert!(oLitEnd < op.wrapping_add(sequenceLength));
+
+    /* copy literals */
     ZSTD_safecopy(op, oend_w, *litPtr, sequence.litLength, Overlap::NoOverlap);
     op = oLitEnd;
     *litPtr = iLitEnd;
+
+    /* copy Match */
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
+        /* offset beyond prefix */
         if sequence.offset > (oLitEnd.addr() - virtualStart.addr()) {
             return Error::corruption_detected.to_error_code();
         }
@@ -1172,6 +1218,7 @@ unsafe fn ZSTD_execSequenceEnd(
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
+        /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.addr() - match_0.addr();
         core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
@@ -1187,6 +1234,9 @@ unsafe fn ZSTD_execSequenceEnd(
     );
     sequenceLength
 }
+
+/// This version is intended to be used during instances where the litBuffer is still split.  
+/// It is kept separate to avoid performance impact for the good case.
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     mut op: *mut u8,
@@ -1203,19 +1253,29 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.sub(sequence.offset);
+
+    /* bounds checks : careful of address space overflow in 32-bit mode */
     if sequenceLength > oend.offset_from(op) as size_t {
         return Error::dstSize_tooSmall.to_error_code();
     }
     if sequence.litLength > litLimit.offset_from(*litPtr) as size_t {
         return Error::corruption_detected.to_error_code();
     }
+
+    debug_assert!(op < op.wrapping_add(sequenceLength));
+    debug_assert!(oLitEnd < op.wrapping_add(sequenceLength));
+
+    /* copy literals */
     if op > *litPtr as *mut u8 && op < (*litPtr).add(sequence.litLength) as *mut u8 {
         return Error::dstSize_tooSmall.to_error_code();
     }
     ZSTD_safecopyDstBeforeSrc(op, *litPtr, sequence.litLength);
     op = oLitEnd;
     *litPtr = iLitEnd;
+
+    /* copy Match */
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
+        /* offset beyond prefix */
         if sequence.offset > oLitEnd.offset_from(virtualStart) as size_t {
             return Error::corruption_detected.to_error_code();
         }
@@ -1224,12 +1284,15 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
+
+        /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.offset_from(match_0) as size_t;
         core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
     }
+
     ZSTD_safecopy(
         op,
         oend_w,
