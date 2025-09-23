@@ -10825,13 +10825,10 @@ pub unsafe fn convertSequences_noRepcodes(
         (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
         (*dstSeqs.add(n)).mlBase =
             ((*inSeqs.add(n)).matchLength).wrapping_sub(MINMATCH as core::ffi::c_uint) as u16;
-        if ((*inSeqs.add(n)).matchLength > (65535 + 3) as core::ffi::c_uint) as core::ffi::c_int
-            as core::ffi::c_long
-            != 0
-        {
+        if (*inSeqs.add(n)).matchLength > 65535 + 3 {
             longLen = n.wrapping_add(1);
         }
-        if ((*inSeqs.add(n)).litLength > 65535) as core::ffi::c_int as core::ffi::c_long != 0 {
+        if (*inSeqs.add(n)).litLength > 65535 {
             longLen = n.wrapping_add(nbSequences).wrapping_add(1);
         }
         n = n.wrapping_add(1);

@@ -419,7 +419,7 @@ unsafe fn ZSTD_rawLiteralsCost(
         } else {
             ZSTD_bitWeight(*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize))
         };
-        if (litPrice > litPriceMax) as core::ffi::c_int as core::ffi::c_long != 0 {
+        if litPrice > litPriceMax {
             litPrice = litPriceMax;
         }
         price = price.wrapping_sub(litPrice);
