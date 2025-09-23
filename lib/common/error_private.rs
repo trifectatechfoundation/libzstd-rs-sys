@@ -49,6 +49,7 @@ impl Error {
         -(self as core::ffi::c_int) as size_t
     }
 
+    #[allow(unused)]
     pub fn from_error_code(code: size_t) -> Option<Self> {
         if !ERR_isError(code) {
             return None;
