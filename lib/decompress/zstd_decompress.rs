@@ -17,7 +17,6 @@ use crate::lib::common::zstd_internal::{
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
     ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
-use crate::lib::compress::zstd_compress::{ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::huf_decompress::{
     DTableDesc, HUF_ReadDTableX2_Workspace, HUF_readDTableX2_wksp, Writer,
 };
@@ -670,7 +669,7 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).ddict = core::ptr::null();
         (*dctx).ddictLocal = core::ptr::null_mut();
         (*dctx).dictEnd = core::ptr::null();
-        (*dctx).ddictIsCold = 0;
+        (*dctx).ddictIsCold = false;
         (*dctx).dictUses = DictUses::ZSTD_dont_use;
         (*dctx).inBuff = core::ptr::null_mut();
         (*dctx).inBuffSize = 0;
@@ -1490,23 +1489,7 @@ unsafe fn ZSTD_DCtx_trace_end(
     streaming: core::ffi::c_int,
 ) {
     if (*dctx).traceCtx != 0 {
-        let mut trace = ZSTD_Trace {
-            version: 0,
-            streaming: 0,
-            dictionaryID: 0,
-            dictionaryIsCold: 0,
-            dictionarySize: 0,
-            uncompressedSize: 0,
-            compressedSize: 0,
-            params: core::ptr::null::<ZSTD_CCtx_params_s>(),
-            cctx: core::ptr::null::<ZSTD_CCtx_s>(),
-            dctx: core::ptr::null::<ZSTD_DCtx_s>(),
-        };
-        ptr::write_bytes(
-            &mut trace as *mut ZSTD_Trace as *mut u8,
-            0,
-            ::core::mem::size_of::<ZSTD_Trace>(),
-        );
+        let mut trace = ZSTD_Trace::default();
         trace.version = ZSTD_VERSION_NUMBER as core::ffi::c_uint;
         trace.streaming = streaming;
         if let Some(ddict) = (*dctx).ddict.as_ref() {
@@ -2280,7 +2263,7 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
         let dictStart = ZSTD_DDict_dictContent(ddict) as *const core::ffi::c_char;
         let dictSize = ZSTD_DDict_dictSize(ddict);
         let dictEnd = dictStart.add(dictSize) as *const core::ffi::c_void;
-        (*dctx.as_mut_ptr()).ddictIsCold = ((*dctx.as_mut_ptr()).dictEnd != dictEnd) as _;
+        (*dctx.as_mut_ptr()).ddictIsCold = (*dctx.as_ptr()).dictEnd != dictEnd;
     }
 
     decompress_begin(dctx);

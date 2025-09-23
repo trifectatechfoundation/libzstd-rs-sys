@@ -470,7 +470,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, false);
 
     /* prefetch huffman table if cold */
-    if dctx.ddictIsCold != 0 && litSize > 768 {
+    if dctx.ddictIsCold && litSize > 768 {
         // NOTE: the litSize comparison is a heuristic.
         let ptr = match dctx.HUFptr {
             None => &raw const dctx.entropy.hufTable,
@@ -860,7 +860,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     baseValue: &'static [u32],
     nbAdditionalBits: &'static [u8],
     flagRepeatTable: bool,
-    ddictIsCold: core::ffi::c_int,
+    ddictIsCold: bool,
     nbSeq: core::ffi::c_int,
     wksp: &mut Workspace,
     bmi2: bool,
@@ -890,7 +890,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
             if !flagRepeatTable {
                 return Error::corruption_detected.to_error_code();
             }
-            if ddictIsCold != 0 && nbSeq > 24 {
+            if ddictIsCold && nbSeq > 24 {
                 let pSize = size_of::<ZSTD_seqSymbol>().wrapping_mul(1 + (1usize << maxLog));
                 if let Some(ptr) = *DTablePtr {
                     prefetch_area(ptr.as_ptr(), pSize);
@@ -2292,7 +2292,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     } else {
         Offset::Regular
     };
-    let mut use_prefetch_decoder = dctx.ddictIsCold != 0;
+    let mut use_prefetch_decoder = dctx.ddictIsCold;
     let mut nbSeq = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip);
     if ERR_isError(seqHSize) {
@@ -2326,7 +2326,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         }
     }
 
-    dctx.ddictIsCold = 0;
+    dctx.ddictIsCold = false;
 
     if use_prefetch_decoder {
         return ZSTD_decompressSequencesLong(dctx, dst.subslice(..), ip, nbSeq, offset);

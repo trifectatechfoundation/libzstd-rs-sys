@@ -7927,23 +7927,7 @@ pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
         let streaming = ((*cctx).inBuffSize > 0
             || (*cctx).outBuffSize > 0
             || (*cctx).appliedParams.nbWorkers > 0) as core::ffi::c_int;
-        let mut trace = ZSTD_Trace {
-            version: 0,
-            streaming: 0,
-            dictionaryID: 0,
-            dictionaryIsCold: 0,
-            dictionarySize: 0,
-            uncompressedSize: 0,
-            compressedSize: 0,
-            params: core::ptr::null(),
-            cctx: core::ptr::null(),
-            dctx: core::ptr::null(),
-        };
-        ptr::write_bytes(
-            &mut trace as *mut ZSTD_Trace as *mut u8,
-            0,
-            ::core::mem::size_of::<ZSTD_Trace>(),
-        );
+        let mut trace = ZSTD_Trace::default();
         trace.version = ZSTD_VERSION_NUMBER as core::ffi::c_uint;
         trace.streaming = streaming;
         trace.dictionaryID = (*cctx).dictID;
