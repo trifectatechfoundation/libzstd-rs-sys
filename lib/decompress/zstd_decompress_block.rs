@@ -1,5 +1,6 @@
 use core::arch::asm;
 use core::ffi::c_void;
+use core::hint::{likely, unlikely};
 use core::ops::Range;
 use core::ptr::{self, NonNull};
 
@@ -755,7 +756,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
             for _ in 0..i32::from(v) {
                 tableDecode[position].baseValue = s as u32;
                 position = position.wrapping_add(step) & tableMask;
-                while core::hint::unlikely(position > highThreshold) {
+                while unlikely(position > highThreshold) {
                     position = position.wrapping_add(step) & tableMask;
                 }
             }
@@ -1334,6 +1335,7 @@ unsafe fn ZSTD_execSequence(
     }
     sequenceLength
 }
+
 #[inline(always)]
 unsafe fn ZSTD_execSequenceSplitLitBuffer(
     mut op: *mut u8,
@@ -1351,10 +1353,19 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     let oMatchEnd = op.add(sequenceLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.sub(sequence.offset);
-    if iLitEnd > litLimit
-        || oMatchEnd > oend_w as *mut u8
-        || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32)
-    {
+
+    debug_assert!(!op.is_null(), "precondition");
+    debug_assert!(oend_w < oend, "No underflow");
+
+    // Handle edge cases in a slow path:
+    //   - Read beyond end of literals
+    //   - Match end is within WILDCOPY_OVERLIMIT of oend
+    //   - 32-bit mode and the match length overflows
+    if unlikely(
+        iLitEnd > litLimit
+            || oMatchEnd > oend_w as *mut u8
+            || MEM_32bits() && (oend.offset_from(op) as size_t) < sequenceLength.wrapping_add(32),
+    ) {
         return ZSTD_execSequenceEndSplitLitBuffer(
             op,
             oend,
@@ -1367,6 +1378,19 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             dictEnd,
         );
     }
+
+    // Assumptions (everything else goes into ZSTD_execSequenceEnd())
+    debug_assert!(op <= oLitEnd, "No overflow");
+    debug_assert!(oLitEnd < oMatchEnd, "Non-zero match & no overflow");
+    debug_assert!(oMatchEnd <= oend, "No underflow");
+    debug_assert!(iLitEnd <= litLimit, "Literal length is in bounds");
+    debug_assert!(oLitEnd <= oend_w.cast_mut(), "Can wildcopy literals");
+    debug_assert!(oMatchEnd <= oend_w.cast_mut(), "Can wildcopy matches");
+
+    // Copy Literals:
+    // Split out litLength <= 16 since it is nearly always true. +1.6% on gcc-9.
+    // We likely don't need the full 32-byte wildcopy.
+    const _: () = assert!(WILDCOPY_OVERLENGTH >= 16);
     ZSTD_copy16(op, *litPtr);
     if sequence.litLength > 16 {
         ZSTD_wildcopy(
@@ -1377,7 +1401,9 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         );
     }
     op = oLitEnd;
-    *litPtr = iLitEnd;
+    *litPtr = iLitEnd; // Update for the next sequence.
+
+    // Copy Match
     if sequence.offset > oLitEnd.offset_from(prefixStart) as size_t {
         if sequence.offset > oLitEnd.offset_from(virtualStart) as size_t {
             return Error::corruption_detected.to_error_code();
@@ -1387,22 +1413,39 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
             return sequenceLength;
         }
+
+        /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.offset_from(match_0) as size_t;
         core::ptr::copy(match_0, oLitEnd, length1);
         op = oLitEnd.add(length1);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
     }
-    if sequence.offset >= 16 {
+
+    /* Match within prefix of 1 or more bytes */
+    debug_assert!(op <= oMatchEnd);
+    debug_assert!(oMatchEnd <= oend_w.cast_mut());
+    debug_assert!(match_0 >= prefixStart);
+    debug_assert!(sequence.matchLength >= 1);
+
+    if likely(sequence.offset >= WILDCOPY_VECLEN as usize) {
+        // We bet on a full wildcopy for matches, since we expect matches to be
+        // longer than literals (in general). In silesia, ~10% of matches are longer
+        // than 16 bytes.
         ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
         return sequenceLength;
     }
+    debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
+
+    // Copy 8 bytes and spread the offset to be >= 8.
     ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
+
+    // If the match length is > 8 bytes, then continue with the wildcopy.
     if sequence.matchLength > 8 {
         ZSTD_wildcopy(
             op,
             match_0,
-            (sequence.matchLength).wrapping_sub(8),
+            sequence.matchLength.wrapping_sub(8),
             Overlap::OverlapSrcBeforeDst,
         );
     }
