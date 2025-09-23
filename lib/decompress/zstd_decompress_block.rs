@@ -1600,13 +1600,13 @@ fn ZSTD_decodeSequence(
 #[inline(always)]
 unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    mut dst: Writer<'_>,
     seq: &[u8],
     mut nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    let ostart = dst as *mut u8;
+    let ostart = dst.as_mut_ptr();
+    let maxDstSize = dst.capacity();
     let oend = ostart.wrapping_byte_add(maxDstSize);
     let mut op = ostart;
     let mut litPtr = dctx.litPtr;
@@ -1622,13 +1622,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         dctx.fseEntropy = true;
         let mut seqState = dctx.new_seq_state(DStream);
 
-        let mut sequence = {
-            seq_t {
-                litLength: 0,
-                matchLength: 0,
-                offset: 0,
-            }
-        };
+        let mut sequence = seq_t::default();
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         if !cfg!(miri) {
@@ -1654,7 +1648,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 dictEnd,
             );
 
-            if ERR_isError(oneSeqSize) as core::ffi::c_long != 0 {
+            if ERR_isError(oneSeqSize) {
                 return oneSeqSize;
             }
 
@@ -1669,7 +1663,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                     return Error::dstSize_tooSmall.to_error_code();
                 }
                 ZSTD_safecopyDstBeforeSrc(op, litPtr, leftoverLit);
-                sequence.litLength = (sequence.litLength).wrapping_sub(leftoverLit);
+                sequence.litLength = sequence.litLength.wrapping_sub(leftoverLit);
                 op = op.add(leftoverLit);
             }
             litPtr = dctx.litExtraBuffer.as_mut_ptr();
@@ -1685,7 +1679,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 vBase,
                 dictEnd,
             );
-            if ERR_isError(oneSeqSize_0) as core::ffi::c_long != 0 {
+            if ERR_isError(oneSeqSize_0) {
                 return oneSeqSize_0;
             }
             op = op.add(oneSeqSize_0);
@@ -1713,7 +1707,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                     vBase,
                     dictEnd,
                 );
-                if ERR_isError(oneSeqSize_1) as core::ffi::c_long != 0 {
+                if ERR_isError(oneSeqSize_1) {
                     return oneSeqSize_1;
                 }
                 op = op.add(oneSeqSize_1);
@@ -1846,13 +1840,12 @@ unsafe fn ZSTD_decompressSequences_default(
 
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_default(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
 }
 
 #[inline(always)]
@@ -2126,13 +2119,12 @@ unsafe fn ZSTD_decompressSequences_bmi2(
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
-    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+    ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -2162,18 +2154,15 @@ unsafe fn ZSTD_decompressSequences(
 
 unsafe fn ZSTD_decompressSequencesSplitLitBuffer(
     dctx: &mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: size_t,
+    dst: Writer<'_>,
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
 ) -> size_t {
     if dctx.bmi2 {
-        ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, maxDstSize, seqStart, nbSeq, offset)
+        ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, seqStart, nbSeq, offset)
     } else {
-        ZSTD_decompressSequencesSplitLitBuffer_default(
-            dctx, dst, maxDstSize, seqStart, nbSeq, offset,
-        )
+        ZSTD_decompressSequencesSplitLitBuffer_default(dctx, dst, seqStart, nbSeq, offset)
     }
 }
 
@@ -2334,14 +2323,7 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     }
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        ZSTD_decompressSequencesSplitLitBuffer(
-            dctx,
-            dst.as_mut_ptr().cast(),
-            dst.capacity(),
-            ip,
-            nbSeq,
-            offset,
-        )
+        ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, ip, nbSeq, offset)
     } else {
         ZSTD_decompressSequences(dctx, dst, ip, nbSeq, offset)
     }
