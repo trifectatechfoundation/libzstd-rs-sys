@@ -8,9 +8,7 @@ use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{FseWorkspace, ZSTD_LITBUFFEREXTRASIZE};
-use crate::lib::zstd::{
-    BufferMode, Format, ZSTD_customMem, ZSTD_forceIgnoreChecksum_e, ZSTD_outBuffer,
-};
+use crate::lib::zstd::{BufferMode, ForceIgnoreChecksum, Format, ZSTD_customMem, ZSTD_outBuffer};
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
@@ -237,7 +235,8 @@ pub struct ZSTD_DCtx_s {
     xxhState: XXH64_state_t,
     headerSize: size_t,
     format: Format,
-    forceIgnoreChecksum: ZSTD_forceIgnoreChecksum_e,
+    forceIgnoreChecksum: ForceIgnoreChecksum,
+    _padding5: [u8; 3],
     validateChecksum: bool,
     _padding4: [u8; 3],
     litPtr: *const u8,
