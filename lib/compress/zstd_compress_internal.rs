@@ -81,10 +81,7 @@ pub(crate) unsafe fn ZSTD_storeSeq(
     let litLimit_w = litLimit.wrapping_sub(WILDCOPY_OVERLENGTH);
     let litEnd = literals.add(litLength);
     if litEnd <= litLimit_w {
-        ZSTD_copy16(
-            seqStorePtr.lit as *mut core::ffi::c_void,
-            literals as *const core::ffi::c_void,
-        );
+        ZSTD_copy16(seqStorePtr.lit, literals);
         if litLength > 16 {
             ZSTD_wildcopy(
                 (seqStorePtr.lit).add(16) as *mut core::ffi::c_void,
