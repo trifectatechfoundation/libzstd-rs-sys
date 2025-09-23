@@ -183,14 +183,14 @@ impl ZSTD_DCtx {
     }
 }
 
-pub fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> size_t {
+pub(crate) fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> size_t {
     if src.len() < ZSTD_blockHeaderSize {
         return Error::srcSize_wrong.to_error_code();
     }
     let cBlockHeader = unsafe { MEM_readLE24(src.as_ptr().cast()) };
     let cSize = cBlockHeader >> 3;
 
-    bpPtr.lastBlock = cBlockHeader & 1;
+    bpPtr.lastBlock = (cBlockHeader & 1) != 0;
     bpPtr.blockType = BlockType::from(cBlockHeader >> 1 & 0b11);
     bpPtr.origSize = cSize;
 
@@ -201,7 +201,7 @@ pub fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> size_t {
     }
 }
 
-pub fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), Error> {
+pub(crate) fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), Error> {
     let [a, b, c, ..] = *src else {
         return Err(Error::srcSize_wrong);
     };
@@ -210,7 +210,7 @@ pub fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), Error> 
     let cSize = cBlockHeader >> 3;
 
     let bp = blockProperties_t {
-        lastBlock: cBlockHeader & 1,
+        lastBlock: (cBlockHeader & 1) != 0,
         blockType: BlockType::from(cBlockHeader >> 1 & 0b11),
         origSize: cSize,
     };
