@@ -655,7 +655,7 @@ fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).format = Format::ZSTD_f_zstd1;
         (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
         (*dctx).outBufferMode = BufferMode::Buffered;
-        (*dctx).forceIgnoreChecksum = ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum;
+        (*dctx).forceIgnoreChecksum = ForceIgnoreChecksum::ValidateChecksum;
         (*dctx).refMultipleDDicts = MultipleDDicts::Single;
         (*dctx).disableHufAsm = 0;
         (*dctx).maxBlockSizeParam = 0;
@@ -1235,7 +1235,7 @@ fn ZSTD_decodeFrameHeader(dctx: &mut ZSTD_DCtx, src: &[u8]) -> size_t {
     dctx.validateChecksum = dctx.fParams.checksumFlag != 0
         && matches!(
             dctx.forceIgnoreChecksum,
-            ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
+            ForceIgnoreChecksum::ValidateChecksum
         );
     if dctx.validateChecksum {
         ZSTD_XXH64_reset(&mut dctx.xxhState, 0);
@@ -1638,7 +1638,7 @@ unsafe fn ZSTD_decompressFrame(
             return Error::checksum_wrong.to_error_code();
         };
 
-        if dctx.forceIgnoreChecksum == ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
+        if dctx.forceIgnoreChecksum == ForceIgnoreChecksum::ValidateChecksum
             && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut dctx.xxhState) as u32
         {
             return Error::checksum_wrong.to_error_code();
@@ -2569,10 +2569,8 @@ pub extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds 
             return bounds;
         }
         ZSTD_dParameter::ZSTD_d_forceIgnoreChecksum => {
-            bounds.lowerBound =
-                ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum as core::ffi::c_int;
-            bounds.upperBound =
-                ZSTD_forceIgnoreChecksum_e::ZSTD_d_ignoreChecksum as core::ffi::c_int;
+            bounds.lowerBound = ForceIgnoreChecksum::ValidateChecksum as core::ffi::c_int;
+            bounds.upperBound = ForceIgnoreChecksum::IgnoreChecksum as core::ffi::c_int;
             return bounds;
         }
         ZSTD_dParameter::ZSTD_d_refMultipleDDicts => {
@@ -2664,7 +2662,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0;
         }
         ZSTD_dParameter::ZSTD_d_forceIgnoreChecksum => {
-            let Ok(value) = ZSTD_forceIgnoreChecksum_e::try_from(value) else {
+            let Ok(value) = ForceIgnoreChecksum::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
             (*dctx).forceIgnoreChecksum = value;

@@ -239,20 +239,20 @@ impl ZSTD_dParameter {
     pub const ZSTD_d_windowLogMax: Self = Self(100);
 }
 
-#[repr(u32)]
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ZSTD_forceIgnoreChecksum_e {
-    ZSTD_d_validateChecksum = 0,
-    ZSTD_d_ignoreChecksum = 1,
+pub(crate) enum ForceIgnoreChecksum {
+    ValidateChecksum = 0,
+    IgnoreChecksum = 1,
 }
 
-impl TryFrom<i32> for ZSTD_forceIgnoreChecksum_e {
+impl TryFrom<i32> for ForceIgnoreChecksum {
     type Error = ();
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::ZSTD_d_validateChecksum),
-            1 => Ok(Self::ZSTD_d_ignoreChecksum),
+            0 => Ok(Self::ValidateChecksum),
+            1 => Ok(Self::IgnoreChecksum),
             _ => Err(()),
         }
     }
