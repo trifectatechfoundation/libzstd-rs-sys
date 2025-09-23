@@ -569,7 +569,7 @@ unsafe fn ZSTD_ldm_gear_feed(
                 .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
         );
         n = n.wrapping_add(1);
-        if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
+        if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
             *numSplits = (*numSplits).wrapping_add(1);
             if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
@@ -583,7 +583,7 @@ unsafe fn ZSTD_ldm_gear_feed(
                 .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
         );
         n = n.wrapping_add(1);
-        if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
+        if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
             *numSplits = (*numSplits).wrapping_add(1);
             if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {
@@ -597,7 +597,7 @@ unsafe fn ZSTD_ldm_gear_feed(
                 .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
         );
         n = n.wrapping_add(1);
-        if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long != 0 {
+        if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
             *numSplits = (*numSplits).wrapping_add(1);
             if *numSplits == LDM_BATCH_SIZE as core::ffi::c_uint {

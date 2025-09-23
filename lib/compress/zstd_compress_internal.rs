@@ -60,8 +60,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     (*(seqStorePtr.sequences)).litLength = litLength as u16;
     (*(seqStorePtr.sequences)).offBase = offBase;
     let mlBase = matchLength.wrapping_sub(MINMATCH as usize);
-    if (mlBase > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long != 0
-    {
+    if mlBase > 0xffff {
         seqStorePtr.longLengthType = ZSTD_llt_matchLength;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;

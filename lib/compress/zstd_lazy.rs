@@ -1088,9 +1088,7 @@ unsafe fn ZSTD_row_update_internal(
     let kSkipThreshold = 384;
     let kMaxMatchStartPositionsToUpdate = 96;
     let kMaxMatchEndPositionsToUpdate = 32;
-    if useCache != 0
-        && (target.wrapping_sub(idx) > kSkipThreshold) as core::ffi::c_int as core::ffi::c_long != 0
-    {
+    if useCache != 0 && target.wrapping_sub(idx) > kSkipThreshold {
         let bound = idx.wrapping_add(kMaxMatchStartPositionsToUpdate);
         ZSTD_row_update_internalImpl(ms, idx, bound, mls, rowLog, rowMask, useCache);
         idx = target.wrapping_sub(kMaxMatchEndPositionsToUpdate);
