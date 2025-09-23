@@ -2265,7 +2265,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             LLlog = LLbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableLL, LLbits as core::ffi::c_uint)?;
+            let _ = FSEv05_buildDTable_raw(DTableLL, LLbits as core::ffi::c_uint);
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2285,7 +2285,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Err(Error::corruption_detected);
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog)?;
+            let _ = FSEv05_buildDTable(DTableLL, norm.as_mut_ptr(), max, LLlog);
         }
         _ => unreachable!(),
     }
@@ -2304,7 +2304,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             Offlog = Offbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableOffb, Offbits as core::ffi::c_uint)?;
+            let _ = FSEv05_buildDTable_raw(DTableOffb, Offbits as core::ffi::c_uint);
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2324,7 +2324,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
                 return Err(Error::corruption_detected);
             }
             ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog)?;
+            let _ = FSEv05_buildDTable(DTableOffb, norm.as_mut_ptr(), max, Offlog);
         }
         _ => unreachable!(),
     }
@@ -2340,7 +2340,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         0 => {
             MLlog = MLbits as core::ffi::c_uint;
-            FSEv05_buildDTable_raw(DTableML, MLbits as core::ffi::c_uint)?;
+            let _ = FSEv05_buildDTable_raw(DTableML, MLbits as core::ffi::c_uint);
         }
         2 => {
             if flagStaticTable == 0 {
@@ -2359,8 +2359,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             if MLlog > MLFSEv05Log as core::ffi::c_uint {
                 return Err(Error::corruption_detected);
             }
-            ip = ip.add(headerSize);
-            FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog)?;
+            let _ = FSEv05_buildDTable(DTableML, norm.as_mut_ptr(), max, MLlog);
         }
         _ => unreachable!(),
     }
@@ -2745,7 +2744,7 @@ pub(crate) unsafe fn ZSTDv05_decompress_usingDict(
     src: Reader<'_>,
     dict: &[u8],
 ) -> Result<size_t, Error> {
-    ZSTDv05_decompressBegin_usingDict(dctx, dict)?;
+    let _ = ZSTDv05_decompressBegin_usingDict(dctx, dict);
     ZSTDv05_checkContinuity(dctx, dst);
     ZSTDv05_decompress_continueDCtx(dctx, dst, maxDstSize, src)
 }
