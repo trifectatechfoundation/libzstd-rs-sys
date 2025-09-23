@@ -153,9 +153,9 @@ pub(crate) unsafe fn ZSTD_wildcopy(
 
 #[inline]
 pub(crate) unsafe fn ZSTD_limitCopy(
-    dst: *mut core::ffi::c_void,
+    dst: *mut u8,
     dstCapacity: size_t,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     srcSize: size_t,
 ) -> size_t {
     let length = Ord::min(dstCapacity, srcSize);

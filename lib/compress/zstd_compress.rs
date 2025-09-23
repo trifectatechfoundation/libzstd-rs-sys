@@ -34,12 +34,12 @@ pub struct ZSTD_CCtx_s {
     pub(super) tmpWorkspace: *mut core::ffi::c_void,
     pub(super) tmpWkspSize: size_t,
     pub(super) bufferedPolicy: ZSTD_buffered_policy_e,
-    pub(super) inBuff: *mut core::ffi::c_char,
+    pub(super) inBuff: *mut u8,
     pub(super) inBuffSize: size_t,
     pub(super) inToCompress: size_t,
     pub(super) inBuffPos: size_t,
     pub(super) inBuffTarget: size_t,
-    pub(super) outBuff: *mut core::ffi::c_char,
+    pub(super) outBuff: *mut u8,
     pub(super) outBuffSize: size_t,
     pub(super) outBuffContentSize: size_t,
     pub(super) outBuffFlushedSize: size_t,
@@ -4221,9 +4221,9 @@ unsafe fn ZSTD_resetCCtx_internal(
     (*zc).seqStore.maxNbLit = blockSize;
     (*zc).bufferedPolicy = zbuff;
     (*zc).inBuffSize = buffInSize;
-    (*zc).inBuff = ZSTD_cwksp_reserve_buffer(ws, buffInSize) as *mut core::ffi::c_char;
+    (*zc).inBuff = ZSTD_cwksp_reserve_buffer(ws, buffInSize);
     (*zc).outBuffSize = buffOutSize;
-    (*zc).outBuff = ZSTD_cwksp_reserve_buffer(ws, buffOutSize) as *mut core::ffi::c_char;
+    (*zc).outBuff = ZSTD_cwksp_reserve_buffer(ws, buffOutSize);
     if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         let numBuckets =
             (1) << ((*params).ldmParams.hashLog).wrapping_sub((*params).ldmParams.bucketSizeLog);
@@ -8409,12 +8409,12 @@ pub unsafe extern "C" fn ZSTD_compress(
         tmpWorkspace: core::ptr::null_mut::<core::ffi::c_void>(),
         tmpWkspSize: 0,
         bufferedPolicy: ZSTDb_not_buffered,
-        inBuff: core::ptr::null_mut::<core::ffi::c_char>(),
+        inBuff: core::ptr::null_mut(),
         inBuffSize: 0,
         inToCompress: 0,
         inBuffPos: 0,
         inBuffTarget: 0,
-        outBuff: core::ptr::null_mut::<core::ffi::c_char>(),
+        outBuff: core::ptr::null_mut(),
         outBuffSize: 0,
         outBuffContentSize: 0,
         outBuffFlushedSize: 0,
@@ -9553,7 +9553,7 @@ unsafe fn ZSTD_compressStream_generic(
     input: *mut ZSTD_inBuffer,
     flushMode: ZSTD_EndDirective,
 ) -> size_t {
-    let istart = (*input).src as *const core::ffi::c_char;
+    let istart = (*input).src as *const u8;
     let iend = if !istart.is_null() {
         istart.add((*input).size)
     } else {
@@ -9564,7 +9564,7 @@ unsafe fn ZSTD_compressStream_generic(
     } else {
         istart
     };
-    let ostart = (*output).dst as *mut core::ffi::c_char;
+    let ostart = (*output).dst as *mut u8;
     let oend = if !ostart.is_null() {
         ostart.add((*output).size)
     } else {
@@ -9631,9 +9631,9 @@ unsafe fn ZSTD_compressStream_generic(
                     {
                         let toLoad = ((*zcs).inBuffTarget).wrapping_sub((*zcs).inBuffPos);
                         let loaded = ZSTD_limitCopy(
-                            ((*zcs).inBuff).add((*zcs).inBuffPos) as *mut core::ffi::c_void,
+                            ((*zcs).inBuff).add((*zcs).inBuffPos),
                             toLoad,
-                            ip as *const core::ffi::c_void,
+                            ip,
                             iend.offset_from(ip) as size_t,
                         );
                         (*zcs).inBuffPos = ((*zcs).inBuffPos).wrapping_add(loaded);
@@ -9803,9 +9803,9 @@ unsafe fn ZSTD_compressStream_generic(
         if current_block_156 == 5431927413890720344 {
             let toFlush = ((*zcs).outBuffContentSize).wrapping_sub((*zcs).outBuffFlushedSize);
             let flushed = ZSTD_limitCopy(
-                op as *mut core::ffi::c_void,
+                op,
                 oend.offset_from(op) as size_t,
-                ((*zcs).outBuff).add((*zcs).outBuffFlushedSize) as *const core::ffi::c_void,
+                ((*zcs).outBuff).add((*zcs).outBuffFlushedSize),
                 toFlush,
             );
             if flushed != 0 {

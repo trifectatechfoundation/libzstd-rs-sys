@@ -262,11 +262,11 @@ pub struct ZSTD_DCtx_s {
     streamStage: StreamStage,
 
     // The fields below are part of the workspace and not copied by `ZSTD_copyDCtx`.
-    inBuff: *mut core::ffi::c_char,
+    inBuff: *mut u8,
     inBuffSize: size_t,
     inPos: size_t,
     maxWindowSize: size_t,
-    outBuff: *mut core::ffi::c_char,
+    outBuff: *mut u8,
     outBuffSize: size_t,
     outStart: size_t,
     outEnd: size_t,
