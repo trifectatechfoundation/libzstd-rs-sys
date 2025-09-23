@@ -1303,10 +1303,7 @@ unsafe fn ZSTD_execSequence(
             dictEnd,
         );
     }
-    ZSTD_copy16(
-        op as *mut core::ffi::c_void,
-        *litPtr as *const core::ffi::c_void,
-    );
+    ZSTD_copy16(op, *litPtr);
     if (sequence.litLength > 16) as core::ffi::c_int as core::ffi::c_long != 0 {
         ZSTD_wildcopy(
             op.add(16) as *mut core::ffi::c_void,
@@ -1387,11 +1384,8 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             dictEnd,
         );
     }
-    ZSTD_copy16(
-        op as *mut core::ffi::c_void,
-        *litPtr as *const core::ffi::c_void,
-    );
-    if (sequence.litLength > 16) as core::ffi::c_int as core::ffi::c_long != 0 {
+    ZSTD_copy16(op, *litPtr);
+    if sequence.litLength > 16 {
         ZSTD_wildcopy(
             op.add(16) as *mut core::ffi::c_void,
             (*litPtr).add(16) as *const core::ffi::c_void,
@@ -1419,7 +1413,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
     }
-    if (sequence.offset >= 16) as core::ffi::c_int as core::ffi::c_long != 0 {
+    if sequence.offset >= 16 {
         ZSTD_wildcopy(
             op as *mut core::ffi::c_void,
             match_0 as *const core::ffi::c_void,
