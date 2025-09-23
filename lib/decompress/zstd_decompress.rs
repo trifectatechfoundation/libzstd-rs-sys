@@ -657,7 +657,7 @@ fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).outBufferMode = BufferMode::Buffered;
         (*dctx).forceIgnoreChecksum = ForceIgnoreChecksum::ValidateChecksum;
         (*dctx).refMultipleDDicts = MultipleDDicts::Single;
-        (*dctx).disableHufAsm = 0;
+        (*dctx).disableHufAsm = false;
         (*dctx).maxBlockSizeParam = 0;
     }
 }
@@ -2614,7 +2614,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
             (*dctx).forceIgnoreChecksum as core::ffi::c_int
         }
         ZSTD_dParameter::ZSTD_d_refMultipleDDicts => (*dctx).refMultipleDDicts as core::ffi::c_int,
-        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => (*dctx).disableHufAsm,
+        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => (*dctx).disableHufAsm as core::ffi::c_int,
         ZSTD_dParameter::ZSTD_d_maxBlockSize => (*dctx).maxBlockSizeParam,
         _ => return Error::parameter_unsupported.to_error_code(),
     };
@@ -2679,7 +2679,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             if !ZSTD_dParam_withinBounds(ZSTD_dParameter::ZSTD_d_experimentalParam5, value) {
                 return Error::parameter_outOfBound.to_error_code();
             }
-            (*dctx).disableHufAsm = (value != 0) as core::ffi::c_int;
+            (*dctx).disableHufAsm = value != 0;
             return 0;
         }
         ZSTD_dParameter::ZSTD_d_maxBlockSize => {

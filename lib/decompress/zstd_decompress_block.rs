@@ -428,9 +428,10 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             0
         };
 
-        let disable_asm_flag = match dctx.disableHufAsm {
-            0 => 0,
-            _ => HUF_flags_disableAsm as core::ffi::c_int,
+        let disable_asm_flag = if dctx.disableHufAsm {
+            HUF_flags_disableAsm as core::ffi::c_int
+        } else {
+            0
         };
 
         bmi_flag | disable_asm_flag
