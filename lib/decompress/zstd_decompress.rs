@@ -1232,9 +1232,12 @@ fn ZSTD_decodeFrameHeader(dctx: &mut ZSTD_DCtx, src: &[u8]) -> size_t {
     if dctx.fParams.dictID != 0 && dctx.dictID != dctx.fParams.dictID {
         return Error::dictionary_wrong.to_error_code();
     }
-    dctx.validateChecksum =
-        (dctx.fParams.checksumFlag != 0 && dctx.forceIgnoreChecksum as u64 == 0) as u32;
-    if dctx.validateChecksum != 0 {
+    dctx.validateChecksum = dctx.fParams.checksumFlag != 0
+        && matches!(
+            dctx.forceIgnoreChecksum,
+            ZSTD_forceIgnoreChecksum_e::ZSTD_d_validateChecksum
+        );
+    if dctx.validateChecksum {
         ZSTD_XXH64_reset(&mut dctx.xxhState, 0);
     }
     dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
@@ -1608,7 +1611,7 @@ unsafe fn ZSTD_decompressFrame(
             return decodedSize;
         }
 
-        if dctx.validateChecksum != 0 {
+        if dctx.validateChecksum {
             let written = op.subslice(..decodedSize);
             let slice = unsafe { written.as_slice() };
             ZSTD_XXH64_update_slice(&mut dctx.xxhState, slice);
@@ -1960,7 +1963,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 return Error::corruption_detected.to_error_code();
             }
             dctx.decodedSize = (dctx.decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
-            if dctx.validateChecksum != 0 {
+            if dctx.validateChecksum {
                 let written = dst.subslice(..rSize);
                 let slice = unsafe { written.as_slice() };
                 ZSTD_XXH64_update_slice(&mut dctx.xxhState, slice);
@@ -1990,7 +1993,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             rSize
         }
         DecompressStage::CheckChecksum => {
-            if dctx.validateChecksum != 0 {
+            if dctx.validateChecksum {
                 let h32 = ZSTD_XXH64_digest(&mut dctx.xxhState) as u32;
                 let check32 = u32::from_le_bytes(*src.first_chunk().unwrap());
                 if check32 != h32 {
