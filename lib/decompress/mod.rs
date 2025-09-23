@@ -244,7 +244,8 @@ pub struct ZSTD_DCtx_s {
     litSize: size_t,
     rleSize: size_t,
     staticSize: size_t,
-    isFrameDecompression: core::ffi::c_int,
+    isFrameDecompression: bool,
+    _padding7: [u8; 3],
     bmi2: bool,
     _padding2: [u8; 3],
     ddictLocal: *mut ZSTD_DDict,
@@ -259,6 +260,8 @@ pub struct ZSTD_DCtx_s {
     _padding6: [u8; 3],
     maxBlockSizeParam: core::ffi::c_int,
     streamStage: StreamStage,
+
+    // The fields below are part of the workspace and not copied by `ZSTD_copyDCtx`.
     inBuff: *mut core::ffi::c_char,
     inBuffSize: size_t,
     inPos: size_t,
