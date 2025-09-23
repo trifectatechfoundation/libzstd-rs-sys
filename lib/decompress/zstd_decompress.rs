@@ -679,7 +679,7 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).previousLegacyVersion = 0;
         (*dctx).noForwardProgress = 0;
         (*dctx).oversizedDuration = 0;
-        (*dctx).isFrameDecompression = 1;
+        (*dctx).isFrameDecompression = true;
         (*dctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
         (*dctx).ddictSet = core::ptr::null_mut();
 
@@ -2198,7 +2198,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).litEntropy = (*dctx).fseEntropy;
         (*dctx).dictID = 0;
         (*dctx).bType = BlockType::Reserved;
-        (*dctx).isFrameDecompression = 1;
+        (*dctx).isFrameDecompression = true;
         (*dctx).entropy.rep = repStartValue;
         (*dctx).LLTptr = NonNull::new((&raw const (*dctx).entropy.LLTable).cast_mut());
         (*dctx).MLTptr = NonNull::new((&raw const (*dctx).entropy.MLTable).cast_mut());
@@ -2717,7 +2717,7 @@ impl ZSTD_DCtx_s {
         ) {
             self.streamStage = StreamStage::Init;
             self.noForwardProgress = 0;
-            self.isFrameDecompression = 1;
+            self.isFrameDecompression = true;
         }
 
         if matches!(

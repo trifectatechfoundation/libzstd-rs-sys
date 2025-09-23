@@ -175,7 +175,7 @@ pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 
 impl ZSTD_DCtx {
     fn block_size_max(&self) -> usize {
-        if self.isFrameDecompression != 0 {
+        if self.isFrameDecompression {
             self.fParams.blockSizeMax as usize
         } else {
             ZSTD_BLOCKSIZE_MAX as usize
@@ -2362,7 +2362,7 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     mut dst: Writer<'_>,
     src: Reader<'_>,
 ) -> size_t {
-    dctx.isFrameDecompression = 0;
+    dctx.isFrameDecompression = false;
     ZSTD_checkContinuity(dctx, dst.as_ptr_range());
 
     // FIXME: can src and dst overlap in this case?
