@@ -1230,4 +1230,33 @@ mod is_frame {
         // null pointer
         assert!(assert_eq_rs_c!({ ZSTD_isFrame(core::ptr::null(), 0) }) == 0);
     }
+
+    fn is_skippable_frame(buf: &[u8]) -> bool {
+        assert_eq_rs_c!({ ZSTD_isSkippableFrame(buf.as_ptr().cast(), buf.len()) }) != 0
+    }
+
+    #[test]
+    fn is_skippable_frame_happy_path() {
+        assert!(is_skippable_frame(&SKIPABLE));
+        assert!(is_skippable_frame(&SKIPABLE_MODIFIED_1));
+        assert!(is_skippable_frame(&SKIPABLE_MODIFIED_2));
+    }
+
+    #[test]
+    fn is_skippable_frame_unhappy_path() {
+        assert!(!is_skippable_frame(&MAGIC));
+        assert!(!is_skippable_frame(&WRONG_MAGIC));
+        assert!(!is_skippable_frame(&SKIPABLE_MODIFIED_INCORRECT));
+
+        // not enough bytes
+        assert!(!is_skippable_frame(&[]));
+        assert!(!is_skippable_frame(&[
+            SKIPABLE[0],
+            SKIPABLE[1],
+            SKIPABLE[2]
+        ]));
+
+        // null pointer
+        assert!(assert_eq_rs_c!({ ZSTD_isSkippableFrame(core::ptr::null(), 0) }) == 0);
+    }
 }
