@@ -1174,3 +1174,60 @@ fn test_multi_fragments_decompression() {
         }
     }
 }
+
+mod is_frame {
+    use super::*;
+    use libzstd_rs_sys::lib::decompress::zstd_decompress::*;
+
+    const MAGIC: [u8; 4] = u32::to_le_bytes(libzstd_rs_sys::ZSTD_MAGICNUMBER);
+    const MAGIC_V1: [u8; 4] = u32::to_le_bytes(ZSTDv01_magicNumberLE);
+    const MAGIC_V2: [u8; 4] = u32::to_le_bytes(ZSTDv02_MAGICNUMBER);
+    const MAGIC_V3: [u8; 4] = u32::to_le_bytes(ZSTDv03_MAGICNUMBER);
+    const MAGIC_V4: [u8; 4] = u32::to_le_bytes(ZSTDv04_MAGICNUMBER);
+    const MAGIC_V5: [u8; 4] = u32::to_le_bytes(ZSTDv05_MAGICNUMBER);
+    const MAGIC_V6: [u8; 4] = u32::to_le_bytes(ZSTDv06_MAGICNUMBER);
+    const MAGIC_V7: [u8; 4] = u32::to_le_bytes(ZSTDv07_MAGICNUMBER);
+
+    const SKIPABLE: [u8; 4] = u32::to_le_bytes(libzstd_rs_sys::ZSTD_MAGIC_SKIPPABLE_START);
+    const SKIPABLE_MODIFIED_1: [u8; 4] =
+        u32::to_le_bytes(libzstd_rs_sys::ZSTD_MAGIC_SKIPPABLE_START + 1);
+    const SKIPABLE_MODIFIED_2: [u8; 4] =
+        u32::to_le_bytes(libzstd_rs_sys::ZSTD_MAGIC_SKIPPABLE_START + 15);
+    const SKIPABLE_MODIFIED_INCORRECT: [u8; 4] =
+        u32::to_le_bytes(libzstd_rs_sys::ZSTD_MAGIC_SKIPPABLE_START + 16);
+
+    const WRONG_MAGIC: [u8; 4] = u32::to_le_bytes(0xDEADBEEF);
+
+    fn is_frame(buf: &[u8]) -> bool {
+        assert_eq_rs_c!({ ZSTD_isFrame(buf.as_ptr().cast(), buf.len()) }) != 0
+    }
+
+    #[test]
+    fn is_frame_happy_path() {
+        assert!(is_frame(&MAGIC));
+        assert!(is_frame(&MAGIC_V1));
+        assert!(is_frame(&MAGIC_V2));
+        assert!(is_frame(&MAGIC_V3));
+        assert!(is_frame(&MAGIC_V4));
+        assert!(is_frame(&MAGIC_V5));
+        assert!(is_frame(&MAGIC_V6));
+        assert!(is_frame(&MAGIC_V7));
+
+        assert!(is_frame(&SKIPABLE));
+        assert!(is_frame(&SKIPABLE_MODIFIED_1));
+        assert!(is_frame(&SKIPABLE_MODIFIED_2));
+    }
+
+    #[test]
+    fn is_frame_unhappy_path() {
+        assert!(!is_frame(&WRONG_MAGIC));
+        assert!(!is_frame(&SKIPABLE_MODIFIED_INCORRECT));
+
+        // not enough bytes
+        assert!(!is_frame(&[]));
+        assert!(!is_frame(&[MAGIC[0], MAGIC[1], MAGIC[2]]));
+
+        // null pointer
+        assert!(assert_eq_rs_c!({ ZSTD_isFrame(core::ptr::null(), 0) }) == 0);
+    }
+}

@@ -127,14 +127,14 @@ pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
-const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
+pub const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 
-const ZSTDv02_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB522;
-const ZSTDv03_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB523;
-const ZSTDv04_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB524;
-const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB525;
-const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB526;
-const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB527;
+pub const ZSTDv02_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB522;
+pub const ZSTDv03_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB523;
+pub const ZSTDv04_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB524;
+pub const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB525;
+pub const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB526;
+pub const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB527;
 
 #[inline]
 unsafe fn ZSTD_isLegacy(src: *const core::ffi::c_void, srcSize: size_t) -> u32 {
