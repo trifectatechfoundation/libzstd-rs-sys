@@ -1293,4 +1293,37 @@ mod ddict {
     fn test_sizeof_null_ptr() {
         assert_eq!(assert_eq_rs_c!({ ZSTD_sizeof_DDict(core::ptr::null()) }), 0);
     }
+
+    macro_rules! get_ddict_id {
+        ($dict:expr) => {{
+            let ddict = ZSTD_createDDict($dict.as_ptr() as *const c_void, $dict.len());
+            assert!(!ddict.is_null(), "Failed to create DDict");
+
+            let id = ZSTD_getDictID_fromDDict(ddict);
+
+            ZSTD_freeDDict(ddict);
+
+            id
+        }};
+    }
+
+    #[test]
+    fn get_dict_id() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
+        assert_eq_rs_c!({ get_ddict_id!(DICT) });
+    }
+
+    #[test]
+    fn get_dict_id_v07() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus-0.7.4.zstd");
+        assert_eq_rs_c!({ get_ddict_id!(DICT) });
+    }
+
+    #[test]
+    fn get_dict_id_null_ptr() {
+        assert_eq!(
+            assert_eq_rs_c!({ ZSTD_getDictID_fromDDict(core::ptr::null()) }),
+            0
+        );
+    }
 }
