@@ -162,8 +162,8 @@ fn ZSTD_loadEntropy_intoDDict(
     Ok(())
 }
 
-unsafe fn ZSTD_initDDict_internal(
-    ddict: *mut ZSTD_DDict,
+fn ZSTD_initDDict_internal(
+    ddict: &mut ZSTD_DDict,
     dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
@@ -173,25 +173,27 @@ unsafe fn ZSTD_initDDict_internal(
         || dict.is_null()
         || dictSize == 0
     {
-        (*ddict).dictBuffer = core::ptr::null_mut();
-        (*ddict).dictContent = dict;
+        ddict.dictBuffer = core::ptr::null_mut();
+        ddict.dictContent = dict;
         if dict.is_null() {
             dictSize = 0;
         }
     } else {
-        let internalBuffer = ZSTD_customMalloc(dictSize, (*ddict).cMem);
-        (*ddict).dictBuffer = internalBuffer;
-        (*ddict).dictContent = internalBuffer;
-        if internalBuffer.is_null() {
-            return Err(Error::dictionary_corrupted);
+        unsafe {
+            let internalBuffer = ZSTD_customMalloc(dictSize, ddict.cMem);
+            ddict.dictBuffer = internalBuffer;
+            ddict.dictContent = internalBuffer;
+            if internalBuffer.is_null() {
+                return Err(Error::dictionary_corrupted);
+            }
+            core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
         }
-        core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
     }
 
-    (*ddict).dictSize = dictSize;
-    (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
+    ddict.dictSize = dictSize;
+    ddict.entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
 
-    ZSTD_loadEntropy_intoDDict(&mut *ddict, dictContentType)?;
+    ZSTD_loadEntropy_intoDDict(ddict, dictContentType)?;
 
     Ok(())
 }
@@ -215,7 +217,8 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
 
     (*ddict).cMem = customMem;
-    if let Err(_) = ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType)
+    if ZSTD_initDDict_internal(&mut *ddict, dict, dictSize, dictLoadMethod, dictContentType)
+        .is_err()
     {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
@@ -279,7 +282,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     }
 
     if ZSTD_initDDict_internal(
-        ddict,
+        &mut *ddict,
         dict,
         dictSize,
         DictLoadMethod::ByRef as _,
