@@ -1260,3 +1260,37 @@ mod is_frame {
         assert!(assert_eq_rs_c!({ ZSTD_isSkippableFrame(core::ptr::null(), 0) }) == 0);
     }
 }
+
+mod ddict {
+    use super::*;
+
+    macro_rules! get_ddict_size {
+        ($dict:expr) => {{
+            let ddict = ZSTD_createDDict($dict.as_ptr() as *const c_void, $dict.len());
+            assert!(!ddict.is_null(), "Failed to create DDict");
+
+            let size = ZSTD_sizeof_DDict(ddict);
+
+            ZSTD_freeDDict(ddict);
+
+            size
+        }};
+    }
+
+    #[test]
+    fn test_sizeof_ddict() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus.zstd");
+        assert_eq_rs_c!({ get_ddict_size!(DICT) });
+    }
+
+    #[test]
+    fn test_sizeof_ddict_v07() {
+        const DICT: &[u8] = include_bytes!("../test-data/compression-corpus-0.7.4.zstd");
+        assert_eq_rs_c!({ get_ddict_size!(DICT) });
+    }
+
+    #[test]
+    fn test_sizeof_null_ptr() {
+        assert_eq!(assert_eq_rs_c!({ ZSTD_sizeof_DDict(core::ptr::null()) }), 0);
+    }
+}
