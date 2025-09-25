@@ -168,7 +168,7 @@ unsafe fn ZSTD_initDDict_internal(
     mut dictSize: size_t,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     dictContentType: ZSTD_dictContentType_e,
-) -> size_t {
+) -> Result<(), Error> {
     if dictLoadMethod == DictLoadMethod::ByRef as ZSTD_dictLoadMethod_e
         || dict.is_null()
         || dictSize == 0
@@ -183,7 +183,7 @@ unsafe fn ZSTD_initDDict_internal(
         (*ddict).dictBuffer = internalBuffer;
         (*ddict).dictContent = internalBuffer;
         if internalBuffer.is_null() {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
         core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
     }
@@ -191,11 +191,9 @@ unsafe fn ZSTD_initDDict_internal(
     (*ddict).dictSize = dictSize;
     (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
 
-    if let Err(err) = ZSTD_loadEntropy_intoDDict(&mut *ddict, dictContentType) {
-        return err.to_error_code();
-    }
+    ZSTD_loadEntropy_intoDDict(&mut *ddict, dictContentType)?;
 
-    0
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_advanced))]
@@ -217,10 +215,8 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
 
     (*ddict).cMem = customMem;
-    let initResult =
-        ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType);
-
-    if ERR_isError(initResult) {
+    if let Err(_) = ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType)
+    {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
     }
@@ -282,15 +278,15 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
         dict = ddict.add(1) as *const core::ffi::c_void;
     }
 
-    let ret = ZSTD_initDDict_internal(
+    if ZSTD_initDDict_internal(
         ddict,
         dict,
         dictSize,
         DictLoadMethod::ByRef as _,
         dictContentType,
-    );
-
-    if ERR_isError(ret) {
+    )
+    .is_err()
+    {
         return core::ptr::null_mut();
     }
 
