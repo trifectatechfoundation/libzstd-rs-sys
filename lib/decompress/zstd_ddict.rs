@@ -115,88 +115,87 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
     }
 }
 
-unsafe fn ZSTD_loadEntropy_intoDDict(
-    ddict: *mut ZSTD_DDict,
+fn ZSTD_loadEntropy_intoDDict(
+    ddict: &mut ZSTD_DDict,
     dictContentType: ZSTD_dictContentType_e,
-) -> size_t {
-    (*ddict).dictID = 0;
-    (*ddict).entropyPresent = 0;
+) -> Result<(), Error> {
+    ddict.dictID = 0;
+    ddict.entropyPresent = 0;
 
     if dictContentType == ZSTD_dct_rawContent as ZSTD_dictContentType_e {
-        return 0;
+        return Ok(());
     }
 
-    let dict = if (*ddict).dictContent.is_null() {
+    let dict = if ddict.dictContent.is_null() {
         &[]
     } else {
-        core::slice::from_raw_parts((*ddict).dictContent.cast::<u8>(), (*ddict).dictSize)
+        unsafe { core::slice::from_raw_parts(ddict.dictContent.cast::<u8>(), ddict.dictSize) }
     };
 
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
 
-        return 0;
+        return Ok(());
     };
 
     let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
 
-        return 0;
+        return Ok(());
     }
 
-    (*ddict).dictID = u32::from_le_bytes(*dict_id);
+    ddict.dictID = u32::from_le_bytes(*dict_id);
 
-    let ret = ZSTD_loadDEntropy(&mut (*ddict).entropy, dict);
+    let ret = ZSTD_loadDEntropy(&mut ddict.entropy, dict);
 
     if ERR_isError(ret) {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
 
-    (*ddict).entropyPresent = 1;
+    ddict.entropyPresent = 1;
 
-    0
+    Ok(())
 }
 
-unsafe fn ZSTD_initDDict_internal(
-    ddict: *mut ZSTD_DDict,
+fn ZSTD_initDDict_internal(
+    ddict: &mut ZSTD_DDict,
     dict: *const core::ffi::c_void,
     mut dictSize: size_t,
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     dictContentType: ZSTD_dictContentType_e,
-) -> size_t {
+) -> Result<(), Error> {
     if dictLoadMethod == DictLoadMethod::ByRef as ZSTD_dictLoadMethod_e
         || dict.is_null()
         || dictSize == 0
     {
-        (*ddict).dictBuffer = core::ptr::null_mut();
-        (*ddict).dictContent = dict;
+        ddict.dictBuffer = core::ptr::null_mut();
+        ddict.dictContent = dict;
         if dict.is_null() {
             dictSize = 0;
         }
     } else {
-        let internalBuffer = ZSTD_customMalloc(dictSize, (*ddict).cMem);
-        (*ddict).dictBuffer = internalBuffer;
-        (*ddict).dictContent = internalBuffer;
-        if internalBuffer.is_null() {
-            return Error::dictionary_corrupted.to_error_code();
+        unsafe {
+            let internalBuffer = ZSTD_customMalloc(dictSize, ddict.cMem);
+            ddict.dictBuffer = internalBuffer;
+            ddict.dictContent = internalBuffer;
+            if internalBuffer.is_null() {
+                return Err(Error::dictionary_corrupted);
+            }
+            core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
         }
-        core::ptr::copy_nonoverlapping(dict, internalBuffer, dictSize);
     }
 
-    (*ddict).dictSize = dictSize;
-    (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
+    ddict.dictSize = dictSize;
+    ddict.entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
 
-    let err_code = ZSTD_loadEntropy_intoDDict(ddict, dictContentType);
-    if ERR_isError(err_code) {
-        return err_code;
-    }
+    ZSTD_loadEntropy_intoDDict(ddict, dictContentType)?;
 
-    0
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_advanced))]
@@ -218,10 +217,9 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
 
     (*ddict).cMem = customMem;
-    let initResult =
-        ZSTD_initDDict_internal(ddict, dict, dictSize, dictLoadMethod, dictContentType);
-
-    if ERR_isError(initResult) {
+    if ZSTD_initDDict_internal(&mut *ddict, dict, dictSize, dictLoadMethod, dictContentType)
+        .is_err()
+    {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
     }
@@ -283,15 +281,15 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
         dict = ddict.add(1) as *const core::ffi::c_void;
     }
 
-    let ret = ZSTD_initDDict_internal(
-        ddict,
+    if ZSTD_initDDict_internal(
+        &mut *ddict,
         dict,
         dictSize,
         DictLoadMethod::ByRef as _,
         dictContentType,
-    );
-
-    if ERR_isError(ret) {
+    )
+    .is_err()
+    {
         return core::ptr::null_mut();
     }
 
