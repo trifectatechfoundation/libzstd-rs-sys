@@ -118,12 +118,12 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
 fn ZSTD_loadEntropy_intoDDict(
     ddict: &mut ZSTD_DDict,
     dictContentType: ZSTD_dictContentType_e,
-) -> size_t {
+) -> Result<(), Error> {
     ddict.dictID = 0;
     ddict.entropyPresent = 0;
 
     if dictContentType == ZSTD_dct_rawContent as ZSTD_dictContentType_e {
-        return 0;
+        return Ok(());
     }
 
     let dict = if ddict.dictContent.is_null() {
@@ -134,19 +134,19 @@ fn ZSTD_loadEntropy_intoDDict(
 
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
 
-        return 0;
+        return Ok(());
     };
 
     let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
         if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
 
-        return 0;
+        return Ok(());
     }
 
     ddict.dictID = u32::from_le_bytes(*dict_id);
@@ -154,12 +154,12 @@ fn ZSTD_loadEntropy_intoDDict(
     let ret = ZSTD_loadDEntropy(&mut ddict.entropy, dict);
 
     if ERR_isError(ret) {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
 
     ddict.entropyPresent = 1;
 
-    0
+    Ok(())
 }
 
 unsafe fn ZSTD_initDDict_internal(
@@ -191,9 +191,8 @@ unsafe fn ZSTD_initDDict_internal(
     (*ddict).dictSize = dictSize;
     (*ddict).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
 
-    let err_code = ZSTD_loadEntropy_intoDDict(&mut *ddict, dictContentType);
-    if ERR_isError(err_code) {
-        return err_code;
+    if let Err(err) = ZSTD_loadEntropy_intoDDict(&mut *ddict, dictContentType) {
+        return err.to_error_code();
     }
 
     0
