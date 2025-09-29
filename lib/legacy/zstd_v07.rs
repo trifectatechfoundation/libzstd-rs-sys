@@ -276,18 +276,14 @@ impl<'a> BITv07_DStream_t<'a> {
 
     #[inline]
     fn look_bits(&self, nbBits: u32) -> size_t {
-        let bitMask = (::core::mem::size_of::<size_t>())
-            .wrapping_mul(8)
-            .wrapping_sub(1) as u32;
+        let bitMask = usize::BITS - 1;
         self.bitContainer << (self.bitsConsumed & bitMask)
             >> 1
             >> (bitMask.wrapping_sub(nbBits) & bitMask)
     }
     #[inline]
     fn look_bits_fast(&self, nbBits: u32) -> size_t {
-        let bitMask = (::core::mem::size_of::<size_t>())
-            .wrapping_mul(8)
-            .wrapping_sub(1) as u32;
+        let bitMask = usize::BITS - 1;
         self.bitContainer << (self.bitsConsumed & bitMask)
             >> (bitMask.wrapping_add(1).wrapping_sub(nbBits) & bitMask)
     }
@@ -309,7 +305,7 @@ impl<'a> BITv07_DStream_t<'a> {
     }
     #[inline]
     fn reload(&mut self) -> BITv07_DStream_status {
-        if self.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+        if self.bitsConsumed > usize::BITS {
             return BITv07_DStream_overflow;
         }
         if self.ptr >= unsafe { (self.start).add(::core::mem::size_of::<size_t>()) } {
@@ -319,7 +315,7 @@ impl<'a> BITv07_DStream_t<'a> {
             return BITv07_DStream_unfinished;
         }
         if self.ptr == self.start {
-            if (self.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+            if self.bitsConsumed < usize::BITS {
                 return BITv07_DStream_endOfBuffer;
             }
             return BITv07_DStream_completed;
@@ -337,9 +333,7 @@ impl<'a> BITv07_DStream_t<'a> {
     }
     #[inline]
     fn is_empty(&self) -> core::ffi::c_uint {
-        (self.ptr == self.start
-            && self.bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
-            as core::ffi::c_int as core::ffi::c_uint
+        (self.ptr == self.start && self.bitsConsumed == usize::BITS) as core::ffi::c_uint
     }
 }
 
@@ -737,9 +731,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         } else {
             FSEv07_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv07_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-        {
+        if (FSEv07_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
             bitD.reload();
         }
         *op.add(1) = (if fast != 0 {
@@ -747,8 +739,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         } else {
             FSEv07_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv07_MAX_TABLELOG * 4 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
+        if (FSEv07_MAX_TABLELOG * 4 + 7) as u32 > usize::BITS
             && bitD.reload() as core::ffi::c_uint
                 > BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
         {
@@ -760,9 +751,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         } else {
             FSEv07_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv07_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-        {
+        if (FSEv07_MAX_TABLELOG * 2 + 7) as u32 > usize::BITS {
             bitD.reload();
         }
         *op.add(3) = (if fast != 0 {
@@ -1448,12 +1437,10 @@ unsafe fn HUFv07_decodeLastSymbolX4(
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
     if (*dt.add(val)).length as core::ffi::c_int == 1 {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-    } else if (DStream.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-    {
+    } else if DStream.bitsConsumed < usize::BITS {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-        if DStream.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-            DStream.bitsConsumed =
-                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
+        if DStream.bitsConsumed > usize::BITS {
+            DStream.bitsConsumed = usize::BITS;
         }
     }
     1
