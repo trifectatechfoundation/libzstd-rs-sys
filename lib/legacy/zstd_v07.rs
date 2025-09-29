@@ -92,14 +92,6 @@ struct FSEv07_DState_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct BITv07_DStream_t {
-    bitContainer: size_t,
-    bitsConsumed: core::ffi::c_uint,
-    ptr: *const core::ffi::c_char,
-    start: *const core::ffi::c_char,
-}
-#[derive(Copy, Clone)]
-#[repr(C)]
 struct seq_t {
     litLength: size_t,
     matchLength: size_t,
@@ -186,163 +178,177 @@ unsafe fn BITv07_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
 }
 
-#[inline]
-unsafe fn BITv07_initDStream(
-    bitD: *mut BITv07_DStream_t,
-    srcBuffer: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
-    if srcSize < 1 {
-        ptr::write_bytes(
-            bitD as *mut u8,
-            0,
-            ::core::mem::size_of::<BITv07_DStream_t>(),
-        );
-        return Error::srcSize_wrong.to_error_code();
-    }
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct BITv07_DStream_t {
+    bitContainer: size_t,
+    bitsConsumed: core::ffi::c_uint,
+    ptr: *const core::ffi::c_char,
+    start: *const core::ffi::c_char,
+}
 
-    let bitD = &mut *bitD;
+impl BITv07_DStream_t {
+    #[inline]
+    unsafe fn new(srcBuffer: *const core::ffi::c_void, srcSize: size_t) -> Result<Self, Error> {
+        if srcSize < 1 {
+            return Err(Error::srcSize_wrong);
+        }
 
-    if srcSize >= ::core::mem::size_of::<size_t>() {
-        // normal case
-        bitD.start = srcBuffer as *const core::ffi::c_char;
-        bitD.ptr = (srcBuffer as *const core::ffi::c_char)
-            .add(srcSize)
-            .sub(::core::mem::size_of::<size_t>());
-        bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
-        let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
-        bitD.bitsConsumed = if lastByte != 0 {
-            8 - BITv07_highbit32(lastByte as u32)
+        if srcSize >= ::core::mem::size_of::<size_t>() {
+            // normal case
+            let mut bitD = BITv07_DStream_t {
+                bitContainer: 0,
+                bitsConsumed: 0,
+                ptr: (srcBuffer as *const core::ffi::c_char)
+                    .add(srcSize)
+                    .sub(::core::mem::size_of::<size_t>()),
+                start: srcBuffer as *const core::ffi::c_char,
+            };
+
+            bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
+            let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
+            bitD.bitsConsumed = if lastByte != 0 {
+                8 - BITv07_highbit32(lastByte as u32)
+            } else {
+                0
+            };
+            if lastByte == 0 {
+                return Err(Error::GENERIC); // endMark not present
+            }
+
+            Ok(bitD)
         } else {
-            0
-        };
-        if lastByte == 0 {
-            return Error::GENERIC.to_error_code(); // endMark not present
-        }
-    } else {
-        bitD.start = srcBuffer as *const core::ffi::c_char;
-        bitD.ptr = bitD.start;
-        bitD.bitContainer = *(bitD.start as *const u8) as size_t;
+            let mut bitD = BITv07_DStream_t {
+                bitContainer: 0,
+                bitsConsumed: 0,
+                ptr: srcBuffer as *const core::ffi::c_char,
+                start: srcBuffer as *const core::ffi::c_char,
+            };
 
-        if srcSize == 7 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(6) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 16);
-        }
+            bitD.bitContainer = *(bitD.start as *const u8) as size_t;
 
-        if srcSize >= 6 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(5) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 24);
-        }
+            if srcSize == 7 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(6) as size_t)
+                    << (::core::mem::size_of::<size_t>() * 8 - 16);
+            }
 
-        if srcSize >= 5 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(4) as size_t)
-                << (::core::mem::size_of::<size_t>() * 8 - 32);
-        }
+            if srcSize >= 6 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(5) as size_t)
+                    << (::core::mem::size_of::<size_t>() * 8 - 24);
+            }
 
-        if srcSize >= 4 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(3) as size_t) << 24;
-        }
+            if srcSize >= 5 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(4) as size_t)
+                    << (::core::mem::size_of::<size_t>() * 8 - 32);
+            }
 
-        if srcSize >= 3 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(2) as size_t) << 16;
-        }
+            if srcSize >= 4 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(3) as size_t) << 24;
+            }
 
-        if srcSize >= 2 {
-            bitD.bitContainer += (*(bitD.start as *const u8).add(1) as size_t) << 8;
-        }
+            if srcSize >= 3 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(2) as size_t) << 16;
+            }
 
-        let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
-        bitD.bitsConsumed = if lastByte != 0 {
-            8 - BITv07_highbit32(lastByte as u32)
-        } else {
-            0
-        };
-        if lastByte == 0 {
-            // endMark not present
-            return Error::GENERIC.to_error_code();
+            if srcSize >= 2 {
+                bitD.bitContainer += (*(bitD.start as *const u8).add(1) as size_t) << 8;
+            }
+
+            let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
+            bitD.bitsConsumed = if lastByte != 0 {
+                8 - BITv07_highbit32(lastByte as u32)
+            } else {
+                0
+            };
+            if lastByte == 0 {
+                // endMark not present
+                return Err(Error::GENERIC);
+            }
+            bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
+
+            Ok(bitD)
         }
-        bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
     }
-    srcSize
+
+    #[inline]
+    fn look_bits(&self, nbBits: u32) -> size_t {
+        let bitMask = (::core::mem::size_of::<size_t>())
+            .wrapping_mul(8)
+            .wrapping_sub(1) as u32;
+        self.bitContainer << (self.bitsConsumed & bitMask)
+            >> 1
+            >> (bitMask.wrapping_sub(nbBits) & bitMask)
+    }
+    #[inline]
+    fn look_bits_fast(&self, nbBits: u32) -> size_t {
+        let bitMask = (::core::mem::size_of::<size_t>())
+            .wrapping_mul(8)
+            .wrapping_sub(1) as u32;
+        self.bitContainer << (self.bitsConsumed & bitMask)
+            >> (bitMask.wrapping_add(1).wrapping_sub(nbBits) & bitMask)
+    }
+    #[inline]
+    fn skip_bits(&mut self, nbBits: u32) {
+        self.bitsConsumed = self.bitsConsumed.wrapping_add(nbBits);
+    }
+    #[inline]
+    fn read_bits(&mut self, nbBits: u32) -> size_t {
+        let value = self.look_bits(nbBits);
+        self.skip_bits(nbBits);
+        value
+    }
+    #[inline]
+    fn read_bits_fast(&mut self, nbBits: u32) -> size_t {
+        let value = self.look_bits_fast(nbBits);
+        self.skip_bits(nbBits);
+        value
+    }
+    #[inline]
+    unsafe fn reload(&mut self) -> BITv07_DStream_status {
+        if self.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+            return BITv07_DStream_overflow;
+        }
+        if self.ptr >= (self.start).add(::core::mem::size_of::<size_t>()) {
+            self.ptr = (self.ptr).offset(-((self.bitsConsumed >> 3) as isize));
+            self.bitsConsumed &= 7;
+            self.bitContainer = MEM_readLEST(self.ptr as *const core::ffi::c_void);
+            return BITv07_DStream_unfinished;
+        }
+        if self.ptr == self.start {
+            if (self.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+                return BITv07_DStream_endOfBuffer;
+            }
+            return BITv07_DStream_completed;
+        }
+        let mut nbBytes = self.bitsConsumed >> 3;
+        let mut result = BITv07_DStream_unfinished;
+        if (self.ptr).offset(-(nbBytes as isize)) < self.start {
+            nbBytes = (self.ptr).offset_from(self.start) as core::ffi::c_long as u32;
+            result = BITv07_DStream_endOfBuffer;
+        }
+        self.ptr = (self.ptr).offset(-(nbBytes as isize));
+        self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
+        self.bitContainer = MEM_readLEST(self.ptr as *const core::ffi::c_void);
+        result
+    }
+    #[inline]
+    fn is_empty(&self) -> core::ffi::c_uint {
+        (self.ptr == self.start
+            && self.bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
+            as core::ffi::c_int as core::ffi::c_uint
+    }
 }
 
-#[inline]
-unsafe fn BITv07_lookBits(bitD: *const BITv07_DStream_t, nbBits: u32) -> size_t {
-    let bitMask = (::core::mem::size_of::<size_t>())
-        .wrapping_mul(8)
-        .wrapping_sub(1) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & bitMask)
-        >> 1
-        >> (bitMask.wrapping_sub(nbBits) & bitMask)
-}
-#[inline]
-unsafe fn BITv07_lookBitsFast(bitD: *const BITv07_DStream_t, nbBits: u32) -> size_t {
-    let bitMask = (::core::mem::size_of::<size_t>())
-        .wrapping_mul(8)
-        .wrapping_sub(1) as u32;
-    (*bitD).bitContainer << ((*bitD).bitsConsumed & bitMask)
-        >> (bitMask.wrapping_add(1).wrapping_sub(nbBits) & bitMask)
-}
-#[inline]
-unsafe fn BITv07_skipBits(bitD: *mut BITv07_DStream_t, nbBits: u32) {
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_add(nbBits);
-}
-#[inline]
-unsafe fn BITv07_readBits(bitD: *mut BITv07_DStream_t, nbBits: u32) -> size_t {
-    let value = BITv07_lookBits(bitD, nbBits);
-    BITv07_skipBits(bitD, nbBits);
-    value
-}
-#[inline]
-unsafe fn BITv07_readBitsFast(bitD: *mut BITv07_DStream_t, nbBits: u32) -> size_t {
-    let value = BITv07_lookBitsFast(bitD, nbBits);
-    BITv07_skipBits(bitD, nbBits);
-    value
-}
-#[inline]
-unsafe fn BITv07_reloadDStream(bitD: *mut BITv07_DStream_t) -> BITv07_DStream_status {
-    if (*bitD).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-        return BITv07_DStream_overflow;
-    }
-    if (*bitD).ptr >= ((*bitD).start).add(::core::mem::size_of::<size_t>()) {
-        (*bitD).ptr = ((*bitD).ptr).offset(-(((*bitD).bitsConsumed >> 3) as isize));
-        (*bitD).bitsConsumed &= 7;
-        (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
-        return BITv07_DStream_unfinished;
-    }
-    if (*bitD).ptr == (*bitD).start {
-        if ((*bitD).bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-            return BITv07_DStream_endOfBuffer;
-        }
-        return BITv07_DStream_completed;
-    }
-    let mut nbBytes = (*bitD).bitsConsumed >> 3;
-    let mut result = BITv07_DStream_unfinished;
-    if ((*bitD).ptr).offset(-(nbBytes as isize)) < (*bitD).start {
-        nbBytes = ((*bitD).ptr).offset_from((*bitD).start) as core::ffi::c_long as u32;
-        result = BITv07_DStream_endOfBuffer;
-    }
-    (*bitD).ptr = ((*bitD).ptr).offset(-(nbBytes as isize));
-    (*bitD).bitsConsumed = ((*bitD).bitsConsumed).wrapping_sub(nbBytes * 8);
-    (*bitD).bitContainer = MEM_readLEST((*bitD).ptr as *const core::ffi::c_void);
-    result
-}
-#[inline]
-unsafe fn BITv07_endOfDStream(DStream: *const BITv07_DStream_t) -> core::ffi::c_uint {
-    ((*DStream).ptr == (*DStream).start
-        && (*DStream).bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
-        as core::ffi::c_int as core::ffi::c_uint
-}
 #[inline]
 unsafe fn FSEv07_initDState(
     DStatePtr: *mut FSEv07_DState_t,
-    bitD: *mut BITv07_DStream_t,
+    bitD: &mut BITv07_DStream_t,
     dt: *const FSEv07_DTable,
 ) {
     let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const FSEv07_DTableHeader;
-    (*DStatePtr).state = BITv07_readBits(bitD, (*DTableH).tableLog as core::ffi::c_uint);
-    BITv07_reloadDStream(bitD);
+    (*DStatePtr).state = bitD.read_bits((*DTableH).tableLog as core::ffi::c_uint);
+    bitD.reload();
     (*DStatePtr).table = dt.add(1) as *const core::ffi::c_void;
 }
 #[inline]
@@ -351,33 +357,33 @@ unsafe fn FSEv07_peekSymbol(DStatePtr: *const FSEv07_DState_t) -> u8 {
     DInfo.symbol
 }
 #[inline]
-unsafe fn FSEv07_updateState(DStatePtr: *mut FSEv07_DState_t, bitD: *mut BITv07_DStream_t) {
+unsafe fn FSEv07_updateState(DStatePtr: *mut FSEv07_DState_t, bitD: &mut BITv07_DStream_t) {
     let DInfo = *((*DStatePtr).table as *const FSEv07_decode_t).add((*DStatePtr).state);
     let nbBits = DInfo.nbBits as u32;
-    let lowBits = BITv07_readBits(bitD, nbBits);
+    let lowBits = bitD.read_bits(nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
 }
 #[inline]
 unsafe fn FSEv07_decodeSymbol(
     DStatePtr: *mut FSEv07_DState_t,
-    bitD: *mut BITv07_DStream_t,
+    bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = *((*DStatePtr).table as *const FSEv07_decode_t).add((*DStatePtr).state);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
-    let lowBits = BITv07_readBits(bitD, nbBits);
+    let lowBits = bitD.read_bits(nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
     symbol
 }
 #[inline]
 unsafe fn FSEv07_decodeSymbolFast(
     DStatePtr: *mut FSEv07_DState_t,
-    bitD: *mut BITv07_DStream_t,
+    bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = *((*DStatePtr).table as *const FSEv07_decode_t).add((*DStatePtr).state);
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
-    let lowBits = BITv07_readBitsFast(bitD, nbBits);
+    let lowBits = bitD.read_bits_fast(nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
     symbol
 }
@@ -723,12 +729,6 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
     let mut op = ostart;
     let omax = op.add(maxDstSize);
     let olimit = omax.sub(3);
-    let mut bitD = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
     let mut state1 = FSEv07_DState_t {
         state: 0,
         table: core::ptr::null::<core::ffi::c_void>(),
@@ -737,16 +737,13 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         state: 0,
         table: core::ptr::null::<core::ffi::c_void>(),
     };
-    let errorCode = BITv07_initDStream(&mut bitD, cSrc, cSrcSize);
-    if ERR_isError(errorCode) {
-        return errorCode;
-    }
+    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     FSEv07_initDState(&mut state1, &mut bitD, dt);
     FSEv07_initDState(&mut state2, &mut bitD, dt);
-    while BITv07_reloadDStream(&mut bitD) as core::ffi::c_uint
-        == BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && op < olimit
-    {
+    while bitD.reload() == BITv07_DStream_unfinished && op < olimit {
         *op = (if fast != 0 {
             FSEv07_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
@@ -755,7 +752,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         if (FSEv07_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
         {
-            BITv07_reloadDStream(&mut bitD);
+            bitD.reload();
         }
         *op.add(1) = (if fast != 0 {
             FSEv07_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
@@ -764,7 +761,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         }) as u8;
         if (FSEv07_MAX_TABLELOG * 4 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-            && BITv07_reloadDStream(&mut bitD) as core::ffi::c_uint
+            && bitD.reload() as core::ffi::c_uint
                 > BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
         {
             op = op.add(2);
@@ -778,7 +775,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         if (FSEv07_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
         {
-            BITv07_reloadDStream(&mut bitD);
+            bitD.reload();
         }
         *op.add(3) = (if fast != 0 {
             FSEv07_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
@@ -798,9 +795,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         } else {
             FSEv07_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if BITv07_reloadDStream(&mut bitD) as core::ffi::c_uint
-            == BITv07_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
-        {
+        if bitD.reload() == BITv07_DStream_overflow {
             let fresh8 = op;
             op = op.add(1);
             *fresh8 = (if fast != 0 {
@@ -820,9 +815,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
             } else {
                 FSEv07_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
             }) as u8;
-            if BITv07_reloadDStream(&mut bitD) as core::ffi::c_uint
-                != BITv07_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
-            {
+            if bitD.reload() != BITv07_DStream_overflow {
                 continue;
             }
             let fresh10 = op;
@@ -979,28 +972,25 @@ unsafe fn HUFv07_readDTableX2(
     iSize
 }
 unsafe fn HUFv07_decodeSymbolX2(
-    Dstream: *mut BITv07_DStream_t,
+    Dstream: &mut BITv07_DStream_t,
     dt: *const HUFv07_DEltX2,
     dtLog: u32,
 ) -> u8 {
-    let val = BITv07_lookBitsFast(Dstream, dtLog);
+    let val = Dstream.look_bits_fast(dtLog);
     let c = (*dt.add(val)).byte;
-    BITv07_skipBits(Dstream, (*dt.add(val)).nbBits as u32);
+    Dstream.skip_bits((*dt.add(val)).nbBits as u32);
     c
 }
 #[inline]
 unsafe fn HUFv07_decodeStreamX2(
     mut p: *mut u8,
-    bitDPtr: *mut BITv07_DStream_t,
+    bitDPtr: &mut BITv07_DStream_t,
     pEnd: *mut u8,
     dt: *const HUFv07_DEltX2,
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    while BITv07_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p <= pEnd.sub(4)
-    {
+    while bitDPtr.reload() == BITv07_DStream_unfinished && p <= pEnd.sub(4) {
         if MEM_64bits() {
             let fresh12 = p;
             p = p.add(1);
@@ -1020,10 +1010,7 @@ unsafe fn HUFv07_decodeStreamX2(
         p = p.add(1);
         *fresh15 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
-    while BITv07_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p < pEnd
-    {
+    while bitDPtr.reload() == BITv07_DStream_unfinished && p < pEnd {
         let fresh16 = p;
         p = p.add(1);
         *fresh16 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
@@ -1046,20 +1033,14 @@ unsafe fn HUFv07_decompress1X2_usingDTable_internal(
     let oend = op.add(dstSize);
     let dtPtr = DTable.add(1) as *const core::ffi::c_void;
     let dt = dtPtr as *const HUFv07_DEltX2;
-    let mut bitD = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
     let dtd = HUFv07_getDTableDesc(DTable);
     let dtLog = dtd.tableLog as u32;
-    let errorCode = BITv07_initDStream(&mut bitD, cSrc, cSrcSize);
-    if HUFv07_isError(errorCode) != 0 {
-        return errorCode;
-    }
+    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
     HUFv07_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
-    if BITv07_endOfDStream(&bitD) == 0 {
+    if bitD.is_empty() == 0 {
         return Error::corruption_detected.to_error_code();
     }
     dstSize
@@ -1104,30 +1085,6 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     let oend = ostart.add(dstSize);
     let dtPtr = DTable.add(1) as *const core::ffi::c_void;
     let dt = dtPtr as *const HUFv07_DEltX2;
-    let mut bitD1 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD2 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD3 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD4 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.add(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.add(4) as *const core::ffi::c_void) as size_t;
@@ -1155,26 +1112,26 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    let errorCode = BITv07_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
-    if HUFv07_isError(errorCode) != 0 {
-        return errorCode;
-    }
-    let errorCode_0 = BITv07_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
-    if HUFv07_isError(errorCode_0) != 0 {
-        return errorCode_0;
-    }
-    let errorCode_1 = BITv07_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
-    if HUFv07_isError(errorCode_1) != 0 {
-        return errorCode_1;
-    }
-    let errorCode_2 = BITv07_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
-    if HUFv07_isError(errorCode_2) != 0 {
-        return errorCode_2;
-    }
-    endSignal = BITv07_reloadDStream(&mut bitD1) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
+    let mut bitD1 = match BITv07_DStream_t::new(istart1 as *const core::ffi::c_void, length1) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD2 = match BITv07_DStream_t::new(istart2 as *const core::ffi::c_void, length2) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD3 = match BITv07_DStream_t::new(istart3 as *const core::ffi::c_void, length3) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD4 = match BITv07_DStream_t::new(istart4 as *const core::ffi::c_void, length4) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    endSignal = bitD1.reload() as core::ffi::c_uint
+        | bitD2.reload() as core::ffi::c_uint
+        | bitD3.reload() as core::ffi::c_uint
+        | bitD4.reload() as core::ffi::c_uint;
     while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() {
             let fresh18 = op1;
@@ -1248,10 +1205,10 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
         let fresh33 = op4;
         op4 = op4.add(1);
         *fresh33 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
-        endSignal = BITv07_reloadDStream(&mut bitD1) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
+        endSignal = bitD1.reload() as core::ffi::c_uint
+            | bitD2.reload() as core::ffi::c_uint
+            | bitD3.reload() as core::ffi::c_uint
+            | bitD4.reload() as core::ffi::c_uint;
     }
     if op1 > opStart2 {
         return Error::corruption_detected.to_error_code();
@@ -1266,10 +1223,7 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     HUFv07_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = BITv07_endOfDStream(&bitD1)
-        & BITv07_endOfDStream(&bitD2)
-        & BITv07_endOfDStream(&bitD3)
-        & BITv07_endOfDStream(&bitD4);
+    endSignal = bitD1.is_empty() & bitD2.is_empty() & bitD3.is_empty() & bitD4.is_empty();
     if endSignal == 0 {
         return Error::corruption_detected.to_error_code();
     }
@@ -1551,29 +1505,29 @@ unsafe fn HUFv07_readDTableX4(
 }
 unsafe fn HUFv07_decodeSymbolX4(
     op: *mut core::ffi::c_void,
-    DStream: *mut BITv07_DStream_t,
+    DStream: &mut BITv07_DStream_t,
     dt: *const HUFv07_DEltX4,
     dtLog: u32,
 ) -> u32 {
-    let val = BITv07_lookBitsFast(DStream, dtLog);
+    let val = DStream.look_bits_fast(dtLog);
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 2);
-    BITv07_skipBits(DStream, (*dt.add(val)).nbBits as u32);
+    DStream.skip_bits((*dt.add(val)).nbBits as u32);
     (*dt.add(val)).length as u32
 }
 unsafe fn HUFv07_decodeLastSymbolX4(
     op: *mut core::ffi::c_void,
-    DStream: *mut BITv07_DStream_t,
+    DStream: &mut BITv07_DStream_t,
     dt: *const HUFv07_DEltX4,
     dtLog: u32,
 ) -> u32 {
-    let val = BITv07_lookBitsFast(DStream, dtLog);
+    let val = DStream.look_bits_fast(dtLog);
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
     if (*dt.add(val)).length as core::ffi::c_int == 1 {
-        BITv07_skipBits(DStream, (*dt.add(val)).nbBits as u32);
+        DStream.skip_bits((*dt.add(val)).nbBits as u32);
     } else if ((*DStream).bitsConsumed as size_t)
         < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
     {
-        BITv07_skipBits(DStream, (*dt.add(val)).nbBits as u32);
+        DStream.skip_bits((*dt.add(val)).nbBits as u32);
         if (*DStream).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
             (*DStream).bitsConsumed =
                 (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
@@ -1584,16 +1538,13 @@ unsafe fn HUFv07_decodeLastSymbolX4(
 #[inline]
 unsafe fn HUFv07_decodeStreamX4(
     mut p: *mut u8,
-    bitDPtr: *mut BITv07_DStream_t,
+    bitDPtr: &mut BITv07_DStream_t,
     pEnd: *mut u8,
     dt: *const HUFv07_DEltX4,
     dtLog: u32,
 ) -> size_t {
     let pStart = p;
-    while BITv07_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p < pEnd.sub(7)
-    {
+    while bitDPtr.reload() == BITv07_DStream_unfinished && p < pEnd.sub(7) {
         if MEM_64bits() {
             p = p.offset(
                 HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
@@ -1613,10 +1564,7 @@ unsafe fn HUFv07_decodeStreamX4(
             HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
     }
-    while BITv07_reloadDStream(bitDPtr) as core::ffi::c_uint
-        == BITv07_DStream_unfinished as core::ffi::c_int as core::ffi::c_uint
-        && p <= pEnd.sub(2)
-    {
+    while bitDPtr.reload() == BITv07_DStream_unfinished && p <= pEnd.sub(2) {
         p = p.offset(
             HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
@@ -1640,23 +1588,17 @@ unsafe fn HUFv07_decompress1X4_usingDTable_internal(
     cSrcSize: size_t,
     DTable: *const HUFv07_DTable,
 ) -> size_t {
-    let mut bitD = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
+    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
     };
-    let errorCode = BITv07_initDStream(&mut bitD, cSrc, cSrcSize);
-    if HUFv07_isError(errorCode) != 0 {
-        return errorCode;
-    }
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let dtPtr = DTable.add(1) as *const core::ffi::c_void;
     let dt = dtPtr as *const HUFv07_DEltX4;
     let dtd = HUFv07_getDTableDesc(DTable);
     HUFv07_decodeStreamX4(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
-    if BITv07_endOfDStream(&bitD) == 0 {
+    if bitD.is_empty() == 0 {
         return Error::corruption_detected.to_error_code();
     }
     dstSize
@@ -1689,30 +1631,6 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     let oend = ostart.add(dstSize);
     let dtPtr = DTable.add(1) as *const core::ffi::c_void;
     let dt = dtPtr as *const HUFv07_DEltX4;
-    let mut bitD1 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD2 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD3 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
-    let mut bitD4 = BITv07_DStream_t {
-        bitContainer: 0,
-        bitsConsumed: 0,
-        ptr: core::ptr::null::<core::ffi::c_char>(),
-        start: core::ptr::null::<core::ffi::c_char>(),
-    };
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.add(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.add(4) as *const core::ffi::c_void) as size_t;
@@ -1740,26 +1658,26 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    let errorCode = BITv07_initDStream(&mut bitD1, istart1 as *const core::ffi::c_void, length1);
-    if HUFv07_isError(errorCode) != 0 {
-        return errorCode;
-    }
-    let errorCode_0 = BITv07_initDStream(&mut bitD2, istart2 as *const core::ffi::c_void, length2);
-    if HUFv07_isError(errorCode_0) != 0 {
-        return errorCode_0;
-    }
-    let errorCode_1 = BITv07_initDStream(&mut bitD3, istart3 as *const core::ffi::c_void, length3);
-    if HUFv07_isError(errorCode_1) != 0 {
-        return errorCode_1;
-    }
-    let errorCode_2 = BITv07_initDStream(&mut bitD4, istart4 as *const core::ffi::c_void, length4);
-    if HUFv07_isError(errorCode_2) != 0 {
-        return errorCode_2;
-    }
-    endSignal = BITv07_reloadDStream(&mut bitD1) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
-        | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
+    let mut bitD1 = match BITv07_DStream_t::new(istart1 as *const core::ffi::c_void, length1) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD2 = match BITv07_DStream_t::new(istart2 as *const core::ffi::c_void, length2) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD3 = match BITv07_DStream_t::new(istart3 as *const core::ffi::c_void, length3) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    let mut bitD4 = match BITv07_DStream_t::new(istart4 as *const core::ffi::c_void, length4) {
+        Ok(bitD) => bitD,
+        Err(err) => return err.to_error_code(),
+    };
+    endSignal = bitD1.reload() as core::ffi::c_uint
+        | bitD2.reload() as core::ffi::c_uint
+        | bitD3.reload() as core::ffi::c_uint
+        | bitD4.reload() as core::ffi::c_uint;
     while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
         if MEM_64bits() {
             op1 = op1.offset(HUFv07_decodeSymbolX4(
@@ -1869,10 +1787,10 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
         op4 = op4.offset(
             HUFv07_decodeSymbolX4(op4 as *mut core::ffi::c_void, &mut bitD4, dt, dtLog) as isize,
         );
-        endSignal = BITv07_reloadDStream(&mut bitD1) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD2) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD3) as core::ffi::c_uint
-            | BITv07_reloadDStream(&mut bitD4) as core::ffi::c_uint;
+        endSignal = bitD1.reload() as core::ffi::c_uint
+            | bitD2.reload() as core::ffi::c_uint
+            | bitD3.reload() as core::ffi::c_uint
+            | bitD4.reload() as core::ffi::c_uint;
     }
     if op1 > opStart2 {
         return Error::corruption_detected.to_error_code();
@@ -1887,10 +1805,7 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     HUFv07_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
-    let endCheck = BITv07_endOfDStream(&bitD1)
-        & BITv07_endOfDStream(&bitD2)
-        & BITv07_endOfDStream(&bitD3)
-        & BITv07_endOfDStream(&bitD4);
+    let endCheck = bitD1.is_empty() & bitD2.is_empty() & bitD3.is_empty() & bitD4.is_empty();
     if endCheck == 0 {
         return Error::corruption_detected.to_error_code();
     }
@@ -2990,9 +2905,9 @@ unsafe fn ZSTDv07_decodeSequence(seqState: *mut seqState_t) -> seq_t {
         offset = 0;
     } else {
         offset = (*OF_base.as_ptr().offset(ofCode as isize) as size_t)
-            .wrapping_add(BITv07_readBits(&mut (*seqState).DStream, ofBits));
+            .wrapping_add((*seqState).DStream.read_bits(ofBits));
         if MEM_32bits() {
-            BITv07_reloadDStream(&mut (*seqState).DStream);
+            (*seqState).DStream.reload();
         }
     }
     if ofCode <= 1 {
@@ -3020,26 +2935,26 @@ unsafe fn ZSTDv07_decodeSequence(seqState: *mut seqState_t) -> seq_t {
     seq.offset = offset;
     seq.matchLength =
         (*ML_base.as_ptr().offset(mlCode as isize) as size_t).wrapping_add(if mlCode > 31 {
-            BITv07_readBits(&mut (*seqState).DStream, mlBits)
+            (*seqState).DStream.read_bits(mlBits)
         } else {
             0
         });
     if MEM_32bits() && mlBits.wrapping_add(llBits) > 24 {
-        BITv07_reloadDStream(&mut (*seqState).DStream);
+        (*seqState).DStream.reload();
     }
     seq.litLength =
         (*LL_base.as_ptr().offset(llCode as isize) as size_t).wrapping_add(if llCode > 15 {
-            BITv07_readBits(&mut (*seqState).DStream, llBits)
+            (*seqState).DStream.read_bits(llBits)
         } else {
             0
         });
     if MEM_32bits() || totalBits > (64 - 7 - (LLFSELog + MLFSELog + OffFSELog)) as u32 {
-        BITv07_reloadDStream(&mut (*seqState).DStream);
+        (*seqState).DStream.reload();
     }
     FSEv07_updateState(&mut (*seqState).stateLL, &mut (*seqState).DStream);
     FSEv07_updateState(&mut (*seqState).stateML, &mut (*seqState).DStream);
     if MEM_32bits() {
-        BITv07_reloadDStream(&mut (*seqState).DStream);
+        (*seqState).DStream.reload();
     }
     FSEv07_updateState(&mut (*seqState).stateOffb, &mut (*seqState).DStream);
     seq
@@ -3212,18 +3127,17 @@ unsafe fn ZSTDv07_decompressSequences(
                 *((*dctx).rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
         }
-        let errorCode = BITv07_initDStream(
-            &mut seqState.DStream,
+        match BITv07_DStream_t::new(
             ip as *const core::ffi::c_void,
             iend.offset_from(ip) as size_t,
-        );
-        if ERR_isError(errorCode) {
-            return Error::corruption_detected.to_error_code();
-        }
+        ) {
+            Ok(bitD) => seqState.DStream = bitD,
+            Err(_) => return Error::corruption_detected.to_error_code(),
+        };
         FSEv07_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
         FSEv07_initDState(&mut seqState.stateOffb, &mut seqState.DStream, DTableOffb);
         FSEv07_initDState(&mut seqState.stateML, &mut seqState.DStream, DTableML);
-        while BITv07_reloadDStream(&mut seqState.DStream) as core::ffi::c_uint
+        while seqState.DStream.reload() as core::ffi::c_uint
             <= BITv07_DStream_completed as core::ffi::c_int as core::ffi::c_uint
             && nbSeq != 0
         {
