@@ -217,8 +217,14 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     }
 
     (*ddict).cMem = customMem;
-    if ZSTD_initDDict_internal(&mut *ddict, dict, dictSize, dictLoadMethod, dictContentType)
-        .is_err()
+    if ZSTD_initDDict_internal(
+        ddict.as_mut().unwrap(),
+        dict,
+        dictSize,
+        dictLoadMethod,
+        dictContentType,
+    )
+    .is_err()
     {
         ZSTD_freeDDict(ddict);
         return core::ptr::null_mut();
@@ -282,7 +288,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     }
 
     if ZSTD_initDDict_internal(
-        &mut *ddict,
+        ddict.as_mut().unwrap(),
         dict,
         dictSize,
         DictLoadMethod::ByRef as _,
