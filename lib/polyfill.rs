@@ -99,7 +99,9 @@ cfg_select! {
         pub use core::hint::{likely, unlikely};
     }
     _ => {
+        #[inline(always)]
         pub fn likely(b: bool) -> bool { b }
+        #[inline(always)]
         pub fn unlikely(b: bool) -> bool { b }
     }
 }
