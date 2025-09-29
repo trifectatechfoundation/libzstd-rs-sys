@@ -15,4 +15,4 @@ path = ".."
 features = ["semver-prefix"]
 
 [dependencies]
-zstd-sys = "2.0.15"
+zstd-sys = { version = "2.0.15", features = ["experimental"] }
