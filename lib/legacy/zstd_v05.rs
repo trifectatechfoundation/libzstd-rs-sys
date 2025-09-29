@@ -67,17 +67,17 @@ struct seq_t {
 #[repr(C)]
 struct seqState_t<'a> {
     DStream: BITv05_DStream_t<'a>,
-    stateLL: FSEv05_DState_t,
-    stateOffb: FSEv05_DState_t,
-    stateML: FSEv05_DState_t,
+    stateLL: FSEv05_DState_t<'a>,
+    stateOffb: FSEv05_DState_t<'a>,
+    stateML: FSEv05_DState_t<'a>,
     prevOffset: size_t,
     dumps: &'a [u8],
 }
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-struct FSEv05_DState_t {
+struct FSEv05_DState_t<'a> {
     state: size_t,
-    table: *const FSEv05_decode_t,
+    table: &'a [FSEv05_decode_t],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -360,27 +360,27 @@ impl<'a> BITv05_DStream_t<'a> {
 }
 
 #[inline]
-unsafe fn FSEv05_initDState<const N: usize>(
-    DStatePtr: &mut FSEv05_DState_t,
+fn FSEv05_initDState<'a, const N: usize>(
+    DStatePtr: &mut FSEv05_DState_t<'a>,
     bitD: &mut BITv05_DStream_t,
-    dt: &FSEv05_DTable<N>,
+    dt: &'a FSEv05_DTable<N>,
 ) {
     let DTableH = dt.header;
     DStatePtr.state = bitD.read_bits(DTableH.tableLog as core::ffi::c_uint);
     bitD.reload();
-    DStatePtr.table = dt.data.as_ptr() as *const FSEv05_decode_t;
+    DStatePtr.table = &dt.data;
 }
 #[inline]
-unsafe fn FSEv05_peakSymbol(DStatePtr: &mut FSEv05_DState_t) -> u8 {
-    let DInfo = *DStatePtr.table.add(DStatePtr.state);
+fn FSEv05_peakSymbol(DStatePtr: &mut FSEv05_DState_t) -> u8 {
+    let DInfo = DStatePtr.table[DStatePtr.state];
     DInfo.symbol
 }
 #[inline]
-unsafe fn FSEv05_decodeSymbol(
+fn FSEv05_decodeSymbol(
     DStatePtr: &mut FSEv05_DState_t,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
-    let DInfo = *DStatePtr.table.add(DStatePtr.state);
+    let DInfo = DStatePtr.table[DStatePtr.state];
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits(nbBits);
@@ -388,11 +388,11 @@ unsafe fn FSEv05_decodeSymbol(
     symbol
 }
 #[inline]
-unsafe fn FSEv05_decodeSymbolFast(
+fn FSEv05_decodeSymbolFast(
     DStatePtr: &mut FSEv05_DState_t,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
-    let DInfo = *DStatePtr.table.add(DStatePtr.state);
+    let DInfo = DStatePtr.table[DStatePtr.state];
     let nbBits = DInfo.nbBits as u32;
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits_fast(nbBits);
@@ -626,23 +626,21 @@ fn FSEv05_buildDTable_raw<const N: usize>(
     Ok(())
 }
 #[inline(always)]
-unsafe fn FSEv05_decompress_usingDTable_generic<const N: usize>(
+fn FSEv05_decompress_usingDTable_generic<const N: usize>(
     dst: &mut [u8],
     cSrc: &[u8],
     dt: &FSEv05_DTable<N>,
     fast: core::ffi::c_uint,
 ) -> Result<size_t, Error> {
-    let ostart = dst.as_mut_ptr();
-    let mut op = ostart;
-    let omax = op.add(dst.len());
-    let olimit = omax.sub(3);
+    let dst_len = dst.len();
+    let mut op = dst;
     let mut state1 = FSEv05_DState_t::default();
     let mut state2 = FSEv05_DState_t::default();
     let mut bitD = BITv05_DStream_t::new(cSrc)?;
     FSEv05_initDState(&mut state1, &mut bitD, dt);
     FSEv05_initDState(&mut state2, &mut bitD, dt);
-    while bitD.reload() == StreamStatus::Unfinished && op < olimit {
-        *op = (if fast != 0 {
+    while bitD.reload() == StreamStatus::Unfinished && op.len() < 3 {
+        op[0] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
@@ -652,7 +650,7 @@ unsafe fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         {
             bitD.reload();
         }
-        *op.add(1) = (if fast != 0 {
+        op[1] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
@@ -661,10 +659,10 @@ unsafe fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
             && bitD.reload() > StreamStatus::Unfinished
         {
-            op = op.add(2);
+            op = &mut op[2..];
             break;
         }
-        *op.add(2) = (if fast != 0 {
+        op[2] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
@@ -674,42 +672,42 @@ unsafe fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         {
             bitD.reload();
         }
-        *op.add(3) = (if fast != 0 {
+        op[3] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
-        op = op.add(4);
+        op = &mut op[4..];
     }
     while !(bitD.reload() > StreamStatus::Completed
-        || op == omax
+        || op.len() == 0
         || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
     {
-        let fresh5 = op;
-        op = op.add(1);
-        *fresh5 = (if fast != 0 {
+        let fresh5: &mut [u8; 1];
+        (fresh5, op) = op.split_first_chunk_mut::<1>().unwrap();
+        fresh5[0] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
         if bitD.reload() > StreamStatus::Completed
-            || op == omax
+            || op.len() == 0
             || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
         {
             break;
         }
-        let fresh6 = op;
-        op = op.add(1);
-        *fresh6 = (if fast != 0 {
+        let fresh6: &mut [u8; 1];
+        (fresh6, op) = op.split_first_chunk_mut::<1>().unwrap();
+        fresh6[0] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
         } else {
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
     }
     if bitD.is_empty() && FSEv05_endOfDState(&state1) != 0 && FSEv05_endOfDState(&state2) != 0 {
-        return Ok(op.offset_from(ostart) as size_t);
+        return Ok(dst_len - op.len());
     }
-    if op == omax {
+    if op.len() == 0 {
         return Err(Error::dstSize_tooSmall);
     }
     Err(Error::corruption_detected)
@@ -721,9 +719,9 @@ fn FSEv05_decompress_usingDTable(
 ) -> Result<size_t, Error> {
     let fastMode = dt.header.fastMode as u32;
     if fastMode != 0 {
-        return unsafe { FSEv05_decompress_usingDTable_generic(dst, cSrc, dt, 1) };
+        return FSEv05_decompress_usingDTable_generic(dst, cSrc, dt, 1);
     }
-    unsafe { FSEv05_decompress_usingDTable_generic(dst, cSrc, dt, 0) }
+    FSEv05_decompress_usingDTable_generic(dst, cSrc, dt, 0)
 }
 fn FSEv05_decompress(dst: &mut [u8], cSrc: &[u8]) -> Result<size_t, Error> {
     let mut counting: [core::ffi::c_short; 256] = [0; 256];
