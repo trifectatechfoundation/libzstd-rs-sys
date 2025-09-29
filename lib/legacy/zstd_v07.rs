@@ -1,4 +1,5 @@
 use core::ptr;
+use std::marker::PhantomData;
 
 use libc::{free, malloc, memcpy, ptrdiff_t, size_t};
 
@@ -77,8 +78,8 @@ struct blockProperties_t {
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct seqState_t {
-    DStream: BITv07_DStream_t,
+struct seqState_t<'a> {
+    DStream: BITv07_DStream_t<'a>,
     stateLL: FSEv07_DState_t,
     stateOffb: FSEv07_DState_t,
     stateML: FSEv07_DState_t,
@@ -174,39 +175,43 @@ static ZSTDv07_frameHeaderSize_min: size_t = 5;
 static ZSTDv07_skippableHeaderSize: size_t = 8;
 const ZSTDv07_BLOCKSIZE_ABSOLUTEMAX: core::ffi::c_int = 128 * 1024;
 #[inline]
-unsafe fn BITv07_highbit32(val: u32) -> core::ffi::c_uint {
+fn BITv07_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() as i32 ^ 31) as core::ffi::c_uint
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct BITv07_DStream_t {
-    bitContainer: size_t,
+struct BITv07_DStream_t<'a> {
+    bitContainer: usize,
     bitsConsumed: core::ffi::c_uint,
-    ptr: *const core::ffi::c_char,
-    start: *const core::ffi::c_char,
+    ptr: *const u8,
+    start: *const u8,
+    _marker: PhantomData<&'a [u8]>,
 }
 
-impl BITv07_DStream_t {
+impl<'a> BITv07_DStream_t<'a> {
     #[inline]
-    unsafe fn new(srcBuffer: *const core::ffi::c_void, srcSize: size_t) -> Result<Self, Error> {
-        if srcSize < 1 {
+    fn new(src: &'a [u8]) -> Result<Self, Error> {
+        if src.is_empty() {
             return Err(Error::srcSize_wrong);
         }
 
-        if srcSize >= ::core::mem::size_of::<size_t>() {
+        if src.len() >= ::core::mem::size_of::<usize>() {
             // normal case
             let mut bitD = BITv07_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: (srcBuffer as *const core::ffi::c_char)
-                    .add(srcSize)
-                    .sub(::core::mem::size_of::<size_t>()),
-                start: srcBuffer as *const core::ffi::c_char,
+                ptr: unsafe {
+                    src.as_ptr()
+                        .add(src.len())
+                        .sub(::core::mem::size_of::<size_t>())
+                },
+                start: src.as_ptr(),
+                _marker: PhantomData,
             };
 
-            bitD.bitContainer = MEM_readLEST(bitD.ptr as *const core::ffi::c_void);
-            let lastByte = *(srcBuffer as *const u8).add(srcSize.wrapping_sub(1));
+            bitD.bitContainer = unsafe { MEM_readLEST(bitD.ptr as *const core::ffi::c_void) };
+            let lastByte = src[src.len() - 1];
             bitD.bitsConsumed = if lastByte != 0 {
                 8 - BITv07_highbit32(lastByte as u32)
             } else {
@@ -221,40 +226,38 @@ impl BITv07_DStream_t {
             let mut bitD = BITv07_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: srcBuffer as *const core::ffi::c_char,
-                start: srcBuffer as *const core::ffi::c_char,
+                ptr: src.as_ptr(),
+                start: src.as_ptr(),
+                _marker: PhantomData,
             };
 
-            bitD.bitContainer = *(bitD.start as *const u8) as size_t;
+            bitD.bitContainer = usize::from(src[0]);
 
-            if srcSize == 7 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(6) as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 16);
+            if src.len() == 7 {
+                bitD.bitContainer += usize::from(src[6]) << (usize::BITS - 16);
             }
 
-            if srcSize >= 6 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(5) as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 24);
+            if src.len() >= 6 {
+                bitD.bitContainer += usize::from(src[5]) << (usize::BITS - 24);
             }
 
-            if srcSize >= 5 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(4) as size_t)
-                    << (::core::mem::size_of::<size_t>() * 8 - 32);
+            if src.len() >= 5 {
+                bitD.bitContainer += usize::from(src[4]) << (usize::BITS - 32);
             }
 
-            if srcSize >= 4 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(3) as size_t) << 24;
+            if src.len() >= 4 {
+                bitD.bitContainer += usize::from(src[3]) << 24;
             }
 
-            if srcSize >= 3 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(2) as size_t) << 16;
+            if src.len() >= 3 {
+                bitD.bitContainer += usize::from(src[2]) << 16;
             }
 
-            if srcSize >= 2 {
-                bitD.bitContainer += (*(bitD.start as *const u8).add(1) as size_t) << 8;
+            if src.len() >= 2 {
+                bitD.bitContainer += usize::from(src[1]) << 8;
             }
 
-            let lastByte = *(srcBuffer as *const u8).add(srcSize - 1);
+            let lastByte = src[src.len() - 1];
             bitD.bitsConsumed = if lastByte != 0 {
                 8 - BITv07_highbit32(lastByte as u32)
             } else {
@@ -264,7 +267,7 @@ impl BITv07_DStream_t {
                 // endMark not present
                 return Err(Error::GENERIC);
             }
-            bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
+            bitD.bitsConsumed += (::core::mem::size_of::<usize>() - src.len()) as u32 * 8;
 
             Ok(bitD)
         }
@@ -304,14 +307,14 @@ impl BITv07_DStream_t {
         value
     }
     #[inline]
-    unsafe fn reload(&mut self) -> BITv07_DStream_status {
+    fn reload(&mut self) -> BITv07_DStream_status {
         if self.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
             return BITv07_DStream_overflow;
         }
-        if self.ptr >= (self.start).add(::core::mem::size_of::<size_t>()) {
-            self.ptr = (self.ptr).offset(-((self.bitsConsumed >> 3) as isize));
+        if self.ptr >= unsafe { (self.start).add(::core::mem::size_of::<size_t>()) } {
+            self.ptr = unsafe { (self.ptr).offset(-((self.bitsConsumed >> 3) as isize)) };
             self.bitsConsumed &= 7;
-            self.bitContainer = MEM_readLEST(self.ptr as *const core::ffi::c_void);
+            self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
             return BITv07_DStream_unfinished;
         }
         if self.ptr == self.start {
@@ -322,13 +325,13 @@ impl BITv07_DStream_t {
         }
         let mut nbBytes = self.bitsConsumed >> 3;
         let mut result = BITv07_DStream_unfinished;
-        if (self.ptr).offset(-(nbBytes as isize)) < self.start {
-            nbBytes = (self.ptr).offset_from(self.start) as core::ffi::c_long as u32;
+        if unsafe { (self.ptr).offset(-(nbBytes as isize)) } < self.start {
+            nbBytes = unsafe { (self.ptr).offset_from(self.start) } as core::ffi::c_long as u32;
             result = BITv07_DStream_endOfBuffer;
         }
-        self.ptr = (self.ptr).offset(-(nbBytes as isize));
+        self.ptr = unsafe { (self.ptr).offset(-(nbBytes as isize)) };
         self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
-        self.bitContainer = MEM_readLEST(self.ptr as *const core::ffi::c_void);
+        self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
         result
     }
     #[inline]
@@ -737,10 +740,11 @@ unsafe fn FSEv07_decompress_usingDTable_generic(
         state: 0,
         table: core::ptr::null::<core::ffi::c_void>(),
     };
-    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
-        Ok(bitD) => bitD,
-        Err(err) => return err.to_error_code(),
-    };
+    let mut bitD =
+        match BITv07_DStream_t::new(core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize)) {
+            Ok(bitD) => bitD,
+            Err(err) => return err.to_error_code(),
+        };
     FSEv07_initDState(&mut state1, &mut bitD, dt);
     FSEv07_initDState(&mut state2, &mut bitD, dt);
     while bitD.reload() == BITv07_DStream_unfinished && op < olimit {
@@ -1035,10 +1039,11 @@ unsafe fn HUFv07_decompress1X2_usingDTable_internal(
     let dt = dtPtr as *const HUFv07_DEltX2;
     let dtd = HUFv07_getDTableDesc(DTable);
     let dtLog = dtd.tableLog as u32;
-    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
-        Ok(bitD) => bitD,
-        Err(err) => return err.to_error_code(),
-    };
+    let mut bitD =
+        match BITv07_DStream_t::new(core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize)) {
+            Ok(bitD) => bitD,
+            Err(err) => return err.to_error_code(),
+        };
     HUFv07_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
     if bitD.is_empty() == 0 {
         return Error::corruption_detected.to_error_code();
@@ -1112,19 +1117,19 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    let mut bitD1 = match BITv07_DStream_t::new(istart1 as *const core::ffi::c_void, length1) {
+    let mut bitD1 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart1, length1)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD2 = match BITv07_DStream_t::new(istart2 as *const core::ffi::c_void, length2) {
+    let mut bitD2 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart2, length2)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD3 = match BITv07_DStream_t::new(istart3 as *const core::ffi::c_void, length3) {
+    let mut bitD3 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart3, length3)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD4 = match BITv07_DStream_t::new(istart4 as *const core::ffi::c_void, length4) {
+    let mut bitD4 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart4, length4)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
@@ -1588,10 +1593,11 @@ unsafe fn HUFv07_decompress1X4_usingDTable_internal(
     cSrcSize: size_t,
     DTable: *const HUFv07_DTable,
 ) -> size_t {
-    let mut bitD = match BITv07_DStream_t::new(cSrc, cSrcSize) {
-        Ok(bitD) => bitD,
-        Err(err) => return err.to_error_code(),
-    };
+    let mut bitD =
+        match BITv07_DStream_t::new(core::slice::from_raw_parts(cSrc.cast::<u8>(), cSrcSize)) {
+            Ok(bitD) => bitD,
+            Err(err) => return err.to_error_code(),
+        };
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let dtPtr = DTable.add(1) as *const core::ffi::c_void;
@@ -1658,19 +1664,19 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     if length4 > cSrcSize {
         return Error::corruption_detected.to_error_code();
     }
-    let mut bitD1 = match BITv07_DStream_t::new(istart1 as *const core::ffi::c_void, length1) {
+    let mut bitD1 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart1, length1)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD2 = match BITv07_DStream_t::new(istart2 as *const core::ffi::c_void, length2) {
+    let mut bitD2 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart2, length2)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD3 = match BITv07_DStream_t::new(istart3 as *const core::ffi::c_void, length3) {
+    let mut bitD3 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart3, length3)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
-    let mut bitD4 = match BITv07_DStream_t::new(istart4 as *const core::ffi::c_void, length4) {
+    let mut bitD4 = match BITv07_DStream_t::new(core::slice::from_raw_parts(istart4, length4)) {
         Ok(bitD) => bitD,
         Err(err) => return err.to_error_code(),
     };
@@ -3102,8 +3108,9 @@ unsafe fn ZSTDv07_decompressSequences(
             DStream: BITv07_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: core::ptr::null::<core::ffi::c_char>(),
-                start: core::ptr::null::<core::ffi::c_char>(),
+                ptr: core::ptr::null(),
+                start: core::ptr::null(),
+                _marker: PhantomData,
             },
             stateLL: FSEv07_DState_t {
                 state: 0,
@@ -3127,10 +3134,10 @@ unsafe fn ZSTDv07_decompressSequences(
                 *((*dctx).rep).as_mut_ptr().offset(i as isize) as size_t;
             i = i.wrapping_add(1);
         }
-        match BITv07_DStream_t::new(
-            ip as *const core::ffi::c_void,
+        match BITv07_DStream_t::new(core::slice::from_raw_parts(
+            ip,
             iend.offset_from(ip) as size_t,
-        ) {
+        )) {
             Ok(bitD) => seqState.DStream = bitD,
             Err(_) => return Error::corruption_detected.to_error_code(),
         };
