@@ -49,6 +49,7 @@ jobs:
           RUSTFLAGS: "-Cllvm-args=-enable-dfa-jump-thread"
         run: |
           . "$HOME/.cargo/env"
+          cargo --version
           cargo build --target ${{matrix.target}} -p test-libzstd-rs-sys --release --examples
           cp target/${{matrix.target}}/release/examples/decompress .
       - name: Benchmark
