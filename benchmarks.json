@@ -1,0 +1,24 @@
+{
+    "commands": {
+        "decompress-rs": [
+            "./decompress rs silesia-small.tar"
+        ],
+        "decompress-c": [
+            "./decompress c silesia-small.tar"
+        ]
+    },
+    "render-versus-self": {
+        "decompression (c vs rs)": {
+            "silesia-small.tar": { "measure": "cycles", "before": { "command": "decompress-c", "index": 0 }, "after": { "command": "decompress-rs", "index": 0 } }
+        }
+    },
+    "render-versus-other": {
+        "decompression (rs, other versus self)": {
+            "measure": "cycles",
+            "command": "decompress",
+            "rows": {
+                "silesia-small.tar": 0
+            }
+        }
+    }
+}
