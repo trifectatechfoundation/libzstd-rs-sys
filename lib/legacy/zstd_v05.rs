@@ -680,7 +680,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         op = &mut op[4..];
     }
     while !(bitD.reload() > StreamStatus::Completed
-        || op.len() == 0
+        || op.is_empty()
         || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
     {
         let fresh5: &mut [u8; 1];
@@ -691,7 +691,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
         if bitD.reload() > StreamStatus::Completed
-            || op.len() == 0
+            || op.is_empty()
             || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
         {
             break;
@@ -707,7 +707,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
     if bitD.is_empty() && FSEv05_endOfDState(&state1) != 0 && FSEv05_endOfDState(&state2) != 0 {
         return Ok(dst_len - op.len());
     }
-    if op.len() == 0 {
+    if op.is_empty() {
         return Err(Error::dstSize_tooSmall);
     }
     Err(Error::corruption_detected)
@@ -1135,8 +1135,8 @@ fn HUFv05_fillDTableX4Level2(
     }
     let mut s: usize = 0;
     while s < sortedSymbols.len() {
-        let symbol = (sortedSymbols[s as usize]).symbol as u32;
-        let weight = (sortedSymbols[s as usize]).weight as u32;
+        let symbol = (sortedSymbols[s]).symbol as u32;
+        let weight = (sortedSymbols[s]).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
@@ -1172,8 +1172,8 @@ fn HUFv05_fillDTableX4(
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
     let mut s = 0;
     while s < sortedList.len() {
-        let symbol = (sortedList[s as usize]).symbol as u16;
-        let weight = (sortedList[s as usize]).weight as u32;
+        let symbol = (sortedList[s]).symbol as u16;
+        let weight = (sortedList[s]).weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start: u32 = rankVal[weight as usize];
         let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
