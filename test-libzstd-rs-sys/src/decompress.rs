@@ -1,4 +1,7 @@
-use std::ffi::{c_void, CStr};
+use std::{
+    ffi::{c_void, CStr},
+    mem::MaybeUninit,
+};
 
 use crate::assert_eq_rs_c;
 
@@ -1008,7 +1011,7 @@ fn test_decompress_stream_with_dict() {
             ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             (ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1) as _,
         );
-        assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
+        assert_eq!(ZSTD_isError(ret), 0);
 
         let mut buffer = vec![0; 10485760];
 
@@ -1053,7 +1056,10 @@ fn decompression_by_small_increment() {
     unsafe {
         use libzstd_rs_sys::*;
 
-        let mut zd = Box::new_uninit();
+        let zd = ZSTD_createDStream()
+            .cast::<MaybeUninit<ZSTD_DStream>>()
+            .as_mut()
+            .unwrap();
         ZSTD_initDStream_usingDict(zd.as_mut_ptr(), DICT.as_ptr().cast(), DICT.len());
 
         let ret = ZSTD_DCtx_setParameter(
@@ -1061,7 +1067,7 @@ fn decompression_by_small_increment() {
             ZSTD_dParameter::ZSTD_d_windowLogMax as _,
             ZSTD_WINDOWLOG_LIMIT_DEFAULT + 1,
         );
-        assert_eq!(libzstd_rs_sys::ZSTD_isError(ret), 0);
+        assert_eq!(ZSTD_isError(ret), 0);
 
         let mut r = 1;
 
