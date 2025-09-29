@@ -93,3 +93,13 @@ impl<T> PointerExt for *mut T {
         ((self as isize) - (base as isize)) / size_of::<T>() as isize
     }
 }
+
+cfg_select! {
+    feature = "nightly" => {
+        pub use core::hint::{likely, unlikely};
+    }
+    _ => {
+        pub fn likely(b: bool) -> bool { b }
+        pub fn unlikely(b: bool) -> bool { b }
+    }
+}

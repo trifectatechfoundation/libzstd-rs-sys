@@ -3,8 +3,8 @@
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
 #![allow(clippy::too_many_arguments)]
-#![cfg_attr(test, feature(test))]
-#![feature(likely_unlikely)]
+#![cfg_attr(all(feature = "nightly", test), feature(test))]
+#![cfg_attr(feature = "nightly", feature(likely_unlikely))]
 // FIXME
 #![allow(clippy::missing_safety_doc)]
 

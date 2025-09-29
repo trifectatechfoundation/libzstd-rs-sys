@@ -1,5 +1,3 @@
-use core::hint::likely;
-
 use libc::size_t;
 
 use crate::lib::common::error_private::Error;
@@ -10,6 +8,7 @@ use crate::lib::common::fse_decompress::{FSE_DecompressWksp, FSE_decompress_wksp
 use crate::lib::common::huf::{
     HUF_flags_bmi2, HUF_READ_STATS_WORKSPACE_SIZE_U32, HUF_TABLELOG_MAX,
 };
+use crate::lib::polyfill::likely;
 
 #[inline(always)]
 fn FSE_readNCount_body(
@@ -494,8 +493,6 @@ mod tests {
     use super::*;
 
     use quickcheck::quickcheck;
-
-    extern crate test;
 
     #[derive(Debug, Clone, PartialEq)]
     struct Input {
