@@ -1097,13 +1097,13 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
     }
     Ok(dst.capacity())
 }
-unsafe fn HUFv05_decompress4X2(dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
+fn HUFv05_decompress4X2(dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
     let mut DTable: [core::ffi::c_ushort; 4097] = [12; 4097];
-    let amount = HUFv05_readDTableX2(DTable.as_mut_ptr(), cSrc)?;
+    let amount = unsafe { HUFv05_readDTableX2(DTable.as_mut_ptr(), cSrc)? };
     if amount >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    HUFv05_decompress4X2_usingDTable(dst, &cSrc[amount..], DTable.as_mut_ptr())
+    unsafe { HUFv05_decompress4X2_usingDTable(dst, &cSrc[amount..], DTable.as_mut_ptr()) }
 }
 fn HUFv05_fillDTableX4Level2(
     DTable: &mut [HUFv05_DEltX4],
@@ -1508,13 +1508,13 @@ unsafe fn HUFv05_decompress4X4_usingDTable(
     }
     Ok(dst.capacity())
 }
-unsafe fn HUFv05_decompress4X4(dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
+fn HUFv05_decompress4X4(dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
     let mut DTable: [core::ffi::c_uint; 4097] = [12; 4097];
-    let hSize = HUFv05_readDTableX4(&mut DTable, cSrc)?;
+    let hSize = unsafe { HUFv05_readDTableX4(&mut DTable, cSrc)? };
     if hSize >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    HUFv05_decompress4X4_usingDTable(dst, &cSrc[hSize..], DTable.as_mut_ptr())
+    unsafe { HUFv05_decompress4X4_usingDTable(dst, &cSrc[hSize..], DTable.as_mut_ptr()) }
 }
 static algoTime: [[algo_time_t; 3]; 16] = [
     [
@@ -1840,9 +1840,9 @@ static algoTime: [[algo_time_t; 3]; 16] = [
 ];
 unsafe fn HUFv05_decompress(mut dst: Writer<'_>, cSrc: &[u8]) -> Result<size_t, Error> {
     #[allow(clippy::type_complexity)]
-    static decompress: [unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>; 2] = [
-        HUFv05_decompress4X2 as unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
-        HUFv05_decompress4X4 as unsafe fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
+    static decompress: [fn(Writer<'_>, &[u8]) -> Result<size_t, Error>; 2] = [
+        HUFv05_decompress4X2 as fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
+        HUFv05_decompress4X4 as fn(Writer<'_>, &[u8]) -> Result<size_t, Error>,
     ];
     let D256 = (dst.capacity() >> 8) as u32;
     if dst.capacity() == 0 {
