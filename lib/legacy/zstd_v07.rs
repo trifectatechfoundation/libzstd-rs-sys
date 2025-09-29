@@ -1448,12 +1448,11 @@ unsafe fn HUFv07_decodeLastSymbolX4(
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
     if (*dt.add(val)).length as core::ffi::c_int == 1 {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-    } else if ((*DStream).bitsConsumed as size_t)
-        < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
+    } else if (DStream.bitsConsumed as size_t) < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
     {
         DStream.skip_bits((*dt.add(val)).nbBits as u32);
-        if (*DStream).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
-            (*DStream).bitsConsumed =
+        if DStream.bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
+            DStream.bitsConsumed =
                 (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
         }
     }
@@ -3513,17 +3512,20 @@ unsafe fn ZSTDv07_decompress_insertDictionary(
     mut dict: &[u8],
 ) -> Result<(), Error> {
     if dict.len() < 8 {
-        return Ok(ZSTDv07_refDictContent(dctx, dict));
+        ZSTDv07_refDictContent(dctx, dict);
+        return Ok(());
     }
     let magic = MEM_readLE32(dict.as_ptr().cast());
     if magic != ZSTDv07_DICT_MAGIC {
-        return Ok(ZSTDv07_refDictContent(dctx, dict));
+        ZSTDv07_refDictContent(dctx, dict);
+        return Ok(());
     }
     (*dctx).dictID = MEM_readLE32(dict[4..].as_ptr() as *const core::ffi::c_void);
     dict = &dict[8..];
     let eSize = ZSTDv07_loadEntropy(dctx, dict).map_err(|_| Error::dictionary_corrupted)?;
     dict = &dict[eSize..];
-    Ok(ZSTDv07_refDictContent(dctx, dict))
+    ZSTDv07_refDictContent(dctx, dict);
+    Ok(())
 }
 unsafe fn ZSTDv07_decompressBegin_usingDict(
     dctx: *mut ZSTDv07_DCtx,
