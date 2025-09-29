@@ -44,3 +44,4 @@ export-symbols = [] # whether the zlib api symbols are publicly exported
 semver-prefix = ["export-symbols"] # prefix all symbols in a semver-compatible way
 no-prefetch = [] # do not prefetch
 trace = []
+nightly = []

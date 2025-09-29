@@ -1,6 +1,5 @@
 use core::arch::asm;
 use core::ffi::c_void;
-use core::hint::{likely, unlikely};
 use core::ops::Range;
 use core::ptr::{self, NonNull};
 
@@ -26,7 +25,7 @@ use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
     ZSTD_seqSymbol_header,
 };
-use crate::lib::polyfill::{prefetch_read_data, Locality};
+use crate::lib::polyfill::{likely, prefetch_read_data, unlikely, Locality};
 use crate::lib::zstd::{ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 pub type BIT_DStream_status = core::ffi::c_uint;
@@ -1659,7 +1658,7 @@ fn ZSTD_decodeSequence(
         seqState.prevOffset[0] = offset;
     } else {
         let ll0 = usize::from(llDInfo.baseValue == 0);
-        if core::hint::likely(ofBits == 0) {
+        if likely(ofBits == 0) {
             offset = seqState.prevOffset[ll0];
             seqState.prevOffset[1] = seqState.prevOffset[usize::from(ll0 == 0)];
             seqState.prevOffset[0] = offset;

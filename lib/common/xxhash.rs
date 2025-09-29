@@ -242,8 +242,6 @@ mod tests {
 
     use quickcheck::quickcheck;
 
-    extern crate test;
-
     fn helper_u64(input: &[u8], seed: u64) -> u64 {
         unsafe { ZSTD_XXH64(input.as_ptr().cast(), input.len(), seed) }
     }
@@ -353,6 +351,10 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "nightly")]
+    extern crate test;
+
+    #[cfg(feature = "nightly")]
     #[bench]
     fn xxh64_reference(b: &mut test::Bencher) {
         b.iter(|| {
@@ -360,6 +362,7 @@ mod tests {
         });
     }
 
+    #[cfg(feature = "nightly")]
     #[bench]
     fn xxh64_ours(b: &mut test::Bencher) {
         b.iter(|| {
