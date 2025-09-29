@@ -200,7 +200,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
             };
 
             match unsafe { ZSTDv07_getFrameParams(&mut fParams_1, ptr, src.len() as _) } {
-                0 => Some(fParams_1.frameContentSize),
+                Ok(0) => Some(fParams_1.frameContentSize),
                 _ => None,
             }
         }
@@ -264,12 +264,11 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let mut result_1: size_t = 0;
             let zd_1 = ZSTDv07_createDCtx();
             if zd_1.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            result_1 = ZSTDv07_decompress_usingDict(
+            let result_1 = ZSTDv07_decompress_usingDict(
                 zd_1,
                 dst,
                 dstCapacity,
@@ -279,7 +278,7 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
                 dict.len(),
             );
             ZSTDv07_freeDCtx(zd_1);
-            result_1
+            result_1.unwrap_or_else(|err| err.to_error_code())
         }
         _ => Error::prefix_unknown.to_error_code(),
     }
@@ -407,7 +406,7 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx_1.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            ZBUFFv07_decompressInitDictionary(dctx_1, dict, dictSize);
+            let _ = ZBUFFv07_decompressInitDictionary(dctx_1, dict, dictSize);
             *legacyContext = dctx_1 as *mut core::ffi::c_void;
             0
         }
@@ -475,7 +474,7 @@ unsafe fn ZSTD_decompressLegacyStream(
                 ZBUFFv07_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
             output.pos = (output.pos).wrapping_add(decodedSize);
             input.pos = (input.pos).wrapping_add(readSize);
-            hintSize
+            hintSize.unwrap_or_else(|err| err.to_error_code())
         }
         _ => Error::version_unsupported.to_error_code(),
     }
