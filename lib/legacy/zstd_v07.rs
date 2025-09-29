@@ -415,11 +415,10 @@ unsafe fn FSEv07_readNCount(
     normalizedCounter: *mut core::ffi::c_short,
     maxSVPtr: *mut core::ffi::c_uint,
     tableLogPtr: *mut core::ffi::c_uint,
-    headerBuffer: *const core::ffi::c_void,
-    hbSize: size_t,
+    headerBuffer: &[u8],
 ) -> size_t {
-    let istart = headerBuffer as *const u8;
-    let iend = istart.add(hbSize);
+    let istart = headerBuffer.as_ptr();
+    let iend = istart.add(headerBuffer.len());
     let mut ip = istart;
     let mut nbBits: core::ffi::c_int = 0;
     let mut remaining: core::ffi::c_int = 0;
@@ -428,7 +427,7 @@ unsafe fn FSEv07_readNCount(
     let mut bitCount: core::ffi::c_int = 0;
     let mut charnum = 0;
     let mut previous0 = 0;
-    if hbSize < 4 {
+    if headerBuffer.len() < 4 {
         return Error::srcSize_wrong.to_error_code();
     }
     bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
@@ -516,7 +515,7 @@ unsafe fn FSEv07_readNCount(
     }
     *maxSVPtr = charnum.wrapping_sub(1);
     ip = ip.offset(((bitCount + 7) >> 3) as isize);
-    if ip.offset_from(istart) as size_t > hbSize {
+    if ip.offset_from(istart) as size_t > headerBuffer.len() {
         return Error::srcSize_wrong.to_error_code();
     }
     ip.offset_from(istart) as size_t
@@ -862,8 +861,7 @@ unsafe fn FSEv07_decompress(
         counting.as_mut_ptr(),
         &mut maxSymbolValue,
         &mut tableLog,
-        istart.as_ptr() as *const core::ffi::c_void,
-        cSrc.len(),
+        istart,
     );
     if ERR_isError(NCountLength) {
         return NCountLength;
@@ -2691,21 +2689,20 @@ unsafe fn ZSTDv07_buildSeqTable(
     type_0: u32,
     mut max: u32,
     maxLog: u32,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
+    src: &[u8],
     defaultNorm: *const i16,
     defaultLog: u32,
     flagRepeatTable: u32,
 ) -> size_t {
     match type_0 {
         1 => {
-            if srcSize == 0 {
+            if src.is_empty() {
                 return Error::srcSize_wrong.to_error_code();
             }
-            if *(src as *const u8) as u32 > max {
+            if src[0] as u32 > max {
                 return Error::corruption_detected.to_error_code();
             }
-            FSEv07_buildDTable_rle(DTable, *(src as *const u8));
+            FSEv07_buildDTable_rle(DTable, src[0]);
             1
         }
         0 => {
@@ -2721,8 +2718,7 @@ unsafe fn ZSTDv07_buildSeqTable(
         3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
-            let headerSize =
-                FSEv07_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src, srcSize);
+            let headerSize = FSEv07_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src);
             if ERR_isError(headerSize) {
                 return Error::corruption_detected.to_error_code();
             }
@@ -2786,8 +2782,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         LLtype,
         MaxLL as u32,
         LLFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as size_t,
+        core::slice::from_raw_parts(ip, iend.offset_from(ip) as size_t),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
         flagRepeatTable,
@@ -2801,8 +2796,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         OFtype,
         MaxOff as u32,
         OffFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as size_t,
+        core::slice::from_raw_parts(ip, iend.offset_from(ip) as size_t),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
         flagRepeatTable,
@@ -2816,8 +2810,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         MLtype,
         MaxML as u32,
         MLFSELog as u32,
-        ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as size_t,
+        core::slice::from_raw_parts(ip, iend.offset_from(ip) as size_t),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
         flagRepeatTable,
@@ -3538,14 +3531,13 @@ unsafe fn ZSTDv07_refDictContent(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t
     (*dctx).previousDstEnd = dict.as_ptr().add(dict.len()) as *const core::ffi::c_void;
     0
 }
-unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
-    let mut dictPtr = dict.as_ptr();
-    let dictEnd = dictPtr.add(dict.len());
+unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> size_t {
+    let dictSize = dict.len();
     let hSize = HUFv07_readDTableX4(((*dctx).hufTable).as_mut_ptr(), dict);
     if ERR_isError(hSize) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(hSize);
+    dict = &dict[hSize..];
     let mut offcodeNCount: [core::ffi::c_short; 29] = [0; 29];
     let mut offcodeMaxValue = MaxOff as u32;
     let mut offcodeLog: u32 = 0;
@@ -3553,8 +3545,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
         offcodeNCount.as_mut_ptr(),
         &mut offcodeMaxValue,
         &mut offcodeLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dict,
     );
     if ERR_isError(offcodeHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -3571,7 +3562,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
     if ERR_isError(errorCode) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(offcodeHeaderSize);
+    dict = &dict[offcodeHeaderSize..];
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
@@ -3579,8 +3570,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
         matchlengthNCount.as_mut_ptr(),
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dict,
     );
     if ERR_isError(matchlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -3597,7 +3587,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
     if ERR_isError(errorCode_0) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(matchlengthHeaderSize);
+    dict = &dict[matchlengthHeaderSize..];
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
@@ -3605,8 +3595,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
         litlengthNCount.as_mut_ptr(),
         &mut litlengthMaxValue,
         &mut litlengthLog,
-        dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dict,
     );
     if ERR_isError(litlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -3623,30 +3612,30 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, dict: &[u8]) -> size_t {
     if ERR_isError(errorCode_1) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(litlengthHeaderSize);
-    if dictPtr.add(12) > dictEnd {
+    dict = &dict[litlengthHeaderSize..];
+    if dict.len() < 12 {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr() = MEM_readLE32(dictPtr as *const core::ffi::c_void);
+    *((*dctx).rep).as_mut_ptr() = MEM_readLE32(dict.as_ptr().cast());
     if *((*dctx).rep).as_mut_ptr() == 0 || *((*dctx).rep).as_mut_ptr() as size_t >= dict.len() {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr().add(1) = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
+    *((*dctx).rep).as_mut_ptr().add(1) = MEM_readLE32(dict[4..].as_ptr().cast());
     if *((*dctx).rep).as_mut_ptr().add(1) == 0
         || *((*dctx).rep).as_mut_ptr().add(1) as size_t >= dict.len()
     {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*dctx).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
+    *((*dctx).rep).as_mut_ptr().add(2) = MEM_readLE32(dict[8..].as_ptr().cast());
     if *((*dctx).rep).as_mut_ptr().add(2) == 0
         || *((*dctx).rep).as_mut_ptr().add(2) as size_t >= dict.len()
     {
         return Error::dictionary_corrupted.to_error_code();
     }
-    dictPtr = dictPtr.add(12);
+    dict = &dict[12..];
     (*dctx).fseEntropy = 1;
     (*dctx).litEntropy = (*dctx).fseEntropy;
-    dictPtr.offset_from(dict.as_ptr()) as size_t
+    dictSize - dict.len()
 }
 unsafe fn ZSTDv07_decompress_insertDictionary(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> size_t {
     if dict.len() < 8 {
