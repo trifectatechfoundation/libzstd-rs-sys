@@ -12,6 +12,7 @@ pub(crate) unsafe fn ZSTD_customMalloc(
     if let Some(f) = customMem.customAlloc {
         return f(customMem.opaque, size);
     }
+
     malloc(size)
 }
 #[inline]
