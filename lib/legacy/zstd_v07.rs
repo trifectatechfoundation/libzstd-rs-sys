@@ -32,7 +32,7 @@ pub(crate) struct ZSTDv07_DCtx {
     vBase: *const core::ffi::c_void,
     dictEnd: *const core::ffi::c_void,
     expected: usize,
-    rep: [u32; 3],
+    rep: [u32; ZSTDv07_REP_INIT],
     fParams: ZSTDv07_frameParams,
     bType: blockType_t,
     stage: ZSTDv07_dStage,
@@ -80,16 +80,16 @@ struct blockProperties_t {
 #[repr(C)]
 struct seqState_t<'a> {
     DStream: BITv07_DStream_t<'a>,
-    stateLL: FSEv07_DState_t<'a>,
-    stateOffb: FSEv07_DState_t<'a>,
-    stateML: FSEv07_DState_t<'a>,
-    prevOffset: [usize; 3],
+    stateLL: FSEv07_DState_t<'a, 512>,
+    stateOffb: FSEv07_DState_t<'a, 256>,
+    stateML: FSEv07_DState_t<'a, 512>,
+    prevOffset: [usize; ZSTDv07_REP_INIT],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-struct FSEv07_DState_t<'a> {
+struct FSEv07_DState_t<'a, const N: usize> {
     state: usize,
-    table: &'a [FSEv07_decode_t],
+    table: &'a [FSEv07_decode_t; N],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -344,7 +344,7 @@ impl<'a> BITv07_DStream_t<'a> {
 fn FSEv07_initDState<'a, const N: usize>(
     bitD: &mut BITv07_DStream_t,
     dt: &'a FSEv07_DTable<N>,
-) -> FSEv07_DState_t<'a> {
+) -> FSEv07_DState_t<'a, N> {
     let state = bitD.read_bits(dt.header.tableLog as core::ffi::c_uint);
     bitD.reload();
     FSEv07_DState_t {
@@ -353,20 +353,23 @@ fn FSEv07_initDState<'a, const N: usize>(
     }
 }
 #[inline]
-unsafe fn FSEv07_peekSymbol(DStatePtr: &FSEv07_DState_t) -> u8 {
+unsafe fn FSEv07_peekSymbol<const N: usize>(DStatePtr: &FSEv07_DState_t<N>) -> u8 {
     let DInfo = DStatePtr.table[DStatePtr.state];
     DInfo.symbol
 }
 #[inline]
-unsafe fn FSEv07_updateState(DStatePtr: &mut FSEv07_DState_t, bitD: &mut BITv07_DStream_t) {
+unsafe fn FSEv07_updateState<const N: usize>(
+    DStatePtr: &mut FSEv07_DState_t<N>,
+    bitD: &mut BITv07_DStream_t,
+) {
     let DInfo = DStatePtr.table[DStatePtr.state];
     let nbBits = DInfo.nbBits as u32;
     let lowBits = bitD.read_bits(nbBits);
     DStatePtr.state = (DInfo.newState as usize).wrapping_add(lowBits);
 }
 #[inline]
-unsafe fn FSEv07_decodeSymbol(
-    DStatePtr: &mut FSEv07_DState_t,
+unsafe fn FSEv07_decodeSymbol<const N: usize>(
+    DStatePtr: &mut FSEv07_DState_t<N>,
     bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
@@ -377,8 +380,8 @@ unsafe fn FSEv07_decodeSymbol(
     symbol
 }
 #[inline]
-unsafe fn FSEv07_decodeSymbolFast(
-    DStatePtr: &mut FSEv07_DState_t,
+unsafe fn FSEv07_decodeSymbolFast<const N: usize>(
+    DStatePtr: &mut FSEv07_DState_t<N>,
     bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
@@ -2038,7 +2041,7 @@ unsafe fn ZSTDv07_defaultFreeFunction(
 }
 const ZSTDv07_DICT_MAGIC: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 const ZSTDv07_REP_NUM: core::ffi::c_int = 3;
-const ZSTDv07_REP_INIT: core::ffi::c_int = 3;
+const ZSTDv07_REP_INIT: usize = 3;
 static repStartValue: [u32; 3] = [1, 4, 8];
 const ZSTDv07_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 static ZSTDv07_fcs_fieldSize: [usize; 4] = [0, 2, 4, 8];
@@ -2904,46 +2907,25 @@ unsafe fn ZSTDv07_decompressSequences(
     )?;
     ip = ip.add(seqHSize);
     if nbSeq != 0 {
-        let mut seqState = seqState_t {
-            DStream: BITv07_DStream_t {
-                bitContainer: 0,
-                bitsConsumed: 0,
-                ptr: core::ptr::null(),
-                start: core::ptr::null(),
-                _marker: PhantomData,
-            },
-            stateLL: FSEv07_DState_t {
-                state: 0,
-                table: &[],
-            },
-            stateOffb: FSEv07_DState_t {
-                state: 0,
-                table: &[],
-            },
-            stateML: FSEv07_DState_t {
-                state: 0,
-                table: &[],
-            },
-            prevOffset: [0; 3],
-        };
         (*dctx).fseEntropy = 1;
-        let mut i: u32 = 0;
-        i = 0;
-        while i < ZSTDv07_REP_INIT as u32 {
-            *(seqState.prevOffset).as_mut_ptr().offset(i as isize) =
-                *((*dctx).rep).as_mut_ptr().offset(i as isize) as usize;
-            i = i.wrapping_add(1);
-        }
-        match BITv07_DStream_t::new(core::slice::from_raw_parts(
+        let prevOffset: [usize; ZSTDv07_REP_INIT] =
+            core::array::from_fn(|i| (*dctx).rep[i] as usize);
+
+        let mut DStream = match BITv07_DStream_t::new(core::slice::from_raw_parts(
             ip,
             iend.offset_from(ip) as usize,
         )) {
-            Ok(bitD) => seqState.DStream = bitD,
+            Ok(DStream) => DStream,
             Err(_) => return Err(Error::corruption_detected),
         };
-        seqState.stateLL = FSEv07_initDState(&mut seqState.DStream, DTableLL);
-        seqState.stateOffb = FSEv07_initDState(&mut seqState.DStream, DTableOffb);
-        seqState.stateML = FSEv07_initDState(&mut seqState.DStream, DTableML);
+        let mut seqState = seqState_t {
+            stateLL: FSEv07_initDState(&mut DStream, DTableLL),
+            stateOffb: FSEv07_initDState(&mut DStream, DTableOffb),
+            stateML: FSEv07_initDState(&mut DStream, DTableML),
+            DStream,
+            prevOffset,
+        };
+
         while seqState.DStream.reload() as core::ffi::c_uint
             <= BITv07_DStream_completed as core::ffi::c_int as core::ffi::c_uint
             && nbSeq != 0
