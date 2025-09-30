@@ -67,17 +67,17 @@ struct seq_t {
 #[repr(C)]
 struct seqState_t<'a> {
     DStream: BITv05_DStream_t<'a>,
-    stateLL: FSEv05_DState_t<'a>,
-    stateOffb: FSEv05_DState_t<'a>,
-    stateML: FSEv05_DState_t<'a>,
+    stateLL: FSEv05_DState_t<'a, 1024>,
+    stateOffb: FSEv05_DState_t<'a, 512>,
+    stateML: FSEv05_DState_t<'a, 1024>,
     prevOffset: size_t,
     dumps: &'a [u8],
 }
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone)]
 #[repr(C)]
-struct FSEv05_DState_t<'a> {
+struct FSEv05_DState_t<'a, const N: usize> {
     state: size_t,
-    table: &'a [FSEv05_decode_t],
+    table: &'a [FSEv05_decode_t; N],
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -361,23 +361,25 @@ impl<'a> BITv05_DStream_t<'a> {
 
 #[inline]
 fn FSEv05_initDState<'a, const N: usize>(
-    DStatePtr: &mut FSEv05_DState_t<'a>,
     bitD: &mut BITv05_DStream_t,
     dt: &'a FSEv05_DTable<N>,
-) {
-    let DTableH = dt.header;
-    DStatePtr.state = bitD.read_bits(DTableH.tableLog as core::ffi::c_uint);
+) -> FSEv05_DState_t<'a, N> {
+    let state = bitD.read_bits(dt.header.tableLog as core::ffi::c_uint);
     bitD.reload();
-    DStatePtr.table = &dt.data;
+
+    FSEv05_DState_t {
+        state,
+        table: &dt.data,
+    }
 }
 #[inline]
-fn FSEv05_peakSymbol(DStatePtr: &mut FSEv05_DState_t) -> u8 {
+fn FSEv05_peakSymbol<const N: usize>(DStatePtr: &mut FSEv05_DState_t<N>) -> u8 {
     let DInfo = DStatePtr.table[DStatePtr.state];
     DInfo.symbol
 }
 #[inline]
-fn FSEv05_decodeSymbol(
-    DStatePtr: &mut FSEv05_DState_t,
+fn FSEv05_decodeSymbol<const N: usize>(
+    DStatePtr: &mut FSEv05_DState_t<N>,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
@@ -388,8 +390,8 @@ fn FSEv05_decodeSymbol(
     symbol
 }
 #[inline]
-fn FSEv05_decodeSymbolFast(
-    DStatePtr: &mut FSEv05_DState_t,
+fn FSEv05_decodeSymbolFast<const N: usize>(
+    DStatePtr: &mut FSEv05_DState_t<N>,
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
@@ -400,7 +402,7 @@ fn FSEv05_decodeSymbolFast(
     symbol
 }
 #[inline]
-fn FSEv05_endOfDState(DStatePtr: &FSEv05_DState_t) -> core::ffi::c_uint {
+fn FSEv05_endOfDState<const N: usize>(DStatePtr: &FSEv05_DState_t<N>) -> core::ffi::c_uint {
     (DStatePtr.state == 0) as core::ffi::c_int as core::ffi::c_uint
 }
 const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
@@ -634,11 +636,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
 ) -> Result<size_t, Error> {
     let dst_len = dst.len();
     let mut op = dst;
-    let mut state1 = FSEv05_DState_t::default();
-    let mut state2 = FSEv05_DState_t::default();
     let mut bitD = BITv05_DStream_t::new(cSrc)?;
-    FSEv05_initDState(&mut state1, &mut bitD, dt);
-    FSEv05_initDState(&mut state2, &mut bitD, dt);
+    let mut state1 = FSEv05_initDState(&mut bitD, dt);
+    let mut state2 = FSEv05_initDState(&mut bitD, dt);
     while bitD.reload() == StreamStatus::Unfinished && op.len() < 3 {
         op[0] = (if fast != 0 {
             FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
@@ -2573,15 +2573,15 @@ unsafe fn ZSTDv05_decompressSequences(
     )?;
     seq = seq.subslice(headerSize..);
     if nbSeq != 0 {
-        let DStream = match BITv05_DStream_t::new(seq.as_slice()) {
+        let mut DStream = match BITv05_DStream_t::new(seq.as_slice()) {
             Ok(bitD) => bitD,
             Err(_) => return Err(Error::corruption_detected),
         };
         let mut seqState = seqState_t {
+            stateLL: FSEv05_initDState(&mut DStream, DTableLL),
+            stateOffb: FSEv05_initDState(&mut DStream, DTableOffb),
+            stateML: FSEv05_initDState(&mut DStream, DTableML),
             DStream,
-            stateLL: FSEv05_DState_t::default(),
-            stateOffb: FSEv05_DState_t::default(),
-            stateML: FSEv05_DState_t::default(),
             prevOffset: REPCODE_STARTVALUE as size_t,
             dumps,
         };
@@ -2591,9 +2591,6 @@ unsafe fn ZSTDv05_decompressSequences(
             matchLength: 0,
             offset: REPCODE_STARTVALUE as size_t,
         };
-        FSEv05_initDState(&mut seqState.stateLL, &mut seqState.DStream, DTableLL);
-        FSEv05_initDState(&mut seqState.stateOffb, &mut seqState.DStream, DTableOffb);
-        FSEv05_initDState(&mut seqState.stateML, &mut seqState.DStream, DTableML);
         while seqState.DStream.reload() <= StreamStatus::Completed && nbSeq != 0 {
             let mut oneSeqSize: size_t = 0;
             nbSeq -= 1;
