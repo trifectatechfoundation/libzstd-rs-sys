@@ -5,14 +5,14 @@ use libc::{free, malloc};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
+    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16,
 };
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
 use crate::lib::decompress::huf_decompress::DTableDesc;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(crate) struct ZSTDv07_frameParams {
     pub(crate) frameContentSize: core::ffi::c_ulonglong,
@@ -2099,39 +2099,35 @@ fn ZSTDv07_frameHeaderSize(src: &[u8]) -> Result<usize, Error> {
             (directMode != 0 && ZSTDv07_fcs_fieldSize[fcsId] == 0) as core::ffi::c_int as usize,
         ))
 }
-pub(crate) unsafe fn ZSTDv07_getFrameParams(
-    fparamsPtr: *mut ZSTDv07_frameParams,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+pub(crate) fn ZSTDv07_getFrameParams(
+    fparamsPtr: &mut ZSTDv07_frameParams,
+    src: &[u8],
 ) -> Result<usize, Error> {
-    let ip = src as *const u8;
-    if srcSize < ZSTDv07_frameHeaderSize_min {
+    if src.len() < ZSTDv07_frameHeaderSize_min {
         return Ok(ZSTDv07_frameHeaderSize_min);
     }
-    ptr::write_bytes(
-        fparamsPtr as *mut u8,
-        0,
-        ::core::mem::size_of::<ZSTDv07_frameParams>(),
-    );
-    if MEM_readLE32(src) != ZSTDv07_MAGICNUMBER {
-        if MEM_readLE32(src) & 0xfffffff0 == ZSTDv07_MAGIC_SKIPPABLE_START {
-            if srcSize < ZSTDv07_skippableHeaderSize {
+    *fparamsPtr = ZSTDv07_frameParams::default();
+
+    let (magic, ip) = src.split_first_chunk::<4>().unwrap();
+    let magic = u32::from_le_bytes(*magic);
+    if magic != ZSTDv07_MAGICNUMBER {
+        if magic & 0xfffffff0 == ZSTDv07_MAGIC_SKIPPABLE_START {
+            if src.len() < ZSTDv07_skippableHeaderSize {
                 return Ok(ZSTDv07_skippableHeaderSize);
             }
-            (*fparamsPtr).frameContentSize =
-                MEM_readLE32((src as *const core::ffi::c_char).add(4) as *const core::ffi::c_void)
-                    as core::ffi::c_ulonglong;
-            (*fparamsPtr).windowSize = 0;
+            fparamsPtr.frameContentSize =
+                u32::from_le_bytes(*ip.first_chunk().unwrap()) as core::ffi::c_ulonglong;
+            fparamsPtr.windowSize = 0;
             return Ok(0);
         }
         return Err(Error::prefix_unknown);
     }
-    let fhsize = ZSTDv07_frameHeaderSize(core::slice::from_raw_parts(src.cast::<u8>(), srcSize))?;
-    if srcSize < fhsize {
+    let fhsize = ZSTDv07_frameHeaderSize(src)?;
+    if src.len() < fhsize {
         return Ok(fhsize);
     }
-    let fhdByte = *ip.add(4);
-    let mut pos = 5_usize;
+    let fhdByte = ip[0];
+    let mut pos = 1_usize;
     let dictIDSizeCode = (fhdByte & 3) as u32;
     let checksumFlag = (fhdByte >> 2 & 1) as u32;
     let directMode = (fhdByte >> 5 & 1) as u32;
@@ -2149,9 +2145,8 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
         return Err(Error::frameParameter_unsupported);
     }
     if directMode == 0 {
-        let fresh39 = pos;
-        pos = pos.wrapping_add(1);
-        let wlByte = *ip.add(fresh39);
+        let wlByte = ip[pos];
+        pos += 1;
         let windowLog = ((wlByte as core::ffi::c_int >> 3) + ZSTDv07_WINDOWLOG_ABSOLUTEMIN) as u32;
         if windowLog
             > (if MEM_32bits() {
@@ -2169,35 +2164,35 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
     match dictIDSizeCode {
         0 => {}
         1 => {
-            dictID = *ip.add(pos) as u32;
-            pos = pos.wrapping_add(1);
+            dictID = u32::from(ip[pos]);
+            pos += 1;
         }
         2 => {
-            dictID = MEM_readLE16(ip.add(pos) as *const core::ffi::c_void) as u32;
-            pos = pos.wrapping_add(2);
+            dictID = u32::from(u16::from_le_bytes(ip[pos..pos + 2].try_into().unwrap()));
+            pos += 2;
         }
         3 => {
-            dictID = MEM_readLE32(ip.add(pos) as *const core::ffi::c_void);
-            pos = pos.wrapping_add(4);
+            dictID = u32::from_le_bytes(ip[pos..pos + 4].try_into().unwrap());
+            pos += 4;
         }
         _ => unreachable!(),
     }
     match fcsID {
         0 => {
             if directMode != 0 {
-                frameContentSize = *ip.add(pos) as u64;
+                frameContentSize = ip[pos] as u64;
             }
         }
         1 => {
-            frameContentSize = (MEM_readLE16(ip.add(pos) as *const core::ffi::c_void)
+            frameContentSize = (u16::from_le_bytes(ip[pos..pos + 2].try_into().unwrap())
                 as core::ffi::c_int
                 + 256) as u64;
         }
         2 => {
-            frameContentSize = MEM_readLE32(ip.add(pos) as *const core::ffi::c_void) as u64;
+            frameContentSize = u64::from(u32::from_le_bytes(ip[pos..pos + 4].try_into().unwrap()));
         }
         3 => {
-            frameContentSize = MEM_readLE64(ip.add(pos) as *const core::ffi::c_void);
+            frameContentSize = u64::from_le_bytes(ip[pos..pos + 8].try_into().unwrap());
         }
         _ => unreachable!(),
     }
@@ -2207,18 +2202,14 @@ pub(crate) unsafe fn ZSTDv07_getFrameParams(
     if windowSize > windowSizeMax {
         return Err(Error::frameParameter_unsupported);
     }
-    (*fparamsPtr).frameContentSize = frameContentSize as core::ffi::c_ulonglong;
-    (*fparamsPtr).windowSize = windowSize;
-    (*fparamsPtr).dictID = dictID;
-    (*fparamsPtr).checksumFlag = checksumFlag;
+    fparamsPtr.frameContentSize = frameContentSize as core::ffi::c_ulonglong;
+    fparamsPtr.windowSize = windowSize;
+    fparamsPtr.dictID = dictID;
+    fparamsPtr.checksumFlag = checksumFlag;
     Ok(0)
 }
-unsafe fn ZSTDv07_decodeFrameHeader(
-    dctx: *mut ZSTDv07_DCtx,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
-) -> Result<usize, Error> {
-    let result = ZSTDv07_getFrameParams(&mut (*dctx).fParams, src, srcSize);
+unsafe fn ZSTDv07_decodeFrameHeader(dctx: *mut ZSTDv07_DCtx, src: &[u8]) -> Result<usize, Error> {
+    let result = ZSTDv07_getFrameParams(&mut (*dctx).fParams, src);
     if (*dctx).fParams.dictID != 0 && (*dctx).dictID != (*dctx).fParams.dictID {
         return Err(Error::dictionary_wrong);
     }
@@ -2936,7 +2927,11 @@ unsafe fn ZSTDv07_decompressFrame(
     if srcSize < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
-    if ZSTDv07_decodeFrameHeader(dctx, src, frameHeaderSize) != Ok(0) {
+    if ZSTDv07_decodeFrameHeader(
+        dctx,
+        core::slice::from_raw_parts(src.cast::<u8>(), frameHeaderSize),
+    ) != Ok(0)
+    {
         return Err(Error::corruption_detected);
     }
     ip = ip.add(frameHeaderSize);
@@ -3210,11 +3205,7 @@ unsafe fn ZSTDv07_decompressContinue(
             .add(ZSTDv07_frameHeaderSize_min),
         (*dctx).expected,
     );
-    ZSTDv07_decodeFrameHeader(
-        dctx,
-        ((*dctx).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-        (*dctx).headerSize,
-    )?;
+    ZSTDv07_decodeFrameHeader(dctx, &(&(*dctx).headerBuffer)[..(*dctx).headerSize])?;
     (*dctx).expected = ZSTDv07_blockHeaderSize;
     (*dctx).stage = ZSTDds_decodeBlockHeader;
     Ok(0)
@@ -3443,8 +3434,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             ZBUFFds_loadHeader => {
                 let hSize = ZSTDv07_getFrameParams(
                     &mut (*zbd).fParams,
-                    ((*zbd).headerBuffer).as_mut_ptr() as *const core::ffi::c_void,
-                    (*zbd).lhSize,
+                    &(&(*zbd).headerBuffer)[..(*zbd).lhSize],
                 )?;
                 if hSize != 0 {
                     // if hSize!=0, hSize > zbd->lhSize
