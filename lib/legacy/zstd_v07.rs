@@ -396,9 +396,9 @@ const FSEv07_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
 const FSEv07_MAX_TABLELOG: core::ffi::c_int = FSEv07_MAX_MEMORY_USAGE - 2;
 const FSEv07_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSEv07_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
-const HUFv07_TABLELOG_ABSOLUTEMAX: core::ffi::c_int = 16;
+const HUFv07_TABLELOG_ABSOLUTEMAX: usize = 16;
 const HUFv07_TABLELOG_MAX: core::ffi::c_int = 12;
-const HUFv07_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
+const HUFv07_SYMBOLVALUE_MAX: usize = 255;
 
 unsafe fn FSEv07_readNCount(
     normalizedCounter: &mut [core::ffi::c_short],
@@ -504,12 +504,11 @@ unsafe fn FSEv07_readNCount(
     }
     Ok(ip.offset_from(istart) as usize)
 }
-unsafe fn HUFv07_readStats(
-    huffWeight: *mut u8,
-    hwSize: usize,
-    rankStats: *mut u32,
-    nbSymbolsPtr: *mut u32,
-    tableLogPtr: *mut u32,
+fn HUFv07_readStats(
+    huffWeight: &mut [u8; HUFv07_SYMBOLVALUE_MAX + 1],
+    rankStats: &mut [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1],
+    nbSymbolsPtr: &mut u32,
+    tableLogPtr: &mut u32,
     src: &[u8],
 ) -> Result<usize, Error> {
     let mut weightTotal: u32 = 0;
@@ -524,7 +523,7 @@ unsafe fn HUFv07_readStats(
         if iSize >= 242 {
             static l: [u32; 14] = [1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128];
             oSize = l[iSize.wrapping_sub(242)] as usize;
-            core::ptr::write_bytes(huffWeight, 1, hwSize);
+            huffWeight.fill(1);
             iSize = 0;
         } else {
             oSize = iSize.wrapping_sub(127);
@@ -532,14 +531,14 @@ unsafe fn HUFv07_readStats(
             if iSize.wrapping_add(1) > src.len() {
                 return Err(Error::srcSize_wrong);
             }
-            if oSize >= hwSize {
+            if oSize >= huffWeight.len() {
                 return Err(Error::corruption_detected);
             }
             ip = &ip[1..];
             let mut n: usize = 0;
             while n < oSize {
-                *huffWeight.add(n) = ip[n / 2] >> 4;
-                *huffWeight.add(n + 1) = ip[n / 2] & 15;
+                huffWeight[n] = ip[n / 2] >> 4;
+                huffWeight[n + 1] = ip[n / 2] & 15;
                 n += 2;
             }
         }
@@ -547,23 +546,24 @@ unsafe fn HUFv07_readStats(
         if iSize.wrapping_add(1) > src.len() {
             return Err(Error::srcSize_wrong);
         }
-        oSize = FSEv07_decompress(
-            huffWeight as *mut core::ffi::c_void,
-            hwSize.wrapping_sub(1),
-            &ip[1..iSize + 1],
-        )?;
+        oSize = unsafe {
+            FSEv07_decompress(
+                huffWeight.as_mut_ptr() as *mut core::ffi::c_void,
+                huffWeight.len() - 1,
+                &ip[1..iSize + 1],
+            )?
+        };
     }
-    core::ptr::write_bytes(rankStats, 0, (HUFv07_TABLELOG_ABSOLUTEMAX + 1) as usize);
+    rankStats.fill(0);
     weightTotal = 0;
     let mut n_0: usize = 0;
     while n_0 < oSize {
-        if *huffWeight.add(n_0) as core::ffi::c_int >= HUFv07_TABLELOG_ABSOLUTEMAX {
+        if huffWeight[n_0] as usize >= HUFv07_TABLELOG_ABSOLUTEMAX {
             return Err(Error::corruption_detected);
         }
-        let fresh2 = &mut (*rankStats.offset(*huffWeight.add(n_0) as isize));
-        *fresh2 = (*fresh2).wrapping_add(1);
+        rankStats[usize::from(huffWeight[n_0])] += 1;
         weightTotal =
-            weightTotal.wrapping_add(((1) << *huffWeight.add(n_0) as core::ffi::c_int >> 1) as u32);
+            weightTotal.wrapping_add(((1) << huffWeight[n_0] as core::ffi::c_int >> 1) as u32);
         n_0 += 1;
     }
     if weightTotal == 0 {
@@ -581,10 +581,9 @@ unsafe fn HUFv07_readStats(
     if verif != rest {
         return Err(Error::corruption_detected);
     }
-    *huffWeight.add(oSize) = lastWeight as u8;
-    let fresh3 = &mut (*rankStats.offset(lastWeight as isize));
-    *fresh3 = (*fresh3).wrapping_add(1);
-    if *rankStats.add(1) < 2 || *rankStats.add(1) & 1 != 0 {
+    huffWeight[oSize] = lastWeight as u8;
+    rankStats[lastWeight as usize] += 1;
+    if rankStats[1] < 2 || rankStats[1] & 1 != 0 {
         return Err(Error::corruption_detected);
     }
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
@@ -826,17 +825,16 @@ unsafe fn HUFv07_getDTableDesc(table: *const HUFv07_DTable) -> DTableDesc {
     ptr::read::<DTableDesc>(table as *const DTableDesc)
 }
 unsafe fn HUFv07_readDTableX2(DTable: *mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
-    let mut huffWeight: [u8; 256] = [0; 256];
-    let mut rankVal: [u32; 17] = [0; 17];
+    let mut huffWeight: [u8; HUFv07_SYMBOLVALUE_MAX + 1] = [0; HUFv07_SYMBOLVALUE_MAX + 1];
+    let mut rankVal: [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1] = [0; HUFv07_TABLELOG_ABSOLUTEMAX + 1];
     let mut tableLog = 0;
     let mut nbSymbols = 0;
     let mut iSize: usize = 0;
     let dtPtr = DTable.add(1) as *mut core::ffi::c_void;
     let dt = dtPtr as *mut HUFv07_DEltX2;
     iSize = HUFv07_readStats(
-        huffWeight.as_mut_ptr(),
-        (HUFv07_SYMBOLVALUE_MAX + 1) as usize,
-        rankVal.as_mut_ptr(),
+        &mut huffWeight,
+        &mut rankVal,
         &mut nbSymbols,
         &mut tableLog,
         src,
@@ -1255,13 +1253,15 @@ unsafe fn HUFv07_fillDTableX4(
     }
 }
 unsafe fn HUFv07_readDTableX4(DTable: *mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
-    let mut weightList: [u8; 256] = [0; 256];
+    let mut weightList: [u8; HUFv07_SYMBOLVALUE_MAX + 1] = [0; HUFv07_SYMBOLVALUE_MAX + 1];
     let mut sortedSymbol: [sortedSymbol_t; 256] = [sortedSymbol_t {
         symbol: 0,
         weight: 0,
     }; 256];
-    let mut rankStats: [u32; 17] = [0; 17];
-    let mut rankStart0: [u32; 18] = [0; 18];
+    let mut rankStats: [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1] =
+        [0; HUFv07_TABLELOG_ABSOLUTEMAX + 1];
+    let mut rankStart0: [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 2] =
+        [0; HUFv07_TABLELOG_ABSOLUTEMAX + 2];
     let rankStart = rankStart0.as_mut_ptr().add(1);
     let mut rankVal: rankVal_t = [[0; 17]; 16];
     let mut tableLog: u32 = 0;
@@ -1277,9 +1277,8 @@ unsafe fn HUFv07_readDTableX4(DTable: *mut HUFv07_DTable, src: &[u8]) -> Result<
         return Err(Error::tableLog_tooLarge);
     }
     iSize = HUFv07_readStats(
-        weightList.as_mut_ptr(),
-        (HUFv07_SYMBOLVALUE_MAX + 1) as usize,
-        rankStats.as_mut_ptr(),
+        &mut weightList,
+        &mut rankStats,
         &mut nbSymbols,
         &mut tableLog,
         src,
