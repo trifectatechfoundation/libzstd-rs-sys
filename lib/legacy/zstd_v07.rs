@@ -42,21 +42,10 @@ pub(crate) struct ZSTDv07_DCtx {
     headerSize: usize,
     dictID: u32,
     litPtr: *const u8,
-    customMem: ZSTDv07_customMem,
     litSize: usize,
     litBuffer: [u8; 131080],
     headerBuffer: [u8; 18],
 }
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub(crate) struct ZSTDv07_customMem {
-    customAlloc: ZSTDv07_allocFunction,
-    customFree: ZSTDv07_freeFunction,
-    opaque: *mut core::ffi::c_void,
-}
-type ZSTDv07_freeFunction = Option<unsafe fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>;
-type ZSTDv07_allocFunction =
-    Option<unsafe fn(*mut core::ffi::c_void, usize) -> *mut core::ffi::c_void>;
 type ZSTDv07_dStage = core::ffi::c_uint;
 const ZSTDds_skipFrame: ZSTDv07_dStage = 5;
 const ZSTDds_decodeSkippableHeader: ZSTDv07_dStage = 4;
@@ -162,7 +151,6 @@ pub(crate) struct ZBUFFv07_DCtx_s {
     blockSize: usize,
     headerBuffer: [u8; 18],
     lhSize: usize,
-    customMem: ZSTDv07_customMem,
 }
 type ZBUFFv07_dStage = core::ffi::c_uint;
 const ZBUFFds_flush: ZBUFFv07_dStage = 4;
@@ -1999,18 +1987,6 @@ unsafe fn HUFv07_decompress4X_hufOnly(
         HUFv07_decompress4X2_DCtx(dctx, dst, dstSize, cSrc)
     }
 }
-unsafe fn ZSTDv07_defaultAllocFunction(
-    _opaque: *mut core::ffi::c_void,
-    size: usize,
-) -> *mut core::ffi::c_void {
-    malloc(size)
-}
-unsafe fn ZSTDv07_defaultFreeFunction(
-    _opaque: *mut core::ffi::c_void,
-    address: *mut core::ffi::c_void,
-) {
-    free(address);
-}
 const ZSTDv07_DICT_MAGIC: core::ffi::c_uint = 0xec30a437;
 const ZSTDv07_REP_NUM: core::ffi::c_int = 3;
 const ZSTDv07_REP_INIT: usize = 3;
@@ -2073,17 +2049,6 @@ unsafe fn ZSTDv07_wildcopy(
         }
     }
 }
-static mut defaultCustomMem: ZSTDv07_customMem = ZSTDv07_customMem {
-    customAlloc: Some(
-        ZSTDv07_defaultAllocFunction
-            as unsafe fn(*mut core::ffi::c_void, usize) -> *mut core::ffi::c_void,
-    ),
-    customFree: Some(
-        ZSTDv07_defaultFreeFunction
-            as unsafe fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> (),
-    ),
-    opaque: core::ptr::null_mut(),
-};
 unsafe fn ZSTDv07_decompressBegin(dctx: *mut ZSTDv07_DCtx) {
     (*dctx).expected = ZSTDv07_frameHeaderSize_min;
     (*dctx).stage = ZSTDds_getFrameHeaderSize;
@@ -2102,36 +2067,20 @@ unsafe fn ZSTDv07_decompressBegin(dctx: *mut ZSTDv07_DCtx) {
         i += 1;
     }
 }
-unsafe fn ZSTDv07_createDCtx_advanced(mut customMem: ZSTDv07_customMem) -> *mut ZSTDv07_DCtx {
+pub(crate) unsafe fn ZSTDv07_createDCtx() -> *mut ZSTDv07_DCtx {
     let mut dctx = core::ptr::null_mut::<ZSTDv07_DCtx>();
-    if (customMem.customAlloc).is_none() && (customMem.customFree).is_none() {
-        customMem = defaultCustomMem;
-    }
-    if (customMem.customAlloc).is_none() || (customMem.customFree).is_none() {
-        return core::ptr::null_mut();
-    }
-    dctx = (customMem.customAlloc).unwrap_unchecked()(
-        customMem.opaque,
-        ::core::mem::size_of::<ZSTDv07_DCtx>(),
-    ) as *mut ZSTDv07_DCtx;
+    dctx = malloc(size_of::<ZSTDv07_DCtx>()) as *mut ZSTDv07_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }
-    ptr::copy_nonoverlapping(&customMem, &mut (*dctx).customMem, 1);
     ZSTDv07_decompressBegin(dctx);
     dctx
-}
-pub(crate) unsafe fn ZSTDv07_createDCtx() -> *mut ZSTDv07_DCtx {
-    ZSTDv07_createDCtx_advanced(defaultCustomMem)
 }
 pub(crate) unsafe fn ZSTDv07_freeDCtx(dctx: *mut ZSTDv07_DCtx) -> usize {
     if dctx.is_null() {
         return 0;
     }
-    ((*dctx).customMem.customFree).unwrap_unchecked()(
-        (*dctx).customMem.opaque,
-        dctx as *mut core::ffi::c_void,
-    );
+    free(dctx as *mut core::ffi::c_void);
     0
 }
 fn ZSTDv07_frameHeaderSize(src: &[u8]) -> Result<usize, Error> {
@@ -3407,26 +3356,13 @@ unsafe fn ZSTDv07_decompressBegin_usingDict(
     Ok(())
 }
 pub(crate) unsafe fn ZBUFFv07_createDCtx() -> *mut ZBUFFv07_DCtx {
-    ZBUFFv07_createDCtx_advanced(defaultCustomMem)
-}
-unsafe fn ZBUFFv07_createDCtx_advanced(mut customMem: ZSTDv07_customMem) -> *mut ZBUFFv07_DCtx {
     let mut zbd = core::ptr::null_mut::<ZBUFFv07_DCtx>();
-    if (customMem.customAlloc).is_none() && (customMem.customFree).is_none() {
-        customMem = defaultCustomMem;
-    }
-    if (customMem.customAlloc).is_none() || (customMem.customFree).is_none() {
-        return core::ptr::null_mut();
-    }
-    zbd = (customMem.customAlloc).unwrap_unchecked()(
-        customMem.opaque,
-        ::core::mem::size_of::<ZBUFFv07_DCtx>(),
-    ) as *mut ZBUFFv07_DCtx;
+    zbd = malloc(size_of::<ZBUFFv07_DCtx>()) as *mut ZBUFFv07_DCtx;
     if zbd.is_null() {
         return core::ptr::null_mut();
     }
     ptr::write_bytes(zbd as *mut u8, 0, ::core::mem::size_of::<ZBUFFv07_DCtx>());
-    ptr::write(&mut (*zbd).customMem, customMem);
-    (*zbd).zd = ZSTDv07_createDCtx_advanced(customMem);
+    (*zbd).zd = ZSTDv07_createDCtx();
     if ((*zbd).zd).is_null() {
         ZBUFFv07_freeDCtx(zbd);
         return core::ptr::null_mut();
@@ -3440,21 +3376,12 @@ pub(crate) unsafe fn ZBUFFv07_freeDCtx(zbd: *mut ZBUFFv07_DCtx) -> usize {
     }
     ZSTDv07_freeDCtx((*zbd).zd);
     if !((*zbd).inBuff).is_null() {
-        ((*zbd).customMem.customFree).unwrap_unchecked()(
-            (*zbd).customMem.opaque,
-            (*zbd).inBuff as *mut core::ffi::c_void,
-        );
+        free((*zbd).inBuff as *mut core::ffi::c_void);
     }
     if !((*zbd).outBuff).is_null() {
-        ((*zbd).customMem.customFree).unwrap_unchecked()(
-            (*zbd).customMem.opaque,
-            (*zbd).outBuff as *mut core::ffi::c_void,
-        );
+        free((*zbd).outBuff as *mut core::ffi::c_void);
     }
-    ((*zbd).customMem.customFree).unwrap_unchecked()(
-        (*zbd).customMem.opaque,
-        zbd as *mut core::ffi::c_void,
-    );
+    free(zbd as *mut core::ffi::c_void);
     0
 }
 pub(crate) unsafe fn ZBUFFv07_decompressInitDictionary(
@@ -3573,15 +3500,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 let blockSize = std::cmp::min((*zbd).fParams.windowSize, 128 * 1024) as usize;
                 (*zbd).blockSize = blockSize;
                 if (*zbd).inBuffSize < blockSize {
-                    ((*zbd).customMem.customFree).unwrap_unchecked()(
-                        (*zbd).customMem.opaque,
-                        (*zbd).inBuff as *mut core::ffi::c_void,
-                    );
+                    free((*zbd).inBuff as *mut core::ffi::c_void);
                     (*zbd).inBuffSize = blockSize;
-                    (*zbd).inBuff = ((*zbd).customMem.customAlloc).unwrap_unchecked()(
-                        (*zbd).customMem.opaque,
-                        blockSize,
-                    ) as *mut core::ffi::c_char;
+                    (*zbd).inBuff = malloc(blockSize) as *mut core::ffi::c_char;
                     if ((*zbd).inBuff).is_null() {
                         return Err(Error::memory_allocation);
                     }
@@ -3590,15 +3511,9 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     .wrapping_add(blockSize)
                     .wrapping_add((WILDCOPY_OVERLENGTH * 2) as usize);
                 if (*zbd).outBuffSize < neededOutSize {
-                    ((*zbd).customMem.customFree).unwrap_unchecked()(
-                        (*zbd).customMem.opaque,
-                        (*zbd).outBuff as *mut core::ffi::c_void,
-                    );
+                    free((*zbd).outBuff as *mut core::ffi::c_void);
                     (*zbd).outBuffSize = neededOutSize;
-                    (*zbd).outBuff = ((*zbd).customMem.customAlloc).unwrap_unchecked()(
-                        (*zbd).customMem.opaque,
-                        neededOutSize,
-                    ) as *mut core::ffi::c_char;
+                    (*zbd).outBuff = malloc(neededOutSize) as *mut core::ffi::c_char;
                     if ((*zbd).outBuff).is_null() {
                         return Err(Error::memory_allocation);
                     }
