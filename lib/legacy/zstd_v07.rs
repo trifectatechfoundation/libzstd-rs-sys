@@ -589,15 +589,15 @@ fn HUFv07_readStats(
     *nbSymbolsPtr = oSize.wrapping_add(1) as u32;
     Ok(iSize.wrapping_add(1))
 }
-unsafe fn FSEv07_buildDTable<const N: usize>(
+fn FSEv07_buildDTable<const N: usize>(
     dt: &mut FSEv07_DTable<N>,
-    normalizedCounter: *const core::ffi::c_short,
+    normalizedCounter: &[core::ffi::c_short],
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
 ) -> Result<(), Error> {
     let tableDecode = &mut dt.data;
     let mut symbolNext: [u16; 256] = [0; 256];
-    let maxSV1 = maxSymbolValue.wrapping_add(1);
+    let maxSV1 = maxSymbolValue as usize + 1;
     let tableSize = ((1) << tableLog) as u32;
     let mut highThreshold = tableSize.wrapping_sub(1);
     if maxSymbolValue > FSEv07_MAX_SYMBOL_VALUE as core::ffi::c_uint {
@@ -613,43 +613,36 @@ unsafe fn FSEv07_buildDTable<const N: usize>(
     DTableH.tableLog = tableLog as u16;
     DTableH.fastMode = 1;
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
-    let mut s: u32 = 0;
-    s = 0;
-    while s < maxSV1 {
-        if *normalizedCounter.offset(s as isize) == -1 {
+    for s in 0..maxSV1 {
+        if normalizedCounter[s] == -1 {
             let fresh4 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             tableDecode[fresh4 as usize].symbol = s as u8;
-            *symbolNext.as_mut_ptr().offset(s as isize) = 1;
+            symbolNext[s] = 1;
         } else {
-            if *normalizedCounter.offset(s as isize) >= largeLimit {
+            if normalizedCounter[s] >= largeLimit {
                 DTableH.fastMode = 0;
             }
-            *symbolNext.as_mut_ptr().offset(s as isize) =
-                *normalizedCounter.offset(s as isize) as u16;
+            symbolNext[s] = normalizedCounter[s] as u16;
         }
-        s = s.wrapping_add(1);
     }
     dt.header = DTableH;
     let tableMask = tableSize.wrapping_sub(1);
     let step = (tableSize >> 1)
         .wrapping_add(tableSize >> 3)
         .wrapping_add(3);
-    let mut s_0: u32 = 0;
     let mut position = 0u32;
-    s_0 = 0;
-    while s_0 < maxSV1 {
+    #[allow(clippy::needless_range_loop)]
+    for s in 0..maxSV1 {
         let mut i: core::ffi::c_int = 0;
-        i = 0;
-        while i < *normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
-            tableDecode[position as usize].symbol = s_0 as u8;
+        while i < normalizedCounter[s] as core::ffi::c_int {
+            tableDecode[position as usize].symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
                 position = position.wrapping_add(step) & tableMask;
             }
             i += 1;
         }
-        s_0 = s_0.wrapping_add(1);
     }
     if position != 0 {
         return Err(Error::GENERIC);
@@ -658,10 +651,8 @@ unsafe fn FSEv07_buildDTable<const N: usize>(
     u = 0;
     while u < tableSize {
         let symbol = tableDecode[u as usize].symbol;
-        let fresh5 = &mut (*symbolNext.as_mut_ptr().offset(symbol as isize));
-        let fresh6 = *fresh5;
-        *fresh5 = (*fresh5).wrapping_add(1);
-        let nextState = fresh6;
+        let nextState = symbolNext[usize::from(symbol)];
+        symbolNext[usize::from(symbol)] += 1;
         tableDecode[u as usize].nbBits =
             tableLog.wrapping_sub(BITv07_highbit32(nextState as u32)) as u8;
         tableDecode[u as usize].newState = (((nextState as core::ffi::c_int)
@@ -818,7 +809,7 @@ unsafe fn FSEv07_decompress(
         return Err(Error::srcSize_wrong);
     }
     ip = &ip[NCountLength..];
-    FSEv07_buildDTable(&mut dt, counting.as_mut_ptr(), maxSymbolValue, tableLog)?;
+    FSEv07_buildDTable(&mut dt, &counting, maxSymbolValue, tableLog)?;
     FSEv07_decompress_usingDTable(dst, maxDstSize, ip, &dt)
 }
 unsafe fn HUFv07_getDTableDesc(table: *const HUFv07_DTable) -> DTableDesc {
@@ -2528,7 +2519,7 @@ unsafe fn ZSTDv07_buildSeqTable<const N: usize>(
     mut max: u32,
     maxLog: u32,
     src: &[u8],
-    defaultNorm: *const i16,
+    defaultNorm: &[i16],
     defaultLog: u32,
     flagRepeatTable: u32,
 ) -> Result<usize, Error> {
@@ -2562,7 +2553,7 @@ unsafe fn ZSTDv07_buildSeqTable<const N: usize>(
             if tableLog > maxLog {
                 return Err(Error::corruption_detected);
             }
-            let _ = FSEv07_buildDTable(DTable, norm.as_mut_ptr(), max, tableLog);
+            let _ = FSEv07_buildDTable(DTable, &norm, max, tableLog);
             Ok(headerSize)
         }
         _ => unreachable!(),
@@ -2620,7 +2611,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         MaxLL as u32,
         LLFSELog as u32,
         core::slice::from_raw_parts(ip, iend.offset_from(ip) as usize),
-        LL_defaultNorm.as_ptr(),
+        &LL_defaultNorm,
         LL_defaultNormLog,
         flagRepeatTable,
     )
@@ -2632,7 +2623,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         MaxOff as u32,
         OffFSELog as u32,
         core::slice::from_raw_parts(ip, iend.offset_from(ip) as usize),
-        OF_defaultNorm.as_ptr(),
+        &OF_defaultNorm,
         OF_defaultNormLog,
         flagRepeatTable,
     )
@@ -2644,7 +2635,7 @@ unsafe fn ZSTDv07_decodeSeqHeaders(
         MaxML as u32,
         MLFSELog as u32,
         core::slice::from_raw_parts(ip, iend.offset_from(ip) as usize),
-        ML_defaultNorm.as_ptr(),
+        &ML_defaultNorm,
         ML_defaultNormLog,
         flagRepeatTable,
     )
@@ -3308,7 +3299,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     }
     FSEv07_buildDTable(
         &mut (*dctx).OffTable,
-        offcodeNCount.as_mut_ptr(),
+        &offcodeNCount,
         offcodeMaxValue,
         offcodeLog,
     )
@@ -3329,7 +3320,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     }
     FSEv07_buildDTable(
         &mut (*dctx).MLTable,
-        matchlengthNCount.as_mut_ptr(),
+        &matchlengthNCount,
         matchlengthMaxValue,
         matchlengthLog,
     )
@@ -3350,7 +3341,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     }
     FSEv07_buildDTable(
         &mut (*dctx).LLTable,
-        litlengthNCount.as_mut_ptr(),
+        &litlengthNCount,
         litlengthMaxValue,
         litlengthLog,
     )
