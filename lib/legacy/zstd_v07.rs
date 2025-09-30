@@ -401,35 +401,31 @@ const HUFv07_TABLELOG_MAX: core::ffi::c_int = 12;
 const HUFv07_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
 
 unsafe fn FSEv07_readNCount(
-    normalizedCounter: *mut core::ffi::c_short,
-    maxSVPtr: *mut core::ffi::c_uint,
-    tableLogPtr: *mut core::ffi::c_uint,
+    normalizedCounter: &mut [core::ffi::c_short],
+    maxSVPtr: &mut core::ffi::c_uint,
+    tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
 ) -> Result<usize, Error> {
     let istart = headerBuffer.as_ptr();
     let iend = istart.add(headerBuffer.len());
     let mut ip = istart;
-    let mut nbBits: core::ffi::c_int = 0;
-    let mut remaining: core::ffi::c_int = 0;
-    let mut threshold: core::ffi::c_int = 0;
-    let mut bitStream: u32 = 0;
-    let mut bitCount: core::ffi::c_int = 0;
-    let mut charnum = 0;
-    let mut previous0 = 0;
     if headerBuffer.len() < 4 {
         return Err(Error::srcSize_wrong);
     }
-    bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
-    nbBits = (bitStream & 0xf).wrapping_add(FSEv07_MIN_TABLELOG as u32) as core::ffi::c_int;
+    let mut bitStream = MEM_readLE32(ip as *const core::ffi::c_void);
+    let mut nbBits = (bitStream & 0xf).wrapping_add(FSEv07_MIN_TABLELOG as u32) as core::ffi::c_int;
     if nbBits > FSEv07_TABLELOG_ABSOLUTE_MAX {
         return Err(Error::tableLog_tooLarge);
     }
     bitStream >>= 4;
-    bitCount = 4;
+    let mut bitCount = 4;
     *tableLogPtr = nbBits as core::ffi::c_uint;
-    remaining = ((1) << nbBits) + 1;
-    threshold = (1) << nbBits;
+    let mut remaining = (1 << nbBits) + 1;
+    let mut threshold = 1 << nbBits;
     nbBits += 1;
+
+    let mut charnum = 0;
+    let mut previous0 = 0;
     while remaining > 1 && charnum <= *maxSVPtr {
         if previous0 != 0 {
             let mut n0 = charnum;
@@ -456,7 +452,7 @@ unsafe fn FSEv07_readNCount(
             while charnum < n0 {
                 let fresh0 = charnum;
                 charnum = charnum.wrapping_add(1);
-                *normalizedCounter.offset(fresh0 as isize) = 0;
+                normalizedCounter[fresh0 as usize] = 0;
             }
             if ip <= iend.sub(7) || ip.offset((bitCount >> 3) as isize) <= iend.sub(4) {
                 ip = ip.offset((bitCount >> 3) as isize);
@@ -482,7 +478,7 @@ unsafe fn FSEv07_readNCount(
         remaining -= count.abs() as core::ffi::c_int;
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
-        *normalizedCounter.offset(fresh1 as isize) = count;
+        normalizedCounter[fresh1 as usize] = count;
         previous0 = (count == 0) as core::ffi::c_int;
         while remaining < threshold {
             nbBits -= 1;
@@ -501,6 +497,7 @@ unsafe fn FSEv07_readNCount(
         return Err(Error::GENERIC);
     }
     *maxSVPtr = charnum.wrapping_sub(1);
+
     ip = ip.offset(((bitCount + 7) >> 3) as isize);
     if ip.offset_from(istart) as usize > headerBuffer.len() {
         return Err(Error::srcSize_wrong);
@@ -816,12 +813,8 @@ unsafe fn FSEv07_decompress(
     if cSrc.len() < 2 {
         return Err(Error::srcSize_wrong);
     }
-    let NCountLength = FSEv07_readNCount(
-        counting.as_mut_ptr(),
-        &mut maxSymbolValue,
-        &mut tableLog,
-        istart,
-    )?;
+    let NCountLength =
+        FSEv07_readNCount(&mut counting, &mut maxSymbolValue, &mut tableLog, istart)?;
     if NCountLength >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
@@ -2564,7 +2557,7 @@ unsafe fn ZSTDv07_buildSeqTable<const N: usize>(
         3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
-            let headerSize = FSEv07_readNCount(norm.as_mut_ptr(), &mut max, &mut tableLog, src)
+            let headerSize = FSEv07_readNCount(&mut norm, &mut max, &mut tableLog, src)
                 .map_err(|_| Error::corruption_detected)?;
 
             if tableLog > maxLog {
@@ -3305,7 +3298,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     let mut offcodeMaxValue = MaxOff as u32;
     let mut offcodeLog: u32 = 0;
     let offcodeHeaderSize = FSEv07_readNCount(
-        offcodeNCount.as_mut_ptr(),
+        &mut offcodeNCount,
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dict,
@@ -3326,7 +3319,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
     let mut matchlengthLog: core::ffi::c_uint = 0;
     let matchlengthHeaderSize = FSEv07_readNCount(
-        matchlengthNCount.as_mut_ptr(),
+        &mut matchlengthNCount,
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dict,
@@ -3347,7 +3340,7 @@ unsafe fn ZSTDv07_loadEntropy(dctx: *mut ZSTDv07_DCtx, mut dict: &[u8]) -> Resul
     let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSEv07_readNCount(
-        litlengthNCount.as_mut_ptr(),
+        &mut litlengthNCount,
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dict,
