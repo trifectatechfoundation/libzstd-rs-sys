@@ -15,7 +15,7 @@
     "render-versus-other": {
         "decompression (rs, other versus self)": {
             "measure": "cycles",
-            "command": "decompress",
+            "command": "decompress-rs",
             "rows": {
                 "silesia-small.tar": 0
             }
