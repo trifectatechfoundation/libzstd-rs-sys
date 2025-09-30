@@ -94,11 +94,19 @@ struct FSEv07_decode_t {
     symbol: core::ffi::c_uchar,
     nbBits: core::ffi::c_uchar,
 }
-type BITv07_DStream_status = core::ffi::c_uint;
-const BITv07_DStream_overflow: BITv07_DStream_status = 3;
-const BITv07_DStream_completed: BITv07_DStream_status = 2;
-const BITv07_DStream_endOfBuffer: BITv07_DStream_status = 1;
-const BITv07_DStream_unfinished: BITv07_DStream_status = 0;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum StreamStatus {
+    /// Fully refilled.
+    Unfinished = 0,
+    /// Still some bits left in the bitstream.
+    EndOfBuffer = 1,
+    /// Bitstream entirely consumed, bit-exact.
+    Completed = 2,
+    /// User requested more bits than present in bitstream.
+    Overflow = 3,
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct FSEv07_DTableHeader {
@@ -295,36 +303,36 @@ impl<'a> BITv07_DStream_t<'a> {
         value
     }
     #[inline]
-    fn reload(&mut self) -> BITv07_DStream_status {
+    fn reload(&mut self) -> StreamStatus {
         if self.bitsConsumed > usize::BITS {
-            return BITv07_DStream_overflow;
+            return StreamStatus::Overflow;
         }
-        if self.ptr >= unsafe { (self.start).add(::core::mem::size_of::<usize>()) } {
-            self.ptr = unsafe { (self.ptr).offset(-((self.bitsConsumed >> 3) as isize)) };
+        if self.ptr >= unsafe { (self.start).add(size_of::<usize>()) } {
+            self.ptr = unsafe { (self.ptr).sub(self.bitsConsumed as usize >> 3) };
             self.bitsConsumed &= 7;
             self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
-            return BITv07_DStream_unfinished;
+            return StreamStatus::Unfinished;
         }
         if self.ptr == self.start {
             if self.bitsConsumed < usize::BITS {
-                return BITv07_DStream_endOfBuffer;
+                return StreamStatus::EndOfBuffer;
             }
-            return BITv07_DStream_completed;
+            return StreamStatus::Completed;
         }
         let mut nbBytes = self.bitsConsumed >> 3;
-        let mut result = BITv07_DStream_unfinished;
-        if unsafe { (self.ptr).offset(-(nbBytes as isize)) } < self.start {
+        let mut result = StreamStatus::Unfinished;
+        if unsafe { (self.ptr).sub(nbBytes as usize) } < self.start {
             nbBytes = unsafe { (self.ptr).offset_from(self.start) } as u32;
-            result = BITv07_DStream_endOfBuffer;
+            result = StreamStatus::EndOfBuffer;
         }
-        self.ptr = unsafe { (self.ptr).offset(-(nbBytes as isize)) };
+        self.ptr = unsafe { (self.ptr).sub(nbBytes as usize) };
         self.bitsConsumed = (self.bitsConsumed).wrapping_sub(nbBytes * 8);
         self.bitContainer = unsafe { MEM_readLEST(self.ptr as *const core::ffi::c_void) };
         result
     }
     #[inline]
-    fn is_empty(&self) -> core::ffi::c_uint {
-        (self.ptr == self.start && self.bitsConsumed == usize::BITS) as core::ffi::c_uint
+    fn is_empty(&self) -> bool {
+        self.ptr == self.start && self.bitsConsumed == usize::BITS
     }
 }
 
@@ -675,7 +683,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic<const N: usize>(
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
     let mut state1 = FSEv07_initDState(&mut bitD, dt);
     let mut state2 = FSEv07_initDState(&mut bitD, dt);
-    while bitD.reload() == BITv07_DStream_unfinished && op < olimit {
+    while bitD.reload() == StreamStatus::Unfinished && op < olimit {
         *op = if fast != 0 {
             FSEv07_decodeSymbolFast(&mut state1, &mut bitD)
         } else {
@@ -690,7 +698,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic<const N: usize>(
             FSEv07_decodeSymbol(&mut state2, &mut bitD)
         };
         if (FSEv07_MAX_TABLELOG * 4 + 7) as u32 > usize::BITS
-            && bitD.reload() > BITv07_DStream_unfinished
+            && bitD.reload() > StreamStatus::Unfinished
         {
             op = op.add(2);
             break;
@@ -721,7 +729,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv07_decodeSymbol(&mut state1, &mut bitD)
         };
-        if bitD.reload() == BITv07_DStream_overflow {
+        if bitD.reload() == StreamStatus::Overflow {
             let fresh8 = op;
             op = op.add(1);
             *fresh8 = if fast != 0 {
@@ -741,7 +749,7 @@ unsafe fn FSEv07_decompress_usingDTable_generic<const N: usize>(
             } else {
                 FSEv07_decodeSymbol(&mut state2, &mut bitD)
             };
-            if bitD.reload() != BITv07_DStream_overflow {
+            if bitD.reload() != StreamStatus::Overflow {
                 continue;
             }
             let fresh10 = op;
@@ -874,7 +882,7 @@ unsafe fn HUFv07_decodeStreamX2(
     dtLog: u32,
 ) -> usize {
     let pStart = p;
-    while bitDPtr.reload() == BITv07_DStream_unfinished && p <= pEnd.sub(4) {
+    while bitDPtr.reload() == StreamStatus::Unfinished && p <= pEnd.sub(4) {
         if MEM_64bits() {
             let fresh12 = p;
             p = p.add(1);
@@ -894,7 +902,7 @@ unsafe fn HUFv07_decodeStreamX2(
         p = p.add(1);
         *fresh15 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
     }
-    while bitDPtr.reload() == BITv07_DStream_unfinished && p < pEnd {
+    while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd {
         let fresh16 = p;
         p = p.add(1);
         *fresh16 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
@@ -920,7 +928,7 @@ unsafe fn HUFv07_decompress1X2_usingDTable_internal(
     let dtLog = dtd.tableLog as u32;
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
     HUFv07_decodeStreamX2(op, &mut bitD, oend, dt, dtLog);
-    if bitD.is_empty() == 0 {
+    if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
     Ok(())
@@ -975,7 +983,6 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     let mut op2 = opStart2;
     let mut op3 = opStart3;
     let mut op4 = opStart4;
-    let mut endSignal: u32 = 0;
     let dtd = HUFv07_getDTableDesc(DTable);
     let dtLog = dtd.tableLog as u32;
     if length4 > cSrcSize {
@@ -985,11 +992,12 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     let mut bitD2 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart2, length2))?;
     let mut bitD3 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart3, length3))?;
     let mut bitD4 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart4, length4))?;
-    endSignal = bitD1.reload() as core::ffi::c_uint
-        | bitD2.reload() as core::ffi::c_uint
-        | bitD3.reload() as core::ffi::c_uint
-        | bitD4.reload() as core::ffi::c_uint;
-    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
+    let mut endSignal = true;
+    endSignal &= bitD1.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD2.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD3.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD4.reload() == StreamStatus::Unfinished;
+    while endSignal && op4 < oend.sub(7) {
         if MEM_64bits() {
             let fresh18 = op1;
             op1 = op1.add(1);
@@ -1062,10 +1070,10 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
         let fresh33 = op4;
         op4 = op4.add(1);
         *fresh33 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
-        endSignal = bitD1.reload() as core::ffi::c_uint
-            | bitD2.reload() as core::ffi::c_uint
-            | bitD3.reload() as core::ffi::c_uint
-            | bitD4.reload() as core::ffi::c_uint;
+        endSignal &= bitD1.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD2.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD3.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD4.reload() == StreamStatus::Unfinished;
     }
     if op1 > opStart2 {
         return Err(Error::corruption_detected);
@@ -1080,8 +1088,7 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     HUFv07_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
-    endSignal = bitD1.is_empty() & bitD2.is_empty() & bitD3.is_empty() & bitD4.is_empty();
-    if endSignal == 0 {
+    if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return Err(Error::corruption_detected);
     }
     Ok(dstSize)
@@ -1372,7 +1379,7 @@ unsafe fn HUFv07_decodeStreamX4(
     dtLog: u32,
 ) -> usize {
     let pStart = p;
-    while bitDPtr.reload() == BITv07_DStream_unfinished && p < pEnd.sub(7) {
+    while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd.sub(7) {
         if MEM_64bits() {
             p = p.offset(
                 HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
@@ -1392,7 +1399,7 @@ unsafe fn HUFv07_decodeStreamX4(
             HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
     }
-    while bitDPtr.reload() == BITv07_DStream_unfinished && p <= pEnd.sub(2) {
+    while bitDPtr.reload() == StreamStatus::Unfinished && p <= pEnd.sub(2) {
         p = p.offset(
             HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
         );
@@ -1422,7 +1429,7 @@ unsafe fn HUFv07_decompress1X4_usingDTable_internal(
     let dt = dtPtr as *const HUFv07_DEltX4;
     let dtd = HUFv07_getDTableDesc(DTable);
     HUFv07_decodeStreamX4(ostart, &mut bitD, oend, dt, dtd.tableLog as u32);
-    if bitD.is_empty() == 0 {
+    if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
     Ok(())
@@ -1474,7 +1481,6 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     let mut op2 = opStart2;
     let mut op3 = opStart3;
     let mut op4 = opStart4;
-    let mut endSignal: u32 = 0;
     let dtd = HUFv07_getDTableDesc(DTable);
     let dtLog = dtd.tableLog as u32;
     if length4 > cSrc.len() {
@@ -1484,11 +1490,12 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     let mut bitD2 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart2, length2))?;
     let mut bitD3 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart3, length3))?;
     let mut bitD4 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart4, length4))?;
-    endSignal = bitD1.reload() as core::ffi::c_uint
-        | bitD2.reload() as core::ffi::c_uint
-        | bitD3.reload() as core::ffi::c_uint
-        | bitD4.reload() as core::ffi::c_uint;
-    while endSignal == BITv07_DStream_unfinished as core::ffi::c_int as u32 && op4 < oend.sub(7) {
+    let mut endSignal = true;
+    endSignal &= bitD1.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD2.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD3.reload() == StreamStatus::Unfinished;
+    endSignal &= bitD4.reload() == StreamStatus::Unfinished;
+    while endSignal && op4 < oend.sub(7) {
         if MEM_64bits() {
             op1 = op1.offset(HUFv07_decodeSymbolX4(
                 op1 as *mut core::ffi::c_void,
@@ -1597,10 +1604,10 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
         op4 = op4.offset(
             HUFv07_decodeSymbolX4(op4 as *mut core::ffi::c_void, &mut bitD4, dt, dtLog) as isize,
         );
-        endSignal = bitD1.reload() as core::ffi::c_uint
-            | bitD2.reload() as core::ffi::c_uint
-            | bitD3.reload() as core::ffi::c_uint
-            | bitD4.reload() as core::ffi::c_uint;
+        endSignal &= bitD1.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD2.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD3.reload() == StreamStatus::Unfinished;
+        endSignal &= bitD4.reload() == StreamStatus::Unfinished;
     }
     if op1 > opStart2 {
         return Err(Error::corruption_detected);
@@ -1615,8 +1622,7 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     HUFv07_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
     HUFv07_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
     HUFv07_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
-    let endCheck = bitD1.is_empty() & bitD2.is_empty() & bitD3.is_empty() & bitD4.is_empty();
-    if endCheck == 0 {
+    if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return Err(Error::corruption_detected);
     }
     Ok(dstSize)
@@ -2821,7 +2827,7 @@ unsafe fn ZSTDv07_decompressSequences(
             prevOffset,
         };
 
-        while seqState.DStream.reload() <= BITv07_DStream_completed && nbSeq != 0 {
+        while seqState.DStream.reload() <= StreamStatus::Completed && nbSeq != 0 {
             nbSeq -= 1;
             let sequence = ZSTDv07_decodeSequence(&mut seqState);
             let oneSeqSize = ZSTDv07_execSequence(
