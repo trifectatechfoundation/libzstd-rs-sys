@@ -192,14 +192,8 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
             }
         }
         7 => {
-            let mut fParams_1 = ZSTDv07_frameParams {
-                frameContentSize: 0,
-                windowSize: 0,
-                dictID: 0,
-                checksumFlag: 0,
-            };
-
-            match unsafe { ZSTDv07_getFrameParams(&mut fParams_1, ptr, src.len() as _) } {
+            let mut fParams_1 = ZSTDv07_frameParams::default();
+            match ZSTDv07_getFrameParams(&mut fParams_1, src) {
                 Ok(0) => Some(fParams_1.frameContentSize),
                 _ => None,
             }
