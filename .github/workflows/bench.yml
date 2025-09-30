@@ -47,6 +47,7 @@ jobs:
       - name: cargo build
         env:
           RUSTFLAGS: "-Cllvm-args=-enable-dfa-jump-thread"
+          RUST_BACKTRACE: 1
         run: |
           . "$HOME/.cargo/env"
           cargo --version
