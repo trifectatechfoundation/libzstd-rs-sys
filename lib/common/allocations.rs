@@ -9,6 +9,10 @@ pub(crate) unsafe fn ZSTD_customMalloc(
     size: size_t,
     customMem: ZSTD_customMem,
 ) -> *mut core::ffi::c_void {
+    if customMem.customAlloc.is_some() ^ customMem.customFree.is_some() {
+        return core::ptr::null_mut();
+    }
+
     if let Some(f) = customMem.customAlloc {
         return f(customMem.opaque, size);
     }
@@ -20,6 +24,10 @@ pub(crate) unsafe fn ZSTD_customCalloc(
     size: size_t,
     customMem: ZSTD_customMem,
 ) -> *mut core::ffi::c_void {
+    if customMem.customAlloc.is_some() ^ customMem.customFree.is_some() {
+        return core::ptr::null_mut();
+    }
+
     if let Some(f) = customMem.customAlloc {
         let ptr = f(customMem.opaque, size);
         ptr::write_bytes(ptr, 0, size);

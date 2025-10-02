@@ -1130,7 +1130,6 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     cMem: ZSTD_customMem,
     pool: *mut ZSTD_threadPool,
 ) -> *mut ZSTDMT_CCtx {
-    let mut mtctx = core::ptr::null_mut::<ZSTDMT_CCtx>();
     let mut nbJobs = nbWorkers.wrapping_add(2);
     let mut initError: core::ffi::c_int = 0;
     if nbWorkers < 1 {
@@ -1151,10 +1150,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
             256
         }) as core::ffi::c_uint
     };
-    if cMem.customAlloc.is_some() ^ cMem.customFree.is_some() {
-        return core::ptr::null_mut();
-    }
-    mtctx = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
+    let mtctx = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
     if mtctx.is_null() {
         return core::ptr::null_mut();
     }

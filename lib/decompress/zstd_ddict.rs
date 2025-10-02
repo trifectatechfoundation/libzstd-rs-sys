@@ -206,10 +206,6 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
     dictContentType: ZSTD_dictContentType_e,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_DDict {
-    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
-        return core::ptr::null_mut();
-    }
-
     let ddict = ZSTD_customMalloc(size_of::<ZSTD_DDict>(), customMem) as *mut ZSTD_DDict;
 
     if ddict.is_null() {
