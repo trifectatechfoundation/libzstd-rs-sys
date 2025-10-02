@@ -1251,8 +1251,11 @@ unsafe fn ZSTD_cwksp_create(
 #[inline]
 unsafe fn ZSTD_cwksp_free(ws: *mut ZSTD_cwksp, customMem: ZSTD_customMem) {
     let ptr = (*ws).workspace;
+    let size = (*ws)
+        .workspaceEnd
+        .byte_offset_from_unsigned((*ws).workspace);
     ptr::write_bytes(ws as *mut u8, 0, ::core::mem::size_of::<ZSTD_cwksp>());
-    ZSTD_customFree(ptr, customMem);
+    ZSTD_customFree(ptr, size, customMem);
 }
 #[inline]
 unsafe fn ZSTD_cwksp_move(dst: *mut ZSTD_cwksp, src: *mut ZSTD_cwksp) {
@@ -1705,7 +1708,11 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     cctx
 }
 unsafe fn ZSTD_clearAllDicts(cctx: *mut ZSTD_CCtx) {
-    ZSTD_customFree((*cctx).localDict.dictBuffer, (*cctx).customMem);
+    ZSTD_customFree(
+        (*cctx).localDict.dictBuffer,
+        (*cctx).localDict.dictSize,
+        (*cctx).customMem,
+    );
     ZSTD_freeCDict((*cctx).localDict.cdict);
     ptr::write_bytes(
         &mut (*cctx).localDict as *mut ZSTD_localDict as *mut u8,
@@ -1746,7 +1753,11 @@ pub unsafe extern "C" fn ZSTD_freeCCtx(cctx: *mut ZSTD_CCtx) -> size_t {
         ZSTD_cwksp_owns_buffer(&(*cctx).workspace, cctx as *const core::ffi::c_void);
     ZSTD_freeCCtxContent(cctx);
     if cctxInWorkspace == 0 {
-        ZSTD_customFree(cctx as *mut core::ffi::c_void, (*cctx).customMem);
+        ZSTD_customFree(
+            cctx as *mut core::ffi::c_void,
+            ::core::mem::size_of::<ZSTD_CCtx>(),
+            (*cctx).customMem,
+        );
     }
     0
 }
@@ -1965,7 +1976,11 @@ pub unsafe extern "C" fn ZSTD_freeCCtxParams(params: *mut ZSTD_CCtx_params) -> s
     if params.is_null() {
         return 0;
     }
-    ZSTD_customFree(params as *mut core::ffi::c_void, (*params).customMem);
+    ZSTD_customFree(
+        params as *mut core::ffi::c_void,
+        ::core::mem::size_of::<ZSTD_CCtx_params>(),
+        (*params).customMem,
+    );
     0
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_CCtxParams_reset))]
@@ -5564,7 +5579,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     seqCollector.maxSequences = outSeqsSize;
     (*zc).seqCollector = seqCollector;
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);
-    ZSTD_customFree(dst, ZSTD_customMem::default());
+    ZSTD_customFree(dst, dstCapacity, ZSTD_customMem::default());
     let err_code_1 = ret;
     if ERR_isError(err_code_1) {
         return err_code_1;
@@ -8657,7 +8672,6 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         isStatic: ZSTD_cwksp_dynamic_alloc,
     };
     if workspace.is_null() {
-        ZSTD_customFree(workspace, customMem);
         return core::ptr::null_mut();
     }
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_dynamic_alloc);
@@ -8765,7 +8779,6 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         targetLength: 0,
         strategy: 0,
     };
-    let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
     if cctxParams.enableDedicatedDictSearch != 0 {
         cParams = ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
         ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
@@ -8789,7 +8802,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
     cctxParams.cParams = cParams;
     cctxParams.useRowMatchFinder =
         ZSTD_resolveRowMatchFinderMode(cctxParams.useRowMatchFinder, &cParams);
-    cdict = ZSTD_createCDict_advanced_internal(
+    let cdict = ZSTD_createCDict_advanced_internal(
         dictSize,
         dictLoadMethod,
         cctxParams.cParams,
@@ -8880,7 +8893,11 @@ pub unsafe extern "C" fn ZSTD_freeCDict(cdict: *mut ZSTD_CDict) -> size_t {
         ZSTD_cwksp_owns_buffer(&(*cdict).workspace, cdict as *const core::ffi::c_void);
     ZSTD_cwksp_free(&mut (*cdict).workspace, cMem);
     if cdictInWorkspace == 0 {
-        ZSTD_customFree(cdict as *mut core::ffi::c_void, cMem);
+        ZSTD_customFree(
+            cdict as *mut core::ffi::c_void,
+            (*cdict).dictContentSize,
+            cMem,
+        );
     }
     0
 }
@@ -8898,18 +8915,14 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
         ZSTD_resolveRowMatchFinderMode(ZSTD_ParamSwitch_e::ZSTD_ps_auto, &cParams);
     let matchStateSize = ZSTD_sizeof_matchState(&cParams, useRowMatchFinder, 1, 0);
     let neededSize = (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>()))
-        .wrapping_add(
-            if dictLoadMethod as core::ffi::c_uint
-                == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
-            {
-                0
-            } else {
-                ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
-                    dictSize,
-                    ::core::mem::size_of::<*mut core::ffi::c_void>(),
-                ))
-            },
-        )
+        .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
+            0
+        } else {
+            ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
+                dictSize,
+                ::core::mem::size_of::<*mut core::ffi::c_void>(),
+            ))
+        })
         .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
         .wrapping_add(matchStateSize);
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
