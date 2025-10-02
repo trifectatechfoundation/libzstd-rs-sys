@@ -101,7 +101,7 @@ pub struct ZSTD_parameters {
     pub fParams: ZSTD_frameParameters,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_customMem {
     pub customAlloc: ZSTD_allocFunction,
