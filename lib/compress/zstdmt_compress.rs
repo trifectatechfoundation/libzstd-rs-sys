@@ -1066,7 +1066,11 @@ unsafe fn ZSTDMT_freeJobsTable(
         ));
         jobNb = jobNb.wrapping_add(1);
     }
-    ZSTD_customFree(jobTable as *mut core::ffi::c_void, cMem);
+    ZSTD_customFree(
+        jobTable as *mut core::ffi::c_void,
+        (nbJobs as usize).wrapping_mul(::core::mem::size_of::<ZSTDMT_jobDescription>()),
+        cMem,
+    );
 }
 unsafe fn ZSTDMT_createJobsTable(
     nbJobsPtr: *mut u32,
@@ -1268,10 +1272,15 @@ pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if !((*mtctx).roundBuff.buffer).is_null() {
         ZSTD_customFree(
             (*mtctx).roundBuff.buffer as *mut core::ffi::c_void,
+            (*mtctx).roundBuff.capacity,
             (*mtctx).cMem,
         );
     }
-    ZSTD_customFree(mtctx as *mut core::ffi::c_void, (*mtctx).cMem);
+    ZSTD_customFree(
+        mtctx as *mut core::ffi::c_void,
+        ::core::mem::size_of::<ZSTDMT_CCtx>(),
+        (*mtctx).cMem,
+    );
     0
 }
 pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
@@ -1560,6 +1569,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         if !((*mtctx).roundBuff.buffer).is_null() {
             ZSTD_customFree(
                 (*mtctx).roundBuff.buffer as *mut core::ffi::c_void,
+                (*mtctx).roundBuff.capacity,
                 (*mtctx).cMem,
             );
         }

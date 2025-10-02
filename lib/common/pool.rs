@@ -136,9 +136,23 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
     ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queueMutex));
     ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePushCond));
     ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePopCond));
-    ZSTD_customFree((*ctx).queue as *mut core::ffi::c_void, (*ctx).customMem);
-    ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
-    ZSTD_customFree(ctx as *mut core::ffi::c_void, (*ctx).customMem);
+    ZSTD_customFree(
+        (*ctx).queue as *mut core::ffi::c_void,
+        ((*ctx).queueSize).wrapping_mul(::core::mem::size_of::<POOL_job>()),
+        (*ctx).customMem,
+    );
+    ZSTD_customFree(
+        (*ctx).threads as *mut core::ffi::c_void,
+        (*ctx)
+            .threadCapacity
+            .wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
+        (*ctx).customMem,
+    );
+    ZSTD_customFree(
+        ctx as *mut core::ffi::c_void,
+        ::core::mem::size_of::<POOL_ctx>(),
+        (*ctx).customMem,
+    );
 }
 pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
     let mut guard = (*ctx).queueMutex.lock().unwrap();
@@ -181,7 +195,13 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
         (*ctx).threads as *const core::ffi::c_void,
         ((*ctx).threadCapacity).wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
     );
-    ZSTD_customFree((*ctx).threads as *mut core::ffi::c_void, (*ctx).customMem);
+    ZSTD_customFree(
+        (*ctx).threads as *mut core::ffi::c_void,
+        (*ctx)
+            .threadCapacity
+            .wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
+        (*ctx).customMem,
+    );
     (*ctx).threads = threadPool;
     for threadId in (*ctx).threadCapacity..numThreads {
         let ctx = SendPoolCtxPtr(ctx);
