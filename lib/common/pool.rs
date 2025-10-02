@@ -2,8 +2,9 @@ use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
-use libc::{calloc, free, size_t};
+use libc::size_t;
 
+use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
 use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
 
 pub struct POOL_ctx {
@@ -34,28 +35,7 @@ pub(crate) struct POOL_job {
 }
 pub type POOL_function = Option<unsafe extern "C" fn(*mut core::ffi::c_void) -> ()>;
 pub type ZSTD_threadPool = POOL_ctx;
-#[inline]
-unsafe extern "C" fn ZSTD_customCalloc(
-    size: size_t,
-    customMem: ZSTD_customMem,
-) -> *mut core::ffi::c_void {
-    if (customMem.customAlloc).is_some() {
-        let ptr = (customMem.customAlloc).unwrap_unchecked()(customMem.opaque, size);
-        ptr::write_bytes(ptr, 0, size as libc::size_t);
-        return ptr;
-    }
-    calloc(1, size)
-}
-#[inline]
-unsafe extern "C" fn ZSTD_customFree(ptr: *mut core::ffi::c_void, customMem: ZSTD_customMem) {
-    if !ptr.is_null() {
-        if (customMem.customFree).is_some() {
-            (customMem.customFree).unwrap_unchecked()(customMem.opaque, ptr);
-        } else {
-            free(ptr);
-        }
-    }
-}
+
 unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     if ctx.is_null() {
         return;

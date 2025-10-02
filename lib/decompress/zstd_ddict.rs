@@ -237,31 +237,25 @@ pub unsafe extern "C" fn ZSTD_createDDict(
     dict: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> *mut ZSTD_DDict {
-    let allocator = ZSTD_customMem {
-        customAlloc: None,
-        customFree: None,
-        opaque: core::ptr::null_mut(),
-    };
-    ZSTD_createDDict_advanced(dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto, allocator)
+    ZSTD_createDDict_advanced(
+        dict,
+        dictSize,
+        ZSTD_dlm_byCopy,
+        ZSTD_dct_auto,
+        ZSTD_customMem::default(),
+    )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
     dictBuffer: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> *mut ZSTD_DDict {
-    let allocator = {
-        ZSTD_customMem {
-            customAlloc: None,
-            customFree: None,
-            opaque: core::ptr::null_mut(),
-        }
-    };
     ZSTD_createDDict_advanced(
         dictBuffer,
         dictSize,
         ZSTD_dlm_byRef,
         ZSTD_dct_auto,
-        allocator,
+        ZSTD_customMem::default(),
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDDict))]
