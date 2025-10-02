@@ -297,8 +297,12 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
         return 0;
     }
     let cMem = (*ddict).cMem;
-    ZSTD_customFree((*ddict).dictBuffer, cMem);
-    ZSTD_customFree(ddict as *mut core::ffi::c_void, cMem);
+    ZSTD_customFree((*ddict).dictBuffer, (*ddict).dictSize, cMem);
+    ZSTD_customFree(
+        ddict as *mut core::ffi::c_void,
+        size_of::<ZSTD_DDict>(),
+        cMem,
+    );
     0
 }
 

@@ -294,17 +294,23 @@ unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
         while u < (*bufPool).totalBuffers {
             ZSTD_customFree(
                 (*((*bufPool).buffers).offset(u as isize)).start,
+                (*((*bufPool).buffers).offset(u as isize)).capacity,
                 (*bufPool).cMem,
             );
             u = u.wrapping_add(1);
         }
         ZSTD_customFree(
             (*bufPool).buffers as *mut core::ffi::c_void,
+            (*bufPool).bufferSize,
             (*bufPool).cMem,
         );
     }
     core::ptr::drop_in_place(core::ptr::addr_of_mut!((*bufPool).poolMutex));
-    ZSTD_customFree(bufPool as *mut core::ffi::c_void, (*bufPool).cMem);
+    ZSTD_customFree(
+        bufPool as *mut core::ffi::c_void,
+        size_of::<ZSTDMT_bufferPool>(),
+        (*bufPool).cMem,
+    );
 }
 unsafe fn ZSTDMT_createBufferPool(
     maxNbBuffers: core::ffi::c_uint,
@@ -389,7 +395,7 @@ unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
         {
             return buf;
         }
-        ZSTD_customFree(buf.start, (*bufPool).cMem);
+        ZSTD_customFree(buf.start, buf.capacity, (*bufPool).cMem);
     }
     drop(guard);
     let mut buffer = buffer_s {
@@ -414,7 +420,7 @@ unsafe fn ZSTDMT_releaseBuffer(bufPool: *mut ZSTDMT_bufferPool, buf: Buffer) {
         return;
     }
     drop(guard);
-    ZSTD_customFree(buf.start, (*bufPool).cMem);
+    ZSTD_customFree(buf.start, buf.capacity, (*bufPool).cMem);
 }
 unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
     ZSTDMT_sizeof_bufferPool(seqPool)
@@ -478,9 +484,17 @@ unsafe fn ZSTDMT_freeCCtxPool(pool: *mut ZSTDMT_CCtxPool) {
             ZSTD_freeCCtx(*((*pool).cctxs).offset(cid as isize));
             cid += 1;
         }
-        ZSTD_customFree((*pool).cctxs as *mut core::ffi::c_void, (*pool).cMem);
+        ZSTD_customFree(
+            (*pool).cctxs as *mut core::ffi::c_void,
+            ((*pool).totalCCtx as usize).wrapping_mul(::core::mem::size_of::<*mut ZSTD_CCtx>()),
+            (*pool).cMem,
+        );
     }
-    ZSTD_customFree(pool as *mut core::ffi::c_void, (*pool).cMem);
+    ZSTD_customFree(
+        pool as *mut core::ffi::c_void,
+        size_of::<ZSTDMT_CCtxPool>(),
+        (*pool).cMem,
+    );
 }
 unsafe fn ZSTDMT_createCCtxPool(
     nbWorkers: core::ffi::c_int,
@@ -605,6 +619,7 @@ unsafe fn ZSTDMT_serialState_reset(
         {
             ZSTD_customFree(
                 (*serialState).ldmState.hashTable as *mut core::ffi::c_void,
+                hashSize,
                 cMem,
             );
             (*serialState).ldmState.hashTable =
@@ -613,6 +628,7 @@ unsafe fn ZSTDMT_serialState_reset(
         if ((*serialState).ldmState.bucketOffsets).is_null() || prevBucketLog < bucketLog {
             ZSTD_customFree(
                 (*serialState).ldmState.bucketOffsets as *mut core::ffi::c_void,
+                1 << prevBucketLog,
                 cMem,
             );
             (*serialState).ldmState.bucketOffsets = ZSTD_customMalloc(numBuckets, cMem) as *mut u8;
@@ -676,12 +692,19 @@ unsafe fn ZSTDMT_serialState_free(serialState: *mut SerialState) {
     core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).cond));
     core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowMutex));
     core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowCond));
+    let hashLog = (*serialState).params.ldmParams.hashLog;
+    let hashSize = ((1 as size_t) << hashLog).wrapping_mul(::core::mem::size_of::<ldmEntry_t>());
+    let bucketLog = ((*serialState).params.ldmParams.hashLog)
+        .wrapping_sub((*serialState).params.ldmParams.bucketSizeLog);
+    let numBuckets = 1usize << bucketLog;
     ZSTD_customFree(
         (*serialState).ldmState.hashTable as *mut core::ffi::c_void,
+        hashSize,
         cMem,
     );
     ZSTD_customFree(
         (*serialState).ldmState.bucketOffsets as *mut core::ffi::c_void,
+        numBuckets,
         cMem,
     );
 }
@@ -1066,7 +1089,11 @@ unsafe fn ZSTDMT_freeJobsTable(
         ));
         jobNb = jobNb.wrapping_add(1);
     }
-    ZSTD_customFree(jobTable as *mut core::ffi::c_void, cMem);
+    ZSTD_customFree(
+        jobTable as *mut core::ffi::c_void,
+        (nbJobs as usize).wrapping_mul(::core::mem::size_of::<ZSTDMT_jobDescription>()),
+        cMem,
+    );
 }
 unsafe fn ZSTDMT_createJobsTable(
     nbJobsPtr: *mut u32,
@@ -1268,10 +1295,15 @@ pub unsafe fn ZSTDMT_freeCCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if !((*mtctx).roundBuff.buffer).is_null() {
         ZSTD_customFree(
             (*mtctx).roundBuff.buffer as *mut core::ffi::c_void,
+            (*mtctx).roundBuff.capacity,
             (*mtctx).cMem,
         );
     }
-    ZSTD_customFree(mtctx as *mut core::ffi::c_void, (*mtctx).cMem);
+    ZSTD_customFree(
+        mtctx as *mut core::ffi::c_void,
+        ::core::mem::size_of::<ZSTDMT_CCtx>(),
+        (*mtctx).cMem,
+    );
     0
 }
 pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
@@ -1560,6 +1592,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         if !((*mtctx).roundBuff.buffer).is_null() {
             ZSTD_customFree(
                 (*mtctx).roundBuff.buffer as *mut core::ffi::c_void,
+                (*mtctx).roundBuff.capacity,
                 (*mtctx).cMem,
             );
         }

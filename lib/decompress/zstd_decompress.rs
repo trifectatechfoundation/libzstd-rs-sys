@@ -537,7 +537,11 @@ unsafe fn ZSTD_DDictHashSet_expand(
         }
         i = i.wrapping_add(1);
     }
-    ZSTD_customFree(oldTable as *mut core::ffi::c_void, customMem);
+    ZSTD_customFree(
+        oldTable as *mut core::ffi::c_void,
+        oldTableSize.wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
+        customMem,
+    );
     0
 }
 
@@ -579,7 +583,11 @@ unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictH
         customMem,
     ) as *mut *const ZSTD_DDict;
     if ((*ret).ddictPtrTable).is_null() {
-        ZSTD_customFree(ret as *mut core::ffi::c_void, customMem);
+        ZSTD_customFree(
+            ret as *mut core::ffi::c_void,
+            ::core::mem::size_of::<ZSTD_DDictHashSet>(),
+            customMem,
+        );
         return core::ptr::null_mut();
     }
     (*ret).ddictPtrTableSize = DDICT_HASHSET_TABLE_BASE_SIZE as size_t;
@@ -591,11 +599,18 @@ unsafe fn ZSTD_freeDDictHashSet(hashSet: *mut ZSTD_DDictHashSet, customMem: ZSTD
     if !hashSet.is_null() && !((*hashSet).ddictPtrTable).is_null() {
         ZSTD_customFree(
             (*hashSet).ddictPtrTable as *mut core::ffi::c_void,
+            (*hashSet)
+                .ddictPtrTableSize
+                .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
             customMem,
         );
     }
     if !hashSet.is_null() {
-        ZSTD_customFree(hashSet as *mut core::ffi::c_void, customMem);
+        ZSTD_customFree(
+            hashSet as *mut core::ffi::c_void,
+            ::core::mem::size_of::<ZSTD_DDictHashSet>(),
+            customMem,
+        );
     }
 }
 unsafe fn ZSTD_DDictHashSet_addDDict(
@@ -742,7 +757,11 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
     }
     let cMem = (*dctx).customMem;
     ZSTD_clearDict(dctx);
-    ZSTD_customFree((*dctx).inBuff as *mut core::ffi::c_void, cMem);
+    ZSTD_customFree(
+        (*dctx).inBuff as *mut core::ffi::c_void,
+        (*dctx).inBuffSize,
+        cMem,
+    );
     (*dctx).inBuff = core::ptr::null_mut();
     if !((*dctx).legacyContext).is_null() {
         ZSTD_freeLegacyStreamContext((*dctx).legacyContext, (*dctx).previousLegacyVersion);
@@ -751,7 +770,11 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
         ZSTD_freeDDictHashSet((*dctx).ddictSet, cMem);
         (*dctx).ddictSet = core::ptr::null_mut();
     }
-    ZSTD_customFree(dctx as *mut core::ffi::c_void, cMem);
+    ZSTD_customFree(
+        dctx as *mut core::ffi::c_void,
+        ::core::mem::size_of::<ZSTD_DCtx>(),
+        cMem,
+    );
     0
 }
 
@@ -3204,7 +3227,11 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             return Error::dictionary_corrupted.to_error_code();
                         }
                     } else {
-                        ZSTD_customFree(zds.inBuff as *mut core::ffi::c_void, zds.customMem);
+                        ZSTD_customFree(
+                            zds.inBuff as *mut core::ffi::c_void,
+                            zds.inBuffSize,
+                            zds.customMem,
+                        );
                         zds.inBuffSize = 0;
                         zds.outBuffSize = 0;
                         zds.inBuff = ZSTD_customMalloc(bufferSize, zds.customMem).cast::<u8>();
