@@ -184,12 +184,6 @@ impl TryFrom<u32> for BufferMode {
     }
 }
 
-pub static mut ZSTD_defaultCMem: ZSTD_customMem = ZSTD_customMem {
-    customAlloc: None,
-    customFree: None,
-    opaque: core::ptr::null_mut(),
-};
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_frameProgression {

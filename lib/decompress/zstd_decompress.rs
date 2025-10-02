@@ -728,7 +728,7 @@ pub unsafe extern "C" fn ZSTD_createDCtx_advanced(customMem: ZSTD_customMem) -> 
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx))]
 pub unsafe extern "C" fn ZSTD_createDCtx() -> *mut ZSTD_DCtx {
-    ZSTD_createDCtx_internal(ZSTD_defaultCMem)
+    ZSTD_createDCtx_internal(ZSTD_customMem::default())
 }
 
 unsafe fn ZSTD_clearDict(dctx: *mut ZSTD_DCtx) {
@@ -1790,7 +1790,7 @@ pub unsafe extern "C" fn ZSTD_decompress(
     srcSize: size_t,
 ) -> size_t {
     let mut regenSize: size_t = 0;
-    let dctx = ZSTD_createDCtx_internal(ZSTD_defaultCMem);
+    let dctx = ZSTD_createDCtx_internal(ZSTD_customMem::default());
     if dctx.is_null() {
         return Error::memory_allocation.to_error_code();
     }
@@ -2318,7 +2318,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
 pub unsafe extern "C" fn ZSTD_createDStream() -> *mut ZSTD_DStream {
-    ZSTD_createDCtx_internal(ZSTD_defaultCMem)
+    ZSTD_createDCtx_internal(ZSTD_customMem::default())
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDStream))]
 pub unsafe extern "C" fn ZSTD_initStaticDStream(

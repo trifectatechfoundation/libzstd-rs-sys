@@ -1594,7 +1594,7 @@ pub unsafe extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx))]
 pub unsafe extern "C" fn ZSTD_createCCtx() -> *mut ZSTD_CCtx {
-    ZSTD_createCCtx_advanced(ZSTD_defaultCMem)
+    ZSTD_createCCtx_advanced(ZSTD_customMem::default())
 }
 unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
     ptr::write_bytes(cctx as *mut u8, 0, ::core::mem::size_of::<ZSTD_CCtx>());
@@ -1958,7 +1958,7 @@ unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtxParams))]
 pub unsafe extern "C" fn ZSTD_createCCtxParams() -> *mut ZSTD_CCtx_params {
-    ZSTD_createCCtxParams_advanced(ZSTD_defaultCMem)
+    ZSTD_createCCtxParams_advanced(ZSTD_customMem::default())
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeCCtxParams))]
 pub unsafe extern "C" fn ZSTD_freeCCtxParams(params: *mut ZSTD_CCtx_params) -> size_t {
@@ -5554,7 +5554,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     if nbWorkers != 0 {
         return Error::parameter_unsupported.to_error_code();
     }
-    dst = ZSTD_customMalloc(dstCapacity, ZSTD_defaultCMem);
+    dst = ZSTD_customMalloc(dstCapacity, ZSTD_customMem::default());
     if dst.is_null() {
         return Error::memory_allocation.to_error_code();
     }
@@ -5564,7 +5564,7 @@ pub unsafe extern "C" fn ZSTD_generateSequences(
     seqCollector.maxSequences = outSeqsSize;
     (*zc).seqCollector = seqCollector;
     let ret = ZSTD_compress2(zc, dst, dstCapacity, src, srcSize);
-    ZSTD_customFree(dst, ZSTD_defaultCMem);
+    ZSTD_customFree(dst, ZSTD_customMem::default());
     let err_code_1 = ret;
     if ERR_isError(err_code_1) {
         return err_code_1;
@@ -8487,7 +8487,7 @@ pub unsafe extern "C" fn ZSTD_compress(
         extSeqBuf: core::ptr::null_mut::<ZSTD_Sequence>(),
         extSeqBufCapacity: 0,
     };
-    ZSTD_initCCtx(&mut ctxBody, ZSTD_defaultCMem);
+    ZSTD_initCCtx(&mut ctxBody, ZSTD_customMem::default());
     result = ZSTD_compressCCtx(
         &mut ctxBody,
         dst,
@@ -8830,7 +8830,7 @@ pub unsafe extern "C" fn ZSTD_createCDict(
         ZSTD_dlm_byCopy,
         ZSTD_dct_auto,
         cParams,
-        ZSTD_defaultCMem,
+        ZSTD_customMem::default(),
     );
     if !cdict.is_null() {
         (*cdict).compressionLevel = if compressionLevel == 0 {
@@ -8859,7 +8859,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_byReference(
         ZSTD_dlm_byRef,
         ZSTD_dct_auto,
         cParams,
-        ZSTD_defaultCMem,
+        ZSTD_customMem::default(),
     );
     if !cdict.is_null() {
         (*cdict).compressionLevel = if compressionLevel == 0 {
@@ -9225,7 +9225,7 @@ pub unsafe extern "C" fn ZSTD_compress_usingCDict(
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCStream))]
 pub unsafe extern "C" fn ZSTD_createCStream() -> *mut ZSTD_CStream {
-    ZSTD_createCStream_advanced(ZSTD_defaultCMem)
+    ZSTD_createCStream_advanced(ZSTD_customMem::default())
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticCStream))]
 pub unsafe extern "C" fn ZSTD_initStaticCStream(

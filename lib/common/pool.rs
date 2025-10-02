@@ -5,7 +5,7 @@ use std::thread::JoinHandle;
 use libc::size_t;
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
-use crate::lib::zstd::{ZSTD_customMem, ZSTD_defaultCMem};
+use crate::lib::zstd::ZSTD_customMem;
 
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn ZSTD_createThreadPool(numThreads: size_t) -> *mut ZSTD_
     POOL_create(numThreads, 0)
 }
 pub unsafe fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx {
-    POOL_create_advanced(numThreads, queueSize, ZSTD_defaultCMem)
+    POOL_create_advanced(numThreads, queueSize, ZSTD_customMem::default())
 }
 pub(crate) unsafe fn POOL_create_advanced(
     numThreads: size_t,

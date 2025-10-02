@@ -986,7 +986,7 @@ unsafe fn ZDICT_analyzeEntropy(
             ZSTD_dlm_byRef,
             ZSTD_dct_rawContent,
             params.cParams,
-            ZSTD_defaultCMem,
+            ZSTD_customMem::default(),
         );
         esr.zc = ZSTD_createCCtx();
         esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as size_t);
