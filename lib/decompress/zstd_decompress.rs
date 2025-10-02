@@ -711,7 +711,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
 }
 
 unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
-    if (customMem.customAlloc).is_none() ^ (customMem.customFree).is_none() {
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
         return core::ptr::null_mut();
     }
 

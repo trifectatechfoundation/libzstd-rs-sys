@@ -1604,10 +1604,7 @@ unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
         return core::ptr::null_mut();
     }
     let cctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_CCtx>(), customMem) as *mut ZSTD_CCtx;
@@ -1954,10 +1951,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
 }
 unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
     let mut params = core::ptr::null_mut::<ZSTD_CCtx_params>();
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
         return core::ptr::null_mut();
     }
     params = ZSTD_customCalloc(::core::mem::size_of::<ZSTD_CCtx_params>(), customMem)
@@ -8639,10 +8633,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     enableDedicatedDictSearch: core::ffi::c_int,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
         return core::ptr::null_mut();
     }
     let workspaceSize = (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>()))
@@ -8790,10 +8781,7 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         strategy: 0,
     };
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
-    if (customMem.customAlloc).is_none() as core::ffi::c_int
-        ^ (customMem.customFree).is_none() as core::ffi::c_int
-        != 0
-    {
+    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
         return core::ptr::null_mut();
     }
     if cctxParams.enableDedicatedDictSearch != 0 {

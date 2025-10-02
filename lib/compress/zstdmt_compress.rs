@@ -1151,10 +1151,7 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
             256
         }) as core::ffi::c_uint
     };
-    if (cMem.customAlloc).is_some() as core::ffi::c_int
-        ^ (cMem.customFree).is_some() as core::ffi::c_int
-        != 0
-    {
+    if cMem.customAlloc.is_some() ^ cMem.customFree.is_some() {
         return core::ptr::null_mut();
     }
     mtctx = ZSTD_customCalloc(::core::mem::size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
