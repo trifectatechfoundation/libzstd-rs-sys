@@ -1604,9 +1604,6 @@ unsafe fn ZSTD_initCCtx(cctx: *mut ZSTD_CCtx, memManager: ZSTD_customMem) {
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createCCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createCCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx {
-    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
-        return core::ptr::null_mut();
-    }
     let cctx = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_CCtx>(), customMem) as *mut ZSTD_CCtx;
     if cctx.is_null() {
         return core::ptr::null_mut();
@@ -1950,11 +1947,7 @@ unsafe fn ZSTD_makeCCtxParamsFromCParams(cParams: ZSTD_compressionParameters) ->
     cctxParams
 }
 unsafe fn ZSTD_createCCtxParams_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_CCtx_params {
-    let mut params = core::ptr::null_mut::<ZSTD_CCtx_params>();
-    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
-        return core::ptr::null_mut();
-    }
-    params = ZSTD_customCalloc(::core::mem::size_of::<ZSTD_CCtx_params>(), customMem)
+    let params = ZSTD_customCalloc(::core::mem::size_of::<ZSTD_CCtx_params>(), customMem)
         as *mut ZSTD_CCtx_params;
     if params.is_null() {
         return core::ptr::null_mut();
@@ -8633,9 +8626,6 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     enableDedicatedDictSearch: core::ffi::c_int,
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
-    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
-        return core::ptr::null_mut();
-    }
     let workspaceSize = (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>()))
         .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
         .wrapping_add(ZSTD_sizeof_matchState(
@@ -8644,18 +8634,14 @@ unsafe fn ZSTD_createCDict_advanced_internal(
             enableDedicatedDictSearch,
             0,
         ))
-        .wrapping_add(
-            if dictLoadMethod as core::ffi::c_uint
-                == ZSTD_dlm_byRef as core::ffi::c_int as core::ffi::c_uint
-            {
-                0
-            } else {
-                ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
-                    dictSize,
-                    ::core::mem::size_of::<*mut core::ffi::c_void>(),
-                ))
-            },
-        );
+        .wrapping_add(if dictLoadMethod == ZSTD_dlm_byRef {
+            0
+        } else {
+            ZSTD_cwksp_alloc_size(ZSTD_cwksp_align(
+                dictSize,
+                ::core::mem::size_of::<*mut core::ffi::c_void>(),
+            ))
+        });
     let workspace = ZSTD_customMalloc(workspaceSize, customMem);
     let mut ws = ZSTD_cwksp {
         workspace: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -8670,13 +8656,12 @@ unsafe fn ZSTD_createCDict_advanced_internal(
         phase: ZSTD_cwksp_alloc_objects,
         isStatic: ZSTD_cwksp_dynamic_alloc,
     };
-    let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
     if workspace.is_null() {
         ZSTD_customFree(workspace, customMem);
         return core::ptr::null_mut();
     }
     ZSTD_cwksp_init(&mut ws, workspace, workspaceSize, ZSTD_cwksp_dynamic_alloc);
-    cdict =
+    let cdict =
         ZSTD_cwksp_reserve_object(&mut ws, ::core::mem::size_of::<ZSTD_CDict>()) as *mut ZSTD_CDict;
     ZSTD_cwksp_move(&mut (*cdict).workspace, &mut ws);
     (*cdict).customMem = customMem;
@@ -8781,9 +8766,6 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced2(
         strategy: 0,
     };
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
-    if customMem.customAlloc.is_none() ^ customMem.customFree.is_none() {
-        return core::ptr::null_mut();
-    }
     if cctxParams.enableDedicatedDictSearch != 0 {
         cParams = ZSTD_dedicatedDictSearch_getCParams(cctxParams.compressionLevel, dictSize);
         ZSTD_overrideCParams(&mut cParams, &cctxParams.cParams);
