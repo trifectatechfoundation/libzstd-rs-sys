@@ -24,6 +24,10 @@ crate-type = ["staticlib", "rlib"]
 name = "programs"
 path = "programs/main.rs"
 
+[profile.relwithdebinfo]
+inherits = "release"
+debug = true
+
 [dependencies]
 libc = "0.2"
 
@@ -37,7 +41,6 @@ zstd-sys = { version = "2.0.15", features = ["experimental"] }
 [dev-dependencies.xxhash-rust]
 version = "0.8.15"
 features = ["xxh64", "xxh32"]
-
 
 [features]
 export-symbols = [] # whether the zlib api symbols are publicly exported
