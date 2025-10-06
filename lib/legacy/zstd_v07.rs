@@ -835,6 +835,7 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
     DTable.description = dtd;
     let dt = DTable.as_x2_mut();
     let mut nextRankStart = 0u32;
+    #[allow(clippy::needless_range_loop)]
     for n in 1..tableLog as usize + 1 {
         let current = nextRankStart;
         nextRankStart += rankVal[n] << (n - 1);
