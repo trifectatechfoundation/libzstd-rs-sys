@@ -263,6 +263,9 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     dictLoadMethod: ZSTD_dictLoadMethod_e,
     dictContentType: ZSTD_dictContentType_e,
 ) -> *const ZSTD_DDict {
+    debug_assert!(!sBuffer.is_null());
+    debug_assert!(!dict.is_null());
+
     if sBuffer as usize & 0b111 != 0 {
         return core::ptr::null_mut();
     }
