@@ -1069,7 +1069,7 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t
     *ip = (*ip).add(8);
     *op = (*op).add(8);
 
-    assert!(unsafe { (*op).offset_from(*ip) } >= 8);
+    debug_assert!(unsafe { (*op).offset_from(*ip) } >= 8);
 }
 
 /// Specialized version of memcpy() that is allowed to READ up to WILDCOPY_OVERLENGTH past the input buffer
