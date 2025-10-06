@@ -1234,7 +1234,7 @@ unsafe fn ZSTD_execSequenceEnd(
     sequenceLength
 }
 
-/// This version is intended to be used during instances where the litBuffer is still split.  
+/// This version is intended to be used during instances where the litBuffer is still split.
 /// It is kept separate to avoid performance impact for the good case.
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEndSplitLitBuffer(

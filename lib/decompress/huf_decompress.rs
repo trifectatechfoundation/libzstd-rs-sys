@@ -2032,11 +2032,21 @@ pub struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
+    pub(crate) fn from_slice(slice: &'a mut [u8]) -> Self {
+        let len = slice.len();
+        let ptr = NonNull::new(slice.as_mut_ptr()).unwrap();
+        Self {
+            ptr: Some(ptr),
+            end: unsafe { ptr.as_ptr().add(len) },
+            _marker: core::marker::PhantomData,
+        }
+    }
+
     /// # Safety
     ///
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
-    pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
+    pub(crate) unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
         let ptr = NonNull::new(ptr);
 
         if ptr.is_none() {
@@ -2186,7 +2196,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    fn write_u8(&mut self, byte: u8) {
+    pub(crate) fn write_u8(&mut self, byte: u8) {
         let Some(ptr) = self.ptr else {
             panic!("write out of bounds");
         };
