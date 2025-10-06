@@ -950,10 +950,10 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     let opStart2 = ostart.add(segmentSize);
     let opStart3 = opStart2.add(segmentSize);
     let opStart4 = opStart3.add(segmentSize);
-    let mut op1 = ostart;
-    let mut op2 = opStart2;
-    let mut op3 = opStart3;
-    let mut op4 = opStart4;
+    let mut op1 = Writer::from_range(ostart, opStart2);
+    let mut op2 = Writer::from_range(opStart2, opStart3);
+    let mut op3 = Writer::from_range(opStart3, opStart4);
+    let mut op4 = Writer::from_range(opStart4, oend);
     let dtLog = DTable.description.tableLog as u32;
     if length4 > cSrc.len() {
         return Err(Error::corruption_detected);
@@ -967,97 +967,43 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     endSignal &= bitD2.reload() == StreamStatus::Unfinished;
     endSignal &= bitD3.reload() == StreamStatus::Unfinished;
     endSignal &= bitD4.reload() == StreamStatus::Unfinished;
-    while endSignal && op4 < oend.sub(7) {
+    while endSignal
+        && op1.capacity() >= 8
+        && op2.capacity() >= 8
+        && op3.capacity() >= 8
+        && op4.capacity() >= 8
+    {
         if MEM_64bits() {
-            let fresh18 = op1;
-            op1 = op1.add(1);
-            *fresh18 = HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog);
-        }
-        if MEM_64bits() {
-            let fresh19 = op2;
-            op2 = op2.add(1);
-            *fresh19 = HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog);
-        }
-        if MEM_64bits() {
-            let fresh20 = op3;
-            op3 = op3.add(1);
-            *fresh20 = HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog);
-        }
-        if MEM_64bits() {
-            let fresh21 = op4;
-            op4 = op4.add(1);
-            *fresh21 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
+            op1.write_u8(HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog));
+            op2.write_u8(HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog));
+            op3.write_u8(HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog));
+            op4.write_u8(HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog));
         }
         if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            let fresh22 = op1;
-            op1 = op1.add(1);
-            *fresh22 = HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            let fresh23 = op2;
-            op2 = op2.add(1);
-            *fresh23 = HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            let fresh24 = op3;
-            op3 = op3.add(1);
-            *fresh24 = HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            let fresh25 = op4;
-            op4 = op4.add(1);
-            *fresh25 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
+            op1.write_u8(HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog));
+            op2.write_u8(HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog));
+            op3.write_u8(HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog));
+            op4.write_u8(HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog));
         }
         if MEM_64bits() {
-            let fresh26 = op1;
-            op1 = op1.add(1);
-            *fresh26 = HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog);
+            op1.write_u8(HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog));
+            op2.write_u8(HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog));
+            op3.write_u8(HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog));
+            op4.write_u8(HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog));
         }
-        if MEM_64bits() {
-            let fresh27 = op2;
-            op2 = op2.add(1);
-            *fresh27 = HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog);
-        }
-        if MEM_64bits() {
-            let fresh28 = op3;
-            op3 = op3.add(1);
-            *fresh28 = HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog);
-        }
-        if MEM_64bits() {
-            let fresh29 = op4;
-            op4 = op4.add(1);
-            *fresh29 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
-        }
-        let fresh30 = op1;
-        op1 = op1.add(1);
-        *fresh30 = HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog);
-        let fresh31 = op2;
-        op2 = op2.add(1);
-        *fresh31 = HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog);
-        let fresh32 = op3;
-        op3 = op3.add(1);
-        *fresh32 = HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog);
-        let fresh33 = op4;
-        op4 = op4.add(1);
-        *fresh33 = HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog);
+        op1.write_u8(HUFv07_decodeSymbolX2(&mut bitD1, dt, dtLog));
+        op2.write_u8(HUFv07_decodeSymbolX2(&mut bitD2, dt, dtLog));
+        op3.write_u8(HUFv07_decodeSymbolX2(&mut bitD3, dt, dtLog));
+        op4.write_u8(HUFv07_decodeSymbolX2(&mut bitD4, dt, dtLog));
         endSignal &= bitD1.reload() == StreamStatus::Unfinished;
         endSignal &= bitD2.reload() == StreamStatus::Unfinished;
         endSignal &= bitD3.reload() == StreamStatus::Unfinished;
         endSignal &= bitD4.reload() == StreamStatus::Unfinished;
     }
-    if op1 > opStart2 {
-        return Err(Error::corruption_detected);
-    }
-    if op2 > opStart3 {
-        return Err(Error::corruption_detected);
-    }
-    if op3 > opStart4 {
-        return Err(Error::corruption_detected);
-    }
-    HUFv07_decodeStreamX2(Writer::from_range(op1, opStart2), &mut bitD1, dt, dtLog);
-    HUFv07_decodeStreamX2(Writer::from_range(op2, opStart3), &mut bitD2, dt, dtLog);
-    HUFv07_decodeStreamX2(Writer::from_range(op3, opStart4), &mut bitD3, dt, dtLog);
-    HUFv07_decodeStreamX2(Writer::from_range(op4, oend), &mut bitD4, dt, dtLog);
+    HUFv07_decodeStreamX2(op1, &mut bitD1, dt, dtLog);
+    HUFv07_decodeStreamX2(op2, &mut bitD2, dt, dtLog);
+    HUFv07_decodeStreamX2(op3, &mut bitD3, dt, dtLog);
+    HUFv07_decodeStreamX2(op4, &mut bitD4, dt, dtLog);
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return Err(Error::corruption_detected);
     }
@@ -1408,8 +1354,7 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     let mut op2 = Writer::from_range(opStart2, opStart3);
     let mut op3 = Writer::from_range(opStart3, opStart3);
     let mut op4 = Writer::from_range(opStart4, oend);
-    let dtd = DTable.description;
-    let dtLog = dtd.tableLog as u32;
+    let dtLog = DTable.description.tableLog as u32;
     if length4 > cSrc.len() {
         return Err(Error::corruption_detected);
     }
