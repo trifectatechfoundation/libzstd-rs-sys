@@ -813,7 +813,7 @@ fn FSEv07_decompress(dst: Writer<'_>, cSrc: &[u8]) -> Result<usize, Error> {
     FSEv07_buildDTable(&mut dt, &counting, maxSymbolValue, tableLog)?;
     FSEv07_decompress_usingDTable(dst, ip, &dt)
 }
-unsafe fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
+fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
     let mut huffWeight: [u8; HUFv07_SYMBOLVALUE_MAX + 1] = [0; HUFv07_SYMBOLVALUE_MAX + 1];
     let mut rankVal: [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1] = [0; HUFv07_TABLELOG_ABSOLUTEMAX + 1];
     let mut tableLog = 0;
@@ -834,33 +834,25 @@ unsafe fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<
     dtd.tableLog = tableLog as u8;
     DTable.description = dtd;
     let dt = DTable.as_x2_mut();
-    let mut n: u32 = 0;
     let mut nextRankStart = 0u32;
-    n = 1;
-    while n < tableLog.wrapping_add(1) {
+    for n in 1..tableLog as usize + 1 {
         let current = nextRankStart;
-        nextRankStart = nextRankStart
-            .wrapping_add(*rankVal.as_mut_ptr().offset(n as isize) << n.wrapping_sub(1));
-        *rankVal.as_mut_ptr().offset(n as isize) = current;
-        n = n.wrapping_add(1);
+        nextRankStart += rankVal[n] << (n - 1);
+        rankVal[n] = current;
     }
-    let mut n_0: u32 = 0;
-    n_0 = 0;
-    while n_0 < nbSymbols {
-        let w = *huffWeight.as_mut_ptr().offset(n_0 as isize) as u32;
-        let length = ((1) << w >> 1) as u32;
-        let mut i: u32 = 0;
-        let mut D = HUFv07_DEltX2 { byte: 0, nbBits: 0 };
-        D.byte = n_0 as u8;
-        D.nbBits = tableLog.wrapping_add(1).wrapping_sub(w) as u8;
-        i = *rankVal.as_mut_ptr().offset(w as isize);
-        while i < (*rankVal.as_mut_ptr().offset(w as isize)).wrapping_add(length) {
+    for n in 0..nbSymbols {
+        let w = huffWeight[n as usize];
+        let length = (1 << w >> 1) as u32;
+        let D = HUFv07_DEltX2 {
+            byte: n as u8,
+            nbBits: tableLog.wrapping_add(1).wrapping_sub(w as u32) as u8,
+        };
+        let mut i = rankVal[usize::from(w)];
+        while i < (rankVal[usize::from(w)]).wrapping_add(length) {
             dt[i as usize] = D;
-            i = i.wrapping_add(1);
+            i += 1;
         }
-        let fresh11 = &mut (*rankVal.as_mut_ptr().offset(w as isize));
-        *fresh11 = (*fresh11).wrapping_add(length);
-        n_0 = n_0.wrapping_add(1);
+        rankVal[usize::from(w)] += length;
     }
     Ok(iSize)
 }
@@ -922,13 +914,11 @@ fn HUFv07_decompress1X2_DCtx(
     dst: Writer<'_>,
     cSrc: &[u8],
 ) -> Result<(), Error> {
-    let mut ip = cSrc;
-    let hSize = unsafe { HUFv07_readDTableX2(DCtx, ip)? };
+    let hSize = HUFv07_readDTableX2(DCtx, cSrc)?;
     if hSize >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    ip = &ip[hSize..];
-    HUFv07_decompress1X2_usingDTable_internal(dst, ip, DCtx)
+    HUFv07_decompress1X2_usingDTable_internal(dst, &cSrc[hSize..], DCtx)
 }
 unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     mut dst: Writer<'_>,
@@ -1078,13 +1068,11 @@ fn HUFv07_decompress4X2_DCtx(
     dst: Writer<'_>,
     cSrc: &[u8],
 ) -> Result<usize, Error> {
-    let mut ip = cSrc;
-    let hSize = unsafe { HUFv07_readDTableX2(dctx, ip)? };
+    let hSize = HUFv07_readDTableX2(dctx, cSrc)?;
     if hSize >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    ip = &ip[hSize..];
-    unsafe { HUFv07_decompress4X2_usingDTable_internal(dst, ip, dctx) }
+    unsafe { HUFv07_decompress4X2_usingDTable_internal(dst, &cSrc[hSize..], dctx) }
 }
 unsafe fn HUFv07_fillDTableX4Level2(
     DTable: &mut [HUFv07_DEltX4],
