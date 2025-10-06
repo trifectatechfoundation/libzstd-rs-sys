@@ -80,7 +80,7 @@ fn FSE_readNCount_body(
             bitCount += 2 * repeats as i32;
 
             /* Add the final repeat which isn't 0b11. */
-            assert!((bitStream & 0b11) < 3);
+            debug_assert!((bitStream & 0b11) < 3);
             charnum = charnum.wrapping_add(bitStream & 0b11);
             bitCount += 2;
 

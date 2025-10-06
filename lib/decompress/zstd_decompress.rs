@@ -1393,7 +1393,7 @@ fn decompression_margin(mut src: &[u8]) -> size_t {
             margin += 3 * frameSizeInfo.nbBlocks;
             maxBlockSize = Ord::max(maxBlockSize, zfh.blockSizeMax)
         } else {
-            assert!(zfh.frameType == ZSTD_skippableFrame);
+            debug_assert!(zfh.frameType == ZSTD_skippableFrame);
             /* Add the entire skippable frame size to our margin. */
             margin += compressedSize;
         }
@@ -3082,7 +3082,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         .wrapping_sub(zds.lhSize)
                         .wrapping_add(ZSTD_blockHeaderSize);
                 }
-                assert!(!ip.is_null());
+                debug_assert!(!ip.is_null());
                 core::ptr::copy_nonoverlapping(
                     ip.cast::<u8>(),
                     zds.headerBuffer.as_mut_ptr().add(zds.lhSize),
@@ -3117,7 +3117,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         if ERR_isError(decompressedSize) {
                             return decompressedSize;
                         }
-                        assert!(!istart.is_null());
+                        debug_assert!(!istart.is_null());
                         ip = istart.add(cSize);
                         op = if !op.is_null() {
                             op.add(decompressedSize)
@@ -3199,7 +3199,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     let bufferSize = neededInBuffSize.wrapping_add(neededOutBuffSize);
                     if zds.staticSize != 0 {
                         // static DCtx
-                        assert!(zds.staticSize >= size_of::<ZSTD_DCtx>()); // controlled at init
+                        debug_assert!(zds.staticSize >= size_of::<ZSTD_DCtx>()); // controlled at init
                         if bufferSize > zds.staticSize - size_of::<ZSTD_DCtx>() {
                             return Error::dictionary_corrupted.to_error_code();
                         }
@@ -3242,7 +3242,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 if ERR_isError(err_code_4) {
                     return err_code_4;
                 }
-                assert!(!ip.is_null());
+                debug_assert!(!ip.is_null());
                 ip = ip.add(neededInSize);
                 // Function modifies the stage so we must break
                 continue;
@@ -3358,7 +3358,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     nextSrcSizeHint = nextSrcSizeHint.wrapping_add(
         ZSTD_blockHeaderSize * (zds.stage.to_next_input_type() == NextInputType::Block) as size_t,
     );
-    assert!(zds.inPos <= nextSrcSizeHint);
+    debug_assert!(zds.inPos <= nextSrcSizeHint);
     // part already loaded
     nextSrcSizeHint = nextSrcSizeHint.wrapping_sub(zds.inPos);
     nextSrcSizeHint

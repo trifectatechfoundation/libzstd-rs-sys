@@ -623,15 +623,15 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
     let mut ip = args.ip;
     let mut op = args.op;
 
-    assert!(cfg!(target_endian = "little"));
-    assert!(cfg!(target_pointer_width = "64"));
+    debug_assert!(cfg!(target_endian = "little"));
+    debug_assert!(cfg!(target_pointer_width = "64"));
 
     'out: loop {
         /* Assert loop preconditions */
         if cfg!(debug_assertions) {
             for stream in 0..4 {
-                assert!(op[stream] <= (if stream == 3 { oend } else { op[stream + 1] }));
-                assert!(ip[stream] >= ilowest);
+                debug_assert!(op[stream] <= (if stream == 3 { oend } else { op[stream + 1] }));
+                debug_assert!(ip[stream] >= ilowest);
             }
         }
 
@@ -664,7 +664,7 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
 
         if cfg!(debug_assertions) {
             for stream in 1..4 {
-                assert!(ip[stream] >= ip[stream - 1]);
+                debug_assert!(ip[stream] >= ip[stream - 1]);
             }
         }
 
@@ -734,19 +734,19 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
         Err(e) => return e.to_error_code(),
     };
 
-    assert!(args.ip[0] >= args.ilowest);
+    debug_assert!(args.ip[0] >= args.ilowest);
     loopFn(&mut args);
 
     // Our loop guarantees that ip[] >= ilowest and that we haven't overwritten any op[].
     let istart = src.as_ptr();
-    assert!(args.ip[0] >= istart);
-    assert!(args.ip[1] >= istart);
-    assert!(args.ip[2] >= istart);
-    assert!(args.ip[3] >= istart);
-    assert!(args.op[3] <= oend);
+    debug_assert!(args.ip[0] >= istart);
+    debug_assert!(args.ip[1] >= istart);
+    debug_assert!(args.ip[2] >= istart);
+    debug_assert!(args.ip[3] >= istart);
+    debug_assert!(args.op[3] <= oend);
 
-    assert_eq!(istart, args.ilowest);
-    assert_eq!(istart.wrapping_add(6), args.iend[0]);
+    debug_assert_eq!(istart, args.ilowest);
+    debug_assert_eq!(istart.wrapping_add(6), args.iend[0]);
 
     let segmentSize = dst.capacity().div_ceil(4);
     let mut segmentEnd = dst.as_mut_ptr_range().start;
@@ -1439,8 +1439,8 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
         /* Assert loop preconditions */
         if cfg!(debug_assertions) {
             for stream in 0..4 {
-                assert!(op[stream] <= oend[stream]);
-                assert!(ip[stream] >= ilowest);
+                debug_assert!(op[stream] <= oend[stream]);
+                debug_assert!(ip[stream] >= ilowest);
             }
         }
 
@@ -1489,7 +1489,7 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
         }
 
         for stream in 1..4 {
-            assert!(ip[stream] >= ip[stream - 1]);
+            debug_assert!(ip[stream] >= ip[stream - 1]);
         }
 
         macro_rules! HUF_4X2_DECODE_SYMBOL {
@@ -1568,19 +1568,19 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
         Err(e) => return e.to_error_code(),
     };
 
-    assert!(args.ip[0] >= args.ilowest);
+    debug_assert!(args.ip[0] >= args.ilowest);
     loopFn(&mut args);
 
     // note : op4 already verified within main loop.
     let ilowest = src.as_ptr();
-    assert!(args.ip[0] >= ilowest);
-    assert!(args.ip[1] >= ilowest);
-    assert!(args.ip[2] >= ilowest);
-    assert!(args.ip[3] >= ilowest);
-    assert!(args.op[3] <= oend);
+    debug_assert!(args.ip[0] >= ilowest);
+    debug_assert!(args.ip[1] >= ilowest);
+    debug_assert!(args.ip[2] >= ilowest);
+    debug_assert!(args.ip[3] >= ilowest);
+    debug_assert!(args.op[3] <= oend);
 
-    assert_eq!(ilowest, args.ilowest);
-    assert_eq!(ilowest.add(6), args.iend[0]);
+    debug_assert_eq!(ilowest, args.ilowest);
+    debug_assert_eq!(ilowest.add(6), args.iend[0]);
 
     let segmentSize = dst.capacity().div_ceil(4) as isize;
     let mut segmentEnd = dst.as_mut_ptr();
@@ -2177,10 +2177,10 @@ impl<'a> Writer<'a> {
                 return None;
             }
 
-            assert!(w1.end <= range.end);
-            assert!(w2.end <= range.end);
-            assert!(w3.end <= range.end);
-            assert!(w4.end <= range.end);
+            debug_assert!(w1.end <= range.end);
+            debug_assert!(w2.end <= range.end);
+            debug_assert!(w3.end <= range.end);
+            debug_assert!(w4.end <= range.end);
 
             Some((w1, w2, w3, w4))
         }
