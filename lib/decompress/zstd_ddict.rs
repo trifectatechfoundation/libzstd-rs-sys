@@ -137,7 +137,7 @@ fn ZSTD_loadEntropy_intoDDict(
             return Err(Error::dictionary_corrupted);
         }
 
-        return Ok(());
+        return Ok(()); // pure content mode
     };
 
     let magic = u32::from_le_bytes(*magic);
@@ -146,7 +146,7 @@ fn ZSTD_loadEntropy_intoDDict(
             return Err(Error::dictionary_corrupted);
         }
 
-        return Ok(());
+        return Ok(()); // pure content mode
     }
 
     ddict.dictID = u32::from_le_bytes(*dict_id);
@@ -191,7 +191,7 @@ fn ZSTD_initDDict_internal(
     }
 
     ddict.dictSize = dictSize;
-    ddict.entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001);
+    ddict.entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001); // cover both little and big endian
 
     ZSTD_loadEntropy_intoDDict(ddict, dictContentType)?;
 
@@ -228,6 +228,10 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
 
     ddict
 }
+
+/// Create a digested dictionary, to start decompression without startup delay.
+///
+/// `dict` content is copied inside the [`ZSTD_DDict`], so `dict` can be released after [`ZSTD_DDict`] creation
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict))]
 pub unsafe extern "C" fn ZSTD_createDDict(
     dict: *const core::ffi::c_void,
@@ -241,6 +245,11 @@ pub unsafe extern "C" fn ZSTD_createDDict(
         ZSTD_customMem::default(),
     )
 }
+
+/// Create a digested dictionary, to start decompression without startup delay.
+///
+/// Dictionary content is simply referenced, it will be accessed during decompression.
+/// `dictBuffer` must outlive [`ZSTD_DDict`] ([`ZSTD_DDict`] must be freed before `dictBuffer`)
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict_byReference))]
 pub unsafe extern "C" fn ZSTD_createDDict_byReference(
     dictBuffer: *const core::ffi::c_void,
@@ -254,6 +263,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_byReference(
         ZSTD_customMem::default(),
     )
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDDict))]
 pub unsafe extern "C" fn ZSTD_initStaticDDict(
     sBuffer: *mut core::ffi::c_void,
@@ -266,6 +276,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     debug_assert!(!sBuffer.is_null());
     debug_assert!(!dict.is_null());
 
+    // sBuffer should be 8-aligned
     if sBuffer as usize & 0b111 != 0 {
         return core::ptr::null_mut();
     }
@@ -276,7 +287,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
 
     let ddict = sBuffer as *mut ZSTD_DDict;
     if dictLoadMethod == DictLoadMethod::ByCopy as ZSTD_dictLoadMethod_e {
-        core::ptr::copy_nonoverlapping(dict.cast::<u8>(), ddict.add(1).cast::<u8>(), dictSize);
+        core::ptr::copy_nonoverlapping(dict.cast::<u8>(), ddict.add(1).cast::<u8>(), dictSize); // local copy
         dict = ddict.add(1) as *const core::ffi::c_void;
     }
 
@@ -294,6 +305,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
 
     ddict
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDDict))]
 pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
     if ddict.is_null() {
@@ -309,6 +321,9 @@ pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
     0
 }
 
+/// Estimate amount of memory that will be needed to create a dictionary for decompression.
+///
+/// Note: dictionary created by reference using [`ZSTD_dlm_byRef`] are smaller
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDDictSize))]
 pub const extern "C" fn ZSTD_estimateDDictSize(
     dict_size: size_t,
@@ -332,6 +347,11 @@ pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {
         0
     })
 }
+
+/// Provides the `dictID` of the dictionary loaded into [`ZSTD_DDict`].
+///
+/// If it returns 0, the dictionary is not conformant to Zstandard specification, or empty.
+/// Non-conformant dictionaries can still be loaded, but as content-only dictionaries.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDictID_fromDDict))]
 pub unsafe extern "C" fn ZSTD_getDictID_fromDDict(ddict: *const ZSTD_DDict) -> core::ffi::c_uint {
     if ddict.is_null() {
