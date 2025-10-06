@@ -2063,6 +2063,17 @@ impl<'a> Writer<'a> {
         }
     }
 
+    /// # Safety
+    ///
+    /// - `start..end` must point to readable and writable bytes
+    pub(crate) unsafe fn from_range(start: *mut u8, end: *mut u8) -> Self {
+        Self {
+            ptr: Some(NonNull::new(start).unwrap()),
+            end,
+            _marker: core::marker::PhantomData,
+        }
+    }
+
     #[inline]
     pub fn capacity(&self) -> usize {
         match self.ptr {

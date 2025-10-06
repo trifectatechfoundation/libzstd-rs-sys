@@ -4,9 +4,7 @@ use std::marker::PhantomData;
 use libc::{free, malloc};
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST, MEM_writeLE16,
-};
+use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
 };
@@ -142,10 +140,15 @@ impl HUFv07_DTable {
         unsafe { core::mem::transmute(&mut self.data) }
     }
 }
+
+#[derive(Copy, Clone, Default)]
+#[repr(transparent)]
+struct LE16([u8; 2]);
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct HUFv07_DEltX4 {
-    sequence: u16,
+    sequence: LE16,
     nbBits: u8,
     length: u8,
 }
@@ -872,59 +875,43 @@ fn HUFv07_decodeSymbolX2(
     c
 }
 #[inline]
-unsafe fn HUFv07_decodeStreamX2(
-    mut p: *mut u8,
+fn HUFv07_decodeStreamX2(
+    mut dst: Writer<'_>,
     bitDPtr: &mut BITv07_DStream_t,
-    pEnd: *mut u8,
     dt: &[HUFv07_DEltX2; 4096],
     dtLog: u32,
 ) -> usize {
-    let pStart = p;
-    while bitDPtr.reload() == StreamStatus::Unfinished && p <= pEnd.sub(4) {
+    let dst_capacity = dst.capacity();
+    while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 4 {
         if MEM_64bits() {
-            let fresh12 = p;
-            p = p.add(1);
-            *fresh12 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+            dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
         }
         if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            let fresh13 = p;
-            p = p.add(1);
-            *fresh13 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+            dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
         }
         if MEM_64bits() {
-            let fresh14 = p;
-            p = p.add(1);
-            *fresh14 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+            dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
         }
-        let fresh15 = p;
-        p = p.add(1);
-        *fresh15 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+        dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
     }
-    while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd {
-        let fresh16 = p;
-        p = p.add(1);
-        *fresh16 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+    while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 1 {
+        dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
     }
-    while p < pEnd {
-        let fresh17 = p;
-        p = p.add(1);
-        *fresh17 = HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog);
+    while dst.capacity() >= 1 {
+        dst.write_u8(HUFv07_decodeSymbolX2(bitDPtr, dt, dtLog));
     }
-    pEnd.offset_from(pStart) as usize
+    dst_capacity - dst.capacity()
 }
 fn HUFv07_decompress1X2_usingDTable_internal(
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     cSrc: &[u8],
     DTable: &HUFv07_DTable,
 ) -> Result<(), Error> {
-    let dstSize = dst.capacity();
-    let op = dst.as_mut_ptr();
-    let oend = unsafe { op.add(dstSize) };
     let dt = DTable.as_x2();
     let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
-    unsafe { HUFv07_decodeStreamX2(op, &mut bitD, oend, dt, dtLog) };
+    HUFv07_decodeStreamX2(dst, &mut bitD, dt, dtLog);
     if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
@@ -1077,10 +1064,10 @@ unsafe fn HUFv07_decompress4X2_usingDTable_internal(
     if op3 > opStart4 {
         return Err(Error::corruption_detected);
     }
-    HUFv07_decodeStreamX2(op1, &mut bitD1, opStart2, dt, dtLog);
-    HUFv07_decodeStreamX2(op2, &mut bitD2, opStart3, dt, dtLog);
-    HUFv07_decodeStreamX2(op3, &mut bitD3, opStart4, dt, dtLog);
-    HUFv07_decodeStreamX2(op4, &mut bitD4, oend, dt, dtLog);
+    HUFv07_decodeStreamX2(Writer::from_range(op1, opStart2), &mut bitD1, dt, dtLog);
+    HUFv07_decodeStreamX2(Writer::from_range(op2, opStart3), &mut bitD2, dt, dtLog);
+    HUFv07_decodeStreamX2(Writer::from_range(op3, opStart4), &mut bitD3, dt, dtLog);
+    HUFv07_decodeStreamX2(Writer::from_range(op4, oend), &mut bitD4, dt, dtLog);
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return Err(Error::corruption_detected);
     }
@@ -1111,17 +1098,14 @@ unsafe fn HUFv07_fillDTableX4Level2(
     baseSeq: u16,
 ) {
     let mut DElt = HUFv07_DEltX4 {
-        sequence: 0,
+        sequence: LE16([0; 2]),
         nbBits: 0,
         length: 0,
     };
     let mut rankVal: [u32; 17] = ptr::read::<[u32; 17]>(rankValOrigin as *const [u32; 17]);
     if minWeight > 1 {
         let skipSize = *rankVal.as_mut_ptr().offset(minWeight as isize);
-        MEM_writeLE16(
-            &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-            baseSeq,
-        );
+        DElt.sequence = LE16(baseSeq.to_le_bytes());
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
         let mut i = 0;
@@ -1140,10 +1124,9 @@ unsafe fn HUFv07_fillDTableX4Level2(
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
         let mut i_0 = start;
         let end = start.wrapping_add(length);
-        MEM_writeLE16(
-            &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-            (baseSeq as u32).wrapping_add(symbol << 8) as u16,
-        );
+        DElt.sequence = LE16(u16::to_le_bytes(
+            (baseSeq as u32).wrapping_add(symbol << 8) as u16
+        ));
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
         loop {
@@ -1199,17 +1182,11 @@ unsafe fn HUFv07_fillDTableX4(
                 symbol,
             );
         } else {
-            let mut DElt = HUFv07_DEltX4 {
-                sequence: 0,
-                nbBits: 0,
-                length: 0,
+            let DElt = HUFv07_DEltX4 {
+                sequence: LE16(symbol.to_le_bytes()),
+                nbBits: nbBits as u8,
+                length: 1,
             };
-            MEM_writeLE16(
-                &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-                symbol,
-            );
-            DElt.nbBits = nbBits as u8;
-            DElt.length = 1;
             let end = start.wrapping_add(length);
             let mut u = start;
             while u < end {
@@ -1325,28 +1302,24 @@ unsafe fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<
     Ok(iSize)
 }
 unsafe fn HUFv07_decodeSymbolX4(
-    op: *mut core::ffi::c_void,
+    dst: &mut Writer<'_>,
     DStream: &mut BITv07_DStream_t,
     dt: &[HUFv07_DEltX4; 4096],
     dtLog: u32,
-) -> u32 {
+) {
     let val = DStream.look_bits_fast(dtLog);
-    ptr::copy_nonoverlapping(
-        &dt[val].sequence as *const _ as *const [u8; 2],
-        op as *mut [u8; 2],
-        1,
-    );
+    ptr::write(dst.as_mut_ptr() as *mut [u8; 2], dt[val].sequence.0);
     DStream.skip_bits(dt[val].nbBits as u32);
-    dt[val].length as u32
+    *dst = dst.subslice(usize::from(dt[val].length)..);
 }
 unsafe fn HUFv07_decodeLastSymbolX4(
-    op: *mut core::ffi::c_void,
+    dst: &mut Writer<'_>,
     DStream: &mut BITv07_DStream_t,
     dt: &[HUFv07_DEltX4],
     dtLog: u32,
-) -> u32 {
+) {
     let val = DStream.look_bits_fast(dtLog);
-    ptr::copy_nonoverlapping(&dt[val] as *const _ as *const u8, op as *mut u8, 1);
+    ptr::write(dst.as_mut_ptr(), dt[val].sequence.0[0]);
     if (dt[val]).length == 1 {
         DStream.skip_bits(dt[val].nbBits as u32);
     } else if DStream.bitsConsumed < usize::BITS {
@@ -1355,66 +1328,48 @@ unsafe fn HUFv07_decodeLastSymbolX4(
             DStream.bitsConsumed = usize::BITS;
         }
     }
-    1
+    *dst = dst.subslice(1..);
 }
 #[inline]
-unsafe fn HUFv07_decodeStreamX4(
-    mut p: *mut u8,
+fn HUFv07_decodeStreamX4(
+    mut dst: Writer<'_>,
     bitDPtr: &mut BITv07_DStream_t,
-    pEnd: *mut u8,
     dt: &[HUFv07_DEltX4; 4096],
     dtLog: u32,
 ) -> usize {
-    let pStart = p;
-    while bitDPtr.reload() == StreamStatus::Unfinished && p < pEnd.sub(7) {
+    let dst_capacity = dst.capacity();
+    while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 8 {
         if MEM_64bits() {
-            p = p.offset(
-                HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-            );
+            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
         }
         if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            p = p.offset(
-                HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-            );
+            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
         }
         if MEM_64bits() {
-            p = p.offset(
-                HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-            );
+            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
         }
-        p = p.offset(
-            HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-        );
+        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
     }
-    while bitDPtr.reload() == StreamStatus::Unfinished && p <= pEnd.sub(2) {
-        p = p.offset(
-            HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-        );
+    while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 2 {
+        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
     }
-    while p <= pEnd.sub(2) {
-        p = p.offset(
-            HUFv07_decodeSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-        );
+    while dst.capacity() >= 2 {
+        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
     }
-    if p < pEnd {
-        p = p.offset(
-            HUFv07_decodeLastSymbolX4(p as *mut core::ffi::c_void, bitDPtr, dt, dtLog) as isize,
-        );
+    if dst.capacity() > 0 {
+        unsafe { HUFv07_decodeLastSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
     }
-    p.offset_from(pStart) as usize
+    dst_capacity - dst.capacity()
 }
 fn HUFv07_decompress1X4_usingDTable_internal(
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     cSrc: &[u8],
     DTable: &HUFv07_DTable,
 ) -> Result<(), Error> {
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
-    let dstSize = dst.capacity();
-    let ostart = dst.as_mut_ptr();
-    let oend = unsafe { ostart.add(dstSize) };
     let dt = DTable.as_x4();
     let dtd = DTable.description;
-    unsafe { HUFv07_decodeStreamX4(ostart, &mut bitD, oend, dt, dtd.tableLog as u32) };
+    HUFv07_decodeStreamX4(dst, &mut bitD, dt, dtd.tableLog as u32);
     if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
@@ -1461,10 +1416,10 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     let opStart2 = ostart.add(segmentSize);
     let opStart3 = opStart2.add(segmentSize);
     let opStart4 = opStart3.add(segmentSize);
-    let mut op1 = ostart;
-    let mut op2 = opStart2;
-    let mut op3 = opStart3;
-    let mut op4 = opStart4;
+    let mut op1 = Writer::from_range(ostart, opStart2);
+    let mut op2 = Writer::from_range(opStart2, opStart3);
+    let mut op3 = Writer::from_range(opStart3, opStart3);
+    let mut op4 = Writer::from_range(opStart4, oend);
     let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
     if length4 > cSrc.len() {
@@ -1479,133 +1434,44 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     endSignal &= bitD2.reload() == StreamStatus::Unfinished;
     endSignal &= bitD3.reload() == StreamStatus::Unfinished;
     endSignal &= bitD4.reload() == StreamStatus::Unfinished;
-    while endSignal && op4 < oend.sub(7) {
+    while endSignal
+        && op1.capacity() >= 8
+        && op2.capacity() >= 8
+        && op3.capacity() >= 8
+        && op4.capacity() >= 8
+    {
         if MEM_64bits() {
-            op1 = op1.offset(HUFv07_decodeSymbolX4(
-                op1 as *mut core::ffi::c_void,
-                &mut bitD1,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() {
-            op2 = op2.offset(HUFv07_decodeSymbolX4(
-                op2 as *mut core::ffi::c_void,
-                &mut bitD2,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() {
-            op3 = op3.offset(HUFv07_decodeSymbolX4(
-                op3 as *mut core::ffi::c_void,
-                &mut bitD3,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() {
-            op4 = op4.offset(HUFv07_decodeSymbolX4(
-                op4 as *mut core::ffi::c_void,
-                &mut bitD4,
-                dt,
-                dtLog,
-            ) as isize);
+            HUFv07_decodeSymbolX4(&mut op1, &mut bitD1, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op2, &mut bitD2, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op3, &mut bitD3, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op4, &mut bitD4, dt, dtLog);
         }
         if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            op1 = op1.offset(HUFv07_decodeSymbolX4(
-                op1 as *mut core::ffi::c_void,
-                &mut bitD1,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            op2 = op2.offset(HUFv07_decodeSymbolX4(
-                op2 as *mut core::ffi::c_void,
-                &mut bitD2,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            op3 = op3.offset(HUFv07_decodeSymbolX4(
-                op3 as *mut core::ffi::c_void,
-                &mut bitD3,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            op4 = op4.offset(HUFv07_decodeSymbolX4(
-                op4 as *mut core::ffi::c_void,
-                &mut bitD4,
-                dt,
-                dtLog,
-            ) as isize);
+            HUFv07_decodeSymbolX4(&mut op1, &mut bitD1, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op2, &mut bitD2, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op3, &mut bitD3, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op4, &mut bitD4, dt, dtLog);
         }
         if MEM_64bits() {
-            op1 = op1.offset(HUFv07_decodeSymbolX4(
-                op1 as *mut core::ffi::c_void,
-                &mut bitD1,
-                dt,
-                dtLog,
-            ) as isize);
+            HUFv07_decodeSymbolX4(&mut op1, &mut bitD1, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op2, &mut bitD2, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op3, &mut bitD3, dt, dtLog);
+            HUFv07_decodeSymbolX4(&mut op4, &mut bitD4, dt, dtLog);
         }
-        if MEM_64bits() {
-            op2 = op2.offset(HUFv07_decodeSymbolX4(
-                op2 as *mut core::ffi::c_void,
-                &mut bitD2,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() {
-            op3 = op3.offset(HUFv07_decodeSymbolX4(
-                op3 as *mut core::ffi::c_void,
-                &mut bitD3,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        if MEM_64bits() {
-            op4 = op4.offset(HUFv07_decodeSymbolX4(
-                op4 as *mut core::ffi::c_void,
-                &mut bitD4,
-                dt,
-                dtLog,
-            ) as isize);
-        }
-        op1 = op1.offset(
-            HUFv07_decodeSymbolX4(op1 as *mut core::ffi::c_void, &mut bitD1, dt, dtLog) as isize,
-        );
-        op2 = op2.offset(
-            HUFv07_decodeSymbolX4(op2 as *mut core::ffi::c_void, &mut bitD2, dt, dtLog) as isize,
-        );
-        op3 = op3.offset(
-            HUFv07_decodeSymbolX4(op3 as *mut core::ffi::c_void, &mut bitD3, dt, dtLog) as isize,
-        );
-        op4 = op4.offset(
-            HUFv07_decodeSymbolX4(op4 as *mut core::ffi::c_void, &mut bitD4, dt, dtLog) as isize,
-        );
+
+        HUFv07_decodeSymbolX4(&mut op1, &mut bitD1, dt, dtLog);
+        HUFv07_decodeSymbolX4(&mut op2, &mut bitD2, dt, dtLog);
+        HUFv07_decodeSymbolX4(&mut op3, &mut bitD3, dt, dtLog);
+        HUFv07_decodeSymbolX4(&mut op4, &mut bitD4, dt, dtLog);
         endSignal &= bitD1.reload() == StreamStatus::Unfinished;
         endSignal &= bitD2.reload() == StreamStatus::Unfinished;
         endSignal &= bitD3.reload() == StreamStatus::Unfinished;
         endSignal &= bitD4.reload() == StreamStatus::Unfinished;
     }
-    if op1 > opStart2 {
-        return Err(Error::corruption_detected);
-    }
-    if op2 > opStart3 {
-        return Err(Error::corruption_detected);
-    }
-    if op3 > opStart4 {
-        return Err(Error::corruption_detected);
-    }
-    HUFv07_decodeStreamX4(op1, &mut bitD1, opStart2, dt, dtLog);
-    HUFv07_decodeStreamX4(op2, &mut bitD2, opStart3, dt, dtLog);
-    HUFv07_decodeStreamX4(op3, &mut bitD3, opStart4, dt, dtLog);
-    HUFv07_decodeStreamX4(op4, &mut bitD4, oend, dt, dtLog);
+    HUFv07_decodeStreamX4(op1, &mut bitD1, dt, dtLog);
+    HUFv07_decodeStreamX4(op2, &mut bitD2, dt, dtLog);
+    HUFv07_decodeStreamX4(op3, &mut bitD3, dt, dtLog);
+    HUFv07_decodeStreamX4(op4, &mut bitD4, dt, dtLog);
     if !(bitD1.is_empty() && bitD2.is_empty() && bitD3.is_empty() && bitD4.is_empty()) {
         return Err(Error::corruption_detected);
     }
