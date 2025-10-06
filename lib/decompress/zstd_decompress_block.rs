@@ -1572,7 +1572,7 @@ fn ZSTD_updateFseStateWithDInfo(
     nbBits: u32,
 ) {
     let lowBits = bitD.read_bits(nbBits);
-    DStatePtr.state = (nextState as size_t).wrapping_add(lowBits as size_t);
+    DStatePtr.state = usize::from(nextState) + lowBits;
 }
 
 /// We need to add at most (ZSTD_WINDOWLOG_MAX_32 - 1) bits to read the maximum
