@@ -1133,7 +1133,7 @@ unsafe fn HUFv07_fillDTableX4(
         s = s.wrapping_add(1);
     }
 }
-unsafe fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
+fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
     let mut weightList: [u8; HUFv07_SYMBOLVALUE_MAX + 1] = [0; HUFv07_SYMBOLVALUE_MAX + 1];
     let mut sortedSymbol: [sortedSymbol_t; 256] = [sortedSymbol_t {
         symbol: 0,
@@ -1143,10 +1143,9 @@ unsafe fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<
         [0; HUFv07_TABLELOG_ABSOLUTEMAX + 1];
     let mut rankStart0: [u32; HUFv07_TABLELOG_ABSOLUTEMAX + 2] =
         [0; HUFv07_TABLELOG_ABSOLUTEMAX + 2];
-    let rankStart = rankStart0.as_mut_ptr().add(1);
+    let rankStart = &mut rankStart0[1..];
     let mut rankVal: rankVal_t = [[0; 17]; 16];
     let mut tableLog: u32 = 0;
-    let mut maxW: u32 = 0;
     let mut sizeOfSort: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let mut dtd = DTable.description;
@@ -1166,70 +1165,51 @@ unsafe fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<
     if tableLog > maxTableLog {
         return Err(Error::tableLog_tooLarge);
     }
-    maxW = tableLog;
-    while *rankStats.as_mut_ptr().offset(maxW as isize) == 0 {
-        maxW = maxW.wrapping_sub(1);
+    let mut maxW = tableLog;
+    while rankStats[maxW as usize] == 0 {
+        maxW -= 1
     }
-    let mut w: u32 = 0;
     let mut nextRankStart = 0u32;
-    w = 1;
-    while w < maxW.wrapping_add(1) {
+    for w in 1..maxW + 1 {
         let current = nextRankStart;
-        nextRankStart = nextRankStart.wrapping_add(*rankStats.as_mut_ptr().offset(w as isize));
-        *rankStart.offset(w as isize) = current;
-        w = w.wrapping_add(1);
+        nextRankStart = nextRankStart.wrapping_add(rankStats[w as usize]);
+        rankStart[w as usize] = current;
     }
-    *rankStart = nextRankStart;
+    rankStart[0] = nextRankStart;
     sizeOfSort = nextRankStart;
-    let mut s: u32 = 0;
-    s = 0;
-    while s < nbSymbols {
-        let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
-        let fresh37 = &mut (*rankStart.offset(w_0 as isize));
-        let fresh38 = *fresh37;
-        *fresh37 = (*fresh37).wrapping_add(1);
-        let r = fresh38;
-        (*sortedSymbol.as_mut_ptr().offset(r as isize)).symbol = s as u8;
-        (*sortedSymbol.as_mut_ptr().offset(r as isize)).weight = w_0 as u8;
-        s = s.wrapping_add(1);
+    for s in 0..nbSymbols {
+        let w = weightList[s as usize];
+        let r = rankStart[usize::from(w)] as usize;
+        rankStart[usize::from(w)] += 1;
+        sortedSymbol[r].symbol = s as u8;
+        sortedSymbol[r].weight = w;
     }
-    *rankStart = 0;
-    let rankVal0 = (*rankVal.as_mut_ptr()).as_mut_ptr();
+    rankStart[0] = 0;
     let rescale = maxTableLog.wrapping_sub(tableLog).wrapping_sub(1) as core::ffi::c_int;
     let mut nextRankVal = 0u32;
-    let mut w_1: u32 = 0;
-    w_1 = 1;
-    while w_1 < maxW.wrapping_add(1) {
-        let current_0 = nextRankVal;
-        nextRankVal = nextRankVal.wrapping_add(
-            *rankStats.as_mut_ptr().offset(w_1 as isize) << w_1.wrapping_add(rescale as u32),
-        );
-        *rankVal0.offset(w_1 as isize) = current_0;
-        w_1 = w_1.wrapping_add(1);
+    for w in 1..maxW + 1 {
+        let current = nextRankVal;
+        nextRankVal += rankStats[w as usize] << w.wrapping_add(rescale as u32);
+        rankVal[0][w as usize] = current;
     }
     let minBits = tableLog.wrapping_add(1).wrapping_sub(maxW);
-    let mut consumed: u32 = 0;
-    consumed = minBits;
-    while consumed < maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
-        let rankValPtr = (*rankVal.as_mut_ptr().offset(consumed as isize)).as_mut_ptr();
-        let mut w_2: u32 = 0;
-        w_2 = 1;
-        while w_2 < maxW.wrapping_add(1) {
-            *rankValPtr.offset(w_2 as isize) = *rankVal0.offset(w_2 as isize) >> consumed;
-            w_2 = w_2.wrapping_add(1);
+    for consumed in minBits..maxTableLog.wrapping_sub(minBits).wrapping_add(1) {
+        for w in 1..maxW + 1 {
+            rankVal[consumed as usize][w as usize] = rankVal[0][w as usize] >> consumed;
         }
-        consumed = consumed.wrapping_add(1);
     }
-    HUFv07_fillDTableX4(
-        dt,
-        maxTableLog,
-        sortedSymbol.as_mut_ptr(),
-        sizeOfSort,
-        rankStart0.as_mut_ptr(),
-        rankVal.as_mut_ptr(),
-        maxW,
-        tableLog.wrapping_add(1),
-    );
+    unsafe {
+        HUFv07_fillDTableX4(
+            dt,
+            maxTableLog,
+            sortedSymbol.as_mut_ptr(),
+            sizeOfSort,
+            rankStart0.as_mut_ptr(),
+            rankVal.as_mut_ptr(),
+            maxW,
+            tableLog + 1,
+        )
+    };
     dtd.tableLog = maxTableLog as u8;
     dtd.tableType = 1;
     DTable.description = dtd;
@@ -1415,13 +1395,11 @@ fn HUFv07_decompress4X4_DCtx(
     dst: Writer<'_>,
     cSrc: &[u8],
 ) -> Result<usize, Error> {
-    let mut ip = cSrc;
-    let hSize = unsafe { HUFv07_readDTableX4(dctx, ip)? };
+    let hSize = HUFv07_readDTableX4(dctx, cSrc)?;
     if hSize >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    ip = &ip[hSize..];
-    unsafe { HUFv07_decompress4X4_usingDTable_internal(dst, ip, dctx) }
+    unsafe { HUFv07_decompress4X4_usingDTable_internal(dst, &cSrc[hSize..], dctx) }
 }
 static algoTime: [[algo_time_t; 3]; 16] = [
     [
