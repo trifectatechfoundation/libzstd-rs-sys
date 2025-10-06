@@ -51,6 +51,7 @@ const XXH_PRIME64_3: u64 = 0x165667b19e3779f9;
 const XXH_PRIME64_4: u64 = 0x85ebca77c2b2ae63;
 const XXH_PRIME64_5: u64 = 0x27d4eb2f165667c5;
 
+#[inline(always)]
 const fn XXH64_round(acc: u64, input: u64) -> u64 {
     input
         .wrapping_mul(XXH_PRIME64_2)
@@ -59,12 +60,14 @@ const fn XXH64_round(acc: u64, input: u64) -> u64 {
         .wrapping_mul(XXH_PRIME64_1)
 }
 
+#[inline(always)]
 const fn XXH64_mergeRound(acc: u64, val: u64) -> u64 {
     (acc ^ XXH64_round(0, val))
         .wrapping_mul(XXH_PRIME64_1)
         .wrapping_add(XXH_PRIME64_4)
 }
 
+#[inline(always)]
 const fn XXH64_avalanche(mut hash: u64) -> u64 {
     hash ^= hash >> 33;
     hash = hash.wrapping_mul(XXH_PRIME64_2);
