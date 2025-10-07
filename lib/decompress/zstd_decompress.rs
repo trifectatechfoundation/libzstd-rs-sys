@@ -691,6 +691,7 @@ const fn ZSTD_startingInputLength(format: Format) -> size_t {
 fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     unsafe {
         let dctx = dctx.as_mut_ptr();
+        debug_assert_eq!((*dctx).streamStage, StreamStage::Init);
         (*dctx).format = Format::ZSTD_f_zstd1;
         (*dctx).maxWindowSize = ZSTD_MAXWINDOWSIZE_DEFAULT as size_t;
         (*dctx).outBufferMode = BufferMode::Buffered;
@@ -831,7 +832,9 @@ pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const 
 ///
 /// [`ZSTD_d_refMultipleDDicts`] must be enabled for this function to be called.
 fn ZSTD_DCtx_selectFrameDDict(dctx: &mut ZSTD_DCtx) {
-    if !(dctx.ddict).is_null() {
+    debug_assert_eq!(dctx.refMultipleDDicts, MultipleDDicts::Multiple);
+    debug_assert!(!dctx.ddictSet.is_null());
+    if !dctx.ddict.is_null() {
         // FIXME: make safe
         let frameDDict = unsafe {
             ZSTD_DDictHashSet_getDDict(dctx.ddictSet.as_mut().unwrap(), dctx.fParams.dictID)
@@ -1412,6 +1415,9 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         && is_skippable_frame(src)
     {
         frameSizeInfo.compressedSize = read_skippable_frame_size(src);
+        debug_assert!(
+            ERR_isError(frameSizeInfo.compressedSize) || frameSizeInfo.compressedSize <= src.len()
+        );
         frameSizeInfo
     } else {
         let mut ip = 0;
@@ -1815,6 +1821,7 @@ unsafe fn ZSTD_decompressFrame(
                 );
             }
             BlockType::Compressed => {
+                debug_assert!(dctx.isFrameDecompression);
                 decodedSize = ZSTD_decompressBlock_internal(
                     dctx,
                     op.as_mut_ptr().cast(),
@@ -2172,6 +2179,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             let mut rSize: size_t = 0;
             match dctx.bType {
                 BlockType::Compressed => {
+                    debug_assert!(dctx.isFrameDecompression);
                     rSize = ZSTD_decompressBlock_internal(
                         dctx,
                         dst.as_mut_ptr().cast(),
@@ -2183,11 +2191,13 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                     dctx.expected = 0; // streaming not supported
                 }
                 BlockType::Raw => {
+                    debug_assert!(src.len() <= dctx.expected);
                     rSize = copy_raw_block_slice(dst.subslice(..), src);
                     let err_code_0 = rSize;
                     if ERR_isError(err_code_0) {
                         return err_code_0;
                     }
+                    debug_assert_eq!(rSize, src.len());
                     dctx.expected = (dctx.expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
@@ -2241,6 +2251,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             rSize
         }
         DecompressStage::CheckChecksum => {
+            debug_assert_eq!(src.len(), 4); // guaranteed by dctx.expected
             if dctx.validateChecksum {
                 let h32 = ZSTD_XXH64_digest(&mut dctx.xxhState) as u32;
                 let check32 = u32::from_le_bytes(*src.first_chunk().unwrap());
@@ -2254,6 +2265,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             0
         }
         DecompressStage::DecodeSkippableHeader => {
+            debug_assert_ne!(dctx.format, Format::ZSTD_f_zstd1_magicless);
             // complete skippable header
             dctx.headerBuffer[8 - src.len()..][..src.len()].copy_from_slice(src);
             dctx.expected =
@@ -2810,6 +2822,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
                 return Error::memory_allocation.to_error_code();
             };
 
+            debug_assert_eq!((*dctx).staticSize, 0); // ddictSet cannot have been allocated if static dctx
             let err_code = ZSTD_DDictHashSet_addDDict(ddictSet, ddict, (*dctx).customMem);
             if ERR_isError(err_code) {
                 return err_code;
@@ -3240,6 +3253,8 @@ unsafe fn ZSTD_decompressContinueStream(
             *op = (*op).add(decodedSize);
             // flushing is not needed
             zds.streamStage = StreamStage::Read;
+            debug_assert!(*op <= oend);
+            debug_assert_eq!(zds.outBufferMode, BufferMode::Stable);
         }
     }
 
@@ -3403,6 +3418,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                 // need more input
                 let toLoad = hSize - zds.lhSize; // if hSize!=0, hSize > zds->lhSize
                 let remainingInput = iend.offset_from_unsigned(ip);
+                debug_assert!(iend >= ip);
                 if toLoad > remainingInput {
                     // not enough input to load full header
                     if remainingInput > 0 {
@@ -3614,7 +3630,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             let toLoad_0 = neededInSize.wrapping_sub(zds.inPos);
             let isSkipFrame = matches!(zds.stage, DecompressStage::SkipFrame);
             // At this point we shouldn't be decompressing a block that we can stream.
-            assert_eq!(
+            debug_assert_eq!(
                 neededInSize,
                 ZSTD_nextSrcSizeToDecompressWithInputSize(zds, iend.offset_from_unsigned(ip))
             );
