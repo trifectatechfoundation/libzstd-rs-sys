@@ -25,7 +25,7 @@ use crate::lib::decompress::{
     LL_base, LitLocation, ML_base, OF_base, OF_bits, Workspace, ZSTD_DCtx, ZSTD_seqSymbol,
     ZSTD_seqSymbol_header,
 };
-use crate::lib::polyfill::{likely, prefetch_read_data, unlikely, Locality};
+use crate::lib::polyfill::{likely, prefetch_read_data, unlikely, Locality, PointerExt};
 use crate::lib::zstd::{ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 pub type BIT_DStream_status = core::ffi::c_uint;
@@ -1765,7 +1765,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         if !cfg!(miri) {
-            asm!(".p2align 6", options(preserves_flags, att_syntax));
+            unsafe { asm!(".p2align 6", options(preserves_flags, att_syntax)) }
         }
 
         while nbSeq != 0 {
@@ -1797,7 +1797,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         }
 
         if nbSeq > 0 {
-            let leftoverLit = (dctx.litBufferEnd).offset_from(litPtr) as size_t;
+            let leftoverLit = dctx.litBufferEnd.wrapping_offset_from(litPtr) as size_t;
             if leftoverLit != 0 {
                 if leftoverLit > op.capacity() {
                     return Error::dstSize_tooSmall.to_error_code();
@@ -1827,11 +1827,16 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         if nbSeq > 0 {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             if !cfg!(miri) {
-                asm!(".p2align 6", options(preserves_flags, att_syntax));
-                asm!("nop", options(preserves_flags, att_syntax));
-                asm!(".p2align 4", options(preserves_flags, att_syntax));
-                asm!("nop", options(preserves_flags, att_syntax));
-                asm!(".p2align 3", options(preserves_flags, att_syntax));
+                unsafe {
+                    asm!(
+                        ".p2align 6",
+                        "nop",
+                        ".p2align 4",
+                        "nop",
+                        ".p2align 3",
+                        options(preserves_flags)
+                    )
+                }
             }
 
             while nbSeq != 0 {
@@ -1863,12 +1868,12 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     }
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        let lastLLSize = litBufferEnd.offset_from(litPtr) as size_t;
+        let lastLLSize = litBufferEnd.wrapping_offset_from(litPtr) as size_t;
         if lastLLSize > op.capacity() {
             return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
-            core::ptr::copy(litPtr, op.as_mut_ptr(), lastLLSize);
+            unsafe { core::ptr::copy(litPtr, op.as_mut_ptr(), lastLLSize) };
             op = op.subslice(lastLLSize..);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
@@ -1876,13 +1881,13 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
     }
 
-    let lastLLSize_0 = litBufferEnd.offset_from(litPtr) as size_t;
+    let lastLLSize_0 = litBufferEnd.wrapping_offset_from(litPtr) as size_t;
     if lastLLSize_0 > op.capacity() {
         return Error::dstSize_tooSmall.to_error_code();
     }
 
     if !op.is_null() {
-        core::ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize_0);
+        unsafe { core::ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize_0) };
         op = op.subslice(lastLLSize_0..);
     }
 
