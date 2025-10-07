@@ -1,6 +1,8 @@
 use core::ffi::c_uint;
 use libc::size_t;
 
+pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
+
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
 pub const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
 pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
