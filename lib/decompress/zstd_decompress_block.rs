@@ -1765,7 +1765,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         if !cfg!(miri) {
-            asm!(".p2align 6", options(preserves_flags, att_syntax));
+            unsafe { asm!(".p2align 6", options(preserves_flags, att_syntax)) }
         }
 
         while nbSeq != 0 {
@@ -1797,7 +1797,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         }
 
         if nbSeq > 0 {
-            let leftoverLit = (dctx.litBufferEnd).offset_from_unsigned(litPtr);
+            let leftoverLit = dctx.litBufferEnd.offset_from_unsigned(litPtr);
             if leftoverLit != 0 {
                 if leftoverLit > op.capacity() {
                     return Error::dstSize_tooSmall.to_error_code();
@@ -1827,11 +1827,16 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
         if nbSeq > 0 {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             if !cfg!(miri) {
-                asm!(".p2align 6", options(preserves_flags, att_syntax));
-                asm!("nop", options(preserves_flags, att_syntax));
-                asm!(".p2align 4", options(preserves_flags, att_syntax));
-                asm!("nop", options(preserves_flags, att_syntax));
-                asm!(".p2align 3", options(preserves_flags, att_syntax));
+                unsafe {
+                    asm!(
+                        ".p2align 6",
+                        "nop",
+                        ".p2align 4",
+                        "nop",
+                        ".p2align 3",
+                        options(preserves_flags)
+                    )
+                }
             }
 
             while nbSeq != 0 {
@@ -1868,7 +1873,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             return Error::dstSize_tooSmall.to_error_code();
         }
         if !op.is_null() {
-            core::ptr::copy(litPtr, op.as_mut_ptr(), lastLLSize);
+            unsafe { core::ptr::copy(litPtr, op.as_mut_ptr(), lastLLSize) };
             op = op.subslice(lastLLSize..);
         }
         litPtr = (dctx.litExtraBuffer).as_mut_ptr();
@@ -1882,7 +1887,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
     }
 
     if !op.is_null() {
-        core::ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize_0);
+        unsafe { core::ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize_0) };
         op = op.subslice(lastLLSize_0..);
     }
 
