@@ -906,7 +906,7 @@ pub unsafe extern "C" fn ZSTD_getFrameHeader(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, Format::ZSTD_f_zstd1 as _)
+    ZSTD_getFrameHeader_advanced(zfhPtr, src, srcSize, ZSTD_format_e::ZSTD_f_zstd1)
 }
 
 fn get_frame_header(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8]) -> size_t {
@@ -2549,7 +2549,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
     ZSTD_DCtx_setParameter(
         dctx,
         ZSTD_dParameter::ZSTD_d_format as ZSTD_dParameter,
-        format as core::ffi::c_int,
+        u32::from(format) as core::ffi::c_int,
     )
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_dParam_getBounds))]
@@ -2655,7 +2655,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
             return 0;
         }
         ZSTD_dParameter::ZSTD_d_experimentalParam1 => {
-            let Ok(format) = Format::try_from(value as ZSTD_format_e) else {
+            let Ok(format) = Format::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
 

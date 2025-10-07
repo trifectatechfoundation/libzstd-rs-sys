@@ -2414,7 +2414,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
 ) -> size_t {
     match param.0 {
         10 => {
-            let Ok(format) = Format::try_from(value as ZSTD_format_e) else {
+            let Ok(format) = Format::try_from(value) else {
                 return Error::parameter_outOfBound.to_error_code();
             };
 
