@@ -115,7 +115,20 @@ pub type ZSTD_freeFunction =
 pub type ZSTD_allocFunction =
     Option<unsafe extern "C" fn(*mut core::ffi::c_void, size_t) -> *mut core::ffi::c_void>;
 
-pub type ZSTD_format_e = core::ffi::c_uint;
+#[derive(PartialEq)]
+#[repr(transparent)]
+pub struct ZSTD_format_e(u32);
+
+impl ZSTD_format_e {
+    pub const ZSTD_f_zstd1: Self = Self(Format::ZSTD_f_zstd1 as u32);
+    pub const ZSTD_f_zstd1_magicless: Self = Self(Format::ZSTD_f_zstd1_magicless as u32);
+}
+
+impl From<ZSTD_format_e> for u32 {
+    fn from(value: ZSTD_format_e) -> Self {
+        value.0
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -137,6 +150,18 @@ impl TryFrom<ZSTD_format_e> for Format {
     type Error = ();
 
     fn try_from(value: ZSTD_format_e) -> Result<Self, Self::Error> {
+        match value {
+            ZSTD_format_e::ZSTD_f_zstd1 => Ok(Self::ZSTD_f_zstd1),
+            ZSTD_format_e::ZSTD_f_zstd1_magicless => Ok(Self::ZSTD_f_zstd1_magicless),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<i32> for Format {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
             0 => Ok(Self::ZSTD_f_zstd1),
             1 => Ok(Self::ZSTD_f_zstd1_magicless),
