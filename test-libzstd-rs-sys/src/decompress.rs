@@ -996,8 +996,6 @@ fn test_decompress_stream_with_dict() {
     const DICT: &[u8] = include_bytes!("../test-data/decompress-stream-dict.dat");
     const INPUT: &[u8] = include_bytes!("../test-data/decompress-stream-input.dat");
 
-    const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-
     unsafe {
         use libzstd_rs_sys::*;
 
@@ -1050,8 +1048,6 @@ fn decompression_by_small_increment() {
     fn FUZ_rand(_: &mut i32) -> usize {
         0xFFFF
     }
-
-    const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 
     unsafe {
         use libzstd_rs_sys::*;
