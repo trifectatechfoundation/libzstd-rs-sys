@@ -109,7 +109,7 @@ impl TryFrom<u32> for Error {
 type ERR_enum = ZSTD_ErrorCode;
 
 pub(crate) const fn ERR_isError(code: size_t) -> bool {
-    code > -(ZSTD_error_maxCode as std::ffi::c_int) as size_t
+    code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t
 }
 
 pub(crate) const fn ERR_getErrorCode(code: size_t) -> ZSTD_ErrorCode {

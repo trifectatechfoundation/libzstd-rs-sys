@@ -3194,14 +3194,14 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                     return Error::frameParameter_windowTooLarge.to_error_code();
                 }
                 if zds.maxBlockSizeParam != 0 {
-                    zds.fParams.blockSizeMax = std::cmp::min(
+                    zds.fParams.blockSizeMax = core::cmp::min(
                         zds.fParams.blockSizeMax,
                         zds.maxBlockSizeParam as core::ffi::c_uint,
                     );
                 }
 
                 // Adapt buffer sizes to frame header instructions
-                let neededInBuffSize = std::cmp::max(zds.fParams.blockSizeMax, 4) as size_t;
+                let neededInBuffSize = core::cmp::max(zds.fParams.blockSizeMax, 4) as size_t;
                 let neededOutBuffSize = if zds.outBufferMode == BufferMode::Buffered {
                     ZSTD_decodingBufferSize_internal(
                         zds.fParams.windowSize,

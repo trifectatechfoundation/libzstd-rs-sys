@@ -1,4 +1,4 @@
-use std::ptr;
+use core::ptr;
 
 use crate::lib::zstd::ZSTD_customMem;
 

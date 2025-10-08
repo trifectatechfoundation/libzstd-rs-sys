@@ -3841,7 +3841,7 @@ pub(crate) unsafe fn ZBUFFv06_decompressContinue(
 
                     // Frame header instruct buffer sizes
                     let blockSize =
-                        std::cmp::min(1 << (*zbd).fParams.windowLog, 128 * 1024) as size_t;
+                        core::cmp::min(1 << (*zbd).fParams.windowLog, 128 * 1024) as size_t;
                     (*zbd).blockSize = blockSize;
                     if (*zbd).inBuffSize < blockSize {
                         free((*zbd).inBuff as *mut core::ffi::c_void);
