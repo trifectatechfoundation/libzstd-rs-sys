@@ -1,5 +1,5 @@
+use core::marker::PhantomData;
 use core::ptr;
-use std::marker::PhantomData;
 
 use libc::{free, malloc};
 
@@ -3252,10 +3252,10 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                         h2Size,
                     )?;
                 }
-                (*zbd).fParams.windowSize = std::cmp::max((*zbd).fParams.windowSize, 1 << 10);
+                (*zbd).fParams.windowSize = core::cmp::max((*zbd).fParams.windowSize, 1 << 10);
 
                 // Frame header instruct buffer sizes
-                let blockSize = std::cmp::min((*zbd).fParams.windowSize, 128 * 1024) as usize;
+                let blockSize = core::cmp::min((*zbd).fParams.windowSize, 128 * 1024) as usize;
                 (*zbd).blockSize = blockSize;
                 if (*zbd).inBuffSize < blockSize {
                     free((*zbd).inBuff as *mut core::ffi::c_void);
