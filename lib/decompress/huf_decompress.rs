@@ -623,8 +623,11 @@ unsafe extern "C" fn HUF_decompress4X1_usingDTable_internal_fast_c_loop(
     let mut ip = args.ip;
     let mut op = args.op;
 
-    debug_assert!(cfg!(target_endian = "little"));
-    debug_assert!(cfg!(target_pointer_width = "64"));
+    #[allow(clippy::assertions_on_constants)]
+    {
+        debug_assert!(cfg!(target_endian = "little"));
+        debug_assert!(cfg!(target_pointer_width = "64"));
+    }
 
     'out: loop {
         /* Assert loop preconditions */
