@@ -15,11 +15,14 @@ pub(crate) unsafe fn ZSTD_customMalloc(
         return f(customMem.opaque, size);
     }
 
-    #[cfg(feature = "rust-allocator")]
-    return std::alloc::alloc(core::alloc::Layout::from_size_align_unchecked(size, 16)).cast();
+    #[allow(unreachable_code)]
+    {
+        #[cfg(feature = "rust-allocator")]
+        return std::alloc::alloc(core::alloc::Layout::from_size_align_unchecked(size, 16)).cast();
 
-    #[cfg(feature = "c-allocator")]
-    return libc::malloc(size);
+        #[cfg(feature = "c-allocator")]
+        return libc::malloc(size);
+    }
 }
 #[inline]
 pub(crate) unsafe fn ZSTD_customCalloc(
@@ -36,12 +39,15 @@ pub(crate) unsafe fn ZSTD_customCalloc(
         return ptr;
     }
 
-    #[cfg(feature = "rust-allocator")]
-    return std::alloc::alloc_zeroed(core::alloc::Layout::from_size_align_unchecked(size, 16))
-        .cast();
+    #[allow(unreachable_code)]
+    {
+        #[cfg(feature = "rust-allocator")]
+        return std::alloc::alloc_zeroed(core::alloc::Layout::from_size_align_unchecked(size, 16))
+            .cast();
 
-    #[cfg(feature = "c-allocator")]
-    return libc::calloc(1, size);
+        #[cfg(feature = "c-allocator")]
+        return libc::calloc(1, size);
+    }
 }
 #[inline]
 pub(crate) unsafe fn ZSTD_customFree(
@@ -51,8 +57,11 @@ pub(crate) unsafe fn ZSTD_customFree(
 ) {
     if !ptr.is_null() {
         if let Some(f) = customMem.customFree {
-            f(customMem.opaque, ptr);
-        } else {
+            return f(customMem.opaque, ptr);
+        }
+
+        #[allow(unreachable_code)]
+        {
             #[cfg(feature = "rust-allocator")]
             return std::alloc::dealloc(
                 ptr.cast(),
