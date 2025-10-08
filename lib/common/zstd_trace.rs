@@ -64,6 +64,10 @@ mod statics {
     use super::{ZSTD_CCtx, ZSTD_Trace, ZSTD_TraceCtx};
     use crate::lib::decompress::ZSTD_DCtx;
 
+    #[expect(
+        improper_ctypes,
+        reason = "ZSTD_CCtx contains types that are not FFI-safe. This is fine as it is opaque to C"
+    )]
     extern "C" {
         pub(super) fn ZSTD_trace_compress_begin(cctx: *const ZSTD_CCtx) -> ZSTD_TraceCtx;
         pub(super) fn ZSTD_trace_compress_end(ctx: ZSTD_TraceCtx, trace: *const ZSTD_Trace);
