@@ -1238,7 +1238,7 @@ unsafe fn ZSTD_execSequenceEnd(
 /// It is kept separate to avoid performance impact for the good case.
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
-    mut op: *mut u8,
+    mut op: Writer<'_>,
     oend: *mut u8,
     oend_w: *const u8,
     mut sequence: seq_t,
@@ -1248,28 +1248,30 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     virtualStart: *const u8,
     dictEnd: *const u8,
 ) -> size_t {
-    let oLitEnd = op.add(sequence.litLength);
+    let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.sub(sequence.offset);
 
     /* bounds checks : careful of address space overflow in 32-bit mode */
-    if sequenceLength > oend.offset_from_unsigned(op) {
+    if sequenceLength > oend.offset_from_unsigned(op.as_mut_ptr()) {
         return Error::dstSize_tooSmall.to_error_code();
     }
     if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
         return Error::corruption_detected.to_error_code();
     }
 
-    debug_assert!(op < op.wrapping_add(sequenceLength));
-    debug_assert!(oLitEnd < op.wrapping_add(sequenceLength));
+    debug_assert!(op.as_mut_ptr() < op.as_mut_ptr().wrapping_add(sequenceLength));
+    debug_assert!(oLitEnd < op.as_mut_ptr().wrapping_add(sequenceLength));
 
     /* copy literals */
-    if op > *litPtr as *mut u8 && op < (*litPtr).add(sequence.litLength) as *mut u8 {
+    if op.as_mut_ptr() > *litPtr as *mut u8
+        && op.as_mut_ptr() < (*litPtr).add(sequence.litLength) as *mut u8
+    {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    ZSTD_safecopyDstBeforeSrc(op, *litPtr, sequence.litLength);
-    op = oLitEnd;
+    ZSTD_safecopyDstBeforeSrc(op.as_mut_ptr(), *litPtr, sequence.litLength);
+    op = op.subslice(sequence.litLength..);
     *litPtr = iLitEnd;
 
     /* copy Match */
@@ -1287,13 +1289,13 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
         /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.offset_from_unsigned(match_0);
         core::ptr::copy(match_0, oLitEnd, length1);
-        op = oLitEnd.add(length1);
+        op = op.subslice(length1..);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
     }
 
     ZSTD_safecopy(
-        op,
+        op.as_mut_ptr(),
         oend_w,
         match_0,
         sequence.matchLength,
@@ -1450,7 +1452,7 @@ unsafe fn ZSTD_execSequence(
 
 #[inline(always)]
 unsafe fn ZSTD_execSequenceSplitLitBuffer(
-    mut op: *mut u8,
+    mut op: Writer<'_>,
     oend: *mut u8,
     oend_w: *const u8,
     mut sequence: seq_t,
@@ -1460,9 +1462,9 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     virtualStart: *const u8,
     dictEnd: *const u8,
 ) -> size_t {
-    let oLitEnd = op.add(sequence.litLength);
+    let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
-    let oMatchEnd = op.add(sequenceLength);
+    let oMatchEnd = op.as_mut_ptr().add(sequenceLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.sub(sequence.offset);
 
@@ -1476,7 +1478,8 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     if unlikely(
         iLitEnd > litLimit
             || oMatchEnd > oend_w as *mut u8
-            || MEM_32bits() && (oend.offset_from_unsigned(op)) < sequenceLength.wrapping_add(32),
+            || MEM_32bits()
+                && (oend.offset_from_unsigned(op.as_mut_ptr())) < sequenceLength.wrapping_add(32),
     ) {
         return ZSTD_execSequenceEndSplitLitBuffer(
             op,
@@ -1492,7 +1495,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     }
 
     // Assumptions (everything else goes into ZSTD_execSequenceEnd())
-    debug_assert!(op <= oLitEnd, "No overflow");
+    debug_assert!(op.as_mut_ptr() <= oLitEnd, "No overflow");
     debug_assert!(oLitEnd < oMatchEnd, "Non-zero match & no overflow");
     debug_assert!(oMatchEnd <= oend, "No underflow");
     debug_assert!(iLitEnd <= litLimit, "Literal length is in bounds");
@@ -1503,16 +1506,16 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     // Split out litLength <= 16 since it is nearly always true. +1.6% on gcc-9.
     // We likely don't need the full 32-byte wildcopy.
     const _: () = assert!(WILDCOPY_OVERLENGTH >= 16);
-    ZSTD_copy16(op, *litPtr);
+    ZSTD_copy16(op.as_mut_ptr(), *litPtr);
     if sequence.litLength > 16 {
         ZSTD_wildcopy(
-            op.add(16),
+            op.as_mut_ptr().add(16),
             (*litPtr).add(16),
             (sequence.litLength).wrapping_sub(16),
             Overlap::NoOverlap,
         );
     }
-    op = oLitEnd;
+    op = op.subslice(sequence.litLength..);
     *litPtr = iLitEnd; // Update for the next sequence.
 
     // Copy Match
@@ -1529,13 +1532,13 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.offset_from_unsigned(match_0);
         core::ptr::copy(match_0, oLitEnd, length1);
-        op = oLitEnd.add(length1);
+        op = op.subslice(length1..);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = prefixStart;
     }
 
     /* Match within prefix of 1 or more bytes */
-    debug_assert!(op <= oMatchEnd);
+    debug_assert!(op.as_mut_ptr() <= oMatchEnd);
     debug_assert!(oMatchEnd <= oend_w.cast_mut());
     debug_assert!(match_0 >= prefixStart);
     debug_assert!(sequence.matchLength >= 1);
@@ -1544,18 +1547,24 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
         // We bet on a full wildcopy for matches, since we expect matches to be
         // longer than literals (in general). In silesia, ~10% of matches are longer
         // than 16 bytes.
-        ZSTD_wildcopy(op, match_0, sequence.matchLength, Overlap::NoOverlap);
+        ZSTD_wildcopy(
+            op.as_mut_ptr(),
+            match_0,
+            sequence.matchLength,
+            Overlap::NoOverlap,
+        );
         return sequenceLength;
     }
     debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
 
     // Copy 8 bytes and spread the offset to be >= 8.
-    ZSTD_overlapCopy8(&mut op, &mut match_0, sequence.offset);
+    ZSTD_overlapCopy8(&mut op.as_mut_ptr(), &mut match_0, sequence.offset);
+    op = op.subslice(8..);
 
     // If the match length is > 8 bytes, then continue with the wildcopy.
     if sequence.matchLength > 8 {
         ZSTD_wildcopy(
-            op,
+            op.as_mut_ptr(),
             match_0,
             sequence.matchLength.wrapping_sub(8),
             Overlap::OverlapSrcBeforeDst,
@@ -1775,10 +1784,9 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 break;
             }
 
-            let range = op.as_mut_ptr_range();
             let oneSeqSize = ZSTD_execSequenceSplitLitBuffer(
-                range.start,
-                range.end,
+                op.subslice(..),
+                op.as_mut_ptr_range().end,
                 litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
                 sequence,
                 &mut litPtr,
@@ -2107,7 +2115,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                 let sequence = sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize];
                 let oneSeqSize_0 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
                     ZSTD_execSequenceSplitLitBuffer(
-                        op.as_mut_ptr(),
+                        op.subslice(..),
                         oend,
                         litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
                         sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize],
@@ -2177,7 +2185,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             } else {
                 let oneSeqSize_2 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
                     ZSTD_execSequenceSplitLitBuffer(
-                        op.as_mut_ptr(),
+                        op.subslice(..),
                         oend,
                         litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
                         *sequence,
