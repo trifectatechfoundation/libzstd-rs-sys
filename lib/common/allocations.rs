@@ -1,5 +1,6 @@
 use core::ptr;
 
+use crate::cfg_select;
 use crate::lib::zstd::ZSTD_customMem;
 
 #[inline]
@@ -15,15 +16,20 @@ pub(crate) unsafe fn ZSTD_customMalloc(
         return f(customMem.opaque, size);
     }
 
-    #[allow(unreachable_code)]
-    {
-        #[cfg(feature = "rust-allocator")]
-        return std::alloc::alloc(core::alloc::Layout::from_size_align_unchecked(size, 16)).cast();
-
-        #[cfg(feature = "c-allocator")]
-        return libc::malloc(size);
+    cfg_select! {
+        feature = "rust-allocator" => {
+            let layout = core::alloc::Layout::from_size_align_unchecked(size, 16);
+            std::alloc::alloc(layout).cast()
+        }
+        feature = "c-allocator" => {
+            libc::malloc(size)
+        }
+        _ => {
+            panic!("no allocator specified");
+        }
     }
 }
+
 #[inline]
 pub(crate) unsafe fn ZSTD_customCalloc(
     size: usize,
@@ -39,16 +45,20 @@ pub(crate) unsafe fn ZSTD_customCalloc(
         return ptr;
     }
 
-    #[allow(unreachable_code)]
-    {
-        #[cfg(feature = "rust-allocator")]
-        return std::alloc::alloc_zeroed(core::alloc::Layout::from_size_align_unchecked(size, 16))
-            .cast();
-
-        #[cfg(feature = "c-allocator")]
-        return libc::calloc(1, size);
+    cfg_select! {
+        feature = "rust-allocator" => {
+            let layout = core::alloc::Layout::from_size_align_unchecked(size, 16);
+            std::alloc::alloc_zeroed(layout).cast()
+        }
+        feature = "c-allocator" => {
+            libc::calloc(1, size)
+        }
+        _ => {
+            panic!("no allocator specified");
+        }
     }
 }
+
 #[inline]
 pub(crate) unsafe fn ZSTD_customFree(
     ptr: *mut core::ffi::c_void,
@@ -60,16 +70,17 @@ pub(crate) unsafe fn ZSTD_customFree(
             return f(customMem.opaque, ptr);
         }
 
-        #[allow(unreachable_code)]
-        {
-            #[cfg(feature = "rust-allocator")]
-            return std::alloc::dealloc(
-                ptr.cast(),
-                core::alloc::Layout::from_size_align_unchecked(_size, 16),
-            );
-
-            #[cfg(feature = "c-allocator")]
-            return libc::free(ptr);
+        cfg_select! {
+            feature = "rust-allocator" => {
+                let layout = core::alloc::Layout::from_size_align_unchecked(_size, 16);
+                std::alloc::dealloc(ptr.cast(), layout)
+            }
+            feature = "c-allocator" => {
+                libc::free(ptr);
+            }
+            _ => {
+                panic!("no allocator specified");
+            }
         }
     }
 }
