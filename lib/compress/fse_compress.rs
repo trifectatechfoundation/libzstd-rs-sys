@@ -334,7 +334,7 @@ unsafe fn FSE_writeNCount_generic(
     *out = bitStream as u8;
     *out.add(1) = (bitStream >> 8) as u8;
     out = out.offset(((bitCount + 7) / 8) as isize);
-    out.offset_from(ostart) as size_t
+    out.offset_from_unsigned(ostart)
 }
 pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,

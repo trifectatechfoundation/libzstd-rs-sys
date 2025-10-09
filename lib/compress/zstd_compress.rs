@@ -4704,7 +4704,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     ) as u32;
     let countSize = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as size_t,
+        oend.offset_from_unsigned(op),
         CTable_LitLength,
         LLFSELog as u32,
         stats.LLtype as SymbolEncodingType_e,
@@ -4758,7 +4758,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     ) as u32;
     let countSize_0 = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as size_t,
+        oend.offset_from_unsigned(op),
         CTable_OffsetBits,
         OffFSELog as u32,
         stats.Offtype as SymbolEncodingType_e,
@@ -4807,7 +4807,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     ) as u32;
     let countSize_1 = ZSTD_buildCTable(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as size_t,
+        oend.offset_from_unsigned(op),
         CTable_MatchLength,
         MLFSELog as u32,
         stats.MLtype as SymbolEncodingType_e,
@@ -4831,7 +4831,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.lastCountSize = countSize_1;
     }
     op = op.add(countSize_1);
-    stats.size = op.offset_from(ostart) as size_t;
+    stats.size = op.offset_from_unsigned(ostart);
     stats
 }
 pub const SUSPECT_UNCOMPRESSIBLE_LITERAL_RATIO: core::ffi::c_int = 20;
@@ -4919,7 +4919,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
             &(*prevEntropy).fse as *const ZSTD_fseCTables_t as *const core::ffi::c_void,
             ::core::mem::size_of::<ZSTD_fseCTables_t>(),
         );
-        return op.offset_from(ostart) as size_t;
+        return op.offset_from_unsigned(ostart);
     }
     let fresh3 = op;
     op = op.add(1);
@@ -4948,7 +4948,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     longOffsets = stats.longOffsets;
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
-        oend.offset_from(op) as size_t,
+        oend.offset_from_unsigned(op),
         CTable_MatchLength,
         mlCodeTable,
         CTable_OffsetBits,
@@ -4968,7 +4968,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     if lastCountSize != 0 && lastCountSize.wrapping_add(bitstreamSize) < 4 {
         return 0;
     }
-    op.offset_from(ostart) as size_t
+    op.offset_from_unsigned(ostart)
 }
 unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     dst: *mut core::ffi::c_void,
@@ -5461,7 +5461,7 @@ unsafe fn ZSTD_copyBlockSequences(
     prevRepcodes: *const u32,
 ) -> size_t {
     let inSeqs: *const SeqDef = (*seqStore).sequencesStart;
-    let nbInSequences = ((*seqStore).sequences).offset_from(inSeqs) as size_t;
+    let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
     let nbInLiterals = ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t;
     let outSeqs = if (*seqCollector).seqIndex == 0 {
         (*seqCollector).seqStart
@@ -5681,7 +5681,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let countWkspSize = ((HUF_SYMBOLVALUE_MAX + 1) as size_t)
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>());
     let nodeWksp = countWkspStart.add(countWkspSize);
-    let nodeWkspSize = wkspEnd.offset_from(nodeWksp) as size_t;
+    let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
     let mut huffLog = LitHufLog as core::ffi::c_uint;
     let mut repeat = (*prevHuf).repeatMode;
@@ -6142,7 +6142,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
     }
     ZSTD_estimateBlockSize(
         seqStore.litStart,
-        (seqStore.lit).offset_from(seqStore.litStart) as size_t,
+        (seqStore.lit).offset_from_unsigned(seqStore.litStart),
         seqStore.ofCode,
         seqStore.llCode,
         seqStore.mlCode,
@@ -6937,7 +6937,7 @@ unsafe fn ZSTD_compress_frameChunk(
     if lastFrameChunk != 0 && op > ostart {
         (*cctx).stage = ZSTDcs_ending;
     }
-    op.offset_from(ostart) as size_t
+    op.offset_from_unsigned(ostart)
 }
 unsafe fn ZSTD_writeFrameHeader(
     dst: *mut core::ffi::c_void,
@@ -7375,7 +7375,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         ((*bs).entropy.huf.CTable).as_mut_ptr(),
         &mut maxSymbolValue,
         dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dictEnd.offset_from_unsigned(dictPtr),
         &mut hasZeroWeights,
     );
     if hasZeroWeights == 0 && maxSymbolValue == 255 {
@@ -7391,7 +7391,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         &mut offcodeMaxValue,
         &mut offcodeLog,
         dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dictEnd.offset_from_unsigned(dictPtr),
     );
     if ERR_isError(offcodeHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -7418,7 +7418,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         &mut matchlengthMaxValue,
         &mut matchlengthLog,
         dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dictEnd.offset_from_unsigned(dictPtr),
     );
     if ERR_isError(matchlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -7450,7 +7450,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         &mut litlengthMaxValue,
         &mut litlengthLog,
         dictPtr as *const core::ffi::c_void,
-        dictEnd.offset_from(dictPtr) as size_t,
+        dictEnd.offset_from_unsigned(dictPtr),
     );
     if ERR_isError(litlengthHeaderSize) {
         return Error::dictionary_corrupted.to_error_code();
@@ -7481,7 +7481,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     *((*bs).rep).as_mut_ptr().add(1) = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
     *((*bs).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
     dictPtr = dictPtr.add(12);
-    let dictContentSize = dictEnd.offset_from(dictPtr) as size_t;
+    let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
     let mut offcodeMax = MaxOff as u32;
     if dictContentSize
         <= (-(1 as core::ffi::c_int) as u32)
@@ -7507,7 +7507,7 @@ pub unsafe fn ZSTD_loadCEntropy(
         }
         u = u.wrapping_add(1);
     }
-    dictPtr.offset_from(dict as *const u8) as size_t
+    dictPtr.offset_from_unsigned(dict as *const u8)
 }
 unsafe fn ZSTD_loadZstdDictionary(
     bs: *mut ZSTD_compressedBlockState_t,
@@ -7535,7 +7535,7 @@ unsafe fn ZSTD_loadZstdDictionary(
         return err_code;
     }
     dictPtr = dictPtr.add(eSize);
-    let dictContentSize = dictEnd.offset_from(dictPtr) as size_t;
+    let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
     let err_code_0 = ZSTD_loadDictionaryContent(
         ms,
         core::ptr::null_mut::<ldmState_t>(),
@@ -7910,7 +7910,7 @@ unsafe fn ZSTD_writeEpilogue(
         op = op.add(4);
     }
     (*cctx).stage = ZSTDcs_created;
-    op.offset_from(ostart) as size_t
+    op.offset_from_unsigned(ostart)
 }
 pub unsafe fn ZSTD_CCtx_trace(cctx: *mut ZSTD_CCtx, extraCSize: size_t) {
     if (*cctx).traceCtx != 0 {
@@ -9545,8 +9545,8 @@ unsafe fn ZSTD_compressStream_generic(
             1 => {
                 if flushMode as core::ffi::c_uint
                     == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint
-                    && (oend.offset_from(op) as size_t
-                        >= ZSTD_compressBound(iend.offset_from(ip) as size_t)
+                    && (oend.offset_from_unsigned(op)
+                        >= ZSTD_compressBound(iend.offset_from_unsigned(ip))
                         || (*zcs).appliedParams.outBufferMode as core::ffi::c_uint
                             == ZSTD_bm_stable as core::ffi::c_int as core::ffi::c_uint)
                     && (*zcs).inBuffPos == 0
@@ -9554,9 +9554,9 @@ unsafe fn ZSTD_compressStream_generic(
                     let cSize = ZSTD_compressEnd_public(
                         zcs,
                         op as *mut core::ffi::c_void,
-                        oend.offset_from(op) as size_t,
+                        oend.offset_from_unsigned(op),
                         ip as *const core::ffi::c_void,
-                        iend.offset_from(ip) as size_t,
+                        iend.offset_from_unsigned(ip),
                     );
                     let err_code = cSize;
                     if ERR_isError(err_code) {
@@ -9577,7 +9577,7 @@ unsafe fn ZSTD_compressStream_generic(
                             ((*zcs).inBuff).add((*zcs).inBuffPos),
                             toLoad,
                             ip,
-                            iend.offset_from(ip) as size_t,
+                            iend.offset_from_unsigned(ip),
                         );
                         (*zcs).inBuffPos = ((*zcs).inBuffPos).wrapping_add(loaded);
                         if !ip.is_null() {
@@ -9600,9 +9600,9 @@ unsafe fn ZSTD_compressStream_generic(
                         }
                     } else if flushMode as core::ffi::c_uint
                         == ZSTD_e_continue as core::ffi::c_int as core::ffi::c_uint
-                        && (iend.offset_from(ip) as size_t) < (*zcs).blockSizeMax
+                        && (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax
                     {
-                        (*zcs).stableIn_notConsumed = iend.offset_from(ip) as size_t;
+                        (*zcs).stableIn_notConsumed = iend.offset_from_unsigned(ip);
                         ip = iend;
                         someMoreWork = 0;
                         current_block_156 = 16754622181974910496;
@@ -9624,11 +9624,11 @@ unsafe fn ZSTD_compressStream_generic(
                                 as core::ffi::c_int;
                             let mut cDst = core::ptr::null_mut::<core::ffi::c_void>();
                             let mut cSize_0: size_t = 0;
-                            let mut oSize = oend.offset_from(op) as size_t;
+                            let mut oSize = oend.offset_from_unsigned(op);
                             let iSize = if inputBuffered != 0 {
                                 ((*zcs).inBuffPos).wrapping_sub((*zcs).inToCompress)
-                            } else if (iend.offset_from(ip) as size_t) < (*zcs).blockSizeMax {
-                                iend.offset_from(ip) as size_t
+                            } else if (iend.offset_from_unsigned(ip)) < (*zcs).blockSizeMax {
+                                iend.offset_from_unsigned(ip)
                             } else {
                                 (*zcs).blockSizeMax
                             };
@@ -9747,7 +9747,7 @@ unsafe fn ZSTD_compressStream_generic(
             let toFlush = ((*zcs).outBuffContentSize).wrapping_sub((*zcs).outBuffFlushedSize);
             let flushed = ZSTD_limitCopy(
                 op,
-                oend.offset_from(op) as size_t,
+                oend.offset_from_unsigned(op),
                 ((*zcs).outBuff).add((*zcs).outBuffFlushedSize),
                 toFlush,
             );
@@ -9769,8 +9769,8 @@ unsafe fn ZSTD_compressStream_generic(
             }
         }
     }
-    (*input).pos = ip.offset_from(istart) as size_t;
-    (*output).pos = op.offset_from(ostart) as size_t;
+    (*input).pos = ip.offset_from_unsigned(istart);
+    (*output).pos = op.offset_from_unsigned(ostart);
     if (*zcs).frameEnded != 0 {
         return 0;
     }
@@ -10442,7 +10442,7 @@ unsafe fn ZSTD_transferSequences_noDelim(
         ZSTD_storeLastLiterals(&mut (*cctx).seqStore, ip, lastLLSize as size_t);
         (*seqPos).posInSrc = ((*seqPos).posInSrc).wrapping_add(lastLLSize as size_t);
     }
-    iend.offset_from(istart) as size_t
+    iend.offset_from_unsigned(istart)
 }
 unsafe fn ZSTD_selectSequenceCopier(mode: ZSTD_SequenceFormat_e) -> ZSTD_SequenceCopier_f {
     if mode as core::ffi::c_uint

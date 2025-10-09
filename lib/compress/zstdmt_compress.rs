@@ -951,7 +951,7 @@ unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_voi
                                         let cSize = ZSTD_compressContinue_public(
                                             cctx,
                                             op as *mut core::ffi::c_void,
-                                            oend.offset_from(op) as size_t,
+                                            oend.offset_from_unsigned(op),
                                             ip as *const core::ffi::c_void,
                                             chunkSize,
                                         );

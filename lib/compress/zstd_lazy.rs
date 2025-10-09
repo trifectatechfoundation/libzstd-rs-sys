@@ -2563,7 +2563,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                     }
                     if matchLength < 4 {
                         let step =
-                            (ip.offset_from(anchor) as size_t >> kSearchStrength).wrapping_add(1);
+                            (ip.offset_from_unsigned(anchor) >> kSearchStrength).wrapping_add(1);
                         ip = ip.add(step);
                         ms.lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
                         continue;
@@ -2821,7 +2821,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                 }
             }
         }
-        let litLength = start.offset_from(anchor) as size_t;
+        let litLength = start.offset_from_unsigned(anchor);
         ZSTD_storeSeq(
             seqStore,
             litLength,
@@ -2923,7 +2923,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     } else {
         offsetSaved2
     };
-    iend.offset_from(anchor) as size_t
+    iend.offset_from_unsigned(anchor)
 }
 pub unsafe fn ZSTD_compressBlock_greedy(
     ms: &mut ZSTD_MatchState_t,
@@ -3404,7 +3404,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 offBase = ofbCandidate;
             }
             if matchLength < 4 {
-                let step = ip.offset_from(anchor) as size_t >> kSearchStrength;
+                let step = ip.offset_from_unsigned(anchor) >> kSearchStrength;
                 ip = ip.add(step.wrapping_add(1));
                 ms.lazySkipping = (step > kLazySkippingStep as size_t) as core::ffi::c_int;
                 continue;
@@ -3550,7 +3550,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                     }
                 }
                 if offBase > ZSTD_REP_NUM as size_t {
-                    let matchIndex = (start.offset_from(base) as size_t)
+                    let matchIndex = (start.offset_from_unsigned(base))
                         .wrapping_sub(offBase.wrapping_sub(ZSTD_REP_NUM as size_t))
                         as u32;
                     let mut match_0 = if matchIndex < dictLimit {
@@ -3576,7 +3576,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 }
             }
         }
-        let litLength = start.offset_from(anchor) as size_t;
+        let litLength = start.offset_from_unsigned(anchor);
         ZSTD_storeSeq(
             seqStore,
             litLength,
@@ -3641,7 +3641,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     }
     *rep = offset_1;
     *rep.add(1) = offset_2;
-    iend.offset_from(anchor) as size_t
+    iend.offset_from_unsigned(anchor)
 }
 pub unsafe fn ZSTD_compressBlock_greedy_extDict(
     ms: &mut ZSTD_MatchState_t,
