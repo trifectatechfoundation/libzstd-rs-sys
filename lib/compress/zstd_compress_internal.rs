@@ -131,7 +131,7 @@ pub(crate) unsafe fn ZSTD_safecopyLiterals(
         ZSTD_wildcopy(
             op,
             ip,
-            ilimit_w.offset_from(ip) as usize,
+            ilimit_w.offset_from_unsigned(ip),
             Overlap::NoOverlap,
         );
         op = op.offset(ilimit_w.offset_from(ip));
@@ -171,7 +171,7 @@ pub(crate) unsafe fn ZSTD_count(
                 pMatch = pMatch.add(::core::mem::size_of::<usize>());
             } else {
                 pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
-                return pIn.offset_from(pStart) as usize;
+                return pIn.offset_from_unsigned(pStart);
             }
         }
     }
@@ -193,7 +193,7 @@ pub(crate) unsafe fn ZSTD_count(
     if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
         pIn = pIn.add(1);
     }
-    pIn.offset_from(pStart) as usize
+    pIn.offset_from_unsigned(pStart)
 }
 
 #[inline]

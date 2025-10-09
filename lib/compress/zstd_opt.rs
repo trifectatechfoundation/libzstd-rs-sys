@@ -2139,7 +2139,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             }
         }
     }
-    iend.offset_from(anchor) as size_t
+    iend.offset_from_unsigned(anchor)
 }
 unsafe fn ZSTD_compressBlock_opt0(
     ms: &mut ZSTD_MatchState_t,

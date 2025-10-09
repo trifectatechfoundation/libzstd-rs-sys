@@ -313,7 +313,7 @@ pub unsafe fn ZSTD_buildCTable(
             }
             let NCountSize = FSE_writeNCount(
                 op as *mut core::ffi::c_void,
-                oend.offset_from(op) as size_t,
+                oend.offset_from_unsigned(op),
                 ((*wksp).norm).as_mut_ptr(),
                 max,
                 tableLog,

@@ -896,7 +896,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
             ip,
-            iend.offset_from(ip) as size_t,
+            iend.offset_from_unsigned(ip),
             splits,
             &mut numSplits,
         );
@@ -984,7 +984,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let candidates = ((*ldmState).matchCandidates).as_mut_ptr();
     let mut numSplits: core::ffi::c_uint = 0;
     if srcSize < minMatchLength as size_t {
-        return iend.offset_from(anchor) as size_t;
+        return iend.offset_from_unsigned(anchor);
     }
     ZSTD_ldm_gear_init(&mut hashState, params);
     ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
@@ -996,7 +996,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
             ip,
-            ilimit.offset_from(ip) as size_t,
+            ilimit.offset_from_unsigned(ip),
             splits,
             &mut numSplits,
         );
@@ -1160,7 +1160,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         }
         ip = ip.add(hashed);
     }
-    iend.offset_from(anchor) as size_t
+    iend.offset_from_unsigned(anchor)
 }
 unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: u32) {
     let mut u: u32 = 0;
@@ -1193,13 +1193,13 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     chunk = 0;
     while chunk < nbChunks && (*sequences).size < (*sequences).capacity {
         let chunkStart = istart.add(chunk * kMaxChunkSize);
-        let remaining = iend.offset_from(chunkStart) as size_t;
+        let remaining = iend.offset_from_unsigned(chunkStart);
         let chunkEnd = if remaining < kMaxChunkSize {
             iend
         } else {
             chunkStart.add(kMaxChunkSize)
         };
-        let chunkSize = chunkEnd.offset_from(chunkStart) as size_t;
+        let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
         let mut newLeftoverSize: size_t = 0;
         let prevSize = (*sequences).size;
         if ZSTD_window_needOverflowCorrection(
@@ -1385,6 +1385,6 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         seqStore,
         rep,
         ip as *const core::ffi::c_void,
-        iend.offset_from(ip) as size_t,
+        iend.offset_from_unsigned(ip),
     )
 }

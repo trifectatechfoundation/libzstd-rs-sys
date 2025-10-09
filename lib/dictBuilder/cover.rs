@@ -368,7 +368,7 @@ unsafe fn COVER_lower_bound(
     last: *const size_t,
     value: size_t,
 ) -> *const size_t {
-    let mut count = last.offset_from(first) as size_t;
+    let mut count = last.offset_from_unsigned(first);
     while count != 0 {
         let step = count / 2;
         let mut ptr = first;

@@ -1457,14 +1457,14 @@ unsafe extern "C" fn HUF_decompress4X2_usingDTable_internal_fast_c_loop(
          * We also know that each input pointer is >= ip[0]. So we can run
          * iters loops before running out of input.
          */
-        let mut iters = ip[0].offset_from(ilowest) as size_t / 7;
+        let mut iters = ip[0].offset_from_unsigned(ilowest) / 7;
 
         /* Each iteration can produce up to 10 bytes of output per stream.
          * Each output stream my advance at different rates. So take the
          * minimum number of safe iterations among all the output streams.
          */
         for stream in 0..4 {
-            let oiters = oend[stream].offset_from(op[stream]) as size_t / 10;
+            let oiters = oend[stream].offset_from_unsigned(op[stream]) / 10;
             iters = Ord::min(iters, oiters);
         }
 
