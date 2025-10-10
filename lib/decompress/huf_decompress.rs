@@ -71,15 +71,13 @@ pub struct DTableDesc {
     pub reserved: u8,
 }
 
-impl DTableDesc {
-    pub fn from_u32(value: u32) -> Self {
-        let [maxTableLog, tableType, tableLog, reserved] = value.to_le_bytes();
-
-        Self {
-            maxTableLog,
-            tableType,
-            tableLog,
-            reserved,
+impl Default for DTableDesc {
+    fn default() -> Self {
+        DTableDesc {
+            maxTableLog: 12,
+            tableType: 0,
+            tableLog: 0,
+            reserved: 0,
         }
     }
 }
