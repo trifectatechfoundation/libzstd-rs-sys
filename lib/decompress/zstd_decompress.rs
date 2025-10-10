@@ -1312,10 +1312,10 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
                 return fcs;
             }
             // check for overflow
-            if totalDstSize.wrapping_add(fcs) < totalDstSize {
-                return ZSTD_CONTENTSIZE_ERROR;
-            }
-            totalDstSize = totalDstSize.wrapping_add(fcs);
+            match totalDstSize.checked_add(fcs) {
+                None => return ZSTD_CONTENTSIZE_ERROR,
+                Some(size) => totalDstSize = size,
+            };
 
             // skip to next frame
             let frameSrcSize = ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1);
