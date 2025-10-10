@@ -2470,7 +2470,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         (*dctx).prefixStart = core::ptr::null();
         (*dctx).virtualStart = core::ptr::null();
         (*dctx).dictEnd = core::ptr::null();
-        (*dctx).entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001); // cover both little and big endian
+        (*dctx).entropy.hufTable.description = DTableDesc::default();
         (*dctx).fseEntropy = false;
         (*dctx).litEntropy = (*dctx).fseEntropy;
         (*dctx).dictID = 0;
