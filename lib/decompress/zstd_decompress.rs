@@ -2215,7 +2215,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             if rSize > dctx.fParams.blockSizeMax as size_t {
                 return Error::corruption_detected.to_error_code();
             }
-            dctx.decodedSize = (dctx.decodedSize as size_t).wrapping_add(rSize) as u64 as u64;
+            dctx.decodedSize = dctx.decodedSize.wrapping_add(rSize as u64);
             if dctx.validateChecksum {
                 let written = dst.subslice(..rSize);
                 let slice = unsafe { written.as_slice() };
