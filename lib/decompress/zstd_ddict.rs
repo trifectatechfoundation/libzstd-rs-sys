@@ -191,7 +191,7 @@ fn ZSTD_initDDict_internal(
     }
 
     ddict.dictSize = dictSize;
-    ddict.entropy.hufTable.description = DTableDesc::from_u32(12 * 0x1000001); // cover both little and big endian
+    ddict.entropy.hufTable.description = DTableDesc::default();
 
     ZSTD_loadEntropy_intoDDict(ddict, dictContentType)?;
 

@@ -1822,12 +1822,7 @@ unsafe fn ZSTDv07_decompressBegin(dctx: *mut ZSTDv07_DCtx) {
     (*dctx).base = core::ptr::null();
     (*dctx).vBase = core::ptr::null();
     (*dctx).dictEnd = core::ptr::null();
-    (*dctx).hufTable.description = DTableDesc {
-        maxTableLog: 12,
-        tableType: 0,
-        tableLog: 0,
-        reserved: 0,
-    };
+    (*dctx).hufTable.description = DTableDesc::default();
     (*dctx).fseEntropy = 0;
     (*dctx).litEntropy = (*dctx).fseEntropy;
     (*dctx).dictID = 0;
