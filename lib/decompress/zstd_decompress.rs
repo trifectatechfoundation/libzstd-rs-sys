@@ -2267,7 +2267,8 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
         DecompressStage::DecodeSkippableHeader => {
             debug_assert_ne!(dctx.format, Format::ZSTD_f_zstd1_magicless);
             // complete skippable header
-            dctx.headerBuffer[8 - src.len()..][..src.len()].copy_from_slice(src);
+            dctx.headerBuffer[ZSTD_SKIPPABLEHEADERSIZE as usize - src.len()..][..src.len()]
+                .copy_from_slice(src);
             dctx.expected =
                 u32::from_le_bytes(*dctx.headerBuffer[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap())
                     as usize;
