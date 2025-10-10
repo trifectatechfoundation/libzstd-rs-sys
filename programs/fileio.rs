@@ -3853,7 +3853,7 @@ unsafe fn FIO_compressZstdFrame(
 ) -> core::ffi::c_ulonglong {
     let ress = *ressPtr;
     let mut writeJob = AIO_WritePool_acquireJob((*ressPtr).writeCtx);
-    let mut compressedfilesize = 0;
+    let mut compressedfilesize = 0u64;
     let mut directive = ZSTD_e_continue;
     let mut pledgedSrcSize = ZSTD_CONTENTSIZE_UNKNOWN;
     let mut previous_zfp_update = {
@@ -4150,8 +4150,7 @@ unsafe fn FIO_compressZstdFrame(
             if outBuff.pos != 0 {
                 (*writeJob).usedBufferSize = outBuff.pos;
                 AIO_WritePool_enqueueAndReacquireWriteJob(&mut writeJob);
-                compressedfilesize =
-                    (compressedfilesize as size_t).wrapping_add(outBuff.pos) as u64 as u64;
+                compressedfilesize = compressedfilesize.wrapping_add(outBuff.pos as u64);
             }
             if (*prefs).adaptiveMode != 0 && UTIL_clockSpanMicro(lastAdaptTime) > adaptEveryMicro {
                 let zfp = ZSTD_getFrameProgression(ress.cctx);
@@ -4492,7 +4491,7 @@ unsafe fn FIO_compressZstdFrame(
     }
     AIO_WritePool_releaseIoJob(writeJob);
     AIO_WritePool_sparseWriteEnd((*ressPtr).writeCtx);
-    compressedfilesize as core::ffi::c_ulonglong
+    compressedfilesize
 }
 unsafe fn FIO_compressFilename_internal(
     fCtx: *mut FIO_ctx_t,
