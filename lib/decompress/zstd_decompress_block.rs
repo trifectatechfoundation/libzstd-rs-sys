@@ -183,9 +183,12 @@ impl ZSTD_DCtx {
     }
 }
 
-pub(crate) fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> size_t {
+pub(crate) fn ZSTD_getcBlockSize(
+    src: &[u8],
+    bpPtr: &mut blockProperties_t,
+) -> Result<size_t, Error> {
     if src.len() < ZSTD_blockHeaderSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     let cBlockHeader = unsafe { MEM_readLE24(src.as_ptr().cast()) };
     let cSize = cBlockHeader >> 3;
@@ -195,9 +198,9 @@ pub(crate) fn ZSTD_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> s
     bpPtr.origSize = cSize;
 
     match bpPtr.blockType {
-        BlockType::Raw | BlockType::Compressed => cSize as size_t,
-        BlockType::Rle => 1,
-        BlockType::Reserved => Error::corruption_detected.to_error_code(),
+        BlockType::Raw | BlockType::Compressed => Ok(cSize as size_t),
+        BlockType::Rle => Ok(1),
+        BlockType::Reserved => Err(Error::corruption_detected),
     }
 }
 

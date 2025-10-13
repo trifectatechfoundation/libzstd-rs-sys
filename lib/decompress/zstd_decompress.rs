@@ -1440,10 +1440,10 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         // iterate over each block
         loop {
             let mut blockProperties = blockProperties_t::default();
-            let cBlockSize = ZSTD_getcBlockSize(&src[ip..], &mut blockProperties);
-            if ERR_isError(cBlockSize) {
-                return ZSTD_errorFrameSizeInfo(cBlockSize);
-            }
+            let cBlockSize = match ZSTD_getcBlockSize(&src[ip..], &mut blockProperties) {
+                Ok(size) => size,
+                Err(err) => return ZSTD_errorFrameSizeInfo(err.to_error_code()),
+            };
             if ZSTD_blockHeaderSize.wrapping_add(cBlockSize) > remainingSize {
                 return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
             }
