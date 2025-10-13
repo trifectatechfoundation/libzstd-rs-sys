@@ -1244,7 +1244,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> size_t {
+) -> Result<size_t, Error> {
     let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
@@ -1252,10 +1252,10 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
 
     /* bounds checks : careful of address space overflow in 32-bit mode */
     if sequenceLength > oend.offset_from_unsigned(op.as_mut_ptr()) {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     debug_assert!(op.as_mut_ptr() < op.as_mut_ptr().wrapping_add(sequenceLength));
@@ -1265,7 +1265,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     if op.as_mut_ptr() > *litPtr as *mut u8
         && op.as_mut_ptr() < (*litPtr).add(sequence.litLength) as *mut u8
     {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     ZSTD_safecopyDstBeforeSrc(op.as_mut_ptr(), *litPtr, sequence.litLength);
     op = op.subslice(sequence.litLength..);
@@ -1275,12 +1275,12 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
         /* offset beyond prefix */
         if sequence.offset > oLitEnd.offset_from_unsigned(virtualStart) {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.offset(-(prefixStart.offset_from(match_0) as core::ffi::c_long as isize));
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
-            return sequenceLength;
+            return Ok(sequenceLength);
         }
 
         /* span extDict & currentPrefixSegment */
@@ -1298,7 +1298,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
         sequence.matchLength,
         Overlap::OverlapSrcBeforeDst,
     );
-    sequenceLength
+    Ok(sequenceLength)
 }
 
 #[inline(always)]
@@ -1456,7 +1456,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             || MEM_32bits()
                 && (oend.offset_from_unsigned(op.as_mut_ptr())) < sequenceLength.wrapping_add(32),
     ) {
-        return ZSTD_execSequenceEndSplitLitBuffer(
+        return match ZSTD_execSequenceEndSplitLitBuffer(
             op,
             oend,
             oend_w,
@@ -1466,7 +1466,10 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             prefixStart,
             virtualStart,
             dictEnd,
-        );
+        ) {
+            Ok(sequenceLength) => sequenceLength,
+            Err(err) => err.to_error_code(),
+        };
     }
 
     // Assumptions (everything else goes into ZSTD_execSequenceEnd())
