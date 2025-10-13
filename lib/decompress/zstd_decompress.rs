@@ -1822,14 +1822,17 @@ unsafe fn ZSTD_decompressFrame(
             }
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
-                decodedSize = ZSTD_decompressBlock_internal(
+                decodedSize = match ZSTD_decompressBlock_internal(
                     dctx,
                     op.as_mut_ptr().cast(),
                     oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                     not_streaming,
-                );
+                ) {
+                    Ok(size) => size,
+                    Err(err) => return err.to_error_code(),
+                };
             }
             BlockType::Reserved => {
                 return Error::corruption_detected.to_error_code();
@@ -2180,15 +2183,18 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
             match dctx.bType {
                 BlockType::Compressed => {
                     debug_assert!(dctx.isFrameDecompression);
-                    rSize = ZSTD_decompressBlock_internal(
+                    dctx.expected = 0; // streaming not supported
+                    rSize = match ZSTD_decompressBlock_internal(
                         dctx,
                         dst.as_mut_ptr().cast(),
                         dst.capacity(),
                         src.as_ptr().cast(),
                         src.len(),
                         is_streaming,
-                    );
-                    dctx.expected = 0; // streaming not supported
+                    ) {
+                        Ok(size) => size,
+                        Err(err) => return err.to_error_code(),
+                    };
                 }
                 BlockType::Raw => {
                     debug_assert!(src.len() <= dctx.expected);
