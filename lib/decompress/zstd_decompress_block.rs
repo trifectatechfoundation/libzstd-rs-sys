@@ -868,15 +868,15 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     nbSeq: core::ffi::c_int,
     wksp: &mut Workspace,
     bmi2: bool,
-) -> size_t {
+) -> Result<size_t, Error> {
     match type_0 {
         SymbolEncodingType_e::set_rle => {
             let [symbol, ..] = *src else {
-                return Error::srcSize_wrong.to_error_code();
+                return Err(Error::srcSize_wrong);
             };
 
             if u32::from(symbol) > max {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
 
             let baseline = baseValue[usize::from(symbol)];
@@ -884,15 +884,15 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
             ZSTD_buildSeqTable_rle(DTableSpace, baseline, nbBits);
 
             *DTablePtr = NonNull::new(DTableSpace);
-            1
+            Ok(1)
         }
         SymbolEncodingType_e::set_basic => {
             *DTablePtr = None;
-            0
+            Ok(0)
         }
         SymbolEncodingType_e::set_repeat => {
             if !flagRepeatTable {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             if ddictIsCold && nbSeq > 24 {
                 let pSize = size_of::<ZSTD_seqSymbol>().wrapping_mul(1 + (1usize << maxLog));
@@ -900,17 +900,17 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
                     prefetch_area(ptr.as_ptr(), pSize);
                 }
             }
-            0
+            Ok(0)
         }
         SymbolEncodingType_e::set_compressed => {
             let mut tableLog: core::ffi::c_uint = 0;
             let mut norm: [i16; 53] = [0; 53];
             let Ok(headerSize) = FSE_readNCount_slice(&mut norm, &mut max, &mut tableLog, src)
             else {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             };
             if tableLog > maxLog {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             ZSTD_buildFSETable(
                 DTableSpace,
@@ -922,7 +922,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
                 bmi2,
             );
             *DTablePtr = NonNull::new(DTableSpace);
-            headerSize
+            Ok(headerSize)
         }
     }
 }
@@ -995,10 +995,8 @@ fn ZSTD_decodeSeqHeaders(
         nbSeq,
         &mut dctx.workspace,
         dctx.bmi2,
-    );
-    if ERR_isError(llhSize) {
-        return Err(Error::corruption_detected);
-    }
+    )
+    .map_err(|_| Error::corruption_detected)?;
 
     ip += llhSize as usize;
     let ofhSize = ZSTD_buildSeqTableNew(
@@ -1015,10 +1013,8 @@ fn ZSTD_decodeSeqHeaders(
         nbSeq,
         &mut dctx.workspace,
         dctx.bmi2,
-    );
-    if ERR_isError(ofhSize) {
-        return Err(Error::corruption_detected);
-    }
+    )
+    .map_err(|_| Error::corruption_detected)?;
 
     ip += ofhSize as usize;
     let mlhSize = ZSTD_buildSeqTableNew(
@@ -1035,10 +1031,8 @@ fn ZSTD_decodeSeqHeaders(
         nbSeq,
         &mut dctx.workspace,
         dctx.bmi2,
-    );
-    if ERR_isError(mlhSize) {
-        return Err(Error::corruption_detected);
-    }
+    )
+    .map_err(|_| Error::corruption_detected)?;
 
     ip += mlhSize as usize;
 
