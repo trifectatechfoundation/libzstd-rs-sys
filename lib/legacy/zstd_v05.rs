@@ -2352,6 +2352,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
             if MLlog > MLFSEv05Log as core::ffi::c_uint {
                 return Err(Error::corruption_detected);
             }
+            ip = ip.add(headerSize);
             let _ = FSEv05_buildDTable(DTableML, &norm, max, MLlog);
         }
         _ => unreachable!(),
