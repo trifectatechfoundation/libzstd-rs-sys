@@ -1180,7 +1180,7 @@ unsafe fn ZSTD_execSequenceEnd(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> size_t {
+) -> Result<size_t, Error> {
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
@@ -1189,10 +1189,10 @@ unsafe fn ZSTD_execSequenceEnd(
 
     /* bounds checks : careful of address space overflow in 32-bit mode */
     if sequenceLength > oend.offset_from_unsigned(op) {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     debug_assert!(op < op.wrapping_add(sequenceLength));
@@ -1207,12 +1207,12 @@ unsafe fn ZSTD_execSequenceEnd(
     if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
         /* offset beyond prefix */
         if sequence.offset > (oLitEnd.addr() - virtualStart.addr()) {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.sub(prefixStart.addr() - match_0.addr());
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
-            return sequenceLength;
+            return Ok(sequenceLength);
         }
         /* span extDict & currentPrefixSegment */
         let length1 = dictEnd.addr() - match_0.addr();
@@ -1228,7 +1228,7 @@ unsafe fn ZSTD_execSequenceEnd(
         sequence.matchLength,
         Overlap::OverlapSrcBeforeDst,
     );
-    sequenceLength
+    Ok(sequenceLength)
 }
 
 /// This version is intended to be used during instances where the litBuffer is still split.
@@ -1337,7 +1337,7 @@ unsafe fn ZSTD_execSequence(
             || oMatchEnd > oend_w
             || MEM_32bits() && (oend.offset_from_unsigned(op)) < sequenceLength.wrapping_add(32),
     ) {
-        return ZSTD_execSequenceEnd(
+        return match ZSTD_execSequenceEnd(
             op,
             oend,
             sequence,
@@ -1346,7 +1346,10 @@ unsafe fn ZSTD_execSequence(
             prefixStart,
             virtualStart,
             dictEnd,
-        );
+        ) {
+            Ok(sequenceLength) => sequenceLength,
+            Err(err) => err.to_error_code(),
+        };
     }
 
     /* Assumptions (everything else goes into ZSTD_execSequenceEnd()) */
