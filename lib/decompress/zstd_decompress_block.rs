@@ -285,11 +285,11 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     src: &[u8],
     dst: Writer<'_>,
     streaming: StreamingOperation,
-) -> size_t {
+) -> Result<size_t, Error> {
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if src.len() < MIN_CBLOCK_SIZE {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let blockSizeMax = dctx.block_size_max();
@@ -297,7 +297,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     let litEncType = SymbolEncodingType_e::try_from(src[0] & 0b11).unwrap();
     match litEncType {
         SymbolEncodingType_e::set_repeat if !dctx.litEntropy => {
-            return Error::dictionary_corrupted.to_error_code();
+            return Err(Error::dictionary_corrupted);
         }
         SymbolEncodingType_e::set_repeat | SymbolEncodingType_e::set_compressed => {}
         SymbolEncodingType_e::set_basic => {
@@ -305,7 +305,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 1 => (2usize, (u16::from_le_bytes([src[0], src[1]]) >> 4) as usize),
                 3 => {
                     let [a, b, c, ..] = *src else {
-                        return Error::corruption_detected.to_error_code();
+                        return Err(Error::corruption_detected);
                     };
 
                     (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
@@ -314,22 +314,22 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             };
 
             if litSize > 0 && dst.is_null() {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
             if litSize > blockSizeMax {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
 
             let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
 
             ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
 
             if lhSize + litSize + WILDCOPY_OVERLENGTH > src.len() {
                 if litSize.wrapping_add(lhSize) > src.len() {
-                    return Error::corruption_detected.to_error_code();
+                    return Err(Error::corruption_detected);
                 }
                 if dctx.litBufferLocation == LitLocation::ZSTD_split {
                     unsafe {
@@ -352,7 +352,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
                 }
                 dctx.litPtr = dctx.litBuffer;
                 dctx.litSize = litSize;
-                return lhSize.wrapping_add(litSize);
+                return Ok(lhSize.wrapping_add(litSize));
             }
 
             dctx.litPtr = src[lhSize..].as_ptr();
@@ -360,20 +360,20 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             dctx.litBufferEnd = (dctx.litPtr).add(litSize);
             dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
 
-            return lhSize.wrapping_add(litSize);
+            return Ok(lhSize.wrapping_add(litSize));
         }
         SymbolEncodingType_e::set_rle => {
             let (lhSize, litSize) = match src[0] >> 2 & 0b11 {
                 1 => {
                     let [a, b, _, ..] = *src else {
-                        return Error::corruption_detected.to_error_code();
+                        return Err(Error::corruption_detected);
                     };
 
                     (2usize, (u16::from_le_bytes([a, b]) >> 4) as usize)
                 }
                 3 => {
                     let [a, b, c, _, ..] = *src else {
-                        return Error::corruption_detected.to_error_code();
+                        return Err(Error::corruption_detected);
                     };
 
                     (3, (u32::from_le_bytes([a, b, c, 0]) >> 4) as usize)
@@ -382,15 +382,15 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             };
 
             if litSize > 0 && dst.is_null() {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
             if litSize > blockSizeMax {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
 
             let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
             if expectedWriteSize < litSize {
-                return Error::dstSize_tooSmall.to_error_code();
+                return Err(Error::dstSize_tooSmall);
             }
 
             ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, true);
@@ -412,12 +412,12 @@ unsafe fn ZSTD_decodeLiteralsBlock(
             }
             dctx.litPtr = dctx.litBuffer;
             dctx.litSize = litSize;
-            return lhSize.wrapping_add(1);
+            return Ok(lhSize.wrapping_add(1));
         }
     }
 
     let [a, b, c, d, size_correction, ..] = *src else {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     };
     let lhc = u32::from_le_bytes([a, b, c, d]) as usize;
 
@@ -451,21 +451,21 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     };
 
     if litSize > 0 && dst.is_null() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if litSize > blockSizeMax {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
     if !singleStream && litSize < 6 {
-        return Error::literals_headerWrong.to_error_code();
+        return Err(Error::literals_headerWrong);
     }
     if litCSize.wrapping_add(lhSize) > src.len() {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let expectedWriteSize = Ord::min(dst.capacity(), blockSizeMax);
     if expectedWriteSize < litSize {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     ZSTD_allocateLiteralsBuffer(dctx, dst, litSize, streaming, expectedWriteSize, false);
@@ -531,7 +531,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
     }
 
     if ERR_isError(hufSuccess) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     dctx.litPtr = dctx.litBuffer;
@@ -542,7 +542,7 @@ unsafe fn ZSTD_decodeLiteralsBlock(
         dctx.HUFptr = None;
     }
 
-    litCSize.wrapping_add(lhSize)
+    Ok(litCSize.wrapping_add(lhSize))
 }
 
 const fn sequence_symbol(
@@ -2401,10 +2401,10 @@ unsafe fn ZSTD_decompressBlock_internal_help(
         return Error::srcSize_wrong.to_error_code();
     }
 
-    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming);
-    if ERR_isError(litCSize) {
-        return litCSize;
-    }
+    let litCSize = match ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
 
     let mut ip = &src[litCSize as usize..];
 
