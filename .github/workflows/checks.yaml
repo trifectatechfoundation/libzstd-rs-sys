@@ -90,7 +90,7 @@ jobs:
         run: "rustc -vV | sed -n 's|host: ||p'"
         if: matrix.os != 'windows-2022'
       - name: Install cargo-llvm-cov & cargo-nextest
-        uses: taiki-e/install-action@522492a8c115f1b6d4d318581f09638e9442547b # v2.62.21
+        uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: Cache apt packages
@@ -194,7 +194,7 @@ jobs:
           rustup toolchain install nightly --component miri
           cargo +nightly miri setup
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@522492a8c115f1b6d4d318581f09638e9442547b # v2.62.21
+        uses: taiki-e/install-action@e7ef886cf8f69c25ecef6bbc2858a42e273496ec # v2.62.28
         with:
           tool: cargo-nextest
       - name: Run unit tests with miri
