@@ -1021,14 +1021,13 @@ fn HUFv07_decompress4X2_DCtx(
     }
     unsafe { HUFv07_decompress4X2_usingDTable_internal(dst, &cSrc[hSize..], dctx) }
 }
-unsafe fn HUFv07_fillDTableX4Level2(
+fn HUFv07_fillDTableX4Level2(
     DTable: &mut [HUFv07_DEltX4],
     sizeLog: u32,
     consumed: u32,
-    rankValOrigin: *const u32,
+    rankValOrigin: &[u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1],
     minWeight: core::ffi::c_int,
-    sortedSymbols: *const sortedSymbol_t,
-    sortedListSize: u32,
+    sortedSymbols: &[sortedSymbol_t],
     nbBitsBaseline: u32,
     baseSeq: u16,
 ) {
@@ -1037,9 +1036,9 @@ unsafe fn HUFv07_fillDTableX4Level2(
         nbBits: 0,
         length: 0,
     };
-    let mut rankVal: [u32; 17] = ptr::read::<[u32; 17]>(rankValOrigin as *const [u32; 17]);
+    let mut rankVal: [u32; 17] = *rankValOrigin;
     if minWeight > 1 {
-        let skipSize = *rankVal.as_mut_ptr().offset(minWeight as isize);
+        let skipSize = rankVal[minWeight as usize];
         DElt.sequence = LE16(baseSeq.to_le_bytes());
         DElt.nbBits = consumed as u8;
         DElt.length = 1;
@@ -1049,70 +1048,55 @@ unsafe fn HUFv07_fillDTableX4Level2(
             i = i.wrapping_add(1);
         }
     }
-    let mut s: u32 = 0;
-    s = 0;
-    while s < sortedListSize {
-        let symbol = (*sortedSymbols.offset(s as isize)).symbol as u32;
-        let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
+    for sym in sortedSymbols {
+        let symbol = sym.symbol as u32;
+        let weight = sym.weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
-        let start = *rankVal.as_mut_ptr().offset(weight as isize);
-        let mut i_0 = start;
-        let end = start.wrapping_add(length);
+        let start = rankVal[weight as usize];
         DElt.sequence = LE16(u16::to_le_bytes(
             (baseSeq as u32).wrapping_add(symbol << 8) as u16
         ));
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
-        loop {
-            let fresh34 = i_0;
-            i_0 = i_0.wrapping_add(1);
-            DTable[fresh34 as usize] = DElt;
-            if i_0 >= end {
-                break;
-            }
+        for i in start..start + length {
+            DTable[i as usize] = DElt;
         }
-        let fresh35 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
-        *fresh35 = (*fresh35).wrapping_add(length);
-        s = s.wrapping_add(1);
+        rankVal[weight as usize] += length;
     }
 }
-unsafe fn HUFv07_fillDTableX4(
+fn HUFv07_fillDTableX4(
     DTable: &mut [HUFv07_DEltX4; 4096],
     targetLog: u32,
-    sortedList: *const sortedSymbol_t,
-    sortedListSize: u32,
-    rankStart: *const u32,
-    rankValOrigin: *mut [u32; 17],
+    sortedList: &[sortedSymbol_t],
+    rankStart: &[u32; HUFv07_TABLELOG_ABSOLUTEMAX + 2],
+    rankValOrigin: &mut [[u32; HUFv07_TABLELOG_ABSOLUTEMAX + 1]; HUFv07_TABLELOG_ABSOLUTEMAX],
     maxWeight: u32,
     nbBitsBaseline: u32,
 ) {
     let scaleLog = nbBitsBaseline.wrapping_sub(targetLog) as core::ffi::c_int;
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
-    let mut s: u32 = 0;
-    let mut rankVal: [u32; 17] = ptr::read::<[u32; 17]>(rankValOrigin);
-    s = 0;
-    while s < sortedListSize {
-        let symbol = (*sortedList.offset(s as isize)).symbol as u16;
-        let weight = (*sortedList.offset(s as isize)).weight as u32;
+    let mut rankVal: [u32; 17] = rankValOrigin[0];
+    for sym in sortedList {
+        let symbol = sym.symbol as u16;
+        let weight = sym.weight as u32;
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
-        let start = *rankVal.as_mut_ptr().offset(weight as isize);
-        let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
+        let start = rankVal[weight as usize];
+        let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
         if targetLog.wrapping_sub(nbBits) >= minBits {
             let mut sortedRank: u32 = 0;
             let mut minWeight = nbBits.wrapping_add(scaleLog as u32) as core::ffi::c_int;
             if minWeight < 1 {
                 minWeight = 1;
             }
-            sortedRank = *rankStart.offset(minWeight as isize);
+            sortedRank = rankStart[minWeight as usize];
             HUFv07_fillDTableX4Level2(
                 &mut DTable[start as usize..],
                 targetLog.wrapping_sub(nbBits),
                 nbBits,
-                (*rankValOrigin.offset(nbBits as isize)).as_mut_ptr(),
+                &rankValOrigin[nbBits as usize],
                 minWeight,
-                sortedList.offset(sortedRank as isize),
-                sortedListSize.wrapping_sub(sortedRank),
+                &sortedList[sortedRank as usize..],
                 nbBitsBaseline,
                 symbol,
             );
@@ -1129,9 +1113,7 @@ unsafe fn HUFv07_fillDTableX4(
                 u = u.wrapping_add(1);
             }
         }
-        let fresh36 = &mut (*rankVal.as_mut_ptr().offset(weight as isize));
-        *fresh36 = (*fresh36).wrapping_add(length);
-        s = s.wrapping_add(1);
+        rankVal[weight as usize] += length;
     }
 }
 fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, Error> {
@@ -1199,18 +1181,15 @@ fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
             rankVal[consumed as usize][w as usize] = rankVal[0][w as usize] >> consumed;
         }
     }
-    unsafe {
-        HUFv07_fillDTableX4(
-            dt,
-            maxTableLog,
-            sortedSymbol.as_mut_ptr(),
-            sizeOfSort,
-            rankStart0.as_mut_ptr(),
-            rankVal.as_mut_ptr(),
-            maxW,
-            tableLog + 1,
-        )
-    };
+    HUFv07_fillDTableX4(
+        dt,
+        maxTableLog,
+        &sortedSymbol[..sizeOfSort as usize],
+        &rankStart0,
+        &mut rankVal,
+        maxW,
+        tableLog + 1,
+    );
     dtd.tableLog = maxTableLog as u8;
     dtd.tableType = 1;
     DTable.description = dtd;
