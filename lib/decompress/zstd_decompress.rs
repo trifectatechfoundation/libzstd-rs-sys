@@ -263,7 +263,7 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
                 return Error::memory_allocation.to_error_code();
             }
             let result = ZSTDv07_decompress_usingDict(
-                zd,
+                &mut *zd,
                 dst,
                 dstCapacity,
                 src,
@@ -400,7 +400,7 @@ unsafe fn ZSTD_initLegacyStream(
             if dctx.is_null() {
                 return Error::memory_allocation.to_error_code();
             }
-            let _ = ZBUFFv07_decompressInitDictionary(dctx, dict, dictSize);
+            let _ = ZBUFFv07_decompressInitDictionary(&mut *dctx, dict, dictSize);
             *legacyContext = dctx as *mut core::ffi::c_void;
             0
         }
@@ -465,7 +465,7 @@ unsafe fn ZSTD_decompressLegacyStream(
                 (output.dst as *mut core::ffi::c_char).add(output.pos) as *mut core::ffi::c_void;
             let mut decodedSize = (output.size).wrapping_sub(output.pos);
             let hintSize =
-                ZBUFFv07_decompressContinue(dctx, dst, &mut decodedSize, src, &mut readSize);
+                ZBUFFv07_decompressContinue(&mut *dctx, dst, &mut decodedSize, src, &mut readSize);
             output.pos = (output.pos).wrapping_add(decodedSize);
             input.pos = (input.pos).wrapping_add(readSize);
             hintSize.unwrap_or_else(|err| err.to_error_code())
