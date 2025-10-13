@@ -2382,36 +2382,37 @@ pub fn ZSTD_loadDEntropy(entropy: &mut ZSTD_entropyDTables_t, dict: &[u8]) -> si
     dict.len() - dict_content_size
 }
 
-fn ZSTD_refDictContent(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> size_t {
+fn ZSTD_refDictContent(dctx: &mut ZSTD_DCtx, dict: &[u8]) {
     dctx.dictEnd = dctx.previousDstEnd;
     let delta = dctx.previousDstEnd.addr() - dctx.prefixStart.addr();
     dctx.virtualStart = dict.as_ptr().wrapping_sub(delta).cast();
     dctx.prefixStart = dict.as_ptr().cast();
     dctx.previousDstEnd = dict.as_ptr_range().end.cast();
-
-    0
 }
 
-fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> size_t {
+fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> Result<(), Error> {
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
-        return ZSTD_refDictContent(dctx, dict);
+        ZSTD_refDictContent(dctx, dict);
+        return Ok(());
     };
 
     let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
-        return ZSTD_refDictContent(dctx, dict); // pure content mode
+        ZSTD_refDictContent(dctx, dict); // pure content mode
+        return Ok(());
     }
     dctx.dictID = u32::from_le_bytes(*dict_id);
 
     let eSize = ZSTD_loadDEntropy(&mut dctx.entropy, dict);
     if ERR_isError(eSize) {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
 
     dctx.fseEntropy = true;
     dctx.litEntropy = dctx.fseEntropy;
 
-    ZSTD_refDictContent(dctx, &dict[eSize..])
+    ZSTD_refDictContent(dctx, &dict[eSize..]);
+    Ok(())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin))]
@@ -2465,35 +2466,23 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     }
 
     let dict = core::slice::from_raw_parts(dict.cast::<u8>(), dictSize);
-    if ERR_isError(ZSTD_decompress_insertDictionary(
-        dctx.assume_init_mut(),
-        dict,
-    )) {
-        return Error::dictionary_corrupted.to_error_code();
-    }
-
-    0
+    ZSTD_decompress_insertDictionary(dctx.assume_init_mut(), dict)
+        .map(|_| 0)
+        .unwrap_or_else(Error::to_error_code)
 }
 
 unsafe fn ZSTD_decompressBegin_usingDict_slice(
     dctx: *mut ZSTD_DCtx,
     dict: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<(), Error> {
     let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
     decompress_begin(dctx);
 
     if dict.is_empty() {
-        return Ok(0);
+        return Ok(());
     }
 
-    if ERR_isError(ZSTD_decompress_insertDictionary(
-        dctx.assume_init_mut(),
-        dict,
-    )) {
-        return Err(Error::dictionary_corrupted);
-    }
-
-    Ok(0)
+    ZSTD_decompress_insertDictionary(dctx.assume_init_mut(), dict)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDDict))]
