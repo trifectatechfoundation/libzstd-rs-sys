@@ -1436,7 +1436,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> size_t {
+) -> Result<size_t, Error> {
     let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.as_mut_ptr().add(sequenceLength);
@@ -1456,7 +1456,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             || MEM_32bits()
                 && (oend.offset_from_unsigned(op.as_mut_ptr())) < sequenceLength.wrapping_add(32),
     ) {
-        return match ZSTD_execSequenceEndSplitLitBuffer(
+        return ZSTD_execSequenceEndSplitLitBuffer(
             op,
             oend,
             oend_w,
@@ -1466,10 +1466,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             prefixStart,
             virtualStart,
             dictEnd,
-        ) {
-            Ok(sequenceLength) => sequenceLength,
-            Err(err) => err.to_error_code(),
-        };
+        );
     }
 
     // Assumptions (everything else goes into ZSTD_execSequenceEnd())
@@ -1499,12 +1496,12 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     // Copy Match
     if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
         if sequence.offset > oLitEnd.offset_from_unsigned(virtualStart) {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.offset(match_0.offset_from(prefixStart) as core::ffi::c_long as isize);
         if match_0.add(sequence.matchLength) <= dictEnd {
             core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
-            return sequenceLength;
+            return Ok(sequenceLength);
         }
 
         /* span extDict & currentPrefixSegment */
@@ -1531,7 +1528,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             sequence.matchLength,
             Overlap::NoOverlap,
         );
-        return sequenceLength;
+        return Ok(sequenceLength);
     }
     debug_assert!(sequence.offset < WILDCOPY_VECLEN as usize);
 
@@ -1548,7 +1545,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
             Overlap::OverlapSrcBeforeDst,
         );
     }
-    sequenceLength
+    Ok(sequenceLength)
 }
 
 #[inline(always)]
@@ -1762,7 +1759,7 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 break;
             }
 
-            let oneSeqSize = ZSTD_execSequenceSplitLitBuffer(
+            let oneSeqSize = match ZSTD_execSequenceSplitLitBuffer(
                 op.subslice(..),
                 op.as_mut_ptr_range().end,
                 litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
@@ -1772,11 +1769,10 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
                 prefixStart,
                 vBase,
                 dictEnd,
-            );
-
-            if ERR_isError(oneSeqSize) {
-                return oneSeqSize;
-            }
+            ) {
+                Ok(sequenceLength) => sequenceLength,
+                Err(err) => return err.to_error_code(),
+            };
 
             op = op.subslice(oneSeqSize..);
             nbSeq -= 1;
@@ -2092,7 +2088,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
             } else {
                 let sequence = sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize];
                 let oneSeqSize_0 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                    ZSTD_execSequenceSplitLitBuffer(
+                    match ZSTD_execSequenceSplitLitBuffer(
                         op.subslice(..),
                         oend,
                         litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
@@ -2102,7 +2098,10 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         prefixStart,
                         dictStart,
                         dictEnd,
-                    )
+                    ) {
+                        Ok(sequenceLength) => sequenceLength,
+                        Err(err) => return err.to_error_code(),
+                    }
                 } else {
                     match ZSTD_execSequence(
                         op.subslice(..),
@@ -2118,9 +2117,6 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         Err(err) => return err.to_error_code(),
                     }
                 };
-                if ERR_isError(oneSeqSize_0) {
-                    return oneSeqSize_0;
-                }
 
                 prefetchPos = ZSTD_prefetchMatch(prefetchPos, sequence_0, prefixStart, dictEnd);
                 sequences[(seqNb & STORED_SEQS_MASK) as usize] = sequence_0;
@@ -2165,7 +2161,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                 op = op.subslice(oneSeqSize_1..);
             } else {
                 let oneSeqSize_2 = if dctx.litBufferLocation == LitLocation::ZSTD_split {
-                    ZSTD_execSequenceSplitLitBuffer(
+                    match ZSTD_execSequenceSplitLitBuffer(
                         op.subslice(..),
                         oend,
                         litPtr.add(sequence.litLength).sub(WILDCOPY_OVERLENGTH),
@@ -2175,7 +2171,10 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         prefixStart,
                         dictStart,
                         dictEnd,
-                    )
+                    ) {
+                        Ok(sequenceLength) => sequenceLength,
+                        Err(err) => return err.to_error_code(),
+                    }
                 } else {
                     match ZSTD_execSequence(
                         op.subslice(..),
@@ -2191,9 +2190,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                         Err(err) => return err.to_error_code(),
                     }
                 };
-                if ERR_isError(oneSeqSize_2) {
-                    return oneSeqSize_2;
-                }
+
                 op = op.subslice(oneSeqSize_2..);
             }
         }
