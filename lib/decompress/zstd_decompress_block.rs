@@ -2332,13 +2332,13 @@ pub unsafe fn ZSTD_decompressBlock_internal(
     src: *const core::ffi::c_void,
     srcSize: size_t,
     streaming: streaming_operation,
-) -> size_t {
+) -> Result<size_t, Error> {
     let Some(dctx) = dctx.as_mut() else {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     };
 
     let Ok(streaming) = StreamingOperation::try_from(streaming) else {
-        return Error::GENERIC.to_error_code();
+        return Err(Error::GENERIC);
     };
 
     let src = if src.is_null() {
@@ -2358,15 +2358,12 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     mut dst: Writer<'_>,
     src: &[u8],
     streaming: StreamingOperation,
-) -> size_t {
+) -> Result<size_t, Error> {
     if src.len() > dctx.block_size_max() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
-    let litCSize = match ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming) {
-        Ok(size) => size,
-        Err(err) => return err.to_error_code(),
-    };
+    let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming)?;
 
     let mut ip = &src[litCSize as usize..];
 
@@ -2380,19 +2377,16 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     };
     let mut use_prefetch_decoder = dctx.ddictIsCold;
     let mut nbSeq = 0;
-    let seqHSize = match ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip) {
-        Ok(size) => size,
-        Err(err) => return err.to_error_code(),
-    };
+    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip)?;
     ip = &ip[seqHSize as usize..];
     if dst.is_empty() && nbSeq > 0 {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if MEM_64bits()
         && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
         && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if offset == Offset::Long
         || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
@@ -2415,22 +2409,11 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     dctx.ddictIsCold = false;
 
     if use_prefetch_decoder {
-        return match ZSTD_decompressSequencesLong(dctx, dst.subslice(..), ip, nbSeq, offset) {
-            Ok(size) => size,
-            Err(err) => err.to_error_code(),
-        };
-    }
-
-    if dctx.litBufferLocation == LitLocation::ZSTD_split {
-        match ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, ip, nbSeq, offset) {
-            Ok(size) => size,
-            Err(err) => err.to_error_code(),
-        }
+        ZSTD_decompressSequencesLong(dctx, dst.subslice(..), ip, nbSeq, offset)
+    } else if dctx.litBufferLocation == LitLocation::ZSTD_split {
+        ZSTD_decompressSequencesSplitLitBuffer(dctx, dst, ip, nbSeq, offset)
     } else {
-        match ZSTD_decompressSequences(dctx, dst, ip, nbSeq, offset) {
-            Ok(size) => size,
-            Err(err) => err.to_error_code(),
-        }
+        ZSTD_decompressSequences(dctx, dst, ip, nbSeq, offset)
     }
 }
 
@@ -2453,16 +2436,15 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     ZSTD_checkContinuity(dctx, dst.as_ptr_range());
 
     // FIXME: can src and dst overlap in this case?
-    let dSize = ZSTD_decompressBlock_internal_help(
+    let dSize = match ZSTD_decompressBlock_internal_help(
         dctx,
         dst.subslice(..),
         src.as_slice(),
         StreamingOperation::NotStreaming,
-    );
-
-    if ERR_isError(dSize) {
-        return dSize;
-    }
+    ) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
 
     dctx.previousDstEnd = dst.as_ptr().byte_add(dSize).cast::<c_void>();
     dSize
