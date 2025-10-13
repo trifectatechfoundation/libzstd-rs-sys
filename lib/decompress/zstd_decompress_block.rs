@@ -2215,11 +2215,8 @@ unsafe fn ZSTD_decompressSequencesLong_default(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> size_t {
-    match ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset) {
-        Ok(size) => size,
-        Err(err) => err.to_error_code(),
-    }
+) -> Result<size_t, Error> {
+    ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset)
 }
 
 #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi2"))]
@@ -2251,11 +2248,8 @@ unsafe fn ZSTD_decompressSequencesLong_bmi2(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> size_t {
-    match ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset) {
-        Ok(size) => size,
-        Err(err) => err.to_error_code(),
-    }
+) -> Result<size_t, Error> {
+    ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset)
 }
 
 unsafe fn ZSTD_decompressSequences(
@@ -2292,7 +2286,7 @@ unsafe fn ZSTD_decompressSequencesLong(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> size_t {
+) -> Result<size_t, Error> {
     if dctx.bmi2 {
         ZSTD_decompressSequencesLong_bmi2(dctx, dst, seqStart, nbSeq, offset)
     } else {
@@ -2439,7 +2433,10 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     dctx.ddictIsCold = false;
 
     if use_prefetch_decoder {
-        return ZSTD_decompressSequencesLong(dctx, dst.subslice(..), ip, nbSeq, offset);
+        return match ZSTD_decompressSequencesLong(dctx, dst.subslice(..), ip, nbSeq, offset) {
+            Ok(size) => size,
+            Err(err) => err.to_error_code(),
+        };
     }
 
     if dctx.litBufferLocation == LitLocation::ZSTD_split {
