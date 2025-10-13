@@ -931,23 +931,23 @@ fn ZSTD_decodeSeqHeaders(
     dctx: &mut ZSTD_DCtx,
     nbSeqPtr: &mut core::ffi::c_int,
     src: &[u8],
-) -> size_t {
+) -> Result<size_t, Error> {
     let mut ip = 0;
     let [nbSeq, ..] = *src else {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     };
     let mut nbSeq = i32::from(nbSeq);
     ip += 1;
     if nbSeq > 0x7f {
         if nbSeq == 0xff {
             let [_, a, b, ..] = *src else {
-                return Error::srcSize_wrong.to_error_code();
+                return Err(Error::srcSize_wrong);
             };
             nbSeq = i32::from(u16::from_le_bytes([a, b])) + LONGNBSEQ;
             ip += 2;
         } else {
             if ip >= src.len() {
-                return Error::srcSize_wrong.to_error_code();
+                return Err(Error::srcSize_wrong);
             }
             nbSeq = ((nbSeq - 0x80) << 8) + i32::from(src[ip]);
             ip += 1;
@@ -956,21 +956,21 @@ fn ZSTD_decodeSeqHeaders(
     *nbSeqPtr = nbSeq;
     if nbSeq == 0 {
         if ip != src.len() {
-            return Error::corruption_detected.to_error_code();
+            return Err(Error::corruption_detected);
         }
-        return ip;
+        return Ok(ip);
     }
 
     /* FSE table descriptors */
 
     // Minimum possible size: 1 byte for symbol encoding types.
     if ip + 1 > src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     // The last field, Reserved, must be all-zeroes.
     if src[ip] & 0b11 != 0 {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     let byte = src[ip];
@@ -997,7 +997,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2,
     );
     if ERR_isError(llhSize) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     ip += llhSize as usize;
@@ -1017,7 +1017,7 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2,
     );
     if ERR_isError(ofhSize) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     ip += ofhSize as usize;
@@ -1037,12 +1037,12 @@ fn ZSTD_decodeSeqHeaders(
         dctx.bmi2,
     );
     if ERR_isError(mlhSize) {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     ip += mlhSize as usize;
 
-    ip
+    Ok(ip)
 }
 
 ///  Copies 8 bytes from ip to op and updates op and ip where ip <= op.
@@ -2421,10 +2421,10 @@ unsafe fn ZSTD_decompressBlock_internal_help(
     };
     let mut use_prefetch_decoder = dctx.ddictIsCold;
     let mut nbSeq = 0;
-    let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip);
-    if ERR_isError(seqHSize) {
-        return seqHSize;
-    }
+    let seqHSize = match ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
     ip = &ip[seqHSize as usize..];
     if dst.is_empty() && nbSeq > 0 {
         return Error::dstSize_tooSmall.to_error_code();
