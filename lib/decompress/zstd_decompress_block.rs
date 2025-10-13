@@ -2431,23 +2431,20 @@ unsafe fn ZSTD_decompressBlock_deprecated(
     dctx: &mut ZSTD_DCtx,
     mut dst: Writer<'_>,
     src: Reader<'_>,
-) -> size_t {
+) -> Result<size_t, Error> {
     dctx.isFrameDecompression = false;
     ZSTD_checkContinuity(dctx, dst.as_ptr_range());
 
     // FIXME: can src and dst overlap in this case?
-    let dSize = match ZSTD_decompressBlock_internal_help(
+    let dSize = ZSTD_decompressBlock_internal_help(
         dctx,
         dst.subslice(..),
         src.as_slice(),
         StreamingOperation::NotStreaming,
-    ) {
-        Ok(size) => size,
-        Err(err) => return err.to_error_code(),
-    };
+    )?;
 
     dctx.previousDstEnd = dst.as_ptr().byte_add(dSize).cast::<c_void>();
-    dSize
+    Ok(dSize)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBlock))]
@@ -2462,6 +2459,7 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
     let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
 
     ZSTD_decompressBlock_deprecated(dctx.as_mut().unwrap(), dst, src)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 #[cfg(test)]
