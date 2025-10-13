@@ -1305,31 +1305,8 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
 }
 
 #[inline(always)]
-unsafe fn ZSTD_execSequence_writer(
-    mut dst: Writer<'_>,
-    sequence: seq_t,
-    litPtr: &mut *const u8,
-    litLimit: *const u8,
-    prefixStart: *const u8,
-    virtualStart: *const u8,
-    dictEnd: *const u8,
-) -> size_t {
-    let range = dst.as_mut_ptr_range();
-    ZSTD_execSequence(
-        range.start,
-        range.end,
-        sequence,
-        litPtr,
-        litLimit,
-        prefixStart,
-        virtualStart,
-        dictEnd,
-    )
-}
-
-#[inline(always)]
 unsafe fn ZSTD_execSequence(
-    mut op: *mut u8,
+    mut op: Writer<'_>,
     oend: *mut u8,
     mut sequence: seq_t,
     litPtr: &mut *const u8,
@@ -1338,6 +1315,7 @@ unsafe fn ZSTD_execSequence(
     virtualStart: *const u8,
     dictEnd: *const u8,
 ) -> size_t {
+    let mut op = op.as_mut_ptr();
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
@@ -1817,8 +1795,9 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
             litPtr = dctx.litExtraBuffer.as_mut_ptr();
             litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
             dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
-            let oneSeqSize_0 = ZSTD_execSequence_writer(
+            let oneSeqSize_0 = ZSTD_execSequence(
                 op.subslice(..),
+                op.as_mut_ptr_range().end,
                 sequence,
                 &mut litPtr,
                 litBufferEnd,
@@ -1849,8 +1828,9 @@ unsafe fn ZSTD_decompressSequences_bodySplitLitBuffer(
 
             while nbSeq != 0 {
                 let sequence_0 = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
-                let oneSeqSize_1 = ZSTD_execSequence_writer(
+                let oneSeqSize_1 = ZSTD_execSequence(
                     op.subslice(..),
+                    op.as_mut_ptr_range().end,
                     sequence_0,
                     &mut litPtr,
                     litBufferEnd,
@@ -1943,7 +1923,7 @@ unsafe fn ZSTD_decompressSequences_body(
         for nbSeq in (1..=nbSeq).rev() {
             let sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
             let oneSeqSize = ZSTD_execSequence(
-                op.as_mut_ptr(),
+                op.subslice(..),
                 oend,
                 sequence,
                 &mut litPtr,
@@ -2094,7 +2074,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                 litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
                 dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
                 let oneSeqSize = ZSTD_execSequence(
-                    op.as_mut_ptr(),
+                    op.subslice(..),
                     oend,
                     sequences[((seqNb - ADVANCED_SEQS) & STORED_SEQS_MASK) as usize],
                     &mut litPtr,
@@ -2127,7 +2107,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     )
                 } else {
                     ZSTD_execSequence(
-                        op.as_mut_ptr(),
+                        op.subslice(..),
                         oend,
                         sequence,
                         &mut litPtr,
@@ -2169,7 +2149,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                 litBufferEnd = dctx.litExtraBuffer[ZSTD_LITBUFFEREXTRASIZE..].as_mut_ptr();
                 dctx.litBufferLocation = LitLocation::ZSTD_not_in_dst;
                 let oneSeqSize_1 = ZSTD_execSequence(
-                    op.as_mut_ptr(),
+                    op.subslice(..),
                     oend,
                     *sequence,
                     &mut litPtr,
@@ -2197,7 +2177,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
                     )
                 } else {
                     ZSTD_execSequence(
-                        op.as_mut_ptr(),
+                        op.subslice(..),
                         oend,
                         *sequence,
                         &mut litPtr,
