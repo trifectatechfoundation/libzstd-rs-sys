@@ -41,8 +41,8 @@ pub(crate) struct ZSTDv07_DCtx {
     dictID: u32,
     litPtr: *const u8,
     litSize: usize,
-    litBuffer: [u8; 131080],
-    headerBuffer: [u8; 18],
+    litBuffer: [u8; ZSTDv07_BLOCKSIZE_ABSOLUTEMAX + WILDCOPY_OVERLENGTH],
+    headerBuffer: [u8; ZSTDv07_frameHeaderSize_max],
 }
 type ZSTDv07_dStage = core::ffi::c_uint;
 const ZSTDds_skipFrame: ZSTDv07_dStage = 5;
@@ -198,9 +198,12 @@ const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb527;
 const ZSTDv07_MAGIC_SKIPPABLE_START: core::ffi::c_uint = 0x184d2a50;
 const ZSTDv07_WINDOWLOG_MAX_32: core::ffi::c_int = 25;
 const ZSTDv07_WINDOWLOG_MAX_64: core::ffi::c_int = 27;
-static ZSTDv07_frameHeaderSize_min: usize = 5;
-static ZSTDv07_skippableHeaderSize: usize = 8;
-const ZSTDv07_BLOCKSIZE_ABSOLUTEMAX: core::ffi::c_int = 128 * 1024;
+const ZSTDv07_BLOCKSIZE_ABSOLUTEMAX: usize = 128 * 1024;
+
+const ZSTDv07_frameHeaderSize_min: usize = 5;
+const ZSTDv07_frameHeaderSize_max: usize = 18;
+const ZSTDv07_skippableHeaderSize: usize = 8; // magic number + skippable frame length
+
 #[inline]
 fn BITv07_highbit32(val: u32) -> core::ffi::c_uint {
     (val.leading_zeros() ^ 31) as core::ffi::c_uint
@@ -1775,7 +1778,7 @@ static OF_defaultNorm: [i16; 29] = [
     1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
 ];
 static OF_defaultNormLog: u32 = 5;
-const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
+const WILDCOPY_OVERLENGTH: usize = 8;
 #[inline]
 unsafe fn ZSTDv07_wildcopy(
     dst: *mut core::ffi::c_void,
@@ -2045,7 +2048,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 }
                 _ => unreachable!(),
             }
-            if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as usize {
+            if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
                 return Err(Error::corruption_detected);
             }
             if litCSize.wrapping_add(lhSize as usize) > srcSize {
@@ -2072,7 +2075,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             ptr::write_bytes(
                 ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                 0,
-                WILDCOPY_OVERLENGTH as usize,
+                WILDCOPY_OVERLENGTH,
             );
             Ok(litCSize.wrapping_add(lhSize as usize))
         }
@@ -2105,7 +2108,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             ptr::write_bytes(
                 ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                 0,
-                WILDCOPY_OVERLENGTH as usize,
+                WILDCOPY_OVERLENGTH,
             );
             Ok(litCSize_0.wrapping_add(lhSize_0 as usize))
         }
@@ -2132,7 +2135,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
             }
             if (lhSize_1 as usize)
                 .wrapping_add(litSize_1)
-                .wrapping_add(WILDCOPY_OVERLENGTH as usize)
+                .wrapping_add(WILDCOPY_OVERLENGTH)
                 > srcSize
             {
                 if litSize_1.wrapping_add(lhSize_1 as usize) > srcSize {
@@ -2148,7 +2151,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 ptr::write_bytes(
                     ((*dctx).litBuffer).as_mut_ptr().add((*dctx).litSize),
                     0,
-                    WILDCOPY_OVERLENGTH as usize,
+                    WILDCOPY_OVERLENGTH,
                 );
                 return Ok((lhSize_1 as usize).wrapping_add(litSize_1));
             }
@@ -2180,13 +2183,13 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 }
                 _ => unreachable!(),
             }
-            if litSize_2 > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as usize {
+            if litSize_2 > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
                 return Err(Error::corruption_detected);
             }
             core::ptr::write_bytes(
                 ((*dctx).litBuffer).as_mut_ptr(),
                 *istart.offset(lhSize_2 as isize),
-                litSize_2.wrapping_add(WILDCOPY_OVERLENGTH as usize),
+                litSize_2.wrapping_add(WILDCOPY_OVERLENGTH),
             );
             (*dctx).litPtr = ((*dctx).litBuffer).as_mut_ptr();
             (*dctx).litSize = litSize_2;
@@ -2424,12 +2427,10 @@ unsafe fn ZSTDv07_execSequence(
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.add(sequenceLength);
-    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH as usize);
+    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
-    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH as usize)
-        > oend.offset_from_unsigned(op)
-    {
+    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > oend.offset_from_unsigned(op) {
         return Err(Error::dstSize_tooSmall);
     }
     if sequenceLength > oend.offset_from_unsigned(op) {
@@ -2618,7 +2619,7 @@ unsafe fn ZSTDv07_decompressBlock_internal(
     mut srcSize: usize,
 ) -> Result<usize, Error> {
     let mut ip = src as *const u8;
-    if srcSize >= ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as usize {
+    if srcSize >= ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
         return Err(Error::srcSize_wrong);
     }
     let litCSize = ZSTDv07_decodeLiteralsBlock(dctx, src, srcSize)?;
@@ -2814,7 +2815,7 @@ pub(crate) unsafe fn ZSTDv07_findFrameSizeInfoLegacy(
         nbBlocks = nbBlocks.wrapping_add(1);
     }
     *cSize = ip.offset_from_unsigned(src as *const u8);
-    *dBound = (nbBlocks * ZSTDv07_BLOCKSIZE_ABSOLUTEMAX as usize) as core::ffi::c_ulonglong;
+    *dBound = (nbBlocks * ZSTDv07_BLOCKSIZE_ABSOLUTEMAX) as core::ffi::c_ulonglong;
 }
 unsafe fn ZSTDv07_nextSrcSizeToDecompress(dctx: *mut ZSTDv07_DCtx) -> usize {
     (*dctx).expected
@@ -3241,7 +3242,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 }
                 let neededOutSize = ((*zbd).fParams.windowSize as usize)
                     .wrapping_add(blockSize)
-                    .wrapping_add((WILDCOPY_OVERLENGTH * 2) as usize);
+                    .wrapping_add(WILDCOPY_OVERLENGTH * 2);
                 if (*zbd).outBuffSize < neededOutSize {
                     free((*zbd).outBuff as *mut core::ffi::c_void);
                     (*zbd).outBuffSize = neededOutSize;
