@@ -2,17 +2,20 @@
     "commands": {
         "decompress-rs": [
             "./decompress rs silesia-small.tar.zst",
+            "./decompress rs re2-exhaustive.txt.zst",
             "./decompress rs zip64support.tar.zst"
         ],
         "decompress-c": [
             "./decompress c silesia-small.tar.zst",
+            "./decompress c re2-exhaustive.txt.zst",
             "./decompress c zip64support.tar.zst"
         ]
     },
     "render-versus-self": {
         "decompression (c vs rs)": {
             "silesia-small.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 0 }, "after": { "command": "decompress-rs", "index": 0 } },
-            "zip64support.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 1 }, "after": { "command": "decompress-rs", "index": 1 } }
+            "re2-exhaustive.txt.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 1 }, "after": { "command": "decompress-rs", "index": 1 } },
+            "zip64support.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 2 }, "after": { "command": "decompress-rs", "index": 2 } }
         }
     },
     "render-versus-other": {
@@ -21,7 +24,8 @@
             "command": "decompress-rs",
             "rows": {
                 "silesia-small.tar.zst": 0,
-                "zip64support.tar.zst": 1
+                "re2-exhaustive.txt.zst": 1,
+                "zip64support.tar.zst": 2
             }
         }
     }
