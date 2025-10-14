@@ -264,8 +264,7 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
             }
             let result = ZSTDv07_decompress_usingDict(
                 &mut *zd,
-                dst,
-                dstCapacity,
+                Writer::from_raw_parts(dst.cast(), dstCapacity),
                 src,
                 compressedSize,
                 dict.as_ptr().cast(),
