@@ -1771,7 +1771,6 @@ unsafe fn ZSTD_decompressFrame(
     // loop on each block
     loop {
         let mut oBlockEnd = oend;
-        let mut decodedSize: size_t = 0;
 
         let (blockProperties, cBlockSize) = getc_block_size(ip.as_slice())?;
 
@@ -1798,29 +1797,29 @@ unsafe fn ZSTD_decompressFrame(
                 .add(ip.as_ptr().offset_from_unsigned(op.as_mut_ptr()));
         }
 
-        match blockProperties.blockType {
+        let decodedSize = match blockProperties.blockType {
             BlockType::Raw => {
                 // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
-                decodedSize = copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize))?;
+                copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize))?
             }
             BlockType::Rle => {
                 let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
-                decodedSize = ZSTD_setRleBlock(
+                ZSTD_setRleBlock(
                     op.subslice(..capacity),
                     ip.as_slice()[0],
                     blockProperties.origSize as size_t,
-                )?;
+                )?
             }
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
-                decodedSize = ZSTD_decompressBlock_internal(
+                ZSTD_decompressBlock_internal(
                     dctx,
                     op.as_mut_ptr().cast(),
                     oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                     not_streaming,
-                )?;
+                )?
             }
             BlockType::Reserved => {
                 return Err(Error::corruption_detected);
