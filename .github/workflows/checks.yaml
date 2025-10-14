@@ -261,3 +261,47 @@ jobs:
 
       - name: run test
         run: ./zstreamtest -T60s
+
+
+  flamegraph:
+    name: "flamegraph"
+    runs-on: "${{ matrix.os }}"
+    env:
+      RUST_BACKTRACE: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: "aarch64-unknown-linux-gnu"
+            os: ubuntu-24.04-arm
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          persist-credentials: false
+          submodules: true
+      
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: nightly
+          targets: "${{ matrix.target }}"
+
+      - name: build
+        run: cargo build --examples -p test-libzstd-rs-sys --release --target ${{ matrix.target }}
+
+      - name: Perf
+        run: | 
+          echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+          perf stat ./target/${{ matrix.target }}/release/examples/decompress c silesia-small.tar
+          perf stat ./target/${{ matrix.target }}/release/examples/decompress rs silesia-small.tar
+
+          perf record --call-graph=fp ./target/${{ matrix.target }}/release/examples/decompress rs silesia-small.tar
+          perf script > /tmp/foo.txt
+
+      - name: Upload perf results 
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-flamegraph.txt 
+          path: /tmp/foo.txt
