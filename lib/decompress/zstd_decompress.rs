@@ -1694,21 +1694,21 @@ fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> size_t {
     src.len()
 }
 
-fn ZSTD_setRleBlock(mut dst: Writer<'_>, b: u8, regenSize: size_t) -> size_t {
+fn ZSTD_setRleBlock(mut dst: Writer<'_>, b: u8, regenSize: size_t) -> Result<size_t, Error> {
     if regenSize > dst.capacity() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     if dst.is_null() {
         if regenSize == 0 {
-            return 0;
+            return Ok(0);
         }
-        return Error::dstBuffer_null.to_error_code();
+        return Err(Error::dstBuffer_null);
     }
 
     unsafe { ptr::write_bytes(dst.as_mut_ptr(), b, regenSize) };
 
-    regenSize
+    Ok(regenSize)
 }
 
 unsafe fn ZSTD_DCtx_trace_end(
@@ -1818,7 +1818,8 @@ unsafe fn ZSTD_decompressFrame(
                     op.subslice(..capacity),
                     ip.as_slice()[0],
                     blockProperties.origSize as size_t,
-                );
+                )
+                .unwrap_or_else(Error::to_error_code);
             }
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
@@ -2206,7 +2207,8 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                     dctx.expected = (dctx.expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
-                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize);
+                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize)
+                        .unwrap_or_else(Error::to_error_code);
                     dctx.expected = 0; // streaming not supported
                 }
                 BlockType::Reserved => {
