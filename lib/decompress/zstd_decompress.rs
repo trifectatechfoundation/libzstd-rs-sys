@@ -1204,27 +1204,28 @@ unsafe fn readSkippableFrameSize(src: *const core::ffi::c_void, srcSize: size_t)
     } else {
         core::slice::from_raw_parts(src.cast(), srcSize)
     })
+    .unwrap_or_else(Error::to_error_code)
 }
 
-fn read_skippable_frame_size(src: &[u8]) -> size_t {
+fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
     let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as usize;
 
     let [_, _, _, _, a, b, c, d, ..] = *src else {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     };
 
     let size = u32::from_le_bytes([a, b, c, d]);
 
     if size.wrapping_add(8) < size {
-        return Error::frameParameter_unsupported.to_error_code();
+        return Err(Error::frameParameter_unsupported);
     }
 
     let skippableSize = skippableHeaderSize.wrapping_add(size as usize);
     if skippableSize > src.len() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
-    skippableSize
+    Ok(skippableSize)
 }
 
 /// Retrieves content of a skippable frame, and writes it to `dst` buffer.
@@ -1305,10 +1306,10 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
 
     while src.len() >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
         if is_skippable_frame(src) {
-            let skippableSize = read_skippable_frame_size(src);
-            if ERR_isError(skippableSize) {
-                return ZSTD_CONTENTSIZE_ERROR;
-            }
+            let skippableSize = match read_skippable_frame_size(src) {
+                Ok(size) => size,
+                Err(_) => return ZSTD_CONTENTSIZE_ERROR,
+            };
             src = &src[skippableSize..];
         } else {
             let fcs = get_frame_content_size(src);
@@ -1415,7 +1416,8 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         && src.len() >= ZSTD_SKIPPABLEHEADERSIZE as usize
         && is_skippable_frame(src)
     {
-        frameSizeInfo.compressedSize = read_skippable_frame_size(src);
+        frameSizeInfo.compressedSize =
+            read_skippable_frame_size(src).unwrap_or_else(Error::to_error_code);
         debug_assert!(
             ERR_isError(frameSizeInfo.compressedSize) || frameSizeInfo.compressedSize <= src.len()
         );
@@ -1919,11 +1921,10 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
         } else {
             if (*dctx).format == Format::ZSTD_f_zstd1 && is_skippable_frame(src.as_slice()) {
                 // skippable frame detected: skip it
-                let skippableSize = read_skippable_frame_size(src.as_slice());
-                let err_code = skippableSize;
-                if ERR_isError(err_code) {
-                    return err_code;
-                }
+                let skippableSize = match read_skippable_frame_size(src.as_slice()) {
+                    Ok(size) => size,
+                    Err(err) => return err.to_error_code(),
+                };
                 src = src.subslice(skippableSize..);
                 continue;
             }
