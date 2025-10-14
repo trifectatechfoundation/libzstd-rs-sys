@@ -64,8 +64,12 @@ impl ZSTD_DDict {
 }
 
 pub type ZSTD_dictContentType_e = core::ffi::c_uint;
+/// Refuses to load a dictionary if it does not respect Zstandard's specification, starting with
+/// [`ZSTD_MAGIC_DICTIONARY`]
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
+/// Ensures dictionary is always loaded as `rawContent`, even if it starts with [`ZSTD_MAGIC_DICTIONARY`]
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
+/// Dictionary is "full" when starting with [`ZSTD_MAGIC_DICTIONARY`], otherwise it is "rawContent"
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,7 +79,9 @@ enum DictLoadMethod {
 }
 
 pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
+/// Copy dictionary content internally
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = DictLoadMethod::ByCopy as _;
+/// Reference dictionary content -- the dictionary buffer must outlive its users
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = DictLoadMethod::ByRef as _;
 
 pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
@@ -231,7 +237,15 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
 
 /// Create a digested dictionary, to start decompression without startup delay.
 ///
-/// `dict` content is copied inside the [`ZSTD_DDict`], so `dict` can be released after [`ZSTD_DDict`] creation
+/// The `dict`'s content is copied inside the [`ZSTD_DDict`], so `dict` can be released after
+/// [`ZSTD_DDict`] creation.
+///
+/// The DDict can be freed using [`ZSTD_freeDDict`].
+///
+/// # Returns
+///
+/// - a [`ZSTD_DDict`] if it was successfully created
+/// - NULL if there was an error creating the dictionary
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDDict))]
 pub unsafe extern "C" fn ZSTD_createDDict(
     dict: *const core::ffi::c_void,
@@ -306,6 +320,9 @@ pub unsafe extern "C" fn ZSTD_initStaticDDict(
     ddict
 }
 
+/// Free the memory allocated with [`ZSTD_createDDict`].
+///
+/// If a NULL pointer is passed, no operation is performed.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDDict))]
 pub unsafe extern "C" fn ZSTD_freeDDict(ddict: *mut ZSTD_DDict) -> size_t {
     if ddict.is_null() {
@@ -336,6 +353,12 @@ pub const extern "C" fn ZSTD_estimateDDictSize(
     }
 }
 
+/// Get the _current_ memory usage of the [`ZSTD_DDict`]
+///
+/// # Returns
+///
+/// - the size of the DDict, including the size of the DDict's `dictBuffer` if present
+/// - 0 if the `ddict` is NULL
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
 pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {
     if ddict.is_null() {

@@ -1,3 +1,36 @@
+//! zstd, short for *Zstandard*, is a fast lossless compression algorithm, targeting real-time
+//! compression scenarios at zlib-level and better compression ratios. The zstd compression library
+//! provides in-memory compression and decompression functions.
+//!
+//! The library supports regular compression levels from 1 up to [`ZSTD_maxCLevel`], which is
+//! currently 22. Levels >= 20, labeled `--ultra`, should be used with caution, as they require
+//! more memory. The library also offers negative compression levels, which extend the range of
+//! speed vs. ratio preferences. The lower the level, the faster the speed (at the cost of
+//! compression).
+//!
+//! (De-)compression can be done in:
+//!   - a single step (described as *Simple API*) using [`ZSTD_compress`] and [`ZSTD_decompress`]
+//!   - a single step, reusing a context (described as *Explicit context*) using
+//!     [`ZSTD_createCCtx`] and [`ZSTD_createDCtx`] to create the context, and using
+//!     [`ZSTD_compressCCtx`] and [`ZSTD_decompressDCtx`] to (de-)compress
+//!   - unbounded multiple steps (described as *Streaming compression*), using
+//!     [`ZSTD_createCStream`] and [`ZSTD_createDStream`] to create a stream, [`ZSTD_initCStream`]
+//!     and [`ZSTD_initDStream`] to (re-)initialize the stream for (de)-compression, and
+//!     [`ZSTD_compressStream2`] and [`ZSTD_decompressStream`] to consume input
+//!
+//! The compression ratio achievable on small data can be highly improved using a dictionary.
+//! Dictionary compression can be performed in:
+//!   - a single step (described as *Simple dictionary API*), using [`ZSTD_compress_usingDict`] and
+//!     [`ZSTD_decompress_usingDict`]
+//!   - a single step, reusing a dictionary (described as *Bulk-processing dictionary API*), using
+//!     [`ZSTD_createCDict`] and [`ZSTD_createDDict`] to create a dictionary, and using
+//!     [`ZSTD_compress_usingCDict`] and [`ZSTD_decompress_usingDDict`] to (de-)compress using the
+//!     dictionary
+//!
+//! Advanced experimental APIs should never be used with a dynamically-linked library. They are not
+//! "stable"; their definitions or signatures may change in the future. Only static linking is
+//! allowed.
+
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
@@ -78,8 +111,8 @@ pub use crate::lib::zstd::{
 
 pub use crate::lib::decompress::{
     zstd_ddict::{
-        ZSTD_DDict, ZSTD_createDDict, ZSTD_createDDict_byReference, ZSTD_freeDDict,
-        ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
+        ZSTD_DDict, ZSTD_createDDict, ZSTD_createDDict_byReference, ZSTD_estimateDDictSize,
+        ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
     },
     zstd_decompress::{
         ZSTD_DCtx_getParameter, ZSTD_DCtx_loadDictionary, ZSTD_DCtx_refDDict, ZSTD_DCtx_refPrefix,
@@ -116,18 +149,18 @@ pub use crate::lib::compress::zstd_compress::{
     ZSTD_CDict, ZSTD_CStreamInSize, ZSTD_CStreamOutSize, ZSTD_EndDirective, ZSTD_cParam_getBounds,
     ZSTD_compress, ZSTD_compress2, ZSTD_compressBlock, ZSTD_compressBound, ZSTD_compressCCtx,
     ZSTD_compressStream, ZSTD_compressStream2, ZSTD_compress_usingCDict, ZSTD_compress_usingDict,
-    ZSTD_copyCCtx, ZSTD_createCCtx, ZSTD_createCDict, ZSTD_createCDict_byReference, ZSTD_endStream,
-    ZSTD_flushStream, ZSTD_freeCCtx, ZSTD_freeCDict, ZSTD_getBlockSize, ZSTD_getDictID_fromCDict,
-    ZSTD_getFrameProgression, ZSTD_initCStream, ZSTD_initCStream_srcSize,
-    ZSTD_initCStream_usingCDict, ZSTD_initCStream_usingDict, ZSTD_maxCLevel, ZSTD_minCLevel,
-    ZSTD_sequenceBound, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_BLOCKSIZE_MAX_MIN,
-    ZSTD_BLOCKSPLITTER_LEVEL_MAX, ZSTD_CHAINLOG_MAX_32, ZSTD_CHAINLOG_MAX_64, ZSTD_CHAINLOG_MIN,
-    ZSTD_HASHLOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX, ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_HASHLOG_MIN,
-    ZSTD_LDM_HASHRATELOG_MIN, ZSTD_LDM_MINMATCH_MAX, ZSTD_LDM_MINMATCH_MIN, ZSTD_MINMATCH_MAX,
-    ZSTD_MINMATCH_MIN, ZSTD_OVERLAPLOG_MAX, ZSTD_OVERLAPLOG_MIN, ZSTD_SEARCHLOG_MIN,
-    ZSTD_SKIPPABLEHEADERSIZE, ZSTD_SRCSIZEHINT_MIN, ZSTD_TARGETCBLOCKSIZE_MAX,
-    ZSTD_TARGETCBLOCKSIZE_MIN, ZSTD_TARGETLENGTH_MAX, ZSTD_TARGETLENGTH_MIN,
-    ZSTD_WINDOWLOG_LIMIT_DEFAULT, ZSTD_WINDOWLOG_MIN,
+    ZSTD_copyCCtx, ZSTD_createCCtx, ZSTD_createCDict, ZSTD_createCDict_byReference,
+    ZSTD_createCStream, ZSTD_endStream, ZSTD_flushStream, ZSTD_freeCCtx, ZSTD_freeCDict,
+    ZSTD_getBlockSize, ZSTD_getDictID_fromCDict, ZSTD_getFrameProgression, ZSTD_initCStream,
+    ZSTD_initCStream_srcSize, ZSTD_initCStream_usingCDict, ZSTD_initCStream_usingDict,
+    ZSTD_maxCLevel, ZSTD_minCLevel, ZSTD_sequenceBound, ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict,
+    ZSTD_BLOCKSIZE_MAX_MIN, ZSTD_BLOCKSPLITTER_LEVEL_MAX, ZSTD_CHAINLOG_MAX_32,
+    ZSTD_CHAINLOG_MAX_64, ZSTD_CHAINLOG_MIN, ZSTD_HASHLOG_MIN, ZSTD_LDM_BUCKETSIZELOG_MAX,
+    ZSTD_LDM_BUCKETSIZELOG_MIN, ZSTD_LDM_HASHLOG_MIN, ZSTD_LDM_HASHRATELOG_MIN,
+    ZSTD_LDM_MINMATCH_MAX, ZSTD_LDM_MINMATCH_MIN, ZSTD_MINMATCH_MAX, ZSTD_MINMATCH_MIN,
+    ZSTD_OVERLAPLOG_MAX, ZSTD_OVERLAPLOG_MIN, ZSTD_SEARCHLOG_MIN, ZSTD_SKIPPABLEHEADERSIZE,
+    ZSTD_SRCSIZEHINT_MIN, ZSTD_TARGETCBLOCKSIZE_MAX, ZSTD_TARGETCBLOCKSIZE_MIN,
+    ZSTD_TARGETLENGTH_MAX, ZSTD_TARGETLENGTH_MIN, ZSTD_WINDOWLOG_LIMIT_DEFAULT, ZSTD_WINDOWLOG_MIN,
 };
 
 pub mod internal {

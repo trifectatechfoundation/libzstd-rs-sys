@@ -61,6 +61,9 @@ use crate::lib::decompress::zstd_ddict::{
     ZSTD_createDDict_advanced, ZSTD_freeDDict, ZSTD_getDictID_fromDDict, ZSTD_sizeof_DDict,
 };
 
+#[cfg(doc)]
+use crate::ZSTD_isError;
+
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[repr(C)]
 pub struct ZSTD_cpuid_t {
@@ -93,7 +96,9 @@ pub struct ZSTD_bounds {
     pub upperBound: core::ffi::c_int,
 }
 
+/// [`ZSTD_DCtx`] and [`ZSTD_DStream`] are effectively the same object (>= v1.3.0)
 pub type ZSTD_DStream = ZSTD_DCtx;
+
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 pub const ZSTDnit_skippableFrame: ZSTD_nextInputType_e = 5;
 pub const ZSTDnit_checksum: ZSTD_nextInputType_e = 4;
@@ -101,13 +106,16 @@ pub const ZSTDnit_lastBlock: ZSTD_nextInputType_e = 3;
 pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub const ZSTDnit_blockHeader: ZSTD_nextInputType_e = 1;
 pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
+
 pub type ZSTD_dictContentType_e = core::ffi::c_uint;
 pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
 pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
 pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
+
 pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
+
 pub const ZSTD_MAXWINDOWSIZE_DEFAULT: u32 = (1u32 << ZSTD_WINDOWLOG_LIMIT_DEFAULT).wrapping_add(1);
 pub const ZSTD_NO_FORWARD_PROGRESS_MAX: core::ffi::c_int = 16;
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
@@ -126,8 +134,18 @@ pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
+
+/// The minimum valid max blocksize. Maximum blocksizes smaller than this make [`ZSTD_compressBound`] inaccurate.
 pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
+
+/// By default, the streaming decoder will refuse any frame requiring larger than
+/// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
+/// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
+///
+/// The limit does not apply for one-pass decoders (such as [`ZSTD_decompress`]), since no
+/// additional memory is allocated.
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+
 pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 pub const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
@@ -600,6 +618,7 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
 /// Allocates space for and returns a ddict hash set.
 ///
 /// # Returns
+///
 /// - the [`ZSTD_DDictHashSet`] if allocation succeeds. The hash set's `ZSTD_DDict*` table has all
 ///   values automatically set to `NULL` to begin with.
 /// - `NULL` if allocation failed
@@ -672,6 +691,12 @@ unsafe fn ZSTD_DDictHashSet_addDDict(
     0
 }
 
+/// Get the _current_ memory usage of the [`ZSTD_DCtx`]
+///
+/// # Returns
+///
+/// - the size of the decompression context, including the size of its internal buffers
+/// - 0 if the `dctx` is NULL
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DCtx))]
 pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
@@ -683,6 +708,9 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
         .wrapping_add((*dctx).outBuffSize)
 }
 
+/// Estimate the memory usage of a [`ZSTD_DCtx`]
+///
+/// This is useful in combination with [`ZSTD_initStaticDCtx`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDCtxSize))]
 pub const extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     size_of::<ZSTD_DCtx>()
@@ -738,6 +766,27 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     ZSTD_DCtx_resetParameters(dctx);
 }
 
+/// Initialize a decompression context using a pre-allocated fixed-size buffer
+///
+/// Provided `workspace` pointer must be 8-bytes aligned. Use [`ZSTD_estimateDCtxSize`] to
+/// determine how large workspace must be.
+///
+/// Zstd will never resize nor `malloc()` when using a static buffer. If the object requires more
+/// memory than available, zstd will just error out (typically [`ZSTD_error_memory_allocation`]).
+///
+/// Note: there is no corresponding "free" function. Since the workspace is allocated externally,
+/// it must be freed externally too.
+///
+/// # Limitations
+///
+/// - currently not compatible with internal dictionary creation, triggered by [`ZSTD_initDStream_usingDict`]
+/// - static DCtx is incompatible with legacy support
+///
+/// # Returns
+///
+/// - a pointer to a [`ZSTD_DCtx`] decompression context (which has the same address as workspace,
+///   just different type)
+/// - NULL if there was an error (size too small, incorrect alignment, etc.)
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDCtx))]
 pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     workspace: *mut core::ffi::c_void,
@@ -772,11 +821,21 @@ unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx 
     dctx.as_mut_ptr()
 }
 
+/// Create a decompression context using a custom memory allocator
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx_advanced))]
 pub unsafe extern "C" fn ZSTD_createDCtx_advanced(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
     ZSTD_createDCtx_internal(customMem)
 }
 
+/// Create a decompression context
+///
+/// When decompressing many times, it is recommended to allocate a context only once and reuse it
+/// for each successive compression operation. This will make workload friendlier for system's
+/// memory.
+///
+/// Use one context per thread for parallel execution.
+///
+/// The decompression context can be freed using [`ZSTD_freeDCtx`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDCtx))]
 pub unsafe extern "C" fn ZSTD_createDCtx() -> *mut ZSTD_DCtx {
     ZSTD_createDCtx_internal(ZSTD_customMem::default())
@@ -789,6 +848,7 @@ unsafe fn ZSTD_clearDict(dctx: *mut ZSTD_DCtx) {
     (*dctx).dictUses = DictUses::ZSTD_dont_use;
 }
 
+/// Free a decompression context from memory
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDCtx))]
 pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
@@ -1171,9 +1231,30 @@ fn get_frame_header_advanced(
 
 /// Get frame content size
 ///
+/// - `src` should point to the start of a ZSTD encoded frame
+/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_frameHeaderSize_max`])
+///
+/// Note: decompressed size is an optional field, it may not be present (typically in streaming mode).
+/// When this method returns [`ZSTD_CONTENTSIZE_UNKNOWN`], the data to decompress could be any size.
+/// In this case, it's necessary to use streaming mode to decompress data, unless the application can
+/// rely on some implicit limit, as [`ZSTD_decompress`] only needs an upper bound of decompressed size.
+/// (For example, data could be necessarily cut into blocks <= 16 KB)
+///
+/// The decompressed size is always present when compression is completed using single-pass functions,
+/// such as [`ZSTD_compress`], [`ZSTD_compressCCtx`], [`ZSTD_compress_usingDict`] or
+/// [`ZSTD_compress_usingCDict`].
+///
+/// The decompressed size can be very large (64-bits value), potentially larger than what local system
+/// can handle as a single memory segment. In such cases, it's necessary to use streaming mode to
+/// decompress the data.
+///
+/// If source is untrusted, decompressed size could be wrong or intentionally modified. Always ensure
+/// return value fits within application's authorized limits.
+///
 /// # Returns
 ///
 /// - the decompressed size of the single frame pointed to by `src` if known
+/// - 0 if that frame is valid but "empty", e.g. when invoking this method on a skippable frame
 /// - [`ZSTD_CONTENTSIZE_UNKNOWN`] if the size cannot be determined
 /// - [`ZSTD_CONTENTSIZE_ERROR`] if an error occurred (e.g. invalid magic number, `srcSize` too small)
 ///
@@ -1352,6 +1433,10 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
 }
 
 /// Get decompressed size, compatible with legacy mode
+///
+/// This function is now obsolete, in favor of [`ZSTD_getFrameContentSize`]. Both functions work
+/// the same way, but this method blends "empty", "unknown" and "error" results to the same return
+/// value (0).
 ///
 /// # Returns
 ///
@@ -1576,8 +1661,8 @@ fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
 /// |___________________ Output_Size ___________________|_ Margin _|
 /// ```
 ///
-/// Note 1: this applies only to single-pass decompression through `ZSTD_decompress()`
-/// or `ZSTD_decompressDCtx()`
+/// Note 1: this applies only to single-pass decompression through [`ZSTD_decompress`]
+/// or [`ZSTD_decompressDCtx`]
 ///
 /// Note 2: this function supports multi-frame input
 ///
@@ -1932,6 +2017,13 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
     Ok(start_capacity - dst.capacity())
 }
 
+/// Decompression using a known dictionary.
+///
+/// Dictionary must be identical to the one used during compression. When `dict` is NULL or
+/// `dictSize < 8`, no dictionary is used.
+///
+/// Note: this function loads the dictionary, resulting in significant startup delay. It's intended
+/// for a dictionary used only once.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDict))]
 pub unsafe extern "C" fn ZSTD_decompress_usingDict(
     dctx: *mut ZSTD_DCtx,
@@ -1969,6 +2061,9 @@ unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
     }
 }
 
+/// Similar to [`ZSTD_decompress`], but requires an allocated decompression context [`ZSTD_DCtx`].
+///
+/// Compatible with sticky parameters
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressDCtx))]
 pub unsafe extern "C" fn ZSTD_decompressDCtx(
     dctx: *mut ZSTD_DCtx,
@@ -1980,6 +2075,20 @@ pub unsafe extern "C" fn ZSTD_decompressDCtx(
     ZSTD_decompress_usingDDict(dctx, dst, dstCapacity, src, srcSize, ZSTD_getDDict(dctx))
 }
 
+/// Decompress `src` into `dst`
+///
+/// Multiple compressed frames can be decompressed at once with this method, the result will be the
+/// concatenation of all decompressed frames, back to back.
+///
+/// - `srcSize` must be the _exact_ size of some number of compressed and/or skippable frames
+/// - `dstCapacity` is an upper bound of the original size to regenerate. The first frame's
+///   decompressed size can be extracted using [`ZSTD_getFrameContentSize`]. If no maximum upper
+///   bound is known, prefer using streaming mode to decompress data (see [`ZSTD_decompressStream`]).
+///
+/// # Returns
+///
+/// - the number of bytes compressed into `dst` (<= `dstCapacity`)
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress))]
 pub unsafe extern "C" fn ZSTD_decompress(
     dst: *mut core::ffi::c_void,
@@ -1997,6 +2106,13 @@ pub unsafe extern "C" fn ZSTD_decompress(
     regenSize
 }
 
+/// Tells how many bytes to provide as `srcSize` to [`ZSTD_decompressContinue`]
+///
+/// # Returns
+///
+/// - the number of bytes to pass to [`ZSTD_decompressContinue`]
+/// - 0 if a frame is fully decoded, in which case the context can be reset to start a new
+///   decompression
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_nextSrcSizeToDecompress))]
 pub unsafe extern "C" fn ZSTD_nextSrcSizeToDecompress(dctx: *mut ZSTD_DCtx) -> size_t {
     (*dctx).expected
@@ -2022,6 +2138,11 @@ fn ZSTD_nextSrcSizeToDecompressWithInputSize(dctx: &mut ZSTD_DCtx, inputSize: si
     }
 }
 
+/// Get type of the next input
+///
+/// This information is not required to properly decode a frame.
+///
+/// This function is deprecated, it is misleading and has very limited utility.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_nextInputType))]
 pub unsafe extern "C" fn ZSTD_nextInputType(dctx: *mut ZSTD_DCtx) -> ZSTD_nextInputType_e {
     (*dctx).stage.to_next_input_type() as ZSTD_nextInputType_e
@@ -2394,6 +2515,10 @@ fn ZSTD_decompress_insertDictionary(dctx: &mut ZSTD_DCtx, dict: &[u8]) -> Result
     Ok(())
 }
 
+/// Start decompression for use with [`ZSTD_decompressContinue`]
+///
+/// If decompression requires a dictionary, use [`ZSTD_decompressBegin_usingDict`] or
+/// [`ZSTD_decompressBegin_usingDDict`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin))]
 pub unsafe extern "C" fn ZSTD_decompressBegin(dctx: *mut ZSTD_DCtx) -> size_t {
     let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
@@ -2431,6 +2556,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     }
 }
 
+/// Similar to [`ZSTD_decompressBegin`], but using a dictionary
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDict))]
 pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     dctx: *mut ZSTD_DCtx,
@@ -2464,6 +2590,7 @@ unsafe fn ZSTD_decompressBegin_usingDict_slice(
     ZSTD_decompress_insertDictionary(dctx.assume_init_mut(), dict)
 }
 
+/// Similar to [`ZSTD_decompressBegin`], but using a pre-digested dictionary
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDDict))]
 pub unsafe extern "C" fn ZSTD_decompressBegin_usingDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2542,9 +2669,10 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromFrame(
     zfp.dictID
 }
 
-/// Decompression using a pre-digested Dictionary
+/// Decompression using a pre-digested dictionary
 ///
-/// Uses dictionary without significant overhead
+/// Recommended when the same dictionary is used multiple times, since it uses the dictionary
+/// without significant overhead.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDDict))]
 pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2562,11 +2690,15 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
         .unwrap_or_else(Error::to_error_code)
 }
 
+/// Create a decompression stream
+///
+/// The stream can be freed using [`ZSTD_freeDStream`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
 pub unsafe extern "C" fn ZSTD_createDStream() -> *mut ZSTD_DStream {
     ZSTD_createDCtx_internal(ZSTD_customMem::default())
 }
 
+/// Create a decompression stream using a pre-allocated fixed-size buffer
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initStaticDStream))]
 pub unsafe extern "C" fn ZSTD_initStaticDStream(
     workspace: *mut core::ffi::c_void,
@@ -2575,6 +2707,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDStream(
     ZSTD_initStaticDCtx(workspace, workspaceSize)
 }
 
+/// Create a decompression stream using a custom memory allocator
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream_advanced))]
 pub unsafe extern "C" fn ZSTD_createDStream_advanced(
     customMem: ZSTD_customMem,
@@ -2582,21 +2715,27 @@ pub unsafe extern "C" fn ZSTD_createDStream_advanced(
     ZSTD_createDCtx_internal(customMem)
 }
 
+/// Free a decompression stream created with [`ZSTD_createDStream`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_freeDStream))]
 pub unsafe extern "C" fn ZSTD_freeDStream(zds: *mut ZSTD_DStream) -> size_t {
     ZSTD_freeDCtx(zds)
 }
 
+/// Recommended size for input buffer
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DStreamInSize))]
 pub const extern "C" fn ZSTD_DStreamInSize() -> size_t {
     (ZSTD_BLOCKSIZE_MAX as size_t).wrapping_add(ZSTD_blockHeaderSize)
 }
 
+/// Recommended size for output buffer. Guarantees to successfully flush at least one complete
+/// block in all circumstances.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DStreamOutSize))]
 pub const extern "C" fn ZSTD_DStreamOutSize() -> size_t {
     ZSTD_BLOCKSIZE_MAX as size_t
 }
 
+/// Same as [`ZSTD_DCtx_loadDictionary`], but gives direct control over how to load the dictionary
+/// (by copy or by reference) and how to interpret it (automatic, raw mode only, or full mode only)
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_loadDictionary_advanced))]
 pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_advanced(
     dctx: *mut ZSTD_DCtx,
@@ -2626,6 +2765,11 @@ pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_advanced(
     0
 }
 
+/// Same as [`ZSTD_DCtx_loadDictionary`], but references `dict` content instead of copying it into `dctx`.
+///
+/// This saves memory if `dict` remains around.
+///
+/// The `dict` must remains accessible (and unmodified) while being used, so it must outlive decompression.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_loadDictionary_byReference))]
 pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_byReference(
     dctx: *mut ZSTD_DCtx,
@@ -2635,6 +2779,24 @@ pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary_byReference(
     ZSTD_DCtx_loadDictionary_advanced(dctx, dict, dictSize, ZSTD_dlm_byRef, ZSTD_dct_auto)
 }
 
+/// Create an internal [`ZSTD_DDict`] from `dict` buffer, to be used to decompress all future frames.
+///
+/// The dictionary remains valid for all future frames, until explicitly invalidated, or a new
+/// dictionary is loaded. Adding a NULL (or 0-size) dictionary invalidates any previous dictionary,
+/// meaning "return to no-dictionary mode".
+///
+/// - The `dict`'s content will be copied internally, so `dict` can be released after loading.
+///   Use [`ZSTD_DCtx_loadDictionary_byReference`] to reference dictionary content instead.
+/// - Use [`ZSTD_DCtx_loadDictionary_advanced`] to take control of how dictionary content is loaded
+///   and interpreted.
+///
+/// Note: loading a dictionary involves building tables, which has a non-negligible impact on CPU
+/// usage and latency. It's recommended to "load once, use many times", to amortize the cost.
+///
+/// # Returns
+///
+/// - 0 if dictionary was successfully loaded
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_loadDictionary))]
 pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary(
     dctx: *mut ZSTD_DCtx,
@@ -2644,6 +2806,8 @@ pub unsafe extern "C" fn ZSTD_DCtx_loadDictionary(
     ZSTD_DCtx_loadDictionary_advanced(dctx, dict, dictSize, ZSTD_dlm_byCopy, ZSTD_dct_auto)
 }
 
+/// Same as [`ZSTD_DCtx_refPrefix`], but gives finer control over how to interpret prefix content
+/// (automatic, force raw mode (default), or full mode only)
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refPrefix_advanced))]
 pub unsafe extern "C" fn ZSTD_DCtx_refPrefix_advanced(
     dctx: *mut ZSTD_DCtx,
@@ -2665,6 +2829,30 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix_advanced(
     0
 }
 
+/// Reference a prefix (single-usage dictionary) to decompress the next frame.
+///
+/// This is the reverse operation of [`crate::ZSTD_CCtx_refPrefix`], and must use the same prefix
+/// as the one used during compression.
+///
+/// The prefix is **only used once**. The reference is discarded at end of frame. The end of frame
+/// is reached when [`ZSTD_decompressStream`] returns 0.
+///
+/// Adding any prefix (including NULL) invalidates any previously set prefix or dictionary.
+///
+/// By default, the prefix is treated as raw content ([`ZSTD_dct_rawContent`]).
+/// Use [`crate::lib::compress::zstd_compress::ZSTD_CCtx_refPrefix_advanced`] to alter the
+/// `dictMode`. Referencing a raw content prefix has almost no cpu nor memory cost.  A full
+/// dictionary is more costly, as it requires building tables.
+///
+/// # Returns
+///
+/// - 0 if prefix was successfully referenced
+/// - an error code, which can be tested with [`ZSTD_isError`]
+///
+/// # Safety
+///
+/// The prefix buffer is referenced, so it **must** outlive decompression. The prefix buffer must
+/// remain unmodified up to the end of frame, reached when [`ZSTD_decompressStream`] returns 0.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refPrefix))]
 pub unsafe extern "C" fn ZSTD_DCtx_refPrefix(
     dctx: *mut ZSTD_DCtx,
@@ -2674,6 +2862,11 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix(
     ZSTD_DCtx_refPrefix_advanced(dctx, prefix, prefixSize, ZSTD_dct_rawContent)
 }
 
+/// This function is deprecated, and is equivalent to first using [`ZSTD_DCtx_reset`] to reset the
+/// decompression context and then using [`ZSTD_DCtx_loadDictionary`] to load the dictionary.
+///
+/// Note no dictionary will be used if `dict` is NULL or `dictSize` < 8
+///
 /// # Returns
 ///
 /// - the expected size, aka [`ZSTD_startingInputLength`]
@@ -2695,6 +2888,13 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
     ZSTD_startingInputLength((*zds).format)
 }
 
+/// Initialize/reset [`ZSTD_DStream`] state for new decompression operation.
+///
+/// Call before new decompression operation using same [`ZSTD_DStream`].
+///
+/// Note: this function is redundant with the advanced API and equivalent to using
+/// [`ZSTD_DCtx_reset`] to reset the session and using [`ZSTD_DCtx_refDDict`] to reset the
+/// dictionary.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream))]
 pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
     let err_code = ZSTD_DCtx_reset(zds, ZSTD_ResetDirective::ZSTD_reset_session_only);
@@ -2708,6 +2908,9 @@ pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
     ZSTD_startingInputLength((*zds).format)
 }
 
+/// This function is deprecated, and is equivalent to first using [`ZSTD_DCtx_reset`] to reset the
+/// decompression context and then using [`ZSTD_DCtx_refDDict`] to reference the dictionary.
+///
 /// Note: DDict will just be referenced, and must outlive decompression session
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
@@ -2725,6 +2928,9 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     ZSTD_startingInputLength((*dctx).format)
 }
 
+/// This function is deprecated, and is equivalent to using [`ZSTD_DCtx_reset`] with
+/// [`ZSTD_ResetDirective::ZSTD_reset_session_only`].
+///
 /// # Returns
 ///
 /// - the expected size, aka [`ZSTD_startingInputLength`]
@@ -2738,6 +2944,29 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
     ZSTD_startingInputLength((*dctx).format)
 }
 
+/// Reference a prepared dictionary, to be used to decompress next frames. The dictionary remains
+/// active for decompression of future frames using same [`ZSTD_DCtx`] decompression context.
+///
+/// If called with [`ZSTD_dParameter::ZSTD_d_refMultipleDDicts`] enabled, repeated calls of this
+/// function will store the [`ZSTD_DDict`] references in a table, and the DDict used for
+/// decompression will be determined at decompression time, as per the dict ID in the frame. The
+/// memory for the table is allocated on the first call to [`ZSTD_DCtx_refDDict`], and can be freed
+/// with [`ZSTD_freeDCtx`].
+///
+/// If called with [`ZSTD_dParameter::ZSTD_d_refMultipleDDicts`] disabled (the default), only one
+/// dictionary will be managed, and referencing a dictionary effectively "discards" any previous
+/// one.
+///
+/// Referencing a NULL DDict means "return to no-dictionary mode".
+///
+/// # Returns
+///
+/// - 0 if dictionary was successfully referenced
+/// - an error code, which can be tested with [`ZSTD_isError`]
+///
+/// # Safety
+///
+/// The DDict is just referenced, its lifetime must outlive its usage from [`ZSTD_DCtx`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refDDict))]
 pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
     dctx: *mut ZSTD_DCtx,
@@ -2771,8 +3000,23 @@ pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
     0
 }
 
-/// Note: no direct equivalence in [`ZSTD_DCtx_setParameter`], since this version sets `windowSize`,
-/// and the other sets `windowLog`
+/// Refuses allocating internal buffers for frames requiring a window size larger than provided limit.
+///
+/// This protects a decoder context from reserving too much memory for itself (potential attack
+/// scenario).
+///
+/// This parameter is only useful in streaming mode, since no internal buffer is allocated in
+/// single-pass mode.
+///
+/// By default, a decompression context accepts all window sizes <= (1 << [`ZSTD_WINDOWLOG_LIMIT_DEFAULT`])
+///
+/// Note: there is no direct equivalence in [`ZSTD_DCtx_setParameter`], since this version sets
+/// `windowSize`, and the other sets `windowLog`
+///
+/// # Returns
+///
+/// - 0 if the maximum window size was set successfully
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setMaxWindowSize))]
 pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
     dctx: *mut ZSTD_DCtx,
@@ -2794,6 +3038,16 @@ pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
     0
 }
 
+/// This function is redundant, prefer [`ZSTD_DCtx_setParameter`].
+///
+/// Instruct the decoder context about what kind of data to decode next. This instruction is
+/// mandatory to decode data without a fully-formed header, such as
+/// [`ZSTD_format_e::ZSTD_f_zstd1_magicless`] for example.
+///
+/// # Returns
+///
+/// - 0 if format was set successfully
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setFormat))]
 pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
     dctx: *mut ZSTD_DCtx,
@@ -2805,6 +3059,17 @@ pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
         u32::from(format) as core::ffi::c_int,
     )
 }
+
+/// Get the bounds for a decompression parameter
+///
+/// All parameters must belong to an interval with lower and upper bounds, otherwise they will
+/// either trigger an error or be automatically clamped.
+///
+/// # Returns
+///
+/// - a structure, [`ZSTD_bounds`], which contains:
+///   - an error status field, which must be tested using [`ZSTD_isError`]
+///   - both lower and upper bounds, inclusive
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_dParam_getBounds))]
 pub extern "C" fn ZSTD_dParam_getBounds(dParam: ZSTD_dParameter) -> ZSTD_bounds {
     let mut bounds = {
@@ -2869,6 +3134,13 @@ fn ZSTD_dParam_withinBounds(dParam: ZSTD_dParameter, value: core::ffi::c_int) ->
     (bounds.lowerBound..=bounds.upperBound).contains(&value)
 }
 
+/// Get the requested decompression parameter value, selected by enum [`ZSTD_dParameter`], and
+/// store it into the `int* value`.
+///
+/// # Returns
+///
+/// - 0 if parameter was retrieved successfully
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_getParameter))]
 pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
     dctx: *mut ZSTD_DCtx,
@@ -2891,6 +3163,18 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
     0
 }
 
+/// Set one compression parameter, selected by the [`ZSTD_dParameter`] enum.
+///
+/// All parameters have valid bounds. Bounds can be queried using [`ZSTD_dParam_getBounds`].
+/// Providing a value beyond bound will either clamp it, or trigger an error (depending on
+/// parameter).
+///
+/// Setting a parameter is only possible during frame initialization (before starting decompression).
+///
+/// # Returns
+///
+/// - 0 if parameter was successfully set
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setParameter))]
 pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
     dctx: *mut ZSTD_DCtx,
@@ -2965,6 +3249,15 @@ pub unsafe extern "C" fn ZSTD_DCtx_setParameter(
     Error::parameter_unsupported.to_error_code()
 }
 
+/// Return a [`ZSTD_DCtx`] decompression context to clean state.
+///
+/// Session and parameters can be reset jointly or separately. Parameters can only be reset when no
+/// active frame is being decompressed.
+///
+/// # Returns
+///
+/// - 0 if context was reset successfully
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_reset))]
 pub unsafe extern "C" fn ZSTD_DCtx_reset(
     dctx: *mut ZSTD_DCtx,
@@ -3016,6 +3309,7 @@ impl ZSTD_DCtx_s {
     }
 }
 
+/// Returns the _current_ memory usage of the [`ZSTD_DStream`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DStream))]
 pub unsafe extern "C" fn ZSTD_sizeof_DStream(dctx: *const ZSTD_DStream) -> size_t {
     ZSTD_sizeof_DCtx(dctx)
@@ -3052,6 +3346,7 @@ fn ZSTD_decodingBufferSize_internal(
     minRBSize
 }
 
+/// When frame content size is not known, pass in [`ZSTD_CONTENTSIZE_UNKNOWN`] as `frameContentSize`
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decodingBufferSize_min))]
 pub extern "C" fn ZSTD_decodingBufferSize_min(
     windowSize: core::ffi::c_ulonglong,
@@ -3060,6 +3355,14 @@ pub extern "C" fn ZSTD_decodingBufferSize_min(
     ZSTD_decodingBufferSize_internal(windowSize, frameContentSize, ZSTD_BLOCKSIZE_MAX as size_t)
 }
 
+/// Get a [`ZSTD_DStream`]'s memory budget based on the `windowSize`
+///
+/// Instead of providing the `windowSize` manually, you can also deduce it from a valid frame
+/// header using [`ZSTD_estimateDStreamSize_fromFrame`]
+///
+/// Note: if streaming is initialized with [`ZSTD_initDStream_usingDict`], an internal DDict
+/// will be created, whose additional size is not estimated here. In this case, get total size by
+/// adding [`crate::ZSTD_estimateDDictSize`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize))]
 pub extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
     let blockSize = Ord::min(windowSize, ZSTD_BLOCKSIZE_MAX as size_t);
@@ -3073,6 +3376,12 @@ pub extern "C" fn ZSTD_estimateDStreamSize(windowSize: size_t) -> size_t {
         .wrapping_add(outBuffSize)
 }
 
+/// Get a [`ZSTD_DStream`]'s memory budget based on a valid frame header
+///
+/// # Returns
+///
+/// - the [`ZSTD_DStream`]'s memory budget
+/// - an error code, which can be tested using [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize_fromFrame))]
 pub unsafe extern "C" fn ZSTD_estimateDStreamSize_fromFrame(
     src: *const core::ffi::c_void,
@@ -3140,7 +3449,7 @@ fn ZSTD_checkOutBuffer(zds: &ZSTD_DStream, output: &ZSTD_outBuffer) -> Result<()
     Err(Error::dstBuffer_wrong)
 }
 
-/// Calls `ZSTD_decompressContinue()` with the right parameters for `ZSTD_decompressStream()`
+/// Calls `ZSTD_decompressContinue()` with the right parameters for [`ZSTD_decompressStream`]
 /// and updates the stage and the output buffer state. This call is extracted so it can be
 /// used both when reading directly from the [`ZSTD_inBuffer`], and in buffered input mode.
 ///
@@ -3199,6 +3508,32 @@ unsafe fn ZSTD_decompressContinueStream(
     0
 }
 
+/// Streaming decompression function, call it repetitively to consume the full input updating it
+/// as necessary.
+///
+/// This function will update both input and output `pos` fields exposing current state via these
+/// fields:
+/// - `input.pos < input.size`, some input remaining and caller should provide remaining input on
+///   the next call.
+/// - `output.pos < output.size`, decoder flushed internal output buffer.
+/// - `output.pos == output.size`, unflushed data potentially present in the internal buffers,
+///   check the return value of this function, if > 0, invoke it again to flush remaining data to
+///   output.
+///
+/// Note: with no additional input, the amount of data flushed <= [`ZSTD_BLOCKSIZE_MAX`].
+///
+/// # Returns
+///
+/// - 0 when a frame is completely decoded and fully flushed
+/// - an error code, which can be tested using [`ZSTD_isError`]
+/// - any other value > 0, which means there is some decoding or flushing to do to complete the
+///   current frame
+///
+/// Note: when an operation returns with an error code, the [`ZSTD_DStream`] state may be left in
+/// undefined state. It's UB to invoke [`ZSTD_decompressStream`] on such a state. In order to
+/// re-use such a state, it must be first reset, which can be done explicitly ([`ZSTD_DCtx_reset`]),
+/// or is implied for operations starting some new decompression job ([`ZSTD_initDStream`],
+///[ `ZSTD_decompressDCtx`], [`ZSTD_decompress_usingDict`])
 #[allow(clippy::drop_non_drop)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressStream))]
 pub unsafe extern "C" fn ZSTD_decompressStream(
@@ -3673,6 +4008,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     nextSrcSizeHint
 }
 
+/// Same as [`ZSTD_decompressStream`], but using only integral types as arguments. This can be
+/// helpful for binders from dynamic languages which have troubles handling structures containing
+/// memory pointers.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressStream_simpleArgs))]
 pub unsafe extern "C" fn ZSTD_decompressStream_simpleArgs(
     dctx: *mut ZSTD_DCtx,
