@@ -1165,9 +1165,30 @@ fn get_frame_header_advanced(
 
 /// Get frame content size
 ///
+/// - `src` should point to the start of a ZSTD encoded frame
+/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_frameHeaderSize_max`])
+///
+/// Note: decompressed size is an optional field, it may not be present (typically in streaming mode).
+/// When this method returns [`ZSTD_CONTENTSIZE_UNKNOWN`], the data to decompress could be any size.
+/// In this case, it's necessary to use streaming mode to decompress data, unless the application can
+/// rely on some implicit limit, as [`ZSTD_decompress`] only needs an upper bound of decompressed size.
+/// (For example, data could be necessarily cut into blocks <= 16 KB)
+///
+/// The decompressed size is always present when compression is completed using single-pass functions,
+/// such as [`ZSTD_compress`], [`ZSTD_compressCCtx`], [`ZSTD_compress_usingDict`] or
+/// [`ZSTD_compress_usingCDict`].
+///
+/// The decompressed size can be very large (64-bits value), potentially larger than what local system
+/// can handle as a single memory segment. In such cases, it's necessary to use streaming mode to
+/// decompress the data.
+///
+/// If source is untrusted, decompressed size could be wrong or intentionally modified. Always ensure
+/// return value fits within application's authorized limits.
+///
 /// # Returns
 ///
 /// - the decompressed size of the single frame pointed to by `src` if known
+/// - 0 if that frame is valid but "empty", e.g. when invoking this method on a skippable frame
 /// - [`ZSTD_CONTENTSIZE_UNKNOWN`] if the size cannot be determined
 /// - [`ZSTD_CONTENTSIZE_ERROR`] if an error occurred (e.g. invalid magic number, `srcSize` too small)
 ///
@@ -1346,6 +1367,10 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
 }
 
 /// Get decompressed size, compatible with legacy mode
+///
+/// This function is now obsolete, in favor of [`ZSTD_getFrameContentSize`]. Both functions work
+/// the same way, but this method blends "empty", "unknown" and "error" results to the same return
+/// value (0).
 ///
 /// # Returns
 ///
@@ -1977,6 +2002,20 @@ pub unsafe extern "C" fn ZSTD_decompressDCtx(
     ZSTD_decompress_usingDDict(dctx, dst, dstCapacity, src, srcSize, ZSTD_getDDict(dctx))
 }
 
+/// Decompress `src` into `dst`
+///
+/// Multiple compressed frames can be decompressed at once with this method, the result will be the
+/// concatenation of all decompressed frames, back to back.
+///
+/// - `srcSize` must be the _exact_ size of some number of compressed and/or skippable frames
+/// - `dstCapacity` is an upper bound of the original size to regenerate. The first frame's
+///   decompressed size can be extracted using [`ZSTD_getFrameContentSize`]. If no maximum upper
+///   bound is known, prefer using streaming mode to decompress data (see [`ZSTD_decompressStream`]).
+///
+/// # Returns
+///
+/// - the number of bytes compressed into `dst` (<= `dstCapacity`)
+/// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress))]
 pub unsafe extern "C" fn ZSTD_decompress(
     dst: *mut core::ffi::c_void,
