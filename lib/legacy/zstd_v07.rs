@@ -122,13 +122,13 @@ struct HUFv07_DTable {
     data: [u32; 4096],
 }
 impl HUFv07_DTable {
-    fn as_x2(&self) -> &[HUFv07_DEltX2; 4096] {
+    fn as_x2(&self) -> &[HUFv07_DEltX2; 8192] {
+        // This is safe as HUFv07_DEltX2 is only 2 bytes long, not 4 bytes like HUFv07_DEltX4.
         unsafe { core::mem::transmute(&self.data) }
     }
 
-    // Note: Using 8192 as HUFv07_readDTableX2 can write past 4096.
-    // This is safe as HUFv07_DEltX2 is only 2 bytes long, not 4 bytes like HUFv07_DEltX4.
     fn as_x2_mut(&mut self) -> &mut [HUFv07_DEltX2; 8192] {
+        // This is safe as HUFv07_DEltX2 is only 2 bytes long, not 4 bytes like HUFv07_DEltX4.
         unsafe { core::mem::transmute(&mut self.data) }
     }
 
@@ -862,7 +862,7 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
 }
 fn HUFv07_decodeSymbolX2(
     Dstream: &mut BITv07_DStream_t,
-    dt: &[HUFv07_DEltX2; 4096],
+    dt: &[HUFv07_DEltX2; 8192],
     dtLog: u32,
 ) -> u8 {
     let val = Dstream.look_bits_fast(dtLog);
@@ -874,7 +874,7 @@ fn HUFv07_decodeSymbolX2(
 fn HUFv07_decodeStreamX2(
     mut dst: Writer<'_>,
     bitDPtr: &mut BITv07_DStream_t,
-    dt: &[HUFv07_DEltX2; 4096],
+    dt: &[HUFv07_DEltX2; 8192],
     dtLog: u32,
 ) -> usize {
     let dst_capacity = dst.capacity();
