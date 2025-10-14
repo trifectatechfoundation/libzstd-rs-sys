@@ -288,7 +288,7 @@ unsafe fn ZSTD_decompressLegacy(
 }
 
 // FIXME: this should be totally safe at this point.
-unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
+unsafe fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> {
     let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     match is_legacy(src) {
@@ -316,14 +316,16 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
             );
         }
         _ => {
-            frameSizeInfo.compressedSize = Error::prefix_unknown.to_error_code();
-            frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
+            return Err(Error::prefix_unknown);
         }
     }
 
-    if !ERR_isError(frameSizeInfo.compressedSize) && frameSizeInfo.compressedSize > src.len() {
-        frameSizeInfo.compressedSize = Error::srcSize_wrong.to_error_code();
-        frameSizeInfo.decompressedBound = ZSTD_CONTENTSIZE_ERROR;
+    if let Some(err) = Error::from_error_code(frameSizeInfo.compressedSize) {
+        return Err(err);
+    }
+
+    if frameSizeInfo.compressedSize > src.len() {
+        return Err(Error::srcSize_wrong);
     }
 
     if frameSizeInfo.decompressedBound != ZSTD_CONTENTSIZE_ERROR {
@@ -332,7 +334,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
             as size_t;
     }
 
-    frameSizeInfo
+    Ok(frameSizeInfo)
 }
 
 #[inline]
@@ -1329,10 +1331,10 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
             };
 
             // skip to next frame
-            let frameSrcSize = ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1);
-            if ERR_isError(frameSrcSize) {
+            let Ok(frameSrcSize) = ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1)
+            else {
                 return ZSTD_CONTENTSIZE_ERROR;
-            }
+            };
             src = &src[frameSrcSize..];
         }
     }
@@ -1399,15 +1401,7 @@ fn ZSTD_decodeFrameHeader(dctx: &mut ZSTD_DCtx, src: &[u8]) -> Result<size_t, Er
     Ok(0)
 }
 
-fn ZSTD_errorFrameSizeInfo(ret: size_t) -> ZSTD_frameSizeInfo {
-    ZSTD_frameSizeInfo {
-        nbBlocks: 0,
-        compressedSize: ret,
-        decompressedBound: ZSTD_CONTENTSIZE_ERROR,
-    }
-}
-
-fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
+fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo, Error> {
     let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     if format == Format::ZSTD_f_zstd1 && is_legacy(src) != 0 {
@@ -1418,12 +1412,9 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         && src.len() >= ZSTD_SKIPPABLEHEADERSIZE as usize
         && is_skippable_frame(src)
     {
-        frameSizeInfo.compressedSize =
-            read_skippable_frame_size(src).unwrap_or_else(Error::to_error_code);
-        debug_assert!(
-            ERR_isError(frameSizeInfo.compressedSize) || frameSizeInfo.compressedSize <= src.len()
-        );
-        frameSizeInfo
+        frameSizeInfo.compressedSize = read_skippable_frame_size(src)?;
+        debug_assert!(frameSizeInfo.compressedSize <= src.len());
+        Ok(frameSizeInfo)
     } else {
         let mut ip = 0;
         let mut remainingSize = src.len();
@@ -1431,12 +1422,9 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         let mut zfh = ZSTD_FrameHeader::default();
 
         // extract Frame Header
-        let ret = match get_frame_header_advanced(&mut zfh, src, format) {
-            Ok(ret) => ret,
-            Err(err) => return ZSTD_errorFrameSizeInfo(err.to_error_code()),
-        };
+        let ret = get_frame_header_advanced(&mut zfh, src, format)?;
         if ret > 0 {
-            return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
+            return Err(Error::srcSize_wrong);
         }
 
         ip += zfh.headerSize as usize;
@@ -1445,12 +1433,9 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         // iterate over each block
         loop {
             let mut blockProperties = blockProperties_t::default();
-            let cBlockSize = match ZSTD_getcBlockSize(&src[ip..], &mut blockProperties) {
-                Ok(size) => size,
-                Err(err) => return ZSTD_errorFrameSizeInfo(err.to_error_code()),
-            };
+            let cBlockSize = ZSTD_getcBlockSize(&src[ip..], &mut blockProperties)?;
             if ZSTD_blockHeaderSize.wrapping_add(cBlockSize) > remainingSize {
-                return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
+                return Err(Error::srcSize_wrong);
             }
 
             ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize) as usize;
@@ -1466,7 +1451,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
         // final frame content checksum
         if zfh.checksumFlag != 0 {
             if remainingSize < 4 {
-                return ZSTD_errorFrameSizeInfo(Error::srcSize_wrong.to_error_code());
+                return Err(Error::srcSize_wrong);
             }
             ip += 4;
         }
@@ -1479,12 +1464,12 @@ fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
             (nbBlocks as core::ffi::c_ulonglong)
                 .wrapping_mul(zfh.blockSizeMax as core::ffi::c_ulonglong)
         };
-        frameSizeInfo
+        Ok(frameSizeInfo)
     }
 }
 
-fn ZSTD_findFrameCompressedSize_advanced(src: &[u8], format: Format) -> size_t {
-    find_frame_size_info(src, format).compressedSize
+fn ZSTD_findFrameCompressedSize_advanced(src: &[u8], format: Format) -> Result<size_t, Error> {
+    Ok(find_frame_size_info(src, format)?.compressedSize)
 }
 
 /// Find frame compressed size, compatible with legacy mode
@@ -1522,6 +1507,7 @@ pub unsafe extern "C" fn ZSTD_findFrameCompressedSize(
     };
 
     ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1)
+        .unwrap_or_else(|err| err.to_error_code())
 }
 
 /// Get an upper-bound on the decompressed size
@@ -1558,14 +1544,11 @@ fn decompress_bound(mut src: &[u8]) -> core::ffi::c_ulonglong {
 
     // iterate over each frame
     while !src.is_empty() {
-        let frameSizeInfo = find_frame_size_info(src, Format::ZSTD_f_zstd1);
-        let compressedSize = frameSizeInfo.compressedSize;
-        let decompressedBound = frameSizeInfo.decompressedBound;
-        if ERR_isError(compressedSize) || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
+        let Ok(frameSizeInfo) = find_frame_size_info(src, Format::ZSTD_f_zstd1) else {
             return ZSTD_CONTENTSIZE_ERROR;
-        }
-        src = &src[compressedSize as usize..];
-        bound += decompressedBound;
+        };
+        src = &src[frameSizeInfo.compressedSize..];
+        bound += frameSizeInfo.decompressedBound;
     }
 
     bound
@@ -1607,26 +1590,22 @@ pub unsafe extern "C" fn ZSTD_decompressionMargin(
     } else {
         core::slice::from_raw_parts(src.cast(), srcSize)
     })
+    .unwrap_or_else(|err| err.to_error_code())
 }
 
-fn decompression_margin(mut src: &[u8]) -> size_t {
+fn decompression_margin(mut src: &[u8]) -> Result<size_t, Error> {
     let mut margin = 0;
     let mut maxBlockSize = 0;
 
     // iterate over each frame
     while !src.is_empty() {
         let frameSizeInfo = find_frame_size_info(src, Format::ZSTD_f_zstd1);
-        let compressedSize = frameSizeInfo.compressedSize;
-        let decompressedBound = frameSizeInfo.decompressedBound;
 
         let mut zfh = ZSTD_FrameHeader::default();
-        if let Err(err) = get_frame_header(&mut zfh, src) {
-            return err.to_error_code();
-        };
+        get_frame_header(&mut zfh, src)?;
 
-        if ERR_isError(compressedSize) || decompressedBound == ZSTD_CONTENTSIZE_ERROR {
-            return Error::corruption_detected.to_error_code();
-        }
+        let frameSizeInfo = frameSizeInfo.map_err(|_| Error::corruption_detected)?;
+        let compressedSize = frameSizeInfo.compressedSize;
 
         if zfh.frameType as core::ffi::c_uint == ZSTD_frame as core::ffi::c_uint {
             // add the frame header to our margin
@@ -1640,13 +1619,13 @@ fn decompression_margin(mut src: &[u8]) -> size_t {
             margin += compressedSize;
         }
 
-        src = &src[compressedSize as usize..];
+        src = &src[compressedSize..];
     }
 
     // add the max block size back to the margin
     margin += maxBlockSize as size_t;
 
-    margin
+    Ok(margin)
 }
 
 /// Insert `src` block into `dctx` history. Useful to track uncompressed blocks.
@@ -1893,9 +1872,8 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
 
     while src.len() >= ZSTD_startingInputLength((*dctx).format) {
         if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src.as_slice()) != 0 {
-            let frameSizeInfo = find_frame_size_info_legacy(src.as_slice());
+            let frameSizeInfo = find_frame_size_info_legacy(src.as_slice())?;
             let frameSize = frameSizeInfo.compressedSize;
-            Error::from_error_code(frameSize).map_or(Ok(()), Err)?;
 
             if (*dctx).staticSize != 0 {
                 return Err(Error::memory_allocation);
@@ -3424,7 +3402,9 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                             iend.offset_from_unsigned(istart),
                         ),
                         zds.format,
-                    );
+                    )
+                    .unwrap_or_else(Error::to_error_code);
+
                     if cSize <= iend.offset_from_unsigned(istart) {
                         let decompressedSize = ZSTD_decompress_usingDDict(
                             zds,
