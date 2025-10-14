@@ -1216,7 +1216,7 @@ unsafe fn readSkippableFrameSize(src: *const core::ffi::c_void, srcSize: size_t)
 }
 
 fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
-    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as usize;
+    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as u32;
 
     let [_, _, _, _, a, b, c, d, ..] = *src else {
         return Err(Error::srcSize_wrong);
@@ -1224,11 +1224,10 @@ fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
 
     let size = u32::from_le_bytes([a, b, c, d]);
 
-    if size.wrapping_add(8) < size {
-        return Err(Error::frameParameter_unsupported);
-    }
+    let skippableSize = skippableHeaderSize
+        .checked_add(size)
+        .ok_or(Error::frameParameter_unsupported)? as usize;
 
-    let skippableSize = skippableHeaderSize.wrapping_add(size as usize);
     if skippableSize > src.len() {
         return Err(Error::srcSize_wrong);
     }
