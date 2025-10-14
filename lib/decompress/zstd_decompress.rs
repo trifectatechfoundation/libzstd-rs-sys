@@ -12,7 +12,6 @@ use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
     ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_slice, ZSTD_XXH64_update_slice,
 };
-use crate::lib::common::zstd_common::ZSTD_getErrorCode;
 use crate::lib::common::zstd_internal::{
     repStartValue, LL_bits, ML_bits, MaxLL, MaxML, MaxOff, ZSTD_blockHeaderSize,
     ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, WILDCOPY_OVERLENGTH, ZSTD_FRAMEIDSIZE,
@@ -1676,22 +1675,22 @@ fn copy_raw_block_slice(mut dst: Writer<'_>, src: &[u8]) -> Result<size_t, Error
     Ok(src.len())
 }
 
-fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> size_t {
+fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> Result<size_t, Error> {
     if src.len() > dst.capacity() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     if dst.is_null() {
         if src.is_empty() {
-            return 0;
+            return Ok(0);
         }
-        return Error::dstBuffer_null.to_error_code();
+        return Err(Error::dstBuffer_null);
     }
 
     // src and dst can overlap in this case.
     unsafe { core::ptr::copy(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
 
-    src.len()
+    Ok(src.len())
 }
 
 fn ZSTD_setRleBlock(mut dst: Writer<'_>, b: u8, regenSize: size_t) -> Result<size_t, Error> {
@@ -1740,7 +1739,7 @@ unsafe fn ZSTD_decompressFrame(
     dctx: &mut ZSTD_DCtx,
     dst: Writer<'_>,
     srcPtr: &mut Reader<'_>,
-) -> size_t {
+) -> Result<size_t, Error> {
     let ilen = srcPtr.len();
     let ip = srcPtr;
 
@@ -1750,20 +1749,15 @@ unsafe fn ZSTD_decompressFrame(
 
     // check
     if ip.len() < dctx.format.frame_header_size_min() + ZSTD_blockHeaderSize {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
     // Frame Header
-    let frameHeaderSize = match frame_header_size_internal(ip.as_slice(), dctx.format) {
-        Ok(size) => size,
-        Err(err) => return err.to_error_code(),
-    };
+    let frameHeaderSize = frame_header_size_internal(ip.as_slice(), dctx.format)?;
     if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
-    if let Err(err) = ZSTD_decodeFrameHeader(dctx, &ip.as_slice()[..frameHeaderSize]) {
-        return err.to_error_code();
-    }
+    ZSTD_decodeFrameHeader(dctx, &ip.as_slice()[..frameHeaderSize])?;
     *ip = ip.subslice(frameHeaderSize..);
 
     // shrink the blockSizeMax if enabled
@@ -1779,14 +1773,11 @@ unsafe fn ZSTD_decompressFrame(
         let mut oBlockEnd = oend;
         let mut decodedSize: size_t = 0;
 
-        let (blockProperties, cBlockSize) = match getc_block_size(ip.as_slice()) {
-            Ok(ret) => ret,
-            Err(e) => return e.to_error_code(),
-        };
+        let (blockProperties, cBlockSize) = getc_block_size(ip.as_slice())?;
 
         *ip = ip.subslice(ZSTD_blockHeaderSize..);
         if cBlockSize > ip.len() {
-            return Error::srcSize_wrong.to_error_code();
+            return Err(Error::srcSize_wrong);
         }
 
         if op.as_mut_ptr_range().contains(&ip.as_ptr().cast_mut()) {
@@ -1810,7 +1801,7 @@ unsafe fn ZSTD_decompressFrame(
         match blockProperties.blockType {
             BlockType::Raw => {
                 // Use oend instead of oBlockEnd because this function is safe to overlap. It uses memmove.
-                decodedSize = copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize));
+                decodedSize = copy_raw_block_reader(op.subslice(..), ip.subslice(..cBlockSize))?;
             }
             BlockType::Rle => {
                 let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
@@ -1818,31 +1809,23 @@ unsafe fn ZSTD_decompressFrame(
                     op.subslice(..capacity),
                     ip.as_slice()[0],
                     blockProperties.origSize as size_t,
-                )
-                .unwrap_or_else(Error::to_error_code);
+                )?;
             }
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
-                decodedSize = match ZSTD_decompressBlock_internal(
+                decodedSize = ZSTD_decompressBlock_internal(
                     dctx,
                     op.as_mut_ptr().cast(),
                     oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
                     ip.as_ptr().cast(),
                     cBlockSize,
                     not_streaming,
-                ) {
-                    Ok(size) => size,
-                    Err(err) => return err.to_error_code(),
-                };
+                )?;
             }
             BlockType::Reserved => {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
-        }
-
-        if ERR_isError(decodedSize) {
-            return decodedSize;
-        }
+        };
 
         if dctx.validateChecksum {
             let written = op.subslice(..decodedSize);
@@ -1862,19 +1845,19 @@ unsafe fn ZSTD_decompressFrame(
         && (start_capacity - op.capacity()) as core::ffi::c_ulonglong
             != dctx.fParams.frameContentSize
     {
-        return Error::corruption_detected.to_error_code();
+        return Err(Error::corruption_detected);
     }
 
     // frame content checksum verification
     if dctx.fParams.checksumFlag != 0 {
         let [a, b, c, d, ..] = *ip.as_slice() else {
-            return Error::checksum_wrong.to_error_code();
+            return Err(Error::checksum_wrong);
         };
 
         if dctx.forceIgnoreChecksum == ForceIgnoreChecksum::ValidateChecksum
             && u32::from_le_bytes([a, b, c, d]) != ZSTD_XXH64_digest(&mut dctx.xxhState) as u32
         {
-            return Error::checksum_wrong.to_error_code();
+            return Err(Error::checksum_wrong);
         }
 
         *ip = ip.subslice(4..);
@@ -1888,7 +1871,7 @@ unsafe fn ZSTD_decompressFrame(
     );
 
     // allow caller to get size read
-    start_capacity - op.capacity()
+    Ok(start_capacity - op.capacity())
 }
 
 unsafe fn ZSTD_decompressMultiFrame<'a>(
@@ -1960,13 +1943,19 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
                 }
             }
             ZSTD_checkContinuity(dctx.as_mut().unwrap(), dst.as_ptr_range());
-            let res = ZSTD_decompressFrame(dctx.as_mut().unwrap(), dst.subslice(..), &mut src);
-            if ZSTD_getErrorCode(res) == ZSTD_error_prefix_unknown && more_than_one_frame {
-                return Error::srcSize_wrong.to_error_code();
-            }
-            if ERR_isError(res) {
-                return res;
-            }
+            let res = match ZSTD_decompressFrame(dctx.as_mut().unwrap(), dst.subslice(..), &mut src)
+            {
+                Ok(res) => res,
+                Err(err) => {
+                    return if err.to_error_code() == ZSTD_error_prefix_unknown as usize
+                        && more_than_one_frame
+                    {
+                        Error::srcSize_wrong.to_error_code()
+                    } else {
+                        err.to_error_code()
+                    }
+                }
+            };
             dst = dst.subslice(res..);
             more_than_one_frame = true;
         }
