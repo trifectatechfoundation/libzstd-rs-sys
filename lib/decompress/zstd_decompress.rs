@@ -201,8 +201,13 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
         _ => None,
     }
 }
+
 #[inline]
-unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8]) -> size_t {
+unsafe fn ZSTD_decompressLegacy(
+    mut dst: Writer<'_>,
+    src: Reader<'_>,
+    dict: &[u8],
+) -> Result<size_t, Error> {
     let version = is_legacy(src.as_slice());
     let dstCapacity = dst.capacity();
 
@@ -218,11 +223,11 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
         5 => {
             let zd = ZSTDv05_createDCtx();
             if zd.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             let result = ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict);
             ZSTDv05_freeDCtx(zd);
-            result.unwrap_or_else(|err| err.to_error_code())
+            result
         }
         6 => {
             let compressedSize = src.len();
@@ -235,7 +240,7 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
             let mut result: size_t = 0;
             let zd = ZSTDv06_createDCtx();
             if zd.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             result = ZSTDv06_decompress_usingDict(
                 zd,
@@ -247,7 +252,8 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
                 dict.len(),
             );
             ZSTDv06_freeDCtx(zd);
-            result
+            // TODO: make `ZSTDv06_decompress_usingDict` return a Result
+            Error::from_error_code(result).map_or(Ok(result), Err)
         }
         7 => {
             let compressedSize = src.len();
@@ -259,7 +265,7 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
 
             let zd = ZSTDv07_createDCtx();
             if zd.is_null() {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
             let result = ZSTDv07_decompress_usingDict(
                 &mut *zd,
@@ -271,9 +277,9 @@ unsafe fn ZSTD_decompressLegacy(mut dst: Writer<'_>, src: Reader<'_>, dict: &[u8
                 dict.len(),
             );
             ZSTDv07_freeDCtx(zd);
-            result.unwrap_or_else(|err| err.to_error_code())
+            result
         }
-        _ => Error::prefix_unknown.to_error_code(),
+        _ => Err(Error::prefix_unknown),
     }
 }
 
@@ -1881,7 +1887,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
     mut src: Reader<'_>,
     mut dict: &'a [u8],
     ddict: Option<&'a ZSTD_DDict>,
-) -> size_t {
+) -> Result<size_t, Error> {
     let start_capacity = dst.capacity();
     let mut more_than_one_frame = false;
 
@@ -1893,27 +1899,22 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
         if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src.as_slice()) != 0 {
             let frameSizeInfo = find_frame_size_info_legacy(src.as_slice());
             let frameSize = frameSizeInfo.compressedSize;
-            if ERR_isError(frameSize) {
-                return frameSize;
-            }
+            Error::from_error_code(frameSize).map_or(Ok(()), Err)?;
 
             if (*dctx).staticSize != 0 {
-                return Error::memory_allocation.to_error_code();
+                return Err(Error::memory_allocation);
             }
 
             let decodedSize =
-                ZSTD_decompressLegacy(dst.subslice(..), src.subslice(..frameSize), dict);
-            if ERR_isError(decodedSize) {
-                return decodedSize;
-            }
+                ZSTD_decompressLegacy(dst.subslice(..), src.subslice(..frameSize), dict)?;
 
             let expectedSize = get_frame_content_size(src.as_slice());
             if expectedSize == ZSTD_CONTENTSIZE_ERROR {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
 
             if expectedSize != ZSTD_CONTENTSIZE_UNKNOWN && expectedSize != decodedSize as u64 {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
 
             dst = dst.subslice(decodedSize..);
@@ -1921,51 +1922,35 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
         } else {
             if (*dctx).format == Format::ZSTD_f_zstd1 && is_skippable_frame(src.as_slice()) {
                 // skippable frame detected: skip it
-                let skippableSize = match read_skippable_frame_size(src.as_slice()) {
-                    Ok(size) => size,
-                    Err(err) => return err.to_error_code(),
-                };
+                let skippableSize = read_skippable_frame_size(src.as_slice())?;
                 src = src.subslice(skippableSize..);
                 continue;
             }
 
             if let Some(ddict) = ddict {
-                let err_code = ZSTD_decompressBegin_usingDDict(dctx, ddict);
-                if ERR_isError(err_code) {
-                    return err_code;
-                }
+                Error::from_error_code(ZSTD_decompressBegin_usingDDict(dctx, ddict))
+                    .map_or(Ok(()), Err)?
             } else {
                 // this will initialize correctly with no dict if `dict == NULL`, so
                 // use this in all cases but for ddict
-                let err_code = ZSTD_decompressBegin_usingDict_slice(dctx, dict);
-                if ERR_isError(err_code) {
-                    return err_code;
-                }
+                ZSTD_decompressBegin_usingDict_slice(dctx, dict)?;
             }
             ZSTD_checkContinuity(dctx.as_mut().unwrap(), dst.as_ptr_range());
-            let res = match ZSTD_decompressFrame(dctx.as_mut().unwrap(), dst.subslice(..), &mut src)
-            {
-                Ok(res) => res,
-                Err(err) => {
-                    return if err.to_error_code() == ZSTD_error_prefix_unknown as usize
-                        && more_than_one_frame
-                    {
-                        Error::srcSize_wrong.to_error_code()
-                    } else {
-                        err.to_error_code()
-                    }
-                }
-            };
+            let res = ZSTD_decompressFrame(dctx.as_mut().unwrap(), dst.subslice(..), &mut src)
+                .map_err(|err| match err {
+                    Error::prefix_unknown if more_than_one_frame => Error::srcSize_wrong,
+                    _ => err,
+                })?;
             dst = dst.subslice(res..);
             more_than_one_frame = true;
         }
     }
 
     if !src.is_empty() {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
 
-    start_capacity - dst.capacity()
+    Ok(start_capacity - dst.capacity())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompress_usingDict))]
@@ -1988,7 +1973,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDict(
         core::slice::from_raw_parts(dict.cast::<u8>(), dictSize)
     };
 
-    ZSTD_decompressMultiFrame(dctx, dst, src, dict, None)
+    ZSTD_decompressMultiFrame(dctx, dst, src, dict, None).unwrap_or_else(Error::to_error_code)
 }
 
 unsafe fn ZSTD_getDDict(dctx: *mut ZSTD_DCtx) -> *const ZSTD_DDict {
@@ -2490,22 +2475,25 @@ pub unsafe extern "C" fn ZSTD_decompressBegin_usingDict(
     0
 }
 
-unsafe fn ZSTD_decompressBegin_usingDict_slice(dctx: *mut ZSTD_DCtx, dict: &[u8]) -> size_t {
+unsafe fn ZSTD_decompressBegin_usingDict_slice(
+    dctx: *mut ZSTD_DCtx,
+    dict: &[u8],
+) -> Result<size_t, Error> {
     let dctx = dctx.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut().unwrap();
     decompress_begin(dctx);
 
     if dict.is_empty() {
-        return 0;
+        return Ok(0);
     }
 
     if ERR_isError(ZSTD_decompress_insertDictionary(
         dctx.assume_init_mut(),
         dict,
     )) {
-        return Error::dictionary_corrupted.to_error_code();
+        return Err(Error::dictionary_corrupted);
     }
 
-    0
+    Ok(0)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBegin_usingDDict))]
@@ -2603,6 +2591,7 @@ pub unsafe extern "C" fn ZSTD_decompress_usingDDict(
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
     ZSTD_decompressMultiFrame(dctx, dst, src, &[], ddict.as_ref())
+        .unwrap_or_else(Error::to_error_code)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createDStream))]
