@@ -1659,21 +1659,21 @@ pub unsafe extern "C" fn ZSTD_insertBlock(
     blockSize
 }
 
-fn copy_raw_block_slice(mut dst: Writer<'_>, src: &[u8]) -> size_t {
+fn copy_raw_block_slice(mut dst: Writer<'_>, src: &[u8]) -> Result<size_t, Error> {
     if src.len() > dst.capacity() {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
 
     if dst.is_null() {
         if src.is_empty() {
-            return 0;
+            return Ok(0);
         }
-        return Error::dstBuffer_null.to_error_code();
+        return Err(Error::dstBuffer_null);
     }
 
     unsafe { core::ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
 
-    src.len()
+    Ok(src.len())
 }
 
 fn copy_raw_block_reader(mut dst: Writer<'_>, src: Reader<'_>) -> size_t {
@@ -2102,12 +2102,16 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     // NOTE: already handles the `dst.is_null()` case.
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
 
-    decompress_continue(dctx, dst, src)
+    decompress_continue(dctx, dst, src).unwrap_or_else(Error::to_error_code)
 }
 
-unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[u8]) -> size_t {
+unsafe fn decompress_continue(
+    dctx: &mut ZSTD_DCtx,
+    mut dst: Writer<'_>,
+    src: &[u8],
+) -> Result<size_t, Error> {
     if src.len() != ZSTD_nextSrcSizeToDecompressWithInputSize(dctx, src.len()) {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     }
     ZSTD_checkContinuity(dctx, dst.as_ptr_range());
     dctx.processedCSize = (dctx.processedCSize as size_t).wrapping_add(src.len()) as u64;
@@ -2120,35 +2124,27 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 // remaining data to load to get full skippable frame header
                 dctx.expected = (ZSTD_SKIPPABLEHEADERSIZE as size_t).wrapping_sub(src.len());
                 dctx.stage = DecompressStage::DecodeSkippableHeader;
-                return 0;
+                return Ok(0);
             }
-            dctx.headerSize = match frame_header_size_internal(src, dctx.format) {
-                Ok(size) => size,
-                Err(err) => return err.to_error_code(),
-            };
+            dctx.headerSize = frame_header_size_internal(src, dctx.format)?;
             dctx.headerBuffer[..src.len()].copy_from_slice(src);
             dctx.expected = (dctx.headerSize).wrapping_sub(src.len());
             dctx.stage = DecompressStage::DecodeFrameHeader;
-            0
+            Ok(0)
         }
         DecompressStage::DecodeFrameHeader => {
             dctx.headerBuffer[(dctx.headerSize) - src.len()..][..src.len()].copy_from_slice(src);
             let header_buffer = dctx.headerBuffer;
-            if let Err(err) = ZSTD_decodeFrameHeader(dctx, &header_buffer[..dctx.headerSize]) {
-                return err.to_error_code();
-            }
+            ZSTD_decodeFrameHeader(dctx, &header_buffer[..dctx.headerSize])?;
             dctx.expected = ZSTD_blockHeaderSize;
             dctx.stage = DecompressStage::DecodeBlockHeader;
-            0
+            Ok(0)
         }
         DecompressStage::DecodeBlockHeader => {
-            let (bp, cBlockSize) = match getc_block_size(src) {
-                Ok(ret) => ret,
-                Err(e) => return e.to_error_code(),
-            };
+            let (bp, cBlockSize) = getc_block_size(src)?;
 
             if cBlockSize > dctx.fParams.blockSizeMax as size_t {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             dctx.expected = cBlockSize;
             dctx.bType = bp.blockType;
@@ -2159,7 +2155,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 } else {
                     DecompressStage::DecompressBlock
                 };
-                return 0;
+                return Ok(0);
             }
 
             // empty block
@@ -2175,7 +2171,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 dctx.expected = ZSTD_blockHeaderSize; // jump to next header
                 dctx.stage = DecompressStage::DecodeBlockHeader;
             }
-            0
+            Ok(0)
         }
 
         DecompressStage::DecompressBlock | DecompressStage::DecompressLastBlock => {
@@ -2184,43 +2180,31 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 BlockType::Compressed => {
                     debug_assert!(dctx.isFrameDecompression);
                     dctx.expected = 0; // streaming not supported
-                    rSize = match ZSTD_decompressBlock_internal(
+                    rSize = ZSTD_decompressBlock_internal(
                         dctx,
                         dst.as_mut_ptr().cast(),
                         dst.capacity(),
                         src.as_ptr().cast(),
                         src.len(),
                         is_streaming,
-                    ) {
-                        Ok(size) => size,
-                        Err(err) => return err.to_error_code(),
-                    };
+                    )?;
                 }
                 BlockType::Raw => {
                     debug_assert!(src.len() <= dctx.expected);
-                    rSize = copy_raw_block_slice(dst.subslice(..), src);
-                    let err_code = rSize;
-                    if ERR_isError(err_code) {
-                        return err_code;
-                    }
+                    rSize = copy_raw_block_slice(dst.subslice(..), src)?;
                     debug_assert_eq!(rSize, src.len());
                     dctx.expected = (dctx.expected).wrapping_sub(rSize);
                 }
                 BlockType::Rle => {
-                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize)
-                        .unwrap_or_else(Error::to_error_code);
                     dctx.expected = 0; // streaming not supported
+                    rSize = ZSTD_setRleBlock(dst.subslice(..), src[0], dctx.rleSize)?;
                 }
                 BlockType::Reserved => {
-                    return Error::corruption_detected.to_error_code();
+                    return Err(Error::corruption_detected);
                 }
             }
-            let err_code = rSize;
-            if ERR_isError(err_code) {
-                return err_code;
-            }
             if rSize > dctx.fParams.blockSizeMax as size_t {
-                return Error::corruption_detected.to_error_code();
+                return Err(Error::corruption_detected);
             }
             dctx.decodedSize = dctx.decodedSize.wrapping_add(rSize as u64);
             if dctx.validateChecksum {
@@ -2232,7 +2216,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
 
             // stay on the same stage until we are finished streaming the block
             if dctx.expected > 0 {
-                return rSize;
+                return Ok(rSize);
             }
 
             if dctx.stage == DecompressStage::DecompressLastBlock {
@@ -2240,7 +2224,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 if dctx.fParams.frameContentSize != (0 as core::ffi::c_ulonglong).wrapping_sub(1)
                     && dctx.decodedSize as core::ffi::c_ulonglong != dctx.fParams.frameContentSize
                 {
-                    return Error::corruption_detected.to_error_code();
+                    return Err(Error::corruption_detected);
                 }
                 if dctx.fParams.checksumFlag != 0 {
                     // another round for frame checksum
@@ -2255,7 +2239,7 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 dctx.stage = DecompressStage::DecodeBlockHeader;
                 dctx.expected = ZSTD_blockHeaderSize;
             }
-            rSize
+            Ok(rSize)
         }
         DecompressStage::CheckChecksum => {
             debug_assert_eq!(src.len(), 4); // guaranteed by dctx.expected
@@ -2263,13 +2247,13 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 let h32 = ZSTD_XXH64_digest(&mut dctx.xxhState) as u32;
                 let check32 = u32::from_le_bytes(*src.first_chunk().unwrap());
                 if check32 != h32 {
-                    return Error::checksum_wrong.to_error_code();
+                    return Err(Error::checksum_wrong);
                 }
             }
             ZSTD_DCtx_trace_end(dctx, dctx.decodedSize, dctx.processedCSize, 1);
             dctx.expected = 0;
             dctx.stage = DecompressStage::GetFrameHeaderSize;
-            0
+            Ok(0)
         }
         DecompressStage::DecodeSkippableHeader => {
             debug_assert_ne!(dctx.format, Format::ZSTD_f_zstd1_magicless);
@@ -2280,12 +2264,12 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 u32::from_le_bytes(*dctx.headerBuffer[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap())
                     as usize;
             dctx.stage = DecompressStage::SkipFrame;
-            0
+            Ok(0)
         }
         DecompressStage::SkipFrame => {
             dctx.expected = 0;
             dctx.stage = DecompressStage::GetFrameHeaderSize;
-            0
+            Ok(0)
         }
     }
 }
