@@ -77,18 +77,22 @@ pub const XXH_OK: XXH_errorcode = 0;
 pub type streaming_operation = core::ffi::c_uint;
 pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
+
+#[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_frameSizeInfo {
     pub nbBlocks: size_t,
     pub compressedSize: size_t,
     pub decompressedBound: core::ffi::c_ulonglong,
 }
+
 #[repr(C)]
 pub struct ZSTD_bounds {
     pub error: size_t,
     pub lowerBound: core::ffi::c_int,
     pub upperBound: core::ffi::c_int,
 }
+
 pub type ZSTD_DStream = ZSTD_DCtx;
 pub type ZSTD_nextInputType_e = core::ffi::c_uint;
 pub const ZSTDnit_skippableFrame: ZSTD_nextInputType_e = 5;
@@ -285,11 +289,7 @@ unsafe fn ZSTD_decompressLegacy(
 
 // FIXME: this should be totally safe at this point.
 unsafe fn find_frame_size_info_legacy(src: &[u8]) -> ZSTD_frameSizeInfo {
-    let mut frameSizeInfo = ZSTD_frameSizeInfo {
-        nbBlocks: 0,
-        compressedSize: 0,
-        decompressedBound: 0,
-    };
+    let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     match is_legacy(src) {
         5 => {
@@ -1408,11 +1408,7 @@ fn ZSTD_errorFrameSizeInfo(ret: size_t) -> ZSTD_frameSizeInfo {
 }
 
 fn find_frame_size_info(src: &[u8], format: Format) -> ZSTD_frameSizeInfo {
-    let mut frameSizeInfo = ZSTD_frameSizeInfo {
-        nbBlocks: 0,
-        compressedSize: 0,
-        decompressedBound: 0,
-    };
+    let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     if format == Format::ZSTD_f_zstd1 && is_legacy(src) != 0 {
         return unsafe { find_frame_size_info_legacy(src) };
