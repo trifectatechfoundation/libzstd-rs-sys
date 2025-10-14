@@ -1,15 +1,18 @@
 {
     "commands": {
         "decompress-rs": [
-            "./decompress rs silesia-small.tar"
+            "./decompress rs silesia-small.tar.zst",
+            "./decompress rs zip64support.tar.zst"
         ],
         "decompress-c": [
-            "./decompress c silesia-small.tar"
+            "./decompress c silesia-small.tar.zst",
+            "./decompress c zip64support.tar.zst"
         ]
     },
     "render-versus-self": {
         "decompression (c vs rs)": {
-            "silesia-small.tar": { "measure": "cycles", "before": { "command": "decompress-c", "index": 0 }, "after": { "command": "decompress-rs", "index": 0 } }
+            "silesia-small.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 0 }, "after": { "command": "decompress-rs", "index": 0 } },
+            "zip64support.tar.zst": { "measure": "cycles", "before": { "command": "decompress-c", "index": 1 }, "after": { "command": "decompress-rs", "index": 1 } }
         }
     },
     "render-versus-other": {
@@ -17,7 +20,8 @@
             "measure": "cycles",
             "command": "decompress-rs",
             "rows": {
-                "silesia-small.tar": 0
+                "silesia-small.tar.zst": 0,
+                "zip64support.tar.zst": 1
             }
         }
     }

@@ -1,20 +1,27 @@
 use core::ffi::c_void;
+use std::borrow::Cow;
 
 fn main() {
     let mut it = std::env::args();
 
     let _ = it.next().unwrap();
+    let variant = it.next().unwrap();
+    let file = it.next();
 
     let silesia_small_tar_zst = include_bytes!("../../silesia-small.tar.zst");
-    let input = silesia_small_tar_zst;
 
-    match it.next().unwrap().as_str() {
+    let input: Cow<'_, [u8]> = match file {
+        None => silesia_small_tar_zst.into(),
+        Some(path) => std::fs::read(path).unwrap().into(),
+    };
+
+    match variant.as_str() {
         "c" => {
-            let err = c(input);
+            let err = c(&input);
             assert_eq!(err, 0);
         }
         "rs" => {
-            let err = rs(input);
+            let err = rs(&input);
             assert_eq!(err, 0);
         }
         bad => panic!("invalid command {bad}"),
