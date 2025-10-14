@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 use core::ptr;
+use std::ops::Range;
 
 use libc::{calloc, free, malloc};
 
@@ -25,10 +26,10 @@ pub(crate) struct ZSTDv07_DCtx {
     OffTable: FSEv07_DTable<256>,
     MLTable: FSEv07_DTable<512>,
     hufTable: HUFv07_DTable,
-    previousDstEnd: *const core::ffi::c_void,
-    base: *const core::ffi::c_void,
-    vBase: *const core::ffi::c_void,
-    dictEnd: *const core::ffi::c_void,
+    previousDstEnd: *const u8,
+    base: *const u8,
+    vBase: *const u8,
+    dictEnd: *const u8,
     expected: usize,
     rep: [u32; ZSTDv07_REP_INIT],
     fParams: ZSTDv07_frameParams,
@@ -171,10 +172,10 @@ pub(crate) struct ZBUFFv07_DCtx_s {
     zd: *mut ZSTDv07_DCtx,
     fParams: ZSTDv07_frameParams,
     stage: ZBUFFv07_dStage,
-    inBuff: *mut core::ffi::c_char,
+    inBuff: *mut u8,
     inBuffSize: usize,
     inPos: usize,
-    outBuff: *mut core::ffi::c_char,
+    outBuff: *mut u8,
     outBuffSize: usize,
     outStart: usize,
     outEnd: usize,
@@ -1821,19 +1822,14 @@ fn ZSTDv07_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> Result<us
     }
     Ok(cSize as usize)
 }
-unsafe fn ZSTDv07_copyRawBlock(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
-) -> Result<usize, Error> {
-    if srcSize > dstCapacity {
+fn ZSTDv07_copyRawBlock(mut dst: Writer<'_>, src: &[u8]) -> Result<usize, Error> {
+    if src.len() > dst.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if srcSize > 0 {
-        ptr::copy_nonoverlapping(src, dst, srcSize);
+    if !src.is_empty() {
+        unsafe { ptr::copy_nonoverlapping(src.as_ptr(), dst.as_mut_ptr(), src.len()) };
     }
-    Ok(srcSize)
+    Ok(src.len())
 }
 unsafe fn ZSTDv07_decodeLiteralsBlock(
     dctx: &mut ZSTDv07_DCtx,
@@ -2000,7 +1996,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
         _ => Err(Error::corruption_detected),
     }
 }
-unsafe fn ZSTDv07_buildSeqTable<const N: usize>(
+fn ZSTDv07_buildSeqTable<const N: usize>(
     DTable: &mut FSEv07_DTable<N>,
     type_0: u32,
     mut max: u32,
@@ -2034,7 +2030,7 @@ unsafe fn ZSTDv07_buildSeqTable<const N: usize>(
         3 => {
             let mut tableLog: u32 = 0;
             let mut norm: [i16; 53] = [0; 53];
-            let headerSize = FSEv07_readNCount(&mut norm, &mut max, &mut tableLog, src)
+            let headerSize = unsafe { FSEv07_readNCount(&mut norm, &mut max, &mut tableLog, src) }
                 .map_err(|_| Error::corruption_detected)?;
 
             if tableLog > maxLog {
@@ -2313,24 +2309,25 @@ unsafe fn ZSTDv07_execSequence(
 }
 unsafe fn ZSTDv07_decompressSequences(
     dctx: &mut ZSTDv07_DCtx,
-    dst: *mut core::ffi::c_void,
-    maxDstSize: usize,
-    seqStart: *const core::ffi::c_void,
+    mut dst: Writer<'_>,
+    seqStart: *const u8,
     seqSize: usize,
 ) -> Result<usize, Error> {
-    let mut ip = seqStart as *const u8;
+    let mut ip = seqStart;
     let iend = ip.add(seqSize);
-    let ostart = dst as *mut u8;
-    let oend = ostart.add(maxDstSize);
+    let Range {
+        start: ostart,
+        end: oend,
+    } = dst.as_mut_ptr_range();
     let mut op = ostart;
     let mut litPtr = dctx.litPtr;
     let litEnd = litPtr.add(dctx.litSize);
     let DTableLL = &mut dctx.LLTable;
     let DTableML = &mut dctx.MLTable;
     let DTableOffb = &mut dctx.OffTable;
-    let base = dctx.base as *const u8;
-    let vBase = dctx.vBase as *const u8;
-    let dictEnd = dctx.dictEnd as *const u8;
+    let base = dctx.base;
+    let vBase = dctx.vBase;
+    let dictEnd = dctx.dictEnd;
     let mut nbSeq: core::ffi::c_int = 0;
     let seqHSize = ZSTDv07_decodeSeqHeaders(
         &mut nbSeq,
@@ -2391,21 +2388,17 @@ unsafe fn ZSTDv07_decompressSequences(
     }
     Ok(op.offset_from_unsigned(ostart))
 }
-unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const core::ffi::c_void) {
+unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
     if dst != dctx.previousDstEnd {
         dctx.dictEnd = dctx.previousDstEnd;
-        dctx.vBase = (dst as *const core::ffi::c_char).offset(
-            -((dctx.previousDstEnd as *const core::ffi::c_char)
-                .offset_from(dctx.base as *const core::ffi::c_char)),
-        ) as *const core::ffi::c_void;
+        dctx.vBase = dst.offset(-(dctx.previousDstEnd.offset_from(dctx.base)));
         dctx.base = dst;
         dctx.previousDstEnd = dst;
     }
 }
 unsafe fn ZSTDv07_decompressBlock_internal(
     dctx: &mut ZSTDv07_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
+    dst: Writer<'_>,
     src: *const u8,
     mut srcSize: usize,
 ) -> Result<usize, Error> {
@@ -2416,39 +2409,29 @@ unsafe fn ZSTDv07_decompressBlock_internal(
     let litCSize = ZSTDv07_decodeLiteralsBlock(dctx, src, srcSize)?;
     ip = ip.add(litCSize);
     srcSize = srcSize.wrapping_sub(litCSize);
-    ZSTDv07_decompressSequences(
-        dctx,
-        dst,
-        dstCapacity,
-        ip as *const core::ffi::c_void,
-        srcSize,
-    )
+    ZSTDv07_decompressSequences(dctx, dst, ip, srcSize)
 }
-unsafe fn ZSTDv07_generateNxBytes(
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
-    byte: u8,
-    length: usize,
-) -> Result<usize, Error> {
-    if length > dstCapacity {
+fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Result<usize, Error> {
+    if length > dst.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
     if length > 0 {
-        core::ptr::write_bytes(dst.cast::<u8>(), byte, length);
+        unsafe { core::ptr::write_bytes(dst.as_mut_ptr(), byte, length) };
     }
     Ok(length)
 }
 unsafe fn ZSTDv07_decompressFrame(
     dctx: &mut ZSTDv07_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
+    mut dst: Writer<'_>,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> Result<usize, Error> {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
-    let ostart = dst as *mut u8;
-    let oend = ostart.add(dstCapacity);
+    let Range {
+        start: ostart,
+        end: oend,
+    } = dst.as_mut_ptr_range();
     let mut op = ostart;
     let mut remainingSize = srcSize;
     if srcSize < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
@@ -2487,20 +2470,16 @@ unsafe fn ZSTDv07_decompressFrame(
         let decodedSize = match blockProperties.blockType {
             bt_compressed => ZSTDv07_decompressBlock_internal(
                 dctx,
-                op as *mut core::ffi::c_void,
-                oend.offset_from_unsigned(op),
+                Writer::from_range(op, oend),
                 ip,
                 cBlockSize,
             )?,
             bt_raw => ZSTDv07_copyRawBlock(
-                op as *mut core::ffi::c_void,
-                oend.offset_from_unsigned(op),
-                ip as *const core::ffi::c_void,
-                cBlockSize,
+                Writer::from_range(op, oend),
+                core::slice::from_raw_parts(ip, cBlockSize),
             )?,
             bt_rle => ZSTDv07_generateNxBytes(
-                op as *mut core::ffi::c_void,
-                oend.offset_from_unsigned(op),
+                Writer::from_range(op, oend),
                 *ip,
                 blockProperties.origSize as usize,
             )?,
@@ -2527,16 +2506,15 @@ unsafe fn ZSTDv07_decompressFrame(
 }
 pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dctx: &mut ZSTDv07_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
+    dst: Writer<'_>,
     src: *const core::ffi::c_void,
     srcSize: usize,
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> Result<usize, Error> {
     let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict, dictSize);
-    ZSTDv07_checkContinuity(&mut *dctx, dst);
-    ZSTDv07_decompressFrame(&mut *dctx, dst, dstCapacity, src, srcSize)
+    ZSTDv07_checkContinuity(&mut *dctx, dst.as_ptr());
+    ZSTDv07_decompressFrame(&mut *dctx, dst, src, srcSize)
 }
 fn ZSTD_errorFrameSizeInfoLegacy(
     cSize: &mut usize,
@@ -2616,16 +2594,15 @@ fn ZSTDv07_isSkipFrame(dctx: &ZSTDv07_DCtx) -> bool {
 }
 unsafe fn ZSTDv07_decompressContinue(
     dctx: &mut ZSTDv07_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: usize,
+    mut dst: Writer<'_>,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> Result<usize, Error> {
     if srcSize != dctx.expected {
         return Err(Error::srcSize_wrong);
     }
-    if dstCapacity != 0 {
-        ZSTDv07_checkContinuity(dctx, dst);
+    if dst.capacity() != 0 {
+        ZSTDv07_checkContinuity(dctx, dst.as_ptr());
     }
     match dctx.stage as core::ffi::c_uint {
         0 => {
@@ -2695,12 +2672,14 @@ unsafe fn ZSTDv07_decompressContinue(
             let rSize = match dctx.bType {
                 0 => ZSTDv07_decompressBlock_internal(
                     dctx,
-                    dst,
-                    dstCapacity,
+                    dst.subslice(..),
                     src.cast::<u8>(),
                     srcSize,
                 ),
-                1 => ZSTDv07_copyRawBlock(dst, dstCapacity, src, srcSize),
+                1 => ZSTDv07_copyRawBlock(
+                    dst.subslice(..),
+                    core::slice::from_raw_parts(src.cast::<u8>(), srcSize),
+                ),
                 2 => return Err(Error::GENERIC),
                 3 => Ok(0),
                 _ => return Err(Error::GENERIC),
@@ -2708,10 +2687,9 @@ unsafe fn ZSTDv07_decompressContinue(
             dctx.stage = ZSTDds_decodeBlockHeader;
             dctx.expected = ZSTDv07_blockHeaderSize;
             let rSize = rSize?;
-            dctx.previousDstEnd =
-                (dst as *mut core::ffi::c_char).add(rSize) as *const core::ffi::c_void;
+            dctx.previousDstEnd = dst.as_ptr().add(rSize);
             if dctx.fParams.checksumFlag != 0 {
-                ZSTD_XXH64_update(&mut dctx.xxhState, dst, rSize as usize);
+                ZSTD_XXH64_update(&mut dctx.xxhState, dst.as_ptr().cast(), rSize as usize);
             }
             return Ok(rSize);
         }
@@ -2750,12 +2728,11 @@ unsafe fn ZSTDv07_decompressContinue(
 }
 unsafe fn ZSTDv07_refDictContent(dctx: &mut ZSTDv07_DCtx, dict: &[u8]) {
     dctx.dictEnd = dctx.previousDstEnd;
-    dctx.vBase = dict.as_ptr().offset(
-        -((dctx.previousDstEnd as *const core::ffi::c_char)
-            .offset_from(dctx.base as *const core::ffi::c_char)),
-    ) as *const core::ffi::c_void;
-    dctx.base = dict.as_ptr().cast();
-    dctx.previousDstEnd = dict.as_ptr().add(dict.len()) as *const core::ffi::c_void;
+    dctx.vBase = dict
+        .as_ptr()
+        .offset(-dctx.previousDstEnd.offset_from(dctx.base));
+    dctx.base = dict.as_ptr();
+    dctx.previousDstEnd = dict.as_ptr().add(dict.len());
 }
 unsafe fn ZSTDv07_loadEntropy(dctx: &mut ZSTDv07_DCtx, mut dict: &[u8]) -> Result<usize, Error> {
     let dictSize = dict.len();
@@ -3003,8 +2980,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 let h1Size = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd); // == ZSTDv07_frameHeaderSize_min
                 ZSTDv07_decompressContinue(
                     &mut *zbd.zd,
-                    core::ptr::null_mut(),
-                    0,
+                    Writer::from_slice(&mut []),
                     zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
                     h1Size,
                 )?;
@@ -3013,8 +2989,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     let h2Size = ZSTDv07_nextSrcSizeToDecompress(&*zbd.zd);
                     ZSTDv07_decompressContinue(
                         &mut *zbd.zd,
-                        core::ptr::null_mut(),
-                        0,
+                        Writer::from_slice(&mut []),
                         zbd.headerBuffer.as_mut_ptr().add(h1Size) as *const core::ffi::c_void,
                         h2Size,
                     )?;
@@ -3027,7 +3002,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 if zbd.inBuffSize < blockSize {
                     free(zbd.inBuff as *mut core::ffi::c_void);
                     zbd.inBuffSize = blockSize;
-                    zbd.inBuff = malloc(blockSize) as *mut core::ffi::c_char;
+                    zbd.inBuff = malloc(blockSize) as *mut u8;
                     if zbd.inBuff.is_null() {
                         return Err(Error::memory_allocation);
                     }
@@ -3038,7 +3013,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 if zbd.outBuffSize < neededOutSize {
                     free(zbd.outBuff as *mut core::ffi::c_void);
                     zbd.outBuffSize = neededOutSize;
-                    zbd.outBuff = malloc(neededOutSize) as *mut core::ffi::c_char;
+                    zbd.outBuff = malloc(neededOutSize) as *mut u8;
                     if zbd.outBuff.is_null() {
                         return Err(Error::memory_allocation);
                     }
@@ -3072,11 +3047,11 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 let isSkipFrame = ZSTDv07_isSkipFrame(&*zbd.zd);
                 let decodedSize = ZSTDv07_decompressContinue(
                     &mut *zbd.zd,
-                    zbd.outBuff.add(zbd.outStart) as *mut core::ffi::c_void,
                     if isSkipFrame {
-                        0
+                        Writer::from_slice(&mut [])
                     } else {
-                        zbd.outBuffSize.wrapping_sub(zbd.outStart)
+                        Writer::from_raw_parts(zbd.outBuff, zbd.outBuffSize)
+                            .subslice(zbd.outStart..)
                     },
                     ip as *const core::ffi::c_void,
                     neededInSize,
@@ -3125,8 +3100,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             let isSkipFrame_0 = ZSTDv07_isSkipFrame(&*zbd.zd);
             let decodedSize_0 = ZSTDv07_decompressContinue(
                 &mut *zbd.zd,
-                zbd.outBuff.add(zbd.outStart) as *mut core::ffi::c_void,
-                zbd.outBuffSize.wrapping_sub(zbd.outStart),
+                Writer::from_raw_parts(zbd.outBuff, zbd.outBuffSize).subslice(zbd.outStart..),
                 zbd.inBuff as *const core::ffi::c_void,
                 neededInSize_0,
             )?;
