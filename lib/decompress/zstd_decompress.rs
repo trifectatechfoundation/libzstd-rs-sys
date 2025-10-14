@@ -920,24 +920,24 @@ fn is_skippable_frame(src: &[u8]) -> bool {
     false
 }
 
-fn frame_header_size_internal(src: &[u8], format: Format) -> usize {
+fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error> {
     static ZSTD_fcs_fieldSize: [u8; 4] = [0, 2, 4, 8];
     static ZSTD_did_fieldSize: [u8; 4] = [0, 1, 2, 4];
 
     let minInputSize = ZSTD_startingInputLength(format);
     let Some([.., fhd]) = src.get(..minInputSize as usize) else {
-        return Error::srcSize_wrong.to_error_code();
+        return Err(Error::srcSize_wrong);
     };
 
     let dictID = fhd & 0b11;
     let singleSegment = (fhd >> 5 & 1) != 0;
     let fcsId = fhd >> 6;
 
-    minInputSize
+    Ok(minInputSize
         + usize::from(!singleSegment)
         + usize::from(ZSTD_did_fieldSize[usize::from(dictID)])
         + usize::from(ZSTD_fcs_fieldSize[usize::from(fcsId)])
-        + usize::from(singleSegment && fcsId == 0)
+        + usize::from(singleSegment && fcsId == 0))
 }
 
 /// Get the frame header size
@@ -959,7 +959,7 @@ pub unsafe extern "C" fn ZSTD_frameHeaderSize(
         core::slice::from_raw_parts(src.cast(), srcSize)
     };
 
-    frame_header_size_internal(src, Format::ZSTD_f_zstd1)
+    frame_header_size_internal(src, Format::ZSTD_f_zstd1).unwrap_or_else(Error::to_error_code)
 }
 
 /// Decode Frame Header, or require larger `srcSize`.
@@ -1074,7 +1074,10 @@ fn get_frame_header_advanced(zfhPtr: &mut ZSTD_FrameHeader, src: &[u8], format: 
     }
 
     // ensure there is enough `src` to fully read/decode frame header
-    let fhsize = frame_header_size_internal(src, format);
+    let fhsize = match frame_header_size_internal(src, format) {
+        Ok(size) => size,
+        Err(err) => err.to_error_code(),
+    };
     if src.len() < fhsize {
         return fhsize;
     }
@@ -1753,10 +1756,10 @@ unsafe fn ZSTD_decompressFrame(
     }
 
     // Frame Header
-    let frameHeaderSize = frame_header_size_internal(ip.as_slice(), dctx.format);
-    if ERR_isError(frameHeaderSize) {
-        return frameHeaderSize;
-    }
+    let frameHeaderSize = match frame_header_size_internal(ip.as_slice(), dctx.format) {
+        Ok(size) => size,
+        Err(err) => return err.to_error_code(),
+    };
     if ip.len() < frameHeaderSize.wrapping_add(ZSTD_blockHeaderSize) {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -2121,10 +2124,10 @@ unsafe fn decompress_continue(dctx: &mut ZSTD_DCtx, mut dst: Writer<'_>, src: &[
                 dctx.stage = DecompressStage::DecodeSkippableHeader;
                 return 0;
             }
-            dctx.headerSize = frame_header_size_internal(src, dctx.format);
-            if ERR_isError(dctx.headerSize) {
-                return dctx.headerSize;
-            }
+            dctx.headerSize = match frame_header_size_internal(src, dctx.format) {
+                Ok(size) => size,
+                Err(err) => return err.to_error_code(),
+            };
             dctx.headerBuffer[..src.len()].copy_from_slice(src);
             dctx.expected = (dctx.headerSize).wrapping_sub(src.len());
             dctx.stage = DecompressStage::DecodeFrameHeader;
