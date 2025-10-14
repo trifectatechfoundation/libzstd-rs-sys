@@ -165,11 +165,6 @@ struct sortedSymbol_t {
     symbol: u8,
     weight: u8,
 }
-#[repr(C)]
-struct algo_time_t {
-    tableTime: u32,
-    decode256Time: u32,
-}
 type litBlockType_t = core::ffi::c_uint;
 #[repr(C)]
 pub(crate) struct ZBUFFv07_DCtx_s {
@@ -1384,265 +1379,142 @@ fn HUFv07_decompress4X4_DCtx(
     }
     unsafe { HUFv07_decompress4X4_usingDTable_internal(dst, &cSrc[hSize..], dctx) }
 }
-static algoTime: [[algo_time_t; 3]; 16] = [
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+struct algo_time_t {
+    tableTime: u32,
+    decode256Time: u32,
+}
+static algoTime: [[algo_time_t; 2]; 16] = [
     [
-        {
-            algo_time_t {
-                tableTime: 0,
-                decode256Time: 0,
-            }
+        algo_time_t {
+            tableTime: 0,
+            decode256Time: 0,
         },
-        {
-            algo_time_t {
-                tableTime: 1,
-                decode256Time: 1,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2,
-                decode256Time: 2,
-            }
+        algo_time_t {
+            tableTime: 1,
+            decode256Time: 1,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 0,
-                decode256Time: 0,
-            }
+        algo_time_t {
+            tableTime: 0,
+            decode256Time: 0,
         },
-        {
-            algo_time_t {
-                tableTime: 1,
-                decode256Time: 1,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2,
-                decode256Time: 2,
-            }
+        algo_time_t {
+            tableTime: 1,
+            decode256Time: 1,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 38,
-                decode256Time: 130,
-            }
+        algo_time_t {
+            tableTime: 38,
+            decode256Time: 130,
         },
-        {
-            algo_time_t {
-                tableTime: 1313,
-                decode256Time: 74,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2151,
-                decode256Time: 38,
-            }
+        algo_time_t {
+            tableTime: 1313,
+            decode256Time: 74,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 448,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 448,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1353,
-                decode256Time: 74,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2238,
-                decode256Time: 41,
-            }
+        algo_time_t {
+            tableTime: 1353,
+            decode256Time: 74,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 556,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 556,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1353,
-                decode256Time: 74,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2238,
-                decode256Time: 47,
-            }
+        algo_time_t {
+            tableTime: 1353,
+            decode256Time: 74,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 714,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 714,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1418,
-                decode256Time: 74,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2436,
-                decode256Time: 53,
-            }
+        algo_time_t {
+            tableTime: 1418,
+            decode256Time: 74,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 883,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 883,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1437,
-                decode256Time: 74,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2464,
-                decode256Time: 61,
-            }
+        algo_time_t {
+            tableTime: 1437,
+            decode256Time: 74,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 897,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 897,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1515,
-                decode256Time: 75,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2622,
-                decode256Time: 68,
-            }
+        algo_time_t {
+            tableTime: 1515,
+            decode256Time: 75,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 926,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 926,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1613,
-                decode256Time: 75,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 2730,
-                decode256Time: 75,
-            }
+        algo_time_t {
+            tableTime: 1613,
+            decode256Time: 75,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 947,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 947,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 1729,
-                decode256Time: 77,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 3359,
-                decode256Time: 77,
-            }
+        algo_time_t {
+            tableTime: 1729,
+            decode256Time: 77,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 1107,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 1107,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 2083,
-                decode256Time: 81,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 4006,
-                decode256Time: 84,
-            }
+        algo_time_t {
+            tableTime: 2083,
+            decode256Time: 81,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 1177,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 1177,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 2379,
-                decode256Time: 87,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 4785,
-                decode256Time: 88,
-            }
+        algo_time_t {
+            tableTime: 2379,
+            decode256Time: 87,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 1242,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 1242,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 2415,
-                decode256Time: 93,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 5155,
-                decode256Time: 84,
-            }
+        algo_time_t {
+            tableTime: 2415,
+            decode256Time: 93,
         },
     ],
     [
@@ -1658,66 +1530,38 @@ static algoTime: [[algo_time_t; 3]; 16] = [
                 decode256Time: 106,
             }
         },
-        {
-            algo_time_t {
-                tableTime: 5260,
-                decode256Time: 106,
-            }
+    ],
+    [
+        algo_time_t {
+            tableTime: 1455,
+            decode256Time: 128,
+        },
+        algo_time_t {
+            tableTime: 2422,
+            decode256Time: 124,
         },
     ],
     [
-        {
-            algo_time_t {
-                tableTime: 1455,
-                decode256Time: 128,
-            }
+        algo_time_t {
+            tableTime: 722,
+            decode256Time: 128,
         },
-        {
-            algo_time_t {
-                tableTime: 2422,
-                decode256Time: 124,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 4174,
-                decode256Time: 124,
-            }
-        },
-    ],
-    [
-        {
-            algo_time_t {
-                tableTime: 722,
-                decode256Time: 128,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 1891,
-                decode256Time: 145,
-            }
-        },
-        {
-            algo_time_t {
-                tableTime: 1936,
-                decode256Time: 146,
-            }
+        algo_time_t {
+            tableTime: 1891,
+            decode256Time: 145,
         },
     ],
 ];
-unsafe fn HUFv07_selectDecoder(dstSize: usize, cSrcSize: usize) -> bool {
-    let Q = (cSrcSize * 16 / dstSize) as u32;
+fn HUFv07_selectDecoder(dstSize: usize, cSrcSize: usize) -> bool {
+    let Q = cSrcSize * 16 / dstSize; // Q < 16 since dstSize > cSrcSize
     let D256 = (dstSize >> 8) as u32;
-    let DTime0 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr()).tableTime)
-        .wrapping_add((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr()).decode256Time * D256);
-    let mut DTime1 = ((*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().add(1)).tableTime)
-        .wrapping_add(
-            (*(*algoTime.as_ptr().offset(Q as isize)).as_ptr().add(1)).decode256Time * D256,
-        );
-    DTime1 = DTime1.wrapping_add(DTime1 >> 3);
+    let [time0, time1] = algoTime[Q];
+    let DTime0 = time0.tableTime + time0.decode256Time * D256;
+    let mut DTime1 = time1.tableTime + time1.decode256Time * D256;
+    DTime1 = DTime1 + (DTime1 >> 3); // advantage to algorithm using less memory, for cache eviction
     DTime1 < DTime0
 }
+
 fn HUFv07_decompress4X_hufOnly(
     dctx: &mut HUFv07_DTable,
     dst: Writer<'_>,
@@ -1729,7 +1573,7 @@ fn HUFv07_decompress4X_hufOnly(
     if cSrc.len() >= dst.capacity() || cSrc.len() <= 1 {
         return Err(Error::corruption_detected);
     }
-    if unsafe { HUFv07_selectDecoder(dst.capacity(), cSrc.len()) } {
+    if HUFv07_selectDecoder(dst.capacity(), cSrc.len()) {
         HUFv07_decompress4X4_DCtx(dctx, dst, cSrc)
     } else {
         HUFv07_decompress4X2_DCtx(dctx, dst, cSrc)
