@@ -171,11 +171,15 @@ impl From<u32> for BlockType {
 #[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
+    /// if set to [`crate::ZSTD_CONTENTSIZE_UNKNOWN`], it means this field is not available, 0 means "empty"
     pub frameContentSize: core::ffi::c_ulonglong,
+    /// can be very large, up to <= `frameContentSize`
     pub windowSize: core::ffi::c_ulonglong,
     pub blockSizeMax: core::ffi::c_uint,
+    /// if set to [`ZSTD_skippableFrame`], `frameContentSize` is the size of skippable content
     pub frameType: ZSTD_FrameType_e,
     pub headerSize: core::ffi::c_uint,
+    /// for [`ZSTD_skippableFrame`], contains the skippable magic variant \[0-15]
     pub dictID: core::ffi::c_uint,
     pub checksumFlag: core::ffi::c_uint,
     pub _reserved1: core::ffi::c_uint,
@@ -210,6 +214,17 @@ impl Workspace {
 }
 
 pub type ZSTD_DCtx = ZSTD_DCtx_s;
+
+/// Decompression context
+///
+/// When decompressing many times, it is recommended to allocate a context only once, and reuse it
+/// for each successive compression operation. This will make workload friendlier for system's
+/// memory.
+///
+/// You can create a decompression context with [`crate::ZSTD_createDCtx`] and free it with
+/// [`crate::ZSTD_freeDCtx`].
+///
+/// Use one context per thread for parallel execution.
 #[repr(C)]
 pub struct ZSTD_DCtx_s {
     LLTptr: Option<NonNull<SymbolTable<512>>>,

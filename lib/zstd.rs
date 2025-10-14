@@ -1,6 +1,13 @@
 use core::ffi::c_uint;
 use libc::size_t;
 
+#[cfg(doc)]
+use crate::{
+    lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
+    ZSTD_DCtx_reset, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_freeDCtx,
+    ZSTD_WINDOWLOG_LIMIT_DEFAULT,
+};
+
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
 
 pub const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
@@ -120,7 +127,14 @@ pub type ZSTD_allocFunction =
 pub struct ZSTD_format_e(u32);
 
 impl ZSTD_format_e {
+    /// zstd frame format, specified in zstd_compression_format.md (default)
     pub const ZSTD_f_zstd1: Self = Self(Format::ZSTD_f_zstd1 as u32);
+
+    /// Variant of zstd frame format, without initial 4-bytes magic number.
+    ///
+    /// Useful to save 4 bytes per generated frame.
+    ///
+    /// The decoder cannot recognize this format automatically, thus requiring this instruction.
     pub const ZSTD_f_zstd1_magicless: Self = Self(Format::ZSTD_f_zstd1_magicless as u32);
 }
 
@@ -174,8 +188,11 @@ pub type ZSTD_inBuffer = ZSTD_inBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_inBuffer_s {
+    /// Pointer to start of input buffer
     pub src: *const core::ffi::c_void,
+    /// Size of input buffer
     pub size: size_t,
+    /// Position where reading stopped. Will be updated. Necessarily `0 <= pos <= size`.
     pub pos: size_t,
 }
 
@@ -183,8 +200,11 @@ pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ZSTD_outBuffer_s {
+    /// Pointer to start of output buffer
     pub dst: *mut core::ffi::c_void,
+    /// Size of output buffer
     pub size: size_t,
+    /// Position where writing stopped. Will be updated. Necessarily `0 <= pos <= size`.
     pub pos: size_t,
 }
 
@@ -238,6 +258,11 @@ pub mod experimental {
     };
 }
 
+/// The advanced API pushes parameters one by one into an existing `ZSTD_DCtx` decompression
+/// context. Parameters are sticky, and remain valid for all following frames using the same
+/// context.
+///
+/// It's possible to reset parameters to default values using [`ZSTD_DCtx_reset`].
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ZSTD_dParameter(u32);
@@ -250,13 +275,87 @@ impl ZSTD_dParameter {
     pub const ZSTD_d_experimentalParam5: Self = Self(1004);
     pub const ZSTD_d_experimentalParam6: Self = Self(1005);
 
+    /// Experimental parameter: allowing selection between [`ZSTD_format_e`] input compression formats
     pub const ZSTD_d_format: Self = Self::ZSTD_d_experimentalParam1;
+
+    /// Experimental parameter: tells the decompressor that the [`ZSTD_outBuffer`] will ALWAYS be
+    /// the same between calls, except for the modifications that zstd makes to pos (the caller
+    /// must not modify pos). This is checked by the decompressor, and decompression will fail if
+    /// it ever changes. Therefore the `ZSTD_outBuffer` MUST be large enough to fit the entire
+    /// decompressed frame. This will be checked when the frame content size is known. The data in
+    /// the `ZSTD_outBuffer` in the range `dst..(dst + pos)` MUST not be modified during
+    /// decompression or you will get data corruption.
+    ///
+    /// When this flag is enabled zstd won't allocate an output buffer, because it can write
+    /// directly to the `ZSTD_outBuffer`, but it will still allocate an input buffer large enough
+    /// to fit any compressed block. This will also avoid the `memcpy()` from the internal output
+    /// buffer to the `ZSTD_outBuffer`. If you need to avoid the input buffer allocation use the
+    /// buffer-less streaming API.
+    ///
+    /// Note: So long as the `ZSTD_outBuffer` always points to valid memory, using this flag is
+    /// ALWAYS memory safe, and will never access out-of-bounds memory. However, decompression WILL
+    /// fail if you violate the preconditions.
+    ///
+    /// **Warning:** The data in the `ZSTD_outBuffer` in the range `dst..(dst + pos)` MUST not be
+    /// modified during decompression or you will get data corruption. This is because zstd needs
+    /// to reference data in the `ZSTD_outBuffer` to regenerate matches. Normally zstd maintains
+    /// its own buffer for this purpose, but passing this flag tells zstd to use the user provided
+    /// buffer.
+    ///
+    /// Default is 0 == disabled. Set to 1 to enable.
     pub const ZSTD_d_stableOutBuffer: Self = Self::ZSTD_d_experimentalParam2;
+
+    /// Experimental parameter: tells the decompressor to skip checksum validation during
+    /// decompression, regardless of whether checksumming was specified during compression. This
+    /// offers some slight performance benefits, and may be useful for debugging.
+    ///
+    /// Default is 0 == disabled. Set to 1 to enable.
     pub const ZSTD_d_forceIgnoreChecksum: Self = Self::ZSTD_d_experimentalParam3;
+
+    /// Experimental parameter: if enabled and [`ZSTD_DCtx`] is allocated on the heap, then
+    /// additional memory will be allocated to store references to multiple [`ZSTD_DDict`]. That
+    /// is, multiple calls of [`ZSTD_DCtx_refDDict`] using a given [`ZSTD_DCtx`], rather than
+    /// overwriting the previous DDict reference, will instead store all references. At
+    /// decompression time, the appropriate `dictID` is selected from the set of DDicts based on
+    /// the `dictID` in the frame.
+    ///
+    /// **Warning:** Enabling this parameter and calling [`ZSTD_DCtx_refDDict`] will trigger memory
+    /// allocation for the hash table. [`ZSTD_freeDCtx`] also frees this memory. Memory is
+    /// allocated as per `ZSTD_DCtx::customMem`.
+    ///
+    /// Although this function allocates memory for the table, the user is still responsible for
+    /// memory management of the underlying [`ZSTD_DDict`] themselves.
+    ///
+    /// Default is 0 == disabled. Set to 1 to enable.
     pub const ZSTD_d_refMultipleDDicts: Self = Self::ZSTD_d_experimentalParam4;
+
+    /// This parameter can be used to disable Huffman assembly at runtime.
+    ///
+    /// Set to 1 to disable the Huffman assembly implementation. The default value is 0, which
+    /// allows zstd to use the Huffman assembly implementation if available.
     pub const ZSTD_d_disableHuffmanAssembly: Self = Self::ZSTD_d_experimentalParam5;
+
+    /// Forces the decompressor to reject blocks whose content size is larger than the configured
+    /// `maxBlockSize`. When `maxBlockSize` is larger than the `windowSize`, the `windowSize` is
+    /// used instead. This saves memory on the decoder when you know all blocks are small.
+    ///
+    /// Allowed values are between 1KB and [`ZSTD_BLOCKSIZE_MAX`] (128KB).
+    /// The default is [`ZSTD_BLOCKSIZE_MAX`], and setting to 0 will set to the default.
+    ///
+    /// This option is typically used in conjunction with [`ZSTD_c_maxBlockSize`].
+    ///
+    /// **Warning:** This causes the decoder to reject otherwise valid frames that have block sizes
+    /// larger than the configured `maxBlockSize`.
     pub const ZSTD_d_maxBlockSize: Self = Self::ZSTD_d_experimentalParam6;
 
+    /// Select a size limit (in power of 2) beyond which the streaming API will refuse to allocate
+    /// memory buffer in order to protect the host from unreasonable memory requirements.
+    ///
+    /// This parameter is only useful in streaming mode, since no internal buffer is allocated in
+    /// single-pass mode. By default, a decompression context accepts window sizes less than or
+    /// equal to (1 << [`ZSTD_WINDOWLOG_LIMIT_DEFAULT`]).
+    ///
+    /// A value of 0 means "use default maximum `windowLog`".
     pub const ZSTD_d_windowLogMax: Self = Self(100);
 }
 
@@ -356,13 +455,48 @@ impl ZSTD_ResetDirective {
     pub const ZSTD_reset_session_and_parameters: Self = Self(3);
 }
 
+/// Note: this enum and the behavior it controls are effectively internal
+/// implementation details of the compressor. They are expected to continue
+/// to evolve and should be considered only in the context of extremely
+/// advanced performance tuning.
+///
+/// Zstd currently supports the use of a [`ZSTD_CDict`] in three ways:
+///
+/// - The contents of the CDict can be copied into the working context. This
+///   means that the compression can search both the dictionary and input
+///   while operating on a single set of internal tables. This makes
+///   the compression faster per byte of input. However, the initial copy of
+///   the CDict's tables incurs a fixed cost at the beginning of the
+///   compression. For small compressions (< 8 KB), that copy can dominate
+///   the cost of the compression.
+///
+/// - The CDict's tables can be used in-place. In this model, compression is
+///   slower per input byte, because the compressor has to search two sets of
+///   tables. However, this model incurs no start-up cost (as long as the
+///   working context's tables can be reused). For small inputs, this can be
+///   faster than copying the CDict's tables.
+///
+/// - The CDict's tables are not used at all, and instead we use the working
+///   context alone to reload the dictionary and use params based on the source
+///   size. See [`ZSTD_compress_insertDictionary`] and [`ZSTD_compress_usingDict`].
+///   This method is effective when the dictionary sizes are very small relative
+///   to the input size, and the input size is fairly large to begin with.
+///
+/// Zstd has a simple internal heuristic that selects which strategy to use
+/// at the beginning of a compression. However, if experimentation shows that
+/// Zstd is making poor choices, it is possible to override that choice with
+/// this enum.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ZSTD_dictAttachPref_e(pub(crate) u32);
 impl ZSTD_dictAttachPref_e {
+    /// Use the default heuristic
     pub const ZSTD_dictDefaultAttach: Self = Self(0);
+    /// Never copy the dictionary
     pub const ZSTD_dictForceAttach: Self = Self(1);
+    /// Always copy the dictionary
     pub const ZSTD_dictForceCopy: Self = Self(2);
+    /// Always reload the dictionary
     pub const ZSTD_dictForceLoad: Self = Self(3);
 }
 
@@ -380,10 +514,17 @@ impl TryFrom<i32> for ZSTD_dictAttachPref_e {
     }
 }
 
+/// Note: this enum controls features which are conditionally beneficial.
+///
+/// Zstd can take a decision on whether or not to enable the feature (`ZSTD_ps_auto`),
+/// or set the switch to `ZSTD_ps_enable` or `ZSTD_ps_disable` force enable/disable the feature.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZSTD_ParamSwitch_e {
+    /// Let the library automatically determine whether the feature shall be enabled
     ZSTD_ps_auto = 0,
+    /// Force-enable the feature
     ZSTD_ps_enable = 1,
+    /// Force-disable the feature
     ZSTD_ps_disable = 2,
 }
 
