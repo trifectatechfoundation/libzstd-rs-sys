@@ -1189,25 +1189,24 @@ fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
     DTable.description = dtd;
     Ok(iSize)
 }
-unsafe fn HUFv07_decodeSymbolX4(
+fn HUFv07_decodeSymbolX4(
     dst: &mut Writer<'_>,
     DStream: &mut BITv07_DStream_t,
     dt: &[HUFv07_DEltX4; 4096],
     dtLog: u32,
 ) {
     let val = DStream.look_bits_fast(dtLog);
-    ptr::write(dst.as_mut_ptr() as *mut [u8; 2], dt[val].sequence.0);
+    dst.write_symbol_x2(u16::from_le_bytes(dt[val].sequence.0), dt[val].length);
     DStream.skip_bits(dt[val].nbBits as u32);
-    *dst = dst.subslice(usize::from(dt[val].length)..);
 }
-unsafe fn HUFv07_decodeLastSymbolX4(
+fn HUFv07_decodeLastSymbolX4(
     dst: &mut Writer<'_>,
     DStream: &mut BITv07_DStream_t,
     dt: &[HUFv07_DEltX4],
     dtLog: u32,
 ) {
     let val = DStream.look_bits_fast(dtLog);
-    ptr::write(dst.as_mut_ptr(), dt[val].sequence.0[0]);
+    dst.write_u8(dt[val].sequence.0[0]);
     if (dt[val]).length == 1 {
         DStream.skip_bits(dt[val].nbBits as u32);
     } else if DStream.bitsConsumed < usize::BITS {
@@ -1228,24 +1227,24 @@ fn HUFv07_decodeStreamX4(
     let dst_capacity = dst.capacity();
     while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 8 {
         if MEM_64bits() {
-            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+            HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
         }
         if MEM_64bits() || HUFv07_TABLELOG_MAX <= 12 {
-            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+            HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
         }
         if MEM_64bits() {
-            unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+            HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
         }
-        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+        HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
     }
     while bitDPtr.reload() == StreamStatus::Unfinished && dst.capacity() >= 2 {
-        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+        HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
     }
     while dst.capacity() >= 2 {
-        unsafe { HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+        HUFv07_decodeSymbolX4(&mut dst, bitDPtr, dt, dtLog);
     }
     if dst.capacity() > 0 {
-        unsafe { HUFv07_decodeLastSymbolX4(&mut dst, bitDPtr, dt, dtLog) };
+        HUFv07_decodeLastSymbolX4(&mut dst, bitDPtr, dt, dtLog);
     }
     dst_capacity - dst.capacity()
 }
@@ -1274,7 +1273,7 @@ fn HUFv07_decompress1X4_usingDTable(
     }
     HUFv07_decompress1X4_usingDTable_internal(dst, cSrc, DTable)
 }
-unsafe fn HUFv07_decompress4X4_usingDTable_internal(
+fn HUFv07_decompress4X4_usingDTable_internal(
     mut dst: Writer<'_>,
     cSrc: &[u8],
     DTable: &HUFv07_DTable,
@@ -1282,40 +1281,32 @@ unsafe fn HUFv07_decompress4X4_usingDTable_internal(
     if cSrc.len() < 10 {
         return Err(Error::corruption_detected);
     }
-    let istart = cSrc.as_ptr();
+    let mut ip = cSrc;
     let dstSize = dst.capacity();
-    let ostart = dst.as_mut_ptr();
-    let oend = ostart.add(dstSize);
     let dt = DTable.as_x4();
-    let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as usize;
-    let length2 = MEM_readLE16(istart.add(2) as *const core::ffi::c_void) as usize;
-    let length3 = MEM_readLE16(istart.add(4) as *const core::ffi::c_void) as usize;
-    let length4 = cSrc.len().wrapping_sub(
-        length1
-            .wrapping_add(length2)
-            .wrapping_add(length3)
-            .wrapping_add(6),
-    );
-    let istart1 = istart.add(6);
-    let istart2 = istart1.add(length1);
-    let istart3 = istart2.add(length2);
-    let istart4 = istart3.add(length3);
-    let segmentSize = dstSize.wrapping_add(3) / 4;
-    let opStart2 = ostart.add(segmentSize);
-    let opStart3 = opStart2.add(segmentSize);
-    let opStart4 = opStart3.add(segmentSize);
-    let mut op1 = Writer::from_range(ostart, opStart2);
-    let mut op2 = Writer::from_range(opStart2, opStart3);
-    let mut op3 = Writer::from_range(opStart3, opStart3);
-    let mut op4 = Writer::from_range(opStart4, oend);
-    let dtLog = DTable.description.tableLog as u32;
-    if length4 > cSrc.len() {
+    let length1 = usize::from(u16::from_le_bytes(ip[0..2].try_into().unwrap()));
+    let length2 = usize::from(u16::from_le_bytes(ip[2..4].try_into().unwrap()));
+    let length3 = usize::from(u16::from_le_bytes(ip[4..6].try_into().unwrap()));
+    ip = &ip[6..];
+    let (istart1, istart2, istart3, istart4);
+    (istart1, ip) = ip
+        .split_at_checked(length1)
+        .ok_or(Error::corruption_detected)?;
+    (istart2, ip) = ip
+        .split_at_checked(length2)
+        .ok_or(Error::corruption_detected)?;
+    (istart3, ip) = ip
+        .split_at_checked(length3)
+        .ok_or(Error::corruption_detected)?;
+    istart4 = ip;
+    let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
         return Err(Error::corruption_detected);
-    }
-    let mut bitD1 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart1, length1))?;
-    let mut bitD2 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart2, length2))?;
-    let mut bitD3 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart3, length3))?;
-    let mut bitD4 = BITv07_DStream_t::new(core::slice::from_raw_parts(istart4, length4))?;
+    };
+    let dtLog = DTable.description.tableLog as u32;
+    let mut bitD1 = BITv07_DStream_t::new(istart1)?;
+    let mut bitD2 = BITv07_DStream_t::new(istart2)?;
+    let mut bitD3 = BITv07_DStream_t::new(istart3)?;
+    let mut bitD4 = BITv07_DStream_t::new(istart4)?;
     let mut endSignal = true;
     endSignal &= bitD1.reload() == StreamStatus::Unfinished;
     endSignal &= bitD2.reload() == StreamStatus::Unfinished;
@@ -1373,7 +1364,7 @@ fn HUFv07_decompress4X4_DCtx(
     if hSize >= cSrc.len() {
         return Err(Error::srcSize_wrong);
     }
-    unsafe { HUFv07_decompress4X4_usingDTable_internal(dst, &cSrc[hSize..], dctx) }
+    HUFv07_decompress4X4_usingDTable_internal(dst, &cSrc[hSize..], dctx)
 }
 
 #[repr(C)]
