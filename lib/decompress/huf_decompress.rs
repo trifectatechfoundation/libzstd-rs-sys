@@ -2178,7 +2178,7 @@ impl<'a> Writer<'a> {
         }
     }
 
-    fn quarter(&mut self) -> Option<(Self, Self, Self, Self)> {
+    pub(crate) fn quarter(&mut self) -> Option<(Self, Self, Self, Self)> {
         let capacity = self.capacity();
         let segment_size = capacity.div_ceil(4);
         let range = self.as_mut_ptr_range();
