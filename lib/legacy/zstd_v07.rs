@@ -1837,202 +1837,165 @@ unsafe fn ZSTDv07_copyRawBlock(
 }
 unsafe fn ZSTDv07_decodeLiteralsBlock(
     dctx: &mut ZSTDv07_DCtx,
-    src: *const core::ffi::c_void,
+    srcPtr: *const u8,
     srcSize: usize,
 ) -> Result<usize, Error> {
-    let istart = src as *const u8;
-    if srcSize < MIN_CBLOCK_SIZE as usize {
+    let src = unsafe { core::slice::from_raw_parts(srcPtr, srcSize) };
+    if src.len() < MIN_CBLOCK_SIZE as usize {
         return Err(Error::corruption_detected);
     }
-    match (*istart as core::ffi::c_int >> 6) as litBlockType_t as core::ffi::c_uint {
+    match (src[0] >> 6) as litBlockType_t {
         0 => {
             let mut litSize: usize = 0;
             let mut litCSize: usize = 0;
             let mut singleStream = 0;
-            let mut lhSize = (*istart as core::ffi::c_int >> 4 & 3) as u32;
-            if srcSize < 5 {
+            let mut lhSize = usize::from((src[0] >> 4) & 3);
+            if src.len() < 5 {
                 return Err(Error::corruption_detected);
             }
             match lhSize {
                 2 => {
                     lhSize = 4;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 10)
-                        + ((*istart.add(1) as core::ffi::c_int) << 2)
-                        + (*istart.add(2) as core::ffi::c_int >> 6))
-                        as usize;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 63) << 8)
-                        + *istart.add(3) as core::ffi::c_int)
-                        as usize;
+                    litSize = ((usize::from(src[0]) & 15) << 10)
+                        + (usize::from(src[1]) << 2)
+                        + (usize::from(src[2]) >> 6);
+                    litCSize = ((usize::from(src[2]) & 63) << 8) + usize::from(src[3]);
                 }
                 3 => {
                     lhSize = 5;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 14)
-                        + ((*istart.add(1) as core::ffi::c_int) << 6)
-                        + (*istart.add(2) as core::ffi::c_int >> 2))
-                        as usize;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 3) << 16)
-                        + ((*istart.add(3) as core::ffi::c_int) << 8)
-                        + *istart.add(4) as core::ffi::c_int)
-                        as usize;
+                    litSize = ((usize::from(src[0]) & 15) << 14)
+                        + (usize::from(src[1]) << 6)
+                        + (usize::from(src[2]) >> 2);
+                    litCSize = ((usize::from(src[2]) & 3) << 16)
+                        + (usize::from(src[3]) << 8)
+                        + usize::from(src[3]);
                 }
                 0 | 1 => {
                     lhSize = 3;
-                    singleStream = (*istart as core::ffi::c_int & 16) as usize;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 6)
-                        + (*istart.add(1) as core::ffi::c_int >> 2))
-                        as usize;
-                    litCSize = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
-                        as usize;
+                    singleStream = usize::from(src[0]) & 16;
+                    litSize = ((usize::from(src[0]) & 15) << 6) + (usize::from(src[1]) >> 2);
+                    litCSize = ((usize::from(src[1]) & 3) << 8) + usize::from(src[2]);
                 }
                 _ => unreachable!(),
             }
             if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
                 return Err(Error::corruption_detected);
             }
-            if litCSize.wrapping_add(lhSize as usize) > srcSize {
+            if litCSize.wrapping_add(lhSize) > src.len() {
                 return Err(Error::corruption_detected);
             }
             if singleStream != 0 {
                 HUFv07_decompress1X2_DCtx(
                     &mut dctx.hufTable,
-                    Writer::from_raw_parts(dctx.litBuffer.as_mut_ptr(), litSize),
-                    core::slice::from_raw_parts(istart.offset(lhSize as isize), litCSize),
+                    Writer::from_slice(&mut dctx.litBuffer[..litSize]),
+                    &src[lhSize..lhSize + litCSize],
                 )
                 .map_err(|_| Error::corruption_detected)?;
             } else {
                 HUFv07_decompress4X_hufOnly(
                     &mut dctx.hufTable,
-                    Writer::from_raw_parts(dctx.litBuffer.as_mut_ptr(), litSize),
-                    core::slice::from_raw_parts(istart.offset(lhSize as isize), litCSize),
+                    Writer::from_slice(&mut dctx.litBuffer[..litSize]),
+                    &src[lhSize..lhSize + litCSize],
                 )
                 .map_err(|_| Error::corruption_detected)?;
             }
             dctx.litPtr = (&raw mut dctx.litBuffer).cast();
             dctx.litSize = litSize;
             dctx.litEntropy = 1;
-            ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
-                0,
-                WILDCOPY_OVERLENGTH,
-            );
-            Ok(litCSize.wrapping_add(lhSize as usize))
+            dctx.litBuffer[dctx.litSize..dctx.litSize + WILDCOPY_OVERLENGTH].fill(0);
+            Ok(litCSize.wrapping_add(lhSize))
         }
         1 => {
-            let mut litSize_0: usize = 0;
-            let mut litCSize_0: usize = 0;
-            let mut lhSize_0 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
-            if lhSize_0 != 1 {
+            let mut litSize: usize = 0;
+            let mut litCSize: usize = 0;
+            let mut lhSize = usize::from((src[0] >> 4) & 3);
+            if lhSize != 1 {
                 return Err(Error::corruption_detected);
             }
             if dctx.litEntropy == 0 {
                 return Err(Error::dictionary_corrupted);
             }
-            lhSize_0 = 3;
-            litSize_0 = (((*istart as core::ffi::c_int & 15) << 6)
-                + (*istart.add(1) as core::ffi::c_int >> 2)) as usize;
-            litCSize_0 = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                + *istart.add(2) as core::ffi::c_int) as usize;
-            if litCSize_0.wrapping_add(lhSize_0 as usize) > srcSize {
+            lhSize = 3;
+            litSize = ((usize::from(src[0]) & 15) << 6) + (usize::from(src[1]) >> 2);
+            litCSize = ((usize::from(src[1]) & 3) << 8) + usize::from(src[2]);
+            if litCSize.wrapping_add(lhSize) > src.len() {
                 return Err(Error::corruption_detected);
             }
             HUFv07_decompress1X4_usingDTable(
-                Writer::from_raw_parts(dctx.litBuffer.as_mut_ptr(), litSize_0),
-                core::slice::from_raw_parts(istart.offset(lhSize_0 as isize), litCSize_0),
+                Writer::from_slice(&mut dctx.litBuffer[..litSize]),
+                &src[lhSize..lhSize + litCSize],
                 &dctx.hufTable,
             )
             .map_err(|_| Error::corruption_detected)?;
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-            dctx.litSize = litSize_0;
-            ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
-                0,
-                WILDCOPY_OVERLENGTH,
-            );
-            Ok(litCSize_0.wrapping_add(lhSize_0 as usize))
+            dctx.litSize = litSize;
+            dctx.litBuffer[dctx.litSize..dctx.litSize + WILDCOPY_OVERLENGTH].fill(0);
+            Ok(litCSize + lhSize)
         }
         2 => {
-            let mut litSize_1: usize = 0;
-            let mut lhSize_1 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
-            match lhSize_1 {
+            let mut litSize: usize = 0;
+            let mut lhSize = usize::from((src[0] >> 4) & 3);
+            match lhSize {
                 2 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
-                        as usize;
+                    litSize = ((usize::from(src[0]) & 15) << 8) + usize::from(src[1]);
                 }
                 3 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
-                        as usize;
+                    litSize = ((usize::from(src[0]) & 15) << 16)
+                        + ((usize::from(src[1])) << 8)
+                        + usize::from(src[2]);
                 }
                 0 | 1 => {
-                    lhSize_1 = 1;
-                    litSize_1 = (*istart as core::ffi::c_int & 31) as usize;
+                    lhSize = 1;
+                    litSize = usize::from(src[0]) & 31;
                 }
                 _ => unreachable!(),
             }
-            if (lhSize_1 as usize)
-                .wrapping_add(litSize_1)
+            if lhSize
+                .wrapping_add(litSize)
                 .wrapping_add(WILDCOPY_OVERLENGTH)
-                > srcSize
+                > src.len()
             {
-                if litSize_1.wrapping_add(lhSize_1 as usize) > srcSize {
+                if litSize.wrapping_add(lhSize) > src.len() {
                     return Err(Error::corruption_detected);
                 }
-                ptr::copy_nonoverlapping(
-                    istart.offset(lhSize_1 as isize),
-                    dctx.litBuffer.as_mut_ptr(),
-                    litSize_1,
-                );
+                dctx.litBuffer[..litSize].copy_from_slice(&src[lhSize..lhSize + litSize]);
                 dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-                dctx.litSize = litSize_1;
-                ptr::write_bytes(
-                    dctx.litBuffer.as_mut_ptr().add(dctx.litSize),
-                    0,
-                    WILDCOPY_OVERLENGTH,
-                );
-                return Ok((lhSize_1 as usize).wrapping_add(litSize_1));
+                dctx.litSize = litSize;
+                dctx.litBuffer[dctx.litSize..dctx.litSize + WILDCOPY_OVERLENGTH].fill(0);
+                return Ok(lhSize.wrapping_add(litSize));
             }
-            dctx.litPtr = istart.offset(lhSize_1 as isize);
-            dctx.litSize = litSize_1;
-            Ok((lhSize_1 as usize).wrapping_add(litSize_1))
+            dctx.litPtr = unsafe { srcPtr.add(lhSize) };
+            dctx.litSize = litSize;
+            Ok(lhSize + litSize)
         }
         3 => {
-            let mut litSize_2: usize = 0;
-            let mut lhSize_2 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
-            match lhSize_2 {
+            let mut litSize: usize = 0;
+            let mut lhSize = usize::from((src[0] >> 4) & 3);
+            match lhSize {
                 2 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
-                        as usize;
+                    litSize = ((usize::from(src[0]) & 15) << 8) + usize::from(src[1]);
                 }
                 3 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
-                        as usize;
-                    if srcSize < 4 {
+                    litSize = ((usize::from(src[0]) & 15) << 16)
+                        + (usize::from(src[1]) << 8)
+                        + usize::from(src[2]);
+                    if src.len() < 4 {
                         return Err(Error::corruption_detected);
                     }
                 }
                 0 | 1 => {
-                    lhSize_2 = 1;
-                    litSize_2 = (*istart as core::ffi::c_int & 31) as usize;
+                    lhSize = 1;
+                    litSize = usize::from(src[0]) & 31;
                 }
                 _ => unreachable!(),
             }
-            if litSize_2 > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
+            if litSize > ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
                 return Err(Error::corruption_detected);
             }
-            core::ptr::write_bytes(
-                dctx.litBuffer.as_mut_ptr(),
-                *istart.offset(lhSize_2 as isize),
-                litSize_2.wrapping_add(WILDCOPY_OVERLENGTH),
-            );
+            dctx.litBuffer[..litSize + WILDCOPY_OVERLENGTH].fill(src[lhSize]);
             dctx.litPtr = dctx.litBuffer.as_mut_ptr();
-            dctx.litSize = litSize_2;
-            Ok(lhSize_2.wrapping_add(1) as usize)
+            dctx.litSize = litSize;
+            Ok(lhSize + 1)
         }
         _ => Err(Error::corruption_detected),
     }
@@ -2443,10 +2406,10 @@ unsafe fn ZSTDv07_decompressBlock_internal(
     dctx: &mut ZSTDv07_DCtx,
     dst: *mut core::ffi::c_void,
     dstCapacity: usize,
-    src: *const core::ffi::c_void,
+    src: *const u8,
     mut srcSize: usize,
 ) -> Result<usize, Error> {
-    let mut ip = src as *const u8;
+    let mut ip = src;
     if srcSize >= ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
         return Err(Error::srcSize_wrong);
     }
@@ -2526,7 +2489,7 @@ unsafe fn ZSTDv07_decompressFrame(
                 dctx,
                 op as *mut core::ffi::c_void,
                 oend.offset_from_unsigned(op),
-                ip as *const core::ffi::c_void,
+                ip,
                 cBlockSize,
             )?,
             bt_raw => ZSTDv07_copyRawBlock(
@@ -2730,7 +2693,13 @@ unsafe fn ZSTDv07_decompressContinue(
         }
         3 => {
             let rSize = match dctx.bType {
-                0 => ZSTDv07_decompressBlock_internal(dctx, dst, dstCapacity, src, srcSize),
+                0 => ZSTDv07_decompressBlock_internal(
+                    dctx,
+                    dst,
+                    dstCapacity,
+                    src.cast::<u8>(),
+                    srcSize,
+                ),
                 1 => ZSTDv07_copyRawBlock(dst, dstCapacity, src, srcSize),
                 2 => return Err(Error::GENERIC),
                 3 => Ok(0),
