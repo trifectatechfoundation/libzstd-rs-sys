@@ -2224,7 +2224,7 @@ impl<'a> Writer<'a> {
         self.ptr = unsafe { NonNull::new(ptr.as_ptr().add(1)) }
     }
 
-    fn write_symbol_x2(&mut self, value: u16, length: u8) {
+    pub(crate) fn write_symbol_x2(&mut self, value: u16, length: u8) {
         debug_assert!(length <= 2);
 
         let Some(ptr) = self.ptr else {
