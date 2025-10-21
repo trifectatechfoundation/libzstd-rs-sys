@@ -158,6 +158,14 @@ impl Format {
             Format::ZSTD_f_zstd1_magicless => 2,
         }
     }
+
+    /// Minimum input size required to query frame header size
+    pub(crate) const fn starting_input_length(self) -> usize {
+        match self {
+            Format::ZSTD_f_zstd1 => 5,
+            Format::ZSTD_f_zstd1_magicless => 1,
+        }
+    }
 }
 
 impl TryFrom<ZSTD_format_e> for Format {

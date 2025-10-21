@@ -716,13 +716,6 @@ pub const extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     size_of::<ZSTD_DCtx>()
 }
 
-const fn ZSTD_startingInputLength(format: Format) -> size_t {
-    match format {
-        Format::ZSTD_f_zstd1 => 5,
-        Format::ZSTD_f_zstd1_magicless => 1,
-    }
-}
-
 fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     unsafe {
         let dctx = dctx.as_mut_ptr();
@@ -991,7 +984,7 @@ fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error
     static ZSTD_fcs_fieldSize: [u8; 4] = [0, 2, 4, 8];
     static ZSTD_did_fieldSize: [u8; 4] = [0, 1, 2, 4];
 
-    let minInputSize = ZSTD_startingInputLength(format);
+    let minInputSize = format.starting_input_length();
     let Some([.., fhd]) = src.get(..minInputSize as usize) else {
         return Err(Error::srcSize_wrong);
     };
@@ -1098,7 +1091,7 @@ fn get_frame_header_advanced(
     src: &[u8],
     format: Format,
 ) -> Result<size_t, Error> {
-    let minInputSize = ZSTD_startingInputLength(format);
+    let minInputSize = format.starting_input_length();
     if src.len() < minInputSize as usize {
         // error out early if magic number is invalid
         if !src.is_empty()
@@ -1398,7 +1391,7 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
 fn find_decompressed_size(mut src: &[u8]) -> u64 {
     let mut totalDstSize = 0u64;
 
-    while src.len() >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
+    while src.len() >= Format::ZSTD_f_zstd1.starting_input_length() {
         if is_skippable_frame(src) {
             let skippableSize = match read_skippable_frame_size(src) {
                 Ok(size) => size,
@@ -1960,7 +1953,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
         dict = ddict.as_slice();
     }
 
-    while src.len() >= ZSTD_startingInputLength((*dctx).format) {
+    while src.len() >= (*dctx).format.starting_input_length() {
         if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src.as_slice()) != 0 {
             let frameSizeInfo = find_frame_size_info_legacy(src.as_slice())?;
             let frameSize = frameSizeInfo.compressedSize;
@@ -2532,7 +2525,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         let dctx = dctx.as_mut_ptr();
 
         (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
-        (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
+        (*dctx).expected = (*dctx).format.starting_input_length();
         (*dctx).stage = DecompressStage::GetFrameHeaderSize;
         (*dctx).processedCSize = 0;
         (*dctx).decodedSize = 0;
@@ -2869,7 +2862,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix(
 ///
 /// # Returns
 ///
-/// - the expected size, aka [`ZSTD_startingInputLength`]
+/// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
@@ -2885,7 +2878,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*zds).format)
+    (*zds).format.starting_input_length()
 }
 
 /// Initialize/reset [`ZSTD_DStream`] state for new decompression operation.
@@ -2905,7 +2898,7 @@ pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*zds).format)
+    (*zds).format.starting_input_length()
 }
 
 /// This function is deprecated, and is equivalent to first using [`ZSTD_DCtx_reset`] to reset the
@@ -2925,7 +2918,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*dctx).format)
+    (*dctx).format.starting_input_length()
 }
 
 /// This function is deprecated, and is equivalent to using [`ZSTD_DCtx_reset`] with
@@ -2933,7 +2926,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
 ///
 /// # Returns
 ///
-/// - the expected size, aka [`ZSTD_startingInputLength`]
+/// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetDStream))]
 pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
@@ -2941,7 +2934,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*dctx).format)
+    (*dctx).format.starting_input_length()
 }
 
 /// Reference a prepared dictionary, to be used to decompress next frames. The dictionary remains
