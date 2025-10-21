@@ -6,6 +6,7 @@ use libc::{calloc, free, malloc};
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE32, MEM_readLEST};
+use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
 };
@@ -1813,12 +1814,11 @@ fn ZSTDv07_copyRawBlock(mut dst: Writer<'_>, src: &[u8]) -> Result<usize, Error>
     }
     Ok(src.len())
 }
-unsafe fn ZSTDv07_decodeLiteralsBlock(
-    dctx: &mut ZSTDv07_DCtx,
-    srcPtr: *const u8,
-    srcSize: usize,
-) -> Result<usize, Error> {
-    let src = unsafe { core::slice::from_raw_parts(srcPtr, srcSize) };
+
+/// # Safety
+///
+/// `src` must outlive the last decompress call that covers the same compressed block.
+unsafe fn ZSTDv07_decodeLiteralsBlock(dctx: &mut ZSTDv07_DCtx, src: &[u8]) -> Result<usize, Error> {
     if src.len() < MIN_CBLOCK_SIZE as usize {
         return Err(Error::corruption_detected);
     }
@@ -1942,7 +1942,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
                 dctx.litBuffer[dctx.litSize..dctx.litSize + WILDCOPY_OVERLENGTH].fill(0);
                 return Ok(lhSize.wrapping_add(litSize));
             }
-            dctx.litPtr = unsafe { srcPtr.add(lhSize) };
+            dctx.litPtr = src[lhSize..].as_ptr();
             dctx.litSize = litSize;
             Ok(lhSize + litSize)
         }
@@ -1978,6 +1978,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(
         _ => Err(Error::corruption_detected),
     }
 }
+
 fn ZSTDv07_buildSeqTable<const N: usize>(
     DTable: &mut FSEv07_DTable<N>,
     type_0: u32,
@@ -2345,21 +2346,24 @@ unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
         dctx.previousDstEnd = dst;
     }
 }
+
+/// # Safety
+///
+/// `src` must outlive the last decompress call that covers the same compressed block.
 unsafe fn ZSTDv07_decompressBlock_internal(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
-    src: *const u8,
-    mut srcSize: usize,
+    src: &[u8],
 ) -> Result<usize, Error> {
     let mut ip = src;
-    if srcSize >= ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
+    if src.len() >= ZSTDv07_BLOCKSIZE_ABSOLUTEMAX {
         return Err(Error::srcSize_wrong);
     }
-    let litCSize = ZSTDv07_decodeLiteralsBlock(dctx, src, srcSize)?;
-    ip = ip.add(litCSize);
-    srcSize = srcSize.wrapping_sub(litCSize);
-    ZSTDv07_decompressSequences(dctx, dst, core::slice::from_raw_parts(ip, srcSize))
+    let litCSize = ZSTDv07_decodeLiteralsBlock(dctx, src)?;
+    ip = &ip[litCSize..];
+    ZSTDv07_decompressSequences(dctx, dst, ip)
 }
+
 fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Result<usize, Error> {
     if length > dst.capacity() {
         return Err(Error::dstSize_tooSmall);
@@ -2420,8 +2424,7 @@ unsafe fn ZSTDv07_decompressFrame(
             bt_compressed => ZSTDv07_decompressBlock_internal(
                 dctx,
                 Writer::from_range(op, oend),
-                ip,
-                cBlockSize,
+                core::slice::from_raw_parts(ip, cBlockSize),
             )?,
             bt_raw => ZSTDv07_copyRawBlock(
                 Writer::from_range(op, oend),
@@ -2544,10 +2547,9 @@ fn ZSTDv07_isSkipFrame(dctx: &ZSTDv07_DCtx) -> bool {
 unsafe fn ZSTDv07_decompressContinue(
     dctx: &mut ZSTDv07_DCtx,
     mut dst: Writer<'_>,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: Reader<'_>,
 ) -> Result<usize, Error> {
-    if srcSize != dctx.expected {
+    if src.len() != dctx.expected {
         return Err(Error::srcSize_wrong);
     }
     if dst.capacity() != 0 {
@@ -2555,12 +2557,14 @@ unsafe fn ZSTDv07_decompressContinue(
     }
     match dctx.stage as core::ffi::c_uint {
         0 => {
-            if srcSize != ZSTDv07_frameHeaderSize_min {
+            if src.len() != ZSTDv07_frameHeaderSize_min {
                 return Err(Error::srcSize_wrong);
             }
-            if MEM_readLE32(src) & 0xfffffff0 == ZSTDv07_MAGIC_SKIPPABLE_START {
+            if u32::from_le_bytes(src.subslice(..4).as_slice().try_into().unwrap()) & 0xfffffff0
+                == ZSTDv07_MAGIC_SKIPPABLE_START
+            {
                 ptr::copy_nonoverlapping(
-                    src as *const u8,
+                    src.as_ptr(),
                     dctx.headerBuffer.as_mut_ptr(),
                     ZSTDv07_frameHeaderSize_min,
                 );
@@ -2569,12 +2573,10 @@ unsafe fn ZSTDv07_decompressContinue(
                 dctx.stage = ZSTDds_decodeSkippableHeader;
                 return Ok(0);
             }
-            dctx.headerSize = ZSTDv07_frameHeaderSize(core::slice::from_raw_parts(
-                src.cast::<u8>(),
-                ZSTDv07_frameHeaderSize_min,
-            ))?;
+            dctx.headerSize =
+                ZSTDv07_frameHeaderSize(src.subslice(..ZSTDv07_frameHeaderSize_min).as_slice())?;
             ptr::copy_nonoverlapping(
-                src as *const u8,
+                src.as_ptr(),
                 dctx.headerBuffer.as_mut_ptr(),
                 ZSTDv07_frameHeaderSize_min,
             );
@@ -2591,19 +2593,17 @@ unsafe fn ZSTDv07_decompressContinue(
                 blockType: bt_compressed,
                 origSize: 0,
             };
-            let cBlockSize = ZSTDv07_getcBlockSize(
-                core::slice::from_raw_parts(src.cast::<u8>(), ZSTDv07_blockHeaderSize),
-                &mut bp,
-            )?;
+            let cBlockSize =
+                ZSTDv07_getcBlockSize(src.subslice(..ZSTDv07_blockHeaderSize).as_slice(), &mut bp)?;
             if bp.blockType == bt_end {
                 if dctx.fParams.checksumFlag != 0 {
                     let h64 = ZSTD_XXH64_digest(&mut dctx.xxhState);
-                    let h32 = (h64 >> 11) as u32 & (((1) << 22) - 1) as u32;
-                    let ip = src as *const u8;
-                    let check32 = (*ip.add(2) as core::ffi::c_int
-                        + ((*ip.add(1) as core::ffi::c_int) << 8)
-                        + ((*ip as core::ffi::c_int & 0x3f as core::ffi::c_int) << 16))
-                        as u32;
+                    let h32 = (h64 >> 11) as u32 & ((1 << 22) - 1) as u32;
+                    let ip = src.subslice(..3);
+                    let ip = ip.as_slice();
+                    let check32 = u32::from(ip[2])
+                        + (u32::from(ip[1]) << 8)
+                        + ((u32::from(ip[0]) & 0x3f) << 16);
                     if check32 != h32 {
                         return Err(Error::checksum_wrong);
                     }
@@ -2619,16 +2619,8 @@ unsafe fn ZSTDv07_decompressContinue(
         }
         3 => {
             let rSize = match dctx.bType {
-                0 => ZSTDv07_decompressBlock_internal(
-                    dctx,
-                    dst.subslice(..),
-                    src.cast::<u8>(),
-                    srcSize,
-                ),
-                1 => ZSTDv07_copyRawBlock(
-                    dst.subslice(..),
-                    core::slice::from_raw_parts(src.cast::<u8>(), srcSize),
-                ),
+                0 => ZSTDv07_decompressBlock_internal(dctx, dst.subslice(..), src.as_slice()),
+                1 => ZSTDv07_copyRawBlock(dst.subslice(..), src.as_slice()),
                 2 => return Err(Error::GENERIC),
                 3 => Ok(0),
                 _ => return Err(Error::GENERIC),
@@ -2647,15 +2639,12 @@ unsafe fn ZSTDv07_decompressContinue(
         }
         4 => {
             ptr::copy_nonoverlapping(
-                src as *const u8,
-                dctx.headerBuffer
-                    .as_mut_ptr()
-                    .add(ZSTDv07_frameHeaderSize_min),
+                src.as_ptr(),
+                dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..].as_mut_ptr(),
                 dctx.expected,
             );
             dctx.expected =
-                MEM_readLE32(dctx.headerBuffer.as_mut_ptr().add(4) as *const core::ffi::c_void)
-                    as usize;
+                u32::from_le_bytes(dctx.headerBuffer[4..8].try_into().unwrap()) as usize;
             dctx.stage = ZSTDds_skipFrame;
             return Ok(0);
         }
@@ -2667,10 +2656,8 @@ unsafe fn ZSTDv07_decompressContinue(
         _ => return Err(Error::GENERIC),
     }
     ptr::copy_nonoverlapping(
-        src as *const u8,
-        dctx.headerBuffer
-            .as_mut_ptr()
-            .add(ZSTDv07_frameHeaderSize_min),
+        src.as_ptr(),
+        dctx.headerBuffer[ZSTDv07_frameHeaderSize_min..].as_mut_ptr(),
         dctx.expected,
     );
     ZSTDv07_decodeFrameHeader(dctx, &(&dctx.headerBuffer)[..dctx.headerSize])?;
@@ -2933,8 +2920,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                 ZSTDv07_decompressContinue(
                     &mut *zbd.zd,
                     Writer::from_slice(&mut []),
-                    zbd.headerBuffer.as_mut_ptr() as *const core::ffi::c_void,
-                    h1Size,
+                    Reader::from_raw_parts(zbd.headerBuffer.as_ptr(), h1Size),
                 )?;
                 if h1Size < zbd.lhSize {
                     // long header
@@ -2942,8 +2928,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                     ZSTDv07_decompressContinue(
                         &mut *zbd.zd,
                         Writer::from_slice(&mut []),
-                        zbd.headerBuffer.as_mut_ptr().add(h1Size) as *const core::ffi::c_void,
-                        h2Size,
+                        Reader::from_raw_parts(zbd.headerBuffer.as_ptr().add(h1Size), h2Size),
                     )?;
                 }
                 zbd.fParams.windowSize = core::cmp::max(zbd.fParams.windowSize, 1 << 10);
@@ -3005,8 +2990,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
                         Writer::from_raw_parts(zbd.outBuff, zbd.outBuffSize)
                             .subslice(zbd.outStart..)
                     },
-                    ip as *const core::ffi::c_void,
-                    neededInSize,
+                    Reader::from_raw_parts(ip, neededInSize),
                 )?;
                 ip = ip.add(neededInSize);
                 if decodedSize == 0 && !isSkipFrame {
@@ -3053,8 +3037,7 @@ pub(crate) unsafe fn ZBUFFv07_decompressContinue(
             let decodedSize_0 = ZSTDv07_decompressContinue(
                 &mut *zbd.zd,
                 Writer::from_raw_parts(zbd.outBuff, zbd.outBuffSize).subslice(zbd.outStart..),
-                zbd.inBuff as *const core::ffi::c_void,
-                neededInSize_0,
+                Reader::from_raw_parts(zbd.inBuff, neededInSize_0),
             )?;
             zbd.inPos = 0; // input is consumed
             if decodedSize_0 == 0 && !isSkipFrame_0 {
