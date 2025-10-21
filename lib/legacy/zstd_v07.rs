@@ -7,7 +7,7 @@ use libc::{calloc, free, malloc};
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
 
@@ -2675,7 +2675,10 @@ unsafe fn ZSTDv07_decompressContinue(
             let rSize = rSize?;
             dctx.previousDstEnd = dst.as_ptr().add(rSize);
             if dctx.fParams.checksumFlag != 0 {
-                ZSTD_XXH64_update(&mut dctx.xxhState, dst.as_ptr().cast(), rSize as usize);
+                ZSTD_XXH64_update_slice(
+                    &mut dctx.xxhState,
+                    dst.subslice(..rSize as usize).as_slice(),
+                );
             }
             return Ok(rSize);
         }
