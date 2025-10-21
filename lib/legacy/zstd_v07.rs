@@ -1611,13 +1611,9 @@ static OF_defaultNorm: [i16; 29] = [
 static OF_defaultNormLog: u32 = 5;
 const WILDCOPY_OVERLENGTH: usize = 8;
 #[inline]
-unsafe fn ZSTDv07_wildcopy(
-    dst: *mut core::ffi::c_void,
-    src: *const core::ffi::c_void,
-    length: isize,
-) {
-    let mut ip = src as *const u8;
-    let mut op = dst as *mut u8;
+unsafe fn ZSTDv07_wildcopy(dst: *mut u8, src: *const u8, length: isize) {
+    let mut ip = src;
+    let mut op = dst;
     let oend = op.offset(length);
     loop {
         core::ptr::copy_nonoverlapping(ip, op, 8);
@@ -2192,8 +2188,7 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
 unsafe fn ZSTDv07_execSequence(
     mut dst: Writer<'_>,
     mut sequence: seq_t,
-    litPtr: &mut *const u8,
-    litLimit: *const u8,
+    litPtr: &mut &[u8],
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
@@ -2206,7 +2201,6 @@ unsafe fn ZSTDv07_execSequence(
     let sequenceLength = sequence.litLength + sequence.matchLength;
     let oMatchEnd = op.add(sequenceLength);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
-    let iLitEnd = (*litPtr).add(sequence.litLength);
     let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
     if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > oend.offset_from_unsigned(op) {
         return Err(Error::dstSize_tooSmall);
@@ -2214,16 +2208,12 @@ unsafe fn ZSTDv07_execSequence(
     if sequenceLength > oend.offset_from_unsigned(op) {
         return Err(Error::dstSize_tooSmall);
     }
-    if sequence.litLength > litLimit.offset_from_unsigned(*litPtr) {
+    if sequence.litLength > litPtr.len() {
         return Err(Error::corruption_detected);
     }
-    ZSTDv07_wildcopy(
-        op as *mut core::ffi::c_void,
-        *litPtr as *const core::ffi::c_void,
-        sequence.litLength as isize,
-    );
+    ZSTDv07_wildcopy(op, (*litPtr).as_ptr(), sequence.litLength as isize);
     op = oLitEnd;
-    *litPtr = iLitEnd;
+    *litPtr = &litPtr[sequence.litLength..];
     if sequence.offset > oLitEnd.offset_from_unsigned(base) {
         if sequence.offset > oLitEnd.offset_from_unsigned(vBase) {
             return Err(Error::corruption_detected);
@@ -2267,11 +2257,7 @@ unsafe fn ZSTDv07_execSequence(
     match_0 = match_0.add(8);
     if oMatchEnd > oend.offset(-((16 - MINMATCH) as isize)) {
         if op < oend_w {
-            ZSTDv07_wildcopy(
-                op as *mut core::ffi::c_void,
-                match_0 as *const core::ffi::c_void,
-                oend_w.offset_from(op),
-            );
+            ZSTDv07_wildcopy(op, match_0, oend_w.offset_from(op));
             match_0 = match_0.offset(oend_w.offset_from(op));
             op = oend_w;
         }
@@ -2283,11 +2269,7 @@ unsafe fn ZSTDv07_execSequence(
             *fresh45 = *fresh44;
         }
     } else {
-        ZSTDv07_wildcopy(
-            op as *mut core::ffi::c_void,
-            match_0 as *const core::ffi::c_void,
-            sequence.matchLength as isize - 8,
-        );
+        ZSTDv07_wildcopy(op, match_0, sequence.matchLength as isize - 8);
     }
     Ok(sequenceLength)
 }
@@ -2299,8 +2281,7 @@ fn ZSTDv07_decompressSequences(
     let mut ip = seqStart;
     let dst_capacity = dst.capacity();
     let mut op = dst;
-    let mut litPtr = dctx.litPtr;
-    let litEnd = unsafe { litPtr.add(dctx.litSize) };
+    let mut litPtr = unsafe { core::slice::from_raw_parts(dctx.litPtr, dctx.litSize) };
     let DTableLL = &mut dctx.LLTable;
     let DTableML = &mut dctx.MLTable;
     let DTableOffb = &mut dctx.OffTable;
@@ -2337,15 +2318,7 @@ fn ZSTDv07_decompressSequences(
             nbSeq -= 1;
             let sequence = ZSTDv07_decodeSequence(&mut seqState);
             let oneSeqSize = unsafe {
-                ZSTDv07_execSequence(
-                    op.subslice(..),
-                    sequence,
-                    &mut litPtr,
-                    litEnd,
-                    base,
-                    vBase,
-                    dictEnd,
-                )?
+                ZSTDv07_execSequence(op.subslice(..), sequence, &mut litPtr, base, vBase, dictEnd)?
             };
             op = op.subslice(oneSeqSize..);
         }
@@ -2354,12 +2327,12 @@ fn ZSTDv07_decompressSequences(
         }
         dctx.rep = core::array::from_fn(|i| seqState.prevOffset[i] as u32);
     }
-    let lastLLSize = unsafe { litEnd.offset_from_unsigned(litPtr) };
+    let lastLLSize = litPtr.len();
     if lastLLSize > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
-        unsafe { ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize) };
+        unsafe { ptr::copy_nonoverlapping(litPtr.as_ptr(), op.as_mut_ptr(), lastLLSize) };
         op = op.subslice(lastLLSize..);
     }
     Ok(dst_capacity - op.capacity())
