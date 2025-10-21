@@ -5,7 +5,7 @@ use std::ops::Range;
 use libc::{calloc, free, malloc};
 
 use crate::lib::common::error_private::Error;
-use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
+use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
 };
@@ -2028,89 +2028,84 @@ fn ZSTDv07_buildSeqTable<const N: usize>(
         _ => unreachable!(),
     }
 }
-unsafe fn ZSTDv07_decodeSeqHeaders(
-    nbSeqPtr: *mut core::ffi::c_int,
+fn ZSTDv07_decodeSeqHeaders(
+    nbSeqPtr: &mut core::ffi::c_int,
     DTableLL: &mut FSEv07_DTable<512>,
     DTableML: &mut FSEv07_DTable<512>,
     DTableOffb: &mut FSEv07_DTable<256>,
     flagRepeatTable: u32,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: &[u8],
 ) -> Result<usize, Error> {
-    let istart = src as *const u8;
-    let iend = istart.add(srcSize);
-    let mut ip = istart;
-    if srcSize < MIN_SEQUENCES_SIZE as usize {
+    let mut ip = src;
+    if src.len() < MIN_SEQUENCES_SIZE as usize {
         return Err(Error::srcSize_wrong);
     }
-    let fresh40 = ip;
-    ip = ip.add(1);
-    let mut nbSeq = *fresh40 as core::ffi::c_int;
+    let mut nbSeq = ip[0] as core::ffi::c_int;
+    ip = &ip[1..];
     if nbSeq == 0 {
         *nbSeqPtr = 0;
         return Ok(1);
     }
     if nbSeq > 0x7f {
         if nbSeq == 0xff {
-            if ip.add(2) > iend {
+            if ip.len() < 2 {
                 return Err(Error::srcSize_wrong);
             }
-            nbSeq = MEM_readLE16(ip as *const core::ffi::c_void) as core::ffi::c_int + LONGNBSEQ;
-            ip = ip.add(2);
+            nbSeq = u16::from_le_bytes(ip[..2].try_into().unwrap()) as core::ffi::c_int + LONGNBSEQ;
+            ip = &ip[2..];
         } else {
-            if ip >= iend {
+            if ip.is_empty() {
                 return Err(Error::srcSize_wrong);
             }
-            let fresh41 = ip;
-            ip = ip.add(1);
-            nbSeq = ((nbSeq - 0x80) << 8) + *fresh41 as core::ffi::c_int;
+            nbSeq = ((nbSeq - 0x80) << 8) + ip[0] as core::ffi::c_int;
+            ip = &ip[1..];
         }
     }
     *nbSeqPtr = nbSeq;
-    if ip.add(4) > iend {
+    if ip.len() < 4 {
         return Err(Error::srcSize_wrong);
     }
-    let LLtype = (*ip >> 6) as u32;
-    let OFtype = (*ip >> 4 & 3) as u32;
-    let MLtype = (*ip >> 2 & 3) as u32;
-    ip = ip.add(1);
+    let LLtype = (ip[0] >> 6) as u32;
+    let OFtype = (ip[0] >> 4 & 3) as u32;
+    let MLtype = (ip[0] >> 2 & 3) as u32;
+    ip = &ip[1..];
     let llhSize = ZSTDv07_buildSeqTable(
         DTableLL,
         LLtype,
         MaxLL as u32,
         LLFSELog as u32,
-        core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
+        ip,
         &LL_defaultNorm,
         LL_defaultNormLog,
         flagRepeatTable,
     )
     .map_err(|_| Error::corruption_detected)?;
-    ip = ip.add(llhSize);
+    ip = &ip[llhSize..];
     let ofhSize = ZSTDv07_buildSeqTable(
         DTableOffb,
         OFtype,
         MaxOff as u32,
         OffFSELog as u32,
-        core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
+        ip,
         &OF_defaultNorm,
         OF_defaultNormLog,
         flagRepeatTable,
     )
     .map_err(|_| Error::corruption_detected)?;
-    ip = ip.add(ofhSize);
+    ip = &ip[ofhSize..];
     let mlhSize = ZSTDv07_buildSeqTable(
         DTableML,
         MLtype,
         MaxML as u32,
         MLFSELog as u32,
-        core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
+        ip,
         &ML_defaultNorm,
         ML_defaultNormLog,
         flagRepeatTable,
     )
     .map_err(|_| Error::corruption_detected)?;
-    ip = ip.add(mlhSize);
-    Ok(ip.offset_from_unsigned(istart))
+    ip = &ip[mlhSize..];
+    Ok(src.len() - ip.len())
 }
 fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
     let mut seq = seq_t {
@@ -2321,8 +2316,7 @@ unsafe fn ZSTDv07_decompressSequences(
         DTableML,
         DTableOffb,
         dctx.fseEntropy,
-        ip as *const core::ffi::c_void,
-        seqSize,
+        core::slice::from_raw_parts(ip, seqSize),
     )?;
     ip = ip.add(seqHSize);
     if nbSeq != 0 {
