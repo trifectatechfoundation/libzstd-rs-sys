@@ -1144,6 +1144,12 @@ fn get_frame_header_advanced(
         _ => ZSTD_CONTENTSIZE_UNKNOWN,
     };
 
+    // We check for content size error here because the original C code would also interpret this
+    // content size as an error
+    if frameContentSize == ZSTD_CONTENTSIZE_ERROR {
+        return Err(Error::corruption_detected);
+    }
+
     if singleSegment {
         windowSize = frameContentSize;
     }
