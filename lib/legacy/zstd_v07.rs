@@ -2190,17 +2190,20 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
     seq
 }
 unsafe fn ZSTDv07_execSequence(
-    mut op: *mut u8,
-    oend: *mut u8,
+    mut dst: Writer<'_>,
     mut sequence: seq_t,
-    litPtr: *mut *const u8,
+    litPtr: &mut *const u8,
     litLimit: *const u8,
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
 ) -> Result<usize, Error> {
+    let Range {
+        start: mut op,
+        end: oend,
+    } = dst.as_mut_ptr_range();
     let oLitEnd = op.add(sequence.litLength);
-    let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
+    let sequenceLength = sequence.litLength + sequence.matchLength;
     let oMatchEnd = op.add(sequenceLength);
     let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
     let iLitEnd = (*litPtr).add(sequence.litLength);
@@ -2288,21 +2291,16 @@ unsafe fn ZSTDv07_execSequence(
     }
     Ok(sequenceLength)
 }
-unsafe fn ZSTDv07_decompressSequences(
+fn ZSTDv07_decompressSequences(
     dctx: &mut ZSTDv07_DCtx,
-    mut dst: Writer<'_>,
-    seqStart: *const u8,
-    seqSize: usize,
+    dst: Writer<'_>,
+    seqStart: &[u8],
 ) -> Result<usize, Error> {
     let mut ip = seqStart;
-    let iend = ip.add(seqSize);
-    let Range {
-        start: ostart,
-        end: oend,
-    } = dst.as_mut_ptr_range();
-    let mut op = ostart;
+    let dst_capacity = dst.capacity();
+    let mut op = dst;
     let mut litPtr = dctx.litPtr;
-    let litEnd = litPtr.add(dctx.litSize);
+    let litEnd = unsafe { litPtr.add(dctx.litSize) };
     let DTableLL = &mut dctx.LLTable;
     let DTableML = &mut dctx.MLTable;
     let DTableOffb = &mut dctx.OffTable;
@@ -2316,17 +2314,14 @@ unsafe fn ZSTDv07_decompressSequences(
         DTableML,
         DTableOffb,
         dctx.fseEntropy,
-        core::slice::from_raw_parts(ip, seqSize),
+        ip,
     )?;
-    ip = ip.add(seqHSize);
+    ip = &ip[seqHSize..];
     if nbSeq != 0 {
         dctx.fseEntropy = 1;
         let prevOffset: [usize; ZSTDv07_REP_INIT] = core::array::from_fn(|i| dctx.rep[i] as usize);
 
-        let mut DStream = match BITv07_DStream_t::new(core::slice::from_raw_parts(
-            ip,
-            iend.offset_from_unsigned(ip),
-        )) {
+        let mut DStream = match BITv07_DStream_t::new(ip) {
             Ok(DStream) => DStream,
             Err(_) => return Err(Error::corruption_detected),
         };
@@ -2341,32 +2336,33 @@ unsafe fn ZSTDv07_decompressSequences(
         while seqState.DStream.reload() <= StreamStatus::Completed && nbSeq != 0 {
             nbSeq -= 1;
             let sequence = ZSTDv07_decodeSequence(&mut seqState);
-            let oneSeqSize = ZSTDv07_execSequence(
-                op,
-                oend,
-                sequence,
-                &mut litPtr,
-                litEnd,
-                base,
-                vBase,
-                dictEnd,
-            )?;
-            op = op.add(oneSeqSize);
+            let oneSeqSize = unsafe {
+                ZSTDv07_execSequence(
+                    op.subslice(..),
+                    sequence,
+                    &mut litPtr,
+                    litEnd,
+                    base,
+                    vBase,
+                    dictEnd,
+                )?
+            };
+            op = op.subslice(oneSeqSize..);
         }
         if nbSeq != 0 {
             return Err(Error::corruption_detected);
         }
         dctx.rep = core::array::from_fn(|i| seqState.prevOffset[i] as u32);
     }
-    let lastLLSize = litEnd.offset_from_unsigned(litPtr);
-    if lastLLSize > oend.offset_from_unsigned(op) {
+    let lastLLSize = unsafe { litEnd.offset_from_unsigned(litPtr) };
+    if lastLLSize > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
     if lastLLSize > 0 {
-        ptr::copy_nonoverlapping(litPtr, op, lastLLSize);
-        op = op.add(lastLLSize);
+        unsafe { ptr::copy_nonoverlapping(litPtr, op.as_mut_ptr(), lastLLSize) };
+        op = op.subslice(lastLLSize..);
     }
-    Ok(op.offset_from_unsigned(ostart))
+    Ok(dst_capacity - op.capacity())
 }
 unsafe fn ZSTDv07_checkContinuity(dctx: &mut ZSTDv07_DCtx, dst: *const u8) {
     if dst != dctx.previousDstEnd {
@@ -2389,7 +2385,7 @@ unsafe fn ZSTDv07_decompressBlock_internal(
     let litCSize = ZSTDv07_decodeLiteralsBlock(dctx, src, srcSize)?;
     ip = ip.add(litCSize);
     srcSize = srcSize.wrapping_sub(litCSize);
-    ZSTDv07_decompressSequences(dctx, dst, ip, srcSize)
+    ZSTDv07_decompressSequences(dctx, dst, core::slice::from_raw_parts(ip, srcSize))
 }
 fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Result<usize, Error> {
     if length > dst.capacity() {
