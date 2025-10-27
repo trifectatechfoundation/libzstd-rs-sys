@@ -114,10 +114,6 @@ pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
 pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
 pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
-pub const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528;
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437;
-pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50;
-pub const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
@@ -929,7 +925,7 @@ fn is_frame(src: &[u8]) -> bool {
         return true;
     }
 
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint {
+    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
         return true;
     }
 
@@ -963,7 +959,7 @@ fn is_skippable_frame(src: &[u8]) -> bool {
     };
 
     let magic = u32::from_le_bytes([a, b, c, d]);
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint {
+    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
         return true;
     }
 
@@ -1107,7 +1103,7 @@ fn get_frame_header_advanced(
             }
 
             let first_word = u32::from_le_bytes(*src.first_chunk().unwrap());
-            let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+            let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START);
             let frameContentSize =
                 u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap());
 
@@ -1351,7 +1347,7 @@ pub unsafe extern "C" fn ZSTD_readSkippableFrame(
         );
     }
     if !magicVariant.is_null() {
-        *magicVariant = magicNumber.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+        *magicVariant = magicNumber.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START);
     }
     skippableContentSize
 }

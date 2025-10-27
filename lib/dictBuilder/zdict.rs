@@ -58,7 +58,6 @@ const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
 const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
