@@ -975,7 +975,7 @@ fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error
     static ZSTD_did_fieldSize: [u8; 4] = [0, 1, 2, 4];
 
     let minInputSize = format.starting_input_length();
-    let Some([.., fhd]) = src.get(..minInputSize as usize) else {
+    let Some([.., fhd]) = src.get(..minInputSize) else {
         return Err(Error::srcSize_wrong);
     };
 
@@ -1082,7 +1082,7 @@ fn get_frame_header_advanced(
     format: Format,
 ) -> Result<size_t, Error> {
     let minInputSize = format.starting_input_length();
-    if src.len() < minInputSize as usize {
+    if src.len() < minInputSize {
         // error out early if magic number is invalid
         if !src.is_empty()
             && format != Format::ZSTD_f_zstd1_magicless
@@ -1134,11 +1134,11 @@ fn get_frame_header_advanced(
         return Ok(fhsize);
     }
 
-    let fhdByte = src[minInputSize as usize - 1];
+    let fhdByte = src[minInputSize - 1];
     let dictIDSizeCode = fhdByte & 0b11;
     let checksumFlag = u32::from(fhdByte) >> 2 & 1;
     let singleSegment = (u32::from(fhdByte) >> 5 & 1) != 0;
-    let fcsID = (u32::from(fhdByte) >> 6) as u32;
+    let fcsID = u32::from(fhdByte) >> 6;
 
     let mut windowSize = 0;
 
@@ -1146,7 +1146,7 @@ fn get_frame_header_advanced(
         return Err(Error::frameParameter_unsupported);
     }
 
-    let mut pos = minInputSize as usize;
+    let mut pos = minInputSize;
     if !singleSegment {
         let wlByte = src[pos];
         pos += 1;
