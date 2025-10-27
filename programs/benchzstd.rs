@@ -87,10 +87,6 @@ pub struct BMK_initCCtxArgs {
 }
 pub const BMK_TIMETEST_DEFAULT_S: core::ffi::c_int = 3;
 pub const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const MB_UNIT: core::ffi::c_int = 1000000;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);

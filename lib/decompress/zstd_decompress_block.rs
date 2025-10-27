@@ -2461,6 +2461,7 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
 
 #[cfg(test)]
 mod test {
+    use crate::lib::zstd::*;
     use core::ffi::*;
 
     #[test]
