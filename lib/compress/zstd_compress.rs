@@ -508,9 +508,6 @@ pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
 pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
 pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-pub const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
 pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
@@ -7043,7 +7040,7 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     }
     MEM_writeLE32(
         op as *mut core::ffi::c_void,
-        (ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint).wrapping_add(magicVariant),
+        ZSTD_MAGIC_SKIPPABLE_START.wrapping_add(magicVariant),
     );
     MEM_writeLE32(op.add(4) as *mut core::ffi::c_void, srcSize as u32);
     libc::memcpy(
