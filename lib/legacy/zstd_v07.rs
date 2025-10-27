@@ -1,6 +1,5 @@
 use core::marker::PhantomData;
 use core::ptr;
-use std::ops::Range;
 
 use libc::{calloc, free, malloc};
 
@@ -2371,17 +2370,14 @@ fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Resu
 }
 unsafe fn ZSTDv07_decompressFrame(
     dctx: &mut ZSTDv07_DCtx,
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     src: *const core::ffi::c_void,
     srcSize: usize,
 ) -> Result<usize, Error> {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
-    let Range {
-        start: ostart,
-        end: oend,
-    } = dst.as_mut_ptr_range();
-    let mut op = ostart;
+    let dstCapacity = dst.capacity();
+    let mut op = dst;
     let mut remainingSize = srcSize;
     if srcSize < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
@@ -2419,18 +2415,15 @@ unsafe fn ZSTDv07_decompressFrame(
         let decodedSize = match blockProperties.blockType {
             bt_compressed => ZSTDv07_decompressBlock_internal(
                 dctx,
-                Writer::from_range(op, oend),
+                op.subslice(..),
                 core::slice::from_raw_parts(ip, cBlockSize),
             )?,
-            bt_raw => ZSTDv07_copyRawBlock(
-                Writer::from_range(op, oend),
-                core::slice::from_raw_parts(ip, cBlockSize),
-            )?,
-            bt_rle => ZSTDv07_generateNxBytes(
-                Writer::from_range(op, oend),
-                *ip,
-                blockProperties.origSize as usize,
-            )?,
+            bt_raw => {
+                ZSTDv07_copyRawBlock(op.subslice(..), core::slice::from_raw_parts(ip, cBlockSize))?
+            }
+            bt_rle => {
+                ZSTDv07_generateNxBytes(op.subslice(..), *ip, blockProperties.origSize as usize)?
+            }
             bt_end => {
                 if remainingSize != 0 {
                     return Err(Error::srcSize_wrong);
@@ -2442,15 +2435,15 @@ unsafe fn ZSTDv07_decompressFrame(
         if dctx.fParams.checksumFlag != 0 {
             ZSTD_XXH64_update(
                 &mut dctx.xxhState,
-                op as *const core::ffi::c_void,
+                op.as_ptr().cast::<core::ffi::c_void>(),
                 decodedSize as usize,
             );
         }
-        op = op.add(decodedSize);
+        op = op.subslice(decodedSize..);
         ip = ip.add(cBlockSize);
         remainingSize = remainingSize.wrapping_sub(cBlockSize);
     }
-    Ok(op.offset_from_unsigned(ostart))
+    Ok(dstCapacity - op.capacity())
 }
 pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dctx: &mut ZSTDv07_DCtx,
