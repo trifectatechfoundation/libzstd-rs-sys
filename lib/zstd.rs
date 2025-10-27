@@ -1,4 +1,4 @@
-use core::ffi::c_uint;
+use core::ffi::{c_int, c_uint};
 use libc::size_t;
 
 #[cfg(doc)]
@@ -18,10 +18,12 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
     _ => panic!(),
 };
 
-pub const ZSTD_BLOCKSIZELOG_MAX: c_uint = 17;
-pub const ZSTD_BLOCKSIZE_MAX: c_uint = (1) << ZSTD_BLOCKSIZELOG_MAX;
+pub const ZSTD_BLOCKSIZELOG_MAX: c_int = 17;
+pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
+/// The minimum valid max blocksize. Maximum blocksizes smaller than this make [`ZSTD_compressBound`] inaccurate.
+pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = 1 << 10;
+pub const ZSTD_CLEVEL_DEFAULT: c_int = 3;
 
-pub const ZSTD_CLEVEL_DEFAULT: c_uint = 3;
 pub const ZSTD_MAGICNUMBER: c_uint = 0xfd2fb528;
 pub const ZSTD_MAGIC_DICTIONARY: c_uint = 0xec30a437;
 pub const ZSTD_MAGIC_SKIPPABLE_START: c_uint = 0x184d2a50;

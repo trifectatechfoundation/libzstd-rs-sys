@@ -26,7 +26,7 @@ use crate::lib::decompress::{
     ZSTD_seqSymbol_header,
 };
 use crate::lib::polyfill::{likely, prefetch_read_data, unlikely, Locality};
-use crate::lib::zstd::{ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
+use crate::lib::zstd::*;
 
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
@@ -165,9 +165,6 @@ pub const STREAM_ACCUMULATOR_MIN: core::ffi::c_int = match size_of::<usize>() {
 };
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
-
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
