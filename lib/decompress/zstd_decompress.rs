@@ -963,7 +963,7 @@ fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error
 
 /// Get the frame header size
 ///
-/// `srcSize` must be >= [`ZSTD_frameHeaderSize_prefix`]
+/// `srcSize` must be >= [`Format::starting_input_length`]
 ///
 /// # Returns
 ///
@@ -1186,7 +1186,7 @@ fn get_frame_header_advanced(
 /// Get frame content size
 ///
 /// - `src` should point to the start of a ZSTD encoded frame
-/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_frameHeaderSize_max`])
+/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_FRAMEHEADERSIZE_MAX`])
 ///
 /// Note: decompressed size is an optional field, it may not be present (typically in streaming mode).
 /// When this method returns [`ZSTD_CONTENTSIZE_UNKNOWN`], the data to decompress could be any size.
@@ -2601,7 +2601,7 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromDict(
 ///   - The frame was built with `dictID` intentionally removed, this also happens when using a
 ///     non-conformant dictionary
 ///   - `srcSize` is too small, and as a result, frame header could not be decoded, possible if
-///     `srcSize < ZSTD_FRAMEHEADERSIZE_MAX`
+///     `srcSize` < [`ZSTD_FRAMEHEADERSIZE_MAX`]
 ///   - This is not a Zstandard frame
 ///
 /// When identifying the exact failure cause, it's possible to use [`ZSTD_getFrameHeader`],

@@ -183,15 +183,20 @@ pub enum Format {
 }
 
 impl Format {
-    pub(crate) const fn frame_header_size_min(self) -> usize {
+    /// This function replaces the `ZSTD_FRAMEHEADERSIZE_MIN` macro.
+    ///
+    /// Returns the minimum size of the frame header.
+    pub const fn frame_header_size_min(self) -> usize {
         match self {
             Format::ZSTD_f_zstd1 => 6,
             Format::ZSTD_f_zstd1_magicless => 2,
         }
     }
 
-    /// Minimum input size required to query frame header size
-    pub(crate) const fn starting_input_length(self) -> usize {
+    /// This function replaces the `ZSTD_FRAMEHEADERSIZE_PREFIX` macro.
+    ///
+    /// Returns the minimum input size required to query the frame header size.
+    pub const fn starting_input_length(self) -> usize {
         match self {
             Format::ZSTD_f_zstd1 => 5,
             Format::ZSTD_f_zstd1_magicless => 1,
