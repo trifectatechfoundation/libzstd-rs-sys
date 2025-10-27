@@ -872,7 +872,7 @@ use crate::lib::common::mem::{
 };
 use crate::lib::common::pool::ZSTD_threadPool;
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
@@ -6792,7 +6792,10 @@ unsafe fn ZSTD_compress_frameChunk(
     let maxDist = (1) << (*cctx).appliedParams.cParams.windowLog;
     let mut savings = (*cctx).consumedSrcSize as S64 - (*cctx).producedCSize as S64;
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
-        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize);
+        ZSTD_XXH64_update_slice(
+            &mut (*cctx).xxhState,
+            core::slice::from_raw_parts(src as *const u8, srcSize),
+        );
     }
     while remaining != 0 {
         let ms: &mut ZSTD_MatchState_t = &mut (*cctx).blockState.matchState;
@@ -10700,7 +10703,10 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     dstCapacity = dstCapacity.wrapping_sub(frameHeaderSize);
     cSize = cSize.wrapping_add(frameHeaderSize);
     if (*cctx).appliedParams.fParams.checksumFlag != 0 && srcSize != 0 {
-        ZSTD_XXH64_update(&mut (*cctx).xxhState, src, srcSize);
+        ZSTD_XXH64_update_slice(
+            &mut (*cctx).xxhState,
+            core::slice::from_raw_parts(src as *const u8, srcSize),
+        );
     }
     let cBlocksSize = ZSTD_compressSequences_internal(
         cctx,
