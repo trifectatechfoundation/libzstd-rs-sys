@@ -91,6 +91,7 @@ fuzz_target!(|data: &[u8]| {
     }
 });
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     GENERIC = 1,
@@ -177,13 +178,15 @@ impl TryFrom<usize> for Error {
     }
 }
 
-const fn ERR_isError(mut code: usize) -> std::ffi::c_uint {
+#[allow(non_snake_case)]
+const fn ERR_isError(code: usize) -> std::ffi::c_uint {
     use zstd_sys::ZSTD_ErrorCode::ZSTD_error_maxCode;
 
     (code > -(ZSTD_error_maxCode as std::ffi::c_int) as usize) as std::ffi::c_int
         as std::ffi::c_uint
 }
-const fn ERR_getErrorCode(mut code: usize) -> usize {
+#[allow(non_snake_case)]
+const fn ERR_getErrorCode(code: usize) -> usize {
     if ERR_isError(code) == 0 {
         return 0;
     }
