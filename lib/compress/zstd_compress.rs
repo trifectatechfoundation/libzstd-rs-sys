@@ -507,9 +507,6 @@ pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
 pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
 pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
-pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
@@ -525,7 +522,6 @@ pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
 pub const ZSTD_TARGETLENGTH_MIN: core::ffi::c_int = 0;
 pub const ZSTD_STRATEGY_MIN: core::ffi::c_int = ZSTD_fast as core::ffi::c_int;
 pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
-pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_OVERLAPLOG_MIN: core::ffi::c_int = 0;
 pub const ZSTD_OVERLAPLOG_MAX: core::ffi::c_int = 9;
 pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;

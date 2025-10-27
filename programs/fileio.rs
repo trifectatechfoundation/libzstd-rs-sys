@@ -296,8 +296,6 @@ const UINT64_MAX: u64 = 18446744073709551615;
 const PATH_SEP: core::ffi::c_int = '/' as i32;
 const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 const SEC_TO_MICRO: core::ffi::c_int = 1000000;
-const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
