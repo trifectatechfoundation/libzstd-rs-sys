@@ -150,8 +150,6 @@ struct SyncPoint {
 }
 type ZSTD_CParamMode_e = core::ffi::c_uint;
 const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 const HASH_READ_SIZE: core::ffi::c_int = 8;

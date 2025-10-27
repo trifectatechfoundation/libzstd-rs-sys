@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_uint};
+use core::ffi::{c_int, c_uint, c_ulonglong};
 use libc::size_t;
 
 #[cfg(doc)]
@@ -42,6 +42,10 @@ pub const ZSTD_VERSION_MINOR: c_uint = 5;
 pub const ZSTD_VERSION_RELEASE: c_uint = 8;
 pub const ZSTD_VERSION_NUMBER: c_uint =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
+
+pub const ZSTD_CONTENTSIZE_UNKNOWN: c_ulonglong = (0 as c_ulonglong).wrapping_sub(1);
+pub const ZSTD_CONTENTSIZE_ERROR: c_ulonglong = (0 as c_ulonglong).wrapping_sub(2);
+pub const ZSTD_SKIPPABLEHEADERSIZE: c_uint = 8;
 
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 

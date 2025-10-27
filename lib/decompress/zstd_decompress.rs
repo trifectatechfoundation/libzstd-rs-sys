@@ -109,11 +109,6 @@ pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
 
 pub const ZSTD_MAXWINDOWSIZE_DEFAULT: u32 = (1u32 << ZSTD_WINDOWLOG_LIMIT_DEFAULT).wrapping_add(1);
 pub const ZSTD_NO_FORWARD_PROGRESS_MAX: core::ffi::c_int = 16;
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
 
 pub const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 
@@ -1092,7 +1087,7 @@ fn get_frame_header_advanced(
                 windowSize: 0,
                 blockSizeMax: 0,
                 frameType: ZSTD_skippableFrame,
-                headerSize: ZSTD_SKIPPABLEHEADERSIZE as core::ffi::c_uint,
+                headerSize: ZSTD_SKIPPABLEHEADERSIZE,
                 dictID,
                 checksumFlag: 0,
                 _reserved1: 0,
@@ -1262,15 +1257,13 @@ unsafe fn readSkippableFrameSize(src: *const core::ffi::c_void, srcSize: size_t)
 }
 
 fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
-    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as u32;
-
     let [_, _, _, _, a, b, c, d, ..] = *src else {
         return Err(Error::srcSize_wrong);
     };
 
     let size = u32::from_le_bytes([a, b, c, d]);
 
-    let skippableSize = skippableHeaderSize
+    let skippableSize = ZSTD_SKIPPABLEHEADERSIZE
         .checked_add(size)
         .ok_or(Error::frameParameter_unsupported)? as usize;
 

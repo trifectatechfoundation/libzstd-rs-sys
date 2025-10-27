@@ -8,7 +8,7 @@ use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{FseWorkspace, ZSTD_LITBUFFEREXTRASIZE};
-use crate::lib::zstd::{BufferMode, ForceIgnoreChecksum, Format, ZSTD_customMem, ZSTD_outBuffer};
+use crate::lib::zstd::*;
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
@@ -172,7 +172,7 @@ impl From<u32> for BlockType {
 #[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
-    /// if set to [`crate::ZSTD_CONTENTSIZE_UNKNOWN`], it means this field is not available, 0 means "empty"
+    /// if set to [`ZSTD_CONTENTSIZE_UNKNOWN`], it means this field is not available, 0 means "empty"
     pub frameContentSize: core::ffi::c_ulonglong,
     /// can be very large, up to <= `frameContentSize`
     pub windowSize: core::ffi::c_ulonglong,
