@@ -120,16 +120,6 @@ pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
 
-/// By default, the streaming decoder will refuse any frame requiring larger than
-/// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
-/// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
-///
-/// The limit does not apply for one-pass decoders (such as [`ZSTD_decompress`]), since no
-/// additional memory is allocated.
-pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-
-pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
-
 pub const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 
 pub const ZSTDv02_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB522;
