@@ -110,6 +110,23 @@ pub struct ZSTD_parameters {
     pub fParams: ZSTD_frameParameters,
 }
 
+/// This enum specifies the content type of a dictionary, either [`ZSTD_dct_auto`], [`ZSTD_dct_rawContent`], or [`ZSTD_dct_fullDict`].
+pub type ZSTD_dictContentType_e = core::ffi::c_uint;
+/// Refuses to load a dictionary if it does not respect Zstandard's specification, starting with
+/// [`ZSTD_MAGIC_DICTIONARY`]
+pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
+/// Ensures dictionary is always loaded as `rawContent`, even if it starts with [`ZSTD_MAGIC_DICTIONARY`]
+pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
+/// Dictionary is "full" when starting with [`ZSTD_MAGIC_DICTIONARY`], otherwise it is "rawContent"
+pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
+
+/// This enum specifies the method used to load a dictionary, either [`ZSTD_dlm_byCopy`] or [`ZSTD_dlm_byRef`].
+pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
+/// Copy dictionary content internally
+pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
+/// Reference dictionary content -- the dictionary buffer must outlive its users
+pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_customMem {
