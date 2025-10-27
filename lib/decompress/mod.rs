@@ -96,15 +96,16 @@ impl DecompressStage {
     }
 }
 
+/// This enum represents [`zstd_decompress::ZSTD_nextInputType_e`].
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NextInputType {
-    FrameHeader = 0,
-    BlockHeader = 1,
-    Block = 2,
-    LastBlock = 3,
-    Checksum = 4,
-    SkippableFrame = 5,
+    FrameHeader = zstd_decompress::ZSTDnit_frameHeader,
+    BlockHeader = zstd_decompress::ZSTDnit_blockHeader,
+    Block = zstd_decompress::ZSTDnit_block,
+    LastBlock = zstd_decompress::ZSTDnit_lastBlock,
+    Checksum = zstd_decompress::ZSTDnit_checksum,
+    SkippableFrame = zstd_decompress::ZSTDnit_skippableFrame,
 }
 
 #[repr(u32)]
