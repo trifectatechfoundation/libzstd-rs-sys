@@ -254,8 +254,7 @@ unsafe fn ZSTD_decompressLegacy(
             let result = ZSTDv07_decompress_usingDict(
                 &mut *zd,
                 Writer::from_raw_parts(dst.cast(), dstCapacity),
-                src,
-                compressedSize,
+                Reader::from_raw_parts(src.cast(), compressedSize),
                 dict.as_ptr().cast(),
                 dict.len(),
             );
@@ -288,8 +287,7 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, 
         }
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
-                src.as_ptr().cast(),
-                src.len(),
+                Reader::from_slice(src),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
             );

@@ -31,6 +31,14 @@ impl<'a> Reader<'a> {
         }
     }
 
+    pub fn from_slice(slice: &[u8]) -> Self {
+        Self {
+            ptr: NonNull::new(slice.as_ptr().cast_mut()),
+            end: unsafe { slice.as_ptr().add(slice.len()) },
+            _marker: core::marker::PhantomData,
+        }
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
         match self.ptr {
