@@ -1579,7 +1579,7 @@ static ZSTDv07_blockHeaderSize: usize = ZSTDv07_BLOCKHEADERSIZE as usize;
 const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
 const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const LONGNBSEQ: core::ffi::c_int = 0x7f00;
-const MINMATCH: core::ffi::c_int = 3;
+const MINMATCH: usize = 3;
 const MaxML: core::ffi::c_int = 52;
 const MaxLL: core::ffi::c_int = 35;
 const MaxOff: core::ffi::c_int = 28;
@@ -2185,90 +2185,88 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
     seq
 }
 unsafe fn ZSTDv07_execSequence(
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     mut sequence: seq_t,
     litPtr: &mut &[u8],
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
 ) -> Result<usize, Error> {
-    let Range {
-        start: mut op,
-        end: oend,
-    } = dst.as_mut_ptr_range();
-    let oLitEnd = op.add(sequence.litLength);
+    let mut op = dst;
+    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > op.capacity() {
+        return Err(Error::dstSize_tooSmall);
+    }
+    let mut oLitEnd = op.subslice(sequence.litLength..);
     let sequenceLength = sequence.litLength + sequence.matchLength;
-    let oMatchEnd = op.add(sequenceLength);
-    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
-    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > oend.offset_from_unsigned(op) {
+    if sequenceLength > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if sequenceLength > oend.offset_from_unsigned(op) {
-        return Err(Error::dstSize_tooSmall);
-    }
+    let mut oMatchEnd = op.subslice(sequenceLength..);
+    let mut match_0: *const u8 = oLitEnd.as_ptr().wrapping_sub(sequence.offset);
     if sequence.litLength > litPtr.len() {
         return Err(Error::corruption_detected);
     }
-    ZSTDv07_wildcopy(op, (*litPtr).as_ptr(), sequence.litLength as isize);
-    op = oLitEnd;
+    ZSTDv07_wildcopy(
+        op.as_mut_ptr(),
+        (*litPtr).as_ptr(),
+        sequence.litLength as isize,
+    );
+    op = oLitEnd.subslice(..);
     *litPtr = &litPtr[sequence.litLength..];
-    if sequence.offset > oLitEnd.offset_from_unsigned(base) {
-        if sequence.offset > oLitEnd.offset_from_unsigned(vBase) {
+    if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(base) {
+        if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(vBase) {
             return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.offset(-(base.offset_from(match_0)));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), sequence.matchLength);
             return Ok(sequenceLength);
         }
         let length1 = dictEnd.offset_from_unsigned(match_0);
-        core::ptr::copy(match_0, oLitEnd, length1);
-        op = oLitEnd.add(length1);
+        core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), length1);
+        op = oLitEnd.subslice(length1..);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = base;
-        if op > oend_w || sequence.matchLength < MINMATCH as usize {
-            while op < oMatchEnd {
-                let fresh42 = match_0;
+        if op.capacity() < WILDCOPY_OVERLENGTH || sequence.matchLength < MINMATCH {
+            while op.as_mut_ptr() < oMatchEnd.as_mut_ptr() {
+                op.write_u8(*match_0);
                 match_0 = match_0.add(1);
-                let fresh43 = op;
-                op = op.add(1);
-                *fresh43 = *fresh42;
             }
             return Ok(sequenceLength);
         }
     }
     if sequence.offset < 8 {
         static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
-        let sub2 = *dec64table.as_ptr().add(sequence.offset);
-        *op = *match_0;
-        *op.add(1) = *match_0.add(1);
-        *op.add(2) = *match_0.add(2);
-        *op.add(3) = *match_0.add(3);
-        match_0 = match_0.offset(*dec32table.as_ptr().add(sequence.offset) as isize);
-        ptr::copy_nonoverlapping(match_0, op.add(4), 4);
-        match_0 = match_0.offset(-(sub2 as isize));
+        static dec64table: [u32; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+        op.write_u8(*match_0);
+        op.write_u8(*match_0.add(1));
+        op.write_u8(*match_0.add(2));
+        op.write_u8(*match_0.add(3));
+        match_0 = match_0.add(dec32table[sequence.offset] as usize);
+        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 4);
+        match_0 = match_0.sub(dec64table[sequence.offset] as usize);
+        op = op.subslice(4..);
     } else {
-        ptr::copy_nonoverlapping(match_0, op, 8);
+        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 8);
+        op = op.subslice(8..);
     }
-    op = op.add(8);
     match_0 = match_0.add(8);
-    if oMatchEnd > oend.offset(-((16 - MINMATCH) as isize)) {
-        if op < oend_w {
-            ZSTDv07_wildcopy(op, match_0, oend_w.offset_from(op));
-            match_0 = match_0.offset(oend_w.offset_from(op));
-            op = oend_w;
+    if oMatchEnd.capacity() < 16 - MINMATCH {
+        if op.capacity() > WILDCOPY_OVERLENGTH {
+            ZSTDv07_wildcopy(
+                op.as_mut_ptr(),
+                match_0,
+                (op.capacity() - WILDCOPY_OVERLENGTH) as isize,
+            );
+            match_0 = match_0.add(op.capacity() - WILDCOPY_OVERLENGTH);
+            op = op.subslice(op.capacity() - WILDCOPY_OVERLENGTH..);
         }
-        while op < oMatchEnd {
-            let fresh44 = match_0;
+        while op.as_ptr() < oMatchEnd.as_ptr() {
+            op.write_u8(*match_0);
             match_0 = match_0.add(1);
-            let fresh45 = op;
-            op = op.add(1);
-            *fresh45 = *fresh44;
         }
     } else {
-        ZSTDv07_wildcopy(op, match_0, sequence.matchLength as isize - 8);
+        ZSTDv07_wildcopy(op.as_mut_ptr(), match_0, sequence.matchLength as isize - 8);
     }
     Ok(sequenceLength)
 }
