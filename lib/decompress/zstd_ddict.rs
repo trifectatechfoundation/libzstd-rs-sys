@@ -112,7 +112,7 @@ fn ZSTD_loadEntropy_intoDDict(
     ddict.dictID = 0;
     ddict.entropyPresent = 0;
 
-    if dictContentType == ZSTD_dct_rawContent as ZSTD_dictContentType_e {
+    if dictContentType == ZSTD_dct_rawContent {
         return Ok(());
     }
 
@@ -123,7 +123,7 @@ fn ZSTD_loadEntropy_intoDDict(
     };
 
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
-        if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
+        if dictContentType == ZSTD_dct_fullDict {
             return Err(Error::dictionary_corrupted);
         }
 
@@ -132,7 +132,7 @@ fn ZSTD_loadEntropy_intoDDict(
 
     let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
-        if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
+        if dictContentType == ZSTD_dct_fullDict {
             return Err(Error::dictionary_corrupted);
         }
 
