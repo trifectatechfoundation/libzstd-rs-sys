@@ -7,7 +7,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
 use crate::ZSTD_CONTENTSIZE_ERROR;
@@ -2372,7 +2372,7 @@ fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Resu
     }
     Ok(length)
 }
-unsafe fn ZSTDv07_decompressFrame(
+fn ZSTDv07_decompressFrame(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
     src: Reader<'_>,
@@ -2387,7 +2387,9 @@ unsafe fn ZSTDv07_decompressFrame(
     if ip.len() < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
-    if ZSTDv07_decodeFrameHeader(dctx, ip.subslice(..frameHeaderSize).as_slice()) != Ok(0) {
+    if unsafe { ZSTDv07_decodeFrameHeader(dctx, ip.subslice(..frameHeaderSize).as_slice()) }
+        != Ok(0)
+    {
         return Err(Error::corruption_detected);
     }
     ip = ip.subslice(frameHeaderSize..);
@@ -2402,11 +2404,13 @@ unsafe fn ZSTDv07_decompressFrame(
             return Err(Error::srcSize_wrong);
         }
         let decodedSize = match blockProperties.blockType {
-            bt_compressed => ZSTDv07_decompressBlock_internal(
-                dctx,
-                op.subslice(..),
-                ip.subslice(..cBlockSize).as_slice(),
-            )?,
+            bt_compressed => unsafe {
+                ZSTDv07_decompressBlock_internal(
+                    dctx,
+                    op.subslice(..),
+                    ip.subslice(..cBlockSize).as_slice(),
+                )?
+            },
             bt_raw => ZSTDv07_copyRawBlock(op.subslice(..), ip.subslice(..cBlockSize).as_slice())?,
             bt_rle => ZSTDv07_generateNxBytes(
                 op.subslice(..),
@@ -2422,11 +2426,9 @@ unsafe fn ZSTDv07_decompressFrame(
             _ => return Err(Error::GENERIC),
         };
         if dctx.fParams.checksumFlag != 0 {
-            ZSTD_XXH64_update(
-                &mut dctx.xxhState,
-                op.as_ptr().cast::<core::ffi::c_void>(),
-                decodedSize as usize,
-            );
+            ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
+                op.subslice(..decodedSize as usize).as_slice()
+            });
         }
         op = op.subslice(decodedSize..);
         ip = ip.subslice(cBlockSize..);
@@ -2441,8 +2443,8 @@ pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dictSize: usize,
 ) -> Result<usize, Error> {
     let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict, dictSize);
-    ZSTDv07_checkContinuity(&mut *dctx, dst.as_ptr());
-    ZSTDv07_decompressFrame(&mut *dctx, dst, src)
+    ZSTDv07_checkContinuity(dctx, dst.as_ptr());
+    ZSTDv07_decompressFrame(dctx, dst, src)
 }
 fn ZSTD_errorFrameSizeInfoLegacy(
     cSize: &mut usize,
