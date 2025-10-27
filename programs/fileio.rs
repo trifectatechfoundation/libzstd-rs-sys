@@ -300,10 +300,6 @@ const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
-const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
-const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 const stdinmark: &CStr = c"/*stdin*\\";
 const stdoutmark: &CStr = c"/*stdout*\\";
 const nulmark: &CStr = c"/dev/null";

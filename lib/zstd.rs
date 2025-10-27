@@ -4,8 +4,8 @@ use libc::size_t;
 #[cfg(doc)]
 use crate::{
     lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
-    ZSTD_DCtx_reset, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_freeDCtx,
-    ZSTD_WINDOWLOG_LIMIT_DEFAULT,
+    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_decompress,
+    ZSTD_freeDCtx,
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
@@ -17,6 +17,14 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
     8 => ZSTD_WINDOWLOG_MAX_64,
     _ => panic!(),
 };
+/// By default, the streaming decoder will refuse any frame requiring larger than
+/// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
+/// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
+///
+/// The limit does not apply for one-pass decoders (such as [`ZSTD_decompress`]), since no
+/// additional memory is allocated.
+pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 pub const ZSTD_BLOCKSIZELOG_MAX: c_int = 17;
 pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
