@@ -107,15 +107,6 @@ pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub const ZSTDnit_blockHeader: ZSTD_nextInputType_e = 1;
 pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
 
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-
 pub const ZSTD_MAXWINDOWSIZE_DEFAULT: u32 = (1u32 << ZSTD_WINDOWLOG_LIMIT_DEFAULT).wrapping_add(1);
 pub const ZSTD_NO_FORWARD_PROGRESS_MAX: core::ffi::c_int = 16;
 pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;

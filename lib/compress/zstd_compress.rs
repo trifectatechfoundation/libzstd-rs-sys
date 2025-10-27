@@ -135,10 +135,6 @@ pub struct ZSTD_prefixDict_s {
     pub dictSize: size_t,
     pub dictContentType: ZSTD_dictContentType_e,
 }
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 pub type ZSTD_CDict = ZSTD_CDict_s;
 #[repr(C)]
 pub struct ZSTD_CDict_s {
@@ -487,9 +483,6 @@ pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
 pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_CStream = ZSTD_CCtx;
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 pub type ZSTD_SequenceCopier_f = Option<
     unsafe fn(
         *mut ZSTD_CCtx,

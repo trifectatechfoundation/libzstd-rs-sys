@@ -32,10 +32,6 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
-type ZSTD_dictContentType_e = core::ffi::c_uint;
-const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct EStats_ress_t {

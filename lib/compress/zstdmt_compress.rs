@@ -136,17 +136,11 @@ struct ZSTDMT_jobDescription {
     dstFlushed: size_t,
     frameChecksumNeeded: core::ffi::c_uint,
 }
-type ZSTD_dictContentType_e = core::ffi::c_uint;
-const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
 type ZSTD_EndDirective = core::ffi::c_uint;
 const ZSTD_e_end: ZSTD_EndDirective = 2;
 const ZSTD_e_flush: ZSTD_EndDirective = 1;
 const ZSTD_e_continue: ZSTD_EndDirective = 0;
-type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
 #[repr(C)]
