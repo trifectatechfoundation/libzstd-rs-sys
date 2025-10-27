@@ -11,7 +11,7 @@ use crate::lib::common::pool::{
     POOL_create_advanced, POOL_free, POOL_resize, POOL_sizeof, POOL_tryAdd, ZSTD_threadPool,
 };
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update,
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::compress::zstd_compress::{
     rawSeq, RawSeqStore_t, ZSTD_CCtx, ZSTD_CCtxParams_setParameter, ZSTD_CCtx_params,
@@ -726,7 +726,10 @@ unsafe fn ZSTDMT_serialState_genSequences(
             (*serialState).ldmWindowCond.notify_one();
         }
         if (*serialState).params.fParams.checksumFlag != 0 && src.size > 0 {
-            ZSTD_XXH64_update(&mut (*serialState).xxhState, src.start, src.size);
+            ZSTD_XXH64_update_slice(
+                &mut (*serialState).xxhState,
+                core::slice::from_raw_parts(src.start as *const u8, src.size),
+            );
         }
     }
     (*serialState).nextJobID = ((*serialState).nextJobID).wrapping_add(1);

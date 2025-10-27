@@ -1,5 +1,3 @@
-use core::ffi::c_void;
-
 enum Align {
     Aligned,
     Unaligned,
@@ -160,18 +158,6 @@ pub(crate) fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) {
     state.reset(seed)
 }
 
-pub(crate) unsafe fn ZSTD_XXH64_update(
-    state: &mut XXH64_state_t,
-    input: *const c_void,
-    len: usize,
-) {
-    if input.is_null() {
-        assert_eq!(len, 0);
-    } else {
-        ZSTD_XXH64_update_slice(state, core::slice::from_raw_parts(input as *const u8, len));
-    }
-}
-
 pub(crate) fn ZSTD_XXH64_update_slice(state: &mut XXH64_state_t, mut slice: &[u8]) {
     state.total_len = state.total_len.wrapping_add(slice.len() as u64);
 
@@ -259,17 +245,10 @@ mod tests {
     }
 
     fn helper_state_u64(input: &[u8], seed: u64) -> u64 {
-        let mut state = XXH64_state_t {
-            total_len: 0,
-            v: [0; 4],
-            mem64: [0; 4],
-            memsize: 0,
-            reserved32: 0,
-            reserved64: 0,
-        };
+        let mut state = XXH64_state_t::default();
         ZSTD_XXH64_reset(&mut state, seed);
 
-        unsafe { ZSTD_XXH64_update(&mut state, input.as_ptr().cast(), input.len()) };
+        ZSTD_XXH64_update_slice(&mut state, input);
 
         ZSTD_XXH64_digest(&mut state)
     }
