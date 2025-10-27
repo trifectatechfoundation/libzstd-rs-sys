@@ -109,11 +109,6 @@ pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
 
 pub const ZSTD_MAXWINDOWSIZE_DEFAULT: u32 = (1u32 << ZSTD_WINDOWLOG_LIMIT_DEFAULT).wrapping_add(1);
 pub const ZSTD_NO_FORWARD_PROGRESS_MAX: core::ffi::c_int = 16;
-pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
-pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
-pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
-pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
 pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
     (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
