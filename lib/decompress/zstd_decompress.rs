@@ -1123,7 +1123,7 @@ fn get_frame_header_advanced(
         pos += 1;
         let windowLog = ((i32::from(wlByte) / 8) + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
 
-        if windowLog > (if size_of::<usize>() == 4 { 30 } else { 31 }) as u32 {
+        if windowLog > ZSTD_WINDOWLOG_MAX as u32 {
             return Err(Error::frameParameter_windowTooLarge);
         }
 
