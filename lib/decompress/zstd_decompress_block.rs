@@ -40,7 +40,7 @@ pub const is_streaming: streaming_operation = 1;
 pub const not_streaming: streaming_operation = 0;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum StreamingOperation {
+pub(crate) enum StreamingOperation {
     NotStreaming = 0,
     IsStreaming = 1,
 }
@@ -2322,35 +2322,7 @@ const fn ZSTD_maxShortOffset() -> size_t {
     }
 }
 
-pub unsafe fn ZSTD_decompressBlock_internal(
-    dctx: *mut ZSTD_DCtx,
-    dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    streaming: streaming_operation,
-) -> Result<size_t, Error> {
-    let Some(dctx) = dctx.as_mut() else {
-        return Err(Error::GENERIC);
-    };
-
-    let Ok(streaming) = StreamingOperation::try_from(streaming) else {
-        return Err(Error::GENERIC);
-    };
-
-    let src = if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast::<u8>(), srcSize)
-    };
-
-    // NOTE: already handles the `dst.is_null()` case.
-    let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
-
-    ZSTD_decompressBlock_internal_help(dctx, dst, src, streaming)
-}
-
-unsafe fn ZSTD_decompressBlock_internal_help(
+pub(crate) unsafe fn ZSTD_decompressBlock_internal_help(
     dctx: &mut ZSTD_DCtx,
     mut dst: Writer<'_>,
     src: &[u8],
@@ -2424,26 +2396,6 @@ pub fn ZSTD_checkContinuity(dctx: &mut ZSTD_DCtx, range: Range<*const u8>) {
     }
 }
 
-unsafe fn ZSTD_decompressBlock_deprecated(
-    dctx: &mut ZSTD_DCtx,
-    mut dst: Writer<'_>,
-    src: Reader<'_>,
-) -> Result<size_t, Error> {
-    dctx.isFrameDecompression = false;
-    ZSTD_checkContinuity(dctx, dst.as_ptr_range());
-
-    // FIXME: can src and dst overlap in this case?
-    let dSize = ZSTD_decompressBlock_internal_help(
-        dctx,
-        dst.subslice(..),
-        src.as_slice(),
-        StreamingOperation::NotStreaming,
-    )?;
-
-    dctx.previousDstEnd = dst.as_ptr().byte_add(dSize).cast::<c_void>();
-    Ok(dSize)
-}
-
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBlock))]
 pub unsafe extern "C" fn ZSTD_decompressBlock(
     dctx: *mut ZSTD_DCtx,
@@ -2455,8 +2407,23 @@ pub unsafe extern "C" fn ZSTD_decompressBlock(
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
     let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
 
-    ZSTD_decompressBlock_deprecated(dctx.as_mut().unwrap(), dst, src)
-        .unwrap_or_else(|err| err.to_error_code())
+    let dctx: &mut ZSTD_DCtx = dctx.as_mut().unwrap();
+    let mut dst = dst;
+    dctx.isFrameDecompression = false;
+
+    ZSTD_checkContinuity(dctx, dst.as_ptr_range());
+
+    // FIXME: can src and dst overlap in this case?
+    let dSize = ZSTD_decompressBlock_internal_help(
+        dctx,
+        dst.subslice(..),
+        src.as_slice(),
+        StreamingOperation::NotStreaming,
+    )
+    .unwrap_or_else(|err| err.to_error_code());
+
+    dctx.previousDstEnd = dst.as_ptr().byte_add(dSize).cast::<c_void>();
+    dSize
 }
 
 #[cfg(test)]

@@ -22,8 +22,8 @@ use crate::lib::decompress::huf_decompress::{
 };
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{
-    getc_block_size, ZSTD_buildFSETable, ZSTD_checkContinuity, ZSTD_decompressBlock_internal,
-    ZSTD_getcBlockSize,
+    getc_block_size, StreamingOperation, ZSTD_buildFSETable, ZSTD_checkContinuity,
+    ZSTD_decompressBlock_internal_help, ZSTD_getcBlockSize,
 };
 use crate::lib::decompress::{
     blockProperties_t, BlockType, DecompressStage, DictUses, LL_base, ML_base, NextInputType,
@@ -77,9 +77,6 @@ type ZBUFFv06_DCtx = ZBUFFv06_DCtx_s;
 type XXH_errorcode = core::ffi::c_uint;
 pub const XXH_ERROR: XXH_errorcode = 1;
 pub const XXH_OK: XXH_errorcode = 0;
-pub type streaming_operation = core::ffi::c_uint;
-pub const is_streaming: streaming_operation = 1;
-pub const not_streaming: streaming_operation = 0;
 
 #[derive(Default)]
 #[repr(C)]
@@ -1835,13 +1832,12 @@ unsafe fn ZSTD_decompressFrame(
             }
             BlockType::Compressed => {
                 debug_assert!(dctx.isFrameDecompression);
-                ZSTD_decompressBlock_internal(
+                let capacity = oBlockEnd.offset_from(op.as_mut_ptr()) as size_t;
+                ZSTD_decompressBlock_internal_help(
                     dctx,
-                    op.as_mut_ptr().cast(),
-                    oBlockEnd.offset_from(op.as_mut_ptr()) as size_t,
-                    ip.as_ptr().cast(),
-                    cBlockSize,
-                    not_streaming,
+                    op.subslice(..capacity),
+                    ip.subslice(..cBlockSize).as_slice(),
+                    StreamingOperation::NotStreaming,
                 )?
             }
             BlockType::Reserved => {
@@ -2204,13 +2200,11 @@ unsafe fn decompress_continue(
                 BlockType::Compressed => {
                     debug_assert!(dctx.isFrameDecompression);
                     dctx.expected = 0; // streaming not supported
-                    rSize = ZSTD_decompressBlock_internal(
+                    rSize = ZSTD_decompressBlock_internal_help(
                         dctx,
-                        dst.as_mut_ptr().cast(),
-                        dst.capacity(),
-                        src.as_ptr().cast(),
-                        src.len(),
-                        is_streaming,
+                        dst.subslice(..),
+                        src,
+                        StreamingOperation::IsStreaming,
                     )?;
                 }
                 BlockType::Raw => {
