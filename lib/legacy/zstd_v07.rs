@@ -1216,7 +1216,6 @@ fn HUFv07_decodeLastSymbolX4(
             DStream.bitsConsumed = usize::BITS;
         }
     }
-    *dst = dst.subslice(1..);
 }
 #[inline]
 fn HUFv07_decodeStreamX4(
