@@ -762,7 +762,7 @@ static mut kNullRange: Range = Range {
     start: core::ptr::null(),
     size: 0,
 };
-unsafe extern "C" fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
+unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
     let mut current_block: u64;
     let job = jobDescription as *mut ZSTDMT_jobDescription;
     let mut jobParams = (*job).params;
@@ -1727,7 +1727,7 @@ unsafe fn ZSTDMT_createCompressionJob(
     }
     if POOL_tryAdd(
         (*mtctx).factory,
-        Some(ZSTDMT_compressionJob as unsafe extern "C" fn(*mut core::ffi::c_void) -> ()),
+        ZSTDMT_compressionJob,
         &mut *((*mtctx).jobs).offset(jobID as isize) as *mut ZSTDMT_jobDescription
             as *mut core::ffi::c_void,
     ) != 0

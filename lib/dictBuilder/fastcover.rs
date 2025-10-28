@@ -501,7 +501,7 @@ unsafe fn FASTCOVER_buildDictionary(
     }
     tail
 }
-unsafe extern "C" fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
+unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut FASTCOVER_tryParameters_data_t;
     let ctx = (*data).ctx;
     let parameters = (*data).parameters;
@@ -895,10 +895,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 if !pool.is_null() {
                     POOL_add(
                         pool,
-                        Some(
-                            FASTCOVER_tryParameters
-                                as unsafe extern "C" fn(*mut core::ffi::c_void) -> (),
-                        ),
+                        FASTCOVER_tryParameters,
                         data as *mut core::ffi::c_void,
                     );
                 } else {

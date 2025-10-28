@@ -677,7 +677,7 @@ unsafe fn AIO_IOPool_enqueueJob(job: *mut IOJob_t) {
             job as *mut core::ffi::c_void,
         );
     } else {
-        ((*ctx).poolFunction).unwrap_unchecked()(job as *mut core::ffi::c_void);
+        ((*ctx).poolFunction)(job as *mut core::ffi::c_void);
     };
 }
 pub unsafe fn AIO_WritePool_acquireJob(ctx: *mut WritePoolCtx_t) -> *mut IOJob_t {
@@ -710,7 +710,7 @@ pub unsafe fn AIO_WritePool_closeFile(ctx: *mut WritePoolCtx_t) -> core::ffi::c_
     AIO_IOPool_setFile(&mut (*ctx).base, core::ptr::null_mut());
     fclose(dstFile)
 }
-unsafe extern "C" fn AIO_WritePool_executeWriteJob(opaque: *mut core::ffi::c_void) {
+unsafe fn AIO_WritePool_executeWriteJob(opaque: *mut core::ffi::c_void) {
     let job = opaque as *mut IOJob_t;
     let ctx = (*job).ctx as *mut WritePoolCtx_t;
     (*ctx).storedSkips = AIO_fwriteSparse(
@@ -760,7 +760,7 @@ pub unsafe fn AIO_WritePool_create(
     AIO_IOPool_init(
         &mut (*ctx).base,
         prefs,
-        Some(AIO_WritePool_executeWriteJob as unsafe extern "C" fn(*mut core::ffi::c_void) -> ()),
+        AIO_WritePool_executeWriteJob,
         bufferSize,
     );
     (*ctx).storedSkips = 0;
@@ -847,7 +847,7 @@ unsafe fn AIO_ReadPool_getNextCompletedJob(ctx: *mut ReadPoolCtx_t) -> *mut IOJo
     AIO_IOPool_unlockJobsMutex(&mut (*ctx).base);
     job
 }
-unsafe extern "C" fn AIO_ReadPool_executeReadJob(opaque: *mut core::ffi::c_void) {
+unsafe fn AIO_ReadPool_executeReadJob(opaque: *mut core::ffi::c_void) {
     let job = opaque as *mut IOJob_t;
     let ctx = (*job).ctx as *mut ReadPoolCtx_t;
     if (*ctx).reachedEof != 0 {
@@ -989,7 +989,7 @@ pub unsafe fn AIO_ReadPool_create(
     AIO_IOPool_init(
         &mut (*ctx).base,
         prefs,
-        Some(AIO_ReadPool_executeReadJob as unsafe extern "C" fn(*mut core::ffi::c_void) -> ()),
+        AIO_ReadPool_executeReadJob,
         bufferSize,
     );
     (*ctx).coalesceBuffer = malloc(bufferSize * 2) as *mut u8;

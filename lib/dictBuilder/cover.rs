@@ -1232,7 +1232,7 @@ pub(super) unsafe fn COVER_selectDict(
     free(candidateDictBuffer as *mut core::ffi::c_void);
     setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
 }
-unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
+unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut COVER_tryParameters_data_t;
     let ctx = (*data).ctx;
     let parameters = (*data).parameters;
@@ -1479,14 +1479,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             } else {
                 COVER_best_start(&mut best);
                 if !pool.is_null() {
-                    POOL_add(
-                        pool,
-                        Some(
-                            COVER_tryParameters
-                                as unsafe extern "C" fn(*mut core::ffi::c_void) -> (),
-                        ),
-                        data as *mut core::ffi::c_void,
-                    );
+                    POOL_add(pool, COVER_tryParameters, data as *mut core::ffi::c_void);
                 } else {
                     COVER_tryParameters(data as *mut core::ffi::c_void);
                 }
