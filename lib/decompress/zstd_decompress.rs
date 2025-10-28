@@ -116,11 +116,6 @@ pub const ZSTDv05_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB525;
 pub const ZSTDv06_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB526;
 pub const ZSTDv07_MAGICNUMBER: core::ffi::c_uint = 0xFD2FB527;
 
-#[inline]
-unsafe fn ZSTD_isLegacy(src: *const core::ffi::c_void, srcSize: size_t) -> u32 {
-    is_legacy(unsafe { core::slice::from_raw_parts(src.cast::<u8>(), srcSize) })
-}
-
 fn is_legacy(src: &[u8]) -> u32 {
     let Some(chunk) = src.first_chunk() else {
         return 0;
@@ -3593,10 +3588,12 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
             let hSize = match hSize {
                 Ok(size) => size,
                 Err(err) => {
-                    let legacyVersion = ZSTD_isLegacy(
-                        istart as *const core::ffi::c_void,
-                        iend.offset_from_unsigned(istart),
-                    );
+                    let legacyVersion = is_legacy(unsafe {
+                        core::slice::from_raw_parts(
+                            istart.cast::<u8>(),
+                            iend.offset_from_unsigned(istart),
+                        )
+                    });
                     if legacyVersion != 0 {
                         let (dict, dictSize) = match ZSTD_getDDict(zds).as_ref() {
                             Some(ddict) => {
