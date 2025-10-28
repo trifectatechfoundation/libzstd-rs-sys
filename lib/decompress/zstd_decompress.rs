@@ -179,7 +179,7 @@ fn get_decompressed_size_legacy(src: &[u8]) -> Option<u64> {
 }
 
 #[inline]
-unsafe fn ZSTD_decompressLegacy(
+fn ZSTD_decompressLegacy(
     mut dst: Writer<'_>,
     src: Reader<'_>,
     dict: &[u8],
@@ -197,12 +197,13 @@ unsafe fn ZSTD_decompressLegacy(
 
     match version {
         5 => {
-            let zd = ZSTDv05_createDCtx();
+            let zd = unsafe { ZSTDv05_createDCtx() };
             if zd.is_null() {
                 return Err(Error::memory_allocation);
             }
-            let result = ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict);
-            ZSTDv05_freeDCtx(zd);
+            let result =
+                unsafe { ZSTDv05_decompress_usingDict(&mut *zd, dst, dstCapacity, src, dict) };
+            unsafe { ZSTDv05_freeDCtx(zd) };
             result
         }
         6 => {
@@ -214,20 +215,22 @@ unsafe fn ZSTD_decompressLegacy(
             };
 
             let mut result: size_t = 0;
-            let zd = ZSTDv06_createDCtx();
+            let zd = unsafe { ZSTDv06_createDCtx() };
             if zd.is_null() {
                 return Err(Error::memory_allocation);
             }
-            result = ZSTDv06_decompress_usingDict(
-                zd,
-                dst,
-                dstCapacity,
-                src,
-                compressedSize,
-                dict.as_ptr().cast(),
-                dict.len(),
-            );
-            ZSTDv06_freeDCtx(zd);
+            result = unsafe {
+                ZSTDv06_decompress_usingDict(
+                    zd,
+                    dst,
+                    dstCapacity,
+                    src,
+                    compressedSize,
+                    dict.as_ptr().cast(),
+                    dict.len(),
+                )
+            };
+            unsafe { ZSTDv06_freeDCtx(zd) };
             // TODO: make `ZSTDv06_decompress_usingDict` return a Result
             Error::from_error_code(result).map_or(Ok(result), Err)
         }
@@ -239,26 +242,27 @@ unsafe fn ZSTD_decompressLegacy(
                 src.as_ptr() as *const core::ffi::c_void
             };
 
-            let zd = ZSTDv07_createDCtx();
+            let zd = unsafe { ZSTDv07_createDCtx() };
             if zd.is_null() {
                 return Err(Error::memory_allocation);
             }
-            let result = ZSTDv07_decompress_usingDict(
-                &mut *zd,
-                Writer::from_raw_parts(dst.cast(), dstCapacity),
-                Reader::from_raw_parts(src.cast(), compressedSize),
-                dict.as_ptr().cast(),
-                dict.len(),
-            );
-            ZSTDv07_freeDCtx(zd);
+            let result = unsafe {
+                ZSTDv07_decompress_usingDict(
+                    &mut *zd,
+                    Writer::from_raw_parts(dst.cast(), dstCapacity),
+                    Reader::from_raw_parts(src.cast(), compressedSize),
+                    dict.as_ptr().cast(),
+                    dict.len(),
+                )
+            };
+            unsafe { ZSTDv07_freeDCtx(zd) };
             result
         }
         _ => Err(Error::prefix_unknown),
     }
 }
 
-// FIXME: this should be totally safe at this point.
-unsafe fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> {
+fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> {
     let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     match is_legacy(src) {
@@ -269,14 +273,14 @@ unsafe fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, 
                 &mut frameSizeInfo.decompressedBound,
             );
         }
-        6 => {
+        6 => unsafe {
             ZSTDv06_findFrameSizeInfoLegacy(
                 src.as_ptr().cast(),
                 src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
-            );
-        }
+            )
+        },
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
                 Reader::from_slice(src),
@@ -1237,15 +1241,6 @@ fn get_frame_content_size(src: &[u8]) -> u64 {
     }
 }
 
-unsafe fn readSkippableFrameSize(src: *const core::ffi::c_void, srcSize: size_t) -> size_t {
-    read_skippable_frame_size(if src.is_null() {
-        &[]
-    } else {
-        core::slice::from_raw_parts(src.cast(), srcSize)
-    })
-    .unwrap_or_else(Error::to_error_code)
-}
-
 fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
     let [_, _, _, _, a, b, c, d, ..] = *src else {
         return Err(Error::srcSize_wrong);
@@ -1283,15 +1278,17 @@ pub unsafe extern "C" fn ZSTD_readSkippableFrame(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    if srcSize < 8 {
+    if srcSize < 8 || src.is_null() {
         return Error::srcSize_wrong.to_error_code();
     }
     let magicNumber = MEM_readLE32(src);
-    let skippableFrameSize = readSkippableFrameSize(src, srcSize);
+    let skippableFrameSize =
+        read_skippable_frame_size(core::slice::from_raw_parts(src.cast(), srcSize))
+            .unwrap_or_else(Error::to_error_code);
     let skippableContentSize = skippableFrameSize.wrapping_sub(ZSTD_SKIPPABLEHEADERSIZE as size_t);
 
     // check input validity
-    if ZSTD_isSkippableFrame(src, srcSize) == 0 {
+    if !is_skippable_frame(core::slice::from_raw_parts(src.cast(), srcSize)) {
         return Error::frameParameter_unsupported.to_error_code();
     }
     if skippableFrameSize < 8 || skippableFrameSize > srcSize {
@@ -1437,7 +1434,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
     let mut frameSizeInfo = ZSTD_frameSizeInfo::default();
 
     if format == Format::ZSTD_f_zstd1 && is_legacy(src) != 0 {
-        return unsafe { find_frame_size_info_legacy(src) };
+        return find_frame_size_info_legacy(src);
     }
 
     if format == Format::ZSTD_f_zstd1
@@ -1725,25 +1722,25 @@ fn ZSTD_setRleBlock(mut dst: Writer<'_>, b: u8, regenSize: size_t) -> Result<siz
     Ok(regenSize)
 }
 
-unsafe fn ZSTD_DCtx_trace_end(
-    dctx: *const ZSTD_DCtx,
+fn ZSTD_DCtx_trace_end(
+    dctx: &ZSTD_DCtx,
     uncompressedSize: u64,
     compressedSize: u64,
     streaming: core::ffi::c_int,
 ) {
-    if (*dctx).traceCtx != 0 {
+    if dctx.traceCtx != 0 {
         let mut trace = ZSTD_Trace::default();
         trace.version = ZSTD_VERSION_NUMBER as core::ffi::c_uint;
         trace.streaming = streaming;
-        if let Some(ddict) = (*dctx).ddict.as_ref() {
-            trace.dictionaryID = ZSTD_getDictID_fromDDict(ddict);
+        if let Some(ddict) = unsafe { dctx.ddict.as_ref() } {
+            trace.dictionaryID = ddict.dictID;
             trace.dictionarySize = ZSTD_DDict_dictSize(ddict);
-            trace.dictionaryIsCold = (*dctx).ddictIsCold;
+            trace.dictionaryIsCold = dctx.ddictIsCold;
         }
         trace.uncompressedSize = uncompressedSize as size_t;
         trace.compressedSize = compressedSize as size_t;
         trace.dctx = dctx;
-        ZSTD_trace_decompress_end((*dctx).traceCtx, &trace);
+        ZSTD_trace_decompress_end(dctx.traceCtx, &trace);
     }
 }
 
@@ -2120,7 +2117,7 @@ pub unsafe extern "C" fn ZSTD_decompressContinue(
     decompress_continue(dctx, dst, src).unwrap_or_else(Error::to_error_code)
 }
 
-unsafe fn decompress_continue(
+fn decompress_continue(
     dctx: &mut ZSTD_DCtx,
     mut dst: Writer<'_>,
     src: &[u8],
@@ -2225,7 +2222,8 @@ unsafe fn decompress_continue(
                 let slice = unsafe { written.as_slice() };
                 ZSTD_XXH64_update_slice(&mut dctx.xxhState, slice);
             }
-            dctx.previousDstEnd = dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>();
+            dctx.previousDstEnd =
+                unsafe { dst.as_mut_ptr().byte_add(rSize).cast::<core::ffi::c_void>() };
 
             // stay on the same stage until we are finished streaming the block
             if dctx.expected > 0 {
