@@ -63,28 +63,12 @@ impl ZSTD_DDict {
     }
 }
 
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-/// Refuses to load a dictionary if it does not respect Zstandard's specification, starting with
-/// [`ZSTD_MAGIC_DICTIONARY`]
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-/// Ensures dictionary is always loaded as `rawContent`, even if it starts with [`ZSTD_MAGIC_DICTIONARY`]
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-/// Dictionary is "full" when starting with [`ZSTD_MAGIC_DICTIONARY`], otherwise it is "rawContent"
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-
+/// This enum represents [`ZSTD_dictLoadMethod_e`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DictLoadMethod {
-    ByCopy = 0,
-    ByRef = 1,
+    ByCopy = ZSTD_dlm_byCopy as _,
+    ByRef = ZSTD_dlm_byRef as _,
 }
-
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-/// Copy dictionary content internally
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = DictLoadMethod::ByCopy as _;
-/// Reference dictionary content -- the dictionary buffer must outlive its users
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = DictLoadMethod::ByRef as _;
-
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
 
 pub fn ZSTD_DDict_dictContent(ddict: &ZSTD_DDict) -> *const core::ffi::c_void {
     ddict.dictContent
@@ -128,7 +112,7 @@ fn ZSTD_loadEntropy_intoDDict(
     ddict.dictID = 0;
     ddict.entropyPresent = 0;
 
-    if dictContentType == ZSTD_dct_rawContent as ZSTD_dictContentType_e {
+    if dictContentType == ZSTD_dct_rawContent {
         return Ok(());
     }
 
@@ -139,7 +123,7 @@ fn ZSTD_loadEntropy_intoDDict(
     };
 
     let ([magic, dict_id, ..], _) = dict.as_chunks::<4>() else {
-        if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
+        if dictContentType == ZSTD_dct_fullDict {
             return Err(Error::dictionary_corrupted);
         }
 
@@ -148,7 +132,7 @@ fn ZSTD_loadEntropy_intoDDict(
 
     let magic = u32::from_le_bytes(*magic);
     if magic != ZSTD_MAGIC_DICTIONARY {
-        if dictContentType == ZSTD_dct_fullDict as ZSTD_dictContentType_e {
+        if dictContentType == ZSTD_dct_fullDict {
             return Err(Error::dictionary_corrupted);
         }
 

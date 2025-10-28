@@ -32,10 +32,6 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
-type ZSTD_dictContentType_e = core::ffi::c_uint;
-const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct EStats_ress_t {
@@ -61,10 +57,6 @@ const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 #[expect(deprecated)]
 const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
-const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;

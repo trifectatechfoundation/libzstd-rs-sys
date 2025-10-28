@@ -6,6 +6,7 @@ use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::{
     MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLE64, MEM_readLEST, MEM_writeLE16,
 };
+use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
 pub(crate) struct ZSTDv06_DCtx {
@@ -179,8 +180,6 @@ const MaxOff: core::ffi::c_int = 28;
 const MLFSELog: core::ffi::c_int = 9;
 const LLFSELog: core::ffi::c_int = 9;
 const OffFSELog: core::ffi::c_int = 8;
-const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,

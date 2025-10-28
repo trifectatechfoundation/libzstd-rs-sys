@@ -11,6 +11,7 @@ use crate::lib::common::xxhash::{
     XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
+use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
@@ -1585,8 +1586,6 @@ const MaxOff: core::ffi::c_int = 28;
 const MLFSELog: core::ffi::c_int = 9;
 const LLFSELog: core::ffi::c_int = 9;
 const OffFSELog: core::ffi::c_int = 8;
-const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 static LL_bits: [u32; 36] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,

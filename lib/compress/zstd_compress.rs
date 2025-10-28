@@ -135,10 +135,6 @@ pub struct ZSTD_prefixDict_s {
     pub dictSize: size_t,
     pub dictContentType: ZSTD_dictContentType_e,
 }
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 pub type ZSTD_CDict = ZSTD_CDict_s;
 #[repr(C)]
 pub struct ZSTD_CDict_s {
@@ -487,9 +483,6 @@ pub const ZSTD_e_end: ZSTD_EndDirective = 2;
 pub const ZSTD_e_flush: ZSTD_EndDirective = 1;
 pub const ZSTD_e_continue: ZSTD_EndDirective = 0;
 pub type ZSTD_CStream = ZSTD_CCtx;
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 pub type ZSTD_SequenceCopier_f = Option<
     unsafe fn(
         *mut ZSTD_CCtx,
@@ -509,20 +502,6 @@ pub struct BlockSummary {
     pub litSize: size_t,
 }
 pub type C2RustUnnamed_2 = core::ffi::c_uint;
-pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
-pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
-pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
-pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
-pub const ZSTD_CLEVEL_DEFAULT: core::ffi::c_int = 3;
-pub const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437 as core::ffi::c_uint;
-pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOWLOG_MIN: core::ffi::c_int = 10;
 pub const ZSTD_HASHLOG_MIN: core::ffi::c_int = 6;
 pub const ZSTD_CHAINLOG_MAX_32: core::ffi::c_int = 29;
@@ -535,10 +514,8 @@ pub const ZSTD_TARGETLENGTH_MAX: core::ffi::c_int = ZSTD_BLOCKSIZE_MAX;
 pub const ZSTD_TARGETLENGTH_MIN: core::ffi::c_int = 0;
 pub const ZSTD_STRATEGY_MIN: core::ffi::c_int = ZSTD_fast as core::ffi::c_int;
 pub const ZSTD_STRATEGY_MAX: core::ffi::c_int = ZSTD_btultra2 as core::ffi::c_int;
-pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
 pub const ZSTD_OVERLAPLOG_MIN: core::ffi::c_int = 0;
 pub const ZSTD_OVERLAPLOG_MAX: core::ffi::c_int = 9;
-pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 pub const ZSTD_LDM_HASHLOG_MIN: core::ffi::c_int = ZSTD_HASHLOG_MIN;
 pub const ZSTD_LDM_MINMATCH_MIN: core::ffi::c_int = 4;
 pub const ZSTD_LDM_MINMATCH_MAX: core::ffi::c_int = 4096;
@@ -968,7 +945,6 @@ use crate::lib::compress::zstdmt_compress::{
     ZSTDMT_sizeof_CCtx, ZSTDMT_toFlushNow, ZSTDMT_updateCParams_whileCompressing,
 };
 use crate::lib::zstd::*;
-pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
 static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1;
@@ -7050,7 +7026,7 @@ pub unsafe extern "C" fn ZSTD_writeSkippableFrame(
     }
     MEM_writeLE32(
         op as *mut core::ffi::c_void,
-        (ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint).wrapping_add(magicVariant),
+        ZSTD_MAGIC_SKIPPABLE_START.wrapping_add(magicVariant),
     );
     MEM_writeLE32(op.add(4) as *mut core::ffi::c_void, srcSize as u32);
     libc::memcpy(

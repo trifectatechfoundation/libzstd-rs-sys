@@ -136,17 +136,11 @@ struct ZSTDMT_jobDescription {
     dstFlushed: size_t,
     frameChecksumNeeded: core::ffi::c_uint,
 }
-type ZSTD_dictContentType_e = core::ffi::c_uint;
-const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 type ZSTD_outBuffer = ZSTD_outBuffer_s;
 type ZSTD_EndDirective = core::ffi::c_uint;
 const ZSTD_e_end: ZSTD_EndDirective = 2;
 const ZSTD_e_flush: ZSTD_EndDirective = 1;
 const ZSTD_e_continue: ZSTD_EndDirective = 0;
-type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
 type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
 #[repr(C)]
@@ -156,10 +150,6 @@ struct SyncPoint {
 }
 type ZSTD_CParamMode_e = core::ffi::c_uint;
 const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
-const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 const HASH_READ_SIZE: core::ffi::c_int = 8;

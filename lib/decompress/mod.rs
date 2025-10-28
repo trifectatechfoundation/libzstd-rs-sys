@@ -8,7 +8,7 @@ use crate::lib::common::zstd_trace::ZSTD_TraceCtx;
 use crate::lib::decompress::huf_decompress::DTable;
 use crate::lib::decompress::zstd_ddict::{MultipleDDicts, ZSTD_DDict, ZSTD_DDictHashSet};
 use crate::lib::decompress::zstd_decompress_block::{FseWorkspace, ZSTD_LITBUFFEREXTRASIZE};
-use crate::lib::zstd::{BufferMode, ForceIgnoreChecksum, Format, ZSTD_customMem, ZSTD_outBuffer};
+use crate::lib::zstd::*;
 
 pub mod huf_decompress;
 pub mod zstd_ddict;
@@ -96,15 +96,16 @@ impl DecompressStage {
     }
 }
 
+/// This enum represents [`zstd_decompress::ZSTD_nextInputType_e`].
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NextInputType {
-    FrameHeader = 0,
-    BlockHeader = 1,
-    Block = 2,
-    LastBlock = 3,
-    Checksum = 4,
-    SkippableFrame = 5,
+    FrameHeader = zstd_decompress::ZSTDnit_frameHeader,
+    BlockHeader = zstd_decompress::ZSTDnit_blockHeader,
+    Block = zstd_decompress::ZSTDnit_block,
+    LastBlock = zstd_decompress::ZSTDnit_lastBlock,
+    Checksum = zstd_decompress::ZSTDnit_checksum,
+    SkippableFrame = zstd_decompress::ZSTDnit_skippableFrame,
 }
 
 #[repr(u32)]
@@ -171,7 +172,7 @@ impl From<u32> for BlockType {
 #[derive(Default)]
 #[repr(C)]
 pub struct ZSTD_FrameHeader {
-    /// if set to [`crate::ZSTD_CONTENTSIZE_UNKNOWN`], it means this field is not available, 0 means "empty"
+    /// if set to [`ZSTD_CONTENTSIZE_UNKNOWN`], it means this field is not available, 0 means "empty"
     pub frameContentSize: core::ffi::c_ulonglong,
     /// can be very large, up to <= `frameContentSize`
     pub windowSize: core::ffi::c_ulonglong,

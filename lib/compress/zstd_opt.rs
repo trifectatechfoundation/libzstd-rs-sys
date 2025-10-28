@@ -74,8 +74,6 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
 };
 use crate::lib::zstd::*;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,

@@ -296,19 +296,6 @@ const UINT64_MAX: u64 = 18446744073709551615;
 const PATH_SEP: core::ffi::c_int = '/' as i32;
 const UTIL_FILESIZE_UNKNOWN: core::ffi::c_int = -(1);
 const SEC_TO_MICRO: core::ffi::c_int = 1000000;
-const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528 as core::ffi::c_uint;
-const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50 as core::ffi::c_int;
-const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0 as core::ffi::c_uint;
-const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = (1) << ZSTD_BLOCKSIZELOG_MAX;
-const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
-const ZSTD_WINDOWLOG_MAX_32: core::ffi::c_int = 30;
-const ZSTD_WINDOWLOG_MAX_64: core::ffi::c_int = 31;
-const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
 const stdinmark: &CStr = c"/*stdin*\\";
 const stdoutmark: &CStr = c"/*stdout*\\";
 const nulmark: &CStr = c"/dev/null";
@@ -7114,9 +7101,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     }
                 }
                 (*info).numActualFrames += 1;
-            } else if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK
-                == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint
-            {
+            } else if magicNumber & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
                 let frameSize =
                     MEM_readLE32(headerBuffer.as_mut_ptr().offset(4) as *const core::ffi::c_void);
                 let seek = (8u32.wrapping_add(frameSize) as size_t).wrapping_sub(numBytesRead)

@@ -7,6 +7,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE16, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
 use crate::lib::decompress::huf_decompress::Writer;
+use crate::ZSTD_CONTENTSIZE_ERROR;
 
 #[repr(C)]
 pub(crate) struct ZSTDv05_DCtx {
@@ -177,8 +178,6 @@ const ZSTD_HUFFDTABLE_CAPACITY_LOG: core::ffi::c_int = 12;
 const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
 const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const WILDCOPY_OVERLENGTH: core::ffi::c_int = 8;
-const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
 
 #[inline]
 unsafe fn ZSTDv05_wildcopy(dst: *mut u8, src: *const u8, length: ptrdiff_t) {

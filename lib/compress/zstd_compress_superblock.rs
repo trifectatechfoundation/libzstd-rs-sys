@@ -28,7 +28,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::ZSTD_ParamSwitch_e;
+use crate::lib::zstd::*;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -61,10 +61,6 @@ pub struct ZSTD_prefixDict_s {
     pub dictSize: size_t,
     pub dictContentType: ZSTD_dictContentType_e,
 }
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
 #[repr(C)]
 pub struct ZSTD_localDict {
     pub dictBuffer: *mut core::ffi::c_void,

@@ -107,46 +107,8 @@ pub const ZSTDnit_block: ZSTD_nextInputType_e = 2;
 pub const ZSTDnit_blockHeader: ZSTD_nextInputType_e = 1;
 pub const ZSTDnit_frameHeader: ZSTD_nextInputType_e = 0;
 
-pub type ZSTD_dictContentType_e = core::ffi::c_uint;
-pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
-pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
-pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
-
-pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
-pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
-pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
-
 pub const ZSTD_MAXWINDOWSIZE_DEFAULT: u32 = (1u32 << ZSTD_WINDOWLOG_LIMIT_DEFAULT).wrapping_add(1);
 pub const ZSTD_NO_FORWARD_PROGRESS_MAX: core::ffi::c_int = 16;
-pub const ZSTD_VERSION_MAJOR: core::ffi::c_int = 1;
-pub const ZSTD_VERSION_MINOR: core::ffi::c_int = 5;
-pub const ZSTD_VERSION_RELEASE: core::ffi::c_int = 8;
-pub const ZSTD_VERSION_NUMBER: core::ffi::c_int =
-    ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
-pub const ZSTD_MAGICNUMBER: core::ffi::c_uint = 0xfd2fb528;
-pub const ZSTD_MAGIC_DICTIONARY: core::ffi::c_uint = 0xec30a437;
-pub const ZSTD_MAGIC_SKIPPABLE_START: core::ffi::c_int = 0x184d2a50;
-pub const ZSTD_MAGIC_SKIPPABLE_MASK: core::ffi::c_uint = 0xfffffff0;
-pub const ZSTD_BLOCKSIZELOG_MAX: core::ffi::c_int = 17;
-pub const ZSTD_BLOCKSIZE_MAX: core::ffi::c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
-pub const ZSTD_CONTENTSIZE_UNKNOWN: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(1);
-pub const ZSTD_CONTENTSIZE_ERROR: core::ffi::c_ulonglong =
-    (0 as core::ffi::c_ulonglong).wrapping_sub(2);
-pub const ZSTD_SKIPPABLEHEADERSIZE: core::ffi::c_int = 8;
-
-/// The minimum valid max blocksize. Maximum blocksizes smaller than this make [`ZSTD_compressBound`] inaccurate.
-pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = (1) << 10;
-
-/// By default, the streaming decoder will refuse any frame requiring larger than
-/// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
-/// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
-///
-/// The limit does not apply for one-pass decoders (such as [`ZSTD_decompress`]), since no
-/// additional memory is allocated.
-pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
-
-pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
 pub const ZSTDv01_magicNumberLE: u32 = 0x1EB52FFD;
 
@@ -715,13 +677,6 @@ pub const extern "C" fn ZSTD_estimateDCtxSize() -> size_t {
     size_of::<ZSTD_DCtx>()
 }
 
-const fn ZSTD_startingInputLength(format: Format) -> size_t {
-    match format {
-        Format::ZSTD_f_zstd1 => 5,
-        Format::ZSTD_f_zstd1_magicless => 1,
-    }
-}
-
 fn ZSTD_DCtx_resetParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
     unsafe {
         let dctx = dctx.as_mut_ptr();
@@ -945,7 +900,7 @@ fn is_frame(src: &[u8]) -> bool {
         return true;
     }
 
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint {
+    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
         return true;
     }
 
@@ -979,7 +934,7 @@ fn is_skippable_frame(src: &[u8]) -> bool {
     };
 
     let magic = u32::from_le_bytes([a, b, c, d]);
-    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START as core::ffi::c_uint {
+    if magic & ZSTD_MAGIC_SKIPPABLE_MASK == ZSTD_MAGIC_SKIPPABLE_START {
         return true;
     }
 
@@ -990,8 +945,8 @@ fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error
     static ZSTD_fcs_fieldSize: [u8; 4] = [0, 2, 4, 8];
     static ZSTD_did_fieldSize: [u8; 4] = [0, 1, 2, 4];
 
-    let minInputSize = ZSTD_startingInputLength(format);
-    let Some([.., fhd]) = src.get(..minInputSize as usize) else {
+    let minInputSize = format.starting_input_length();
+    let Some([.., fhd]) = src.get(..minInputSize) else {
         return Err(Error::srcSize_wrong);
     };
 
@@ -1008,7 +963,7 @@ fn frame_header_size_internal(src: &[u8], format: Format) -> Result<usize, Error
 
 /// Get the frame header size
 ///
-/// `srcSize` must be >= [`ZSTD_frameHeaderSize_prefix`]
+/// `srcSize` must be >= [`Format::starting_input_length`]
 ///
 /// # Returns
 ///
@@ -1097,8 +1052,8 @@ fn get_frame_header_advanced(
     src: &[u8],
     format: Format,
 ) -> Result<size_t, Error> {
-    let minInputSize = ZSTD_startingInputLength(format);
-    if src.len() < minInputSize as usize {
+    let minInputSize = format.starting_input_length();
+    if src.len() < minInputSize {
         // error out early if magic number is invalid
         if !src.is_empty()
             && format != Format::ZSTD_f_zstd1_magicless
@@ -1123,7 +1078,7 @@ fn get_frame_header_advanced(
             }
 
             let first_word = u32::from_le_bytes(*src.first_chunk().unwrap());
-            let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+            let dictID = first_word.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START);
             let frameContentSize =
                 u32::from_le_bytes(*src[ZSTD_FRAMEIDSIZE..].first_chunk().unwrap());
 
@@ -1132,7 +1087,7 @@ fn get_frame_header_advanced(
                 windowSize: 0,
                 blockSizeMax: 0,
                 frameType: ZSTD_skippableFrame,
-                headerSize: ZSTD_SKIPPABLEHEADERSIZE as core::ffi::c_uint,
+                headerSize: ZSTD_SKIPPABLEHEADERSIZE,
                 dictID,
                 checksumFlag: 0,
                 _reserved1: 0,
@@ -1150,11 +1105,11 @@ fn get_frame_header_advanced(
         return Ok(fhsize);
     }
 
-    let fhdByte = src[minInputSize as usize - 1];
+    let fhdByte = src[minInputSize - 1];
     let dictIDSizeCode = fhdByte & 0b11;
     let checksumFlag = u32::from(fhdByte) >> 2 & 1;
     let singleSegment = (u32::from(fhdByte) >> 5 & 1) != 0;
-    let fcsID = (u32::from(fhdByte) >> 6) as u32;
+    let fcsID = u32::from(fhdByte) >> 6;
 
     let mut windowSize = 0;
 
@@ -1162,13 +1117,13 @@ fn get_frame_header_advanced(
         return Err(Error::frameParameter_unsupported);
     }
 
-    let mut pos = minInputSize as usize;
+    let mut pos = minInputSize;
     if !singleSegment {
         let wlByte = src[pos];
         pos += 1;
         let windowLog = ((i32::from(wlByte) / 8) + ZSTD_WINDOWLOG_ABSOLUTEMIN) as u32;
 
-        if windowLog > (if size_of::<usize>() == 4 { 30 } else { 31 }) as u32 {
+        if windowLog > ZSTD_WINDOWLOG_MAX as u32 {
             return Err(Error::frameParameter_windowTooLarge);
         }
 
@@ -1231,7 +1186,7 @@ fn get_frame_header_advanced(
 /// Get frame content size
 ///
 /// - `src` should point to the start of a ZSTD encoded frame
-/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_frameHeaderSize_max`])
+/// - `srcSize` must be at least as large as the frame header (see [`ZSTD_FRAMEHEADERSIZE_MAX`])
 ///
 /// Note: decompressed size is an optional field, it may not be present (typically in streaming mode).
 /// When this method returns [`ZSTD_CONTENTSIZE_UNKNOWN`], the data to decompress could be any size.
@@ -1302,15 +1257,13 @@ unsafe fn readSkippableFrameSize(src: *const core::ffi::c_void, srcSize: size_t)
 }
 
 fn read_skippable_frame_size(src: &[u8]) -> Result<size_t, Error> {
-    let skippableHeaderSize = ZSTD_SKIPPABLEHEADERSIZE as u32;
-
     let [_, _, _, _, a, b, c, d, ..] = *src else {
         return Err(Error::srcSize_wrong);
     };
 
     let size = u32::from_le_bytes([a, b, c, d]);
 
-    let skippableSize = skippableHeaderSize
+    let skippableSize = ZSTD_SKIPPABLEHEADERSIZE
         .checked_add(size)
         .ok_or(Error::frameParameter_unsupported)? as usize;
 
@@ -1367,7 +1320,7 @@ pub unsafe extern "C" fn ZSTD_readSkippableFrame(
         );
     }
     if !magicVariant.is_null() {
-        *magicVariant = magicNumber.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START as u32);
+        *magicVariant = magicNumber.wrapping_sub(ZSTD_MAGIC_SKIPPABLE_START);
     }
     skippableContentSize
 }
@@ -1397,7 +1350,7 @@ pub unsafe extern "C" fn ZSTD_findDecompressedSize(
 fn find_decompressed_size(mut src: &[u8]) -> u64 {
     let mut totalDstSize = 0u64;
 
-    while src.len() >= ZSTD_startingInputLength(Format::ZSTD_f_zstd1) {
+    while src.len() >= Format::ZSTD_f_zstd1.starting_input_length() {
         if is_skippable_frame(src) {
             let skippableSize = match read_skippable_frame_size(src) {
                 Ok(size) => size,
@@ -1959,7 +1912,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
         dict = ddict.as_slice();
     }
 
-    while src.len() >= ZSTD_startingInputLength((*dctx).format) {
+    while src.len() >= (*dctx).format.starting_input_length() {
         if (*dctx).format == Format::ZSTD_f_zstd1 && is_legacy(src.as_slice()) != 0 {
             let frameSizeInfo = find_frame_size_info_legacy(src.as_slice())?;
             let frameSize = frameSizeInfo.compressedSize;
@@ -2531,7 +2484,7 @@ fn decompress_begin(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
         let dctx = dctx.as_mut_ptr();
 
         (*dctx).traceCtx = ZSTD_trace_decompress_begin(dctx);
-        (*dctx).expected = ZSTD_startingInputLength((*dctx).format);
+        (*dctx).expected = (*dctx).format.starting_input_length();
         (*dctx).stage = DecompressStage::GetFrameHeaderSize;
         (*dctx).processedCSize = 0;
         (*dctx).decodedSize = 0;
@@ -2648,7 +2601,7 @@ pub unsafe extern "C" fn ZSTD_getDictID_fromDict(
 ///   - The frame was built with `dictID` intentionally removed, this also happens when using a
 ///     non-conformant dictionary
 ///   - `srcSize` is too small, and as a result, frame header could not be decoded, possible if
-///     `srcSize < ZSTD_FRAMEHEADERSIZE_MAX`
+///     `srcSize` < [`ZSTD_FRAMEHEADERSIZE_MAX`]
 ///   - This is not a Zstandard frame
 ///
 /// When identifying the exact failure cause, it's possible to use [`ZSTD_getFrameHeader`],
@@ -2868,7 +2821,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix(
 ///
 /// # Returns
 ///
-/// - the expected size, aka [`ZSTD_startingInputLength`]
+/// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
@@ -2884,7 +2837,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*zds).format)
+    (*zds).format.starting_input_length()
 }
 
 /// Initialize/reset [`ZSTD_DStream`] state for new decompression operation.
@@ -2904,7 +2857,7 @@ pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*zds).format)
+    (*zds).format.starting_input_length()
 }
 
 /// This function is deprecated, and is equivalent to first using [`ZSTD_DCtx_reset`] to reset the
@@ -2924,7 +2877,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*dctx).format)
+    (*dctx).format.starting_input_length()
 }
 
 /// This function is deprecated, and is equivalent to using [`ZSTD_DCtx_reset`] with
@@ -2932,7 +2885,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
 ///
 /// # Returns
 ///
-/// - the expected size, aka [`ZSTD_startingInputLength`]
+/// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetDStream))]
 pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
@@ -2940,7 +2893,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
     if ERR_isError(err_code) {
         return err_code;
     }
-    ZSTD_startingInputLength((*dctx).format)
+    (*dctx).format.starting_input_length()
 }
 
 /// Reference a prepared dictionary, to be used to decompress next frames. The dictionary remains

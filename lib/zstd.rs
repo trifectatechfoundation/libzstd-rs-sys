@@ -1,11 +1,11 @@
-use core::ffi::c_uint;
+use core::ffi::{c_int, c_uint, c_ulonglong};
 use libc::size_t;
 
 #[cfg(doc)]
 use crate::{
     lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
-    ZSTD_DCtx_reset, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_freeDCtx,
-    ZSTD_WINDOWLOG_LIMIT_DEFAULT,
+    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_decompress,
+    ZSTD_freeDCtx,
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
@@ -17,11 +17,21 @@ pub const ZSTD_WINDOWLOG_MAX: core::ffi::c_int = match size_of::<usize>() {
     8 => ZSTD_WINDOWLOG_MAX_64,
     _ => panic!(),
 };
+/// By default, the streaming decoder will refuse any frame requiring larger than
+/// (1<<`ZSTD_WINDOWLOG_LIMIT_DEFAULT`) window size to preserve host's memory from unreasonable
+/// requirements. This limit can be overridden using [`ZSTD_DCtx_setParameter`].
+///
+/// The limit does not apply for one-pass decoders (such as [`ZSTD_decompress`]), since no
+/// additional memory is allocated.
+pub const ZSTD_WINDOWLOG_LIMIT_DEFAULT: core::ffi::c_int = 27;
+pub const ZSTD_WINDOWLOG_ABSOLUTEMIN: core::ffi::c_int = 10;
 
-pub const ZSTD_BLOCKSIZELOG_MAX: c_uint = 17;
-pub const ZSTD_BLOCKSIZE_MAX: c_uint = (1) << ZSTD_BLOCKSIZELOG_MAX;
+pub const ZSTD_BLOCKSIZELOG_MAX: c_int = 17;
+pub const ZSTD_BLOCKSIZE_MAX: c_int = 1 << ZSTD_BLOCKSIZELOG_MAX;
+/// The minimum valid max blocksize. Maximum blocksizes smaller than this make [`ZSTD_compressBound`] inaccurate.
+pub const ZSTD_BLOCKSIZE_MAX_MIN: core::ffi::c_int = 1 << 10;
+pub const ZSTD_CLEVEL_DEFAULT: c_int = 3;
 
-pub const ZSTD_CLEVEL_DEFAULT: c_uint = 3;
 pub const ZSTD_MAGICNUMBER: c_uint = 0xfd2fb528;
 pub const ZSTD_MAGIC_DICTIONARY: c_uint = 0xec30a437;
 pub const ZSTD_MAGIC_SKIPPABLE_START: c_uint = 0x184d2a50;
@@ -32,6 +42,10 @@ pub const ZSTD_VERSION_MINOR: c_uint = 5;
 pub const ZSTD_VERSION_RELEASE: c_uint = 8;
 pub const ZSTD_VERSION_NUMBER: c_uint =
     ZSTD_VERSION_MAJOR * 100 * 100 + ZSTD_VERSION_MINOR * 100 + ZSTD_VERSION_RELEASE;
+
+pub const ZSTD_CONTENTSIZE_UNKNOWN: c_ulonglong = (0 as c_ulonglong).wrapping_sub(1);
+pub const ZSTD_CONTENTSIZE_ERROR: c_ulonglong = (0 as c_ulonglong).wrapping_sub(2);
+pub const ZSTD_SKIPPABLEHEADERSIZE: c_uint = 8;
 
 pub type ZSTD_ErrorCode = core::ffi::c_uint;
 
@@ -110,6 +124,23 @@ pub struct ZSTD_parameters {
     pub fParams: ZSTD_frameParameters,
 }
 
+/// This enum specifies the content type of a dictionary, either [`ZSTD_dct_auto`], [`ZSTD_dct_rawContent`], or [`ZSTD_dct_fullDict`].
+pub type ZSTD_dictContentType_e = core::ffi::c_uint;
+/// Refuses to load a dictionary if it does not respect Zstandard's specification, starting with
+/// [`ZSTD_MAGIC_DICTIONARY`]
+pub const ZSTD_dct_fullDict: ZSTD_dictContentType_e = 2;
+/// Ensures dictionary is always loaded as `rawContent`, even if it starts with [`ZSTD_MAGIC_DICTIONARY`]
+pub const ZSTD_dct_rawContent: ZSTD_dictContentType_e = 1;
+/// Dictionary is "full" when starting with [`ZSTD_MAGIC_DICTIONARY`], otherwise it is "rawContent"
+pub const ZSTD_dct_auto: ZSTD_dictContentType_e = 0;
+
+/// This enum specifies the method used to load a dictionary, either [`ZSTD_dlm_byCopy`] or [`ZSTD_dlm_byRef`].
+pub type ZSTD_dictLoadMethod_e = core::ffi::c_uint;
+/// Copy dictionary content internally
+pub const ZSTD_dlm_byCopy: ZSTD_dictLoadMethod_e = 0;
+/// Reference dictionary content -- the dictionary buffer must outlive its users
+pub const ZSTD_dlm_byRef: ZSTD_dictLoadMethod_e = 1;
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_customMem {
@@ -152,10 +183,23 @@ pub enum Format {
 }
 
 impl Format {
-    pub(crate) const fn frame_header_size_min(self) -> usize {
+    /// This function replaces the `ZSTD_FRAMEHEADERSIZE_MIN` macro.
+    ///
+    /// Returns the minimum size of the frame header.
+    pub const fn frame_header_size_min(self) -> usize {
         match self {
             Format::ZSTD_f_zstd1 => 6,
             Format::ZSTD_f_zstd1_magicless => 2,
+        }
+    }
+
+    /// This function replaces the `ZSTD_FRAMEHEADERSIZE_PREFIX` macro.
+    ///
+    /// Returns the minimum input size required to query the frame header size.
+    pub const fn starting_input_length(self) -> usize {
+        match self {
+            Format::ZSTD_f_zstd1 => 5,
+            Format::ZSTD_f_zstd1_magicless => 1,
         }
     }
 }
