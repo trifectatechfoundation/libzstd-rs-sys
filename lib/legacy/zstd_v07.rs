@@ -1,6 +1,5 @@
 use core::marker::PhantomData;
 use core::ptr;
-use std::ops::Range;
 
 use libc::{calloc, free, malloc};
 
@@ -8,7 +7,7 @@ use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE32, MEM_readLEST};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::xxhash::{
-    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update, ZSTD_XXH64_update_slice,
+    XXH64_state_t, ZSTD_XXH64_digest, ZSTD_XXH64_reset, ZSTD_XXH64_update_slice,
 };
 use crate::lib::decompress::huf_decompress::{DTableDesc, Writer};
 
@@ -1578,7 +1577,7 @@ static ZSTDv07_blockHeaderSize: usize = ZSTDv07_BLOCKHEADERSIZE as usize;
 const MIN_SEQUENCES_SIZE: core::ffi::c_int = 1;
 const MIN_CBLOCK_SIZE: core::ffi::c_int = 1 + 1 + MIN_SEQUENCES_SIZE;
 const LONGNBSEQ: core::ffi::c_int = 0x7f00;
-const MINMATCH: core::ffi::c_int = 3;
+const MINMATCH: usize = 3;
 const MaxML: core::ffi::c_int = 52;
 const MaxLL: core::ffi::c_int = 35;
 const MaxOff: core::ffi::c_int = 28;
@@ -1653,10 +1652,12 @@ pub(crate) unsafe fn ZSTDv07_freeDCtx(dctx: *mut ZSTDv07_DCtx) -> usize {
     free(dctx as *mut core::ffi::c_void);
     0
 }
-fn ZSTDv07_frameHeaderSize(src: &[u8]) -> Result<usize, Error> {
+fn ZSTDv07_frameHeaderSize(src: Reader<'_>) -> Result<usize, Error> {
     if src.len() < ZSTDv07_frameHeaderSize_min {
         return Err(Error::srcSize_wrong);
     }
+    let src = src.subslice(..ZSTDv07_frameHeaderSize_min);
+    let src = src.as_slice();
     let fhd = src[4];
     let dictID = (fhd & 3) as usize;
     let directMode = (fhd >> 5 & 1) as u32;
@@ -1692,7 +1693,7 @@ pub(crate) fn ZSTDv07_getFrameParams(
         }
         return Err(Error::prefix_unknown);
     }
-    let fhsize = ZSTDv07_frameHeaderSize(src)?;
+    let fhsize = ZSTDv07_frameHeaderSize(Reader::from_slice(src))?;
     if src.len() < fhsize {
         return Ok(fhsize);
     }
@@ -1788,11 +1789,13 @@ unsafe fn ZSTDv07_decodeFrameHeader(dctx: *mut ZSTDv07_DCtx, src: &[u8]) -> Resu
     }
     result
 }
-fn ZSTDv07_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> Result<usize, Error> {
+fn ZSTDv07_getcBlockSize(src: Reader<'_>, bpPtr: &mut blockProperties_t) -> Result<usize, Error> {
     let mut cSize: u32 = 0;
     if src.len() < ZSTDv07_blockHeaderSize {
         return Err(Error::srcSize_wrong);
     }
+    let src = src.subslice(..ZSTDv07_blockHeaderSize);
+    let src = src.as_slice();
     bpPtr.blockType = (src[0] >> 6) as blockType_t;
     cSize = u32::from(src[2]) + (u32::from(src[1]) << 8) + (u32::from(src[0] & 7) << 16);
     bpPtr.origSize = if bpPtr.blockType == bt_rle { cSize } else { 0 };
@@ -2186,90 +2189,88 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
     seq
 }
 unsafe fn ZSTDv07_execSequence(
-    mut dst: Writer<'_>,
+    dst: Writer<'_>,
     mut sequence: seq_t,
     litPtr: &mut &[u8],
     base: *const u8,
     vBase: *const u8,
     dictEnd: *const u8,
 ) -> Result<usize, Error> {
-    let Range {
-        start: mut op,
-        end: oend,
-    } = dst.as_mut_ptr_range();
-    let oLitEnd = op.add(sequence.litLength);
+    let mut op = dst;
+    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > op.capacity() {
+        return Err(Error::dstSize_tooSmall);
+    }
+    let mut oLitEnd = op.subslice(sequence.litLength..);
     let sequenceLength = sequence.litLength + sequence.matchLength;
-    let oMatchEnd = op.add(sequenceLength);
-    let oend_w = oend.wrapping_sub(WILDCOPY_OVERLENGTH);
-    let mut match_0: *const u8 = oLitEnd.wrapping_sub(sequence.offset);
-    if (sequence.litLength).wrapping_add(WILDCOPY_OVERLENGTH) > oend.offset_from_unsigned(op) {
+    if sequenceLength > op.capacity() {
         return Err(Error::dstSize_tooSmall);
     }
-    if sequenceLength > oend.offset_from_unsigned(op) {
-        return Err(Error::dstSize_tooSmall);
-    }
+    let mut oMatchEnd = op.subslice(sequenceLength..);
+    let mut match_0: *const u8 = oLitEnd.as_ptr().wrapping_sub(sequence.offset);
     if sequence.litLength > litPtr.len() {
         return Err(Error::corruption_detected);
     }
-    ZSTDv07_wildcopy(op, (*litPtr).as_ptr(), sequence.litLength as isize);
-    op = oLitEnd;
+    ZSTDv07_wildcopy(
+        op.as_mut_ptr(),
+        (*litPtr).as_ptr(),
+        sequence.litLength as isize,
+    );
+    op = oLitEnd.subslice(..);
     *litPtr = &litPtr[sequence.litLength..];
-    if sequence.offset > oLitEnd.offset_from_unsigned(base) {
-        if sequence.offset > oLitEnd.offset_from_unsigned(vBase) {
+    if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(base) {
+        if sequence.offset > oLitEnd.as_ptr().offset_from_unsigned(vBase) {
             return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.offset(-(base.offset_from(match_0)));
         if match_0.add(sequence.matchLength) <= dictEnd {
-            core::ptr::copy(match_0, oLitEnd, sequence.matchLength);
+            core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), sequence.matchLength);
             return Ok(sequenceLength);
         }
         let length1 = dictEnd.offset_from_unsigned(match_0);
-        core::ptr::copy(match_0, oLitEnd, length1);
-        op = oLitEnd.add(length1);
+        core::ptr::copy(match_0, oLitEnd.as_mut_ptr(), length1);
+        op = oLitEnd.subslice(length1..);
         sequence.matchLength = (sequence.matchLength).wrapping_sub(length1);
         match_0 = base;
-        if op > oend_w || sequence.matchLength < MINMATCH as usize {
-            while op < oMatchEnd {
-                let fresh42 = match_0;
+        if op.capacity() < WILDCOPY_OVERLENGTH || sequence.matchLength < MINMATCH {
+            while op.as_mut_ptr() < oMatchEnd.as_mut_ptr() {
+                op.write_u8(*match_0);
                 match_0 = match_0.add(1);
-                let fresh43 = op;
-                op = op.add(1);
-                *fresh43 = *fresh42;
             }
             return Ok(sequenceLength);
         }
     }
     if sequence.offset < 8 {
         static dec32table: [u32; 8] = [0, 1, 2, 1, 4, 4, 4, 4];
-        static dec64table: [core::ffi::c_int; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
-        let sub2 = *dec64table.as_ptr().add(sequence.offset);
-        *op = *match_0;
-        *op.add(1) = *match_0.add(1);
-        *op.add(2) = *match_0.add(2);
-        *op.add(3) = *match_0.add(3);
-        match_0 = match_0.offset(*dec32table.as_ptr().add(sequence.offset) as isize);
-        ptr::copy_nonoverlapping(match_0, op.add(4), 4);
-        match_0 = match_0.offset(-(sub2 as isize));
+        static dec64table: [u32; 8] = [8, 8, 8, 7, 8, 9, 10, 11];
+        op.write_u8(*match_0);
+        op.write_u8(*match_0.add(1));
+        op.write_u8(*match_0.add(2));
+        op.write_u8(*match_0.add(3));
+        match_0 = match_0.add(dec32table[sequence.offset] as usize);
+        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 4);
+        match_0 = match_0.sub(dec64table[sequence.offset] as usize);
+        op = op.subslice(4..);
     } else {
-        ptr::copy_nonoverlapping(match_0, op, 8);
+        ptr::copy_nonoverlapping(match_0, op.as_mut_ptr(), 8);
+        op = op.subslice(8..);
     }
-    op = op.add(8);
     match_0 = match_0.add(8);
-    if oMatchEnd > oend.offset(-((16 - MINMATCH) as isize)) {
-        if op < oend_w {
-            ZSTDv07_wildcopy(op, match_0, oend_w.offset_from(op));
-            match_0 = match_0.offset(oend_w.offset_from(op));
-            op = oend_w;
+    if oMatchEnd.capacity() < 16 - MINMATCH {
+        if op.capacity() > WILDCOPY_OVERLENGTH {
+            ZSTDv07_wildcopy(
+                op.as_mut_ptr(),
+                match_0,
+                (op.capacity() - WILDCOPY_OVERLENGTH) as isize,
+            );
+            match_0 = match_0.add(op.capacity() - WILDCOPY_OVERLENGTH);
+            op = op.subslice(op.capacity() - WILDCOPY_OVERLENGTH..);
         }
-        while op < oMatchEnd {
-            let fresh44 = match_0;
+        while op.as_ptr() < oMatchEnd.as_ptr() {
+            op.write_u8(*match_0);
             match_0 = match_0.add(1);
-            let fresh45 = op;
-            op = op.add(1);
-            *fresh45 = *fresh44;
         }
     } else {
-        ZSTDv07_wildcopy(op, match_0, sequence.matchLength as isize - 8);
+        ZSTDv07_wildcopy(op.as_mut_ptr(), match_0, sequence.matchLength as isize - 8);
     }
     Ok(sequenceLength)
 }
@@ -2372,70 +2373,53 @@ fn ZSTDv07_generateNxBytes(mut dst: Writer<'_>, byte: u8, length: usize) -> Resu
     }
     Ok(length)
 }
-unsafe fn ZSTDv07_decompressFrame(
+fn ZSTDv07_decompressFrame(
     dctx: &mut ZSTDv07_DCtx,
-    mut dst: Writer<'_>,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    dst: Writer<'_>,
+    src: Reader<'_>,
 ) -> Result<usize, Error> {
-    let mut ip = src as *const u8;
-    let iend = ip.add(srcSize);
-    let Range {
-        start: ostart,
-        end: oend,
-    } = dst.as_mut_ptr_range();
-    let mut op = ostart;
-    let mut remainingSize = srcSize;
-    if srcSize < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
+    let mut ip = src;
+    let dstCapacity = dst.capacity();
+    let mut op = dst;
+    if ip.len() < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
-    let frameHeaderSize = ZSTDv07_frameHeaderSize(core::slice::from_raw_parts(
-        src.cast::<u8>(),
-        ZSTDv07_frameHeaderSize_min,
-    ))?;
-    if srcSize < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
+    let frameHeaderSize = ZSTDv07_frameHeaderSize(ip.subslice(..))?;
+    if ip.len() < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
         return Err(Error::srcSize_wrong);
     }
-    if ZSTDv07_decodeFrameHeader(
-        dctx,
-        core::slice::from_raw_parts(src.cast::<u8>(), frameHeaderSize),
-    ) != Ok(0)
+    if unsafe { ZSTDv07_decodeFrameHeader(dctx, ip.subslice(..frameHeaderSize).as_slice()) }
+        != Ok(0)
     {
         return Err(Error::corruption_detected);
     }
-    ip = ip.add(frameHeaderSize);
-    remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
+    ip = ip.subslice(frameHeaderSize..);
     loop {
         let mut blockProperties = blockProperties_t {
             blockType: bt_compressed,
             origSize: 0,
         };
-        let cBlockSize = ZSTDv07_getcBlockSize(
-            core::slice::from_raw_parts(ip, iend.offset_from_unsigned(ip)),
-            &mut blockProperties,
-        )?;
-        ip = ip.add(ZSTDv07_blockHeaderSize);
-        remainingSize = remainingSize.wrapping_sub(ZSTDv07_blockHeaderSize);
-        if cBlockSize > remainingSize {
+        let cBlockSize = ZSTDv07_getcBlockSize(ip.subslice(..), &mut blockProperties)?;
+        ip = ip.subslice(ZSTDv07_blockHeaderSize..);
+        if cBlockSize > ip.len() {
             return Err(Error::srcSize_wrong);
         }
         let decodedSize = match blockProperties.blockType {
-            bt_compressed => ZSTDv07_decompressBlock_internal(
-                dctx,
-                Writer::from_range(op, oend),
-                core::slice::from_raw_parts(ip, cBlockSize),
-            )?,
-            bt_raw => ZSTDv07_copyRawBlock(
-                Writer::from_range(op, oend),
-                core::slice::from_raw_parts(ip, cBlockSize),
-            )?,
+            bt_compressed => unsafe {
+                ZSTDv07_decompressBlock_internal(
+                    dctx,
+                    op.subslice(..),
+                    ip.subslice(..cBlockSize).as_slice(),
+                )?
+            },
+            bt_raw => ZSTDv07_copyRawBlock(op.subslice(..), ip.subslice(..cBlockSize).as_slice())?,
             bt_rle => ZSTDv07_generateNxBytes(
-                Writer::from_range(op, oend),
-                *ip,
+                op.subslice(..),
+                ip.subslice(..1).as_slice()[0],
                 blockProperties.origSize as usize,
             )?,
             bt_end => {
-                if remainingSize != 0 {
+                if !ip.is_empty() {
                     return Err(Error::srcSize_wrong);
                 }
                 break;
@@ -2443,29 +2427,25 @@ unsafe fn ZSTDv07_decompressFrame(
             _ => return Err(Error::GENERIC),
         };
         if dctx.fParams.checksumFlag != 0 {
-            ZSTD_XXH64_update(
-                &mut dctx.xxhState,
-                op as *const core::ffi::c_void,
-                decodedSize as usize,
-            );
+            ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
+                op.subslice(..decodedSize as usize).as_slice()
+            });
         }
-        op = op.add(decodedSize);
-        ip = ip.add(cBlockSize);
-        remainingSize = remainingSize.wrapping_sub(cBlockSize);
+        op = op.subslice(decodedSize..);
+        ip = ip.subslice(cBlockSize..);
     }
-    Ok(op.offset_from_unsigned(ostart))
+    Ok(dstCapacity - op.capacity())
 }
 pub(crate) unsafe fn ZSTDv07_decompress_usingDict(
     dctx: &mut ZSTDv07_DCtx,
     dst: Writer<'_>,
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+    src: Reader<'_>,
     dict: *const core::ffi::c_void,
     dictSize: usize,
 ) -> Result<usize, Error> {
     let _ = ZSTDv07_decompressBegin_usingDict(dctx, dict, dictSize);
-    ZSTDv07_checkContinuity(&mut *dctx, dst.as_ptr());
-    ZSTDv07_decompressFrame(&mut *dctx, dst, src, srcSize)
+    ZSTDv07_checkContinuity(dctx, dst.as_ptr());
+    ZSTDv07_decompressFrame(dctx, dst, src)
 }
 fn ZSTD_errorFrameSizeInfoLegacy(
     cSize: &mut usize,
@@ -2475,66 +2455,58 @@ fn ZSTD_errorFrameSizeInfoLegacy(
     *cSize = ret.to_error_code();
     *dBound = ZSTD_CONTENTSIZE_ERROR;
 }
-pub(crate) unsafe fn ZSTDv07_findFrameSizeInfoLegacy(
-    src: *const core::ffi::c_void,
-    srcSize: usize,
+pub(crate) fn ZSTDv07_findFrameSizeInfoLegacy(
+    src: Reader<'_>,
     cSize: &mut usize,
     dBound: &mut core::ffi::c_ulonglong,
 ) {
-    let mut ip = src as *const u8;
-    let mut remainingSize = srcSize;
+    let srcSize = src.len();
+    let mut ip = src;
     let mut nbBlocks = 0_usize;
-    if srcSize < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
+    if ip.len() < ZSTDv07_frameHeaderSize_min.wrapping_add(ZSTDv07_blockHeaderSize) {
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
         return;
     }
-    let frameHeaderSize =
-        match ZSTDv07_frameHeaderSize(core::slice::from_raw_parts(src.cast::<u8>(), srcSize)) {
-            Ok(frameHeaderSize) => frameHeaderSize,
-            Err(err) => {
-                ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
-                return;
-            }
-        };
-    if MEM_readLE32(src) != ZSTDv07_MAGICNUMBER {
+    let frameHeaderSize = match ZSTDv07_frameHeaderSize(ip.subslice(..)) {
+        Ok(frameHeaderSize) => frameHeaderSize,
+        Err(err) => {
+            ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
+            return;
+        }
+    };
+    if u32::from_le_bytes(ip.subslice(..4).as_slice().try_into().unwrap()) != ZSTDv07_MAGICNUMBER {
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::prefix_unknown);
         return;
     }
-    if srcSize < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
+    if ip.len() < frameHeaderSize.wrapping_add(ZSTDv07_blockHeaderSize) {
         ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
         return;
     }
-    ip = ip.add(frameHeaderSize);
-    remainingSize = remainingSize.wrapping_sub(frameHeaderSize);
+    ip = ip.subslice(frameHeaderSize..);
     loop {
         let mut blockProperties = blockProperties_t {
             blockType: bt_compressed,
             origSize: 0,
         };
-        let cBlockSize = match ZSTDv07_getcBlockSize(
-            core::slice::from_raw_parts(ip, remainingSize),
-            &mut blockProperties,
-        ) {
+        let cBlockSize = match ZSTDv07_getcBlockSize(ip.subslice(..), &mut blockProperties) {
             Ok(cBlockSize) => cBlockSize,
             Err(err) => {
                 ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, err);
                 return;
             }
         };
-        ip = ip.add(ZSTDv07_blockHeaderSize);
-        remainingSize = remainingSize.wrapping_sub(ZSTDv07_blockHeaderSize);
+        ip = ip.subslice(ZSTDv07_blockHeaderSize..);
         if blockProperties.blockType == bt_end {
             break;
         }
-        if cBlockSize > remainingSize {
+        if cBlockSize > ip.len() {
             ZSTD_errorFrameSizeInfoLegacy(cSize, dBound, Error::srcSize_wrong);
             return;
         }
-        ip = ip.add(cBlockSize);
-        remainingSize = remainingSize.wrapping_sub(cBlockSize);
+        ip = ip.subslice(cBlockSize..);
         nbBlocks = nbBlocks.wrapping_add(1);
     }
-    *cSize = ip.offset_from_unsigned(src as *const u8);
+    *cSize = srcSize - ip.len();
     *dBound = (nbBlocks * ZSTDv07_BLOCKSIZE_ABSOLUTEMAX) as core::ffi::c_ulonglong;
 }
 fn ZSTDv07_nextSrcSizeToDecompress(dctx: &ZSTDv07_DCtx) -> usize {
@@ -2572,8 +2544,7 @@ unsafe fn ZSTDv07_decompressContinue(
                 dctx.stage = ZSTDds_decodeSkippableHeader;
                 return Ok(0);
             }
-            dctx.headerSize =
-                ZSTDv07_frameHeaderSize(src.subslice(..ZSTDv07_frameHeaderSize_min).as_slice())?;
+            dctx.headerSize = ZSTDv07_frameHeaderSize(src.subslice(..))?;
             ptr::copy_nonoverlapping(
                 src.as_ptr(),
                 dctx.headerBuffer.as_mut_ptr(),
@@ -2592,8 +2563,7 @@ unsafe fn ZSTDv07_decompressContinue(
                 blockType: bt_compressed,
                 origSize: 0,
             };
-            let cBlockSize =
-                ZSTDv07_getcBlockSize(src.subslice(..ZSTDv07_blockHeaderSize).as_slice(), &mut bp)?;
+            let cBlockSize = ZSTDv07_getcBlockSize(src.subslice(..), &mut bp)?;
             if bp.blockType == bt_end {
                 if dctx.fParams.checksumFlag != 0 {
                     let h64 = ZSTD_XXH64_digest(&mut dctx.xxhState);
