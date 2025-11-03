@@ -391,7 +391,6 @@ unsafe fn COVER_groupBy(
         *const core::ffi::c_void,
         *const core::ffi::c_void,
     ) -> core::ffi::c_int,
-    grp: unsafe fn(*mut COVER_ctx_t, *const core::ffi::c_void, *const core::ffi::c_void) -> (),
 ) {
     let mut ptr = data as *const u8;
     let mut num = 0;
@@ -408,7 +407,7 @@ unsafe fn COVER_groupBy(
             grpEnd = grpEnd.add(size);
             num = num.wrapping_add(1);
         }
-        grp(
+        COVER_group(
             ctx,
             ptr as *const core::ffi::c_void,
             grpEnd as *const core::ffi::c_void,
@@ -697,12 +696,6 @@ unsafe fn COVER_ctx_init(
                     *const core::ffi::c_void,
                 ) -> core::ffi::c_int
         },
-        COVER_group
-            as unsafe fn(
-                *mut COVER_ctx_t,
-                *const core::ffi::c_void,
-                *const core::ffi::c_void,
-            ) -> (),
     );
 
     core::mem::swap(&mut ctx.freqs, &mut ctx.suffix);
