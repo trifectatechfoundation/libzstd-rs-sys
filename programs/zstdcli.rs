@@ -1083,25 +1083,7 @@ unsafe fn parseLegacyParameters(
     1
 }
 unsafe fn defaultCoverParams() -> ZDICT_cover_params_t {
-    let mut params = ZDICT_cover_params_t {
-        k: 0,
-        d: 0,
-        steps: 0,
-        nbThreads: 0,
-        splitPoint: 0.,
-        shrinkDict: 0,
-        shrinkDictMaxRegression: 0,
-        zParams: ZDICT_params_t {
-            compressionLevel: 0,
-            notificationLevel: 0,
-            dictID: 0,
-        },
-    };
-    ptr::write_bytes(
-        &mut params as *mut ZDICT_cover_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_cover_params_t>(),
-    );
+    let mut params = ZDICT_cover_params_t::default();
     params.d = 8;
     params.steps = 4;
     params.splitPoint = 1.0f64;
@@ -1110,27 +1092,7 @@ unsafe fn defaultCoverParams() -> ZDICT_cover_params_t {
     params
 }
 unsafe fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
-    let mut params = ZDICT_fastCover_params_t {
-        k: 0,
-        d: 0,
-        f: 0,
-        steps: 0,
-        nbThreads: 0,
-        splitPoint: 0.,
-        accel: 0,
-        shrinkDict: 0,
-        shrinkDictMaxRegression: 0,
-        zParams: ZDICT_params_t {
-            compressionLevel: 0,
-            notificationLevel: 0,
-            dictID: 0,
-        },
-    };
-    ptr::write_bytes(
-        &mut params as *mut ZDICT_fastCover_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
-    );
+    let mut params = ZDICT_fastCover_params_t::default();
     params.d = 8;
     params.f = 20;
     params.steps = 4;
@@ -3080,14 +3042,11 @@ unsafe fn main_0(
         } else if operation as core::ffi::c_uint
             == zom_train as core::ffi::c_int as core::ffi::c_uint
         {
-            let mut zParams = ZDICT_params_t {
-                compressionLevel: 0,
-                notificationLevel: 0,
-                dictID: 0,
+            let zParams = ZDICT_params_t {
+                compressionLevel: dictCLevel,
+                notificationLevel: g_displayLevel as core::ffi::c_uint,
+                dictID: dictID,
             };
-            zParams.compressionLevel = dictCLevel;
-            zParams.notificationLevel = g_displayLevel as core::ffi::c_uint;
-            zParams.dictID = dictID;
             if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
                 let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
                 coverParams.nbThreads = nbWorkers;
@@ -3124,19 +3083,7 @@ unsafe fn main_0(
                     memLimit,
                 );
             } else {
-                let mut dictParams = ZDICT_legacy_params_t {
-                    selectivityLevel: 0,
-                    zParams: ZDICT_params_t {
-                        compressionLevel: 0,
-                        notificationLevel: 0,
-                        dictID: 0,
-                    },
-                };
-                ptr::write_bytes(
-                    &mut dictParams as *mut ZDICT_legacy_params_t as *mut u8,
-                    0,
-                    ::core::mem::size_of::<ZDICT_legacy_params_t>(),
-                );
+                let mut dictParams = ZDICT_legacy_params_t::default();
                 dictParams.selectivityLevel = dictSelect;
                 dictParams.zParams = zParams;
                 operationResult = DiB_trainFromFiles(

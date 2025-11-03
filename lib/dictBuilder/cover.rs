@@ -1377,20 +1377,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         liveJobs: 0,
         dict: core::ptr::null_mut::<core::ffi::c_void>(),
         dictSize: 0,
-        parameters: ZDICT_cover_params_t {
-            k: 0,
-            d: 0,
-            steps: 0,
-            nbThreads: 0,
-            splitPoint: 0.,
-            shrinkDict: 0,
-            shrinkDictMaxRegression: 0,
-            zParams: ZDICT_params_t {
-                compressionLevel: 0,
-                notificationLevel: 0,
-                dictID: 0,
-            },
-        },
+        parameters: ZDICT_cover_params_t::default(),
         compressedSize: 0,
     };
     let mut pool = core::ptr::null_mut();

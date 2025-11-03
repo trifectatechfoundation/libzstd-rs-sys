@@ -593,20 +593,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
 ) -> size_t {
     let dict = dictBuffer as *mut u8;
     let mut ctx = FASTCOVER_ctx_t::default();
-    let mut coverParams = ZDICT_cover_params_t {
-        k: 0,
-        d: 0,
-        steps: 0,
-        nbThreads: 0,
-        splitPoint: 0.,
-        shrinkDict: 0,
-        shrinkDictMaxRegression: 0,
-        zParams: ZDICT_params_t {
-            compressionLevel: 0,
-            notificationLevel: 0,
-            dictID: 0,
-        },
-    };
+    let mut coverParams = ZDICT_cover_params_t::default();
     let mut accelParams = FASTCOVER_accel_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
@@ -711,20 +698,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     nbSamples: core::ffi::c_uint,
     parameters: *mut ZDICT_fastCover_params_t,
 ) -> size_t {
-    let mut coverParams = ZDICT_cover_params_t {
-        k: 0,
-        d: 0,
-        steps: 0,
-        nbThreads: 0,
-        splitPoint: 0.,
-        shrinkDict: 0,
-        shrinkDictMaxRegression: 0,
-        zParams: ZDICT_params_t {
-            compressionLevel: 0,
-            notificationLevel: 0,
-            dictID: 0,
-        },
-    };
+    let mut coverParams = ZDICT_cover_params_t::default();
     let mut accelParams = FASTCOVER_accel_t::default();
     let nbThreads = (*parameters).nbThreads;
     let splitPoint = if (*parameters).splitPoint <= 0.0f64 {
@@ -789,20 +763,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         liveJobs: 0,
         dict: core::ptr::null_mut::<core::ffi::c_void>(),
         dictSize: 0,
-        parameters: ZDICT_cover_params_t {
-            k: 0,
-            d: 0,
-            steps: 0,
-            nbThreads: 0,
-            splitPoint: 0.,
-            shrinkDict: 0,
-            shrinkDictMaxRegression: 0,
-            zParams: ZDICT_params_t {
-                compressionLevel: 0,
-                notificationLevel: 0,
-                dictID: 0,
-            },
-        },
+        parameters: ZDICT_cover_params_t::default(),
         compressedSize: 0,
     };
     let mut pool = core::ptr::null_mut();
