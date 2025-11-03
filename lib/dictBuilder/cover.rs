@@ -13,7 +13,6 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
-use crate::lib::zdict::ZDICT_params_t;
 
 extern "C" {
     fn clock() -> clock_t;
@@ -32,6 +31,7 @@ struct COVER_map_pair_t {
     key: u32,
     value: u32,
 }
+#[derive(Debug, Default)]
 #[repr(C)]
 struct COVER_ctx_t {
     samples: *const u8,
@@ -632,11 +632,7 @@ unsafe fn COVER_ctx_init(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    ptr::write_bytes(
-        &raw mut *ctx as *mut u8,
-        0,
-        ::core::mem::size_of::<COVER_ctx_t>(),
-    );
+    *ctx = COVER_ctx_t::default();
     if displayLevel >= 2 {
         eprintln!(
             "Training on {} samples of total size {}",
@@ -875,20 +871,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     mut parameters: ZDICT_cover_params_t,
 ) -> size_t {
     let dict = dictBuffer as *mut u8;
-    let mut ctx = COVER_ctx_t {
-        samples: core::ptr::null::<u8>(),
-        offsets: core::ptr::null_mut::<size_t>(),
-        samplesSizes: core::ptr::null::<size_t>(),
-        nbSamples: 0,
-        nbTrainSamples: 0,
-        nbTestSamples: 0,
-        suffix: core::ptr::null_mut::<u32>(),
-        suffixSize: 0,
-        freqs: core::ptr::null_mut::<u32>(),
-        dmerAt: core::ptr::null_mut::<u32>(),
-        d: 0,
-        displayLevel: 0,
-    };
+    let mut ctx = COVER_ctx_t::default();
     let mut activeDmers = COVER_map_t {
         data: core::ptr::null_mut::<COVER_map_pair_t>(),
         sizeLog: 0,
