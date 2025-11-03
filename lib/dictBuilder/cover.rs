@@ -349,25 +349,23 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
     }
 }
 
-unsafe fn COVER_lower_bound(
-    mut first: *const size_t,
-    last: *const size_t,
-    value: size_t,
-) -> *const size_t {
-    let mut count = last.offset_from_unsigned(first);
+fn COVER_lower_bound(slice: &[usize], value: size_t) -> usize {
+    let mut count = slice.len();
+    let mut first = slice;
     while count != 0 {
         let step = count / 2;
         let mut ptr = first;
-        ptr = ptr.add(step);
-        if *ptr < value {
-            ptr = ptr.add(1);
+        ptr = &ptr[step..];
+        if ptr[0] < value {
+            ptr = &ptr[1..];
             first = ptr;
             count = count.wrapping_sub(step.wrapping_add(1));
         } else {
             count = step;
         }
     }
-    first
+
+    slice.len() - first.len()
 }
 
 unsafe fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32) -> Ordering) {
@@ -401,9 +399,10 @@ unsafe fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
         if v >= curSampleEnd {
             freq = freq.wrapping_add(1);
             if it.peek().is_some() {
-                let sampleEndPtr = COVER_lower_bound(curOffsetPtr, offsetsEnd, v);
-                curSampleEnd = *sampleEndPtr;
-                curOffsetPtr = sampleEndPtr.add(1);
+                let slice = core::slice::from_ptr_range(curOffsetPtr..offsetsEnd);
+                let sampleEndPtr = COVER_lower_bound(slice, v);
+                curSampleEnd = *(curOffsetPtr.add(sampleEndPtr));
+                curOffsetPtr = curOffsetPtr.add(sampleEndPtr).add(1);
             }
         }
     }
