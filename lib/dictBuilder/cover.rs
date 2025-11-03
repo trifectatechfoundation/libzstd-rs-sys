@@ -2,7 +2,7 @@ use core::ptr;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
-use libc::{free, malloc, memcmp, memcpy, size_t};
+use libc::{free, malloc, memcpy, size_t};
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -35,7 +35,7 @@ struct COVER_map_pair_t {
 #[derive(Debug, Default)]
 #[repr(C)]
 struct COVER_ctx_t<'a> {
-    samples: *const u8,
+    samples: &'a [u8],
     offsets: Box<[size_t]>,
     samplesSizes: &'a [size_t],
     nbSamples: size_t,
@@ -188,21 +188,21 @@ pub(super) unsafe fn COVER_sum(
 }
 
 unsafe extern "C" fn COVER_cmp(
-    ctx: *const COVER_ctx_t,
+    ctx: &COVER_ctx_t,
     lp: *const core::ffi::c_void,
     rp: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
-    let lhs = *(lp as *const u32);
-    let rhs = *(rp as *const u32);
-    memcmp(
-        ((*ctx).samples).offset(lhs as isize) as *const core::ffi::c_void,
-        ((*ctx).samples).offset(rhs as isize) as *const core::ffi::c_void,
-        (*ctx).d as size_t,
-    )
+    let lhs = *(lp as *const u32) as usize;
+    let rhs = *(rp as *const u32) as usize;
+
+    let lhs = &ctx.samples[lhs..][..(*ctx).d as usize];
+    let rhs = &ctx.samples[rhs..][..(*ctx).d as usize];
+
+    lhs.cmp(rhs) as _
 }
 
 unsafe extern "C" fn COVER_cmp8(
-    ctx: *const COVER_ctx_t,
+    ctx: &COVER_ctx_t,
     lp: *const core::ffi::c_void,
     rp: *const core::ffi::c_void,
 ) -> core::ffi::c_int {
@@ -211,11 +211,15 @@ unsafe extern "C" fn COVER_cmp8(
     } else {
         (1u64 << (8 as core::ffi::c_uint).wrapping_mul((*ctx).d)).wrapping_sub(1)
     };
-    let lhs = MEM_readLE64(
-        ((*ctx).samples).offset(*(lp as *const u32) as isize) as *const core::ffi::c_void
+    let lhs = u64::from_le_bytes(
+        ctx.samples[*(lp as *const u32) as usize..][..8]
+            .try_into()
+            .unwrap(),
     ) & mask;
-    let rhs = MEM_readLE64(
-        ((*ctx).samples).offset(*(rp as *const u32) as isize) as *const core::ffi::c_void
+    let rhs = u64::from_le_bytes(
+        ctx.samples[*(rp as *const u32) as usize..][..8]
+            .try_into()
+            .unwrap(),
     ) & mask;
     if lhs < rhs {
         return -(1);
@@ -234,7 +238,8 @@ unsafe extern "C" fn COVER_strict_cmp(
         (a, b, c)
     };
 
-    let mut result = COVER_cmp(g_coverCtx as *const COVER_ctx_t, lp, rp);
+    let g_coverCtx = g_coverCtx.cast::<COVER_ctx_t>().as_ref().unwrap();
+    let mut result = COVER_cmp(g_coverCtx, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
     }
@@ -252,16 +257,12 @@ unsafe extern "C" fn COVER_strict_cmp8(
         (a, b, c)
     };
 
-    let ctx = g_coverCtx as *const COVER_ctx_t;
-    let suffix = (*ctx).suffix.as_ptr();
-    let suffixSize = (*ctx).suffixSize;
-    let range = suffix..suffix.wrapping_add(suffixSize);
+    let g_coverCtx = g_coverCtx.cast::<COVER_ctx_t>().as_ref().unwrap();
 
-    assert!(range.contains(&lp.cast()));
-    assert!(range.contains(&rp.cast()));
-    assert!(!range.contains(&ctx.cast()));
+    assert!(g_coverCtx.suffix.as_ptr_range().contains(&lp.cast()));
+    assert!(g_coverCtx.suffix.as_ptr_range().contains(&rp.cast()));
 
-    let mut result = COVER_cmp8(g_coverCtx as *const COVER_ctx_t, lp, rp);
+    let mut result = COVER_cmp8(g_coverCtx, lp, rp);
     if result == 0 {
         result = if lp < rp { -(1) } else { 1 };
     }
@@ -353,8 +354,8 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
         }
         _ => {
             ctx.suffix.sort_by(|lp, rp| {
-                let lhs = core::slice::from_raw_parts(ctx.samples.add(*lp as usize), ctx.d as size_t);
-                let rhs = core::slice::from_raw_parts(ctx.samples.add(*rp as usize), ctx.d as size_t);
+                let lhs = &ctx.samples[*lp as usize..][.. ctx.d as size_t];
+                let rhs = &ctx.samples[*rp as usize..][.. ctx.d as size_t];
 
                 lhs.cmp(rhs)
             });
@@ -386,7 +387,7 @@ unsafe fn COVER_lower_bound(
 unsafe fn COVER_groupBy(
     ctx: &mut COVER_ctx_t,
     cmp: unsafe extern "C" fn(
-        *const COVER_ctx_t,
+        &COVER_ctx_t,
         *const core::ffi::c_void,
         *const core::ffi::c_void,
     ) -> core::ffi::c_int,
@@ -548,8 +549,12 @@ unsafe fn COVER_ctx_init(
     } else {
         core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
     };
-    let samples = samplesBuffer as *const u8;
     let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
     let nbTrainSamples = if splitPoint < 1.0f64 {
         (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
     } else {
@@ -667,14 +672,14 @@ unsafe fn COVER_ctx_init(
         if ctx.d <= 8 {
             COVER_cmp8
                 as unsafe extern "C" fn(
-                    *const COVER_ctx_t,
+                    &COVER_ctx_t,
                     *const core::ffi::c_void,
                     *const core::ffi::c_void,
                 ) -> core::ffi::c_int
         } else {
             COVER_cmp
                 as unsafe extern "C" fn(
-                    *const COVER_ctx_t,
+                    &COVER_ctx_t,
                     *const core::ffi::c_void,
                     *const core::ffi::c_void,
                 ) -> core::ffi::c_int
@@ -800,9 +805,12 @@ unsafe fn COVER_buildDictionary(
                 break;
             }
             tail = tail.wrapping_sub(segmentSize);
+            let samples = (*ctx).samples;
             memcpy(
                 dict.add(tail) as *mut core::ffi::c_void,
-                ((*ctx).samples).offset(segment.begin as isize) as *const core::ffi::c_void,
+                samples[segment.begin as usize..][..segmentSize as usize]
+                    .as_ptr()
+                    .cast(),
                 segmentSize,
             );
             if displayLevel >= 2 {
@@ -1241,7 +1249,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
             dict.add(tail),
             dictBufferCapacity,
             dictBufferCapacity.wrapping_sub(tail),
-            (*ctx).samples,
+            (*ctx).samples.as_ptr(),
             (*ctx).samplesSizes.as_ptr(),
             (*ctx).nbTrainSamples as core::ffi::c_uint,
             (*ctx).nbTrainSamples,
