@@ -1,4 +1,5 @@
 use core::ptr;
+use std::cmp::Ordering;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
@@ -6,7 +7,6 @@ use libc::{free, malloc, memcpy, size_t};
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::mem::MEM_readLE64;
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
 use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBound, ZSTD_compress_usingCDict, ZSTD_createCCtx,
@@ -187,44 +187,26 @@ pub(super) unsafe fn COVER_sum(
     sum
 }
 
-unsafe extern "C" fn COVER_cmp(
-    ctx: &COVER_ctx_t,
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-) -> core::ffi::c_int {
-    let lhs = *(lp as *const u32) as usize;
-    let rhs = *(rp as *const u32) as usize;
+fn COVER_cmp(ctx: &COVER_ctx_t, lp: &u32, rp: &u32) -> Ordering {
+    let lhs = *lp as usize;
+    let rhs = *rp as usize;
 
-    let lhs = &ctx.samples[lhs..][..(*ctx).d as usize];
-    let rhs = &ctx.samples[rhs..][..(*ctx).d as usize];
+    let lhs = &ctx.samples[lhs..][..ctx.d as usize];
+    let rhs = &ctx.samples[rhs..][..ctx.d as usize];
 
-    lhs.cmp(rhs) as _
+    lhs.cmp(rhs)
 }
 
-unsafe extern "C" fn COVER_cmp8(
-    ctx: &COVER_ctx_t,
-    lp: *const core::ffi::c_void,
-    rp: *const core::ffi::c_void,
-) -> core::ffi::c_int {
-    let mask = if (*ctx).d == 8 {
-        -(1 as core::ffi::c_int) as u64
-    } else {
-        (1u64 << (8 as core::ffi::c_uint).wrapping_mul((*ctx).d)).wrapping_sub(1)
+fn COVER_cmp8(ctx: &COVER_ctx_t, lp: &u32, rp: &u32) -> Ordering {
+    let mask = match ctx.d {
+        8 => u64::MAX,
+        n => (1u64 << (8u32 * n)) - 1,
     };
-    let lhs = u64::from_le_bytes(
-        ctx.samples[*(lp as *const u32) as usize..][..8]
-            .try_into()
-            .unwrap(),
-    ) & mask;
-    let rhs = u64::from_le_bytes(
-        ctx.samples[*(rp as *const u32) as usize..][..8]
-            .try_into()
-            .unwrap(),
-    ) & mask;
-    if lhs < rhs {
-        return -(1);
-    }
-    (lhs > rhs) as core::ffi::c_int
+
+    let lhs = u64::from_le_bytes(ctx.samples[*lp as usize..][..8].try_into().unwrap()) & mask;
+    let rhs = u64::from_le_bytes(ctx.samples[*rp as usize..][..8].try_into().unwrap()) & mask;
+
+    Ord::cmp(&lhs, &rhs)
 }
 
 unsafe extern "C" fn COVER_strict_cmp(
@@ -239,11 +221,13 @@ unsafe extern "C" fn COVER_strict_cmp(
     };
 
     let g_coverCtx = g_coverCtx.cast::<COVER_ctx_t>().as_ref().unwrap();
-    let mut result = COVER_cmp(g_coverCtx, lp, rp);
-    if result == 0 {
-        result = if lp < rp { -(1) } else { 1 };
-    }
-    result
+    let lhs = lp.cast::<u32>().as_ref().unwrap();
+    let rhs = rp.cast::<u32>().as_ref().unwrap();
+    COVER_cmp(g_coverCtx, lhs, rhs).then(if lp < rp {
+        Ordering::Less
+    } else {
+        Ordering::Greater
+    }) as _
 }
 
 unsafe extern "C" fn COVER_strict_cmp8(
@@ -262,11 +246,13 @@ unsafe extern "C" fn COVER_strict_cmp8(
     assert!(g_coverCtx.suffix.as_ptr_range().contains(&lp.cast()));
     assert!(g_coverCtx.suffix.as_ptr_range().contains(&rp.cast()));
 
-    let mut result = COVER_cmp8(g_coverCtx, lp, rp);
-    if result == 0 {
-        result = if lp < rp { -(1) } else { 1 };
-    }
-    result
+    let lhs = lp.cast::<u32>().as_ref().unwrap();
+    let rhs = rp.cast::<u32>().as_ref().unwrap();
+    COVER_cmp8(g_coverCtx, lhs, rhs).then(if lp < rp {
+        Ordering::Less
+    } else {
+        Ordering::Greater
+    }) as _
 }
 
 crate::cfg_select! {
@@ -384,31 +370,18 @@ unsafe fn COVER_lower_bound(
     first
 }
 
-unsafe fn COVER_groupBy(
-    ctx: &mut COVER_ctx_t,
-    cmp: unsafe extern "C" fn(
-        &COVER_ctx_t,
-        *const core::ffi::c_void,
-        *const core::ffi::c_void,
-    ) -> core::ffi::c_int,
-) {
+unsafe fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32) -> Ordering) {
     let data = &mut ctx.suffix;
     let count = data.len();
 
     let mut ptr = 0;
-    let mut num = 0;
-    while num < count {
+    let mut index = 0;
+    while index < count {
         let mut grpEnd = ptr + 1;
-        num = num.wrapping_add(1);
-        while num < count
-            && cmp(
-                ctx,
-                &raw const ctx.suffix[ptr] as *const core::ffi::c_void,
-                &raw const ctx.suffix[grpEnd] as *const core::ffi::c_void,
-            ) == 0
-        {
+        index = index.wrapping_add(1);
+        while index < count && cmp(ctx, &ctx.suffix[ptr], &ctx.suffix[grpEnd]) == Ordering::Equal {
             grpEnd += 1;
-            num = num.wrapping_add(1);
+            index = index.wrapping_add(1);
         }
         COVER_group(ctx, ptr..grpEnd);
         ptr = grpEnd;
@@ -670,19 +643,9 @@ unsafe fn COVER_ctx_init(
     COVER_groupBy(
         ctx,
         if ctx.d <= 8 {
-            COVER_cmp8
-                as unsafe extern "C" fn(
-                    &COVER_ctx_t,
-                    *const core::ffi::c_void,
-                    *const core::ffi::c_void,
-                ) -> core::ffi::c_int
+            COVER_cmp8 as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
         } else {
-            COVER_cmp
-                as unsafe extern "C" fn(
-                    &COVER_ctx_t,
-                    *const core::ffi::c_void,
-                    *const core::ffi::c_void,
-                ) -> core::ffi::c_int
+            COVER_cmp as fn(&COVER_ctx_t, &u32, &u32) -> Ordering
         },
     );
 
