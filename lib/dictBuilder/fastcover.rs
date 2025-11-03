@@ -68,74 +68,27 @@ unsafe fn FASTCOVER_hashPtrToIndex(
     }
     ZSTD_hash8Ptr(p, f)
 }
-static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = [
-    {
-        FASTCOVER_accel_t {
-            finalize: 100,
-            skip: 0,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 100,
-            skip: 0,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 50,
-            skip: 1,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 34,
-            skip: 2,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 25,
-            skip: 3,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 20,
-            skip: 4,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 17,
-            skip: 5,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 14,
-            skip: 6,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 13,
-            skip: 7,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 11,
-            skip: 8,
-        }
-    },
-    {
-        FASTCOVER_accel_t {
-            finalize: 10,
-            skip: 9,
-        }
-    },
-];
+
+static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = {
+    const fn accel(finalize: core::ffi::c_uint, skip: core::ffi::c_uint) -> FASTCOVER_accel_t {
+        FASTCOVER_accel_t { finalize, skip }
+    }
+
+    [
+        accel(100, 0),
+        accel(100, 0),
+        accel(50, 1),
+        accel(34, 2),
+        accel(25, 3),
+        accel(20, 4),
+        accel(17, 5),
+        accel(14, 6),
+        accel(13, 7),
+        accel(11, 8),
+        accel(10, 9),
+    ]
+};
+
 unsafe fn FASTCOVER_selectSegment(
     ctx: *const FASTCOVER_ctx_t,
     freqs: *mut u32,
