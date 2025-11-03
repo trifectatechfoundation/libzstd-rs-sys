@@ -1668,27 +1668,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
 ) -> size_t {
-    let mut params = ZDICT_fastCover_params_t {
-        k: 0,
-        d: 0,
-        f: 0,
-        steps: 0,
-        nbThreads: 0,
-        splitPoint: 0.,
-        accel: 0,
-        shrinkDict: 0,
-        shrinkDictMaxRegression: 0,
-        zParams: ZDICT_params_t {
-            compressionLevel: 0,
-            notificationLevel: 0,
-            dictID: 0,
-        },
-    };
-    ptr::write_bytes(
-        &mut params as *mut ZDICT_fastCover_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
-    );
+    let mut params = ZDICT_fastCover_params_t::default();
     params.d = 8;
     params.steps = 4;
     params.zParams.compressionLevel = ZSTD_CLEVEL_DEFAULT;
@@ -1711,16 +1691,7 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
 ) -> size_t {
-    let mut params = ZDICT_params_t {
-        compressionLevel: 0,
-        notificationLevel: 0,
-        dictID: 0,
-    };
-    ptr::write_bytes(
-        &mut params as *mut ZDICT_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_params_t>(),
-    );
+    let params = ZDICT_params_t::default();
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize,

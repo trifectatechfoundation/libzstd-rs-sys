@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZDICT_params_t {
     pub compressionLevel: core::ffi::c_int,
@@ -19,7 +19,7 @@ pub mod experimental {
     #[deprecated = "will be removed in v1.6.0"]
     pub const ZDICT_CONTENTSIZE_MIN: core::ffi::c_int = 128;
 
-    #[derive(Copy, Clone)]
+    #[derive(Debug, Copy, Clone, Default)]
     #[repr(C)]
     pub struct ZDICT_cover_params_t {
         pub k: core::ffi::c_uint,
@@ -32,7 +32,7 @@ pub mod experimental {
         pub zParams: ZDICT_params_t,
     }
 
-    #[derive(Copy, Clone)]
+    #[derive(Debug, Copy, Clone, Default)]
     #[repr(C)]
     pub struct ZDICT_fastCover_params_t {
         pub k: core::ffi::c_uint,
@@ -54,7 +54,7 @@ pub mod experimental {
         ZDICT_optimizeTrainFromBuffer_fastCover, ZDICT_trainFromBuffer_fastCover,
     };
 
-    #[derive(Copy, Clone)]
+    #[derive(Debug, Copy, Clone, Default)]
     #[repr(C)]
     pub struct ZDICT_legacy_params_t {
         pub selectivityLevel: core::ffi::c_uint,
