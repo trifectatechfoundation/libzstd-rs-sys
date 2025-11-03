@@ -40,9 +40,9 @@ struct COVER_ctx_t {
     nbSamples: size_t,
     nbTrainSamples: size_t,
     nbTestSamples: size_t,
-    suffix: *mut u32,
+    suffix: Box<[u32]>,
     suffixSize: size_t,
-    freqs: *mut u32,
+    freqs: Box<[u32]>,
     dmerAt: *mut u32,
     d: core::ffi::c_uint,
     displayLevel: core::ffi::c_int,
@@ -252,7 +252,7 @@ unsafe extern "C" fn COVER_strict_cmp8(
     };
 
     let ctx = g_coverCtx as *const COVER_ctx_t;
-    let suffix = (*ctx).suffix.cast_const();
+    let suffix = (*ctx).suffix.as_ptr();
     let suffixSize = (*ctx).suffixSize;
     let range = suffix..suffix.wrapping_add(suffixSize);
 
@@ -325,8 +325,8 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
     crate::cfg_select! {
         all(not(miri), target_vendor = "apple") => {
             qsort_r(
-                (*ctx).suffix as *mut core::ffi::c_void,
-                (*ctx).suffixSize,
+                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
+                ctx.suffixSize,
                 ::core::mem::size_of::<u32>(),
                 &raw mut *ctx as *mut core::ffi::c_void,
                 compare_fn,
@@ -334,8 +334,8 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
         }
         all(not(miri), windows) => {
             qsort_s(
-                (*ctx).suffix as *mut core::ffi::c_void,
-                (*ctx).suffixSize,
+                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
+                ctx.suffixSize,
                 ::core::mem::size_of::<u32>(),
                 compare_fn,
                 &raw mut *ctx as *mut core::ffi::c_void,
@@ -343,7 +343,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
         }
         all(not(miri), unix) => {
             qsort_r(
-                ctx.suffix as *mut core::ffi::c_void,
+                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
                 ctx.suffixSize,
                 ::core::mem::size_of::<u32>(),
                 compare_fn,
@@ -351,9 +351,7 @@ unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
             );
         }
         _ => {
-            let suffix = core::slice::from_raw_parts_mut(ctx.suffix, ctx.suffixSize);
-
-            suffix.sort_by(|lp, rp| {
+            ctx.suffix.sort_by(|lp, rp| {
                 let lhs = core::slice::from_raw_parts(ctx.samples.add(*lp as usize), ctx.d as size_t);
                 let rhs = core::slice::from_raw_parts(ctx.samples.add(*rp as usize), ctx.d as size_t);
 
@@ -425,7 +423,7 @@ unsafe fn COVER_group(
 ) {
     let mut grpPtr = group as *const u32;
     let grpEnd = groupEnd as *const u32;
-    let dmerId = grpPtr.offset_from((*ctx).suffix) as core::ffi::c_long as u32;
+    let dmerId = grpPtr.offset_from((*ctx).suffix.as_ptr()) as core::ffi::c_long as u32;
     let mut freq = 0u32;
     let mut curOffsetPtr: *const size_t = (*ctx).offsets;
     let offsetsEnd: *const size_t = ((*ctx).offsets).add((*ctx).nbSamples);
@@ -442,7 +440,7 @@ unsafe fn COVER_group(
         }
         grpPtr = grpPtr.add(1);
     }
-    *((*ctx).suffix).offset(dmerId as isize) = freq;
+    *(group as *mut u32) = freq;
 }
 unsafe fn COVER_selectSegment(
     ctx: *const COVER_ctx_t,
@@ -535,27 +533,20 @@ fn COVER_checkParameters(parameters: ZDICT_cover_params_t, maxDictSize: size_t) 
     true
 }
 
-unsafe fn COVER_ctx_destroy(ctx: *mut COVER_ctx_t) {
-    if ctx.is_null() {
-        return;
+unsafe fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
+    drop(core::mem::take(&mut ctx.suffix));
+    drop(core::mem::take(&mut ctx.freqs));
+
+    if !(ctx.dmerAt).is_null() {
+        free(ctx.dmerAt as *mut core::ffi::c_void);
+        ctx.dmerAt = core::ptr::null_mut();
     }
-    if !((*ctx).suffix).is_null() {
-        free((*ctx).suffix as *mut core::ffi::c_void);
-        (*ctx).suffix = core::ptr::null_mut();
-    }
-    if !((*ctx).freqs).is_null() {
-        free((*ctx).freqs as *mut core::ffi::c_void);
-        (*ctx).freqs = core::ptr::null_mut();
-    }
-    if !((*ctx).dmerAt).is_null() {
-        free((*ctx).dmerAt as *mut core::ffi::c_void);
-        (*ctx).dmerAt = core::ptr::null_mut();
-    }
-    if !((*ctx).offsets).is_null() {
-        free((*ctx).offsets as *mut core::ffi::c_void);
-        (*ctx).offsets = core::ptr::null_mut();
+    if !(ctx.offsets).is_null() {
+        free(ctx.offsets as *mut core::ffi::c_void);
+        ctx.offsets = core::ptr::null_mut();
     }
 }
+
 unsafe fn COVER_ctx_init(
     ctx: &mut COVER_ctx_t,
     samplesBuffer: *const core::ffi::c_void,
@@ -657,19 +648,19 @@ unsafe fn COVER_ctx_init(
             ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
-    ctx.suffix = malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.suffix = (0..ctx.suffixSize as u32).collect();
     ctx.dmerAt = malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     ctx.offsets = malloc(
         (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
     ) as *mut size_t;
-    if (ctx.suffix).is_null() || (ctx.dmerAt).is_null() || (ctx.offsets).is_null() {
+    if (ctx.dmerAt).is_null() || (ctx.offsets).is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate scratch buffers");
         }
         COVER_ctx_destroy(ctx);
         return Error::memory_allocation.to_error_code();
     }
-    ctx.freqs = core::ptr::null_mut();
+    ctx.freqs = Box::default();
     ctx.d = d;
     let mut i: u32 = 0;
     *(ctx.offsets) = 0;
@@ -682,18 +673,12 @@ unsafe fn COVER_ctx_init(
     if displayLevel >= 2 {
         eprintln!("Constructing partial suffix array");
     }
-    let mut i_0: u32 = 0;
-    i_0 = 0;
-    while (i_0 as size_t) < ctx.suffixSize {
-        *(ctx.suffix).offset(i_0 as isize) = i_0;
-        i_0 = i_0.wrapping_add(1);
-    }
     stableSort(ctx);
     if displayLevel >= 2 {
         eprintln!("Computing frequencies");
     }
     COVER_groupBy(
-        ctx.suffix as *const core::ffi::c_void,
+        ctx.suffix.as_mut_ptr() as *const core::ffi::c_void,
         ctx.suffixSize,
         ::core::mem::size_of::<u32>(),
         ctx,
@@ -719,10 +704,12 @@ unsafe fn COVER_ctx_init(
                 *const core::ffi::c_void,
             ) -> (),
     );
-    ctx.freqs = ctx.suffix;
-    ctx.suffix = core::ptr::null_mut();
+
+    core::mem::swap(&mut ctx.freqs, &mut ctx.suffix);
+
     0
 }
+
 pub(super) unsafe fn COVER_warnOnSmallCorpus(
     maxDictSize: size_t,
     nbDmers: size_t,
@@ -927,7 +914,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     }
     let tail = COVER_buildDictionary(
         &ctx,
-        ctx.freqs,
+        ctx.freqs.as_mut_ptr(),
         &mut activeDmers,
         dictBuffer,
         dictBufferCapacity,
@@ -1263,7 +1250,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     } else {
         memcpy(
             freqs as *mut core::ffi::c_void,
-            (*ctx).freqs as *const core::ffi::c_void,
+            (*ctx).freqs.as_ptr() as *const core::ffi::c_void,
             ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>()),
         );
         let tail = COVER_buildDictionary(
@@ -1402,20 +1389,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     }
     d = kMinD;
     while d <= kMaxD {
-        let mut ctx = COVER_ctx_t {
-            samples: core::ptr::null::<u8>(),
-            offsets: core::ptr::null_mut::<size_t>(),
-            samplesSizes: core::ptr::null::<size_t>(),
-            nbSamples: 0,
-            nbTrainSamples: 0,
-            nbTestSamples: 0,
-            suffix: core::ptr::null_mut::<u32>(),
-            suffixSize: 0,
-            freqs: core::ptr::null_mut::<u32>(),
-            dmerAt: core::ptr::null_mut::<u32>(),
-            d: 0,
-            displayLevel: 0,
-        };
+        let mut ctx = COVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
         }
