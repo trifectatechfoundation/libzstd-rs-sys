@@ -949,21 +949,23 @@ unsafe fn ZDICT_analyzeEntropy(
             *litLengthCount.as_mut_ptr().offset(u as isize) = 1;
             u = u.wrapping_add(1);
         }
+
         ptr::write_bytes(
             repOffset.as_mut_ptr() as *mut u8,
             0,
             ::core::mem::size_of::<[u32; 1024]>(),
         );
-        let fresh15 = &mut (*repOffset.as_mut_ptr().add(8));
-        *fresh15 = 1;
-        let fresh16 = &mut (*repOffset.as_mut_ptr().add(4));
-        *fresh16 = *fresh15;
-        *repOffset.as_mut_ptr().add(1) = *fresh16;
+
+        repOffset[1] = 1;
+        repOffset[4] = 1;
+        repOffset[8] = 1;
+
         ptr::write_bytes(
             bestRepOffset.as_mut_ptr() as *mut u8,
             0,
             ::core::mem::size_of::<[offsetCount_t; 4]>(),
         );
+
         if compressionLevel == 0 {
             compressionLevel = ZSTD_CLEVEL_DEFAULT;
         }
