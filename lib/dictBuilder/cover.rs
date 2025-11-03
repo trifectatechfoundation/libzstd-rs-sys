@@ -34,10 +34,10 @@ struct COVER_map_pair_t {
 }
 #[derive(Debug, Default)]
 #[repr(C)]
-struct COVER_ctx_t {
+struct COVER_ctx_t<'a> {
     samples: *const u8,
     offsets: Box<[size_t]>,
-    samplesSizes: *const size_t,
+    samplesSizes: &'a [size_t],
     nbSamples: size_t,
     nbTrainSamples: size_t,
     nbTestSamples: size_t,
@@ -70,8 +70,8 @@ pub(super) struct COVER_best_t {
     pub(super) compressedSize: size_t,
 }
 #[repr(C)]
-struct COVER_tryParameters_data_t {
-    ctx: *const COVER_ctx_t,
+struct COVER_tryParameters_data_t<'a> {
+    ctx: *const COVER_ctx_t<'a>,
     best: *mut COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
@@ -543,8 +543,13 @@ unsafe fn COVER_ctx_init(
     splitPoint: core::ffi::c_double,
     displayLevel: core::ffi::c_int,
 ) -> size_t {
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
     let samples = samplesBuffer as *const u8;
-    let totalSamplesSize = COVER_sum(samplesSizes, nbSamples);
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
     let nbTrainSamples = if splitPoint < 1.0f64 {
         (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
     } else {
@@ -556,12 +561,14 @@ unsafe fn COVER_ctx_init(
         nbSamples
     };
     let trainingSamplesSize = if splitPoint < 1.0f64 {
-        COVER_sum(samplesSizes, nbTrainSamples)
+        samplesSizes[..nbTrainSamples as usize].iter().sum()
     } else {
         totalSamplesSize
     };
     let testSamplesSize = if splitPoint < 1.0f64 {
-        COVER_sum(samplesSizes.offset(nbTrainSamples as isize), nbTestSamples)
+        samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
+            .iter()
+            .sum()
     } else {
         totalSamplesSize
     };
@@ -644,8 +651,8 @@ unsafe fn COVER_ctx_init(
     ctx.offsets[0] = 0;
     i = 1;
     while i <= nbSamples as usize {
-        ctx.offsets[i] = ctx.offsets[i.wrapping_sub(1)]
-            .wrapping_add(*samplesSizes.add(i.wrapping_sub(1)));
+        ctx.offsets[i] =
+            ctx.offsets[i.wrapping_sub(1)].wrapping_add(samplesSizes[i.wrapping_sub(1)]);
         i = i.wrapping_add(1);
     }
     if displayLevel >= 2 {
@@ -1235,7 +1242,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
             dictBufferCapacity,
             dictBufferCapacity.wrapping_sub(tail),
             (*ctx).samples,
-            (*ctx).samplesSizes,
+            (*ctx).samplesSizes.as_ptr(),
             (*ctx).nbTrainSamples as core::ffi::c_uint,
             (*ctx).nbTrainSamples,
             (*ctx).nbSamples,
