@@ -303,40 +303,48 @@ type __compar_d_fn_t = unsafe extern "C" fn(
     *const core::ffi::c_void,
 ) -> core::ffi::c_int;
 
-unsafe extern "C" fn stableSort(ctx: &mut COVER_ctx_t) {
+fn stableSort(ctx: &mut COVER_ctx_t) {
     let compare_fn = if ctx.d <= 8 {
         COVER_strict_cmp8 as __compar_d_fn_t
     } else {
         COVER_strict_cmp as __compar_d_fn_t
     };
 
+    debug_assert_eq!(ctx.suffixSize, ctx.suffix.len());
+
     crate::cfg_select! {
         all(not(miri), target_vendor = "apple") => {
-            qsort_r(
-                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
-                ctx.suffixSize,
-                ::core::mem::size_of::<u32>(),
-                &raw mut *ctx as *mut core::ffi::c_void,
-                compare_fn,
-            );
+            unsafe {
+                qsort_r(
+                    ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
+                    ctx.suffix.len(),
+                    ::core::mem::size_of::<u32>(),
+                    &raw mut *ctx as *mut core::ffi::c_void,
+                    compare_fn,
+                );
+            }
         }
         all(not(miri), windows) => {
-            qsort_s(
-                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
-                ctx.suffixSize,
-                ::core::mem::size_of::<u32>(),
-                compare_fn,
-                &raw mut *ctx as *mut core::ffi::c_void,
-            );
+            unsafe {
+                qsort_s(
+                    ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
+                    ctx.suffix.len(),
+                    ::core::mem::size_of::<u32>(),
+                    compare_fn,
+                    &raw mut *ctx as *mut core::ffi::c_void,
+                );
+            }
         }
         all(not(miri), unix) => {
-            qsort_r(
-                ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
-                ctx.suffixSize,
-                ::core::mem::size_of::<u32>(),
-                compare_fn,
-                &raw mut *ctx as *mut core::ffi::c_void,
-            );
+            unsafe {
+                qsort_r(
+                    ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
+                    ctx.suffix.len(),
+                    ::core::mem::size_of::<u32>(),
+                    compare_fn,
+                    &raw mut *ctx as *mut core::ffi::c_void,
+                );
+            }
         }
         _ => {
             ctx.suffix.sort_by(|lp, rp| {
@@ -505,26 +513,16 @@ unsafe fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
     drop(core::mem::take(&mut ctx.offsets));
 }
 
-unsafe fn COVER_ctx_init(
-    ctx: &mut COVER_ctx_t,
-    samplesBuffer: *const core::ffi::c_void,
-    samplesSizes: *const size_t,
+fn COVER_ctx_init<'a>(
+    ctx: &'_ mut COVER_ctx_t<'a>,
+    samples: &'a [u8],
+    samplesSizes: &'a [size_t],
     nbSamples: core::ffi::c_uint,
     d: core::ffi::c_uint,
     splitPoint: core::ffi::c_double,
     displayLevel: core::ffi::c_int,
 ) -> size_t {
-    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-    };
-    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
-    };
+    let totalSamplesSize = samples.len();
     let nbTrainSamples = if splitPoint < 1.0f64 {
         (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
     } else {
@@ -829,9 +827,22 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
     let initVal = COVER_ctx_init(
         &mut ctx,
-        samplesBuffer,
+        samples,
         samplesSizes,
         nbSamples,
         parameters.d,
@@ -870,7 +881,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         dict.add(tail) as *const core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(tail),
         samplesBuffer,
-        samplesSizes,
+        samplesSizes.as_ptr(),
         nbSamples,
         parameters.zParams,
     );
@@ -1342,9 +1353,22 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         } else {
             displayLevel - 1
         };
+
+        let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+            &[]
+        } else {
+            core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+        };
+        let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+        let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+            &[]
+        } else {
+            core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+        };
+
         let initVal = COVER_ctx_init(
             &mut ctx,
-            samplesBuffer,
+            samples,
             samplesSizes,
             nbSamples,
             d,
