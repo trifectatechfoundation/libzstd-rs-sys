@@ -1,4 +1,5 @@
 use core::ptr;
+use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
 use libc::{free, malloc, memcmp, memcpy, size_t};
@@ -381,66 +382,60 @@ unsafe fn COVER_lower_bound(
     }
     first
 }
+
 unsafe fn COVER_groupBy(
-    data: *const core::ffi::c_void,
-    count: size_t,
-    size: size_t,
-    ctx: *mut COVER_ctx_t,
+    ctx: &mut COVER_ctx_t,
     cmp: unsafe extern "C" fn(
         *const COVER_ctx_t,
         *const core::ffi::c_void,
         *const core::ffi::c_void,
     ) -> core::ffi::c_int,
 ) {
-    let mut ptr = data as *const u8;
+    let data = &mut ctx.suffix;
+    let count = data.len();
+
+    let mut ptr = 0;
     let mut num = 0;
     while num < count {
-        let mut grpEnd = ptr.add(size);
+        let mut grpEnd = ptr + 1;
         num = num.wrapping_add(1);
         while num < count
             && cmp(
                 ctx,
-                ptr as *const core::ffi::c_void,
-                grpEnd as *const core::ffi::c_void,
+                &raw const ctx.suffix[ptr] as *const core::ffi::c_void,
+                &raw const ctx.suffix[grpEnd] as *const core::ffi::c_void,
             ) == 0
         {
-            grpEnd = grpEnd.add(size);
+            grpEnd += 1;
             num = num.wrapping_add(1);
         }
-        COVER_group(
-            ctx,
-            ptr as *const core::ffi::c_void,
-            grpEnd as *const core::ffi::c_void,
-        );
+        COVER_group(ctx, ptr..grpEnd);
         ptr = grpEnd;
     }
 }
-unsafe fn COVER_group(
-    ctx: *mut COVER_ctx_t,
-    group: *const core::ffi::c_void,
-    groupEnd: *const core::ffi::c_void,
-) {
-    let mut grpPtr = group as *const u32;
-    let grpEnd = groupEnd as *const u32;
-    let dmerId = grpPtr.offset_from((*ctx).suffix.as_ptr()) as core::ffi::c_long as u32;
+
+unsafe fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
+    let dmerId = range.start as u32;
+    let group = &mut ctx.suffix[range];
     let mut freq = 0u32;
-    let mut curOffsetPtr: *const size_t = (*ctx).offsets;
-    let offsetsEnd: *const size_t = ((*ctx).offsets).add((*ctx).nbSamples);
-    let mut curSampleEnd = *((*ctx).offsets);
-    while grpPtr != grpEnd {
-        *((*ctx).dmerAt).offset(*grpPtr as isize) = dmerId;
-        if (*grpPtr as size_t) >= curSampleEnd {
+    let mut curOffsetPtr: *const size_t = ctx.offsets;
+    let offsetsEnd: *const size_t = ctx.offsets.add(ctx.nbSamples);
+    let mut curSampleEnd = *ctx.offsets;
+    let mut it = group.iter().map(|v| *v as usize).peekable();
+    while let Some(v) = it.next() {
+        *(ctx.dmerAt).add(v) = dmerId;
+        if v >= curSampleEnd {
             freq = freq.wrapping_add(1);
-            if grpPtr.add(1) != grpEnd {
-                let sampleEndPtr = COVER_lower_bound(curOffsetPtr, offsetsEnd, *grpPtr as size_t);
+            if it.peek().is_some() {
+                let sampleEndPtr = COVER_lower_bound(curOffsetPtr, offsetsEnd, v);
                 curSampleEnd = *sampleEndPtr;
                 curOffsetPtr = sampleEndPtr.add(1);
             }
         }
-        grpPtr = grpPtr.add(1);
     }
-    *(group as *mut u32) = freq;
+    group[0] = freq;
 }
+
 unsafe fn COVER_selectSegment(
     ctx: *const COVER_ctx_t,
     freqs: *mut u32,
@@ -677,9 +672,6 @@ unsafe fn COVER_ctx_init(
         eprintln!("Computing frequencies");
     }
     COVER_groupBy(
-        ctx.suffix.as_mut_ptr() as *const core::ffi::c_void,
-        ctx.suffixSize,
-        ::core::mem::size_of::<u32>(),
         ctx,
         if ctx.d <= 8 {
             COVER_cmp8
