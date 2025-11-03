@@ -44,7 +44,7 @@ struct COVER_ctx_t {
     suffix: Box<[u32]>,
     suffixSize: size_t,
     freqs: Box<[u32]>,
-    dmerAt: *mut u32,
+    dmerAt: Box<[u32]>,
     d: core::ffi::c_uint,
     displayLevel: core::ffi::c_int,
 }
@@ -423,7 +423,7 @@ unsafe fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
     let mut curSampleEnd = *ctx.offsets;
     let mut it = group.iter().map(|v| *v as usize).peekable();
     while let Some(v) = it.next() {
-        *(ctx.dmerAt).add(v) = dmerId;
+        ctx.dmerAt[v] = dmerId;
         if v >= curSampleEnd {
             freq = freq.wrapping_add(1);
             if it.peek().is_some() {
@@ -464,7 +464,7 @@ unsafe fn COVER_selectSegment(
     activeSegment.end = begin;
     activeSegment.score = 0;
     while activeSegment.end < end {
-        let newDmer = *((*ctx).dmerAt).offset(activeSegment.end as isize);
+        let newDmer = (*ctx).dmerAt[activeSegment.end as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
         if *newDmerOcc == 0 {
             activeSegment.score =
@@ -473,7 +473,7 @@ unsafe fn COVER_selectSegment(
         activeSegment.end = (activeSegment.end).wrapping_add(1);
         *newDmerOcc = (*newDmerOcc).wrapping_add(1);
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
-            let delDmer = *((*ctx).dmerAt).offset(activeSegment.begin as isize);
+            let delDmer = (*ctx).dmerAt[activeSegment.begin as usize];
             let delDmerOcc = COVER_map_at(activeDmers, delDmer);
             activeSegment.begin = (activeSegment.begin).wrapping_add(1);
             *delDmerOcc = (*delDmerOcc).wrapping_sub(1);
@@ -492,7 +492,7 @@ unsafe fn COVER_selectSegment(
     let mut pos: u32 = 0;
     pos = bestSegment.begin;
     while pos != bestSegment.end {
-        let freq = *freqs.offset(*((*ctx).dmerAt).offset(pos as isize) as isize);
+        let freq = *freqs.offset((*ctx).dmerAt[pos as usize] as isize);
         if freq != 0 {
             newBegin = if newBegin < pos { newBegin } else { pos };
             newEnd = pos.wrapping_add(1);
@@ -504,7 +504,7 @@ unsafe fn COVER_selectSegment(
     let mut pos_0: u32 = 0;
     pos_0 = bestSegment.begin;
     while pos_0 != bestSegment.end {
-        *freqs.offset(*((*ctx).dmerAt).offset(pos_0 as isize) as isize) = 0;
+        *freqs.offset((*ctx).dmerAt[pos_0 as usize] as isize) = 0;
         pos_0 = pos_0.wrapping_add(1);
     }
     bestSegment
@@ -530,11 +530,8 @@ fn COVER_checkParameters(parameters: ZDICT_cover_params_t, maxDictSize: size_t) 
 unsafe fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
     drop(core::mem::take(&mut ctx.suffix));
     drop(core::mem::take(&mut ctx.freqs));
+    drop(core::mem::take(&mut ctx.dmerAt));
 
-    if !(ctx.dmerAt).is_null() {
-        free(ctx.dmerAt as *mut core::ffi::c_void);
-        ctx.dmerAt = core::ptr::null_mut();
-    }
     if !(ctx.offsets).is_null() {
         free(ctx.offsets as *mut core::ffi::c_void);
         ctx.offsets = core::ptr::null_mut();
@@ -643,11 +640,11 @@ unsafe fn COVER_ctx_init(
         })
         .wrapping_add(1);
     ctx.suffix = (0..ctx.suffixSize as u32).collect();
-    ctx.dmerAt = malloc((ctx.suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    ctx.dmerAt = Box::from(vec![0u32; ctx.suffixSize]);
     ctx.offsets = malloc(
         (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
     ) as *mut size_t;
-    if (ctx.dmerAt).is_null() || (ctx.offsets).is_null() {
+    if (ctx.offsets).is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate scratch buffers");
         }
