@@ -368,7 +368,7 @@ fn COVER_lower_bound(slice: &[usize], value: size_t) -> usize {
     slice.len() - first.len()
 }
 
-unsafe fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32) -> Ordering) {
+fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32) -> Ordering) {
     let data = &mut ctx.suffix;
     let count = data.len();
 
@@ -386,23 +386,21 @@ unsafe fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32)
     }
 }
 
-unsafe fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
+fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
     let dmerId = range.start as u32;
     let group = &mut ctx.suffix[range];
     let mut freq = 0u32;
-    let mut curOffsetPtr: *const size_t = ctx.offsets.as_ptr();
-    let offsetsEnd: *const size_t = ctx.offsets.as_ptr().add(ctx.nbSamples);
+    let mut curOffsetPtr = &ctx.offsets[..ctx.nbSamples];
     let mut curSampleEnd = ctx.offsets[0];
     let mut it = group.iter().map(|v| *v as usize).peekable();
     while let Some(v) = it.next() {
         ctx.dmerAt[v] = dmerId;
         if v >= curSampleEnd {
-            freq = freq.wrapping_add(1);
+            freq += 1;
             if it.peek().is_some() {
-                let slice = core::slice::from_ptr_range(curOffsetPtr..offsetsEnd);
-                let sampleEndPtr = COVER_lower_bound(slice, v);
-                curSampleEnd = *(curOffsetPtr.add(sampleEndPtr));
-                curOffsetPtr = curOffsetPtr.add(sampleEndPtr).add(1);
+                let sampleEndPtr = COVER_lower_bound(curOffsetPtr, v);
+                curSampleEnd = curOffsetPtr[sampleEndPtr];
+                curOffsetPtr = &curOffsetPtr[sampleEndPtr + 1..];
             }
         }
     }
