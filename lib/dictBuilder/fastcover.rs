@@ -22,13 +22,14 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 struct FASTCOVER_accel_t {
     finalize: core::ffi::c_uint,
     skip: core::ffi::c_uint,
 }
 #[repr(C)]
+#[derive(Debug, Default)]
 struct FASTCOVER_ctx_t {
     samples: *const u8,
     offsets: *mut size_t,
@@ -591,23 +592,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     mut parameters: ZDICT_fastCover_params_t,
 ) -> size_t {
     let dict = dictBuffer as *mut u8;
-    let mut ctx = FASTCOVER_ctx_t {
-        samples: core::ptr::null::<u8>(),
-        offsets: core::ptr::null_mut::<size_t>(),
-        samplesSizes: core::ptr::null::<size_t>(),
-        nbSamples: 0,
-        nbTrainSamples: 0,
-        nbTestSamples: 0,
-        nbDmers: 0,
-        freqs: core::ptr::null_mut::<u32>(),
-        d: 0,
-        f: 0,
-        accelParams: FASTCOVER_accel_t {
-            finalize: 0,
-            skip: 0,
-        },
-        displayLevel: 0,
-    };
+    let mut ctx = FASTCOVER_ctx_t::default();
     let mut coverParams = ZDICT_cover_params_t {
         k: 0,
         d: 0,
@@ -622,10 +607,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
             dictID: 0,
         },
     };
-    let mut accelParams = FASTCOVER_accel_t {
-        finalize: 0,
-        skip: 0,
-    };
+    let mut accelParams = FASTCOVER_accel_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     parameters.f = if parameters.f == 0 {
@@ -743,10 +725,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             dictID: 0,
         },
     };
-    let mut accelParams = FASTCOVER_accel_t {
-        finalize: 0,
-        skip: 0,
-    };
+    let mut accelParams = FASTCOVER_accel_t::default();
     let nbThreads = (*parameters).nbThreads;
     let splitPoint = if (*parameters).splitPoint <= 0.0f64 {
         FASTCOVER_DEFAULT_SPLITPOINT
@@ -880,23 +859,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     }
     d = kMinD;
     while d <= kMaxD {
-        let mut ctx = FASTCOVER_ctx_t {
-            samples: core::ptr::null::<u8>(),
-            offsets: core::ptr::null_mut::<size_t>(),
-            samplesSizes: core::ptr::null::<size_t>(),
-            nbSamples: 0,
-            nbTrainSamples: 0,
-            nbTestSamples: 0,
-            nbDmers: 0,
-            freqs: core::ptr::null_mut::<u32>(),
-            d: 0,
-            f: 0,
-            accelParams: FASTCOVER_accel_t {
-                finalize: 0,
-                skip: 0,
-            },
-            displayLevel: 0,
-        };
+        let mut ctx = FASTCOVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
         }
