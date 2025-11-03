@@ -1670,9 +1670,11 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
 ) -> size_t {
-    let mut params = ZDICT_fastCover_params_t::default();
-    params.d = 8;
-    params.steps = 4;
+    let mut params = ZDICT_fastCover_params_t {
+        d: 8,
+        steps: 4,
+        ..Default::default()
+    };
     params.zParams.compressionLevel = ZSTD_CLEVEL_DEFAULT;
     ZDICT_optimizeTrainFromBuffer_fastCover(
         dictBuffer,
