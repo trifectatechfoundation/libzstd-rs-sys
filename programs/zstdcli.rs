@@ -857,7 +857,7 @@ unsafe fn longCommandWArg(
     }
     result
 }
-static mut kDefaultRegression: core::ffi::c_uint = 1;
+const kDefaultRegression: core::ffi::c_uint = 1;
 unsafe fn parseCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
     params: *mut ZDICT_cover_params_t,
@@ -1082,7 +1082,8 @@ unsafe fn parseLegacyParameters(
     }
     1
 }
-unsafe fn defaultCoverParams() -> ZDICT_cover_params_t {
+
+fn defaultCoverParams() -> ZDICT_cover_params_t {
     let mut params = ZDICT_cover_params_t::default();
     params.d = 8;
     params.steps = 4;
@@ -1091,7 +1092,8 @@ unsafe fn defaultCoverParams() -> ZDICT_cover_params_t {
     params.shrinkDictMaxRegression = kDefaultRegression;
     params
 }
-unsafe fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
+
+fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     let mut params = ZDICT_fastCover_params_t::default();
     params.d = 8;
     params.f = 20;
@@ -1102,6 +1104,7 @@ unsafe fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
     params.shrinkDictMaxRegression = kDefaultRegression;
     params
 }
+
 unsafe fn parseAdaptParameters(
     mut stringPtr: *const core::ffi::c_char,
     adaptMinPtr: *mut core::ffi::c_int,
