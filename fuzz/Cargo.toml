@@ -28,3 +28,10 @@ path = "fuzz_targets/decompress_overlapping.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "dictionary_round_trip"
+path = "fuzz_targets/dictionary_round_trip.rs"
+test = false
+doc = false
+bench = false
