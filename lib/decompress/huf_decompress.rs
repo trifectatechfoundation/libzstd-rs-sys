@@ -144,11 +144,7 @@ unsafe fn HUF_initFastDStream(ip: *const u8) -> size_t {
 }
 
 impl<'a> HUF_DecompressFastArgs<'a> {
-    unsafe fn new(
-        mut dst: Writer<'_>,
-        src: &[u8],
-        DTable: &'a DTable,
-    ) -> Result<Option<Self>, Error> {
+    fn new(mut dst: Writer<'_>, src: &[u8], DTable: &'a DTable) -> Result<Option<Self>, Error> {
         // The fast decoding loop assumes 64-bit little-endian.
         if cfg!(target_endian = "big") || cfg!(target_pointer_width = "32") {
             return Ok(None);
@@ -182,10 +178,12 @@ impl<'a> HUF_DecompressFastArgs<'a> {
 
         let istart = src.as_ptr();
         let mut iend = [core::ptr::null(); 4];
-        iend[0] = istart.add(6); /* jumpTable */
-        iend[1] = iend[0].add(length1);
-        iend[2] = iend[1].add(length2);
-        iend[3] = iend[2].add(length3);
+        unsafe {
+            iend[0] = istart.add(6); /* jumpTable */
+            iend[1] = iend[0].add(length1);
+            iend[2] = iend[1].add(length2);
+            iend[3] = iend[2].add(length3);
+        }
 
         // HUF_initFastDStream() requires this, and this small of an input won't benefit from the ASM loop anyways.
         if length1 < 8 || length2 < 8 || length3 < 8 || length4 < 8 {
@@ -194,17 +192,21 @@ impl<'a> HUF_DecompressFastArgs<'a> {
 
         /* ip[] contains the position that is currently loaded into bits[]. */
         let mut ip = [core::ptr::null(); 4];
-        ip[0] = iend[1].sub(size_of::<u64>());
-        ip[1] = iend[2].sub(size_of::<u64>());
-        ip[2] = iend[3].sub(size_of::<u64>());
-        ip[3] = src.as_ptr().add(src.len() - size_of::<u64>());
+        unsafe {
+            ip[0] = iend[1].sub(size_of::<u64>());
+            ip[1] = iend[2].sub(size_of::<u64>());
+            ip[2] = iend[3].sub(size_of::<u64>());
+            ip[3] = src.as_ptr().add(src.len() - size_of::<u64>());
+        }
 
         /* op[] contains the output pointers. */
         let mut op = [core::ptr::null_mut(); 4];
-        op[0] = dst.as_mut_ptr();
-        op[1] = op[0].add(dst.capacity().div_ceil(4));
-        op[2] = op[1].add(dst.capacity().div_ceil(4));
-        op[3] = op[2].add(dst.capacity().div_ceil(4));
+        unsafe {
+            op[0] = dst.as_mut_ptr();
+            op[1] = op[0].add(dst.capacity().div_ceil(4));
+            op[2] = op[1].add(dst.capacity().div_ceil(4));
+            op[3] = op[2].add(dst.capacity().div_ceil(4));
+        }
 
         // No point to call the ASM loop for tiny outputs.
         if op[3] >= dst.as_mut_ptr_range().end {
@@ -218,7 +220,7 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         // shifted in. After the lowest valid bit a 1 is
         // set, so that CountTrailingZeros(bits[]) can be used
         // to count how many bits we've consumed.
-        let bits = ip.map(|v| HUF_initFastDStream(v) as u64);
+        let bits = ip.map(|v| unsafe { HUF_initFastDStream(v) } as u64);
 
         // The decoders must be sure to never read beyond ilowest.
         // This is lower than iend[0], but allowing decoders to read
