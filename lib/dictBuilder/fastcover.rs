@@ -15,7 +15,7 @@ use crate::lib::dictBuilder::cover::{
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
 };
-use crate::lib::zdict::{ZDICT_finalizeDictionary, ZDICT_params_t};
+use crate::lib::zdict::ZDICT_finalizeDictionary;
 
 extern "C" {
     fn clock() -> clock_t;
