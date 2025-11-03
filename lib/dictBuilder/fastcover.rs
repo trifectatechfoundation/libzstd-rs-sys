@@ -215,35 +215,38 @@ unsafe fn FASTCOVER_selectSegment(
     }
     bestSegment
 }
-unsafe fn FASTCOVER_checkParameters(
+
+fn FASTCOVER_checkParameters(
     parameters: ZDICT_cover_params_t,
     maxDictSize: size_t,
     f: core::ffi::c_uint,
     accel: core::ffi::c_uint,
-) -> core::ffi::c_int {
+) -> bool {
     if parameters.d == 0 || parameters.k == 0 {
-        return 0;
+        return false;
     }
     if parameters.d != 6 && parameters.d != 8 {
-        return 0;
+        return false;
     }
     if parameters.k as size_t > maxDictSize {
-        return 0;
+        return false;
     }
     if parameters.d > parameters.k {
-        return 0;
+        return false;
     }
     if f > FASTCOVER_MAX_F as core::ffi::c_uint || f == 0 {
-        return 0;
+        return false;
     }
     if parameters.splitPoint <= 0.0 || parameters.splitPoint > 1.0 {
-        return 0;
+        return false;
     }
     if accel > 10 || accel == 0 {
-        return 0;
+        return false;
     }
-    1
+
+    true
 }
+
 unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
     if ctx.is_null() {
         return;
@@ -613,13 +616,12 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     FASTCOVER_convertToCoverParams(parameters, &mut coverParams);
-    if FASTCOVER_checkParameters(
+    if !FASTCOVER_checkParameters(
         coverParams,
         dictBufferCapacity,
         parameters.f,
         parameters.accel,
-    ) == 0
-    {
+    ) {
         if displayLevel >= 1 {
             eprintln!("FASTCOVER parameters incorrect");
         }
@@ -878,13 +880,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             (*data).parameters.steps = kSteps;
             (*data).parameters.shrinkDict = shrinkDict;
             (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
-            if FASTCOVER_checkParameters(
+            if !FASTCOVER_checkParameters(
                 (*data).parameters,
                 dictBufferCapacity,
                 (*(*data).ctx).f,
                 accel,
-            ) == 0
-            {
+            ) {
                 if displayLevel >= 1 {
                     eprintln!("FASTCOVER parameters incorrect");
                 }

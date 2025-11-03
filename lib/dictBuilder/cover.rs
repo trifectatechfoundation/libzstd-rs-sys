@@ -517,24 +517,24 @@ unsafe fn COVER_selectSegment(
     }
     bestSegment
 }
-unsafe fn COVER_checkParameters(
-    parameters: ZDICT_cover_params_t,
-    maxDictSize: size_t,
-) -> core::ffi::c_int {
+
+fn COVER_checkParameters(parameters: ZDICT_cover_params_t, maxDictSize: size_t) -> bool {
     if parameters.d == 0 || parameters.k == 0 {
-        return 0;
+        return false;
     }
     if parameters.k as size_t > maxDictSize {
-        return 0;
+        return false;
     }
     if parameters.d > parameters.k {
-        return 0;
+        return false;
     }
     if parameters.splitPoint <= 0.0 || parameters.splitPoint > 1.0 {
-        return 0;
+        return false;
     }
-    1
+
+    true
 }
+
 unsafe fn COVER_ctx_destroy(ctx: *mut COVER_ctx_t) {
     if ctx.is_null() {
         return;
@@ -897,7 +897,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     };
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
-    if COVER_checkParameters(parameters, dictBufferCapacity) == 0 {
+    if !COVER_checkParameters(parameters, dictBufferCapacity) {
         if displayLevel >= 1 {
             eprintln!("Cover parameters incorrect");
         }
@@ -1488,7 +1488,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             (*data).parameters.steps = kSteps;
             (*data).parameters.shrinkDict = shrinkDict;
             (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
-            if COVER_checkParameters((*data).parameters, dictBufferCapacity) == 0 {
+            if !COVER_checkParameters((*data).parameters, dictBufferCapacity) {
                 if displayLevel >= 1 {
                     eprintln!("Cover parameters incorrect");
                 }
