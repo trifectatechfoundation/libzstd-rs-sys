@@ -36,7 +36,7 @@ struct COVER_map_pair_t {
 #[repr(C)]
 struct COVER_ctx_t {
     samples: *const u8,
-    offsets: *mut size_t,
+    offsets: Box<[size_t]>,
     samplesSizes: *const size_t,
     nbSamples: size_t,
     nbTrainSamples: size_t,
@@ -418,9 +418,9 @@ unsafe fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
     let dmerId = range.start as u32;
     let group = &mut ctx.suffix[range];
     let mut freq = 0u32;
-    let mut curOffsetPtr: *const size_t = ctx.offsets;
-    let offsetsEnd: *const size_t = ctx.offsets.add(ctx.nbSamples);
-    let mut curSampleEnd = *ctx.offsets;
+    let mut curOffsetPtr: *const size_t = ctx.offsets.as_ptr();
+    let offsetsEnd: *const size_t = ctx.offsets.as_ptr().add(ctx.nbSamples);
+    let mut curSampleEnd = ctx.offsets[0];
     let mut it = group.iter().map(|v| *v as usize).peekable();
     while let Some(v) = it.next() {
         ctx.dmerAt[v] = dmerId;
@@ -531,11 +531,7 @@ unsafe fn COVER_ctx_destroy(ctx: &mut COVER_ctx_t) {
     drop(core::mem::take(&mut ctx.suffix));
     drop(core::mem::take(&mut ctx.freqs));
     drop(core::mem::take(&mut ctx.dmerAt));
-
-    if !(ctx.offsets).is_null() {
-        free(ctx.offsets as *mut core::ffi::c_void);
-        ctx.offsets = core::ptr::null_mut();
-    }
+    drop(core::mem::take(&mut ctx.offsets));
 }
 
 unsafe fn COVER_ctx_init(
@@ -641,24 +637,15 @@ unsafe fn COVER_ctx_init(
         .wrapping_add(1);
     ctx.suffix = (0..ctx.suffixSize as u32).collect();
     ctx.dmerAt = Box::from(vec![0u32; ctx.suffixSize]);
-    ctx.offsets = malloc(
-        (nbSamples.wrapping_add(1) as size_t).wrapping_mul(::core::mem::size_of::<size_t>()),
-    ) as *mut size_t;
-    if (ctx.offsets).is_null() {
-        if displayLevel >= 1 {
-            eprintln!("Failed to allocate scratch buffers");
-        }
-        COVER_ctx_destroy(ctx);
-        return Error::memory_allocation.to_error_code();
-    }
+    ctx.offsets = Box::from(vec![0usize; nbSamples as usize + 1]);
     ctx.freqs = Box::default();
     ctx.d = d;
-    let mut i: u32 = 0;
-    *(ctx.offsets) = 0;
+    let mut i: usize = 0;
+    ctx.offsets[0] = 0;
     i = 1;
-    while i <= nbSamples {
-        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets).offset(i.wrapping_sub(1) as isize))
-            .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
+    while i <= nbSamples as usize {
+        ctx.offsets[i] = ctx.offsets[i.wrapping_sub(1)]
+            .wrapping_add(*samplesSizes.add(i.wrapping_sub(1)));
         i = i.wrapping_add(1);
     }
     if displayLevel >= 2 {
@@ -1203,7 +1190,7 @@ pub(super) unsafe fn COVER_selectDict(
 }
 unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut COVER_tryParameters_data_t;
-    let ctx = (*data).ctx;
+    let ctx = (*data).ctx.cast_mut();
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
@@ -1253,7 +1240,7 @@ unsafe extern "C" fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
             (*ctx).nbTrainSamples,
             (*ctx).nbSamples,
             parameters,
-            (*ctx).offsets,
+            (*ctx).offsets.as_mut_ptr(),
             totalCompressedSize,
         );
         if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
