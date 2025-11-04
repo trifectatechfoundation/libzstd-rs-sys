@@ -892,7 +892,6 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut matchLengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut litLengthCount: [core::ffi::c_uint; 36] = [0; 36];
     let mut litLengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut repOffset: [u32; 1024] = [0; 1024];
     let mut bestRepOffset: [offsetCount_t; 4] = [offsetCount_t {
         offset: 0,
         count: 0,
@@ -902,22 +901,7 @@ unsafe fn ZDICT_analyzeEntropy(
         zc: core::ptr::null_mut(),
         workPlace: core::ptr::null_mut(),
     };
-    let mut params = ZSTD_parameters {
-        cParams: ZSTD_compressionParameters {
-            windowLog: 0,
-            chainLog: 0,
-            hashLog: 0,
-            searchLog: 0,
-            minMatch: 0,
-            targetLength: 0,
-            strategy: 0,
-        },
-        fParams: ZSTD_frameParameters {
-            contentSizeFlag: 0,
-            checksumFlag: 0,
-            noDictIDFlag: 0,
-        },
-    };
+    let mut params = ZSTD_parameters::default();
     let mut u: u32 = 0;
     let mut huffLog = 11;
     let mut Offlog = OffFSELog as u32;
@@ -956,12 +940,7 @@ unsafe fn ZDICT_analyzeEntropy(
             u = u.wrapping_add(1);
         }
 
-        ptr::write_bytes(
-            repOffset.as_mut_ptr() as *mut u8,
-            0,
-            ::core::mem::size_of::<[u32; 1024]>(),
-        );
-
+        let mut repOffset: [u32; 1024] = [0; 1024];
         repOffset[1] = 1;
         repOffset[4] = 1;
         repOffset[8] = 1;
@@ -1245,20 +1224,7 @@ unsafe fn ZDICT_analyzeEntropy(
     free(esr.workPlace);
     eSize
 }
-unsafe fn ZDICT_maxRep(reps: *const u32) -> u32 {
-    let mut maxRep = *reps;
-    let mut r: core::ffi::c_int = 0;
-    r = 1;
-    while r < ZSTD_REP_NUM {
-        maxRep = if maxRep > *reps.offset(r as isize) {
-            maxRep
-        } else {
-            *reps.offset(r as isize)
-        };
-        r += 1;
-    }
-    maxRep
-}
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_finalizeDictionary))]
 pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     dictBuffer: *mut core::ffi::c_void,
@@ -1278,7 +1244,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         params.compressionLevel
     };
     let notificationLevel = params.notificationLevel;
-    let minContentSize = ZDICT_maxRep(repStartValue.as_ptr()) as size_t;
+    let minContentSize = *repStartValue.iter().max().unwrap() as size_t;
     let mut paddingSize: size_t = 0;
     if dictBufferCapacity < dictContentSize {
         return Error::dstSize_tooSmall.to_error_code();
