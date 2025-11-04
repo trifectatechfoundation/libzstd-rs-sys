@@ -35,3 +35,10 @@ path = "fuzz_targets/dictionary_round_trip.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "dictionary_train"
+path = "fuzz_targets/dictionary_train.rs"
+test = false
+doc = false
+bench = false
