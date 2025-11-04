@@ -19,11 +19,11 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
+
 #[repr(C)]
 struct COVER_map_t {
     data: Box<[COVER_map_pair_t]>,
     sizeLog: u32,
-    size: u32,
     sizeMask: u32,
 }
 
@@ -37,7 +37,6 @@ impl COVER_map_t {
         let mut this = Self {
             data,
             sizeLog,
-            size,
             sizeMask,
         };
 
@@ -79,6 +78,7 @@ struct COVER_ctx_t<'a> {
     d: core::ffi::c_uint,
     displayLevel: core::ffi::c_int,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub(super) struct COVER_segment_t {
@@ -179,7 +179,6 @@ fn COVER_map_remove(map: &mut COVER_map_t, key: u32) {
 
 fn COVER_map_destroy(map: &mut COVER_map_t) {
     drop(core::mem::take(&mut map.data));
-    map.size = 0;
 }
 
 pub(super) unsafe fn COVER_sum(
