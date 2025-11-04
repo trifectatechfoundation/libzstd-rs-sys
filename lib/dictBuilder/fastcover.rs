@@ -21,12 +21,14 @@ extern "C" {
 }
 type __clock_t = core::ffi::c_long;
 type clock_t = __clock_t;
+
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 struct FASTCOVER_accel_t {
     finalize: core::ffi::c_uint,
     skip: core::ffi::c_uint,
 }
+
 #[repr(C)]
 #[derive(Debug, Default)]
 struct FASTCOVER_ctx_t {
@@ -43,6 +45,7 @@ struct FASTCOVER_ctx_t {
     accelParams: FASTCOVER_accel_t,
     displayLevel: core::ffi::c_int,
 }
+
 #[repr(C)]
 struct FASTCOVER_tryParameters_data_t {
     ctx: *const FASTCOVER_ctx_t,
@@ -208,6 +211,7 @@ unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
     free((*ctx).offsets as *mut core::ffi::c_void);
     (*ctx).offsets = core::ptr::null_mut();
 }
+
 unsafe fn FASTCOVER_computeFrequency(freqs: *mut u32, ctx: *const FASTCOVER_ctx_t) {
     let f = (*ctx).f;
     let d = (*ctx).d;
@@ -521,18 +525,20 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     COVER_dictSelectionFree(selection);
     free(freqs as *mut core::ffi::c_void);
 }
-unsafe fn FASTCOVER_convertToCoverParams(
+
+fn FASTCOVER_convertToCoverParams(
     fastCoverParams: ZDICT_fastCover_params_t,
-    coverParams: *mut ZDICT_cover_params_t,
+    coverParams: &mut ZDICT_cover_params_t,
 ) {
-    (*coverParams).k = fastCoverParams.k;
-    (*coverParams).d = fastCoverParams.d;
-    (*coverParams).steps = fastCoverParams.steps;
-    (*coverParams).nbThreads = fastCoverParams.nbThreads;
-    (*coverParams).splitPoint = fastCoverParams.splitPoint;
-    (*coverParams).zParams = fastCoverParams.zParams;
-    (*coverParams).shrinkDict = fastCoverParams.shrinkDict;
+    coverParams.k = fastCoverParams.k;
+    coverParams.d = fastCoverParams.d;
+    coverParams.steps = fastCoverParams.steps;
+    coverParams.nbThreads = fastCoverParams.nbThreads;
+    coverParams.splitPoint = fastCoverParams.splitPoint;
+    coverParams.zParams = fastCoverParams.zParams;
+    coverParams.shrinkDict = fastCoverParams.shrinkDict;
 }
+
 unsafe fn FASTCOVER_convertToFastCoverParams(
     coverParams: ZDICT_cover_params_t,
     fastCoverParams: *mut ZDICT_fastCover_params_t,
