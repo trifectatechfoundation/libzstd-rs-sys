@@ -1,7 +1,6 @@
 #![no_main]
 
-use std::cmp::{max, min};
-
+use c2rust_out_fuzz::ArbitrarySamples;
 use libfuzzer_sys::{arbitrary, fuzz_target};
 use libzstd_rs_sys::{
     internal::ZSTD_XXH64,
@@ -36,12 +35,7 @@ const MIN_CLEVEL: i32 = -3;
 const MAX_CLEVEL: i32 = 19;
 
 #[derive(Debug)]
-struct ArbitraryDictionaryRoundTrip {
-    pub src: Vec<u8>,
-    pub dict_size: usize,
-    pub nb_samples: usize,
-    pub samples: Vec<u8>,
-    pub sample_sizes: Vec<usize>,
+struct ArbitraryRoundTrip {
     pub ref_prefix: bool,
     pub c_buf_size_minus_one: bool,
     pub dctx_load_dict_method: bool,
@@ -59,29 +53,8 @@ enum CompressionStrat {
     },
 }
 
-impl arbitrary::Arbitrary<'_> for ArbitraryDictionaryRoundTrip {
+impl arbitrary::Arbitrary<'_> for ArbitraryRoundTrip {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
-        let src = Vec::<u8>::arbitrary(u)?;
-
-        let dict_size = max(src.len() / 8, 1024);
-        let total_sample_size = dict_size * 11;
-        let nb_samples = 100;
-
-        // generate random samples from src
-        let mut samples = Vec::with_capacity(total_sample_size);
-        let mut sample_sizes = Vec::with_capacity(nb_samples);
-        let mut remaining = total_sample_size;
-        for sample in 0..nb_samples {
-            let offset = u.int_in_range(0..=src.len().saturating_sub(1))?;
-            let limit = min(src.len() - offset, remaining);
-            let to_copy = min(limit, remaining / (nb_samples - sample));
-
-            samples.extend_from_slice(&src[offset..(offset + to_copy)]);
-            remaining -= to_copy;
-            sample_sizes.push(to_copy);
-        }
-        samples.resize(total_sample_size, 0);
-
         // pick a compression strategy
         let compression = if u8::arbitrary(u)? % 16 == 0 {
             CompressionStrat::CompressUsingDict {
@@ -94,12 +67,7 @@ impl arbitrary::Arbitrary<'_> for ArbitraryDictionaryRoundTrip {
             }
         };
 
-        Ok(ArbitraryDictionaryRoundTrip {
-            src,
-            dict_size,
-            nb_samples,
-            samples,
-            sample_sizes,
+        Ok(ArbitraryRoundTrip {
             ref_prefix: bool::arbitrary(u)?,
             c_buf_size_minus_one: bool::arbitrary(u)?,
             dctx_load_dict_method: bool::arbitrary(u)?,
@@ -108,16 +76,20 @@ impl arbitrary::Arbitrary<'_> for ArbitraryDictionaryRoundTrip {
     }
 }
 
-fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
+fuzz_target!(|data: (ArbitrarySamples, ArbitraryRoundTrip)| {
     use libzstd_rs_sys::*;
 
-    let result_capacity = data.src.len();
+    let (samples, data) = data;
+
+    let src = samples.src;
+
+    let result_capacity = src.len();
     let mut result = vec![0; result_capacity];
 
     // Half of the time fuzz with a 1 byte smaller output size.
     // This will still succeed because we force the checksum to be disabled, giving us 4 bytes of overhead.
     let compressed_capacity =
-        unsafe { ZSTD_compressBound(data.src.len()) } - data.c_buf_size_minus_one as usize;
+        unsafe { ZSTD_compressBound(src.len()) } - data.c_buf_size_minus_one as usize;
     let mut compressed = vec![0; compressed_capacity];
 
     let cctx = unsafe { ZSTD_createCCtx() };
@@ -144,15 +116,15 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
             dictID: 0,
         },
     };
-    let mut dict_size = data.dict_size;
+    let mut dict_size = samples.dict_size;
     let mut dict = vec![0u8; dict_size];
     let res = unsafe {
         ZDICT_trainFromBuffer_fastCover(
             dict.as_mut_ptr().cast(),
             dict_size,
-            data.samples.as_ptr().cast(),
-            data.sample_sizes.as_ptr(),
-            data.nb_samples as u32,
+            samples.samples.as_ptr().cast(),
+            samples.sample_sizes.as_ptr(),
+            samples.nb_samples as u32,
             params,
         )
     };
@@ -171,8 +143,8 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
                     cctx,
                     compressed.as_mut_ptr().cast(),
                     compressed_capacity,
-                    data.src.as_ptr().cast(),
-                    data.src.len(),
+                    src.as_ptr().cast(),
+                    src.len(),
                     dict.as_ptr().cast(),
                     dict_size,
                     c_level,
@@ -187,8 +159,8 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
                     cctx,
                     compressed.as_mut_ptr().cast(),
                     compressed_capacity,
-                    data.src.as_ptr().cast(),
-                    data.src.len(),
+                    src.as_ptr().cast(),
+                    src.len(),
                     dict.as_ptr().cast(),
                     dict_size,
                     c_level,
@@ -240,8 +212,8 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
                     cctx,
                     compressed.as_mut_ptr().cast(),
                     compressed_capacity,
-                    data.src.as_ptr().cast(),
-                    data.src.len(),
+                    src.as_ptr().cast(),
+                    src.len(),
                 ),
                 "Compression 2 failed"
             );
@@ -269,8 +241,8 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
                     cctx,
                     compressed.as_mut_ptr().cast(),
                     compressed_capacity,
-                    data.src.as_ptr().cast(),
-                    data.src.len(),
+                    src.as_ptr().cast(),
+                    src.len(),
                 ),
                 "Compression 2 failed"
             );
@@ -311,8 +283,8 @@ fuzz_target!(|data: ArbitraryDictionaryRoundTrip| {
         ),
         "Decompression failed"
     );
-    assert!(res == data.src.len(), "Incorrect regenerated size");
-    assert_eq!(result, data.src, "Corruption!");
+    assert!(res == src.len(), "Incorrect regenerated size");
+    assert_eq!(result, src, "Corruption!");
 
     unsafe {
         ZSTD_freeCCtx(cctx);
