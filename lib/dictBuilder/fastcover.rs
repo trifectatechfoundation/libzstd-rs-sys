@@ -31,10 +31,10 @@ struct FASTCOVER_accel_t {
 
 #[repr(C)]
 #[derive(Debug, Default)]
-struct FASTCOVER_ctx_t {
-    samples: *const u8,
+struct FASTCOVER_ctx_t<'a> {
+    samples: &'a [u8],
     offsets: Box<[size_t]>,
-    samplesSizes: *const size_t,
+    samplesSizes: &'a [size_t],
     nbSamples: size_t,
     nbTrainSamples: size_t,
     nbTestSamples: size_t,
@@ -47,8 +47,8 @@ struct FASTCOVER_ctx_t {
 }
 
 #[repr(C)]
-struct FASTCOVER_tryParameters_data_t {
-    ctx: *const FASTCOVER_ctx_t,
+struct FASTCOVER_tryParameters_data_t<'a> {
+    ctx: *const FASTCOVER_ctx_t<'a>,
     best: *mut COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
@@ -120,7 +120,7 @@ unsafe fn FASTCOVER_selectSegment(
     activeSegment.score = 0;
     while activeSegment.end < end {
         let idx = FASTCOVER_hashPtrToIndex(
-            ((*ctx).samples).offset(activeSegment.end as isize) as *const core::ffi::c_void,
+            (*ctx).samples.as_ptr().offset(activeSegment.end as isize) as *const core::ffi::c_void,
             f,
             d,
         );
@@ -132,7 +132,8 @@ unsafe fn FASTCOVER_selectSegment(
         *fresh0 = (*fresh0 as core::ffi::c_int + 1) as u16;
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
             let delIndex = FASTCOVER_hashPtrToIndex(
-                ((*ctx).samples).offset(activeSegment.begin as isize) as *const core::ffi::c_void,
+                (*ctx).samples.as_ptr().offset(activeSegment.begin as isize)
+                    as *const core::ffi::c_void,
                 f,
                 d,
             );
@@ -149,7 +150,8 @@ unsafe fn FASTCOVER_selectSegment(
     }
     while activeSegment.begin < end {
         let delIndex_0 = FASTCOVER_hashPtrToIndex(
-            ((*ctx).samples).offset(activeSegment.begin as isize) as *const core::ffi::c_void,
+            (*ctx).samples.as_ptr().offset(activeSegment.begin as isize)
+                as *const core::ffi::c_void,
             f,
             d,
         );
@@ -161,7 +163,7 @@ unsafe fn FASTCOVER_selectSegment(
     pos = bestSegment.begin;
     while pos != bestSegment.end {
         let i = FASTCOVER_hashPtrToIndex(
-            ((*ctx).samples).offset(pos as isize) as *const core::ffi::c_void,
+            (*ctx).samples.as_ptr().offset(pos as isize) as *const core::ffi::c_void,
             f,
             d,
         );
@@ -222,7 +224,7 @@ unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
         let currSampleEnd = ctx.offsets[i + 1];
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
             let dmerIndex = FASTCOVER_hashPtrToIndex(
-                (ctx.samples).add(start) as *const core::ffi::c_void,
+                ctx.samples.as_ptr().add(start) as *const core::ffi::c_void,
                 f,
                 d,
             );
@@ -233,21 +235,10 @@ unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     }
 }
 
-unsafe fn COVER_sum(samplesSizes: *const size_t, nbSamples: core::ffi::c_uint) -> size_t {
-    let mut sum = 0 as size_t;
-    let mut i: core::ffi::c_uint = 0;
-    i = 0;
-    while i < nbSamples {
-        sum = sum.wrapping_add(*samplesSizes.offset(i as isize));
-        i = i.wrapping_add(1);
-    }
-    sum
-}
-
-unsafe fn FASTCOVER_ctx_init(
-    ctx: &mut FASTCOVER_ctx_t,
-    samplesBuffer: *const core::ffi::c_void,
-    samplesSizes: *const size_t,
+unsafe fn FASTCOVER_ctx_init<'a>(
+    ctx: &mut FASTCOVER_ctx_t<'a>,
+    samples: &'a [u8],
+    samplesSizes: &'a [size_t],
     nbSamples: core::ffi::c_uint,
     d: core::ffi::c_uint,
     splitPoint: core::ffi::c_double,
@@ -255,8 +246,7 @@ unsafe fn FASTCOVER_ctx_init(
     accelParams: FASTCOVER_accel_t,
     displayLevel: core::ffi::c_int,
 ) -> size_t {
-    let samples = samplesBuffer as *const u8;
-    let totalSamplesSize = COVER_sum(samplesSizes, nbSamples);
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
     let nbTrainSamples = if splitPoint < 1.0f64 {
         (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
     } else {
@@ -268,12 +258,14 @@ unsafe fn FASTCOVER_ctx_init(
         nbSamples
     };
     let trainingSamplesSize = if splitPoint < 1.0f64 {
-        COVER_sum(samplesSizes, nbTrainSamples)
+        samplesSizes[..nbTrainSamples as usize].iter().sum()
     } else {
         totalSamplesSize
     };
     let testSamplesSize = if splitPoint < 1.0f64 {
-        COVER_sum(samplesSizes.offset(nbTrainSamples as isize), nbTestSamples)
+        samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
+            .iter()
+            .sum()
     } else {
         totalSamplesSize
     };
@@ -352,7 +344,7 @@ unsafe fn FASTCOVER_ctx_init(
     ctx.offsets = Box::from(vec![0usize; nbSamples as usize + 1]);
 
     for i in 1..nbSamples as usize + 1 {
-        ctx.offsets[i] = ctx.offsets[i - 1] + *samplesSizes.offset(i.wrapping_sub(1) as isize);
+        ctx.offsets[i] = ctx.offsets[i - 1] + samplesSizes[i - 1];
     }
 
     ctx.freqs = Box::from(vec![0u32; 1 << f]);
@@ -422,7 +414,7 @@ unsafe fn FASTCOVER_buildDictionary(
             tail = tail.wrapping_sub(segmentSize);
             memcpy(
                 dict.add(tail) as *mut core::ffi::c_void,
-                ((*ctx).samples).offset(segment.begin as isize) as *const core::ffi::c_void,
+                ctx.samples.as_ptr().offset(segment.begin as isize) as *const core::ffi::c_void,
                 segmentSize,
             );
             if displayLevel >= 2 {
@@ -474,8 +466,8 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
             dict.add(tail),
             dictBufferCapacity,
             dictBufferCapacity.wrapping_sub(tail),
-            (*ctx).samples,
-            (*ctx).samplesSizes,
+            ctx.samples.as_ptr(),
+            ctx.samplesSizes.as_ptr(),
             nbFinalizeSamples,
             (*ctx).nbTrainSamples,
             (*ctx).nbSamples,
@@ -581,9 +573,22 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     accelParams = *FASTCOVER_defaultAccelParameters
         .as_ptr()
         .offset(parameters.accel as isize);
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
     let initVal = FASTCOVER_ctx_init(
         &mut ctx,
-        samplesBuffer,
+        samples,
         samplesSizes,
         nbSamples,
         coverParams.d,
@@ -619,7 +624,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         dict.add(tail) as *const core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(tail),
         samplesBuffer,
-        samplesSizes,
+        samplesSizes.as_ptr(),
         nbFinalizeSamples,
         coverParams.zParams,
     );
@@ -770,9 +775,22 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         } else {
             displayLevel - 1
         };
+
+        let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+            &[]
+        } else {
+            core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+        };
+        let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+        let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+            &[]
+        } else {
+            core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+        };
+
         let initVal = FASTCOVER_ctx_init(
             &mut ctx,
-            samplesBuffer,
+            samples,
             samplesSizes,
             nbSamples,
             d,
