@@ -242,7 +242,7 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     }
 }
 
-unsafe fn FASTCOVER_ctx_init<'a>(
+fn FASTCOVER_ctx_init<'a>(
     ctx: &mut FASTCOVER_ctx_t<'a>,
     samples: &'a [u8],
     samplesSizes: &'a [size_t],
@@ -276,29 +276,22 @@ unsafe fn FASTCOVER_ctx_init<'a>(
     } else {
         totalSamplesSize
     };
+
+    const GB: usize = (1) << 30;
+    const FASTCOVER_MAX_SAMPLES_SIZE: usize = match usize::BITS {
+        64 => 4 * GB,
+        _ => GB,
+    };
+
     ctx.displayLevel = displayLevel;
-    if totalSamplesSize
-        < (if d as size_t > ::core::mem::size_of::<u64>() {
-            d as size_t
-        } else {
-            ::core::mem::size_of::<u64>()
-        })
-        || totalSamplesSize
-            >= (if ::core::mem::size_of::<size_t>() == 8 {
-                -(1 as core::ffi::c_int) as core::ffi::c_uint
-            } else {
-                (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
-            }) as size_t
+    if totalSamplesSize < Ord::max(d as size_t, ::core::mem::size_of::<u64>())
+        || totalSamplesSize >= FASTCOVER_MAX_SAMPLES_SIZE
     {
         if displayLevel >= 1 {
             eprintln!(
                 "Total samples size is too large ({} MB), maximum size is {} MB",
-                (totalSamplesSize >> 20),
-                (if ::core::mem::size_of::<size_t>() == 8 {
-                    -(1 as core::ffi::c_int) as core::ffi::c_uint
-                } else {
-                    (1 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
-                }) >> 20,
+                totalSamplesSize >> 20,
+                FASTCOVER_MAX_SAMPLES_SIZE >> 20,
             );
         }
         return Error::srcSize_wrong.to_error_code();
@@ -338,13 +331,8 @@ unsafe fn FASTCOVER_ctx_init<'a>(
     ctx.nbSamples = nbSamples as size_t;
     ctx.nbTrainSamples = nbTrainSamples as size_t;
     ctx.nbTestSamples = nbTestSamples as size_t;
-    ctx.nbDmers = trainingSamplesSize
-        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
-            d as size_t
-        } else {
-            ::core::mem::size_of::<u64>()
-        })
-        .wrapping_add(1);
+    ctx.nbDmers =
+        trainingSamplesSize.wrapping_sub(Ord::max(d as size_t, ::core::mem::size_of::<u64>())) + 1;
     ctx.d = d;
     ctx.f = f;
     ctx.accelParams = accelParams;
@@ -361,6 +349,7 @@ unsafe fn FASTCOVER_ctx_init<'a>(
     FASTCOVER_computeFrequency(ctx);
     0
 }
+
 unsafe fn FASTCOVER_buildDictionary(
     ctx: *const FASTCOVER_ctx_t,
     freqs: &mut [u32],
