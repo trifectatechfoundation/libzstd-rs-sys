@@ -9,8 +9,7 @@ use crate::lib::compress::zstd_compress_internal::{ZSTD_hash6Ptr, ZSTD_hash8Ptr}
 use crate::lib::dictBuilder::cover::{
     COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_start, COVER_best_t,
     COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
-    COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict, COVER_sum,
-    COVER_warnOnSmallCorpus,
+    COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict, COVER_warnOnSmallCorpus,
 };
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
@@ -232,6 +231,18 @@ unsafe fn FASTCOVER_computeFrequency(freqs: *mut u32, ctx: *const FASTCOVER_ctx_
         i = i.wrapping_add(1);
     }
 }
+
+unsafe fn COVER_sum(samplesSizes: *const size_t, nbSamples: core::ffi::c_uint) -> size_t {
+    let mut sum = 0 as size_t;
+    let mut i: core::ffi::c_uint = 0;
+    i = 0;
+    while i < nbSamples {
+        sum = sum.wrapping_add(*samplesSizes.offset(i as isize));
+        i = i.wrapping_add(1);
+    }
+    sum
+}
+
 unsafe fn FASTCOVER_ctx_init(
     ctx: *mut FASTCOVER_ctx_t,
     samplesBuffer: *const core::ffi::c_void,

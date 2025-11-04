@@ -181,20 +181,6 @@ fn COVER_map_destroy(map: &mut COVER_map_t) {
     drop(core::mem::take(&mut map.data));
 }
 
-pub(super) unsafe fn COVER_sum(
-    samplesSizes: *const size_t,
-    nbSamples: core::ffi::c_uint,
-) -> size_t {
-    let mut sum = 0 as size_t;
-    let mut i: core::ffi::c_uint = 0;
-    i = 0;
-    while i < nbSamples {
-        sum = sum.wrapping_add(*samplesSizes.offset(i as isize));
-        i = i.wrapping_add(1);
-    }
-    sum
-}
-
 fn COVER_cmp(ctx: &COVER_ctx_t, lp: &u32, rp: &u32) -> Ordering {
     let lhs = *lp as usize;
     let rhs = *rp as usize;
