@@ -76,14 +76,17 @@ unsafe fn ZDICT_printHex(ptr: *const core::ffi::c_void, length: size_t) {
         u = u.wrapping_add(1);
     }
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
-pub unsafe extern "C" fn ZDICT_isError(errorCode: size_t) -> core::ffi::c_uint {
+pub extern "C" fn ZDICT_isError(errorCode: size_t) -> core::ffi::c_uint {
     ERR_isError(errorCode) as _
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getErrorName))]
-pub unsafe extern "C" fn ZDICT_getErrorName(errorCode: size_t) -> *const core::ffi::c_char {
+pub extern "C" fn ZDICT_getErrorName(errorCode: size_t) -> *const core::ffi::c_char {
     ERR_getErrorName(errorCode)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictID))]
 pub unsafe extern "C" fn ZDICT_getDictID(
     dictBuffer: *const core::ffi::c_void,
@@ -97,6 +100,7 @@ pub unsafe extern "C" fn ZDICT_getDictID(
     }
     MEM_readLE32((dictBuffer as *const core::ffi::c_char).add(4) as *const core::ffi::c_void)
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictHeaderSize))]
 pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     dictBuffer: *const core::ffi::c_void,
@@ -119,6 +123,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     free(wksp as *mut core::ffi::c_void);
     headerSize
 }
+
 unsafe fn ZDICT_count(
     mut pIn: *const core::ffi::c_void,
     mut pMatch: *const core::ffi::c_void,
@@ -139,6 +144,7 @@ unsafe fn ZDICT_count(
         }
     }
 }
+
 unsafe fn ZDICT_initDictItem(d: *mut dictItem) {
     (*d).pos = 1;
     (*d).length = 0;
@@ -1662,6 +1668,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     free(newBuff);
     result
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     dictBuffer: *mut core::ffi::c_void,
@@ -1685,6 +1692,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
         &mut params,
     )
 }
+
 #[deprecated = "use ZDICT_finalizeDictionary() instead"]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_addEntropyTablesFromBuffer))]
 pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
