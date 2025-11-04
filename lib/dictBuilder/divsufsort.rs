@@ -297,18 +297,16 @@ static lg_table: [core::ffi::c_int; 256] = [
     7,
     7,
 ];
+
 #[inline]
-unsafe fn ss_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
-    if n & 0xff00 as core::ffi::c_int != 0 {
-        8 + *lg_table
-            .as_ptr()
-            .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
+fn ss_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
+    if n & 0xff00 != 0 {
+        8 + lg_table[(n >> 8 & 0xff) as usize]
     } else {
-        *lg_table
-            .as_ptr()
-            .offset((n & 0xff as core::ffi::c_int) as isize)
+        lg_table[(n & 0xff) as usize]
     }
 }
+
 static sqq_table: [core::ffi::c_int; 256] = [
     0, 16, 22, 27, 32, 35, 39, 42, 45, 48, 50, 53, 55, 57, 59, 61, 64, 65, 67, 69, 71, 73, 75, 76,
     78, 80, 81, 83, 84, 86, 87, 89, 90, 91, 93, 94, 96, 97, 98, 99, 101, 102, 103, 104, 106, 107,
@@ -325,42 +323,35 @@ static sqq_table: [core::ffi::c_int; 256] = [
     245, 246, 246, 247, 247, 248, 248, 249, 249, 250, 250, 251, 251, 252, 252, 253, 253, 254, 254,
     255,
 ];
+
 #[inline]
-unsafe fn ss_isqrt(x: core::ffi::c_int) -> core::ffi::c_int {
+fn ss_isqrt(x: core::ffi::c_int) -> core::ffi::c_int {
     let mut y: core::ffi::c_int = 0;
     let mut e: core::ffi::c_int = 0;
     if x >= SS_BLOCKSIZE * SS_BLOCKSIZE {
         return SS_BLOCKSIZE;
     }
-    e = if x as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
-        if x as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
-            24 + *lg_table
-                .as_ptr()
-                .offset((x >> 24 & 0xff as core::ffi::c_int) as isize)
+    e = if x as core::ffi::c_uint & 0xffff0000 != 0 {
+        if x as core::ffi::c_uint & 0xff000000 != 0 {
+            24 + lg_table[(x >> 24 & 0xff) as usize]
         } else {
-            16 + *lg_table
-                .as_ptr()
-                .offset((x >> 16 & 0xff as core::ffi::c_int) as isize)
+            16 + lg_table[(x >> 16 & 0xff) as usize]
         }
     } else if x & 0xff00 as core::ffi::c_int != 0 {
-        8 + *lg_table
-            .as_ptr()
-            .offset((x >> 8 & 0xff as core::ffi::c_int) as isize)
+        8 + lg_table[(x >> 8 & 0xff as core::ffi::c_int) as usize]
     } else {
-        *lg_table
-            .as_ptr()
-            .offset((x & 0xff as core::ffi::c_int) as isize)
+        lg_table[(x & 0xff as core::ffi::c_int) as usize]
     };
     if e >= 16 {
-        y = *sqq_table.as_ptr().offset((x >> (e - 6 - (e & 1))) as isize) << ((e >> 1) - 7);
+        y = sqq_table[(x >> (e - 6 - (e & 1))) as usize] << ((e >> 1) - 7);
         if e >= 24 {
             y = (y + 1 + x / y) >> 1;
         }
         y = (y + 1 + x / y) >> 1;
     } else if e >= 8 {
-        y = (*sqq_table.as_ptr().offset((x >> (e - 6 - (e & 1))) as isize) >> (7 - (e >> 1))) + 1;
+        y = (sqq_table[(x >> (e - 6 - (e & 1))) as usize] >> (7 - (e >> 1))) + 1;
     } else {
-        return *sqq_table.as_ptr().offset(x as isize) >> 4;
+        return sqq_table[x as usize] >> 4;
     }
     if x < y * y {
         y - 1
@@ -368,6 +359,7 @@ unsafe fn ss_isqrt(x: core::ffi::c_int) -> core::ffi::c_int {
         y
     }
 }
+
 #[inline]
 unsafe fn ss_compare(
     T: *const core::ffi::c_uchar,
@@ -1957,28 +1949,22 @@ unsafe fn sssort(
         *a.sub(1) = i;
     }
 }
+
 #[inline]
-unsafe fn tr_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
-    if n as core::ffi::c_uint & 0xffff0000 as core::ffi::c_uint != 0 {
-        if n as core::ffi::c_uint & 0xff000000 as core::ffi::c_uint != 0 {
-            24 + *lg_table
-                .as_ptr()
-                .offset((n >> 24 & 0xff as core::ffi::c_int) as isize)
+fn tr_ilg(n: core::ffi::c_int) -> core::ffi::c_int {
+    if n as core::ffi::c_uint & 0xffff0000 != 0 {
+        if n as core::ffi::c_uint & 0xff000000 != 0 {
+            24 + lg_table[(n >> 24 & 0xff) as usize]
         } else {
-            16 + *lg_table
-                .as_ptr()
-                .offset((n >> 16 & 0xff as core::ffi::c_int) as isize)
+            16 + lg_table[(n >> 16 & 0xff) as usize]
         }
     } else if n & 0xff00 as core::ffi::c_int != 0 {
-        8 + *lg_table
-            .as_ptr()
-            .offset((n >> 8 & 0xff as core::ffi::c_int) as isize)
+        8 + lg_table[(n >> 8 & 0xff) as usize]
     } else {
-        *lg_table
-            .as_ptr()
-            .offset((n & 0xff as core::ffi::c_int) as isize)
+        lg_table[(n & 0xff) as usize]
     }
 }
+
 unsafe fn tr_insertionsort(
     ISAd: *const core::ffi::c_int,
     first: *mut core::ffi::c_int,
