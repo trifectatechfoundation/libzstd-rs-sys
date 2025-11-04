@@ -80,7 +80,7 @@ struct COVER_ctx_t<'a> {
     displayLevel: core::ffi::c_int,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub(super) struct COVER_segment_t {
     pub(super) begin: u32,
@@ -424,18 +424,8 @@ unsafe fn COVER_selectSegment(
     let k = parameters.k;
     let d = parameters.d;
     let dmersInK = k.wrapping_sub(d).wrapping_add(1);
-    let mut bestSegment = {
-        COVER_segment_t {
-            begin: 0,
-            end: 0,
-            score: 0,
-        }
-    };
-    let mut activeSegment = COVER_segment_t {
-        begin: 0,
-        end: 0,
-        score: 0,
-    };
+    let mut bestSegment = COVER_segment_t::default();
+    let mut activeSegment = COVER_segment_t::default();
     COVER_map_clear(activeDmers);
     activeSegment.begin = begin;
     activeSegment.end = begin;
