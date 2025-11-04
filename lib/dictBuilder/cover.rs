@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
@@ -887,7 +888,6 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
     let mut totalCompressedSize = Error::GENERIC.to_error_code();
     let mut cctx = core::ptr::null_mut::<ZSTD_CCtx>();
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
-    let mut dst = core::ptr::null_mut::<core::ffi::c_void>();
     let mut dstCapacity: size_t = 0;
     let mut i: size_t = 0;
     let mut maxSampleSize = 0;
@@ -905,14 +905,14 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
         i = i.wrapping_add(1);
     }
     dstCapacity = ZSTD_compressBound(maxSampleSize);
-    dst = malloc(dstCapacity);
+    let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
     cctx = ZSTD_createCCtx();
     cdict = ZSTD_createCDict(
         dict as *const core::ffi::c_void,
         dictBufferCapacity,
         parameters.zParams.compressionLevel,
     );
-    if !(dst.is_null() || cctx.is_null() || cdict.is_null()) {
+    if !(cctx.is_null() || cdict.is_null()) {
         totalCompressedSize = dictBufferCapacity;
         i = if parameters.splitPoint < 1.0f64 {
             nbTrainSamples
@@ -922,7 +922,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
         while i < nbSamples {
             let size = ZSTD_compress_usingCDict(
                 cctx,
-                dst,
+                dst.as_mut_ptr().cast::<core::ffi::c_void>(),
                 dstCapacity,
                 samples.add(*offsets.add(i)) as *const core::ffi::c_void,
                 *samplesSizes.add(i),
@@ -939,9 +939,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
     }
     ZSTD_freeCCtx(cctx);
     ZSTD_freeCDict(cdict);
-    if !dst.is_null() {
-        free(dst);
-    }
+    drop(dst);
     totalCompressedSize
 }
 
