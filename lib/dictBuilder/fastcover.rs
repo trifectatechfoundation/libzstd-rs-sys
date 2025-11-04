@@ -33,7 +33,7 @@ struct FASTCOVER_accel_t {
 #[derive(Debug, Default)]
 struct FASTCOVER_ctx_t {
     samples: *const u8,
-    offsets: *mut size_t,
+    offsets: Box<[size_t]>,
     samplesSizes: *const size_t,
     nbSamples: size_t,
     nbTrainSamples: size_t,
@@ -207,8 +207,7 @@ unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
         return;
     }
     drop(core::mem::take(&mut ((*ctx).freqs)));
-    free((*ctx).offsets as *mut core::ffi::c_void);
-    (*ctx).offsets = core::ptr::null_mut();
+    drop(core::mem::take(&mut ((*ctx).offsets)));
 }
 
 unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
@@ -219,8 +218,8 @@ unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     let mut i: size_t = 0;
     i = 0;
     while i < ctx.nbTrainSamples {
-        let mut start = *(ctx.offsets).add(i);
-        let currSampleEnd = *(ctx.offsets).add(i.wrapping_add(1));
+        let mut start = ctx.offsets[i];
+        let currSampleEnd = ctx.offsets[i + 1];
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
             let dmerIndex = FASTCOVER_hashPtrToIndex(
                 (ctx.samples).add(start) as *const core::ffi::c_void,
@@ -350,26 +349,12 @@ unsafe fn FASTCOVER_ctx_init(
     ctx.d = d;
     ctx.f = f;
     ctx.accelParams = accelParams;
-    ctx.offsets = calloc(
-        nbSamples.wrapping_add(1) as size_t,
-        ::core::mem::size_of::<size_t>(),
-    ) as *mut size_t;
-    if (ctx.offsets).is_null() {
-        if displayLevel >= 1 {
-            eprintln!("Failed to allocate scratch buffers");
-        }
-        FASTCOVER_ctx_destroy(ctx);
-        return Error::memory_allocation.to_error_code();
+    ctx.offsets = Box::from(vec![0usize; nbSamples as usize + 1]);
+
+    for i in 1..nbSamples as usize + 1 {
+        ctx.offsets[i] = ctx.offsets[i - 1] + *samplesSizes.offset(i.wrapping_sub(1) as isize);
     }
-    let mut i: u32 = 0;
-    *(ctx.offsets) = 0;
-    i = 1;
-    while i <= nbSamples {
-        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets)
-            .offset(i.wrapping_sub(1) as isize))
-        .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
-        i = i.wrapping_add(1);
-    }
+
     ctx.freqs = Box::from(vec![0u32; 1 << f]);
     if displayLevel >= 2 {
         eprintln!("Computing frequencies");
@@ -495,7 +480,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
             (*ctx).nbTrainSamples,
             (*ctx).nbSamples,
             parameters,
-            (*ctx).offsets,
+            ctx.offsets.as_ptr().cast_mut(),
             totalCompressedSize,
         );
         if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
