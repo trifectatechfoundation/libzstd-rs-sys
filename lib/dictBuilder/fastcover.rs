@@ -351,7 +351,7 @@ fn FASTCOVER_ctx_init<'a>(
 }
 
 unsafe fn FASTCOVER_buildDictionary(
-    ctx: *const FASTCOVER_ctx_t,
+    ctx: &FASTCOVER_ctx_t,
     freqs: &mut [u32],
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
@@ -362,12 +362,12 @@ unsafe fn FASTCOVER_buildDictionary(
     let mut tail = dictBufferCapacity;
     let epochs = COVER_computeEpochs(
         dictBufferCapacity as u32,
-        (*ctx).nbDmers as u32,
+        ctx.nbDmers as u32,
         parameters.k,
         1,
     );
     let maxZeroScoreRun = 10;
-    let displayLevel = (*ctx).displayLevel;
+    let displayLevel = ctx.displayLevel;
     let mut zeroScoreRun = 0 as size_t;
     let mut lastUpdateTime = 0;
     let mut epoch: size_t = 0;
@@ -434,7 +434,7 @@ unsafe fn FASTCOVER_buildDictionary(
 }
 unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut FASTCOVER_tryParameters_data_t;
-    let ctx = (*data).ctx;
+    let ctx = (*data).ctx.cast_mut().as_mut().unwrap();
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
@@ -456,8 +456,8 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
             parameters,
             segmentFreqs,
         );
-        let nbFinalizeSamples = ((*ctx).nbTrainSamples * (*ctx).accelParams.finalize as size_t
-            / 100) as core::ffi::c_uint;
+        let nbFinalizeSamples =
+            (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
         selection = COVER_selectDict(
             dict.add(tail),
             dictBufferCapacity,
@@ -465,8 +465,8 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
             ctx.samples.as_ptr(),
             ctx.samplesSizes.as_ptr(),
             nbFinalizeSamples,
-            (*ctx).nbTrainSamples,
-            (*ctx).nbSamples,
+            ctx.nbTrainSamples,
+            ctx.nbSamples,
             parameters,
             ctx.offsets.as_ptr().cast_mut(),
             totalCompressedSize,
@@ -604,14 +604,18 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         eprintln!("Building dictionary");
     }
     let segmentFreqs = calloc(1 << parameters.f, ::core::mem::size_of::<u16>()) as *mut u16;
+
+    let mut freqs = core::mem::take(&mut ctx.freqs);
     let tail = FASTCOVER_buildDictionary(
         &ctx,
-        &mut ctx.freqs,
+        &mut freqs,
         dictBuffer,
         dictBufferCapacity,
         coverParams,
         segmentFreqs,
     );
+    ctx.freqs = freqs;
+
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
     let dictionarySize = ZDICT_finalizeDictionary(
