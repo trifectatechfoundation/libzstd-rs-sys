@@ -702,7 +702,7 @@ unsafe fn COVER_buildDictionary(
     let mut tail = dictBufferCapacity;
     let epochs = COVER_computeEpochs(
         dictBufferCapacity as u32,
-        (*ctx).suffixSize as u32,
+        (*ctx).suffixSize as u32, // suffix itself may be deallocated already
         parameters.k,
         4,
     );
@@ -842,7 +842,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     if ERR_isError(initVal) {
         return initVal;
     }
-    COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffixSize, displayLevel);
+    COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
     if displayLevel >= 2 {
@@ -1165,7 +1165,11 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
-    let freqs = malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    let suffixSize = {
+        let suffix = &(*ctx).suffix;
+        suffix.len()
+    };
+    let freqs = malloc(suffixSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
@@ -1177,7 +1181,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         memcpy(
             freqs as *mut core::ffi::c_void,
             (*ctx).freqs.as_ptr() as *const core::ffi::c_void,
-            ((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>()),
+            (suffixSize).wrapping_mul(::core::mem::size_of::<u32>()),
         );
         let tail = COVER_buildDictionary(
             ctx,
@@ -1355,7 +1359,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             return initVal;
         }
         if warned == 0 {
-            COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffixSize, displayLevel);
+            COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
             warned = 1;
         }
         k = kMinK;
