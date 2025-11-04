@@ -180,6 +180,27 @@ jobs:
         env:
           RUSTFLAGS: "-Awarnings"
 
+  fuzz-dictionary:
+    name: fuzz-dictionary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          persist-credentials: false
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          toolchain: nightly
+      - name: Install cargo fuzz
+        run: cargo install cargo-fuzz
+      - name: run the fuzzer
+        run: |
+          cargo fuzz run dictionary_round_trip -- -max_total_time=10
+          cargo fuzz run dictionary_train -- -max_total_time=60
+        env:
+          RUSTFLAGS: "-Awarnings"
+
   miri:
     name: "Miri"
     runs-on: ubuntu-latest
