@@ -87,52 +87,55 @@ const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 const MAP_EMPTY_VALUE: core::ffi::c_int = -(1);
 
-unsafe fn COVER_map_clear(map: *mut COVER_map_t) {
+unsafe fn COVER_map_clear(map: &mut COVER_map_t) {
     core::ptr::write_bytes(
-        (*map).data as *mut u8,
+        map.data as *mut u8,
         MAP_EMPTY_VALUE as u8,
-        (*map).size as size_t * core::mem::size_of::<COVER_map_pair_t>(),
+        map.size as size_t * core::mem::size_of::<COVER_map_pair_t>(),
     );
 }
 
-unsafe fn COVER_map_init(map: *mut COVER_map_t, size: u32) -> core::ffi::c_int {
-    (*map).sizeLog = (ZSTD_highbit32(size)).wrapping_add(2);
-    (*map).size = (1) << (*map).sizeLog;
-    (*map).sizeMask = ((*map).size).wrapping_sub(1);
-    (*map).data =
-        malloc(((*map).size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()))
-            as *mut COVER_map_pair_t;
-    if ((*map).data).is_null() {
-        (*map).sizeLog = 0;
-        (*map).size = 0;
-        return 0;
+unsafe fn COVER_map_init(map: &mut COVER_map_t, size: u32) -> bool {
+    map.sizeLog = (ZSTD_highbit32(size)).wrapping_add(2);
+    map.size = (1) << map.sizeLog;
+    map.sizeMask = (map.size).wrapping_sub(1);
+    map.data = malloc((map.size as size_t).wrapping_mul(::core::mem::size_of::<COVER_map_pair_t>()))
+        as *mut COVER_map_pair_t;
+    if map.data.is_null() {
+        map.sizeLog = 0;
+        map.size = 0;
+        return false;
     }
     COVER_map_clear(map);
-    1
+
+    true
 }
-static COVER_prime4bytes: u32 = 2654435761;
-unsafe fn COVER_map_hash(map: *mut COVER_map_t, key: u32) -> u32 {
-    (key.wrapping_mul(COVER_prime4bytes)) >> 32u32.wrapping_sub((*map).sizeLog)
+
+fn COVER_map_hash(map: &mut COVER_map_t, key: u32) -> u32 {
+    const COVER_prime4bytes: u32 = 2654435761;
+    (key.wrapping_mul(COVER_prime4bytes)) >> 32u32.wrapping_sub(map.sizeLog)
 }
-unsafe fn COVER_map_index(map: *mut COVER_map_t, key: u32) -> u32 {
+
+unsafe fn COVER_map_index(map: &mut COVER_map_t, key: u32) -> u32 {
     let hash = COVER_map_hash(map, key);
     let mut i: u32 = 0;
     i = hash;
     loop {
         let pos: *mut COVER_map_pair_t =
-            &mut *((*map).data).offset(i as isize) as *mut COVER_map_pair_t;
+            &mut *(map.data).offset(i as isize) as *mut COVER_map_pair_t;
         if (*pos).value == MAP_EMPTY_VALUE as u32 {
             return i;
         }
         if (*pos).key == key {
             return i;
         }
-        i = i.wrapping_add(1) & (*map).sizeMask;
+        i = i.wrapping_add(1) & map.sizeMask;
     }
 }
-unsafe fn COVER_map_at(map: *mut COVER_map_t, key: u32) -> *mut u32 {
-    let pos: *mut COVER_map_pair_t = &mut *((*map).data)
-        .offset((COVER_map_index as unsafe fn(*mut COVER_map_t, u32) -> u32)(map, key) as isize)
+
+unsafe fn COVER_map_at(map: &mut COVER_map_t, key: u32) -> *mut u32 {
+    let pos: *mut COVER_map_pair_t = &mut *(map.data)
+        .offset((COVER_map_index as unsafe fn(&mut COVER_map_t, u32) -> u32)(map, key) as isize)
         as *mut COVER_map_pair_t;
     if (*pos).value == MAP_EMPTY_VALUE as u32 {
         (*pos).key = key;
@@ -140,23 +143,24 @@ unsafe fn COVER_map_at(map: *mut COVER_map_t, key: u32) -> *mut u32 {
     }
     &mut (*pos).value
 }
-unsafe fn COVER_map_remove(map: *mut COVER_map_t, key: u32) {
+
+unsafe fn COVER_map_remove(map: &mut COVER_map_t, key: u32) {
     let mut i = COVER_map_index(map, key);
     let mut del: *mut COVER_map_pair_t =
-        &mut *((*map).data).offset(i as isize) as *mut COVER_map_pair_t;
+        &mut *(map.data).offset(i as isize) as *mut COVER_map_pair_t;
     let mut shift = 1;
     if (*del).value == MAP_EMPTY_VALUE as u32 {
         return;
     }
-    i = i.wrapping_add(1) & (*map).sizeMask;
+    i = i.wrapping_add(1) & map.sizeMask;
     loop {
         let pos: *mut COVER_map_pair_t =
-            &mut *((*map).data).offset(i as isize) as *mut COVER_map_pair_t;
+            &mut *(map.data).offset(i as isize) as *mut COVER_map_pair_t;
         if (*pos).value == MAP_EMPTY_VALUE as u32 {
             (*del).value = MAP_EMPTY_VALUE as u32;
             return;
         }
-        if i.wrapping_sub(COVER_map_hash(map, (*pos).key)) & (*map).sizeMask >= shift {
+        if i.wrapping_sub(COVER_map_hash(map, (*pos).key)) & map.sizeMask >= shift {
             (*del).key = (*pos).key;
             (*del).value = (*pos).value;
             del = pos;
@@ -164,7 +168,7 @@ unsafe fn COVER_map_remove(map: *mut COVER_map_t, key: u32) {
         } else {
             shift = shift.wrapping_add(1);
         }
-        i = i.wrapping_add(1) & (*map).sizeMask;
+        i = i.wrapping_add(1) & map.sizeMask;
     }
 }
 unsafe fn COVER_map_destroy(map: *mut COVER_map_t) {
@@ -420,7 +424,7 @@ fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
 unsafe fn COVER_selectSegment(
     ctx: *const COVER_ctx_t,
     freqs: *mut u32,
-    activeDmers: *mut COVER_map_t,
+    activeDmers: &mut COVER_map_t,
     begin: u32,
     end: u32,
     parameters: ZDICT_cover_params_t,
@@ -701,7 +705,7 @@ pub(super) fn COVER_computeEpochs(
 unsafe fn COVER_buildDictionary(
     ctx: *const COVER_ctx_t,
     freqs: *mut u32,
-    activeDmers: *mut COVER_map_t,
+    activeDmers: &mut COVER_map_t,
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
@@ -857,11 +861,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         return initVal;
     }
     COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffixSize, displayLevel);
-    if COVER_map_init(
+    if !COVER_map_init(
         &mut activeDmers,
         (parameters.k).wrapping_sub(parameters.d).wrapping_add(1),
-    ) == 0
-    {
+    ) {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate dmer map: out of memory");
         }
@@ -1196,11 +1199,10 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let freqs = malloc(((*ctx).suffixSize).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
-    if COVER_map_init(
+    if !COVER_map_init(
         &mut activeDmers,
         (parameters.k).wrapping_sub(parameters.d).wrapping_add(1),
-    ) == 0
-    {
+    ) {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate dmer map: out of memory");
         }
