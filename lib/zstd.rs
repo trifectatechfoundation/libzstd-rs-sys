@@ -97,7 +97,7 @@ pub const ZSTD_greedy: ZSTD_strategy = 3;
 pub const ZSTD_dfast: ZSTD_strategy = 2;
 pub const ZSTD_fast: ZSTD_strategy = 1;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_compressionParameters {
     pub windowLog: core::ffi::c_uint,
@@ -109,7 +109,7 @@ pub struct ZSTD_compressionParameters {
     pub strategy: ZSTD_strategy,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_frameParameters {
     pub contentSizeFlag: core::ffi::c_int,
@@ -117,7 +117,7 @@ pub struct ZSTD_frameParameters {
     pub noDictIDFlag: core::ffi::c_int,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_parameters {
     pub cParams: ZSTD_compressionParameters,

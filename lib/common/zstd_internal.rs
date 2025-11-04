@@ -11,7 +11,7 @@ const fn const_max(a: usize, b: usize) -> usize {
 pub(crate) const ZSTD_OPT_NUM: core::ffi::c_int = 1 << 12;
 
 pub(crate) const ZSTD_REP_NUM: core::ffi::c_int = 3;
-pub(crate) static repStartValue: [u32; 3] = [1, 4, 8];
+pub(crate) static repStartValue: [u32; ZSTD_REP_NUM as usize] = [1, 4, 8];
 
 pub(crate) const ZSTD_FRAMEIDSIZE: usize = 4;
 
