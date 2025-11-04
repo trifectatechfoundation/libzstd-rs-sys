@@ -1163,43 +1163,39 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
-    let dict = malloc(dictBufferCapacity) as *mut u8;
+    let mut dict: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let mut freqs = (*ctx).freqs.clone();
     let displayLevel = (*ctx).displayLevel;
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
-    if dict.is_null() {
-        if displayLevel >= 1 {
-            eprintln!("Failed to allocate buffers: out of memory");
-        }
-    } else {
-        let tail = COVER_buildDictionary(
-            ctx,
-            freqs.as_mut_ptr(),
-            &mut activeDmers,
-            dict as *mut core::ffi::c_void,
-            dictBufferCapacity,
-            parameters,
-        );
-        selection = COVER_selectDict(
-            dict.add(tail),
-            dictBufferCapacity,
-            dictBufferCapacity.wrapping_sub(tail),
-            (*ctx).samples.as_ptr(),
-            (*ctx).samplesSizes.as_ptr(),
-            (*ctx).nbTrainSamples as core::ffi::c_uint,
-            (*ctx).nbTrainSamples,
-            (*ctx).nbSamples,
-            parameters,
-            (*ctx).offsets.as_mut_ptr(),
-            totalCompressedSize,
-        );
-        if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
-            eprintln!("Failed to select dictionary");
-        }
+
+    let tail = COVER_buildDictionary(
+        ctx,
+        freqs.as_mut_ptr(),
+        &mut activeDmers,
+        dict.as_mut_ptr() as *mut core::ffi::c_void,
+        dictBufferCapacity,
+        parameters,
+    );
+    selection = COVER_selectDict(
+        dict.as_mut_ptr().add(tail),
+        dictBufferCapacity,
+        dictBufferCapacity.wrapping_sub(tail),
+        (*ctx).samples.as_ptr(),
+        (*ctx).samplesSizes.as_ptr(),
+        (*ctx).nbTrainSamples as core::ffi::c_uint,
+        (*ctx).nbTrainSamples,
+        (*ctx).nbSamples,
+        parameters,
+        (*ctx).offsets.as_mut_ptr(),
+        totalCompressedSize,
+    );
+
+    if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
+        eprintln!("Failed to select dictionary");
     }
-    free(dict as *mut core::ffi::c_void);
+    drop(dict);
     COVER_best_finish((*data).best, parameters, selection);
     free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
