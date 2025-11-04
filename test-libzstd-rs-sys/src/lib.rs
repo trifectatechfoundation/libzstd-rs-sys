@@ -10,6 +10,7 @@ macro_rules! assert_eq_rs_c {
     ($tt:tt) => {{
         #[cfg(not(miri))]
         #[allow(clippy::macro_metavars_in_unsafe)]
+        #[allow(unused_unsafe)]
         let _c = unsafe {
             use zstd_sys::*;
 
@@ -18,6 +19,7 @@ macro_rules! assert_eq_rs_c {
         };
 
         #[allow(clippy::macro_metavars_in_unsafe)]
+        #[allow(unused_unsafe)]
         let _rs = unsafe {
             use libzstd_rs_sys::*;
 
