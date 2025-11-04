@@ -1165,27 +1165,18 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
-    let suffixSize = {
-        let suffix = &(*ctx).suffix;
-        suffix.len()
-    };
-    let freqs = malloc(suffixSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
+    let mut freqs = (*ctx).freqs.clone();
     let displayLevel = (*ctx).displayLevel;
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
-    if dict.is_null() || freqs.is_null() {
+    if dict.is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate buffers: out of memory");
         }
     } else {
-        memcpy(
-            freqs as *mut core::ffi::c_void,
-            (*ctx).freqs.as_ptr() as *const core::ffi::c_void,
-            (suffixSize).wrapping_mul(::core::mem::size_of::<u32>()),
-        );
         let tail = COVER_buildDictionary(
             ctx,
-            freqs,
+            freqs.as_mut_ptr(),
             &mut activeDmers,
             dict as *mut core::ffi::c_void,
             dictBufferCapacity,
@@ -1213,8 +1204,9 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
-    free(freqs as *mut core::ffi::c_void);
+    drop(freqs);
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     dictBuffer: *mut core::ffi::c_void,
