@@ -5,7 +5,9 @@ use libc::{calloc, free, malloc, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
-use crate::lib::compress::zstd_compress_internal::{ZSTD_hash6Ptr, ZSTD_hash8Ptr};
+use crate::lib::compress::zstd_compress_internal::{
+    ZSTD_hash6Ptr, ZSTD_hash6Ptr_array, ZSTD_hash8Ptr, ZSTD_hash8Ptr_array,
+};
 use crate::lib::dictBuilder::cover::{
     COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_start, COVER_best_t,
     COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
@@ -60,15 +62,23 @@ const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
 const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
 const DEFAULT_F: core::ffi::c_int = 20;
 const DEFAULT_ACCEL: core::ffi::c_int = 1;
+
 unsafe fn FASTCOVER_hashPtrToIndex(
     p: *const core::ffi::c_void,
     f: u32,
     d: core::ffi::c_uint,
 ) -> size_t {
-    if d == 6 {
-        return ZSTD_hash6Ptr(p, f);
+    match d {
+        6 => ZSTD_hash6Ptr(p, f),
+        _ => ZSTD_hash8Ptr(p, f),
     }
-    ZSTD_hash8Ptr(p, f)
+}
+
+fn FASTCOVER_hashPtrToIndex_array(p: &[u8; 8], f: u32, d: core::ffi::c_uint) -> size_t {
+    match d {
+        6 => ZSTD_hash6Ptr_array(p, f),
+        _ => ZSTD_hash8Ptr_array(p, f),
+    }
 }
 
 static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = {
@@ -212,7 +222,7 @@ unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
     drop(core::mem::take(&mut ((*ctx).offsets)));
 }
 
-unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
+fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
     let f = ctx.f;
     let d = ctx.d;
     let skip = ctx.accelParams.skip;
@@ -223,11 +233,8 @@ unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
         let mut start = ctx.offsets[i];
         let currSampleEnd = ctx.offsets[i + 1];
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
-            let dmerIndex = FASTCOVER_hashPtrToIndex(
-                ctx.samples.as_ptr().add(start) as *const core::ffi::c_void,
-                f,
-                d,
-            );
+            let dmerIndex =
+                FASTCOVER_hashPtrToIndex_array(ctx.samples[start..][..8].try_into().unwrap(), f, d);
             ctx.freqs[dmerIndex] += 1;
             start = start.wrapping_add(skip as size_t).wrapping_add(1);
         }
