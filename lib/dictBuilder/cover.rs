@@ -92,6 +92,7 @@ pub(super) struct COVER_epoch_info_t {
     pub(super) num: u32,
     pub(super) size: u32,
 }
+#[derive(Default)]
 pub(super) struct COVER_best_t {
     pub(super) mutex: Mutex<()>,
     pub(super) cond: Condvar,
@@ -1250,15 +1251,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
-    let mut best = COVER_best_t {
-        mutex: Mutex::new(()),
-        cond: Condvar::new(),
-        liveJobs: 0,
-        dict: core::ptr::null_mut::<core::ffi::c_void>(),
-        dictSize: 0,
-        parameters: ZDICT_cover_params_t::default(),
-        compressedSize: 0,
-    };
+    let mut best = COVER_best_t::default();
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut lastUpdateTime = 0;
