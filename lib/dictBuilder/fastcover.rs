@@ -93,7 +93,7 @@ static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = {
 
 unsafe fn FASTCOVER_selectSegment(
     ctx: *const FASTCOVER_ctx_t,
-    freqs: *mut u32,
+    freqs: &mut [u32],
     begin: u32,
     end: u32,
     parameters: ZDICT_cover_params_t,
@@ -125,7 +125,7 @@ unsafe fn FASTCOVER_selectSegment(
             d,
         );
         if *segmentFreqs.add(idx) as core::ffi::c_int == 0 {
-            activeSegment.score = (activeSegment.score).wrapping_add(*freqs.add(idx));
+            activeSegment.score = (activeSegment.score).wrapping_add(freqs[idx]);
         }
         activeSegment.end = (activeSegment.end).wrapping_add(1);
         let fresh0 = &mut (*segmentFreqs.add(idx));
@@ -139,7 +139,7 @@ unsafe fn FASTCOVER_selectSegment(
             let fresh1 = &mut (*segmentFreqs.add(delIndex));
             *fresh1 = (*fresh1 as core::ffi::c_int - 1) as u16;
             if *segmentFreqs.add(delIndex) as core::ffi::c_int == 0 {
-                activeSegment.score = (activeSegment.score).wrapping_sub(*freqs.add(delIndex));
+                activeSegment.score = (activeSegment.score).wrapping_sub(freqs[delIndex]);
             }
             activeSegment.begin = (activeSegment.begin).wrapping_add(1);
         }
@@ -165,7 +165,7 @@ unsafe fn FASTCOVER_selectSegment(
             f,
             d,
         );
-        *freqs.add(i) = 0;
+        freqs[i] = 0;
         pos = pos.wrapping_add(1);
     }
     bestSegment
@@ -212,18 +212,18 @@ unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
 }
 
 unsafe fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
-    let f = (*ctx).f;
-    let d = (*ctx).d;
-    let skip = (*ctx).accelParams.skip;
+    let f = ctx.f;
+    let d = ctx.d;
+    let skip = ctx.accelParams.skip;
     let readLength = if d > 8 { d } else { 8 };
     let mut i: size_t = 0;
     i = 0;
-    while i < (*ctx).nbTrainSamples {
-        let mut start = *((*ctx).offsets).add(i);
-        let currSampleEnd = *((*ctx).offsets).add(i.wrapping_add(1));
+    while i < ctx.nbTrainSamples {
+        let mut start = *(ctx.offsets).add(i);
+        let currSampleEnd = *(ctx.offsets).add(i.wrapping_add(1));
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
             let dmerIndex = FASTCOVER_hashPtrToIndex(
-                ((*ctx).samples).add(start) as *const core::ffi::c_void,
+                (ctx.samples).add(start) as *const core::ffi::c_void,
                 f,
                 d,
             );
@@ -246,7 +246,7 @@ unsafe fn COVER_sum(samplesSizes: *const size_t, nbSamples: core::ffi::c_uint) -
 }
 
 unsafe fn FASTCOVER_ctx_init(
-    ctx: *mut FASTCOVER_ctx_t,
+    ctx: &mut FASTCOVER_ctx_t,
     samplesBuffer: *const core::ffi::c_void,
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
@@ -278,7 +278,7 @@ unsafe fn FASTCOVER_ctx_init(
     } else {
         totalSamplesSize
     };
-    (*ctx).displayLevel = displayLevel;
+    ctx.displayLevel = displayLevel;
     if totalSamplesSize
         < (if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
@@ -323,7 +323,6 @@ unsafe fn FASTCOVER_ctx_init(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    ptr::write_bytes(ctx as *mut u8, 0, ::core::mem::size_of::<FASTCOVER_ctx_t>());
     if displayLevel >= 2 {
         eprintln!(
             "Training on {} samples of total size {}",
@@ -336,26 +335,26 @@ unsafe fn FASTCOVER_ctx_init(
             nbTestSamples, testSamplesSize,
         );
     }
-    (*ctx).samples = samples;
-    (*ctx).samplesSizes = samplesSizes;
-    (*ctx).nbSamples = nbSamples as size_t;
-    (*ctx).nbTrainSamples = nbTrainSamples as size_t;
-    (*ctx).nbTestSamples = nbTestSamples as size_t;
-    (*ctx).nbDmers = trainingSamplesSize
+    ctx.samples = samples;
+    ctx.samplesSizes = samplesSizes;
+    ctx.nbSamples = nbSamples as size_t;
+    ctx.nbTrainSamples = nbTrainSamples as size_t;
+    ctx.nbTestSamples = nbTestSamples as size_t;
+    ctx.nbDmers = trainingSamplesSize
         .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
             d as size_t
         } else {
             ::core::mem::size_of::<u64>()
         })
         .wrapping_add(1);
-    (*ctx).d = d;
-    (*ctx).f = f;
-    (*ctx).accelParams = accelParams;
-    (*ctx).offsets = calloc(
+    ctx.d = d;
+    ctx.f = f;
+    ctx.accelParams = accelParams;
+    ctx.offsets = calloc(
         nbSamples.wrapping_add(1) as size_t,
         ::core::mem::size_of::<size_t>(),
     ) as *mut size_t;
-    if ((*ctx).offsets).is_null() {
+    if (ctx.offsets).is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate scratch buffers");
         }
@@ -363,24 +362,24 @@ unsafe fn FASTCOVER_ctx_init(
         return Error::memory_allocation.to_error_code();
     }
     let mut i: u32 = 0;
-    *((*ctx).offsets) = 0;
+    *(ctx.offsets) = 0;
     i = 1;
     while i <= nbSamples {
-        *((*ctx).offsets).offset(i as isize) = (*((*ctx).offsets)
+        *(ctx.offsets).offset(i as isize) = (*(ctx.offsets)
             .offset(i.wrapping_sub(1) as isize))
         .wrapping_add(*samplesSizes.offset(i.wrapping_sub(1) as isize));
         i = i.wrapping_add(1);
     }
-    (*ctx).freqs = Box::from(vec![0u32; 1 << f]);
+    ctx.freqs = Box::from(vec![0u32; 1 << f]);
     if displayLevel >= 2 {
         eprintln!("Computing frequencies");
     }
-    FASTCOVER_computeFrequency(ctx.as_mut().unwrap());
+    FASTCOVER_computeFrequency(ctx);
     0
 }
 unsafe fn FASTCOVER_buildDictionary(
     ctx: *const FASTCOVER_ctx_t,
-    freqs: *mut u32,
+    freqs: &mut [u32],
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
@@ -469,22 +468,16 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let segmentFreqs = calloc((1) << (*ctx).f, ::core::mem::size_of::<u16>()) as *mut u16;
     let dict = malloc(dictBufferCapacity) as *mut u8;
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
-    let freqs =
-        malloc(((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let displayLevel = (*ctx).displayLevel;
-    if segmentFreqs.is_null() || dict.is_null() || freqs.is_null() {
+    let mut freqs = (*ctx).freqs.clone();
+    if segmentFreqs.is_null() || dict.is_null() {
         if displayLevel >= 1 {
             eprintln!("Failed to allocate buffers: out of memory");
         }
     } else {
-        memcpy(
-            freqs as *mut core::ffi::c_void,
-            (*ctx).freqs.as_ptr() as *const core::ffi::c_void,
-            ((1 as size_t) << (*ctx).f).wrapping_mul(::core::mem::size_of::<u32>()),
-        );
         let tail = FASTCOVER_buildDictionary(
             ctx,
-            freqs,
+            &mut freqs,
             dict as *mut core::ffi::c_void,
             dictBufferCapacity,
             parameters,
@@ -514,7 +507,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     free(data as *mut core::ffi::c_void);
     free(segmentFreqs as *mut core::ffi::c_void);
     COVER_dictSelectionFree(selection);
-    free(freqs as *mut core::ffi::c_void);
+    drop(freqs);
 }
 
 fn FASTCOVER_convertToCoverParams(
@@ -627,7 +620,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let segmentFreqs = calloc(1 << parameters.f, ::core::mem::size_of::<u16>()) as *mut u16;
     let tail = FASTCOVER_buildDictionary(
         &ctx,
-        ctx.freqs.as_mut_ptr(),
+        &mut ctx.freqs,
         dictBuffer,
         dictBufferCapacity,
         coverParams,
