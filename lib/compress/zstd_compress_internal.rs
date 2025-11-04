@@ -256,6 +256,9 @@ const fn ZSTD_hash6(u: u64, h: u32, s: u64) -> usize {
 pub(crate) unsafe fn ZSTD_hash6Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
     ZSTD_hash6(MEM_readLE64(p), h, 0)
 }
+pub(crate) fn ZSTD_hash6Ptr_array(p: &[u8; 8], h: u32) -> usize {
+    ZSTD_hash6(u64::from_le_bytes(*p), h, 0)
+}
 unsafe fn ZSTD_hash6PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
     ZSTD_hash6(MEM_readLE64(p), h, s)
 }
@@ -277,6 +280,9 @@ const fn ZSTD_hash8(u: u64, h: u32, s: u64) -> usize {
 }
 pub(crate) unsafe fn ZSTD_hash8Ptr(p: *const core::ffi::c_void, h: u32) -> usize {
     ZSTD_hash8(MEM_readLE64(p), h, 0)
+}
+pub(crate) fn ZSTD_hash8Ptr_array(p: &[u8; 8], h: u32) -> usize {
+    ZSTD_hash8(u64::from_le_bytes(*p), h, 0)
 }
 unsafe fn ZSTD_hash8PtrS(p: *const core::ffi::c_void, h: u32, s: u64) -> usize {
     ZSTD_hash8(MEM_readLE64(p), h, s)
