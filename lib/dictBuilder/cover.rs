@@ -975,42 +975,39 @@ pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
 }
 
 pub(super) unsafe fn COVER_best_finish(
-    best: *mut COVER_best_t,
+    best: &mut COVER_best_t,
     parameters: ZDICT_cover_params_t,
     selection: COVER_dictSelection_t,
 ) {
     let dict = selection.dictContent as *mut core::ffi::c_void;
     let compressedSize = selection.totalCompressedSize;
     let dictSize = selection.dictSize;
-    if best.is_null() {
-        return;
-    }
     let mut liveJobs: size_t = 0;
-    let _guard = (*best).mutex.lock().unwrap();
-    (*best).liveJobs = ((*best).liveJobs).wrapping_sub(1);
-    liveJobs = (*best).liveJobs;
-    if compressedSize < (*best).compressedSize {
-        if ((*best).dict).is_null() || (*best).dictSize < dictSize {
-            if !((*best).dict).is_null() {
-                free((*best).dict);
+    let _guard = best.mutex.lock().unwrap();
+    best.liveJobs = (best.liveJobs).wrapping_sub(1);
+    liveJobs = best.liveJobs;
+    if compressedSize < best.compressedSize {
+        if (best.dict).is_null() || best.dictSize < dictSize {
+            if !(best.dict).is_null() {
+                free(best.dict);
             }
-            (*best).dict = malloc(dictSize);
-            if ((*best).dict).is_null() {
-                (*best).compressedSize = Error::GENERIC.to_error_code();
-                (*best).dictSize = 0;
-                (*best).cond.notify_one();
+            best.dict = malloc(dictSize);
+            if (best.dict).is_null() {
+                best.compressedSize = Error::GENERIC.to_error_code();
+                best.dictSize = 0;
+                best.cond.notify_one();
                 return;
             }
         }
         if !dict.is_null() {
-            memcpy((*best).dict, dict, dictSize);
-            (*best).dictSize = dictSize;
-            (*best).parameters = parameters;
-            (*best).compressedSize = compressedSize;
+            memcpy(best.dict, dict, dictSize);
+            best.dictSize = dictSize;
+            best.parameters = parameters;
+            best.compressedSize = compressedSize;
         }
     }
     if liveJobs == 0 {
-        (*best).cond.notify_all();
+        best.cond.notify_all();
     }
 }
 
@@ -1194,7 +1191,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);
-    COVER_best_finish((*data).best, parameters, selection);
+    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, selection);
     free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
