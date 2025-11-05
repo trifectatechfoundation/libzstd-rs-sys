@@ -473,7 +473,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
         }
     }
     free(dict as *mut core::ffi::c_void);
-    COVER_best_finish((*data).best, parameters, selection);
+    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, selection);
     free(data as *mut core::ffi::c_void);
     drop(segmentFreqs);
     COVER_dictSelectionFree(selection);
