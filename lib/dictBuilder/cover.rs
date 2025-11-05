@@ -63,7 +63,7 @@ impl COVER_map_pair_t {
     };
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[repr(C)]
 struct COVER_ctx_t<'a> {
     samples: &'a [u8],
@@ -391,28 +391,28 @@ fn COVER_groupBy(ctx: &mut COVER_ctx_t, cmp: fn(&COVER_ctx_t, &u32, &u32) -> Ord
     }
 }
 
-fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
-    let dmerId = range.start as u32;
+fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) -> u32 {
+    let dmer_id = range.start as u32;
     let group = &mut ctx.suffix[range];
     let mut freq = 0u32;
-    let mut curOffsetPtr = &ctx.offsets[..ctx.nbSamples];
-    let mut curSampleEnd = ctx.offsets[0];
+    let offsets = &ctx.offsets[..ctx.nbSamples + 1];
+    let mut cur_offset = 0;
+    let mut cur_sample_end = ctx.offsets[0];
     let mut it = group.iter().map(|v| *v as usize).peekable();
     while let Some(v) = it.next() {
-        ctx.dmerAt[v] = dmerId;
-        if v >= curSampleEnd {
+        ctx.dmerAt[v] = dmer_id;
+        if v >= cur_sample_end {
             freq += 1;
-            if curOffsetPtr.is_empty() {
-                break;
-            }
             if it.peek().is_some() {
-                let sampleEndPtr = COVER_lower_bound(curOffsetPtr, v);
-                curSampleEnd = curOffsetPtr[sampleEndPtr];
-                curOffsetPtr = &curOffsetPtr[sampleEndPtr + 1..];
+                let n = COVER_lower_bound(&ctx.offsets[cur_offset..ctx.nbSamples], v);
+                let sampleEndPtr = cur_offset + n;
+                cur_sample_end = offsets[sampleEndPtr];
+                cur_offset = sampleEndPtr + 1;
             }
         }
     }
     group[0] = freq;
+    freq
 }
 
 unsafe fn COVER_selectSegment(
@@ -1408,4 +1408,92 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     COVER_best_destroy(&mut best);
     POOL_free(pool);
     dictSize
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_lower_bound() {
+        assert_eq!(COVER_lower_bound(&[255, 267], 251), 0);
+
+        assert_eq!(
+            COVER_lower_bound(
+                &[
+                    0, 12, 22, 28, 33, 42, 51, 63, 75, 87, 99, 111, 123, 135, 147, 159, 171, 183,
+                    195, 207, 219, 231, 243, 255, 267,
+                ],
+                47,
+            ),
+            6
+        );
+    }
+
+    #[test]
+    fn test_group() {
+        let offsets = [
+            0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 110, 121, 132, 143, 154, 165, 176, 187, 198,
+            209, 220, 231, 242, 253, 264, 275, 286, 297, 308, 319, 330, 341, 352, 363, 374, 385,
+            396, 407, 418, 429, 440, 451, 462, 473, 484, 495, 506, 517, 528, 539, 550, 561, 572,
+            583, 594, 605, 616, 627, 638, 649, 660, 671, 682, 693, 704, 715, 726, 737, 748, 759,
+            770, 781, 792, 803, 814, 825, 836, 847, 858, 869, 880, 891, 902, 913, 924, 935, 946,
+            957, 968, 979, 990, 1001, 1012, 1023, 1034, 1045, 1056, 1067, 1078, 1089, 1100,
+        ];
+        let suffix_range = [
+            2, 3, 4, 5, 6, 13, 14, 15, 16, 17, 24, 25, 26, 27, 28, 35, 36, 37, 38, 39, 46, 47, 48,
+            49, 50, 57, 58, 59, 60, 61, 68, 69, 70, 71, 72, 79, 80, 81, 82, 83, 90, 91, 92, 93, 94,
+            101, 102, 103, 104, 105, 112, 113, 114, 115, 116, 123, 124, 125, 126, 127, 134, 135,
+            136, 137, 138, 145, 146, 147, 148, 149, 156, 157, 158, 159, 160, 167, 168, 169, 170,
+            171, 178, 179, 180, 181, 182, 189, 190, 191, 192, 193, 200, 201, 202, 203, 204, 211,
+            212, 213, 214, 215, 222, 223, 224, 225, 226, 233, 234, 235, 236, 237, 244, 245, 246,
+            247, 248, 255, 256, 257, 258, 259, 266, 267, 268, 269, 270, 277, 278, 279, 280, 281,
+            288, 289, 290, 291, 292, 299, 300, 301, 302, 303, 310, 311, 312, 313, 314, 321, 322,
+            323, 324, 325, 332, 333, 334, 335, 336, 343, 344, 345, 346, 347, 354, 355, 356, 357,
+            358, 365, 366, 367, 368, 369, 376, 377, 378, 379, 380, 387, 388, 389, 390, 391, 398,
+            399, 400, 401, 402, 409, 410, 411, 412, 413, 420, 421, 422, 423, 424, 431, 432, 433,
+            434, 435, 442, 443, 444, 445, 446, 453, 454, 455, 456, 457, 464, 465, 466, 467, 468,
+            475, 476, 477, 478, 479, 486, 487, 488, 489, 490, 497, 498, 499, 500, 501, 508, 509,
+            510, 511, 512, 519, 520, 521, 522, 523, 530, 531, 532, 533, 534, 541, 542, 543, 544,
+            545, 552, 553, 554, 555, 556, 563, 564, 565, 566, 567, 574, 575, 576, 577, 578, 585,
+            586, 587, 588, 589, 596, 597, 598, 599, 600, 607, 608, 609, 610, 611, 618, 619, 620,
+            621, 622, 629, 630, 631, 632, 633, 640, 641, 642, 643, 644, 651, 652, 653, 654, 655,
+            662, 663, 664, 665, 666, 673, 674, 675, 676, 677, 684, 685, 686, 687, 688, 695, 696,
+            697, 698, 699, 706, 707, 708, 709, 710, 717, 718, 719, 720, 721, 728, 729, 730, 731,
+            732, 739, 740, 741, 742, 743, 750, 751, 752, 753, 754, 761, 762, 763, 764, 765, 772,
+            773, 774, 775, 776, 783, 784, 785, 786, 787, 794, 795, 796, 797, 798, 805, 806, 807,
+            808, 809, 816, 817, 818, 819, 820, 827, 828, 829, 830, 831, 838, 839, 840, 841, 842,
+            849, 850, 851, 852, 853, 860, 861, 862, 863, 864, 871, 872, 873, 874, 875, 882, 883,
+            884, 885, 886, 893, 894, 895, 896, 897, 904, 905, 906, 907, 908, 915, 916, 917, 918,
+            919, 926, 927, 928, 929, 930, 937, 938, 939, 940, 941, 948, 949, 950, 951, 952, 959,
+            960, 961, 962, 963, 970, 971, 972, 973, 974, 981, 982, 983, 984, 985, 992, 993, 994,
+            995, 996, 1003, 1004, 1005, 1006, 1007, 1014, 1015, 1016, 1017, 1018, 1025, 1026, 1027,
+            1028, 1029, 1036, 1037, 1038, 1039, 1040, 1047, 1048, 1049, 1050, 1051, 1058, 1059,
+            1060, 1061, 1062, 1069, 1070, 1071, 1072, 1073, 1080, 1081, 1082, 1083, 1084, 1091,
+            1092,
+        ];
+
+        let range = 497..994;
+        let nbSamples = 100;
+
+        let mut suffix = vec![0; range.end];
+        suffix[range.start..range.end].copy_from_slice(&suffix_range);
+
+        let mut ctx = COVER_ctx_t {
+            samples: &[],
+            offsets: offsets.into(),
+            samplesSizes: &[],
+            nbSamples,
+            nbTrainSamples: 0,
+            nbTestSamples: 0,
+            suffixSize: suffix.len(),
+            suffix: suffix.into(),
+            freqs: Box::default(),
+            dmerAt: vec![0; 1 << 16].into(),
+            d: 0,
+            displayLevel: 0,
+        };
+
+        assert_eq!(COVER_group(&mut ctx, range), 100);
+    }
 }
