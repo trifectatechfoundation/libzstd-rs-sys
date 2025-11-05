@@ -924,8 +924,7 @@ unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
     *((*bitC).bitContainer).as_mut_ptr() >>=
         *((*bitC).bitPos).as_mut_ptr().add(1) & 0xff as core::ffi::c_int as size_t;
     *((*bitC).bitContainer).as_mut_ptr() |= *((*bitC).bitContainer).as_mut_ptr().add(1);
-    let fresh22 = &mut (*((*bitC).bitPos).as_mut_ptr());
-    *fresh22 = (*fresh22).wrapping_add(*((*bitC).bitPos).as_mut_ptr().add(1));
+    (*bitC).bitPos[0] += (*bitC).bitPos[1];
 }
 #[inline(always)]
 unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: core::ffi::c_int) {
