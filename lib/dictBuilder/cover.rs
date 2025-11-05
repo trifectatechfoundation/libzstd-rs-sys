@@ -92,15 +92,17 @@ pub(super) struct COVER_epoch_info_t {
     pub(super) num: u32,
     pub(super) size: u32,
 }
+
 pub(super) struct COVER_best_t {
     pub(super) mutex: Mutex<()>,
     pub(super) cond: Condvar,
     pub(super) liveJobs: size_t,
-    pub(super) dict: *mut core::ffi::c_void,
+    pub(super) dict: Box<[u8]>,
     pub(super) dictSize: size_t,
     pub(super) parameters: ZDICT_cover_params_t,
     pub(super) compressedSize: size_t,
 }
+
 #[repr(C)]
 struct COVER_tryParameters_data_t<'a, 'b> {
     ctx: *const COVER_ctx_t<'a>,
@@ -948,7 +950,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
 
 pub(super) fn COVER_best_init(best: &mut COVER_best_t) {
     best.liveJobs = 0;
-    best.dict = core::ptr::null_mut();
+    best.dict = Box::default();
     best.dictSize = 0;
     best.compressedSize = -(1 as core::ffi::c_int) as size_t;
     best.parameters = ZDICT_cover_params_t::default();
@@ -964,9 +966,7 @@ pub(super) fn COVER_best_wait(best: &mut COVER_best_t) {
 
 pub(super) unsafe fn COVER_best_destroy(best: &mut COVER_best_t) {
     COVER_best_wait(best);
-    if !(best.dict).is_null() {
-        free(best.dict);
-    }
+    drop(core::mem::take(&mut best.dict));
 }
 
 pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
@@ -987,20 +987,12 @@ pub(super) unsafe fn COVER_best_finish(
     best.liveJobs = (best.liveJobs).wrapping_sub(1);
     liveJobs = best.liveJobs;
     if compressedSize < best.compressedSize {
-        if (best.dict).is_null() || best.dictSize < dictSize {
-            if !(best.dict).is_null() {
-                free(best.dict);
-            }
-            best.dict = malloc(dictSize);
-            if (best.dict).is_null() {
-                best.compressedSize = Error::GENERIC.to_error_code();
-                best.dictSize = 0;
-                best.cond.notify_one();
-                return;
-            }
+        if best.dictSize < dictSize {
+            drop(core::mem::take(&mut best.dict));
+            best.dict = Box::from(vec![0u8; dictSize]);
         }
         if !dict.is_null() {
-            memcpy(best.dict, dict, dictSize);
+            memcpy(best.dict.as_mut_ptr().cast(), dict, dictSize);
             best.dictSize = dictSize;
             best.parameters = parameters;
             best.compressedSize = compressedSize;
@@ -1258,7 +1250,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         mutex: Mutex::new(()),
         cond: Condvar::new(),
         liveJobs: 0,
-        dict: core::ptr::null_mut::<core::ffi::c_void>(),
+        dict: Box::default(),
         dictSize: 0,
         parameters: ZDICT_cover_params_t::default(),
         compressedSize: 0,
@@ -1412,7 +1404,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         return compressedSize;
     }
     *parameters = best.parameters;
-    memcpy(dictBuffer, best.dict, dictSize);
+    memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
     COVER_best_destroy(&mut best);
     POOL_free(pool);
     dictSize
