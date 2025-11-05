@@ -969,12 +969,9 @@ pub(super) unsafe fn COVER_best_destroy(best: &mut COVER_best_t) {
     }
 }
 
-pub(super) unsafe fn COVER_best_start(best: *mut COVER_best_t) {
-    if best.is_null() {
-        return;
-    }
-    let _guard = (*best).mutex.lock().unwrap();
-    (*best).liveJobs = ((*best).liveJobs).wrapping_add(1);
+pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
+    let _guard = best.mutex.lock().unwrap();
+    best.liveJobs += 1;
 }
 
 pub(super) unsafe fn COVER_best_finish(
