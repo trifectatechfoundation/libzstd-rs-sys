@@ -110,7 +110,7 @@ struct COVER_tryParameters_data_t<'a, 'b> {
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
 }
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub(super) struct COVER_dictSelection_t {
     dictContent: *mut u8,
@@ -977,7 +977,7 @@ pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
 pub(super) unsafe fn COVER_best_finish(
     best: &mut COVER_best_t,
     parameters: ZDICT_cover_params_t,
-    selection: COVER_dictSelection_t,
+    selection: &COVER_dictSelection_t,
 ) {
     let dict = selection.dictContent as *mut core::ffi::c_void;
     let compressedSize = selection.totalCompressedSize;
@@ -1019,8 +1019,8 @@ pub(super) fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
     setDictSelection(core::ptr::null_mut(), 0, error)
 }
 
-pub(super) fn COVER_dictSelectionIsError(selection: COVER_dictSelection_t) -> core::ffi::c_uint {
-    (ERR_isError(selection.totalCompressedSize) || (selection.dictContent).is_null())
+pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> core::ffi::c_uint {
+    (ERR_isError(selection.totalCompressedSize) || selection.dictContent.is_null())
         as core::ffi::c_int as core::ffi::c_uint
 }
 
@@ -1179,11 +1179,11 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         totalCompressedSize,
     );
 
-    if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
+    if COVER_dictSelectionIsError(&selection) != 0 && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);
-    COVER_best_finish((*data).best, parameters, selection);
+    COVER_best_finish((*data).best, parameters, &selection);
     free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
