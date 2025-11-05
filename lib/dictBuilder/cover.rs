@@ -400,6 +400,9 @@ fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) {
         ctx.dmerAt[v] = dmerId;
         if v >= curSampleEnd {
             freq += 1;
+            if curOffsetPtr.is_empty() {
+                break;
+            }
             if it.peek().is_some() {
                 let sampleEndPtr = COVER_lower_bound(curOffsetPtr, v);
                 curSampleEnd = curOffsetPtr[sampleEndPtr];
