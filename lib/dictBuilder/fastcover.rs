@@ -704,7 +704,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         mutex: Mutex::new(()),
         cond: Condvar::new(),
         liveJobs: 0,
-        dict: core::ptr::null_mut::<core::ffi::c_void>(),
+        dict: Box::default(),
         dictSize: 0,
         parameters: ZDICT_cover_params_t::default(),
         compressedSize: 0,
@@ -884,7 +884,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
-    memcpy(dictBuffer, best.dict, dictSize);
+    memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
     COVER_best_destroy(&mut best);
     POOL_free(pool);
     dictSize
