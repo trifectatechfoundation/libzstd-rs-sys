@@ -438,6 +438,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << ctx.f]);
     let mut dict: Box<[u8]> = Box::from(vec![0; dictBufferCapacity]);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
+
     let displayLevel = ctx.displayLevel;
     let mut freqs = ctx.freqs.clone();
 
@@ -464,12 +465,12 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
         ctx.offsets.as_ptr().cast_mut(),
         totalCompressedSize,
     );
-    if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
+    if COVER_dictSelectionIsError(&selection) != 0 && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
 
     drop(dict);
-    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, selection);
+    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, &selection);
     free(data as *mut core::ffi::c_void);
     drop(segmentFreqs);
     COVER_dictSelectionFree(selection);
