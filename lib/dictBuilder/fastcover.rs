@@ -436,43 +436,39 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << ctx.f]);
-    let dict = malloc(dictBufferCapacity) as *mut u8;
+    let mut dict: Box<[u8]> = Box::from(vec![0; dictBufferCapacity]);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let displayLevel = ctx.displayLevel;
     let mut freqs = ctx.freqs.clone();
-    if dict.is_null() {
-        if displayLevel >= 1 {
-            eprintln!("Failed to allocate buffers: out of memory");
-        }
-    } else {
-        let tail = FASTCOVER_buildDictionary(
-            ctx,
-            &mut freqs,
-            dict as *mut core::ffi::c_void,
-            dictBufferCapacity,
-            parameters,
-            &mut segmentFreqs,
-        );
-        let nbFinalizeSamples =
-            (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
-        selection = COVER_selectDict(
-            dict.add(tail),
-            dictBufferCapacity,
-            dictBufferCapacity.wrapping_sub(tail),
-            ctx.samples.as_ptr(),
-            ctx.samplesSizes.as_ptr(),
-            nbFinalizeSamples,
-            ctx.nbTrainSamples,
-            ctx.nbSamples,
-            parameters,
-            ctx.offsets.as_ptr().cast_mut(),
-            totalCompressedSize,
-        );
-        if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
-            eprintln!("Failed to select dictionary");
-        }
+
+    let tail = FASTCOVER_buildDictionary(
+        ctx,
+        &mut freqs,
+        dict.as_mut_ptr() as *mut core::ffi::c_void,
+        dictBufferCapacity,
+        parameters,
+        &mut segmentFreqs,
+    );
+    let nbFinalizeSamples =
+        (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
+    selection = COVER_selectDict(
+        dict.as_mut_ptr().add(tail),
+        dictBufferCapacity,
+        dictBufferCapacity.wrapping_sub(tail),
+        ctx.samples.as_ptr(),
+        ctx.samplesSizes.as_ptr(),
+        nbFinalizeSamples,
+        ctx.nbTrainSamples,
+        ctx.nbSamples,
+        parameters,
+        ctx.offsets.as_ptr().cast_mut(),
+        totalCompressedSize,
+    );
+    if COVER_dictSelectionIsError(selection) != 0 && displayLevel >= 1 {
+        eprintln!("Failed to select dictionary");
     }
-    free(dict as *mut core::ffi::c_void);
+
+    drop(dict);
     COVER_best_finish((*data).best.as_mut().unwrap(), parameters, selection);
     free(data as *mut core::ffi::c_void);
     drop(segmentFreqs);
