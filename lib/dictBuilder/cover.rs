@@ -102,9 +102,9 @@ pub(super) struct COVER_best_t {
     pub(super) compressedSize: size_t,
 }
 #[repr(C)]
-struct COVER_tryParameters_data_t<'a> {
+struct COVER_tryParameters_data_t<'a, 'b> {
     ctx: *const COVER_ctx_t<'a>,
-    best: *mut COVER_best_t,
+    best: &'b mut COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
 }
@@ -1191,7 +1191,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);
-    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, selection);
+    COVER_best_finish((*data).best, parameters, selection);
     free(data as *mut core::ffi::c_void);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
@@ -1377,7 +1377,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 }
                 free(data as *mut core::ffi::c_void);
             } else {
-                COVER_best_start(&mut best);
+                COVER_best_start((*data).best);
                 if !pool.is_null() {
                     POOL_add(pool, COVER_tryParameters, data as *mut core::ffi::c_void);
                 } else {
