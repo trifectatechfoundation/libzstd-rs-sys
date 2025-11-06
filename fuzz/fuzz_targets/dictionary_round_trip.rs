@@ -76,10 +76,10 @@ impl arbitrary::Arbitrary<'_> for ArbitraryRoundTrip {
     }
 }
 
-fuzz_target!(|data: (ArbitrarySamples, ArbitraryRoundTrip)| {
+fuzz_target!(|data: (ArbitraryRoundTrip, ArbitrarySamples)| {
     use libzstd_rs_sys::*;
 
-    let (samples, data) = data;
+    let (data, samples) = data;
 
     let src = samples.src;
 
