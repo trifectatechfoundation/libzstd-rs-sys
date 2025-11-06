@@ -884,7 +884,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
     parameters: ZDICT_cover_params_t,
     samplesSizes: &[size_t],
     samples: &[u8],
-    offsets: *mut size_t,
+    offsets: &[size_t],
     nbTrainSamples: size_t,
     nbSamples: size_t,
     dict: *mut u8,
@@ -929,7 +929,7 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
                 cctx,
                 dst.as_mut_ptr().cast::<core::ffi::c_void>(),
                 dstCapacity,
-                samples[*offsets.add(i)..].as_ptr() as *const core::ffi::c_void,
+                samples[offsets[i]..].as_ptr() as *const core::ffi::c_void,
                 samplesSizes[i],
                 cdict,
             );
@@ -1032,7 +1032,7 @@ pub(super) unsafe fn COVER_selectDict(
     nbCheckSamples: size_t,
     nbSamples: size_t,
     params: ZDICT_cover_params_t,
-    offsets: *mut size_t,
+    offsets: &[size_t],
     mut totalCompressedSize: size_t,
 ) -> COVER_dictSelection_t {
     let mut largestDict = 0;
@@ -1158,7 +1158,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         (*ctx).nbTrainSamples,
         (*ctx).nbSamples,
         parameters,
-        (*ctx).offsets.as_mut_ptr(),
+        &(*ctx).offsets,
         totalCompressedSize,
     );
 
