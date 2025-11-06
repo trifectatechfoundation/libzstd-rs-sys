@@ -882,8 +882,8 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
 
 pub(super) unsafe fn COVER_checkTotalCompressedSize(
     parameters: ZDICT_cover_params_t,
-    samplesSizes: *const size_t,
-    samples: *const u8,
+    samplesSizes: &[size_t],
+    samples: &[u8],
     offsets: *mut size_t,
     nbTrainSamples: size_t,
     nbSamples: size_t,
@@ -902,8 +902,8 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
         0
     };
     while i < nbSamples {
-        maxSampleSize = if *samplesSizes.add(i) > maxSampleSize {
-            *samplesSizes.add(i)
+        maxSampleSize = if samplesSizes[i] > maxSampleSize {
+            samplesSizes[i]
         } else {
             maxSampleSize
         };
@@ -929,8 +929,8 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
                 cctx,
                 dst.as_mut_ptr().cast::<core::ffi::c_void>(),
                 dstCapacity,
-                samples.add(*offsets.add(i)) as *const core::ffi::c_void,
-                *samplesSizes.add(i),
+                samples[*offsets.add(i)..].as_ptr() as *const core::ffi::c_void,
+                samplesSizes[i],
                 cdict,
             );
             if ERR_isError(size) {
@@ -1026,8 +1026,8 @@ pub(super) unsafe fn COVER_selectDict(
     customDictContent: &[u8],
     dictBufferCapacity: size_t,
     mut dictContentSize: size_t,
-    samplesBuffer: *const u8,
-    samplesSizes: *const size_t,
+    samplesBuffer: &[u8],
+    samplesSizes: &[size_t],
     nbFinalizeSamples: core::ffi::c_uint,
     nbCheckSamples: size_t,
     nbSamples: size_t,
@@ -1047,8 +1047,8 @@ pub(super) unsafe fn COVER_selectDict(
         dictBufferCapacity,
         customDictContent.as_ptr() as *const core::ffi::c_void,
         dictContentSize,
-        samplesBuffer as *const core::ffi::c_void,
-        samplesSizes,
+        samplesBuffer.as_ptr() as *const core::ffi::c_void,
+        samplesSizes.as_ptr(),
         nbFinalizeSamples,
         params.zParams,
     );
@@ -1088,8 +1088,8 @@ pub(super) unsafe fn COVER_selectDict(
                 .as_ptr()
                 .cast(),
             dictContentSize,
-            samplesBuffer as *const core::ffi::c_void,
-            samplesSizes,
+            samplesBuffer.as_ptr() as *const core::ffi::c_void,
+            samplesSizes.as_ptr(),
             nbFinalizeSamples,
             params.zParams,
         );
@@ -1152,8 +1152,8 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         &dict[tail..],
         dictBufferCapacity,
         dictBufferCapacity.wrapping_sub(tail),
-        (*ctx).samples.as_ptr(),
-        (*ctx).samplesSizes.as_ptr(),
+        (*ctx).samples,
+        (*ctx).samplesSizes,
         (*ctx).nbTrainSamples as core::ffi::c_uint,
         (*ctx).nbTrainSamples,
         (*ctx).nbSamples,
