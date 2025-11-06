@@ -462,7 +462,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
         ctx.nbTrainSamples,
         ctx.nbSamples,
         parameters,
-        ctx.offsets.as_ptr().cast_mut(),
+        &ctx.offsets,
         totalCompressedSize,
     );
     if COVER_dictSelectionIsError(&selection) != 0 && displayLevel >= 1 {
