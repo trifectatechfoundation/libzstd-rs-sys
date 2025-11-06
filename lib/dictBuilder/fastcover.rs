@@ -1,4 +1,5 @@
 use core::ptr;
+use std::time::{Duration, Instant};
 
 use libc::{free, malloc, memcpy, size_t};
 
@@ -16,12 +17,6 @@ use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
 };
 use crate::lib::zdict::ZDICT_finalizeDictionary;
-
-extern "C" {
-    fn clock() -> clock_t;
-}
-type __clock_t = core::ffi::c_long;
-type clock_t = __clock_t;
 
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
@@ -55,7 +50,6 @@ struct FASTCOVER_tryParameters_data_t<'a> {
     parameters: ZDICT_cover_params_t,
 }
 
-const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const FASTCOVER_MAX_F: core::ffi::c_int = 31;
 const FASTCOVER_MAX_ACCEL: core::ffi::c_int = 10;
 const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
@@ -365,7 +359,7 @@ unsafe fn FASTCOVER_buildDictionary(
     let maxZeroScoreRun = 10;
     let displayLevel = ctx.displayLevel;
     let mut zeroScoreRun = 0 as size_t;
-    let mut lastUpdateTime = 0;
+    let mut last_update_time = Instant::now();
     let mut epoch: size_t = 0;
     if displayLevel >= 2 {
         eprintln!(
@@ -410,9 +404,9 @@ unsafe fn FASTCOVER_buildDictionary(
                 segmentSize,
             );
             if displayLevel >= 2 {
-                let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
-                if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
-                    lastUpdateTime = clock();
+                let refresh_rate = Duration::from_millis(150);
+                if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
+                    last_update_time = Instant::now();
                     eprint!(
                         "\r{}%       ",
                         (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
@@ -698,7 +692,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut k: core::ffi::c_uint = 0;
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
-    let mut lastUpdateTime = 0;
+    let mut last_update_time = Instant::now();
     if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
             eprintln!("Incorrect splitPoint");
@@ -843,9 +837,9 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                     FASTCOVER_tryParameters(data as *mut core::ffi::c_void);
                 }
                 if displayLevel >= 2 {
-                    let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
-                    if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
-                        lastUpdateTime = clock();
+                    let refresh_rate = Duration::from_millis(150);
+                    if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
+                        last_update_time = Instant::now();
                         eprintln!(
                             "\r{}%       ",
                             iteration.wrapping_mul(100).wrapping_div(kIterations),
