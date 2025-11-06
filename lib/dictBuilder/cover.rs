@@ -972,11 +972,6 @@ pub(super) fn COVER_best_wait(best: &mut COVER_best_t) {
     }
 }
 
-pub(super) fn COVER_best_destroy(best: &mut COVER_best_t) {
-    COVER_best_wait(best);
-    drop(core::mem::take(&mut best.dict));
-}
-
 pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
     let _guard = best.mutex.lock().unwrap();
     best.liveJobs += 1;
@@ -1321,7 +1316,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
-            COVER_best_destroy(&mut best);
+            COVER_best_wait(&mut best);
             POOL_free(pool);
             return initVal;
         }
@@ -1396,7 +1391,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
-        COVER_best_destroy(&mut best);
+        COVER_best_wait(&mut best);
         POOL_free(pool);
         return compressedSize;
     }
@@ -1406,7 +1401,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         dictBuffer.cast::<u8>(),
         dictSize,
     );
-    COVER_best_destroy(&mut best);
+    COVER_best_wait(&mut best);
     POOL_free(pool);
     dictSize
 }
