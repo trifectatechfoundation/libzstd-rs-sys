@@ -711,18 +711,7 @@ unsafe fn COVER_buildDictionary(
         parameters.k,
         4,
     );
-    let maxZeroScoreRun = (if 10
-        > (if (100) < epochs.num >> 3 {
-            100
-        } else {
-            epochs.num >> 3
-        }) {
-        10
-    } else if (100) < epochs.num >> 3 {
-        100
-    } else {
-        epochs.num >> 3
-    }) as size_t;
+    let maxZeroScoreRun = (epochs.num >> 3).clamp(10, 100) as size_t;
     let mut zeroScoreRun = 0 as size_t;
     let mut epoch: size_t = 0;
     let mut lastUpdateTime = 0;
