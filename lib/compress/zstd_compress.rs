@@ -1549,7 +1549,7 @@ pub const ZSTD_COMPRESSBLOCK_BTULTRA2: unsafe fn(
 pub const ZSTD_LDM_DEFAULT_WINDOW_LOG: core::ffi::c_int = 27;
 pub const INT_MAX: core::ffi::c_int = __INT_MAX__;
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBound))]
-pub unsafe extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
+pub extern "C" fn ZSTD_compressBound(srcSize: size_t) -> size_t {
     let r = if srcSize as core::ffi::c_ulonglong
         >= (if ::core::mem::size_of::<size_t>() == 8 {
             0xff00ff00ff00ff00 as core::ffi::c_ulonglong
