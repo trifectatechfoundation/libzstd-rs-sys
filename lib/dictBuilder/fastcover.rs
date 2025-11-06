@@ -43,9 +43,9 @@ struct FASTCOVER_ctx_t<'a> {
 }
 
 #[repr(C)]
-struct FASTCOVER_tryParameters_data_t<'a> {
-    ctx: *const FASTCOVER_ctx_t<'a>,
-    best: *mut COVER_best_t,
+struct FASTCOVER_tryParameters_data_t<'a, 'b> {
+    ctx: &'b FASTCOVER_ctx_t<'a>,
+    best: &'b COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
 }
@@ -424,7 +424,7 @@ unsafe fn FASTCOVER_buildDictionary(
 }
 unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut FASTCOVER_tryParameters_data_t;
-    let ctx = (*data).ctx.as_ref().unwrap();
+    let ctx = (*data).ctx;
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
@@ -463,7 +463,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     }
 
     drop(dict);
-    COVER_best_finish((*data).best.as_mut().unwrap(), parameters, &selection);
+    COVER_best_finish((*data).best, parameters, &selection);
     free(data as *mut core::ffi::c_void);
     drop(segmentFreqs);
     COVER_dictSelectionFree(selection);
@@ -729,7 +729,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             return Error::memory_allocation.to_error_code();
         }
     }
-    let mut best = COVER_best_t::new();
+    let best = COVER_best_t::new();
     ptr::write_bytes(
         &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
         0,
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 return Error::memory_allocation.to_error_code();
             }
             (*data).ctx = &ctx;
-            (*data).best = &mut best;
+            (*data).best = &best;
             (*data).dictBufferCapacity = dictBufferCapacity;
             (*data).parameters = coverParams;
             (*data).parameters.k = k;
@@ -818,7 +818,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             if !FASTCOVER_checkParameters(
                 (*data).parameters,
                 dictBufferCapacity,
-                (*(*data).ctx).f,
+                (*data).ctx.f,
                 accel,
             ) {
                 if displayLevel >= 1 {
