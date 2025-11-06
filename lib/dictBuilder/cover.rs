@@ -94,8 +94,16 @@ pub(super) struct COVER_epoch_info_t {
     pub(super) size: u32,
 }
 
+pub(super) struct COVER_best_t_inner {}
+
+impl COVER_best_t_inner {
+    pub(crate) fn new() -> Self {
+        Self {}
+    }
+}
+
 pub(super) struct COVER_best_t {
-    pub(super) mutex: Mutex<()>,
+    pub(super) mutex: Mutex<COVER_best_t_inner>,
     pub(super) cond: Condvar,
     pub(super) liveJobs: size_t,
     pub(super) dict: Box<[u8]>,
@@ -107,7 +115,7 @@ pub(super) struct COVER_best_t {
 impl COVER_best_t {
     pub(crate) fn new() -> Self {
         Self {
-            mutex: Mutex::new(()),
+            mutex: Mutex::new(COVER_best_t_inner::new()),
             cond: Condvar::new(),
             liveJobs: 0,
             dict: Box::default(),
