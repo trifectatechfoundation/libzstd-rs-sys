@@ -17,7 +17,7 @@ impl arbitrary::Arbitrary<'_> for ArbitrarySamples {
 
         let dict_size = max(src.len() / 8, 1024);
         let total_sample_size = dict_size * 11;
-        let nb_samples = 100;
+        let nb_samples = u.int_in_range(1..=100)?;
 
         // generate random samples from src
         let mut samples = Vec::with_capacity(total_sample_size);
