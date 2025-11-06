@@ -40,7 +40,6 @@
 #![cfg_attr(feature = "nightly", feature(likely_unlikely))]
 // FIXME
 #![allow(clippy::missing_safety_doc)]
-#![feature(slice_from_ptr_range)]
 
 pub mod lib {
     pub mod common {

@@ -84,7 +84,7 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
-          toolchain: nightly
+          toolchain: stable
           targets: "${{ matrix.target }}"
       - name: target
         run: "rustc -vV | sed -n 's|host: ||p'"
@@ -144,7 +144,7 @@ jobs:
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@be73d7920c329f220ce78e0234b8f96b7ae60248
         with:
-          toolchain: nightly
+          toolchain: stable
           components: clippy
           targets: ${{matrix.target}}
       - name: Rust cache
@@ -254,7 +254,7 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
         with:
-          toolchain: nightly
+          toolchain: stable
           targets: "${{ matrix.target }}"
 
       # NOTE: explicitly specifying the target is required on windows where we build for gnu, but the system is msvc.
