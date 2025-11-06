@@ -196,7 +196,17 @@ fn test_train_from_buffer_fastcover() {
 
 #[test]
 #[cfg(not(target_family = "wasm"))]
-fn test_optimize_train_from_buffer_cover_pool() {
+fn test_optimize_train_from_buffer_cover_single_threaded() {
+    test_optimize_train_from_buffer_cover_pool(1);
+}
+
+#[test]
+#[cfg(not(target_family = "wasm"))]
+fn test_optimize_train_from_buffer_cover_multi_threaded() {
+    test_optimize_train_from_buffer_cover_pool(4);
+}
+
+fn test_optimize_train_from_buffer_cover_pool(thread_count: u32) {
     let input_data = "The quick brown fox jumps high";
 
     assert_eq_rs_c!({
@@ -218,8 +228,7 @@ fn test_optimize_train_from_buffer_cover_pool() {
             k: 200,
             d: 8,
             steps: 4,
-            // NOTE: a nbThreads value above 1 uses the pool
-            nbThreads: 1,
+            nbThreads: thread_count,
             splitPoint: 0.5,
             shrinkDict: 0,
             shrinkDictMaxRegression: 1,

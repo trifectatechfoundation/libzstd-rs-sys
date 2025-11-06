@@ -1294,7 +1294,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
     };
 
-    let mut best = COVER_best_t::new();
+    let best = COVER_best_t::new();
 
     for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = COVER_ctx_t::default();
