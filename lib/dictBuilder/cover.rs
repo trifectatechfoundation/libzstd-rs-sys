@@ -1136,11 +1136,14 @@ pub(super) fn COVER_selectDict(
     setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
 }
 
-unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
-    let data = opaque as *mut COVER_tryParameters_data_t;
-    let ctx = (*data).ctx.cast_mut();
-    let parameters = (*data).parameters;
-    let dictBufferCapacity = (*data).dictBufferCapacity;
+unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
+    COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
+}
+
+unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
+    let ctx = data.ctx.cast_mut();
+    let parameters = data.parameters;
+    let dictBufferCapacity = data.dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut dict: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
@@ -1175,8 +1178,8 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);
-    COVER_best_finish((*data).best, parameters, &selection);
-    drop(unsafe { Box::from_raw(data) });
+    COVER_best_finish(data.best, parameters, &selection);
+    drop(data);
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
     drop(freqs);
@@ -1355,21 +1358,21 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             if displayLevel >= 3 {
                 eprintln!("k={}", k);
             }
-            if !COVER_checkParameters((*data).parameters, dictBufferCapacity) {
+            if !COVER_checkParameters(data.parameters, dictBufferCapacity) {
                 if displayLevel >= 1 {
                     eprintln!("Cover parameters incorrect");
                 }
                 drop(data);
             } else {
-                COVER_best_start((*data).best);
+                COVER_best_start(data.best);
                 if !pool.is_null() {
                     POOL_add(
                         pool,
-                        COVER_tryParameters,
+                        COVER_tryParameters_wrapper,
                         Box::leak(data) as *mut _ as *mut core::ffi::c_void,
                     );
                 } else {
-                    COVER_tryParameters(Box::leak(data) as *mut _ as *mut core::ffi::c_void);
+                    COVER_tryParameters(data);
                 }
                 if displayLevel >= 2 {
                     let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
