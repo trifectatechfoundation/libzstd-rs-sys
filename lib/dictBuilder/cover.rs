@@ -1388,10 +1388,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
+
+    COVER_best_wait(&mut best);
+
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
-        COVER_best_wait(&mut best);
         POOL_free(pool);
         return compressedSize;
     }
@@ -1401,7 +1403,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         dictBuffer.cast::<u8>(),
         dictSize,
     );
-    COVER_best_wait(&mut best);
     POOL_free(pool);
     dictSize
 }

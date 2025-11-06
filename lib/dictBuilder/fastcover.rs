@@ -863,16 +863,17 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
+
+    COVER_best_wait(&mut best);
+
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
-        COVER_best_wait(&mut best);
         POOL_free(pool);
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
     memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
-    COVER_best_wait(&mut best);
     POOL_free(pool);
     dictSize
 }
