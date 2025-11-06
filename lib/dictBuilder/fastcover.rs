@@ -832,7 +832,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 }
                 free(data as *mut core::ffi::c_void);
             } else {
-                COVER_best_start(&mut best);
+                COVER_best_start(&best);
                 if !pool.is_null() {
                     POOL_add(
                         pool,
