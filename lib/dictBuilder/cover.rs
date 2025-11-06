@@ -106,7 +106,7 @@ pub(super) struct COVER_best_t {
 
 #[repr(C)]
 struct COVER_tryParameters_data_t<'a, 'b> {
-    ctx: *const COVER_ctx_t<'a>,
+    ctx: &'b COVER_ctx_t<'a>,
     best: &'b mut COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
@@ -1140,14 +1140,14 @@ unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
 }
 
 unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
-    let ctx = data.ctx.cast_mut();
+    let ctx = data.ctx;
     let parameters = data.parameters;
     let dictBufferCapacity = data.dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut dict: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
-    let mut freqs = (*ctx).freqs.clone();
-    let displayLevel = (*ctx).displayLevel;
+    let mut freqs = ctx.freqs.clone();
+    let displayLevel = ctx.displayLevel;
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
 
@@ -1163,13 +1163,13 @@ unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
         &dict[tail..],
         dictBufferCapacity,
         dictBufferCapacity.wrapping_sub(tail),
-        (*ctx).samples,
-        (*ctx).samplesSizes,
-        (*ctx).nbTrainSamples as core::ffi::c_uint,
-        (*ctx).nbTrainSamples,
-        (*ctx).nbSamples,
+        ctx.samples,
+        ctx.samplesSizes,
+        ctx.nbTrainSamples as core::ffi::c_uint,
+        ctx.nbTrainSamples,
+        ctx.nbSamples,
         parameters,
-        &(*ctx).offsets,
+        &ctx.offsets,
         totalCompressedSize,
     );
 
