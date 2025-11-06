@@ -880,7 +880,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     dictionarySize
 }
 
-pub(super) unsafe fn COVER_checkTotalCompressedSize(
+pub(super) fn COVER_checkTotalCompressedSize(
     parameters: ZDICT_cover_params_t,
     samplesSizes: &[size_t],
     samples: &[u8],
@@ -911,12 +911,14 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
     }
     dstCapacity = ZSTD_compressBound(maxSampleSize);
     let mut dst: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dstCapacity);
-    cctx = ZSTD_createCCtx();
-    cdict = ZSTD_createCDict(
-        dict as *const core::ffi::c_void,
-        dictBufferCapacity,
-        parameters.zParams.compressionLevel,
-    );
+    cctx = unsafe { ZSTD_createCCtx() };
+    cdict = unsafe {
+        ZSTD_createCDict(
+            dict as *const core::ffi::c_void,
+            dictBufferCapacity,
+            parameters.zParams.compressionLevel,
+        )
+    };
     if !(cctx.is_null() || cdict.is_null()) {
         totalCompressedSize = dictBufferCapacity;
         i = if parameters.splitPoint < 1.0f64 {
@@ -925,14 +927,16 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
             0
         };
         while i < nbSamples {
-            let size = ZSTD_compress_usingCDict(
-                cctx,
-                dst.as_mut_ptr().cast::<core::ffi::c_void>(),
-                dstCapacity,
-                samples[offsets[i]..].as_ptr() as *const core::ffi::c_void,
-                samplesSizes[i],
-                cdict,
-            );
+            let size = unsafe {
+                ZSTD_compress_usingCDict(
+                    cctx,
+                    dst.as_mut_ptr().cast::<core::ffi::c_void>(),
+                    dstCapacity,
+                    samples[offsets[i]..].as_ptr() as *const core::ffi::c_void,
+                    samplesSizes[i],
+                    cdict,
+                )
+            };
             if ERR_isError(size) {
                 totalCompressedSize = size;
                 break;
@@ -942,8 +946,8 @@ pub(super) unsafe fn COVER_checkTotalCompressedSize(
             }
         }
     }
-    ZSTD_freeCCtx(cctx);
-    ZSTD_freeCDict(cdict);
+    unsafe { ZSTD_freeCCtx(cctx) };
+    unsafe { ZSTD_freeCDict(cdict) };
     drop(dst);
     totalCompressedSize
 }
@@ -1022,7 +1026,7 @@ pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
     drop(selection)
 }
 
-pub(super) unsafe fn COVER_selectDict(
+pub(super) fn COVER_selectDict(
     customDictContent: &[u8],
     dictBufferCapacity: size_t,
     mut dictContentSize: size_t,
@@ -1042,16 +1046,18 @@ pub(super) unsafe fn COVER_selectDict(
     let regressionTolerance =
         params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
     largestDictbuffer[..customDictContent.len()].copy_from_slice(customDictContent);
-    dictContentSize = ZDICT_finalizeDictionary(
-        largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        customDictContent.as_ptr() as *const core::ffi::c_void,
-        dictContentSize,
-        samplesBuffer.as_ptr() as *const core::ffi::c_void,
-        samplesSizes.as_ptr(),
-        nbFinalizeSamples,
-        params.zParams,
-    );
+    dictContentSize = unsafe {
+        ZDICT_finalizeDictionary(
+            largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
+            dictBufferCapacity,
+            customDictContent.as_ptr() as *const core::ffi::c_void,
+            dictContentSize,
+            samplesBuffer.as_ptr() as *const core::ffi::c_void,
+            samplesSizes.as_ptr(),
+            nbFinalizeSamples,
+            params.zParams,
+        )
+    };
     if ZDICT_isError(dictContentSize) != 0 {
         drop(largestDictbuffer);
         drop(candidateDictBuffer);
@@ -1081,18 +1087,20 @@ pub(super) unsafe fn COVER_selectDict(
     dictContentSize = ZDICT_DICTSIZE_MIN as size_t;
     while dictContentSize < largestDict {
         candidateDictBuffer[..largestDict].copy_from_slice(&largestDictbuffer[..largestDict]);
-        dictContentSize = ZDICT_finalizeDictionary(
-            candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
-            dictBufferCapacity,
-            customDictContent[customDictContent.len() - dictContentSize..]
-                .as_ptr()
-                .cast(),
-            dictContentSize,
-            samplesBuffer.as_ptr() as *const core::ffi::c_void,
-            samplesSizes.as_ptr(),
-            nbFinalizeSamples,
-            params.zParams,
-        );
+        dictContentSize = unsafe {
+            ZDICT_finalizeDictionary(
+                candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
+                dictBufferCapacity,
+                customDictContent[customDictContent.len() - dictContentSize..]
+                    .as_ptr()
+                    .cast(),
+                dictContentSize,
+                samplesBuffer.as_ptr() as *const core::ffi::c_void,
+                samplesSizes.as_ptr(),
+                nbFinalizeSamples,
+                params.zParams,
+            )
+        };
         if ZDICT_isError(dictContentSize) != 0 {
             drop(largestDictbuffer);
             drop(candidateDictBuffer);
