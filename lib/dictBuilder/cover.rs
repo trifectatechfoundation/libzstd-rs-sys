@@ -3,7 +3,7 @@ use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
-use libc::{memcpy, size_t};
+use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -765,11 +765,9 @@ unsafe fn COVER_buildDictionary(
             }
             tail = tail.wrapping_sub(segmentSize);
             let samples = (*ctx).samples;
-            memcpy(
-                dict.add(tail) as *mut core::ffi::c_void,
-                samples[segment.begin as usize..][..segmentSize as usize]
-                    .as_ptr()
-                    .cast(),
+            core::ptr::copy_nonoverlapping(
+                samples[segment.begin as usize..][..segmentSize as usize].as_ptr(),
+                dict.add(tail),
                 segmentSize,
             );
             if displayLevel >= 2 {
@@ -1405,7 +1403,11 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         return compressedSize;
     }
     *parameters = best.parameters;
-    memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
+    core::ptr::copy_nonoverlapping(
+        best.dict[..dictSize].as_ptr(),
+        dictBuffer.cast::<u8>(),
+        dictSize,
+    );
     COVER_best_destroy(&mut best);
     POOL_free(pool);
     dictSize
