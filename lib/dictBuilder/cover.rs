@@ -416,8 +416,8 @@ fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) -> u32 {
     freq
 }
 
-unsafe fn COVER_selectSegment(
-    ctx: *const COVER_ctx_t,
+fn COVER_selectSegment(
+    ctx: &COVER_ctx_t,
     freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
     begin: u32,
@@ -444,7 +444,7 @@ unsafe fn COVER_selectSegment(
     activeSegment.end = begin;
     activeSegment.score = 0;
     while activeSegment.end < end {
-        let newDmer = (*ctx).dmerAt[activeSegment.end as usize];
+        let newDmer = ctx.dmerAt[activeSegment.end as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
         if *newDmerOcc == 0 {
             activeSegment.score = (activeSegment.score).wrapping_add(freqs[newDmer as usize]);
@@ -452,7 +452,7 @@ unsafe fn COVER_selectSegment(
         activeSegment.end = (activeSegment.end).wrapping_add(1);
         *newDmerOcc = (*newDmerOcc).wrapping_add(1);
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
-            let delDmer = (*ctx).dmerAt[activeSegment.begin as usize];
+            let delDmer = ctx.dmerAt[activeSegment.begin as usize];
             let delDmerOcc = COVER_map_at(activeDmers, delDmer);
             activeSegment.begin = (activeSegment.begin).wrapping_add(1);
             *delDmerOcc = (*delDmerOcc).wrapping_sub(1);
@@ -470,7 +470,7 @@ unsafe fn COVER_selectSegment(
     let mut pos: u32 = 0;
     pos = bestSegment.begin;
     while pos != bestSegment.end {
-        let freq = freqs[(*ctx).dmerAt[pos as usize] as usize];
+        let freq = freqs[ctx.dmerAt[pos as usize] as usize];
         if freq != 0 {
             newBegin = if newBegin < pos { newBegin } else { pos };
             newEnd = pos.wrapping_add(1);
@@ -482,7 +482,7 @@ unsafe fn COVER_selectSegment(
     let mut pos_0: u32 = 0;
     pos_0 = bestSegment.begin;
     while pos_0 != bestSegment.end {
-        freqs[(*ctx).dmerAt[pos_0 as usize] as usize] = 0;
+        freqs[ctx.dmerAt[pos_0 as usize] as usize] = 0;
         pos_0 = pos_0.wrapping_add(1);
     }
     bestSegment
@@ -696,7 +696,7 @@ pub(super) fn COVER_computeEpochs(
 }
 
 unsafe fn COVER_buildDictionary(
-    ctx: *const COVER_ctx_t,
+    ctx: &COVER_ctx_t,
     freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
     dictBuffer: *mut core::ffi::c_void,
@@ -707,7 +707,7 @@ unsafe fn COVER_buildDictionary(
     let mut tail = dictBufferCapacity;
     let epochs = COVER_computeEpochs(
         dictBufferCapacity as u32,
-        (*ctx).suffixSize as u32, // suffix itself may be deallocated already
+        ctx.suffixSize as u32, // suffix itself may be deallocated already
         parameters.k,
         4,
     );
@@ -715,7 +715,7 @@ unsafe fn COVER_buildDictionary(
     let mut zeroScoreRun = 0 as size_t;
     let mut epoch: size_t = 0;
     let mut lastUpdateTime = 0;
-    let displayLevel = (*ctx).displayLevel;
+    let displayLevel = ctx.displayLevel;
     if displayLevel >= 2 {
         eprintln!(
             "Breaking content into {} epochs of size {}",
@@ -753,7 +753,7 @@ unsafe fn COVER_buildDictionary(
                 break;
             }
             tail = tail.wrapping_sub(segmentSize);
-            let samples = (*ctx).samples;
+            let samples = ctx.samples;
             core::ptr::copy_nonoverlapping(
                 samples[segment.begin as usize..][..segmentSize as usize].as_ptr(),
                 dict.add(tail),
@@ -840,14 +840,18 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     if displayLevel >= 2 {
         eprintln!("Building dictionary");
     }
+
+    let mut freqs = core::mem::take(&mut ctx.freqs);
     let tail = COVER_buildDictionary(
         &ctx,
-        &mut ctx.freqs,
+        &mut freqs,
         &mut activeDmers,
         dictBuffer,
         dictBufferCapacity,
         parameters,
     );
+    ctx.freqs = freqs;
+
     let dictionarySize = ZDICT_finalizeDictionary(
         dict as *mut core::ffi::c_void,
         dictBufferCapacity,
@@ -954,7 +958,7 @@ pub(super) fn COVER_best_wait(best: &mut COVER_best_t) {
     }
 }
 
-pub(super) unsafe fn COVER_best_destroy(best: &mut COVER_best_t) {
+pub(super) fn COVER_best_destroy(best: &mut COVER_best_t) {
     COVER_best_wait(best);
     drop(core::mem::take(&mut best.dict));
 }
@@ -1122,7 +1126,7 @@ pub(super) fn COVER_selectDict(
     setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
 }
 
-unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
+fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 
