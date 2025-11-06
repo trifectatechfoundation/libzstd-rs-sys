@@ -8,9 +8,9 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_hash6Ptr, ZSTD_hash6Ptr_array, ZSTD_hash8Ptr, ZSTD_hash8Ptr_array,
 };
 use crate::lib::dictBuilder::cover::{
-    COVER_best_destroy, COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait,
-    COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
-    COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict, COVER_warnOnSmallCorpus,
+    COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
+    COVER_dictSelectionError, COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t,
+    COVER_selectDict, COVER_warnOnSmallCorpus,
 };
 use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
@@ -787,7 +787,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
-            COVER_best_destroy(&mut best);
+            COVER_best_wait(&mut best);
             POOL_free(pool);
             return initVal;
         }
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 if displayLevel >= 1 {
                     eprintln!("Failed to allocate parameters");
                 }
-                COVER_best_destroy(&mut best);
+                COVER_best_wait(&mut best);
                 FASTCOVER_ctx_destroy(&mut ctx);
                 POOL_free(pool);
                 return Error::memory_allocation.to_error_code();
@@ -866,13 +866,13 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
-        COVER_best_destroy(&mut best);
+        COVER_best_wait(&mut best);
         POOL_free(pool);
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
     memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
-    COVER_best_destroy(&mut best);
+    COVER_best_wait(&mut best);
     POOL_free(pool);
     dictSize
 }
