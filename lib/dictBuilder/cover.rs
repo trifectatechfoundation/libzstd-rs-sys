@@ -104,6 +104,20 @@ pub(super) struct COVER_best_t {
     pub(super) compressedSize: size_t,
 }
 
+impl COVER_best_t {
+    pub(crate) fn new() -> Self {
+        Self {
+            mutex: Mutex::new(()),
+            cond: Condvar::new(),
+            liveJobs: 0,
+            dict: Box::default(),
+            dictSize: 0,
+            compressedSize: -(1 as core::ffi::c_int) as size_t,
+            parameters: ZDICT_cover_params_t::default(),
+        }
+    }
+}
+
 #[repr(C)]
 struct COVER_tryParameters_data_t<'a, 'b> {
     ctx: &'b COVER_ctx_t<'a>,
@@ -942,14 +956,6 @@ pub(super) fn COVER_checkTotalCompressedSize(
     totalCompressedSize
 }
 
-pub(super) fn COVER_best_init(best: &mut COVER_best_t) {
-    best.liveJobs = 0;
-    best.dict = Box::default();
-    best.dictSize = 0;
-    best.compressedSize = -(1 as core::ffi::c_int) as size_t;
-    best.parameters = ZDICT_cover_params_t::default();
-}
-
 pub(super) fn COVER_best_wait(best: &mut COVER_best_t) {
     let mut guard = best.mutex.lock().unwrap();
     #[expect(clippy::while_immutable_condition)]
@@ -1232,15 +1238,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let shrinkDict = 0 as core::ffi::c_uint;
     let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
-    let mut best = COVER_best_t {
-        mutex: Mutex::new(()),
-        cond: Condvar::new(),
-        liveJobs: 0,
-        dict: Box::default(),
-        dictSize: 0,
-        parameters: ZDICT_cover_params_t::default(),
-        compressedSize: 0,
-    };
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut lastUpdateTime = 0;
@@ -1274,10 +1271,23 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             return Error::memory_allocation.to_error_code();
         }
     }
-    COVER_best_init(&mut best);
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
+    let mut best = COVER_best_t::new();
 
     for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = COVER_ctx_t::default();
@@ -1288,18 +1298,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             0
         } else {
             displayLevel - 1
-        };
-
-        let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-            &[]
-        } else {
-            core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-        };
-        let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-        let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-            &[]
-        } else {
-            core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
         };
 
         let initVal = COVER_ctx_init(
