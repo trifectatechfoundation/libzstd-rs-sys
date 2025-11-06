@@ -142,7 +142,9 @@ pub use crate::lib::common::zstd_common::{
 pub use crate::lib::dictBuilder::cover::{
     ZDICT_optimizeTrainFromBuffer_cover, ZDICT_trainFromBuffer_cover,
 };
-pub use crate::lib::dictBuilder::fastcover::ZDICT_trainFromBuffer_fastCover;
+pub use crate::lib::dictBuilder::fastcover::{
+    ZDICT_optimizeTrainFromBuffer_fastCover, ZDICT_trainFromBuffer_fastCover,
+};
 pub use crate::lib::zdict::{
     experimental::{ZDICT_cover_params_t, ZDICT_fastCover_params_t},
     ZDICT_getDictID, ZDICT_getErrorName, ZDICT_isError, ZDICT_params_t, ZDICT_trainFromBuffer,
