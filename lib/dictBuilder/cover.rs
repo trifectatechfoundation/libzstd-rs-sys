@@ -95,6 +95,7 @@ pub(super) struct COVER_epoch_info_t {
 }
 
 pub(super) struct COVER_best_t_inner {
+    pub(super) liveJobs: size_t,
     pub(super) dict: Box<[u8]>,
     pub(super) dictSize: size_t,
     pub(super) parameters: ZDICT_cover_params_t,
@@ -104,6 +105,7 @@ pub(super) struct COVER_best_t_inner {
 impl COVER_best_t_inner {
     pub(crate) fn new() -> Self {
         Self {
+            liveJobs: 0,
             dict: Box::default(),
             dictSize: 0,
             compressedSize: -(1 as core::ffi::c_int) as size_t,
@@ -115,7 +117,6 @@ impl COVER_best_t_inner {
 pub(super) struct COVER_best_t {
     pub(super) mutex: Mutex<COVER_best_t_inner>,
     pub(super) cond: Condvar,
-    pub(super) liveJobs: size_t,
 }
 
 impl COVER_best_t {
@@ -123,7 +124,6 @@ impl COVER_best_t {
         Self {
             mutex: Mutex::new(COVER_best_t_inner::new()),
             cond: Condvar::new(),
-            liveJobs: 0,
         }
     }
 }
@@ -971,15 +971,15 @@ pub(super) fn COVER_best_wait(
 ) -> std::sync::MutexGuard<'_, COVER_best_t_inner> {
     let mut guard = best.mutex.lock().unwrap();
     #[expect(clippy::while_immutable_condition)]
-    while best.liveJobs != 0 {
+    while guard.liveJobs != 0 {
         guard = best.cond.wait(guard).unwrap();
     }
     guard
 }
 
 pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
-    let _guard = best.mutex.lock().unwrap();
-    best.liveJobs += 1;
+    let mut guard = best.mutex.lock().unwrap();
+    guard.liveJobs += 1;
 }
 
 pub(super) fn COVER_best_finish(
@@ -991,8 +991,8 @@ pub(super) fn COVER_best_finish(
     let dictSize = selection.dictSize;
     let mut liveJobs: size_t = 0;
     let mut guard = best.mutex.lock().unwrap();
-    best.liveJobs = (best.liveJobs).wrapping_sub(1);
-    liveJobs = best.liveJobs;
+    guard.liveJobs = (guard.liveJobs).wrapping_sub(1);
+    liveJobs = guard.liveJobs;
     if compressedSize < guard.compressedSize {
         if let Some(slice) = guard.dict.get_mut(..selection.dictContent.len()) {
             slice.copy_from_slice(&selection.dictContent);
