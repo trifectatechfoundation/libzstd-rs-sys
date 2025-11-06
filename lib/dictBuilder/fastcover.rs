@@ -468,22 +468,23 @@ fn FASTCOVER_convertToCoverParams(
     coverParams.shrinkDict = fastCoverParams.shrinkDict;
 }
 
-unsafe fn FASTCOVER_convertToFastCoverParams(
+fn FASTCOVER_convertToFastCoverParams(
     coverParams: ZDICT_cover_params_t,
-    fastCoverParams: *mut ZDICT_fastCover_params_t,
+    fastCoverParams: &mut ZDICT_fastCover_params_t,
     f: core::ffi::c_uint,
     accel: core::ffi::c_uint,
 ) {
-    (*fastCoverParams).k = coverParams.k;
-    (*fastCoverParams).d = coverParams.d;
-    (*fastCoverParams).steps = coverParams.steps;
-    (*fastCoverParams).nbThreads = coverParams.nbThreads;
-    (*fastCoverParams).splitPoint = coverParams.splitPoint;
-    (*fastCoverParams).f = f;
-    (*fastCoverParams).accel = accel;
-    (*fastCoverParams).zParams = coverParams.zParams;
-    (*fastCoverParams).shrinkDict = coverParams.shrinkDict;
+    fastCoverParams.k = coverParams.k;
+    fastCoverParams.d = coverParams.d;
+    fastCoverParams.steps = coverParams.steps;
+    fastCoverParams.nbThreads = coverParams.nbThreads;
+    fastCoverParams.splitPoint = coverParams.splitPoint;
+    fastCoverParams.f = f;
+    fastCoverParams.accel = accel;
+    fastCoverParams.zParams = coverParams.zParams;
+    fastCoverParams.shrinkDict = coverParams.shrinkDict;
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_fastCover))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     dictBuffer: *mut core::ffi::c_void,
@@ -607,6 +608,12 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     drop(segmentFreqs);
     dictionarySize
 }
+
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `parameters` satisfies the conditions of [`pointer::as_mut`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_fastCover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     dictBuffer: *mut core::ffi::c_void,
@@ -616,38 +623,28 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     nbSamples: core::ffi::c_uint,
     parameters: *mut ZDICT_fastCover_params_t,
 ) -> size_t {
+    let parameters = unsafe { parameters.as_mut().unwrap() };
+
     let mut coverParams = ZDICT_cover_params_t::default();
     let mut accelParams = FASTCOVER_accel_t::default();
-    let nbThreads = (*parameters).nbThreads;
-    let splitPoint = if (*parameters).splitPoint <= 0.0f64 {
+    let nbThreads = parameters.nbThreads;
+    let splitPoint = if parameters.splitPoint <= 0.0f64 {
         FASTCOVER_DEFAULT_SPLITPOINT
     } else {
-        (*parameters).splitPoint
+        parameters.splitPoint
     };
-    let kMinD = if (*parameters).d == 0 {
-        6
-    } else {
-        (*parameters).d
-    };
-    let kMaxD = if (*parameters).d == 0 {
-        8
-    } else {
-        (*parameters).d
-    };
-    let kMinK = if (*parameters).k == 0 {
-        50
-    } else {
-        (*parameters).k
-    };
-    let kMaxK = if (*parameters).k == 0 {
+    let kMinD = if parameters.d == 0 { 6 } else { parameters.d };
+    let kMaxD = if parameters.d == 0 { 8 } else { parameters.d };
+    let kMinK = if parameters.k == 0 { 50 } else { parameters.k };
+    let kMaxK = if parameters.k == 0 {
         2000
     } else {
-        (*parameters).k
+        parameters.k
     };
-    let kSteps = if (*parameters).steps == 0 {
+    let kSteps = if parameters.steps == 0 {
         40
     } else {
-        (*parameters).steps
+        parameters.steps
     };
     let kStepSize = if kMaxK.wrapping_sub(kMinK).wrapping_div(kSteps) > 1 {
         kMaxK.wrapping_sub(kMinK).wrapping_div(kSteps)
@@ -660,18 +657,18 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             (1 as core::ffi::c_uint)
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
-    let f = if (*parameters).f == 0 {
+    let f = if parameters.f == 0 {
         DEFAULT_F as core::ffi::c_uint
     } else {
-        (*parameters).f
+        parameters.f
     };
-    let accel = if (*parameters).accel == 0 {
+    let accel = if parameters.accel == 0 {
         DEFAULT_ACCEL as core::ffi::c_uint
     } else {
-        (*parameters).accel
+        parameters.accel
     };
     let shrinkDict = 0;
-    let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
+    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
