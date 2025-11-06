@@ -967,7 +967,7 @@ pub(super) fn COVER_checkTotalCompressedSize(
 }
 
 pub(super) fn COVER_best_wait(
-    best: &mut COVER_best_t,
+    best: &COVER_best_t,
 ) -> std::sync::MutexGuard<'_, COVER_best_t_inner> {
     let mut guard = best.mutex.lock().unwrap();
     while guard.liveJobs != 0 {
@@ -1320,7 +1320,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
-            drop(COVER_best_wait(&mut best));
+            drop(COVER_best_wait(&best));
             POOL_free(pool);
             return initVal;
         }
@@ -1361,7 +1361,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 }
                 drop(data);
             } else {
-                COVER_best_start(data.best);
+                COVER_best_start(&best);
                 if !pool.is_null() {
                     POOL_add(
                         pool,
@@ -1385,7 +1385,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             }
         }
 
-        drop(COVER_best_wait(&mut best));
+        drop(COVER_best_wait(&best));
         COVER_ctx_destroy(&mut ctx);
     }
 
@@ -1393,7 +1393,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         println!("\r{:79 }\r", "");
     }
 
-    let best = COVER_best_wait(&mut best);
+    let best = COVER_best_wait(&best);
 
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {

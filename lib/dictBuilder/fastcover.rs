@@ -787,7 +787,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
-            drop(COVER_best_wait(&mut best));
+            drop(COVER_best_wait(&best));
             POOL_free(pool);
             return initVal;
         }
@@ -806,7 +806,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 if displayLevel >= 1 {
                     eprintln!("Failed to allocate parameters");
                 }
-                drop(COVER_best_wait(&mut best));
+                drop(COVER_best_wait(&best));
                 FASTCOVER_ctx_destroy(&mut ctx);
                 POOL_free(pool);
                 return Error::memory_allocation.to_error_code();
@@ -856,7 +856,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             }
             k = k.wrapping_add(kStepSize);
         }
-        drop(COVER_best_wait(&mut best));
+        drop(COVER_best_wait(&best));
         FASTCOVER_ctx_destroy(&mut ctx);
         d = d.wrapping_add(2);
     }
@@ -864,7 +864,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         println!("\r{:79 }\r", "");
     }
 
-    let best = COVER_best_wait(&mut best);
+    let best = COVER_best_wait(&best);
 
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
