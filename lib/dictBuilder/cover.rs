@@ -1023,7 +1023,7 @@ pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
 }
 
 pub(super) unsafe fn COVER_selectDict(
-    customDictContent: *mut u8,
+    customDictContent: &[u8],
     dictBufferCapacity: size_t,
     mut dictContentSize: size_t,
     samplesBuffer: *const u8,
@@ -1037,20 +1037,16 @@ pub(super) unsafe fn COVER_selectDict(
 ) -> COVER_dictSelection_t {
     let mut largestDict = 0;
     let mut largestCompressed = 0;
-    let customDictContentEnd = customDictContent.add(dictContentSize);
+    let customDictContentEnd = customDictContent.as_ptr().add(dictContentSize);
     let mut largestDictbuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
-    let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0; dictBufferCapacity]);
+    let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let regressionTolerance =
         params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
-    memcpy(
-        largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
-        customDictContent as *const core::ffi::c_void,
-        dictContentSize,
-    );
+    largestDictbuffer[..customDictContent.len()].copy_from_slice(customDictContent);
     dictContentSize = ZDICT_finalizeDictionary(
         largestDictbuffer.as_mut_ptr() as *mut core::ffi::c_void,
         dictBufferCapacity,
-        customDictContent as *const core::ffi::c_void,
+        customDictContent.as_ptr() as *const core::ffi::c_void,
         dictContentSize,
         samplesBuffer as *const core::ffi::c_void,
         samplesSizes,
@@ -1085,11 +1081,7 @@ pub(super) unsafe fn COVER_selectDict(
     largestCompressed = totalCompressedSize;
     dictContentSize = ZDICT_DICTSIZE_MIN as size_t;
     while dictContentSize < largestDict {
-        memcpy(
-            candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
-            largestDictbuffer.as_ptr() as *const core::ffi::c_void,
-            largestDict,
-        );
+        candidateDictBuffer[..largestDict].copy_from_slice(&largestDictbuffer[..largestDict]);
         dictContentSize = ZDICT_finalizeDictionary(
             candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
             dictBufferCapacity,
@@ -1156,7 +1148,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
         parameters,
     );
     selection = COVER_selectDict(
-        dict.as_mut_ptr().add(tail),
+        &dict[tail..],
         dictBufferCapacity,
         dictBufferCapacity.wrapping_sub(tail),
         (*ctx).samples.as_ptr(),

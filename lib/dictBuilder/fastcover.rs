@@ -453,7 +453,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
     selection = COVER_selectDict(
-        dict.as_mut_ptr().add(tail),
+        &dict[tail..],
         dictBufferCapacity,
         dictBufferCapacity.wrapping_sub(tail),
         ctx.samples.as_ptr(),
