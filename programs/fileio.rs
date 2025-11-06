@@ -1,12 +1,13 @@
 use core::ptr;
 use std::ffi::CStr;
 use std::io;
+use std::time::Instant;
 
 use libc::{
-    calloc, clock_t, close, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, fread,
-    free, fseek, ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove, sighandler_t, signal,
-    size_t, strcmp, strcpy, strlen, strrchr, timespec, FILE, O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY,
-    SIGINT, SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR,
+    calloc, close, exit, fclose, fdopen, feof, fflush, fileno, fopen, fprintf, fread, free, fseek,
+    ftell, malloc, memcpy, mmap, mode_t, munmap, open, remove, sighandler_t, signal, size_t,
+    strcmp, strcpy, strlen, strrchr, timespec, FILE, O_CREAT, O_RDONLY, O_TRUNC, O_WRONLY, SIGINT,
+    SIG_DFL, SIG_IGN, S_IRGRP, S_IROTH, S_IRUSR, S_IWGRP, S_IWOTH, S_IWUSR,
 };
 use libzstd_rs_sys::internal::{MEM_readLE24, MEM_readLE32};
 use libzstd_rs_sys::lib::common::zstd_common::{
@@ -66,7 +67,6 @@ extern "C" {
         __size: size_t,
         __compar: __compar_fn_t,
     );
-    fn clock() -> clock_t;
     fn zlibVersion() -> *const core::ffi::c_char;
     fn deflate(strm: z_streamp, flush: core::ffi::c_int) -> core::ffi::c_int;
     fn deflateEnd(strm: z_streamp) -> core::ffi::c_int;
@@ -324,7 +324,6 @@ const Z_STREAM_END: core::ffi::c_int = 1;
 const Z_BUF_ERROR: core::ffi::c_int = -(5);
 const Z_BEST_COMPRESSION: core::ffi::c_int = 9;
 const ZSTD_SPARSE_DEFAULT: core::ffi::c_int = 1;
-const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const REFRESH_RATE: PTime = SEC_TO_MICRO as PTime / 6;
 const LZ4_MAGICNUMBER: core::ffi::c_int = 0x184d2204 as core::ffi::c_int;
 pub unsafe fn FIO_zlibVersion() -> *const core::ffi::c_char {
@@ -4489,7 +4488,7 @@ unsafe fn FIO_compressFilename_internal(
     compressionLevel: core::ffi::c_int,
 ) -> core::ffi::c_int {
     let timeStart = UTIL_getTime();
-    let cpuStart = clock();
+    let cpuStart = Instant::now();
     let mut readsize = 0;
     let mut compressedfilesize = 0;
     let fileSize = UTIL_getFileSize(srcFileName);
@@ -4627,9 +4626,7 @@ unsafe fn FIO_compressFilename_internal(
             );
         }
     }
-    let cpuEnd = clock();
-    let cpuLoad_s =
-        (cpuEnd - cpuStart) as core::ffi::c_double / CLOCKS_PER_SEC as core::ffi::c_double;
+    let cpuLoad_s = cpuStart.elapsed().as_secs_f64();
     let timeLength_ns = UTIL_clockSpanNano(timeStart);
     let timeLength_s = timeLength_ns as core::ffi::c_double / 1000000000.0;
     let cpuLoad_pct = cpuLoad_s / timeLength_s * 100.0;

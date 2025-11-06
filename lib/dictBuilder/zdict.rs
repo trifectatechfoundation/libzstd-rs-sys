@@ -1,4 +1,5 @@
 use core::ptr;
+use std::time::{Duration, Instant};
 
 use libc::{free, malloc, memcpy, size_t};
 
@@ -27,11 +28,6 @@ use crate::lib::zdict::experimental::{
 use crate::lib::zdict::ZDICT_params_t;
 use crate::lib::zstd::*;
 
-extern "C" {
-    fn clock() -> clock_t;
-}
-type __clock_t = core::ffi::c_long;
-type clock_t = __clock_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct EStats_ress_t {
@@ -57,12 +53,8 @@ const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 #[expect(deprecated)]
 const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
-const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
 const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;
-unsafe fn ZDICT_clockSpan(nPrevious: clock_t) -> clock_t {
-    clock() - nPrevious
-}
 unsafe fn ZDICT_printHex(ptr: *const core::ffi::c_void, length: size_t) {
     let b = ptr as *const u8;
     let mut u: size_t = 0;
@@ -617,8 +609,8 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let filePos =
         malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let mut result = 0;
-    let mut displayClock = 0;
-    let refreshRate = CLOCKS_PER_SEC as __clock_t * 3 / 10;
+    let mut displayClock = Instant::now();
+    let refresh_rate = Duration::from_millis(300);
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", "");
     }
@@ -702,8 +694,8 @@ unsafe fn ZDICT_trainBuffer_legacy(
                         ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
                         cursor = cursor.wrapping_add(solution.length);
                         if notificationLevel >= 2 {
-                            if ZDICT_clockSpan(displayClock) > refreshRate {
-                                displayClock = clock();
+                            if displayClock.elapsed() > refresh_rate {
+                                displayClock = Instant::now();
                                 eprint!(
                                     "\r{:4.2} % \r",
                                     cursor as core::ffi::c_double

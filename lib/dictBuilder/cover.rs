@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 use libc::size_t;
 
@@ -15,12 +16,6 @@ use crate::lib::compress::zstd_compress::{
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
 use crate::ZDICT_params_t;
-
-extern "C" {
-    fn clock() -> clock_t;
-}
-type __clock_t = core::ffi::c_long;
-type clock_t = __clock_t;
 
 #[repr(C)]
 struct COVER_map_t {
@@ -142,8 +137,6 @@ pub(super) struct COVER_dictSelection_t {
     dictSize: size_t,
     totalCompressedSize: size_t,
 }
-const CLOCKS_PER_SEC: core::ffi::c_int = 1000000;
-
 const COVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 1.0f64;
 
 fn COVER_map_clear(map: &mut COVER_map_t) {
@@ -719,7 +712,7 @@ pub(super) fn COVER_computeEpochs(
     epochs
 }
 
-unsafe fn COVER_buildDictionary(
+fn COVER_buildDictionary(
     ctx: &COVER_ctx_t,
     freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
@@ -738,7 +731,7 @@ unsafe fn COVER_buildDictionary(
     let maxZeroScoreRun = (epochs.num >> 3).clamp(10, 100) as size_t;
     let mut zeroScoreRun = 0 as size_t;
     let mut epoch: size_t = 0;
-    let mut lastUpdateTime = 0;
+    let mut last_update_time = Instant::now();
     let displayLevel = ctx.displayLevel;
     if displayLevel >= 2 {
         eprintln!(
@@ -778,15 +771,17 @@ unsafe fn COVER_buildDictionary(
             }
             tail = tail.wrapping_sub(segmentSize);
             let samples = ctx.samples;
-            core::ptr::copy_nonoverlapping(
-                samples[segment.begin as usize..][..segmentSize as usize].as_ptr(),
-                dict.add(tail),
-                segmentSize,
-            );
+            unsafe {
+                core::ptr::copy_nonoverlapping(
+                    samples[segment.begin as usize..][..segmentSize as usize].as_ptr(),
+                    dict.add(tail),
+                    segmentSize,
+                );
+            }
             if displayLevel >= 2 {
-                let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
-                if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
-                    lastUpdateTime = clock();
+                let refresh_rate = Duration::from_millis(150);
+                if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
+                    last_update_time = Instant::now();
                     eprint!(
                         "\r{}%       ",
                         (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
@@ -1155,16 +1150,14 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
 
-    let tail = unsafe {
-        COVER_buildDictionary(
-            ctx,
-            &mut freqs,
-            &mut activeDmers,
-            dict.as_mut_ptr() as *mut core::ffi::c_void,
-            dictBufferCapacity,
-            parameters,
-        )
-    };
+    let tail = COVER_buildDictionary(
+        ctx,
+        &mut freqs,
+        &mut activeDmers,
+        dict.as_mut_ptr() as *mut core::ffi::c_void,
+        dictBufferCapacity,
+        parameters,
+    );
 
     selection = COVER_selectDict(
         &dict[tail..],
@@ -1247,7 +1240,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let mut iteration = 1 as core::ffi::c_uint;
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
-    let mut lastUpdateTime = 0;
+    let mut last_update_time = Instant::now();
     if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
             eprintln!("Incorrect parameters");
@@ -1372,9 +1365,9 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                     COVER_tryParameters(data);
                 }
                 if displayLevel >= 2 {
-                    let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
-                    if clock() - lastUpdateTime > refreshRate || displayLevel >= 4 {
-                        lastUpdateTime = clock();
+                    let refresh_rate = Duration::from_millis(150);
+                    if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
+                        last_update_time = Instant::now();
                         eprintln!(
                             "\r{}%       ",
                             iteration.wrapping_mul(100).wrapping_div(kIterations),
