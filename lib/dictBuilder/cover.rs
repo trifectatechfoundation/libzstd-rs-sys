@@ -418,7 +418,7 @@ fn COVER_group(ctx: &mut COVER_ctx_t, range: Range<usize>) -> u32 {
 
 unsafe fn COVER_selectSegment(
     ctx: *const COVER_ctx_t,
-    freqs: *mut u32,
+    freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
     begin: u32,
     end: u32,
@@ -447,8 +447,7 @@ unsafe fn COVER_selectSegment(
         let newDmer = (*ctx).dmerAt[activeSegment.end as usize];
         let newDmerOcc = COVER_map_at(activeDmers, newDmer);
         if *newDmerOcc == 0 {
-            activeSegment.score =
-                (activeSegment.score).wrapping_add(*freqs.offset(newDmer as isize));
+            activeSegment.score = (activeSegment.score).wrapping_add(freqs[newDmer as usize]);
         }
         activeSegment.end = (activeSegment.end).wrapping_add(1);
         *newDmerOcc = (*newDmerOcc).wrapping_add(1);
@@ -459,8 +458,7 @@ unsafe fn COVER_selectSegment(
             *delDmerOcc = (*delDmerOcc).wrapping_sub(1);
             if *delDmerOcc == 0 {
                 COVER_map_remove(activeDmers, delDmer);
-                activeSegment.score =
-                    (activeSegment.score).wrapping_sub(*freqs.offset(delDmer as isize));
+                activeSegment.score = (activeSegment.score).wrapping_sub(freqs[delDmer as usize]);
             }
         }
         if activeSegment.score > bestSegment.score {
@@ -472,7 +470,7 @@ unsafe fn COVER_selectSegment(
     let mut pos: u32 = 0;
     pos = bestSegment.begin;
     while pos != bestSegment.end {
-        let freq = *freqs.offset((*ctx).dmerAt[pos as usize] as isize);
+        let freq = freqs[(*ctx).dmerAt[pos as usize] as usize];
         if freq != 0 {
             newBegin = if newBegin < pos { newBegin } else { pos };
             newEnd = pos.wrapping_add(1);
@@ -484,7 +482,7 @@ unsafe fn COVER_selectSegment(
     let mut pos_0: u32 = 0;
     pos_0 = bestSegment.begin;
     while pos_0 != bestSegment.end {
-        *freqs.offset((*ctx).dmerAt[pos_0 as usize] as isize) = 0;
+        freqs[(*ctx).dmerAt[pos_0 as usize] as usize] = 0;
         pos_0 = pos_0.wrapping_add(1);
     }
     bestSegment
@@ -699,7 +697,7 @@ pub(super) fn COVER_computeEpochs(
 
 unsafe fn COVER_buildDictionary(
     ctx: *const COVER_ctx_t,
-    freqs: *mut u32,
+    freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
@@ -857,7 +855,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     }
     let tail = COVER_buildDictionary(
         &ctx,
-        ctx.freqs.as_mut_ptr(),
+        &mut ctx.freqs,
         &mut activeDmers,
         dictBuffer,
         dictBufferCapacity,
@@ -1154,7 +1152,7 @@ unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
 
     let tail = COVER_buildDictionary(
         ctx,
-        freqs.as_mut_ptr(),
+        &mut freqs,
         &mut activeDmers,
         dict.as_mut_ptr() as *mut core::ffi::c_void,
         dictBufferCapacity,
