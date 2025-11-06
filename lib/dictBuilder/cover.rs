@@ -1022,7 +1022,7 @@ pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> b
     ERR_isError(selection.totalCompressedSize) || selection.dictContent.is_empty()
 }
 
-pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
+pub(super) fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
     drop(selection)
 }
 
@@ -1139,7 +1139,7 @@ unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 
-unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
+fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let ctx = data.ctx;
     let parameters = data.parameters;
     let dictBufferCapacity = data.dictBufferCapacity;
@@ -1151,14 +1151,17 @@ unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
 
-    let tail = COVER_buildDictionary(
-        ctx,
-        &mut freqs,
-        &mut activeDmers,
-        dict.as_mut_ptr() as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        parameters,
-    );
+    let tail = unsafe {
+        COVER_buildDictionary(
+            ctx,
+            &mut freqs,
+            &mut activeDmers,
+            dict.as_mut_ptr() as *mut core::ffi::c_void,
+            dictBufferCapacity,
+            parameters,
+        )
+    };
+
     selection = COVER_selectDict(
         &dict[tail..],
         dictBufferCapacity,
