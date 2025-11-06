@@ -1336,16 +1336,17 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                     compressionLevel: 0,
                     dictID: 0,
                 },
-                nbThreads: 0, // FIXME?
+                nbThreads: 0,
                 shrinkDictMaxRegression: 0,
             };
 
             let data = Box::new(COVER_tryParameters_data_t {
-                ctx: &mut ctx,
+                ctx: &ctx,
                 best: &mut best,
-                dictBufferCapacity: dictBufferCapacity,
+                dictBufferCapacity,
                 parameters,
             });
+
             if displayLevel >= 3 {
                 eprintln!("k={}", k);
             }
