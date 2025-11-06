@@ -1,5 +1,4 @@
 use core::ptr;
-use std::sync::{Condvar, Mutex};
 
 use libc::{free, malloc, memcpy, size_t};
 
@@ -9,8 +8,8 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_hash6Ptr, ZSTD_hash6Ptr_array, ZSTD_hash8Ptr, ZSTD_hash8Ptr_array,
 };
 use crate::lib::dictBuilder::cover::{
-    COVER_best_destroy, COVER_best_finish, COVER_best_init, COVER_best_start, COVER_best_t,
-    COVER_best_wait, COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
+    COVER_best_destroy, COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait,
+    COVER_computeEpochs, COVER_dictSelectionError, COVER_dictSelectionFree,
     COVER_dictSelectionIsError, COVER_segment_t, COVER_selectDict, COVER_warnOnSmallCorpus,
 };
 use crate::lib::zdict::experimental::{
@@ -697,15 +696,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let mut iteration = 1 as core::ffi::c_uint;
     let mut d: core::ffi::c_uint = 0;
     let mut k: core::ffi::c_uint = 0;
-    let mut best = COVER_best_t {
-        mutex: Mutex::new(()),
-        cond: Condvar::new(),
-        liveJobs: 0,
-        dict: Box::default(),
-        dictSize: 0,
-        parameters: ZDICT_cover_params_t::default(),
-        compressedSize: 0,
-    };
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut lastUpdateTime = 0;
@@ -745,7 +735,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             return Error::memory_allocation.to_error_code();
         }
     }
-    COVER_best_init(&mut best);
+    let mut best = COVER_best_t::new();
     ptr::write_bytes(
         &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
         0,
