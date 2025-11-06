@@ -94,11 +94,21 @@ pub(super) struct COVER_epoch_info_t {
     pub(super) size: u32,
 }
 
-pub(super) struct COVER_best_t_inner {}
+pub(super) struct COVER_best_t_inner {
+    pub(super) dict: Box<[u8]>,
+    pub(super) dictSize: size_t,
+    pub(super) parameters: ZDICT_cover_params_t,
+    pub(super) compressedSize: size_t,
+}
 
 impl COVER_best_t_inner {
     pub(crate) fn new() -> Self {
-        Self {}
+        Self {
+            dict: Box::default(),
+            dictSize: 0,
+            compressedSize: -(1 as core::ffi::c_int) as size_t,
+            parameters: ZDICT_cover_params_t::default(),
+        }
     }
 }
 
@@ -106,10 +116,6 @@ pub(super) struct COVER_best_t {
     pub(super) mutex: Mutex<COVER_best_t_inner>,
     pub(super) cond: Condvar,
     pub(super) liveJobs: size_t,
-    pub(super) dict: Box<[u8]>,
-    pub(super) dictSize: size_t,
-    pub(super) parameters: ZDICT_cover_params_t,
-    pub(super) compressedSize: size_t,
 }
 
 impl COVER_best_t {
@@ -118,10 +124,6 @@ impl COVER_best_t {
             mutex: Mutex::new(COVER_best_t_inner::new()),
             cond: Condvar::new(),
             liveJobs: 0,
-            dict: Box::default(),
-            dictSize: 0,
-            compressedSize: -(1 as core::ffi::c_int) as size_t,
-            parameters: ZDICT_cover_params_t::default(),
         }
     }
 }
@@ -964,12 +966,15 @@ pub(super) fn COVER_checkTotalCompressedSize(
     totalCompressedSize
 }
 
-pub(super) fn COVER_best_wait(best: &mut COVER_best_t) {
+pub(super) fn COVER_best_wait(
+    best: &mut COVER_best_t,
+) -> std::sync::MutexGuard<'_, COVER_best_t_inner> {
     let mut guard = best.mutex.lock().unwrap();
     #[expect(clippy::while_immutable_condition)]
     while best.liveJobs != 0 {
         guard = best.cond.wait(guard).unwrap();
     }
+    guard
 }
 
 pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
@@ -985,19 +990,19 @@ pub(super) fn COVER_best_finish(
     let compressedSize = selection.totalCompressedSize;
     let dictSize = selection.dictSize;
     let mut liveJobs: size_t = 0;
-    let _guard = best.mutex.lock().unwrap();
+    let mut guard = best.mutex.lock().unwrap();
     best.liveJobs = (best.liveJobs).wrapping_sub(1);
     liveJobs = best.liveJobs;
-    if compressedSize < best.compressedSize {
-        if let Some(slice) = best.dict.get_mut(..selection.dictContent.len()) {
+    if compressedSize < guard.compressedSize {
+        if let Some(slice) = guard.dict.get_mut(..selection.dictContent.len()) {
             slice.copy_from_slice(&selection.dictContent);
         } else {
-            best.dict = selection.dictContent.clone();
+            guard.dict = selection.dictContent.clone();
         }
 
-        best.dictSize = dictSize;
-        best.parameters = parameters;
-        best.compressedSize = compressedSize;
+        guard.dictSize = dictSize;
+        guard.parameters = parameters;
+        guard.compressedSize = compressedSize;
     }
     if liveJobs == 0 {
         best.cond.notify_all();
@@ -1316,7 +1321,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             if displayLevel >= 1 {
                 eprintln!("Failed to initialize context");
             }
-            COVER_best_wait(&mut best);
+            drop(COVER_best_wait(&mut best));
             POOL_free(pool);
             return initVal;
         }
@@ -1381,7 +1386,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             }
         }
 
-        COVER_best_wait(&mut best);
+        drop(COVER_best_wait(&mut best));
         COVER_ctx_destroy(&mut ctx);
     }
 
@@ -1389,7 +1394,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         println!("\r{:79 }\r", "");
     }
 
-    COVER_best_wait(&mut best);
+    let best = COVER_best_wait(&mut best);
 
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
