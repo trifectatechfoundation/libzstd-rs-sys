@@ -424,7 +424,7 @@ unsafe fn FASTCOVER_buildDictionary(
 }
 unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut FASTCOVER_tryParameters_data_t;
-    let ctx = (*data).ctx.cast_mut().as_mut().unwrap();
+    let ctx = (*data).ctx.as_ref().unwrap();
     let parameters = (*data).parameters;
     let dictBufferCapacity = (*data).dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
@@ -805,7 +805,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 POOL_free(pool);
                 return Error::memory_allocation.to_error_code();
             }
-            (*data).ctx = &mut ctx;
+            (*data).ctx = &ctx;
             (*data).best = &mut best;
             (*data).dictBufferCapacity = dictBufferCapacity;
             (*data).parameters = coverParams;
