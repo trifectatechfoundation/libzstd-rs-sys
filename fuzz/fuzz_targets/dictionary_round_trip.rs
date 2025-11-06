@@ -88,8 +88,7 @@ fuzz_target!(|data: (ArbitrarySamples, ArbitraryRoundTrip)| {
 
     // Half of the time fuzz with a 1 byte smaller output size.
     // This will still succeed because we force the checksum to be disabled, giving us 4 bytes of overhead.
-    let compressed_capacity =
-        unsafe { ZSTD_compressBound(src.len()) } - data.c_buf_size_minus_one as usize;
+    let compressed_capacity = ZSTD_compressBound(src.len()) - data.c_buf_size_minus_one as usize;
     let mut compressed = vec![0; compressed_capacity];
 
     let cctx = unsafe { ZSTD_createCCtx() };
