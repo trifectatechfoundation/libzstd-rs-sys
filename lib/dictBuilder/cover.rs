@@ -131,7 +131,7 @@ impl COVER_best_t {
 #[repr(C)]
 struct COVER_tryParameters_data_t<'a, 'b> {
     ctx: &'b COVER_ctx_t<'a>,
-    best: &'b mut COVER_best_t,
+    best: &'b COVER_best_t,
     dictBufferCapacity: size_t,
     parameters: ZDICT_cover_params_t,
 }
@@ -970,20 +970,19 @@ pub(super) fn COVER_best_wait(
     best: &mut COVER_best_t,
 ) -> std::sync::MutexGuard<'_, COVER_best_t_inner> {
     let mut guard = best.mutex.lock().unwrap();
-    #[expect(clippy::while_immutable_condition)]
     while guard.liveJobs != 0 {
         guard = best.cond.wait(guard).unwrap();
     }
     guard
 }
 
-pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
+pub(super) fn COVER_best_start(best: &COVER_best_t) {
     let mut guard = best.mutex.lock().unwrap();
     guard.liveJobs += 1;
 }
 
 pub(super) fn COVER_best_finish(
-    best: &mut COVER_best_t,
+    best: &COVER_best_t,
     parameters: ZDICT_cover_params_t,
     selection: &COVER_dictSelection_t,
 ) {
@@ -1348,7 +1347,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
 
             let data = Box::new(COVER_tryParameters_data_t {
                 ctx: &ctx,
-                best: &mut best,
+                best: &best,
                 dictBufferCapacity,
                 parameters,
             });
