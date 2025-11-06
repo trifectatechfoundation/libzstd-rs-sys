@@ -974,12 +974,11 @@ pub(super) fn COVER_best_start(best: &mut COVER_best_t) {
     best.liveJobs += 1;
 }
 
-pub(super) unsafe fn COVER_best_finish(
+pub(super) fn COVER_best_finish(
     best: &mut COVER_best_t,
     parameters: ZDICT_cover_params_t,
     selection: &COVER_dictSelection_t,
 ) {
-    let dict = selection.dictContent.as_ptr() as *const core::ffi::c_void;
     let compressedSize = selection.totalCompressedSize;
     let dictSize = selection.dictSize;
     let mut liveJobs: size_t = 0;
@@ -987,16 +986,15 @@ pub(super) unsafe fn COVER_best_finish(
     best.liveJobs = (best.liveJobs).wrapping_sub(1);
     liveJobs = best.liveJobs;
     if compressedSize < best.compressedSize {
-        if best.dictSize < dictSize {
-            drop(core::mem::take(&mut best.dict));
-            best.dict = Box::from(vec![0u8; dictSize]);
+        if let Some(slice) = best.dict.get_mut(..selection.dictContent.len()) {
+            slice.copy_from_slice(&selection.dictContent);
+        } else {
+            best.dict = selection.dictContent.clone();
         }
-        if !dict.is_null() {
-            memcpy(best.dict.as_mut_ptr().cast(), dict, dictSize);
-            best.dictSize = dictSize;
-            best.parameters = parameters;
-            best.compressedSize = compressedSize;
-        }
+
+        best.dictSize = dictSize;
+        best.parameters = parameters;
+        best.compressedSize = compressedSize;
     }
     if liveJobs == 0 {
         best.cond.notify_all();
