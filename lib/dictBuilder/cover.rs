@@ -1016,9 +1016,10 @@ pub(super) fn COVER_dictSelectionError(error: size_t) -> COVER_dictSelection_t {
     setDictSelection(Box::default(), 0, error)
 }
 
-pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> core::ffi::c_uint {
-    (ERR_isError(selection.totalCompressedSize) || selection.dictContent.is_empty())
-        as core::ffi::c_int as core::ffi::c_uint
+pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> bool {
+    // NOTE: is_empty is a proxy for NULL in the C code. It indicates that the dictContent was not
+    // set, which is almost certainly a programmer error if it ever comes up.
+    ERR_isError(selection.totalCompressedSize) || selection.dictContent.is_empty()
 }
 
 pub(super) unsafe fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
@@ -1172,7 +1173,7 @@ unsafe fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
         totalCompressedSize,
     );
 
-    if COVER_dictSelectionIsError(&selection) != 0 && displayLevel >= 1 {
+    if COVER_dictSelectionIsError(&selection) && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
     drop(dict);

@@ -465,7 +465,7 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
         &ctx.offsets,
         totalCompressedSize,
     );
-    if COVER_dictSelectionIsError(&selection) != 0 && displayLevel >= 1 {
+    if COVER_dictSelectionIsError(&selection) && displayLevel >= 1 {
         eprintln!("Failed to select dictionary");
     }
 
