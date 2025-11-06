@@ -697,7 +697,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                     dictMatchIndexAndTagL3 as size_t,
                                     dictHashAndTagL3,
                                 );
-                                let mut matchL3 = base.offset(matchIndexL3 as isize);
+                                let mut matchL3 = base.wrapping_offset(matchIndexL3 as isize);
                                 *hashLong.add(hl3) = curr.wrapping_add(1);
                                 if matchIndexL3 >= prefixLowestIndex
                                     && MEM_read64(matchL3 as *const core::ffi::c_void)
