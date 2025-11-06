@@ -1037,7 +1037,6 @@ pub(super) unsafe fn COVER_selectDict(
 ) -> COVER_dictSelection_t {
     let mut largestDict = 0;
     let mut largestCompressed = 0;
-    let customDictContentEnd = customDictContent.as_ptr().add(dictContentSize);
     let mut largestDictbuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let regressionTolerance =
@@ -1085,7 +1084,9 @@ pub(super) unsafe fn COVER_selectDict(
         dictContentSize = ZDICT_finalizeDictionary(
             candidateDictBuffer.as_mut_ptr() as *mut core::ffi::c_void,
             dictBufferCapacity,
-            customDictContentEnd.offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
+            customDictContent[customDictContent.len() - dictContentSize..]
+                .as_ptr()
+                .cast(),
             dictContentSize,
             samplesBuffer as *const core::ffi::c_void,
             samplesSizes,
