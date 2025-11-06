@@ -3,7 +3,7 @@ use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::sync::{Condvar, Mutex};
 
-use libc::{free, malloc, memcpy, size_t};
+use libc::{memcpy, size_t};
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -14,6 +14,7 @@ use crate::lib::compress::zstd_compress::{
 };
 use crate::lib::dictBuilder::zdict::{ZDICT_finalizeDictionary, ZDICT_isError};
 use crate::lib::zdict::experimental::{ZDICT_cover_params_t, ZDICT_DICTSIZE_MIN};
+use crate::ZDICT_params_t;
 
 extern "C" {
     fn clock() -> clock_t;
@@ -1175,7 +1176,7 @@ unsafe fn COVER_tryParameters(opaque: *mut core::ffi::c_void) {
     }
     drop(dict);
     COVER_best_finish((*data).best, parameters, &selection);
-    free(data as *mut core::ffi::c_void);
+    drop(unsafe { Box::from_raw(data) });
     COVER_map_destroy(&mut activeDmers);
     COVER_dictSelectionFree(selection);
     drop(freqs);
@@ -1330,41 +1331,45 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         }
         k = kMinK;
         while k <= kMaxK {
-            let data = malloc(::core::mem::size_of::<COVER_tryParameters_data_t>())
-                as *mut COVER_tryParameters_data_t;
+            let parameters = ZDICT_cover_params_t {
+                k,
+                d,
+                splitPoint,
+                steps: kSteps,
+                shrinkDict,
+                zParams: ZDICT_params_t {
+                    notificationLevel: ctx.displayLevel as core::ffi::c_uint,
+                    compressionLevel: 0,
+                    dictID: 0,
+                },
+                nbThreads: 0, // FIXME?
+                shrinkDictMaxRegression: 0,
+            };
+
+            let data = Box::new(COVER_tryParameters_data_t {
+                ctx: &mut ctx,
+                best: &mut best,
+                dictBufferCapacity: dictBufferCapacity,
+                parameters,
+            });
             if displayLevel >= 3 {
                 eprintln!("k={}", k);
             }
-            if data.is_null() {
-                if displayLevel >= 1 {
-                    eprintln!("Failed to allocate parameters");
-                }
-                COVER_best_destroy(&mut best);
-                COVER_ctx_destroy(&mut ctx);
-                POOL_free(pool);
-                return Error::memory_allocation.to_error_code();
-            }
-            (*data).ctx = &mut ctx;
-            (*data).best = &mut best;
-            (*data).dictBufferCapacity = dictBufferCapacity;
-            (*data).parameters = *parameters;
-            (*data).parameters.k = k;
-            (*data).parameters.d = d;
-            (*data).parameters.splitPoint = splitPoint;
-            (*data).parameters.steps = kSteps;
-            (*data).parameters.shrinkDict = shrinkDict;
-            (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
             if !COVER_checkParameters((*data).parameters, dictBufferCapacity) {
                 if displayLevel >= 1 {
                     eprintln!("Cover parameters incorrect");
                 }
-                free(data as *mut core::ffi::c_void);
+                drop(data);
             } else {
                 COVER_best_start((*data).best);
                 if !pool.is_null() {
-                    POOL_add(pool, COVER_tryParameters, data as *mut core::ffi::c_void);
+                    POOL_add(
+                        pool,
+                        COVER_tryParameters,
+                        Box::leak(data) as *mut _ as *mut core::ffi::c_void,
+                    );
                 } else {
-                    COVER_tryParameters(data as *mut core::ffi::c_void);
+                    COVER_tryParameters(Box::leak(data) as *mut _ as *mut core::ffi::c_void);
                 }
                 if displayLevel >= 2 {
                     let refreshRate = CLOCKS_PER_SEC as __clock_t * 15 / 100;
