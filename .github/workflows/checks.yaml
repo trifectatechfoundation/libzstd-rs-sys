@@ -198,6 +198,7 @@ jobs:
         run: |
           cargo fuzz run dictionary_round_trip -- -max_total_time=10
           cargo fuzz run dictionary_train -- -dict=./fuzz/dictionaries/dictionary_train.txt -max_total_time=60
+          cargo fuzz run dictionary_train_fast -- -dict=./fuzz/dictionaries/dictionary_train.txt -max_total_time=60
         env:
           RUSTFLAGS: "-Awarnings"
 
