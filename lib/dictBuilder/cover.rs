@@ -1232,8 +1232,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     let shrinkDict = 0 as core::ffi::c_uint;
     let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
-    let mut d: core::ffi::c_uint = 0;
-    let mut k: core::ffi::c_uint = 0;
     let mut best = COVER_best_t {
         mutex: Mutex::new(()),
         cond: Condvar::new(),
@@ -1280,8 +1278,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
-    d = kMinD;
-    while d <= kMaxD {
+
+    for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = COVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
@@ -1325,8 +1323,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
             warned = 1;
         }
-        k = kMinK;
-        while k <= kMaxK {
+
+        for k in (kMinK..=kMaxK).step_by(kStepSize as usize) {
             let parameters = ZDICT_cover_params_t {
                 k,
                 d,
@@ -1379,12 +1377,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 }
                 iteration = iteration.wrapping_add(1);
             }
-            k = k.wrapping_add(kStepSize);
         }
+
         COVER_best_wait(&mut best);
         COVER_ctx_destroy(&mut ctx);
-        d = d.wrapping_add(2);
     }
+
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
