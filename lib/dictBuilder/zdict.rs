@@ -35,7 +35,7 @@ struct EStats_ress_t {
     zc: *mut ZSTD_CCtx,
     workPlace: *mut core::ffi::c_void,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct offsetCount_t {
     offset: u32,
@@ -867,20 +867,12 @@ unsafe fn ZDICT_analyzeEntropy(
     dictBufferSize: size_t,
     notificationLevel: core::ffi::c_uint,
 ) -> size_t {
-    let mut countLit: [core::ffi::c_uint; 256] = [0; 256];
     let mut hufTable: [HUF_CElt; 257] = [0; 257];
-    let mut offcodeCount: [core::ffi::c_uint; 31] = [0; 31];
     let mut offcodeNCount: [core::ffi::c_short; 31] = [0; 31];
     let offcodeMax =
         ZSTD_highbit32(dictBufferSize.wrapping_add((128 * ((1) << 10)) as size_t) as u32);
-    let mut matchLengthCount: [core::ffi::c_uint; 53] = [0; 53];
     let mut matchLengthNCount: [core::ffi::c_short; 53] = [0; 53];
-    let mut litLengthCount: [core::ffi::c_uint; 36] = [0; 36];
     let mut litLengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut bestRepOffset = [offsetCount_t {
-        offset: 0,
-        count: 0,
-    }; ZSTD_REP_NUM as usize + 1];
     let mut esr = EStats_ress_t {
         dict: core::ptr::null_mut(),
         zc: core::ptr::null_mut(),
@@ -905,23 +897,27 @@ unsafe fn ZDICT_analyzeEntropy(
         eSize = Error::dictionaryCreation_failed.to_error_code();
     } else {
         u = 0;
+        let mut countLit: [core::ffi::c_uint; 256] = [0; 256];
         while u < 256 {
-            *countLit.as_mut_ptr().offset(u as isize) = 1;
+            countLit[u as usize] = 1;
             u = u.wrapping_add(1);
         }
         u = 0;
+        let mut offcodeCount: [core::ffi::c_uint; 31] = [0; 31];
         while u <= offcodeMax {
-            *offcodeCount.as_mut_ptr().offset(u as isize) = 1;
+            offcodeCount[u as usize] = 1;
             u = u.wrapping_add(1);
         }
         u = 0;
+        let mut matchLengthCount: [core::ffi::c_uint; 53] = [0; 53];
         while u <= MaxML as u32 {
-            *matchLengthCount.as_mut_ptr().offset(u as isize) = 1;
+            matchLengthCount[u as usize] = 1;
             u = u.wrapping_add(1);
         }
         u = 0;
+        let mut litLengthCount: [core::ffi::c_uint; 36] = [0; 36];
         while u <= MaxLL as u32 {
-            *litLengthCount.as_mut_ptr().offset(u as isize) = 1;
+            litLengthCount[u as usize] = 1;
             u = u.wrapping_add(1);
         }
 
@@ -930,11 +926,7 @@ unsafe fn ZDICT_analyzeEntropy(
         repOffset[4] = 1;
         repOffset[8] = 1;
 
-        ptr::write_bytes(
-            bestRepOffset.as_mut_ptr() as *mut u8,
-            0,
-            ::core::mem::size_of::<[offsetCount_t; 4]>(),
-        );
+        let mut bestRepOffset = [offsetCount_t::default(); ZSTD_REP_NUM as usize + 1];
 
         if compressionLevel == 0 {
             compressionLevel = ZSTD_CLEVEL_DEFAULT;
