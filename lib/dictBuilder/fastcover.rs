@@ -401,6 +401,7 @@ unsafe fn FASTCOVER_buildDictionary(
     }
     tail
 }
+
 unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     let data = opaque as *mut FASTCOVER_tryParameters_data_t;
     let ctx = (*data).ctx;

@@ -1301,14 +1301,11 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         outDictContent,
         dictContentSize,
     );
-    memcpy(
-        outDictHeader as *mut core::ffi::c_void,
-        header.as_mut_ptr() as *const core::ffi::c_void,
-        hSize,
-    );
+    core::ptr::copy_nonoverlapping(header.as_mut_ptr(), outDictHeader, hSize);
     core::ptr::write_bytes(outDictPadding, 0, paddingSize);
     dictSize
 }
+
 const HBUFFSIZE: core::ffi::c_int = 256;
 unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     dictBuffer: *mut core::ffi::c_void,
