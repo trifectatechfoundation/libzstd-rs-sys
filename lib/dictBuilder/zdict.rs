@@ -1244,10 +1244,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    MEM_writeLE32(
-        header.as_mut_ptr() as *mut core::ffi::c_void,
-        ZSTD_MAGIC_DICTIONARY,
-    );
+    header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
     let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
         .wrapping_add(32768) as u32;
@@ -1256,7 +1253,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     } else {
         compliantID
     };
-    MEM_writeLE32(header.as_mut_ptr().add(4) as *mut core::ffi::c_void, dictID);
+    header[4..][..4].copy_from_slice(&dictID.to_le_bytes());
     hSize = 8;
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", "");
@@ -1265,7 +1262,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         eprintln!("statistics ...");
     }
     let eSize = ZDICT_analyzeEntropy(
-        header.as_mut_ptr().add(hSize) as *mut core::ffi::c_void,
+        header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
         (HBUFFSIZE as size_t).wrapping_sub(hSize),
         compressionLevel,
         samplesBuffer,
