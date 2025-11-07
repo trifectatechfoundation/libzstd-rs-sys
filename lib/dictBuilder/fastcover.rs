@@ -468,6 +468,16 @@ fn FASTCOVER_convertToFastCoverParams(
     fastCoverParams.shrinkDict = coverParams.shrinkDict;
 }
 
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `dictBufferCapacity` is 0 or `dictBuffer` and `dictBufferCapacity` satisfy the requirements
+///   of [`core::slice::from_raw_parts_mut`].
+/// - `nbSamples` is 0 or `samplesSizes` and `nbSamples` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
+/// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_fastCover))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     dictBuffer: *mut core::ffi::c_void,
@@ -475,9 +485,33 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     samplesBuffer: *const core::ffi::c_void,
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
+    parameters: ZDICT_fastCover_params_t,
+) -> size_t {
+    let dict = unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) };
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
+    train_from_buffer_fastcover(dict, samples, samplesSizes, parameters)
+}
+
+fn train_from_buffer_fastcover(
+    dict: &mut [MaybeUninit<u8>],
+    samples: &[u8],
+    samplesSizes: &[usize],
     mut parameters: ZDICT_fastCover_params_t,
 ) -> size_t {
-    let dict = dictBuffer as *mut u8;
+    let dictBufferCapacity = dict.len();
+
     let mut ctx = FASTCOVER_ctx_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
@@ -504,7 +538,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         }
         return Error::parameter_outOfBound.to_error_code();
     }
-    if nbSamples == 0 {
+    if samplesSizes.is_empty() {
         if displayLevel >= 1 {
             eprintln!("FASTCOVER must have at least one input file");
         }
@@ -517,18 +551,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         return Error::dstSize_tooSmall.to_error_code();
     }
     let accelParams = FASTCOVER_defaultAccelParameters[parameters.accel as usize];
-
-    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-    };
-    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
-    };
 
     let initVal = FASTCOVER_ctx_init(
         &mut ctx,
@@ -553,27 +575,27 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << parameters.f]);
 
     let mut freqs = core::mem::take(&mut ctx.freqs);
-    let dict_tail = FASTCOVER_buildDictionary(
-        &ctx,
-        &mut freqs,
-        unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) },
-        coverParams,
-        &mut segmentFreqs,
-    );
+    let dict_tail =
+        FASTCOVER_buildDictionary(&ctx, &mut freqs, dict, coverParams, &mut segmentFreqs);
     ctx.freqs = freqs;
 
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
-    let dictionarySize = ZDICT_finalizeDictionary(
-        dict as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        dict_tail.as_ptr() as *const core::ffi::c_void,
-        dict_tail.len(),
-        samplesBuffer,
-        samplesSizes.as_ptr(),
-        nbFinalizeSamples,
-        coverParams.zParams,
-    );
+    let customDictContentSize = dict_tail.len();
+    let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
+    let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
+    let dictionarySize = unsafe {
+        ZDICT_finalizeDictionary(
+            dictBuffer,
+            dictBufferCapacity,
+            customDictContent,
+            customDictContentSize,
+            samples.as_ptr() as *const core::ffi::c_void,
+            samplesSizes.as_ptr(),
+            nbFinalizeSamples,
+            coverParams.zParams,
+        )
+    };
     if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize);
     }
