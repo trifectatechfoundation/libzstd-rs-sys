@@ -222,13 +222,13 @@ fn FASTCOVER_ctx_init<'a>(
     ctx: &mut FASTCOVER_ctx_t<'a>,
     samples: &'a [u8],
     samplesSizes: &'a [size_t],
-    nbSamples: core::ffi::c_uint,
     d: core::ffi::c_uint,
     splitPoint: core::ffi::c_double,
     f: core::ffi::c_uint,
     accelParams: FASTCOVER_accel_t,
     displayLevel: core::ffi::c_int,
 ) -> size_t {
+    let nbSamples = samplesSizes.len() as core::ffi::c_uint;
     let totalSamplesSize = samplesSizes.iter().sum::<usize>();
     let nbTrainSamples = if splitPoint < 1.0f64 {
         (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
@@ -534,7 +534,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         &mut ctx,
         samples,
         samplesSizes,
-        nbSamples,
         coverParams.d,
         parameters.splitPoint,
         parameters.f,
@@ -587,7 +586,13 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
 ///
 /// Behavior is undefined if any of the following conditions are violated:
 ///
-/// - `parameters` satisfies the conditions of [`pointer::as_mut`]
+/// - `dictBufferCapacity` is 0 or `dictBuffer` and `dictBufferCapacity` satisfy the requirements
+///   of [`core::slice::from_raw_parts_mut`].
+/// - `nbSamples` is 0 or `samplesSizes` and `nbSamples` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
+/// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
+/// - `parameters` satisfies the requirements of [`pointer::as_mut`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_fastCover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     dictBuffer: *mut core::ffi::c_void,
@@ -597,7 +602,32 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     nbSamples: core::ffi::c_uint,
     parameters: *mut ZDICT_fastCover_params_t,
 ) -> size_t {
+    let dict = unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) };
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
     let parameters = unsafe { parameters.as_mut().unwrap() };
+
+    optimize_train_from_buffer_fastcover(dict, samples, samplesSizes, parameters)
+}
+
+fn optimize_train_from_buffer_fastcover(
+    dict: &mut [MaybeUninit<u8>],
+    samples: &[u8],
+    samplesSizes: &[usize],
+    parameters: &mut ZDICT_fastCover_params_t,
+) -> size_t {
+    let dictBufferCapacity = dict.len();
 
     let nbThreads = parameters.nbThreads;
     let splitPoint = if parameters.splitPoint <= 0.0f64 {
@@ -642,7 +672,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let shrinkDict = 0;
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
-    let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut last_update_time = Instant::now();
     if splitPoint <= 0.0 || splitPoint > 1.0 {
@@ -663,24 +692,27 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         }
         return Error::parameter_outOfBound.to_error_code();
     }
-    if nbSamples == 0 {
+    if samplesSizes.is_empty() {
         if displayLevel >= 1 {
             eprintln!("FASTCOVER must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dict.len() < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
+
+    let mut pool = core::ptr::null_mut();
     if nbThreads > 1 {
-        pool = POOL_create(nbThreads as size_t, 1);
+        pool = unsafe { POOL_create(nbThreads as size_t, 1) };
         if pool.is_null() {
             return Error::memory_allocation.to_error_code();
         }
     }
+
     let best = COVER_best_t::new();
     let mut coverParams = ZDICT_cover_params_t::default();
     FASTCOVER_convertToCoverParams(*parameters, &mut coverParams);
@@ -688,18 +720,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
-
-    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-    };
-    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
-    };
 
     for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = FASTCOVER_ctx_t::default();
@@ -716,7 +736,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             &mut ctx,
             samples,
             samplesSizes,
-            nbSamples,
             d,
             splitPoint,
             f,
@@ -728,7 +747,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 eprintln!("Failed to initialize context");
             }
             drop(COVER_best_wait(&best));
-            POOL_free(pool);
+            unsafe { POOL_free(pool) };
             return initVal;
         }
         if warned == 0 {
@@ -771,11 +790,13 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             } else {
                 COVER_best_start(&best);
                 if !pool.is_null() {
-                    POOL_add(
-                        pool,
-                        FASTCOVER_tryParameters_wrapper,
-                        Box::leak(data) as *mut _ as *mut core::ffi::c_void,
-                    );
+                    unsafe {
+                        POOL_add(
+                            pool,
+                            FASTCOVER_tryParameters_wrapper,
+                            Box::leak(data) as *mut _ as *mut core::ffi::c_void,
+                        )
+                    }
                 } else {
                     FASTCOVER_tryParameters(data);
                 }
@@ -806,13 +827,11 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let dictSize = best.dictSize;
     if ERR_isError(best.compressedSize) {
         let compressedSize = best.compressedSize;
-        POOL_free(pool);
+        unsafe { POOL_free(pool) };
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
-    unsafe {
-        core::ptr::copy_nonoverlapping(best.dict.as_ptr(), dictBuffer.cast::<u8>(), dictSize)
-    };
-    POOL_free(pool);
+    dict[..dictSize].copy_from_slice(super::cover::as_uninit(&best.dict[..dictSize]));
+    unsafe { POOL_free(pool) };
     dictSize
 }
