@@ -712,18 +712,16 @@ pub(super) fn COVER_computeEpochs(
     epochs
 }
 
-fn COVER_buildDictionary(
+fn COVER_buildDictionary<'a>(
     ctx: &COVER_ctx_t,
     freqs: &mut [u32],
     activeDmers: &mut COVER_map_t,
-    dictBuffer: *mut core::ffi::c_void,
-    dictBufferCapacity: size_t,
+    dict: &'a mut [MaybeUninit<u8>],
     parameters: ZDICT_cover_params_t,
-) -> size_t {
-    let dict = dictBuffer as *mut u8;
-    let mut tail = dictBufferCapacity;
+) -> &'a [u8] {
+    let mut tail = dict.len();
     let epochs = COVER_computeEpochs(
-        dictBufferCapacity as u32,
+        dict.len() as u32,
         ctx.suffixSize as u32, // suffix itself may be deallocated already
         parameters.k,
         4,
@@ -761,23 +759,19 @@ fn COVER_buildDictionary(
             if segmentSize < parameters.d as size_t {
                 break;
             }
+
             tail = tail.wrapping_sub(segmentSize);
-            let samples = ctx.samples;
-            unsafe {
-                core::ptr::copy_nonoverlapping(
-                    samples[segment.begin as usize..][..segmentSize as usize].as_ptr(),
-                    dict.add(tail),
-                    segmentSize,
-                );
-            }
+            dict[tail..][..segmentSize].copy_from_slice(as_uninit(
+                &ctx.samples[segment.begin as usize..][..segmentSize as usize],
+            ));
+
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);
                 if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
                     last_update_time = Instant::now();
                     eprint!(
                         "\r{}%       ",
-                        (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
-                            as core::ffi::c_uint,
+                        dict.len().wrapping_sub(tail) * 100 / dict.len()
                     );
                 }
             }
@@ -787,8 +781,28 @@ fn COVER_buildDictionary(
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
-    tail
+    unsafe { assume_init_ref(&dict[tail..]) }
 }
+
+pub(super) const fn as_uninit<T>(slice: &[T]) -> &[MaybeUninit<T>] {
+    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
+    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
+    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
+    // reference and thus guaranteed to be valid for reads.
+    //
+    // For immutable slices, there is no risk of writing uninitialized data to assumed-initialized
+    // places.
+    unsafe { &*(slice as *const [T] as *const [MaybeUninit<T>]) }
+}
+
+pub(super) const unsafe fn assume_init_ref<T>(slice: &[MaybeUninit<T>]) -> &[T] {
+    // SAFETY: casting `slice` to a `*const [T]` is safe since the caller guarantees that
+    // `slice` is initialized, and `MaybeUninit` is guaranteed to have the same layout as `T`.
+    // The pointer obtained is valid since it refers to memory owned by `slice` which is a
+    // reference and thus guaranteed to be valid for reads.
+    unsafe { &*(slice as *const [MaybeUninit<T>] as *const [T]) }
+}
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     dictBuffer: *mut core::ffi::c_void,
@@ -853,12 +867,11 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     }
 
     let mut freqs = core::mem::take(&mut ctx.freqs);
-    let tail = COVER_buildDictionary(
+    let dict_tail = COVER_buildDictionary(
         &ctx,
         &mut freqs,
         &mut activeDmers,
-        dictBuffer,
-        dictBufferCapacity,
+        unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) },
         parameters,
     );
     ctx.freqs = freqs;
@@ -866,8 +879,8 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     let dictionarySize = ZDICT_finalizeDictionary(
         dict as *mut core::ffi::c_void,
         dictBufferCapacity,
-        dict.add(tail) as *const core::ffi::c_void,
-        dictBufferCapacity.wrapping_sub(tail),
+        dict_tail.as_ptr() as *const core::ffi::c_void,
+        dict_tail.len(),
         samplesBuffer,
         samplesSizes.as_ptr(),
         nbSamples,
@@ -1135,26 +1148,19 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     let parameters = data.parameters;
     let dictBufferCapacity = data.dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
-    let mut dict: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
+    let mut dict: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dictBufferCapacity);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
     let mut freqs = ctx.freqs.clone();
     let displayLevel = ctx.displayLevel;
     let mut activeDmers =
         COVER_map_t::new((parameters.k).wrapping_sub(parameters.d).wrapping_add(1));
 
-    let tail = COVER_buildDictionary(
-        ctx,
-        &mut freqs,
-        &mut activeDmers,
-        dict.as_mut_ptr() as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        parameters,
-    );
+    let dict_tail = COVER_buildDictionary(ctx, &mut freqs, &mut activeDmers, &mut dict, parameters);
 
     selection = COVER_selectDict(
-        &dict[tail..],
+        dict_tail,
         dictBufferCapacity,
-        dictBufferCapacity.wrapping_sub(tail),
+        dict_tail.len(),
         ctx.samples,
         ctx.samplesSizes,
         ctx.nbTrainSamples as core::ffi::c_uint,

@@ -1,4 +1,5 @@
 use core::ptr;
+use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
 use libc::size_t;
@@ -326,22 +327,15 @@ fn FASTCOVER_ctx_init<'a>(
     0
 }
 
-unsafe fn FASTCOVER_buildDictionary(
+fn FASTCOVER_buildDictionary<'a>(
     ctx: &FASTCOVER_ctx_t,
     freqs: &mut [u32],
-    dictBuffer: *mut core::ffi::c_void,
-    dictBufferCapacity: size_t,
+    dict: &'a mut [MaybeUninit<u8>],
     parameters: ZDICT_cover_params_t,
     segmentFreqs: &mut [u16],
-) -> size_t {
-    let dict = dictBuffer as *mut u8;
-    let mut tail = dictBufferCapacity;
-    let epochs = COVER_computeEpochs(
-        dictBufferCapacity as u32,
-        ctx.nbDmers as u32,
-        parameters.k,
-        1,
-    );
+) -> &'a [u8] {
+    let mut tail = dict.len();
+    let epochs = COVER_computeEpochs(dict.len() as u32, ctx.nbDmers as u32, parameters.k, 1);
     let maxZeroScoreRun = 10;
     let displayLevel = ctx.displayLevel;
     let mut zeroScoreRun = 0 as size_t;
@@ -376,21 +370,16 @@ unsafe fn FASTCOVER_buildDictionary(
                 break;
             }
             tail = tail.wrapping_sub(segmentSize);
-            unsafe {
-                core::ptr::copy_nonoverlapping(
-                    ctx.samples[segment.begin as usize..].as_ptr(),
-                    dict.add(tail),
-                    segmentSize,
-                )
-            };
+            dict[tail..][..segmentSize].copy_from_slice(super::cover::as_uninit(
+                &ctx.samples[segment.begin as usize..][..segmentSize as usize],
+            ));
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);
                 if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
                     last_update_time = Instant::now();
                     eprint!(
                         "\r{}%       ",
-                        (dictBufferCapacity.wrapping_sub(tail) * 100 / dictBufferCapacity)
-                            as core::ffi::c_uint,
+                        dict.len().wrapping_sub(tail) * 100 / dict.len()
                     );
                 }
             }
@@ -400,39 +389,35 @@ unsafe fn FASTCOVER_buildDictionary(
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
-    tail
+
+    // SAFETY: the `tail..` elements were copied from a `&[u8]` above.
+    unsafe { super::cover::assume_init_ref(&dict[tail..]) }
 }
 
 unsafe fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 
-unsafe fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
+fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
     let ctx = data.ctx;
     let parameters = data.parameters;
     let dictBufferCapacity = data.dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << ctx.f]);
-    let mut dict: Box<[u8]> = Box::from(vec![0; dictBufferCapacity]);
+    let mut dict: Box<[MaybeUninit<u8>]> = Box::new_uninit_slice(dictBufferCapacity);
     let mut selection = COVER_dictSelectionError(Error::GENERIC.to_error_code());
 
     let displayLevel = ctx.displayLevel;
     let mut freqs = ctx.freqs.clone();
 
-    let tail = FASTCOVER_buildDictionary(
-        ctx,
-        &mut freqs,
-        dict.as_mut_ptr() as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        parameters,
-        &mut segmentFreqs,
-    );
+    let dict_tail =
+        FASTCOVER_buildDictionary(ctx, &mut freqs, &mut dict, parameters, &mut segmentFreqs);
     let nbFinalizeSamples =
         (ctx.nbTrainSamples * ctx.accelParams.finalize as size_t / 100) as core::ffi::c_uint;
     selection = COVER_selectDict(
-        &dict[tail..],
+        dict_tail,
         dictBufferCapacity,
-        dictBufferCapacity.wrapping_sub(tail),
+        dict_tail.len(),
         ctx.samples,
         ctx.samplesSizes,
         nbFinalizeSamples,
@@ -495,7 +480,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
 ) -> size_t {
     let dict = dictBuffer as *mut u8;
     let mut ctx = FASTCOVER_ctx_t::default();
-    let mut coverParams = ZDICT_cover_params_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     parameters.f = if parameters.f == 0 {
@@ -508,11 +492,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     } else {
         parameters.accel
     };
-    ptr::write_bytes(
-        &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_cover_params_t>(),
-    );
+    let mut coverParams = ZDICT_cover_params_t::default();
     FASTCOVER_convertToCoverParams(parameters, &mut coverParams);
     if !FASTCOVER_checkParameters(
         coverParams,
@@ -575,11 +555,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << parameters.f]);
 
     let mut freqs = core::mem::take(&mut ctx.freqs);
-    let tail = FASTCOVER_buildDictionary(
+    let dict_tail = FASTCOVER_buildDictionary(
         &ctx,
         &mut freqs,
-        dictBuffer,
-        dictBufferCapacity,
+        unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) },
         coverParams,
         &mut segmentFreqs,
     );
@@ -590,8 +569,8 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let dictionarySize = ZDICT_finalizeDictionary(
         dict as *mut core::ffi::c_void,
         dictBufferCapacity,
-        dict.add(tail) as *const core::ffi::c_void,
-        dictBufferCapacity.wrapping_sub(tail),
+        dict_tail.as_ptr() as *const core::ffi::c_void,
+        dict_tail.len(),
         samplesBuffer,
         samplesSizes.as_ptr(),
         nbFinalizeSamples,
