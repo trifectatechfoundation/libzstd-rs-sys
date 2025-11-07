@@ -11,7 +11,7 @@ fuzz_target!(|data: (u8, u8, ArbitrarySamples)| {
     let k = d + (k as u32 % 256);
 
     // train
-    let (_dict_size, dict) = assert_eq_rs_c!({
+    assert_eq_rs_c!({
         let mut params = libzstd_rs_sys::ZDICT_fastCover_params_t::default();
         params.d = d;
         params.k = k;
@@ -34,9 +34,8 @@ fuzz_target!(|data: (u8, u8, ArbitrarySamples)| {
         let mut opt_params = libzstd_rs_sys::ZDICT_fastCover_params_t::default();
         opt_params.steps = 4;
 
-        let mut dict = dict.clone();
-
-        let opt_dict_size = ZDICT_optimizeTrainFromBuffer_fastCover(
+        let mut dict = vec![0u8; samples.dict_size];
+        let dict_size = ZDICT_optimizeTrainFromBuffer_fastCover(
             dict.as_mut_ptr().cast(),
             samples.dict_size,
             samples.samples.as_ptr().cast(),
@@ -45,6 +44,6 @@ fuzz_target!(|data: (u8, u8, ArbitrarySamples)| {
             std::mem::transmute(&mut opt_params),
         );
 
-        (opt_dict_size, dict)
+        (dict_size, dict)
     });
 });

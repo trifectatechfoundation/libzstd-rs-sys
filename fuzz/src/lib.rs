@@ -19,6 +19,10 @@ impl arbitrary::Arbitrary<'_> for ArbitrarySamples {
         let total_sample_size = dict_size * 11;
         // pick number of samples based on remaining randomness that is left
         let nb_samples = u.arbitrary_len::<usize>()?;
+        if nb_samples <= 10 {
+            // dict trainer has issues with <= 10 samples: https://github.com/facebook/zstd/issues/3599
+            return Err(arbitrary::Error::NotEnoughData);
+        }
 
         // generate random samples from src
         let mut samples = Vec::with_capacity(total_sample_size);
