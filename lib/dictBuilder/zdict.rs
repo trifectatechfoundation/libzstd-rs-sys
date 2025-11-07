@@ -741,10 +741,10 @@ unsafe fn ZDICT_countEStats(
     mut srcSize: size_t,
     notificationLevel: u32,
 ) {
-    let blockSizeMax = (if ((1) << 17) < (1) << (*params).cParams.windowLog {
+    let blockSizeMax = (if ((1) << 17) < (1) << params.cParams.windowLog {
         (1) << 17
     } else {
-        (1) << (*params).cParams.windowLog
+        (1) << params.cParams.windowLog
     }) as size_t;
     let mut cSize: size_t = 0;
     if srcSize > blockSizeMax {
