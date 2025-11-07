@@ -1,4 +1,3 @@
-use core::ptr;
 use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
@@ -600,7 +599,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
 ) -> size_t {
     let parameters = unsafe { parameters.as_mut().unwrap() };
 
-    let mut coverParams = ZDICT_cover_params_t::default();
     let nbThreads = parameters.nbThreads;
     let splitPoint = if parameters.splitPoint <= 0.0f64 {
         FASTCOVER_DEFAULT_SPLITPOINT
@@ -684,11 +682,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         }
     }
     let best = COVER_best_t::new();
-    ptr::write_bytes(
-        &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_cover_params_t>(),
-    );
+    let mut coverParams = ZDICT_cover_params_t::default();
     FASTCOVER_convertToCoverParams(*parameters, &mut coverParams);
     let accelParams = FASTCOVER_defaultAccelParameters[accel as usize];
     if displayLevel >= 2 {
