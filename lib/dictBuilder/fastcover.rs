@@ -491,7 +491,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
     let dict = dictBuffer as *mut u8;
     let mut ctx = FASTCOVER_ctx_t::default();
     let mut coverParams = ZDICT_cover_params_t::default();
-    let mut accelParams = FASTCOVER_accel_t::default();
     let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     parameters.splitPoint = 1.0f64;
     parameters.f = if parameters.f == 0 {
@@ -533,9 +532,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_fastCover(
         }
         return Error::dstSize_tooSmall.to_error_code();
     }
-    accelParams = *FASTCOVER_defaultAccelParameters
-        .as_ptr()
-        .offset(parameters.accel as isize);
+    let accelParams = FASTCOVER_defaultAccelParameters[parameters.accel as usize];
 
     let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
         &[]
@@ -620,7 +617,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let parameters = unsafe { parameters.as_mut().unwrap() };
 
     let mut coverParams = ZDICT_cover_params_t::default();
-    let mut accelParams = FASTCOVER_accel_t::default();
     let nbThreads = parameters.nbThreads;
     let splitPoint = if parameters.splitPoint <= 0.0f64 {
         FASTCOVER_DEFAULT_SPLITPOINT
@@ -710,9 +706,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         ::core::mem::size_of::<ZDICT_cover_params_t>(),
     );
     FASTCOVER_convertToCoverParams(*parameters, &mut coverParams);
-    accelParams = *FASTCOVER_defaultAccelParameters
-        .as_ptr()
-        .offset(accel as isize);
+    let accelParams = FASTCOVER_defaultAccelParameters[accel as usize];
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
