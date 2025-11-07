@@ -1134,7 +1134,7 @@ pub(super) fn COVER_selectDict(
     setDictSelection(largestDictbuffer, dictContentSize, totalCompressedSize)
 }
 
-fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
+unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
     COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
 }
 

@@ -1,7 +1,7 @@
 use core::ptr;
 use std::time::{Duration, Instant};
 
-use libc::{free, malloc, size_t};
+use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
@@ -15,6 +15,7 @@ use crate::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_DICTSIZE_MIN,
 };
 use crate::lib::zdict::ZDICT_finalizeDictionary;
+use crate::ZDICT_params_t;
 
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
@@ -402,11 +403,14 @@ unsafe fn FASTCOVER_buildDictionary(
     tail
 }
 
-unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
-    let data = opaque as *mut FASTCOVER_tryParameters_data_t;
-    let ctx = (*data).ctx;
-    let parameters = (*data).parameters;
-    let dictBufferCapacity = (*data).dictBufferCapacity;
+unsafe fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
+    FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
+}
+
+unsafe fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
+    let ctx = data.ctx;
+    let parameters = data.parameters;
+    let dictBufferCapacity = data.dictBufferCapacity;
     let totalCompressedSize = Error::GENERIC.to_error_code();
     let mut segmentFreqs: Box<[u16]> = Box::from(vec![0u16; 1 << ctx.f]);
     let mut dict: Box<[u8]> = Box::from(vec![0; dictBufferCapacity]);
@@ -443,8 +447,8 @@ unsafe fn FASTCOVER_tryParameters(opaque: *mut core::ffi::c_void) {
     }
 
     drop(dict);
-    COVER_best_finish((*data).best, parameters, &selection);
-    free(data as *mut core::ffi::c_void);
+    COVER_best_finish(data.best, parameters, &selection);
+    drop(data);
     drop(segmentFreqs);
     COVER_dictSelectionFree(selection);
     drop(freqs);
@@ -760,50 +764,47 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         }
 
         for k in (kMinK..=kMaxK).step_by(kStepSize as usize) {
-            let data = malloc(::core::mem::size_of::<FASTCOVER_tryParameters_data_t>())
-                as *mut FASTCOVER_tryParameters_data_t;
             if displayLevel >= 3 {
                 eprintln!("k={}", k);
             }
-            if data.is_null() {
-                if displayLevel >= 1 {
-                    eprintln!("Failed to allocate parameters");
-                }
-                drop(COVER_best_wait(&best));
-                FASTCOVER_ctx_destroy(&mut ctx);
-                POOL_free(pool);
-                return Error::memory_allocation.to_error_code();
-            }
-            (*data).ctx = &ctx;
-            (*data).best = &best;
-            (*data).dictBufferCapacity = dictBufferCapacity;
-            (*data).parameters = coverParams;
-            (*data).parameters.k = k;
-            (*data).parameters.d = d;
-            (*data).parameters.splitPoint = splitPoint;
-            (*data).parameters.steps = kSteps;
-            (*data).parameters.shrinkDict = shrinkDict;
-            (*data).parameters.zParams.notificationLevel = ctx.displayLevel as core::ffi::c_uint;
-            if !FASTCOVER_checkParameters(
-                (*data).parameters,
+
+            let parameters = ZDICT_cover_params_t {
+                k,
+                d,
+                splitPoint,
+                steps: kSteps,
+                shrinkDict,
+                zParams: ZDICT_params_t {
+                    notificationLevel: ctx.displayLevel as core::ffi::c_uint,
+                    compressionLevel: 0,
+                    dictID: 0,
+                },
+                nbThreads: 0,
+                shrinkDictMaxRegression: 0,
+            };
+
+            let data = Box::new(FASTCOVER_tryParameters_data_t {
+                ctx: &ctx,
+                best: &best,
                 dictBufferCapacity,
-                (*data).ctx.f,
-                accel,
-            ) {
+                parameters,
+            });
+
+            if !FASTCOVER_checkParameters(data.parameters, dictBufferCapacity, data.ctx.f, accel) {
                 if displayLevel >= 1 {
                     eprintln!("FASTCOVER parameters incorrect");
                 }
-                free(data as *mut core::ffi::c_void);
+                drop(data);
             } else {
                 COVER_best_start(&best);
                 if !pool.is_null() {
                     POOL_add(
                         pool,
-                        FASTCOVER_tryParameters,
-                        data as *mut core::ffi::c_void,
+                        FASTCOVER_tryParameters_wrapper,
+                        Box::leak(data) as *mut _ as *mut core::ffi::c_void,
                     );
                 } else {
-                    FASTCOVER_tryParameters(data as *mut core::ffi::c_void);
+                    FASTCOVER_tryParameters(data);
                 }
                 if displayLevel >= 2 {
                     let refresh_rate = Duration::from_millis(150);
