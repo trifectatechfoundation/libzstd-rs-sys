@@ -851,17 +851,15 @@ unsafe fn ZDICT_insertSortCount(table: *mut offsetCount_t, val: u32, count: u32)
         u = u.wrapping_sub(1);
     }
 }
-unsafe fn ZDICT_flatLit(countLit: *mut core::ffi::c_uint) {
-    let mut u: core::ffi::c_int = 0;
-    u = 1;
-    while u < 256 {
-        *countLit.offset(u as isize) = 2;
-        u += 1;
-    }
-    *countLit = 4;
-    *countLit.add(253) = 1;
-    *countLit.add(254) = 1;
+
+fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
+    countLit.fill(2);
+
+    countLit[0] = 4;
+    countLit[253] = 1;
+    countLit[254] = 1;
 }
+
 const OFFCODE_MAX: core::ffi::c_int = 30;
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
@@ -1020,7 +1018,7 @@ unsafe fn ZDICT_analyzeEntropy(
                             "warning : pathological dataset : literals are not compressible : samples are noisy or too regular "
                         );
                     }
-                    ZDICT_flatLit(countLit.as_mut_ptr());
+                    ZDICT_flatLit(&mut countLit);
                     maxNbBits = HUF_buildCTable_wksp(
                         hufTable.as_mut_ptr(),
                         countLit.as_mut_ptr(),
