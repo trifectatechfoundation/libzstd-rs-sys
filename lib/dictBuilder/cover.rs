@@ -1184,6 +1184,11 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     drop(freqs);
 }
 
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `parameters` satisfies the conditions of [`pointer::as_mut`]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     dictBuffer: *mut core::ffi::c_void,
@@ -1193,36 +1198,26 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     nbSamples: core::ffi::c_uint,
     parameters: *mut ZDICT_cover_params_t,
 ) -> size_t {
-    let nbThreads = (*parameters).nbThreads;
-    let splitPoint = if (*parameters).splitPoint <= 0.0f64 {
+    let parameters = unsafe { parameters.as_mut().unwrap() };
+
+    let nbThreads = parameters.nbThreads;
+    let splitPoint = if parameters.splitPoint <= 0.0f64 {
         COVER_DEFAULT_SPLITPOINT
     } else {
-        (*parameters).splitPoint
+        parameters.splitPoint
     };
-    let kMinD = if (*parameters).d == 0 {
-        6
-    } else {
-        (*parameters).d
-    };
-    let kMaxD = if (*parameters).d == 0 {
-        8
-    } else {
-        (*parameters).d
-    };
-    let kMinK = if (*parameters).k == 0 {
-        50
-    } else {
-        (*parameters).k
-    };
-    let kMaxK = if (*parameters).k == 0 {
+    let kMinD = if parameters.d == 0 { 6 } else { parameters.d };
+    let kMaxD = if parameters.d == 0 { 8 } else { parameters.d };
+    let kMinK = if parameters.k == 0 { 50 } else { parameters.k };
+    let kMaxK = if parameters.k == 0 {
         2000
     } else {
-        (*parameters).k
+        parameters.k
     };
-    let kSteps = if (*parameters).steps == 0 {
+    let kSteps = if parameters.steps == 0 {
         40
     } else {
-        (*parameters).steps
+        parameters.steps
     };
     let kStepSize = if kMaxK.wrapping_sub(kMinK).wrapping_div(kSteps) > 1 {
         kMaxK.wrapping_sub(kMinK).wrapping_div(kSteps)
@@ -1236,7 +1231,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
         );
     let shrinkDict = 0 as core::ffi::c_uint;
-    let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
+    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
