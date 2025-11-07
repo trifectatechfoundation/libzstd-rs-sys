@@ -832,22 +832,21 @@ unsafe fn ZDICT_totalSampleSize(fileSizes: *const size_t, nbFiles: core::ffi::c_
     }
     total
 }
-unsafe fn ZDICT_insertSortCount(table: *mut offsetCount_t, val: u32, count: u32) {
-    let mut u: u32 = 0;
-    (*table.offset(ZSTD_REP_NUM as isize)).offset = val;
-    (*table.offset(ZSTD_REP_NUM as isize)).count = count;
-    u = ZSTD_REP_NUM as u32;
+
+fn ZDICT_insertSortCount(table: &mut [offsetCount_t; 4], val: u32, count: u32) {
+    let mut u = 0usize;
+    table[ZSTD_REP_NUM as usize] = offsetCount_t { offset: val, count };
     while u > 0 {
         let mut tmp = offsetCount_t {
             offset: 0,
             count: 0,
         };
-        if (*table.offset(u.wrapping_sub(1) as isize)).count >= (*table.offset(u as isize)).count {
+        if (table[u.wrapping_sub(1)]).count >= (table[u]).count {
             break;
         }
-        tmp = *table.offset(u.wrapping_sub(1) as isize);
-        *table.offset(u.wrapping_sub(1) as isize) = *table.offset(u as isize);
-        *table.offset(u as isize) = tmp;
+        tmp = table[u.wrapping_sub(1)];
+        table[u.wrapping_sub(1)] = table[u];
+        table[u] = tmp;
         u = u.wrapping_sub(1);
     }
 }
@@ -1032,11 +1031,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 let mut offset: u32 = 0;
                 offset = 1;
                 while offset < MAXREPOFFSET as u32 {
-                    ZDICT_insertSortCount(
-                        bestRepOffset.as_mut_ptr(),
-                        offset,
-                        *repOffset.as_mut_ptr().offset(offset as isize),
-                    );
+                    ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
                     offset = offset.wrapping_add(1);
                 }
                 total = 0;
