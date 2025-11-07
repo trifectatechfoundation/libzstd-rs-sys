@@ -1322,7 +1322,7 @@ unsafe fn finalize_dictionary(
         outDictContent,
         dictContentSize,
     );
-    core::ptr::copy_nonoverlapping(header.as_mut_ptr(), outDictHeader, hSize);
+    core::ptr::copy_nonoverlapping(header.as_ptr(), outDictHeader, hSize);
     core::ptr::write_bytes(outDictPadding, 0, paddingSize);
     Ok(dictSize)
 }
