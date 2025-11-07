@@ -56,18 +56,7 @@ const FASTCOVER_DEFAULT_SPLITPOINT: core::ffi::c_double = 0.75f64;
 const DEFAULT_F: core::ffi::c_int = 20;
 const DEFAULT_ACCEL: core::ffi::c_int = 1;
 
-unsafe fn FASTCOVER_hashPtrToIndex(
-    p: *const core::ffi::c_void,
-    f: u32,
-    d: core::ffi::c_uint,
-) -> size_t {
-    match d {
-        6 => ZSTD_hash6Ptr(p, f),
-        _ => ZSTD_hash8Ptr(p, f),
-    }
-}
-
-fn FASTCOVER_hashPtrToIndex_array(p: &[u8; 8], f: u32, d: core::ffi::c_uint) -> size_t {
+fn FASTCOVER_hashPtrToIndex(p: &[u8; 8], f: u32, d: core::ffi::c_uint) -> size_t {
     match d {
         6 => ZSTD_hash6Ptr_array(p, f),
         _ => ZSTD_hash8Ptr_array(p, f),
@@ -94,7 +83,7 @@ static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = {
     ]
 };
 
-unsafe fn FASTCOVER_selectSegment(
+fn FASTCOVER_selectSegment(
     ctx: &FASTCOVER_ctx_t,
     freqs: &mut [u32],
     begin: u32,
@@ -124,7 +113,9 @@ unsafe fn FASTCOVER_selectSegment(
     activeSegment.score = 0;
     while activeSegment.end < end {
         let idx = FASTCOVER_hashPtrToIndex(
-            ctx.samples.as_ptr().offset(activeSegment.end as isize) as *const core::ffi::c_void,
+            ctx.samples[activeSegment.end as usize..][..8]
+                .try_into()
+                .unwrap(),
             f,
             d,
         );
@@ -134,7 +125,7 @@ unsafe fn FASTCOVER_selectSegment(
         activeSegment.end = (activeSegment.end).wrapping_add(1);
         segmentFreqs[idx] += 1;
         if (activeSegment.end).wrapping_sub(activeSegment.begin) == dmersInK.wrapping_add(1) {
-            let delIndex = FASTCOVER_hashPtrToIndex_array(
+            let delIndex = FASTCOVER_hashPtrToIndex(
                 samples[activeSegment.begin as usize..][..8]
                     .try_into()
                     .unwrap(),
@@ -152,7 +143,7 @@ unsafe fn FASTCOVER_selectSegment(
         }
     }
     while activeSegment.begin < end {
-        let delIndex_0 = FASTCOVER_hashPtrToIndex_array(
+        let delIndex_0 = FASTCOVER_hashPtrToIndex(
             samples[activeSegment.begin as usize..][..8]
                 .try_into()
                 .unwrap(),
@@ -165,8 +156,7 @@ unsafe fn FASTCOVER_selectSegment(
     let mut pos: u32 = 0;
     pos = bestSegment.begin;
     while pos != bestSegment.end {
-        let i =
-            FASTCOVER_hashPtrToIndex_array(samples[pos as usize..][..8].try_into().unwrap(), f, d);
+        let i = FASTCOVER_hashPtrToIndex(samples[pos as usize..][..8].try_into().unwrap(), f, d);
         freqs[i] = 0;
         pos = pos.wrapping_add(1);
     }
@@ -221,7 +211,7 @@ fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
         let currSampleEnd = ctx.offsets[i + 1];
         while start.wrapping_add(readLength as size_t) <= currSampleEnd {
             let dmerIndex =
-                FASTCOVER_hashPtrToIndex_array(ctx.samples[start..][..8].try_into().unwrap(), f, d);
+                FASTCOVER_hashPtrToIndex(ctx.samples[start..][..8].try_into().unwrap(), f, d);
             ctx.freqs[dmerIndex] += 1;
             start = start.wrapping_add(skip as size_t).wrapping_add(1);
         }
