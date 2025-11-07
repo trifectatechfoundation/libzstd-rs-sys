@@ -833,21 +833,17 @@ unsafe fn ZDICT_totalSampleSize(fileSizes: *const size_t, nbFiles: core::ffi::c_
     total
 }
 
-fn ZDICT_insertSortCount(table: &mut [offsetCount_t; 4], val: u32, count: u32) {
-    let mut u = 0usize;
+fn ZDICT_insertSortCount(
+    table: &mut [offsetCount_t; ZSTD_REP_NUM as usize + 1],
+    val: u32,
+    count: u32,
+) {
     table[ZSTD_REP_NUM as usize] = offsetCount_t { offset: val, count };
-    while u > 0 {
-        let mut tmp = offsetCount_t {
-            offset: 0,
-            count: 0,
-        };
-        if (table[u.wrapping_sub(1)]).count >= (table[u]).count {
+    for u in (1..ZSTD_REP_NUM as usize).rev() {
+        if (table[u - 1]).count >= (table[u]).count {
             break;
         }
-        tmp = table[u.wrapping_sub(1)];
-        table[u.wrapping_sub(1)] = table[u];
-        table[u] = tmp;
-        u = u.wrapping_sub(1);
+        table.swap(u, u - 1);
     }
 }
 
@@ -881,10 +877,10 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut matchLengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut litLengthCount: [core::ffi::c_uint; 36] = [0; 36];
     let mut litLengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut bestRepOffset: [offsetCount_t; 4] = [offsetCount_t {
+    let mut bestRepOffset = [offsetCount_t {
         offset: 0,
         count: 0,
-    }; 4];
+    }; ZSTD_REP_NUM as usize + 1];
     let mut esr = EStats_ress_t {
         dict: core::ptr::null_mut(),
         zc: core::ptr::null_mut(),
