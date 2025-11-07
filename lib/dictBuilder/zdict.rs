@@ -1222,12 +1222,36 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
     customDictContent: *const core::ffi::c_void,
-    mut dictContentSize: size_t,
+    dictContentSize: size_t,
     samplesBuffer: *const core::ffi::c_void,
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
     params: ZDICT_params_t,
 ) -> size_t {
+    finalize_dictionary(
+        dictBuffer,
+        dictBufferCapacity,
+        customDictContent,
+        dictContentSize,
+        samplesBuffer,
+        samplesSizes,
+        nbSamples,
+        params,
+    )
+    .map_err(|e| e.to_error_code())
+    .unwrap_or_else(|e| e)
+}
+
+unsafe fn finalize_dictionary(
+    dictBuffer: *mut core::ffi::c_void,
+    dictBufferCapacity: size_t,
+    customDictContent: *const core::ffi::c_void,
+    mut dictContentSize: size_t,
+    samplesBuffer: *const core::ffi::c_void,
+    samplesSizes: *const size_t,
+    nbSamples: core::ffi::c_uint,
+    params: ZDICT_params_t,
+) -> Result<usize, Error> {
     let mut hSize: size_t = 0;
     let mut header: [u8; 256] = [0; 256];
     let compressionLevel = if params.compressionLevel == 0 {
@@ -1239,10 +1263,10 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     let minContentSize = *repStartValue.iter().max().unwrap() as size_t;
     let mut paddingSize: size_t = 0;
     if dictBufferCapacity < dictContentSize {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
-        return Error::dstSize_tooSmall.to_error_code();
+        return Err(Error::dstSize_tooSmall);
     }
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
     let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
@@ -1272,8 +1296,8 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         dictContentSize,
         notificationLevel,
     );
-    if ZDICT_isError(eSize) != 0 {
-        return eSize;
+    if let Some(err) = Error::from_error_code(eSize) {
+        return Err(err);
     }
     hSize = hSize.wrapping_add(eSize);
     if hSize.wrapping_add(dictContentSize) > dictBufferCapacity {
@@ -1281,7 +1305,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     }
     if dictContentSize < minContentSize {
         if hSize.wrapping_add(minContentSize) > dictBufferCapacity {
-            return Error::dstSize_tooSmall.to_error_code();
+            return Err(Error::dstSize_tooSmall);
         }
         paddingSize = minContentSize.wrapping_sub(dictContentSize);
     } else {
@@ -1300,7 +1324,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     );
     core::ptr::copy_nonoverlapping(header.as_mut_ptr(), outDictHeader, hSize);
     core::ptr::write_bytes(outDictPadding, 0, paddingSize);
-    dictSize
+    Ok(dictSize)
 }
 
 const HBUFFSIZE: core::ffi::c_int = 256;
