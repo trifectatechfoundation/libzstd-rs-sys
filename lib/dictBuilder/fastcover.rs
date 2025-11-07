@@ -1,7 +1,7 @@
 use core::ptr;
 use std::time::{Duration, Instant};
 
-use libc::{free, malloc, memcpy, size_t};
+use libc::{free, malloc, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
@@ -383,11 +383,13 @@ unsafe fn FASTCOVER_buildDictionary(
                 break;
             }
             tail = tail.wrapping_sub(segmentSize);
-            memcpy(
-                dict.add(tail) as *mut core::ffi::c_void,
-                ctx.samples.as_ptr().offset(segment.begin as isize) as *const core::ffi::c_void,
-                segmentSize,
-            );
+            unsafe {
+                core::ptr::copy_nonoverlapping(
+                    ctx.samples[segment.begin as usize..].as_ptr(),
+                    dict.add(tail),
+                    segmentSize,
+                )
+            };
             if displayLevel >= 2 {
                 let refresh_rate = Duration::from_millis(150);
                 if last_update_time.elapsed() > refresh_rate || displayLevel >= 4 {
@@ -847,7 +849,9 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         return compressedSize;
     }
     FASTCOVER_convertToFastCoverParams(best.parameters, parameters, f, accel);
-    memcpy(dictBuffer, best.dict.as_ptr().cast(), dictSize);
+    unsafe {
+        core::ptr::copy_nonoverlapping(best.dict.as_ptr(), dictBuffer.cast::<u8>(), dictSize)
+    };
     POOL_free(pool);
     dictSize
 }
