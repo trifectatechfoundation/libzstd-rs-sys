@@ -723,6 +723,18 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
 
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
     for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = FASTCOVER_ctx_t::default();
         if displayLevel >= 3 {
@@ -732,18 +744,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             0
         } else {
             displayLevel - 1
-        };
-
-        let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-            &[]
-        } else {
-            core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-        };
-        let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-        let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-            &[]
-        } else {
-            core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
         };
 
         let initVal = FASTCOVER_ctx_init(
