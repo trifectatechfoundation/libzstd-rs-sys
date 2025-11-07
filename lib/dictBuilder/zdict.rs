@@ -879,7 +879,6 @@ unsafe fn ZDICT_analyzeEntropy(
         workPlace: core::ptr::null_mut(),
     };
     let mut params = ZSTD_parameters::default();
-    let mut u: u32 = 0;
     let mut huffLog = 11;
     let mut Offlog = OffFSELog as u32;
     let mut mlLog = MLFSELog as u32;
@@ -896,30 +895,10 @@ unsafe fn ZDICT_analyzeEntropy(
     if offcodeMax > OFFCODE_MAX as u32 {
         eSize = Error::dictionaryCreation_failed.to_error_code();
     } else {
-        u = 0;
-        let mut countLit: [core::ffi::c_uint; 256] = [0; 256];
-        while u < 256 {
-            countLit[u as usize] = 1;
-            u = u.wrapping_add(1);
-        }
-        u = 0;
-        let mut offcodeCount: [core::ffi::c_uint; 31] = [0; 31];
-        while u <= offcodeMax {
-            offcodeCount[u as usize] = 1;
-            u = u.wrapping_add(1);
-        }
-        u = 0;
-        let mut matchLengthCount: [core::ffi::c_uint; 53] = [0; 53];
-        while u <= MaxML as u32 {
-            matchLengthCount[u as usize] = 1;
-            u = u.wrapping_add(1);
-        }
-        u = 0;
-        let mut litLengthCount: [core::ffi::c_uint; 36] = [0; 36];
-        while u <= MaxLL as u32 {
-            litLengthCount[u as usize] = 1;
-            u = u.wrapping_add(1);
-        }
+        let mut countLit = [1u32; 256];
+        let mut offcodeCount = [1u32; 31];
+        let mut matchLengthCount = [1u32; 53];
+        let mut litLengthCount = [1u32; 36];
 
         let mut repOffset: [u32; 1024] = [0; 1024];
         repOffset[1] = 1;
@@ -952,7 +931,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 eprintln!("Not enough memory");
             }
         } else {
-            u = 0;
+            let mut u = 0;
             while u < nbFiles {
                 ZDICT_countEStats(
                     esr,
