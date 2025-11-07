@@ -5,9 +5,7 @@ use libc::{free, malloc, memcpy, size_t};
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::pool::{POOL_add, POOL_create, POOL_free};
-use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_hash6Ptr, ZSTD_hash6Ptr_array, ZSTD_hash8Ptr, ZSTD_hash8Ptr_array,
-};
+use crate::lib::compress::zstd_compress_internal::{ZSTD_hash6Ptr_array, ZSTD_hash8Ptr_array};
 use crate::lib::dictBuilder::cover::{
     COVER_best_finish, COVER_best_start, COVER_best_t, COVER_best_wait, COVER_computeEpochs,
     COVER_dictSelectionError, COVER_dictSelectionFree, COVER_dictSelectionIsError, COVER_segment_t,
@@ -675,8 +673,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     let shrinkDict = 0;
     let displayLevel = (*parameters).zParams.notificationLevel as core::ffi::c_int;
     let mut iteration = 1 as core::ffi::c_uint;
-    let mut d: core::ffi::c_uint = 0;
-    let mut k: core::ffi::c_uint = 0;
     let mut pool = core::ptr::null_mut();
     let mut warned = 0;
     let mut last_update_time = Instant::now();
@@ -729,8 +725,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
-    d = kMinD;
-    while d <= kMaxD {
+
+    for d in (kMinD..=kMaxD).step_by(2) {
         let mut ctx = FASTCOVER_ctx_t::default();
         if displayLevel >= 3 {
             eprintln!("d={}", d);
@@ -776,8 +772,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
             COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.nbDmers, displayLevel);
             warned = 1;
         }
-        k = kMinK;
-        while k <= kMaxK {
+
+        for k in (kMinK..=kMaxK).step_by(kStepSize as usize) {
             let data = malloc(::core::mem::size_of::<FASTCOVER_tryParameters_data_t>())
                 as *mut FASTCOVER_tryParameters_data_t;
             if displayLevel >= 3 {
@@ -835,12 +831,12 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
                 }
                 iteration = iteration.wrapping_add(1);
             }
-            k = k.wrapping_add(kStepSize);
         }
+
         drop(COVER_best_wait(&best));
         FASTCOVER_ctx_destroy(&mut ctx);
-        d = d.wrapping_add(2);
     }
+
     if displayLevel >= 2 {
         println!("\r{:79 }\r", "");
     }
