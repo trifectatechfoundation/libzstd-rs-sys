@@ -730,12 +730,12 @@ unsafe fn ZDICT_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
 const MAXREPOFFSET: core::ffi::c_int = 1024;
 unsafe fn ZDICT_countEStats(
     esr: EStats_ress_t,
-    params: *const ZSTD_parameters,
-    countLit: *mut core::ffi::c_uint,
-    offsetcodeCount: *mut core::ffi::c_uint,
-    matchlengthCount: *mut core::ffi::c_uint,
-    litlengthCount: *mut core::ffi::c_uint,
-    repOffsets: *mut u32,
+    params: &ZSTD_parameters,
+    countLit: &mut [u32; 256],
+    offsetcodeCount: &mut [u32; 31],
+    matchlengthCount: &mut [u32; 53],
+    litlengthCount: &mut [u32; 36],
+    repOffsets: &mut [u32; 1024],
     src: *const core::ffi::c_void,
     mut srcSize: size_t,
     notificationLevel: u32,
@@ -771,40 +771,32 @@ unsafe fn ZDICT_countEStats(
     }
     if cSize != 0 {
         let seqStorePtr = ZSTD_getSeqStore(esr.zc);
-        let mut bytePtr = core::ptr::null::<u8>();
-        bytePtr = (*seqStorePtr).litStart;
+
+        /* literals stats */
+        let mut bytePtr = (*seqStorePtr).litStart as *const u8;
         while bytePtr < (*seqStorePtr).lit as *const u8 {
-            let fresh9 = &mut (*countLit.offset(*bytePtr as isize));
-            *fresh9 = (*fresh9).wrapping_add(1);
+            countLit[usize::from(*bytePtr)] += 1;
             bytePtr = bytePtr.add(1);
         }
+
+        /* seqStats */
         let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
         ZSTD_seqToCodes(seqStorePtr);
+
         let codePtr: *const u8 = (*seqStorePtr).ofCode;
-        let mut u: u32 = 0;
-        u = 0;
-        while u < nbSeq {
-            let fresh10 = &mut (*offsetcodeCount.offset(*codePtr.offset(u as isize) as isize));
-            *fresh10 = (*fresh10).wrapping_add(1);
-            u = u.wrapping_add(1);
+        for u in 0..nbSeq as usize {
+            offsetcodeCount[*codePtr.add(u) as usize] += 1;
         }
-        let codePtr_0: *const u8 = (*seqStorePtr).mlCode;
-        let mut u_0: u32 = 0;
-        u_0 = 0;
-        while u_0 < nbSeq {
-            let fresh11 = &mut (*matchlengthCount.offset(*codePtr_0.offset(u_0 as isize) as isize));
-            *fresh11 = (*fresh11).wrapping_add(1);
-            u_0 = u_0.wrapping_add(1);
+        let codePtr: *const u8 = (*seqStorePtr).mlCode;
+        for u in 0..nbSeq as usize {
+            matchlengthCount[*codePtr.add(u) as usize] += 1;
         }
-        let codePtr_1: *const u8 = (*seqStorePtr).llCode;
-        let mut u_1: u32 = 0;
-        u_1 = 0;
-        while u_1 < nbSeq {
-            let fresh12 = &mut (*litlengthCount.offset(*codePtr_1.offset(u_1 as isize) as isize));
-            *fresh12 = (*fresh12).wrapping_add(1);
-            u_1 = u_1.wrapping_add(1);
+        let codePtr: *const u8 = (*seqStorePtr).llCode;
+        for u in 0..nbSeq as usize {
+            litlengthCount[*codePtr.add(u) as usize] += 1;
         }
+
         if nbSeq >= 2 {
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
             let mut offset1 = ((*seq).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
@@ -815,13 +807,12 @@ unsafe fn ZDICT_countEStats(
             if offset2 >= MAXREPOFFSET as u32 {
                 offset2 = 0;
             }
-            let fresh13 = &mut (*repOffsets.offset(offset1 as isize));
-            *fresh13 = (*fresh13).wrapping_add(3);
-            let fresh14 = &mut (*repOffsets.offset(offset2 as isize));
-            *fresh14 = (*fresh14).wrapping_add(1);
+            repOffsets[offset1 as usize] += 3;
+            repOffsets[offset2 as usize] += 1;
         }
     }
 }
+
 unsafe fn ZDICT_totalSampleSize(fileSizes: *const size_t, nbFiles: core::ffi::c_uint) -> size_t {
     let mut total = 0 as size_t;
     let mut u: core::ffi::c_uint = 0;
@@ -936,11 +927,11 @@ unsafe fn ZDICT_analyzeEntropy(
                 ZDICT_countEStats(
                     esr,
                     &params,
-                    countLit.as_mut_ptr(),
-                    offcodeCount.as_mut_ptr(),
-                    matchLengthCount.as_mut_ptr(),
-                    litLengthCount.as_mut_ptr(),
-                    repOffset.as_mut_ptr(),
+                    &mut countLit,
+                    &mut offcodeCount,
+                    &mut matchLengthCount,
+                    &mut litLengthCount,
+                    &mut repOffset,
                     (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
                     *fileSizes.offset(u as isize),
                     notificationLevel,
