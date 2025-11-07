@@ -56,7 +56,7 @@ pub mod experimental {
         pub nbThreads: core::ffi::c_uint,
         /// Set the percentage of samples used for training (only used for optimization).
         ///
-        /// The first `nbSamples * splitPoint` samples will be used to training, the last
+        /// The first `nbSamples * splitPoint` samples will be used for training, the last
         /// `nbSamples * (1 - splitPoint)` samples will be used for testing.
         ///
         /// 0.0 means default (1.0), 1.0 means all samples are used for both training and testing.
@@ -93,7 +93,7 @@ pub mod experimental {
         pub nbThreads: core::ffi::c_uint,
         /// Percentage of samples used for training (only used for optimization)
         ///
-        /// The first `nbSamples * splitPoint` samples will be used to training, the last
+        /// The first `nbSamples * splitPoint` samples will be used for training, the last
         /// `nbSamples * (1 - splitPoint)` samples will be used for testing.
         ///
         /// 0.0 means default (0.75), 1.0 means all samples are used for both training and testing.
