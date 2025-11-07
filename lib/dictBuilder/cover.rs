@@ -753,19 +753,11 @@ fn COVER_buildDictionary(
             }
         } else {
             zeroScoreRun = 0;
-            segmentSize = if ((segment.end)
-                .wrapping_sub(segment.begin)
-                .wrapping_add(parameters.d)
-                .wrapping_sub(1) as size_t)
-                < tail
-            {
-                (segment.end)
-                    .wrapping_sub(segment.begin)
-                    .wrapping_add(parameters.d)
-                    .wrapping_sub(1) as size_t
-            } else {
-                tail
-            };
+            /* Trim the segment if necessary and if it is too small then we are done */
+            segmentSize = Ord::min(
+                (segment.end - segment.begin + parameters.d - 1) as usize,
+                tail,
+            );
             if segmentSize < parameters.d as size_t {
                 break;
             }
