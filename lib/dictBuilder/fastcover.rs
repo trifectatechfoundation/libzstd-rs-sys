@@ -95,7 +95,7 @@ static FASTCOVER_defaultAccelParameters: [FASTCOVER_accel_t; 11] = {
 };
 
 unsafe fn FASTCOVER_selectSegment(
-    ctx: *const FASTCOVER_ctx_t,
+    ctx: &FASTCOVER_ctx_t,
     freqs: &mut [u32],
     begin: u32,
     end: u32,
@@ -104,8 +104,8 @@ unsafe fn FASTCOVER_selectSegment(
 ) -> COVER_segment_t {
     let k = parameters.k;
     let d = parameters.d;
-    let samples = (*ctx).samples;
-    let f = (*ctx).f;
+    let samples = ctx.samples;
+    let f = ctx.f;
     let dmersInK = k.wrapping_sub(d).wrapping_add(1);
     let mut bestSegment = {
         COVER_segment_t {
@@ -124,7 +124,7 @@ unsafe fn FASTCOVER_selectSegment(
     activeSegment.score = 0;
     while activeSegment.end < end {
         let idx = FASTCOVER_hashPtrToIndex(
-            (*ctx).samples.as_ptr().offset(activeSegment.end as isize) as *const core::ffi::c_void,
+            ctx.samples.as_ptr().offset(activeSegment.end as isize) as *const core::ffi::c_void,
             f,
             d,
         );
@@ -204,12 +204,9 @@ fn FASTCOVER_checkParameters(
     true
 }
 
-unsafe fn FASTCOVER_ctx_destroy(ctx: *mut FASTCOVER_ctx_t) {
-    if ctx.is_null() {
-        return;
-    }
-    drop(core::mem::take(&mut ((*ctx).freqs)));
-    drop(core::mem::take(&mut ((*ctx).offsets)));
+fn FASTCOVER_ctx_destroy(ctx: &mut FASTCOVER_ctx_t) {
+    drop(core::mem::take(&mut (ctx.freqs)));
+    drop(core::mem::take(&mut (ctx.offsets)));
 }
 
 fn FASTCOVER_computeFrequency(ctx: &mut FASTCOVER_ctx_t) {
