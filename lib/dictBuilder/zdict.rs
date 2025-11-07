@@ -715,18 +715,19 @@ unsafe fn ZDICT_trainBuffer_legacy(
     free(filePos as *mut core::ffi::c_void);
     result
 }
-unsafe fn ZDICT_fillNoise(buffer: *mut core::ffi::c_void, length: size_t) {
-    let prime1 = 2654435761 as core::ffi::c_uint;
-    let prime2 = 2246822519 as core::ffi::c_uint;
+
+fn ZDICT_fillNoise(buffer: &mut [u8]) {
+    const prime1: u32 = 2654435761;
+    const prime2: u32 = 2246822519;
+
     let mut acc = prime1;
-    let mut p = 0;
-    p = 0;
-    while p < length {
+
+    for e in buffer.iter_mut() {
         acc = acc.wrapping_mul(prime2);
-        *(buffer as *mut core::ffi::c_uchar).add(p) = (acc >> 21) as core::ffi::c_uchar;
-        p = p.wrapping_add(1);
+        *e = (acc >> 21) as u8;
     }
 }
+
 const MAXREPOFFSET: core::ffi::c_int = 1024;
 unsafe fn ZDICT_countEStats(
     esr: EStats_ress_t,
@@ -1569,31 +1570,21 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     nbSamples: core::ffi::c_uint,
     params: ZDICT_legacy_params_t,
 ) -> size_t {
-    let mut result: size_t = 0;
-    let mut newBuff = core::ptr::null_mut::<core::ffi::c_void>();
     let sBuffSize = ZDICT_totalSampleSize(samplesSizes, nbSamples);
     if sBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
         return 0;
     }
-    newBuff = malloc(sBuffSize.wrapping_add(NOISELENGTH as size_t));
-    if newBuff.is_null() {
-        return Error::memory_allocation.to_error_code();
-    }
-    memcpy(newBuff, samplesBuffer, sBuffSize);
-    ZDICT_fillNoise(
-        (newBuff as *mut core::ffi::c_char).add(sBuffSize) as *mut core::ffi::c_void,
-        NOISELENGTH as size_t,
-    );
-    result = ZDICT_trainFromBuffer_unsafe_legacy(
+    let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH as size_t)];
+    core::ptr::copy_nonoverlapping(samplesBuffer.cast::<u8>(), new_buf.as_mut_ptr(), sBuffSize);
+    ZDICT_fillNoise(&mut new_buf[sBuffSize..]);
+    ZDICT_trainFromBuffer_unsafe_legacy(
         dictBuffer,
         dictBufferCapacity,
-        newBuff,
+        new_buf.as_ptr().cast::<core::ffi::c_void>(),
         samplesSizes,
         nbSamples,
         params,
-    );
-    free(newBuff);
-    result
+    )
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer))]
