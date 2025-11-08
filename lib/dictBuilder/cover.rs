@@ -533,14 +533,14 @@ fn COVER_ctx_init<'a>(
     ctx: &'_ mut COVER_ctx_t<'a>,
     samples: &'a [u8],
     samplesSizes: &'a [size_t],
-    nbSamples: core::ffi::c_uint,
     d: core::ffi::c_uint,
     splitPoint: core::ffi::c_double,
     displayLevel: core::ffi::c_int,
 ) -> size_t {
+    let nbSamples = samplesSizes.len();
     let totalSamplesSize = samples.len();
     let nbTrainSamples = if splitPoint < 1.0f64 {
-        (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
+        (nbSamples as core::ffi::c_double * splitPoint) as usize
     } else {
         nbSamples
     };
@@ -851,7 +851,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
         &mut ctx,
         samples,
         samplesSizes,
-        nbSamples,
         parameters.d,
         parameters.splitPoint,
         displayLevel,
@@ -1196,8 +1195,35 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     nbSamples: core::ffi::c_uint,
     parameters: *mut ZDICT_cover_params_t,
 ) -> size_t {
+    let dict = if dictBuffer.is_null() || nbSamples == 0 {
+        &mut []
+    } else {
+        core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity)
+    };
+
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
+
     let parameters = unsafe { parameters.as_mut().unwrap() };
 
+    optimize_train_from_buffer_cover(dict, samples, samplesSizes, parameters)
+}
+
+unsafe fn optimize_train_from_buffer_cover(
+    dict: &mut [MaybeUninit<u8>],
+    samples: &[u8],
+    samplesSizes: &[size_t],
+    parameters: &mut ZDICT_cover_params_t,
+) -> usize {
     let nbThreads = parameters.nbThreads;
     let splitPoint = if parameters.splitPoint <= 0.0f64 {
         COVER_DEFAULT_SPLITPOINT
@@ -1222,17 +1248,14 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     } else {
         1
     };
-    let kIterations = (1 as core::ffi::c_uint)
+    let kIterations = 1u32
         .wrapping_add(kMaxD.wrapping_sub(kMinD).wrapping_div(2))
-        .wrapping_mul(
-            (1 as core::ffi::c_uint)
-                .wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)),
-        );
-    let shrinkDict = 0 as core::ffi::c_uint;
-    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
-    let mut iteration = 1 as core::ffi::c_uint;
+        .wrapping_mul(1u32.wrapping_add(kMaxK.wrapping_sub(kMinK).wrapping_div(kStepSize)));
+    let shrinkDict = 0;
+    let displayLevel = parameters.zParams.notificationLevel as i32;
+    let mut iteration = 1u32;
     let mut pool = core::ptr::null_mut();
-    let mut warned = 0;
+    let mut warned = false;
     let mut last_update_time = Instant::now();
     if splitPoint <= 0.0 || splitPoint > 1.0 {
         if displayLevel >= 1 {
@@ -1246,13 +1269,13 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
         }
         return Error::parameter_outOfBound.to_error_code();
     }
-    if nbSamples == 0 {
+    if samplesSizes.is_empty() {
         if displayLevel >= 1 {
             eprintln!("Cover must have at least one input file");
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dict.len() < ZDICT_DICTSIZE_MIN as size_t {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
@@ -1267,18 +1290,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     if displayLevel >= 2 {
         eprintln!("Trying {} different sets of parameters", kIterations);
     }
-
-    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
-    };
-    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
-    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
-        &[]
-    } else {
-        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
-    };
 
     let best = COVER_best_t::new();
 
@@ -1297,7 +1308,6 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             &mut ctx,
             samples,
             samplesSizes,
-            nbSamples,
             d,
             splitPoint,
             childDisplayLevel,
@@ -1310,9 +1320,9 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             POOL_free(pool);
             return initVal;
         }
-        if warned == 0 {
-            COVER_warnOnSmallCorpus(dictBufferCapacity, ctx.suffix.len(), displayLevel);
-            warned = 1;
+        if !warned {
+            COVER_warnOnSmallCorpus(dict.len(), ctx.suffix.len(), displayLevel);
+            warned = true;
         }
 
         for k in (kMinK..=kMaxK).step_by(kStepSize as usize) {
@@ -1323,7 +1333,7 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
                 steps: kSteps,
                 shrinkDict,
                 zParams: ZDICT_params_t {
-                    notificationLevel: ctx.displayLevel as core::ffi::c_uint,
+                    notificationLevel: ctx.displayLevel as u32,
                     compressionLevel: 0,
                     dictID: 0,
                 },
@@ -1334,14 +1344,14 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
             let data = Box::new(COVER_tryParameters_data_t {
                 ctx: &ctx,
                 best: &best,
-                dictBufferCapacity,
+                dictBufferCapacity: dict.len(),
                 parameters,
             });
 
             if displayLevel >= 3 {
                 eprintln!("k={}", k);
             }
-            if !COVER_checkParameters(data.parameters, dictBufferCapacity) {
+            if !COVER_checkParameters(data.parameters, dict.len()) {
                 if displayLevel >= 1 {
                     eprintln!("Cover parameters incorrect");
                 }
@@ -1389,8 +1399,8 @@ pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     }
     *parameters = best.parameters;
     core::ptr::copy_nonoverlapping(
-        best.dict[..dictSize].as_ptr(),
-        dictBuffer.cast::<u8>(),
+        best.dict[..dictSize].as_ptr().cast::<MaybeUninit<u8>>(),
+        dict[..dictSize].as_mut_ptr(),
         dictSize,
     );
     POOL_free(pool);
