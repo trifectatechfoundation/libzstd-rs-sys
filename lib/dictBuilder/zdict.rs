@@ -98,22 +98,22 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     dictBuffer: *const core::ffi::c_void,
     dictSize: size_t,
 ) -> size_t {
-    let mut headerSize: size_t = 0;
     if dictSize <= 8 || MEM_readLE32(dictBuffer) != ZSTD_MAGIC_DICTIONARY {
         return Error::dictionary_corrupted.to_error_code();
     }
-    let bs = malloc(::core::mem::size_of::<ZSTD_compressedBlockState_t>())
-        as *mut ZSTD_compressedBlockState_t;
-    let wksp = malloc(HUF_WORKSPACE_SIZE as size_t) as *mut u32;
-    if bs.is_null() || wksp.is_null() {
-        headerSize = Error::memory_allocation.to_error_code();
-    } else {
-        ZSTD_reset_compressedBlockState(bs);
-        headerSize = ZSTD_loadCEntropy(bs, wksp as *mut core::ffi::c_void, dictBuffer, dictSize);
-    }
-    free(bs as *mut core::ffi::c_void);
-    free(wksp as *mut core::ffi::c_void);
-    headerSize
+
+    // FIXME: in 1.92 we can use https://doc.rust-lang.org/std/boxed/struct.Box.html#method.new_zeroed
+    let mut bs = Box::<ZSTD_compressedBlockState_t>::new_uninit();
+    unsafe { ZSTD_reset_compressedBlockState(bs.as_mut_ptr()) };
+
+    let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE as size_t / 4);
+
+    ZSTD_loadCEntropy(
+        bs.as_mut_ptr(),
+        wksp.as_mut_ptr() as *mut core::ffi::c_void,
+        dictBuffer,
+        dictSize,
+    )
 }
 
 unsafe fn ZDICT_count(
