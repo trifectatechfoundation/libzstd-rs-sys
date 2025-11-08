@@ -639,10 +639,9 @@ unsafe fn ZDICT_trainBuffer_legacy(
             );
         }
         let divSuftSortResult = divsufsort(
-            buffer as *const core::ffi::c_uchar,
-            suffix as *mut core::ffi::c_int,
-            bufferSize as core::ffi::c_int,
-            0,
+            core::slice::from_raw_parts(buffer as *const u8, bufferSize),
+            core::slice::from_raw_parts_mut(suffix as *mut i32, bufferSize),
+            false,
         );
         if divSuftSortResult != 0 {
             result = Error::GENERIC.to_error_code();
