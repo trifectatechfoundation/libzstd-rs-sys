@@ -716,15 +716,15 @@ unsafe fn ZDICT_trainBuffer_legacy(
     result
 }
 
-fn ZDICT_fillNoise(buffer: &mut [u8]) {
+fn fill_noise(buffer: &mut [u8]) {
     const prime1: u32 = 2654435761;
     const prime2: u32 = 2246822519;
 
     let mut acc = prime1;
 
-    for e in buffer.iter_mut() {
+    for v in buffer.iter_mut() {
         acc = acc.wrapping_mul(prime2);
-        *e = (acc >> 21) as u8;
+        *v = (acc >> 21) as u8;
     }
 }
 
@@ -1576,7 +1576,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     }
     let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH as size_t)];
     core::ptr::copy_nonoverlapping(samplesBuffer.cast::<u8>(), new_buf.as_mut_ptr(), sBuffSize);
-    ZDICT_fillNoise(&mut new_buf[sBuffSize..]);
+    fill_noise(&mut new_buf[sBuffSize..]);
     ZDICT_trainFromBuffer_unsafe_legacy(
         dictBuffer,
         dictBufferCapacity,
@@ -1674,5 +1674,15 @@ mod test {
 
         let code = unsafe { ZDICT_getDictID(DICT.as_ptr().cast(), DICT.len()) };
         assert_eq!(code, 1877512422);
+    }
+
+    #[test]
+    fn test_fill_noise() {
+        let mut buf = vec![0u8; 16];
+        fill_noise(&mut buf);
+        assert_eq!(
+            buf,
+            [226, 51, 247, 105, 221, 225, 137, 112, 5, 188, 15, 79, 183, 243, 110, 209]
+        );
     }
 }
