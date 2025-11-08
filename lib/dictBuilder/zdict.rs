@@ -1631,3 +1631,19 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
         params,
     )
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const DICT: &[u8] = include_bytes!("../../test-libzstd-rs-sys/test-data/test-dict.dat");
+
+    #[test]
+    fn test_get_dict_header_size() {
+        let code = unsafe { ZDICT_getDictHeaderSize(DICT.as_ptr().cast(), DICT.len()) };
+        match Error::from_error_code(code) {
+            Some(err) => panic!("{:?}", err),
+            None => assert_eq!(code, 133),
+        }
+    }
+}
