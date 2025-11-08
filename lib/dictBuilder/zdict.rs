@@ -1640,10 +1640,38 @@ mod test {
 
     #[test]
     fn test_get_dict_header_size() {
+        let empty: &[u8] = &[];
+        let code = unsafe { ZDICT_getDictHeaderSize(empty.as_ptr().cast(), empty.len()) };
+        assert_eq!(
+            Error::from_error_code(code),
+            Some(Error::dictionary_corrupted)
+        );
+
+        let no_magic: &[u8] = &[0; 8];
+        let code = unsafe { ZDICT_getDictHeaderSize(no_magic.as_ptr().cast(), no_magic.len()) };
+        assert_eq!(
+            Error::from_error_code(code),
+            Some(Error::dictionary_corrupted)
+        );
+
         let code = unsafe { ZDICT_getDictHeaderSize(DICT.as_ptr().cast(), DICT.len()) };
         match Error::from_error_code(code) {
             Some(err) => panic!("{:?}", err),
             None => assert_eq!(code, 133),
         }
+    }
+
+    #[test]
+    fn test_get_dict_id() {
+        let empty: &[u8] = &[];
+        let code = unsafe { ZDICT_getDictID(empty.as_ptr().cast(), empty.len()) };
+        assert_eq!(code, 0);
+
+        let no_magic: &[u8] = &[0; 8];
+        let code = unsafe { ZDICT_getDictID(no_magic.as_ptr().cast(), no_magic.len()) };
+        assert_eq!(code, 0);
+
+        let code = unsafe { ZDICT_getDictID(DICT.as_ptr().cast(), DICT.len()) };
+        assert_eq!(code, 1877512422);
     }
 }
