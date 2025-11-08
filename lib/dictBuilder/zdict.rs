@@ -90,7 +90,7 @@ pub unsafe extern "C" fn ZDICT_getDictID(
     if MEM_readLE32(dictBuffer) != ZSTD_MAGIC_DICTIONARY {
         return 0;
     }
-    MEM_readLE32((dictBuffer as *const core::ffi::c_char).add(4) as *const core::ffi::c_void)
+    MEM_readLE32(dictBuffer.byte_add(4))
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getDictHeaderSize))]
@@ -142,6 +142,7 @@ unsafe fn ZDICT_initDictItem(d: *mut dictItem) {
     (*d).length = 0;
     (*d).savings = -(1 as core::ffi::c_int) as u32;
 }
+
 const LLIMIT: core::ffi::c_int = 64;
 const MINMATCHLENGTH: core::ffi::c_int = 7;
 unsafe fn ZDICT_analyzePos(
