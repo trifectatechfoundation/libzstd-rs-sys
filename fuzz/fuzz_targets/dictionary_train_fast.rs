@@ -40,7 +40,7 @@ fuzz_target!(|data: (u8, u8, ArbitrarySamples)| {
             samples.dict_size,
             samples.samples.as_ptr().cast(),
             samples.sample_sizes.as_ptr(),
-            samples.nb_samples as u32 / 4,
+            samples.nb_samples as u32,
             std::mem::transmute(&mut opt_params),
         );
 
