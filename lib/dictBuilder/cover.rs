@@ -550,12 +550,12 @@ fn COVER_ctx_init<'a>(
         nbSamples
     };
     let trainingSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[..nbTrainSamples as usize].iter().sum()
+        samplesSizes[..nbTrainSamples].iter().sum()
     } else {
         totalSamplesSize
     };
     let testSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[nbTrainSamples as usize..][..nbTestSamples as usize]
+        samplesSizes[nbTrainSamples..][..nbTestSamples]
             .iter()
             .sum()
     } else {
@@ -633,13 +633,13 @@ fn COVER_ctx_init<'a>(
         .wrapping_add(1);
     ctx.suffix = (0..ctx.suffixSize as u32).collect();
     ctx.dmerAt = Box::from(vec![0u32; ctx.suffixSize]);
-    ctx.offsets = Box::from(vec![0usize; nbSamples as usize + 1]);
+    ctx.offsets = Box::from(vec![0usize; nbSamples + 1]);
     ctx.freqs = Box::default();
     ctx.d = d;
     let mut i: usize = 0;
     ctx.offsets[0] = 0;
     i = 1;
-    while i <= nbSamples as usize {
+    while i <= nbSamples {
         ctx.offsets[i] =
             ctx.offsets[i.wrapping_sub(1)].wrapping_add(samplesSizes[i.wrapping_sub(1)]);
         i = i.wrapping_add(1);
