@@ -863,8 +863,6 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut Offlog = OffFSELog as u32;
     let mut mlLog = MLFSELog as u32;
     let mut llLog = LLFSELog as u32;
-    let mut total: u32 = 0;
-    let mut pos = 0 as size_t;
     let mut errorCode: size_t = 0;
     let mut eSize = 0;
     let averageSampleSize = if fileSizes.is_empty() {
@@ -878,11 +876,11 @@ unsafe fn ZDICT_analyzeEntropy(
         eSize = Error::dictionaryCreation_failed.to_error_code();
     } else {
         let mut countLit = [1u32; 256];
-        let mut offcodeCount = [1u32; 31];
-        let mut matchLengthCount = [1u32; 53];
-        let mut litLengthCount = [1u32; 36];
+        let mut offcodeCount = [1u32; (OFFCODE_MAX + 1) as usize];
+        let mut matchLengthCount = [1u32; (MaxML + 1) as usize];
+        let mut litLengthCount = [1u32; (MaxLL + 1) as usize];
 
-        let mut repOffset: [u32; 1024] = [0; 1024];
+        let mut repOffset = [0; MAXREPOFFSET as usize];
         repOffset[1] = 1;
         repOffset[4] = 1;
         repOffset[8] = 1;
@@ -913,6 +911,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 eprintln!("Not enough memory");
             }
         } else {
+            let mut pos = 0usize;
             for fileSize in fileSizes {
                 ZDICT_countEStats(
                     esr,
@@ -929,13 +928,9 @@ unsafe fn ZDICT_analyzeEntropy(
                 pos = pos.wrapping_add(*fileSize);
             }
             if notificationLevel >= 4 {
-                if notificationLevel >= 4 {
-                    eprintln!("Offset Code Frequencies :");
-                }
-                for u in 0..=offcodeMax as usize {
-                    if notificationLevel >= 4 {
-                        eprintln!("{:>2} :{:>7} ", u, offcodeCount[u]);
-                    }
+                eprintln!("Offset Code Frequencies :");
+                for (i, count) in offcodeCount.iter().enumerate() {
+                    eprintln!("{:>2} :{:>7} ", i, count);
                 }
             }
             let mut maxNbBits = HUF_buildCTable_wksp(
@@ -975,11 +970,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
                     offset = offset.wrapping_add(1);
                 }
-                total = 0;
-                for u in 0..=offcodeMax {
-                    total = (total as core::ffi::c_uint)
-                        .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize));
-                }
+                let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
                 errorCode = FSE_normalizeCount(
                     offcodeNCount.as_mut_ptr(),
                     Offlog,
@@ -995,11 +986,7 @@ unsafe fn ZDICT_analyzeEntropy(
                     }
                 } else {
                     Offlog = errorCode as u32;
-                    total = 0;
-                    for u in 0..=MaxML as u32 {
-                        total = (total as core::ffi::c_uint)
-                            .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize));
-                    }
+                    let total: u32 = matchLengthCount.iter().sum();
                     errorCode = FSE_normalizeCount(
                         matchLengthNCount.as_mut_ptr(),
                         mlLog,
@@ -1015,11 +1002,7 @@ unsafe fn ZDICT_analyzeEntropy(
                         }
                     } else {
                         mlLog = errorCode as u32;
-                        total = 0;
-                        for u in 0..=MaxLL as u32 {
-                            total = (total as core::ffi::c_uint)
-                                .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize));
-                        }
+                        let total: u32 = litLengthCount.iter().sum();
                         errorCode = FSE_normalizeCount(
                             litLengthNCount.as_mut_ptr(),
                             llLog,
