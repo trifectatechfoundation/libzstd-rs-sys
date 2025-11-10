@@ -1257,7 +1257,9 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
 ///   of [`core::slice::from_raw_parts`].
 /// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
 ///   of [`core::slice::from_raw_parts`].
-/// - `parameters` satisfies the requirements of `pointer::as_mut`
+/// - `parameters` satisfies the requirements of [`pointer::as_mut`]
+///
+/// [`pointer::as_mut`]: https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.as_mut
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_cover(
     dictBuffer: *mut core::ffi::c_void,
