@@ -241,7 +241,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 let mut lit: core::ffi::c_uint = 0;
                 (*optPtr).litSum = 0;
                 lit = 0;
-                while lit <= MaxLit as core::ffi::c_uint {
+                while lit <= MaxLit {
                     let scaleLog = 11u32;
                     let bitCost = HUF_getNbBitsFromCTable(
                         ((*(*optPtr).symbolCosts).huf.CTable).as_ptr(),
@@ -272,7 +272,7 @@ unsafe fn ZSTD_rescaleFreqs(
             );
             (*optPtr).litLengthSum = 0;
             ll = 0;
-            while ll <= MaxLL as core::ffi::c_uint {
+            while ll <= MaxLL {
                 let scaleLog_0 = 10u32;
                 let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll);
                 *((*optPtr).litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
@@ -299,7 +299,7 @@ unsafe fn ZSTD_rescaleFreqs(
             );
             (*optPtr).matchLengthSum = 0;
             ml = 0;
-            while ml <= MaxML as core::ffi::c_uint {
+            while ml <= MaxML {
                 let scaleLog_1 = 10u32;
                 let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml);
                 *((*optPtr).matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
@@ -326,7 +326,7 @@ unsafe fn ZSTD_rescaleFreqs(
             );
             (*optPtr).offCodeSum = 0;
             of = 0;
-            while of <= MaxOff as core::ffi::c_uint {
+            while of <= MaxOff {
                 let scaleLog_2 = 10u32;
                 let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of);
                 *((*optPtr).offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
@@ -337,12 +337,12 @@ unsafe fn ZSTD_rescaleFreqs(
                     as core::ffi::c_uint;
                 (*optPtr).offCodeSum = ((*optPtr).offCodeSum as core::ffi::c_uint)
                     .wrapping_add(*((*optPtr).offCodeFreq).offset(of as isize))
-                    as u32 as u32;
+                    as u32;
                 of = of.wrapping_add(1);
             }
         } else {
             if compressedLiterals != 0 {
-                let mut lit_0 = MaxLit as core::ffi::c_uint;
+                let mut lit_0 = MaxLit;
                 HIST_count_simple(
                     (*optPtr).litFreq,
                     &mut lit_0,
@@ -350,7 +350,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     srcSize,
                 );
                 (*optPtr).litSum =
-                    ZSTD_downscaleStats((*optPtr).litFreq, MaxLit as u32, 8, base_0possible);
+                    ZSTD_downscaleStats((*optPtr).litFreq, MaxLit, 8, base_0possible);
             }
             let baseLLfreqs: [core::ffi::c_uint; 36] = [
                 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -365,11 +365,11 @@ unsafe fn ZSTD_rescaleFreqs(
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), (MaxLL + 1) as size_t);
             let mut ml_0: core::ffi::c_uint = 0;
             ml_0 = 0;
-            while ml_0 <= MaxML as core::ffi::c_uint {
+            while ml_0 <= MaxML {
                 *((*optPtr).matchLengthFreq).offset(ml_0 as isize) = 1;
                 ml_0 = ml_0.wrapping_add(1);
             }
-            (*optPtr).matchLengthSum = (MaxML + 1) as u32;
+            (*optPtr).matchLengthSum = MaxML + 1;
             let baseOFCfreqs: [core::ffi::c_uint; 32] = [
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1,
@@ -384,11 +384,11 @@ unsafe fn ZSTD_rescaleFreqs(
         }
     } else {
         if compressedLiterals != 0 {
-            (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, MaxLit as u32, 12);
+            (*optPtr).litSum = ZSTD_scaleStats((*optPtr).litFreq, MaxLit, 12);
         }
-        (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, MaxLL as u32, 11);
-        (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, MaxML as u32, 11);
-        (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, MaxOff as u32, 11);
+        (*optPtr).litLengthSum = ZSTD_scaleStats((*optPtr).litLengthFreq, MaxLL, 11);
+        (*optPtr).matchLengthSum = ZSTD_scaleStats((*optPtr).matchLengthFreq, MaxML, 11);
+        (*optPtr).offCodeSum = ZSTD_scaleStats((*optPtr).offCodeFreq, MaxOff, 11);
     }
     ZSTD_setBasePrices(optPtr, optLevel);
 }

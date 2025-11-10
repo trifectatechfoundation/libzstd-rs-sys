@@ -24,17 +24,17 @@ pub(crate) const bt_compressed: blockType_e = 2;
 
 pub(crate) const MINMATCH: core::ffi::c_int = 3;
 
-pub(crate) const Litbits: core::ffi::c_int = 8;
-pub(crate) const LitHufLog: core::ffi::c_int = 11;
-pub(crate) const MaxLit: core::ffi::c_int = ((1) << Litbits) - 1;
-pub(crate) const MaxML: core::ffi::c_int = 52;
-pub(crate) const MaxLL: core::ffi::c_int = 35;
-pub(crate) const DefaultMaxOff: core::ffi::c_int = 28;
-pub(crate) const MaxOff: core::ffi::c_int = 31;
+pub(crate) const Litbits: u32 = 8;
+pub(crate) const LitHufLog: u32 = 11;
+pub(crate) const MaxLit: u32 = (1 << Litbits) - 1;
+pub(crate) const MaxML: u32 = 52;
+pub(crate) const MaxLL: u32 = 35;
+pub(crate) const DefaultMaxOff: u32 = 28;
+pub(crate) const MaxOff: u32 = 31;
 pub(crate) const MaxSeq: usize = const_max(MaxLL as usize, MaxML as usize); /* Assumption : MaxOff < MaxLL,MaxML */
-pub(crate) const MLFSELog: core::ffi::c_int = 9;
-pub(crate) const LLFSELog: core::ffi::c_int = 9;
-pub(crate) const OffFSELog: core::ffi::c_int = 8;
+pub(crate) const MLFSELog: u32 = 9;
+pub(crate) const LLFSELog: u32 = 9;
+pub(crate) const OffFSELog: u32 = 8;
 pub(crate) const MaxFSELog: usize = const_max(
     const_max(MLFSELog as usize, LLFSELog as usize),
     OffFSELog as usize,

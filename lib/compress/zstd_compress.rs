@@ -4655,7 +4655,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
     };
     stats.lastCountSize = 0;
     stats.longOffsets = ZSTD_seqToCodes(seqStorePtr);
-    let mut max = MaxLL as core::ffi::c_uint;
+    let mut max = MaxLL;
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
@@ -4671,7 +4671,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         max,
         mostFrequent,
         nbSeq,
-        LLFSELog as core::ffi::c_uint,
+        LLFSELog,
         ((*prevEntropy).litlengthCTable).as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
@@ -4682,7 +4682,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         CTable_LitLength,
-        LLFSELog as u32,
+        LLFSELog,
         stats.LLtype as SymbolEncodingType_e,
         countWorkspace,
         max,
@@ -4690,7 +4690,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        MaxLL as u32,
+        MaxLL,
         ((*prevEntropy).litlengthCTable).as_ptr(),
         ::core::mem::size_of::<[FSE_CTable; 329]>(),
         entropyWorkspace,
@@ -4704,7 +4704,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.lastCountSize = countSize;
     }
     op = op.add(countSize);
-    let mut max_0 = MaxOff as core::ffi::c_uint;
+    let mut max_0 = MaxOff;
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
@@ -4713,7 +4713,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         entropyWorkspace,
         entropyWkspSize,
     );
-    let defaultPolicy = (if max_0 <= DefaultMaxOff as core::ffi::c_uint {
+    let defaultPolicy = (if max_0 <= DefaultMaxOff {
         ZSTD_defaultAllowed as core::ffi::c_int
     } else {
         ZSTD_defaultDisallowed as core::ffi::c_int
@@ -4725,7 +4725,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         max_0,
         mostFrequent_0,
         nbSeq,
-        OffFSELog as core::ffi::c_uint,
+        OffFSELog,
         ((*prevEntropy).offcodeCTable).as_ptr(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
@@ -4736,7 +4736,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         CTable_OffsetBits,
-        OffFSELog as u32,
+        OffFSELog,
         stats.Offtype as SymbolEncodingType_e,
         countWorkspace,
         max_0,
@@ -4744,7 +4744,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        DefaultMaxOff as u32,
+        DefaultMaxOff,
         ((*prevEntropy).offcodeCTable).as_ptr(),
         ::core::mem::size_of::<[FSE_CTable; 193]>(),
         entropyWorkspace,
@@ -4758,7 +4758,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         stats.lastCountSize = countSize_0;
     }
     op = op.add(countSize_0);
-    let mut max_1 = MaxML as core::ffi::c_uint;
+    let mut max_1 = MaxML;
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_1,
@@ -4774,7 +4774,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         max_1,
         mostFrequent_1,
         nbSeq,
-        MLFSELog as core::ffi::c_uint,
+        MLFSELog,
         ((*prevEntropy).matchlengthCTable).as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
@@ -4785,7 +4785,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
         CTable_MatchLength,
-        MLFSELog as u32,
+        MLFSELog,
         stats.MLtype as SymbolEncodingType_e,
         countWorkspace,
         max_1,
@@ -4793,7 +4793,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         nbSeq,
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        MaxML as u32,
+        MaxML,
         ((*prevEntropy).matchlengthCTable).as_ptr(),
         ::core::mem::size_of::<[FSE_CTable; 363]>(),
         entropyWorkspace,
@@ -5659,7 +5659,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let nodeWksp = countWkspStart.add(countWkspSize);
     let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
-    let mut huffLog = LitHufLog as core::ffi::c_uint;
+    let mut huffLog = LitHufLog;
     let mut repeat = (*prevHuf).repeatMode;
     libc::memcpy(
         nextHuf as *mut core::ffi::c_void,
@@ -6020,12 +6020,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         (*fseMetadata).ofType,
         ofCodeTable,
         nbSeq,
-        MaxOff as core::ffi::c_uint,
+        MaxOff,
         ((*fseTables).offcodeCTable).as_ptr(),
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
-        DefaultMaxOff as u32,
+        DefaultMaxOff,
         workspace,
         wkspSize,
     ));
@@ -6033,12 +6033,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         (*fseMetadata).llType,
         llCodeTable,
         nbSeq,
-        MaxLL as core::ffi::c_uint,
+        MaxLL,
         ((*fseTables).litlengthCTable).as_ptr(),
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
-        MaxLL as u32,
+        MaxLL,
         workspace,
         wkspSize,
     ));
@@ -6046,12 +6046,12 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         (*fseMetadata).mlType,
         mlCodeTable,
         nbSeq,
-        MaxML as core::ffi::c_uint,
+        MaxML,
         ((*fseTables).matchlengthCTable).as_ptr(),
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
-        MaxML as u32,
+        MaxML,
         workspace,
         wkspSize,
     ));
@@ -7343,7 +7343,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     dictSize: size_t,
 ) -> size_t {
     let mut offcodeNCount: [core::ffi::c_short; 32] = [0; 32];
-    let mut offcodeMaxValue = MaxOff as core::ffi::c_uint;
+    let mut offcodeMaxValue = MaxOff;
     let mut dictPtr = dict as *const u8;
     let dictEnd = dictPtr.add(dictSize);
     dictPtr = dictPtr.add(8);
@@ -7390,7 +7390,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     }
     dictPtr = dictPtr.add(offcodeHeaderSize);
     let mut matchlengthNCount: [core::ffi::c_short; 53] = [0; 53];
-    let mut matchlengthMaxValue = MaxML as core::ffi::c_uint;
+    let mut matchlengthMaxValue = MaxML;
     let mut matchlengthLog: core::ffi::c_uint = 0;
     let matchlengthHeaderSize = FSE_readNCount(
         &mut matchlengthNCount,
@@ -7415,14 +7415,11 @@ pub unsafe fn ZSTD_loadCEntropy(
     )) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*bs).entropy.fse.matchlength_repeatMode = ZSTD_dictNCountRepeat(
-        matchlengthNCount.as_mut_ptr(),
-        matchlengthMaxValue,
-        MaxML as core::ffi::c_uint,
-    );
+    (*bs).entropy.fse.matchlength_repeatMode =
+        ZSTD_dictNCountRepeat(matchlengthNCount.as_mut_ptr(), matchlengthMaxValue, MaxML);
     dictPtr = dictPtr.add(matchlengthHeaderSize);
     let mut litlengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut litlengthMaxValue = MaxLL as core::ffi::c_uint;
+    let mut litlengthMaxValue = MaxLL;
     let mut litlengthLog: core::ffi::c_uint = 0;
     let litlengthHeaderSize = FSE_readNCount(
         &mut litlengthNCount,
@@ -7447,11 +7444,8 @@ pub unsafe fn ZSTD_loadCEntropy(
     )) {
         return Error::dictionary_corrupted.to_error_code();
     }
-    (*bs).entropy.fse.litlength_repeatMode = ZSTD_dictNCountRepeat(
-        litlengthNCount.as_mut_ptr(),
-        litlengthMaxValue,
-        MaxLL as core::ffi::c_uint,
-    );
+    (*bs).entropy.fse.litlength_repeatMode =
+        ZSTD_dictNCountRepeat(litlengthNCount.as_mut_ptr(), litlengthMaxValue, MaxLL);
     dictPtr = dictPtr.add(litlengthHeaderSize);
     if dictPtr.add(12) > dictEnd {
         return Error::dictionary_corrupted.to_error_code();
@@ -7461,7 +7455,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     *((*bs).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
     dictPtr = dictPtr.add(12);
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
-    let mut offcodeMax = MaxOff as u32;
+    let mut offcodeMax = MaxOff;
     if dictContentSize
         <= (-(1 as core::ffi::c_int) as u32)
             .wrapping_sub((128 as core::ffi::c_int * ((1 as core::ffi::c_int) << 10)) as u32)
