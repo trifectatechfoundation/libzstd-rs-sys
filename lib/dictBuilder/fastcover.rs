@@ -614,7 +614,7 @@ fn train_from_buffer_fastcover(
 ///   of [`core::slice::from_raw_parts`].
 /// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
 ///   of [`core::slice::from_raw_parts`].
-/// - `parameters` satisfies the requirements of [`pointer::as_mut`]
+/// - `parameters` satisfies the requirements of `pointer::as_mut`
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_optimizeTrainFromBuffer_fastCover))]
 pub unsafe extern "C" fn ZDICT_optimizeTrainFromBuffer_fastCover(
     dictBuffer: *mut core::ffi::c_void,
