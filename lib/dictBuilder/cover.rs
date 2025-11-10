@@ -801,6 +801,29 @@ pub(super) const unsafe fn assume_init_ref<T>(slice: &[MaybeUninit<T>]) -> &[T] 
     unsafe { &*(slice as *const [MaybeUninit<T>] as *const [T]) }
 }
 
+/// Train a dictionary from an array of samples using the COVER algorithm.
+///
+/// Samples must be stored concatenated in a single flat buffer `samplesBuffer`, supplied with an
+/// array of sizes `samplesSizes`, providing the size of each sample, in order.
+///
+/// The resulting dictionary will be saved into `dictBuffer`.
+///
+/// In general, a reasonable dictionary has a size of ~100 KB. It's possible to select smaller or
+/// larger size, just by specifying `dictBufferCapacity`. In general, it's recommended to provide a
+/// few thousands samples, though this can vary a lot. It's recommended that total size of all
+/// samples be about ~x100 times the target size of dictionary.
+///
+/// # Returns
+///
+/// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
+/// - an error code, which can be tested with [`ZDICT_isError`]
+///
+/// Dictionary training will fail if there are not enough samples to construct a dictionary, or if
+/// most of the samples are too small (< 8 bytes being the lower limit). If dictionary training
+/// fails, you should use zstd without a dictionary, as the dictionary would've been ineffective
+/// anyways. If you believe your samples would benefit from a dictionary please open an issue with
+/// details, and we can look into it.
+///
 /// # Safety
 ///
 /// Behavior is undefined if any of the following conditions are violated:
@@ -1200,6 +1223,30 @@ fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {
     drop(freqs);
 }
 
+/// This function tries many parameter combinations (specifically, `k` and `d` combinations) and
+/// picks the best parameters.
+///
+/// `*parameters` is filled with the best parameters found, and the dictionary constructed with
+/// those parameters is stored in `dictBuffer`.
+///
+/// The parameters `d`, `k`, and `steps` are optional:
+/// - If `d` is zero, we check `d` in 6..8.
+/// - If `k` is zero, we check `d` in 50..2000.
+/// - If `steps` is zero it defaults to its default value (40).
+///
+/// # Returns
+///
+/// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
+/// - an error code, which can be tested with [`ZDICT_isError`]
+///
+/// Dictionary training will fail if there are not enough samples to construct a dictionary, or if
+/// most of the samples are too small (< 8 bytes being the lower limit). If dictionary training
+/// fails, you should use zstd without a dictionary, as the dictionary would've been ineffective
+/// anyways. If you believe your samples would benefit from a dictionary please open an issue with
+/// details, and we can look into it.
+///
+/// On success `*parameters` contains the parameters selected.
+///
 /// # Safety
 ///
 /// Behavior is undefined if any of the following conditions are violated:

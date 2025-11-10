@@ -1587,6 +1587,41 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     )
 }
 
+/// Train a dictionary from an array of samples.
+///
+/// Calls single-threaded [`ZDICT_optimizeTrainFromBuffer_fastCover`], with `d=8`, `steps=4`,
+/// `f=20`, and `accel=1`.
+///
+/// Samples must be stored concatenated in a single flat buffer `samplesBuffer`,  supplied with an
+/// array of sizes `samplesSizes`, providing the size of each sample, in order. The resulting
+/// dictionary will be saved into `dictBuffer`.
+///
+/// In general, a reasonable dictionary has a size of ~100 KB. It's possible to select smaller or
+/// larger size, just by specifying `dictBufferCapacity`. In general, it's recommended to provide a
+/// few thousands samples, though this can vary a lot. It's recommended that total size of all
+/// samples be about ~x100 times the target size of dictionary.
+///
+/// # Returns
+///
+/// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
+/// - an error code, which can be tested with [`ZDICT_isError`]
+///
+/// Dictionary training will fail if there are not enough samples to construct a dictionary, or if
+/// most of the samples are too small (< 8 bytes being the lower limit). If dictionary training
+/// fails, you should use zstd without a dictionary, as the dictionary would've been ineffective
+/// anyways. If you believe your samples would benefit from a dictionary please open an issue with
+/// details, and we can look into it.
+///
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `dictBufferCapacity` is 0 or `dictBuffer` and `dictBufferCapacity` satisfy the requirements
+///   of [`core::slice::from_raw_parts_mut`].
+/// - `nbSamples` is 0 or `samplesSizes` and `nbSamples` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
+/// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer(
     dictBuffer: *mut core::ffi::c_void,
