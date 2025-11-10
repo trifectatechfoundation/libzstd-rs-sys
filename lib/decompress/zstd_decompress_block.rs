@@ -984,8 +984,8 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.LLTable,
         &mut dctx.LLTptr,
         LLtype,
-        MaxLL as core::ffi::c_uint,
-        LLFSELog as u32,
+        MaxLL,
+        LLFSELog,
         &src[ip..],
         &LL_base,
         &LL_bits,
@@ -1002,8 +1002,8 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
         OFtype,
-        MaxOff as core::ffi::c_uint,
-        OffFSELog as u32,
+        MaxOff,
+        OffFSELog,
         &src[ip..],
         &OF_base,
         &OF_bits,
@@ -1020,8 +1020,8 @@ fn ZSTD_decodeSeqHeaders(
         &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
         MLtype,
-        MaxML as core::ffi::c_uint,
-        MLFSELog as u32,
+        MaxML,
+        MLFSELog,
         &src[ip..],
         &ML_base,
         &ML_bits,
@@ -1602,7 +1602,7 @@ fn ZSTD_decodeSequence(
 
     assert!(llBits <= MaxLLBits);
     assert!(mlBits <= MaxMLBits);
-    assert!(ofBits as core::ffi::c_int <= MaxOff);
+    assert!(ofBits as u32 <= MaxOff);
 
     let mut offset: size_t = 0;
     if ofBits > 1 {
@@ -1682,7 +1682,7 @@ fn ZSTD_decodeSequence(
     }
 
     // Ensure there are enough bits to read the rest of data in 64-bit mode.
-    const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64) };
+    const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64 as u32) };
 
     if llBits > 0 {
         seq.litLength = (seq.litLength)
@@ -2300,7 +2300,7 @@ impl<const N: usize> SymbolTable<N> {
                 info.longOffsetShare += 1;
             }
         }
-        info.longOffsetShare <<= (OffFSELog as u32).wrapping_sub(tableLog);
+        info.longOffsetShare <<= OffFSELog.wrapping_sub(tableLog);
 
         info
     }

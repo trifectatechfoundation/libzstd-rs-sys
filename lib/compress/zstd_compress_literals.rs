@@ -251,7 +251,7 @@ pub unsafe fn ZSTD_compressLiterals(
         src,
         srcSize,
         HUF_SYMBOLVALUE_MAX as core::ffi::c_uint,
-        LitHufLog as core::ffi::c_uint,
+        LitHufLog,
         entropyWorkspace,
         entropyWorkspaceSize,
         ((*nextHuf).CTable).as_mut_ptr(),

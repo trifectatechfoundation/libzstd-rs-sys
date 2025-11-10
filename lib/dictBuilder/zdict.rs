@@ -728,7 +728,7 @@ fn fill_noise(buffer: &mut [u8]) {
     }
 }
 
-const MAXREPOFFSET: core::ffi::c_int = 1024;
+const MAXREPOFFSET: u32 = 1024;
 unsafe fn ZDICT_countEStats(
     esr: EStats_ress_t,
     params: &ZSTD_parameters,
@@ -802,10 +802,10 @@ unsafe fn ZDICT_countEStats(
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
             let mut offset1 = ((*seq).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
             let mut offset2 = ((*seq.add(1)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
-            if offset1 >= MAXREPOFFSET as u32 {
+            if offset1 >= MAXREPOFFSET {
                 offset1 = 0;
             }
-            if offset2 >= MAXREPOFFSET as u32 {
+            if offset2 >= MAXREPOFFSET {
                 offset2 = 0;
             }
             repOffsets[offset1 as usize] += 3;
@@ -836,7 +836,7 @@ fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit[254] = 1;
 }
 
-const OFFCODE_MAX: core::ffi::c_int = 30;
+const OFFCODE_MAX: u32 = 30;
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
@@ -860,9 +860,9 @@ unsafe fn ZDICT_analyzeEntropy(
     };
     let mut params = ZSTD_parameters::default();
     let mut huffLog = 11;
-    let mut Offlog = OffFSELog as u32;
-    let mut mlLog = MLFSELog as u32;
-    let mut llLog = LLFSELog as u32;
+    let mut offLog = OffFSELog;
+    let mut mlLog = MLFSELog;
+    let mut llLog = LLFSELog;
     let mut errorCode: size_t = 0;
     let mut eSize = 0;
     let averageSampleSize = if fileSizes.is_empty() {
@@ -872,7 +872,7 @@ unsafe fn ZDICT_analyzeEntropy(
     };
     let mut dstPtr = dstBuffer as *mut u8;
     let mut wksp: [u32; 1216] = [0; 1216];
-    if offcodeMax > OFFCODE_MAX as u32 {
+    if offcodeMax > OFFCODE_MAX {
         eSize = Error::dictionaryCreation_failed.to_error_code();
     } else {
         let mut countLit = [1u32; 256];
@@ -966,14 +966,14 @@ unsafe fn ZDICT_analyzeEntropy(
                 huffLog = maxNbBits as u32;
                 let mut offset: u32 = 0;
                 offset = 1;
-                while offset < MAXREPOFFSET as u32 {
+                while offset < MAXREPOFFSET {
                     ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
                     offset = offset.wrapping_add(1);
                 }
                 let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
                 errorCode = FSE_normalizeCount(
                     offcodeNCount.as_mut_ptr(),
-                    Offlog,
+                    offLog,
                     offcodeCount.as_mut_ptr(),
                     total as size_t,
                     offcodeMax,
@@ -985,14 +985,14 @@ unsafe fn ZDICT_analyzeEntropy(
                         eprintln!("FSE_normalizeCount error with offcodeCount");
                     }
                 } else {
-                    Offlog = errorCode as u32;
+                    offLog = errorCode as u32;
                     let total: u32 = matchLengthCount.iter().sum();
                     errorCode = FSE_normalizeCount(
                         matchLengthNCount.as_mut_ptr(),
                         mlLog,
                         matchLengthCount.as_mut_ptr(),
                         total as size_t,
-                        MaxML as core::ffi::c_uint,
+                        MaxML,
                         1,
                     );
                     if ERR_isError(errorCode) {
@@ -1008,7 +1008,7 @@ unsafe fn ZDICT_analyzeEntropy(
                             llLog,
                             litLengthCount.as_mut_ptr(),
                             total as size_t,
-                            MaxLL as core::ffi::c_uint,
+                            MaxLL,
                             1,
                         );
                         if ERR_isError(errorCode) {
@@ -1040,8 +1040,8 @@ unsafe fn ZDICT_analyzeEntropy(
                                     dstPtr as *mut core::ffi::c_void,
                                     maxDstSize,
                                     offcodeNCount.as_mut_ptr(),
-                                    OFFCODE_MAX as core::ffi::c_uint,
-                                    Offlog,
+                                    OFFCODE_MAX,
+                                    offLog,
                                 );
                                 if ERR_isError(ohSize) {
                                     eSize = ohSize;
@@ -1056,7 +1056,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                         dstPtr as *mut core::ffi::c_void,
                                         maxDstSize,
                                         matchLengthNCount.as_mut_ptr(),
-                                        MaxML as core::ffi::c_uint,
+                                        MaxML,
                                         mlLog,
                                     );
                                     if ERR_isError(mhSize) {
@@ -1074,7 +1074,7 @@ unsafe fn ZDICT_analyzeEntropy(
                                             dstPtr as *mut core::ffi::c_void,
                                             maxDstSize,
                                             litLengthNCount.as_mut_ptr(),
-                                            MaxLL as core::ffi::c_uint,
+                                            MaxLL,
                                             llLog,
                                         );
                                         if ERR_isError(lhSize) {

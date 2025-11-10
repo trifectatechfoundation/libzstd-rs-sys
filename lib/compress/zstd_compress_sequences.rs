@@ -473,7 +473,7 @@ unsafe fn ZSTD_encodeSequences_body(
         );
         if MEM_32bits()
             || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits)
-                >= (64 - 7 - (LLFSELog + MLFSELog + OffFSELog)) as u32
+                >= 64 - 7 - (LLFSELog + MLFSELog + OffFSELog)
         {
             BIT_flushBits(&mut blockStream);
         }
