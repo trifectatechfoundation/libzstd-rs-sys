@@ -555,9 +555,7 @@ fn COVER_ctx_init<'a>(
         totalSamplesSize
     };
     let testSamplesSize = if splitPoint < 1.0f64 {
-        samplesSizes[nbTrainSamples..][..nbTestSamples]
-            .iter()
-            .sum()
+        samplesSizes[nbTrainSamples..][..nbTestSamples].iter().sum()
     } else {
         totalSamplesSize
     };
@@ -803,6 +801,16 @@ pub(super) const unsafe fn assume_init_ref<T>(slice: &[MaybeUninit<T>]) -> &[T] 
     unsafe { &*(slice as *const [MaybeUninit<T>] as *const [T]) }
 }
 
+/// # Safety
+///
+/// Behavior is undefined if any of the following conditions are violated:
+///
+/// - `dictBufferCapacity` is 0 or `dictBuffer` and `dictBufferCapacity` satisfy the requirements
+///   of [`core::slice::from_raw_parts_mut`].
+/// - `nbSamples` is 0 or `samplesSizes` and `nbSamples` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
+/// - `sum(samplesSizes)` is 0 or `samplesBuffer` and `sum(samplesSizes)` satisfy the requirements
+///   of [`core::slice::from_raw_parts`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_cover))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     dictBuffer: *mut core::ffi::c_void,
@@ -810,30 +818,9 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     samplesBuffer: *const core::ffi::c_void,
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
-    mut parameters: ZDICT_cover_params_t,
+    parameters: ZDICT_cover_params_t,
 ) -> size_t {
-    let dict = dictBuffer as *mut u8;
-    let mut ctx = COVER_ctx_t::default();
-    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
-    parameters.splitPoint = 1.0f64;
-    if !COVER_checkParameters(parameters, dictBufferCapacity) {
-        if displayLevel >= 1 {
-            eprintln!("Cover parameters incorrect");
-        }
-        return Error::parameter_outOfBound.to_error_code();
-    }
-    if nbSamples == 0 {
-        if displayLevel >= 1 {
-            eprintln!("Cover must have at least one input file");
-        }
-        return Error::srcSize_wrong.to_error_code();
-    }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
-        if displayLevel >= 1 {
-            eprintln!("dictBufferCapacity must be at least {}", 256,);
-        }
-        return Error::dstSize_tooSmall.to_error_code();
-    }
+    let dict = unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) };
 
     let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
         &[]
@@ -846,6 +833,39 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     } else {
         core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
     };
+
+    train_from_buffer_cover(dict, samples, samplesSizes, parameters)
+}
+
+fn train_from_buffer_cover(
+    dict: &mut [MaybeUninit<u8>],
+    samples: &[u8],
+    samplesSizes: &[usize],
+    mut parameters: ZDICT_cover_params_t,
+) -> size_t {
+    let dictBufferCapacity = dict.len();
+
+    let mut ctx = COVER_ctx_t::default();
+    let displayLevel = parameters.zParams.notificationLevel as core::ffi::c_int;
+    parameters.splitPoint = 1.0f64;
+    if !COVER_checkParameters(parameters, dictBufferCapacity) {
+        if displayLevel >= 1 {
+            eprintln!("Cover parameters incorrect");
+        }
+        return Error::parameter_outOfBound.to_error_code();
+    }
+    if samplesSizes.is_empty() {
+        if displayLevel >= 1 {
+            eprintln!("Cover must have at least one input file");
+        }
+        return Error::srcSize_wrong.to_error_code();
+    }
+    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+        if displayLevel >= 1 {
+            eprintln!("dictBufferCapacity must be at least {}", 256,);
+        }
+        return Error::dstSize_tooSmall.to_error_code();
+    }
 
     let initVal = COVER_ctx_init(
         &mut ctx,
@@ -866,25 +886,24 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_cover(
     }
 
     let mut freqs = core::mem::take(&mut ctx.freqs);
-    let dict_tail = COVER_buildDictionary(
-        &ctx,
-        &mut freqs,
-        &mut activeDmers,
-        unsafe { core::slice::from_raw_parts_mut(dictBuffer.cast(), dictBufferCapacity) },
-        parameters,
-    );
+    let dict_tail = COVER_buildDictionary(&ctx, &mut freqs, &mut activeDmers, dict, parameters);
     ctx.freqs = freqs;
 
-    let dictionarySize = ZDICT_finalizeDictionary(
-        dict as *mut core::ffi::c_void,
-        dictBufferCapacity,
-        dict_tail.as_ptr() as *const core::ffi::c_void,
-        dict_tail.len(),
-        samplesBuffer,
-        samplesSizes.as_ptr(),
-        nbSamples,
-        parameters.zParams,
-    );
+    let customDictContentSize = dict_tail.len();
+    let dictBuffer = dict.as_mut_ptr() as *mut core::ffi::c_void;
+    let customDictContent = dictBuffer.wrapping_add(dictBufferCapacity - customDictContentSize);
+    let dictionarySize = unsafe {
+        ZDICT_finalizeDictionary(
+            dictBuffer,
+            dictBufferCapacity,
+            customDictContent,
+            customDictContentSize,
+            samples.as_ptr() as *const core::ffi::c_void,
+            samplesSizes.as_ptr(),
+            samplesSizes.len() as core::ffi::c_uint,
+            parameters.zParams,
+        )
+    };
     if !ERR_isError(dictionarySize) && displayLevel >= 2 {
         eprintln!("Constructed dictionary of size {}", dictionarySize,);
     }
