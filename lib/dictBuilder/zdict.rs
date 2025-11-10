@@ -839,6 +839,41 @@ fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
 const OFFCODE_MAX: u32 = 30;
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
+    maxDstSize: size_t,
+    compressionLevel: core::ffi::c_int,
+    srcBuffer: *const core::ffi::c_void,
+    fileSizes: &[usize],
+    dictBuffer: *const core::ffi::c_void,
+    dictBufferSize: size_t,
+    notificationLevel: core::ffi::c_uint,
+) -> Result<size_t, Error> {
+    let mut esr = EStats_ress_t {
+        dict: core::ptr::null_mut(),
+        zc: core::ptr::null_mut(),
+        workPlace: core::ptr::null_mut(),
+    };
+
+    let eSize = analyze_entropy_internal(
+        dstBuffer,
+        maxDstSize,
+        compressionLevel,
+        srcBuffer,
+        fileSizes,
+        dictBuffer,
+        dictBufferSize,
+        notificationLevel,
+        &mut esr,
+    );
+
+    ZSTD_freeCDict(esr.dict);
+    ZSTD_freeCCtx(esr.zc);
+    free(esr.workPlace);
+
+    eSize
+}
+
+unsafe fn analyze_entropy_internal(
+    dstBuffer: *mut core::ffi::c_void,
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
     srcBuffer: *const core::ffi::c_void,
@@ -846,25 +881,20 @@ unsafe fn ZDICT_analyzeEntropy(
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
     notificationLevel: core::ffi::c_uint,
-) -> size_t {
+    esr: &mut EStats_ress_t,
+) -> Result<size_t, Error> {
     let mut hufTable: [HUF_CElt; 257] = [0; 257];
     let mut offcodeNCount: [core::ffi::c_short; 31] = [0; 31];
     let offcodeMax =
         ZSTD_highbit32(dictBufferSize.wrapping_add((128 * ((1) << 10)) as size_t) as u32);
     let mut matchLengthNCount: [core::ffi::c_short; 53] = [0; 53];
     let mut litLengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut esr = EStats_ress_t {
-        dict: core::ptr::null_mut(),
-        zc: core::ptr::null_mut(),
-        workPlace: core::ptr::null_mut(),
-    };
     let mut params = ZSTD_parameters::default();
     let mut huffLog = 11;
     let mut offLog = OffFSELog;
     let mut mlLog = MLFSELog;
     let mut llLog = LLFSELog;
     let mut errorCode: size_t = 0;
-    let mut eSize = 0;
     let averageSampleSize = if fileSizes.is_empty() {
         0
     } else {
@@ -873,259 +903,233 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut dstPtr = dstBuffer as *mut u8;
     let mut wksp: [u32; 1216] = [0; 1216];
     if offcodeMax > OFFCODE_MAX {
-        eSize = Error::dictionaryCreation_failed.to_error_code();
-    } else {
-        let mut countLit = [1u32; 256];
-        let mut offcodeCount = [1u32; (OFFCODE_MAX + 1) as usize];
-        let mut matchLengthCount = [1u32; (MaxML + 1) as usize];
-        let mut litLengthCount = [1u32; (MaxLL + 1) as usize];
+        return Err(Error::dictionaryCreation_failed);
+    }
+    let mut countLit = [1u32; 256];
+    let mut offcodeCount = [1u32; (OFFCODE_MAX + 1) as usize];
+    let mut matchLengthCount = [1u32; (MaxML + 1) as usize];
+    let mut litLengthCount = [1u32; (MaxLL + 1) as usize];
 
-        let mut repOffset = [0; MAXREPOFFSET as usize];
-        repOffset[1] = 1;
-        repOffset[4] = 1;
-        repOffset[8] = 1;
+    let mut repOffset = [0; MAXREPOFFSET as usize];
+    repOffset[1] = 1;
+    repOffset[4] = 1;
+    repOffset[8] = 1;
 
-        let mut bestRepOffset = [offsetCount_t::default(); ZSTD_REP_NUM as usize + 1];
+    let mut bestRepOffset = [offsetCount_t::default(); ZSTD_REP_NUM as usize + 1];
 
-        if compressionLevel == 0 {
-            compressionLevel = ZSTD_CLEVEL_DEFAULT;
+    if compressionLevel == 0 {
+        compressionLevel = ZSTD_CLEVEL_DEFAULT;
+    }
+    params = ZSTD_getParams(
+        compressionLevel,
+        averageSampleSize as core::ffi::c_ulonglong,
+        dictBufferSize,
+    );
+    esr.dict = ZSTD_createCDict_advanced(
+        dictBuffer,
+        dictBufferSize,
+        ZSTD_dlm_byRef,
+        ZSTD_dct_rawContent,
+        params.cParams,
+        ZSTD_customMem::default(),
+    );
+    esr.zc = ZSTD_createCCtx();
+    esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as size_t);
+    if (esr.dict).is_null() || (esr.zc).is_null() || (esr.workPlace).is_null() {
+        if notificationLevel >= 1 {
+            eprintln!("Not enough memory");
         }
-        params = ZSTD_getParams(
-            compressionLevel,
-            averageSampleSize as core::ffi::c_ulonglong,
-            dictBufferSize,
+        return Err(Error::memory_allocation);
+    }
+    let mut pos = 0usize;
+    for fileSize in fileSizes {
+        ZDICT_countEStats(
+            *esr,
+            &params,
+            &mut countLit,
+            &mut offcodeCount,
+            &mut matchLengthCount,
+            &mut litLengthCount,
+            &mut repOffset,
+            (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
+            *fileSize,
+            notificationLevel,
         );
-        esr.dict = ZSTD_createCDict_advanced(
-            dictBuffer,
-            dictBufferSize,
-            ZSTD_dlm_byRef,
-            ZSTD_dct_rawContent,
-            params.cParams,
-            ZSTD_customMem::default(),
-        );
-        esr.zc = ZSTD_createCCtx();
-        esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as size_t);
-        if (esr.dict).is_null() || (esr.zc).is_null() || (esr.workPlace).is_null() {
-            eSize = Error::memory_allocation.to_error_code();
-            if notificationLevel >= 1 {
-                eprintln!("Not enough memory");
-            }
-        } else {
-            let mut pos = 0usize;
-            for fileSize in fileSizes {
-                ZDICT_countEStats(
-                    esr,
-                    &params,
-                    &mut countLit,
-                    &mut offcodeCount,
-                    &mut matchLengthCount,
-                    &mut litLengthCount,
-                    &mut repOffset,
-                    (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
-                    *fileSize,
-                    notificationLevel,
-                );
-                pos = pos.wrapping_add(*fileSize);
-            }
-            if notificationLevel >= 4 {
-                eprintln!("Offset Code Frequencies :");
-                for (i, count) in offcodeCount.iter().enumerate() {
-                    eprintln!("{:>2} :{:>7} ", i, count);
-                }
-            }
-            let mut maxNbBits = HUF_buildCTable_wksp(
-                hufTable.as_mut_ptr(),
-                countLit.as_mut_ptr(),
-                255,
-                huffLog,
-                wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 1216]>(),
-            );
-            if ERR_isError(maxNbBits) {
-                eSize = maxNbBits;
-                if notificationLevel >= 1 {
-                    eprintln!(" HUF_buildCTable error");
-                }
-            } else {
-                if maxNbBits == 8 {
-                    if notificationLevel >= 2 {
-                        eprintln!(
-                            "warning : pathological dataset : literals are not compressible : samples are noisy or too regular "
-                        );
-                    }
-                    ZDICT_flatLit(&mut countLit);
-                    maxNbBits = HUF_buildCTable_wksp(
-                        hufTable.as_mut_ptr(),
-                        countLit.as_mut_ptr(),
-                        255,
-                        huffLog,
-                        wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                        ::core::mem::size_of::<[u32; 1216]>(),
-                    );
-                }
-                huffLog = maxNbBits as u32;
-                let mut offset: u32 = 0;
-                offset = 1;
-                while offset < MAXREPOFFSET {
-                    ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
-                    offset = offset.wrapping_add(1);
-                }
-                let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
-                errorCode = FSE_normalizeCount(
-                    offcodeNCount.as_mut_ptr(),
-                    offLog,
-                    offcodeCount.as_mut_ptr(),
-                    total as size_t,
-                    offcodeMax,
-                    1,
-                );
-                if ERR_isError(errorCode) {
-                    eSize = errorCode;
-                    if notificationLevel >= 1 {
-                        eprintln!("FSE_normalizeCount error with offcodeCount");
-                    }
-                } else {
-                    offLog = errorCode as u32;
-                    let total: u32 = matchLengthCount.iter().sum();
-                    errorCode = FSE_normalizeCount(
-                        matchLengthNCount.as_mut_ptr(),
-                        mlLog,
-                        matchLengthCount.as_mut_ptr(),
-                        total as size_t,
-                        MaxML,
-                        1,
-                    );
-                    if ERR_isError(errorCode) {
-                        eSize = errorCode;
-                        if notificationLevel >= 1 {
-                            eprintln!("FSE_normalizeCount error with matchLengthCount");
-                        }
-                    } else {
-                        mlLog = errorCode as u32;
-                        let total: u32 = litLengthCount.iter().sum();
-                        errorCode = FSE_normalizeCount(
-                            litLengthNCount.as_mut_ptr(),
-                            llLog,
-                            litLengthCount.as_mut_ptr(),
-                            total as size_t,
-                            MaxLL,
-                            1,
-                        );
-                        if ERR_isError(errorCode) {
-                            eSize = errorCode;
-                            if notificationLevel >= 1 {
-                                eprintln!("FSE_normalizeCount error with litLengthCount");
-                            }
-                        } else {
-                            llLog = errorCode as u32;
-                            let hhSize = HUF_writeCTable_wksp(
-                                dstPtr as *mut core::ffi::c_void,
-                                maxDstSize,
-                                hufTable.as_mut_ptr(),
-                                255,
-                                huffLog,
-                                wksp.as_mut_ptr() as *mut core::ffi::c_void,
-                                ::core::mem::size_of::<[u32; 1216]>(),
-                            );
-                            if ERR_isError(hhSize) {
-                                eSize = hhSize;
-                                if notificationLevel >= 1 {
-                                    eprintln!("HUF_writeCTable error");
-                                }
-                            } else {
-                                dstPtr = dstPtr.add(hhSize);
-                                maxDstSize = maxDstSize.wrapping_sub(hhSize);
-                                eSize = eSize.wrapping_add(hhSize);
-                                let ohSize = FSE_writeNCount(
-                                    dstPtr as *mut core::ffi::c_void,
-                                    maxDstSize,
-                                    offcodeNCount.as_mut_ptr(),
-                                    OFFCODE_MAX,
-                                    offLog,
-                                );
-                                if ERR_isError(ohSize) {
-                                    eSize = ohSize;
-                                    if notificationLevel >= 1 {
-                                        eprintln!("FSE_writeNCount error with offcodeNCount");
-                                    }
-                                } else {
-                                    dstPtr = dstPtr.add(ohSize);
-                                    maxDstSize = maxDstSize.wrapping_sub(ohSize);
-                                    eSize = eSize.wrapping_add(ohSize);
-                                    let mhSize = FSE_writeNCount(
-                                        dstPtr as *mut core::ffi::c_void,
-                                        maxDstSize,
-                                        matchLengthNCount.as_mut_ptr(),
-                                        MaxML,
-                                        mlLog,
-                                    );
-                                    if ERR_isError(mhSize) {
-                                        eSize = mhSize;
-                                        if notificationLevel >= 1 {
-                                            eprintln!(
-                                                "FSE_writeNCount error with matchLengthNCount "
-                                            );
-                                        }
-                                    } else {
-                                        dstPtr = dstPtr.add(mhSize);
-                                        maxDstSize = maxDstSize.wrapping_sub(mhSize);
-                                        eSize = eSize.wrapping_add(mhSize);
-                                        let lhSize = FSE_writeNCount(
-                                            dstPtr as *mut core::ffi::c_void,
-                                            maxDstSize,
-                                            litLengthNCount.as_mut_ptr(),
-                                            MaxLL,
-                                            llLog,
-                                        );
-                                        if ERR_isError(lhSize) {
-                                            eSize = lhSize;
-                                            if notificationLevel >= 1 {
-                                                eprintln!(
-                                                    "FSE_writeNCount error with litlengthNCount "
-                                                );
-                                            }
-                                        } else {
-                                            dstPtr = dstPtr.add(lhSize);
-                                            maxDstSize = maxDstSize.wrapping_sub(lhSize);
-                                            eSize = eSize.wrapping_add(lhSize);
-                                            if maxDstSize < 12 {
-                                                eSize = -(ZSTD_error_dstSize_tooSmall
-                                                    as core::ffi::c_int)
-                                                    as size_t;
-                                                if notificationLevel >= 1 {
-                                                    eprintln!(
-                                                        "not enough space to write RepOffsets "
-                                                    );
-                                                }
-                                            } else {
-                                                MEM_writeLE32(
-                                                    dstPtr as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr(),
-                                                );
-                                                MEM_writeLE32(
-                                                    dstPtr.add(4) as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr().add(1),
-                                                );
-                                                MEM_writeLE32(
-                                                    dstPtr.add(8) as *mut core::ffi::c_void,
-                                                    *repStartValue.as_ptr().add(2),
-                                                );
-                                                eSize = eSize.wrapping_add(12);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        pos = pos.wrapping_add(*fileSize);
+    }
+    if notificationLevel >= 4 {
+        eprintln!("Offset Code Frequencies :");
+        for (i, count) in offcodeCount.iter().enumerate() {
+            eprintln!("{:>2} :{:>7} ", i, count);
         }
     }
-    ZSTD_freeCDict(esr.dict);
-    ZSTD_freeCCtx(esr.zc);
-    free(esr.workPlace);
-    eSize
+    let mut maxNbBits = HUF_buildCTable_wksp(
+        hufTable.as_mut_ptr(),
+        countLit.as_mut_ptr(),
+        255,
+        huffLog,
+        wksp.as_mut_ptr() as *mut core::ffi::c_void,
+        ::core::mem::size_of::<[u32; 1216]>(),
+    );
+    if let Some(err) = Error::from_error_code(maxNbBits) {
+        if notificationLevel >= 1 {
+            eprintln!(" HUF_buildCTable error");
+        }
+        return Err(err);
+    }
+    if maxNbBits == 8 {
+        if notificationLevel >= 2 {
+            eprintln!(
+                            "warning : pathological dataset : literals are not compressible : samples are noisy or too regular "
+                        );
+        }
+        ZDICT_flatLit(&mut countLit);
+        maxNbBits = HUF_buildCTable_wksp(
+            hufTable.as_mut_ptr(),
+            countLit.as_mut_ptr(),
+            255,
+            huffLog,
+            wksp.as_mut_ptr() as *mut core::ffi::c_void,
+            ::core::mem::size_of::<[u32; 1216]>(),
+        );
+    }
+    huffLog = maxNbBits as u32;
+    let mut offset: u32 = 0;
+    offset = 1;
+    while offset < MAXREPOFFSET {
+        ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
+        offset = offset.wrapping_add(1);
+    }
+    let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
+    errorCode = FSE_normalizeCount(
+        offcodeNCount.as_mut_ptr(),
+        offLog,
+        offcodeCount.as_mut_ptr(),
+        total as size_t,
+        offcodeMax,
+        1,
+    );
+    if let Some(err) = Error::from_error_code(errorCode) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_normalizeCount error with offcodeCount");
+        }
+        return Err(err);
+    }
+    offLog = errorCode as u32;
+    let total: u32 = matchLengthCount.iter().sum();
+    errorCode = FSE_normalizeCount(
+        matchLengthNCount.as_mut_ptr(),
+        mlLog,
+        matchLengthCount.as_mut_ptr(),
+        total as size_t,
+        MaxML,
+        1,
+    );
+    if let Some(err) = Error::from_error_code(errorCode) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_normalizeCount error with matchLengthCount");
+        }
+        return Err(err);
+    }
+    mlLog = errorCode as u32;
+    let total: u32 = litLengthCount.iter().sum();
+    errorCode = FSE_normalizeCount(
+        litLengthNCount.as_mut_ptr(),
+        llLog,
+        litLengthCount.as_mut_ptr(),
+        total as size_t,
+        MaxLL,
+        1,
+    );
+    if let Some(err) = Error::from_error_code(errorCode) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_normalizeCount error with litLengthCount");
+        }
+        return Err(err);
+    }
+    llLog = errorCode as u32;
+    let hhSize = HUF_writeCTable_wksp(
+        dstPtr as *mut core::ffi::c_void,
+        maxDstSize,
+        hufTable.as_mut_ptr(),
+        255,
+        huffLog,
+        wksp.as_mut_ptr() as *mut core::ffi::c_void,
+        ::core::mem::size_of::<[u32; 1216]>(),
+    );
+    if let Some(err) = Error::from_error_code(hhSize) {
+        if notificationLevel >= 1 {
+            eprintln!("HUF_writeCTable error");
+        }
+        return Err(err);
+    }
+    dstPtr = dstPtr.add(hhSize);
+    maxDstSize = maxDstSize.wrapping_sub(hhSize);
+    let mut eSize = hhSize;
+    let ohSize = FSE_writeNCount(
+        dstPtr as *mut core::ffi::c_void,
+        maxDstSize,
+        offcodeNCount.as_mut_ptr(),
+        OFFCODE_MAX,
+        offLog,
+    );
+    if let Some(err) = Error::from_error_code(ohSize) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_writeNCount error with offcodeNCount");
+        }
+        return Err(err);
+    }
+    dstPtr = dstPtr.add(ohSize);
+    maxDstSize = maxDstSize.wrapping_sub(ohSize);
+    eSize = eSize.wrapping_add(ohSize);
+    let mhSize = FSE_writeNCount(
+        dstPtr as *mut core::ffi::c_void,
+        maxDstSize,
+        matchLengthNCount.as_mut_ptr(),
+        MaxML,
+        mlLog,
+    );
+    if let Some(err) = Error::from_error_code(mhSize) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_writeNCount error with matchLengthNCount ");
+        }
+        return Err(err);
+    }
+    dstPtr = dstPtr.add(mhSize);
+    maxDstSize = maxDstSize.wrapping_sub(mhSize);
+    eSize = eSize.wrapping_add(mhSize);
+    let lhSize = FSE_writeNCount(
+        dstPtr as *mut core::ffi::c_void,
+        maxDstSize,
+        litLengthNCount.as_mut_ptr(),
+        MaxLL,
+        llLog,
+    );
+    if let Some(err) = Error::from_error_code(lhSize) {
+        if notificationLevel >= 1 {
+            eprintln!("FSE_writeNCount error with litlengthNCount ");
+        }
+        return Err(err);
+    }
+    dstPtr = dstPtr.add(lhSize);
+    maxDstSize = maxDstSize.wrapping_sub(lhSize);
+    eSize = eSize.wrapping_add(lhSize);
+    if maxDstSize < 12 {
+        if notificationLevel >= 1 {
+            eprintln!("not enough space to write RepOffsets ");
+        }
+        return Err(Error::dstSize_tooSmall);
+    }
+    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, *repStartValue.as_ptr());
+    MEM_writeLE32(
+        dstPtr.add(4) as *mut core::ffi::c_void,
+        *repStartValue.as_ptr().add(1),
+    );
+    MEM_writeLE32(
+        dstPtr.add(8) as *mut core::ffi::c_void,
+        *repStartValue.as_ptr().add(2),
+    );
+    Ok(eSize.wrapping_add(12))
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_finalizeDictionary))]
@@ -1209,10 +1213,7 @@ unsafe fn finalize_dictionary(
         customDictContent,
         dictContentSize,
         notificationLevel,
-    );
-    if let Some(err) = Error::from_error_code(eSize) {
-        return Err(err);
-    }
+    )?;
     hSize = hSize.wrapping_add(eSize);
     if hSize.wrapping_add(dictContentSize) > dictBufferCapacity {
         dictContentSize = dictBufferCapacity.wrapping_sub(hSize);
@@ -1263,7 +1264,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     if notificationLevel >= 2 {
         eprintln!("statistics ...");
     }
-    let eSize = ZDICT_analyzeEntropy(
+    let eSize = match ZDICT_analyzeEntropy(
         (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
         dictBufferCapacity.wrapping_sub(hSize),
         compressionLevel,
@@ -1274,10 +1275,10 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
         dictContentSize,
         notificationLevel,
-    );
-    if ZDICT_isError(eSize) != 0 {
-        return eSize;
-    }
+    ) {
+        Ok(eSize) => eSize,
+        Err(err) => return err.to_error_code(),
+    };
     hSize = hSize.wrapping_add(eSize);
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);
     let randomID = ZSTD_XXH64(
