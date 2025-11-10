@@ -814,17 +814,6 @@ unsafe fn ZDICT_countEStats(
     }
 }
 
-unsafe fn ZDICT_totalSampleSize(fileSizes: *const size_t, nbFiles: core::ffi::c_uint) -> size_t {
-    let mut total = 0 as size_t;
-    let mut u: core::ffi::c_uint = 0;
-    u = 0;
-    while u < nbFiles {
-        total = total.wrapping_add(*fileSizes.offset(u as isize));
-        u = u.wrapping_add(1);
-    }
-    total
-}
-
 fn ZDICT_insertSortCount(
     table: &mut [offsetCount_t; ZSTD_REP_NUM as usize + 1],
     val: u32,
@@ -853,8 +842,7 @@ unsafe fn ZDICT_analyzeEntropy(
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
     srcBuffer: *const core::ffi::c_void,
-    fileSizes: *const size_t,
-    nbFiles: core::ffi::c_uint,
+    fileSizes: &[usize],
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
     notificationLevel: core::ffi::c_uint,
@@ -879,9 +867,11 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut pos = 0 as size_t;
     let mut errorCode: size_t = 0;
     let mut eSize = 0;
-    let totalSrcSize = ZDICT_totalSampleSize(fileSizes, nbFiles);
-    let averageSampleSize = totalSrcSize
-        / nbFiles.wrapping_add((nbFiles == 0) as core::ffi::c_int as core::ffi::c_uint) as size_t;
+    let averageSampleSize = if fileSizes.is_empty() {
+        0
+    } else {
+        fileSizes.iter().sum::<usize>() / fileSizes.len()
+    };
     let mut dstPtr = dstBuffer as *mut u8;
     let mut wksp: [u32; 1216] = [0; 1216];
     if offcodeMax > OFFCODE_MAX as u32 {
@@ -923,8 +913,7 @@ unsafe fn ZDICT_analyzeEntropy(
                 eprintln!("Not enough memory");
             }
         } else {
-            let mut u = 0;
-            while u < nbFiles {
+            for fileSize in fileSizes {
                 ZDICT_countEStats(
                     esr,
                     &params,
@@ -934,26 +923,19 @@ unsafe fn ZDICT_analyzeEntropy(
                     &mut litLengthCount,
                     &mut repOffset,
                     (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
-                    *fileSizes.offset(u as isize),
+                    *fileSize,
                     notificationLevel,
                 );
-                pos = pos.wrapping_add(*fileSizes.offset(u as isize));
-                u = u.wrapping_add(1);
+                pos = pos.wrapping_add(*fileSize);
             }
             if notificationLevel >= 4 {
                 if notificationLevel >= 4 {
                     eprintln!("Offset Code Frequencies :");
                 }
-                u = 0;
-                while u <= offcodeMax {
+                for u in 0..=offcodeMax as usize {
                     if notificationLevel >= 4 {
-                        eprintln!(
-                            "{:>2} :{:>7} ",
-                            u,
-                            *offcodeCount.as_mut_ptr().offset(u as isize),
-                        );
+                        eprintln!("{:>2} :{:>7} ", u, offcodeCount[u]);
                     }
-                    u = u.wrapping_add(1);
                 }
             }
             let mut maxNbBits = HUF_buildCTable_wksp(
@@ -994,11 +976,9 @@ unsafe fn ZDICT_analyzeEntropy(
                     offset = offset.wrapping_add(1);
                 }
                 total = 0;
-                u = 0;
-                while u <= offcodeMax {
+                for u in 0..=offcodeMax {
                     total = (total as core::ffi::c_uint)
                         .wrapping_add(*offcodeCount.as_mut_ptr().offset(u as isize));
-                    u = u.wrapping_add(1);
                 }
                 errorCode = FSE_normalizeCount(
                     offcodeNCount.as_mut_ptr(),
@@ -1016,11 +996,9 @@ unsafe fn ZDICT_analyzeEntropy(
                 } else {
                     Offlog = errorCode as u32;
                     total = 0;
-                    u = 0;
-                    while u <= MaxML as u32 {
+                    for u in 0..=MaxML as u32 {
                         total = (total as core::ffi::c_uint)
                             .wrapping_add(*matchLengthCount.as_mut_ptr().offset(u as isize));
-                        u = u.wrapping_add(1);
                     }
                     errorCode = FSE_normalizeCount(
                         matchLengthNCount.as_mut_ptr(),
@@ -1038,11 +1016,9 @@ unsafe fn ZDICT_analyzeEntropy(
                     } else {
                         mlLog = errorCode as u32;
                         total = 0;
-                        u = 0;
-                        while u <= MaxLL as u32 {
+                        for u in 0..=MaxLL as u32 {
                             total = (total as core::ffi::c_uint)
                                 .wrapping_add(*litLengthCount.as_mut_ptr().offset(u as isize));
-                            u = u.wrapping_add(1);
                         }
                         errorCode = FSE_normalizeCount(
                             litLengthNCount.as_mut_ptr(),
@@ -1180,6 +1156,12 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     nbSamples: core::ffi::c_uint,
     params: ZDICT_params_t,
 ) -> size_t {
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+
     finalize_dictionary(
         dictBuffer,
         dictBufferCapacity,
@@ -1187,7 +1169,6 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
         dictContentSize,
         samplesBuffer,
         samplesSizes,
-        nbSamples,
         params,
     )
     .map_err(|e| e.to_error_code())
@@ -1200,8 +1181,7 @@ unsafe fn finalize_dictionary(
     customDictContent: *const core::ffi::c_void,
     mut dictContentSize: size_t,
     samplesBuffer: *const core::ffi::c_void,
-    samplesSizes: *const size_t,
-    nbSamples: core::ffi::c_uint,
+    samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> Result<usize, Error> {
     let mut hSize: size_t = 0;
@@ -1243,7 +1223,6 @@ unsafe fn finalize_dictionary(
         compressionLevel,
         samplesBuffer,
         samplesSizes,
-        nbSamples,
         customDictContent,
         dictContentSize,
         notificationLevel,
@@ -1285,8 +1264,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     dictContentSize: size_t,
     dictBufferCapacity: size_t,
     samplesBuffer: *const core::ffi::c_void,
-    samplesSizes: *const size_t,
-    nbSamples: core::ffi::c_uint,
+    samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> size_t {
     let compressionLevel = if params.compressionLevel == 0 {
@@ -1308,7 +1286,6 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         compressionLevel,
         samplesBuffer,
         samplesSizes,
-        nbSamples,
         (dictBuffer as *mut core::ffi::c_char)
             .add(dictBufferCapacity)
             .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
@@ -1353,14 +1330,15 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         hSize.wrapping_add(dictContentSize)
     }
 }
+
 unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictBuffer: *mut core::ffi::c_void,
     maxDictSize: size_t,
     samplesBuffer: *const core::ffi::c_void,
-    samplesSizes: *const size_t,
-    nbSamples: core::ffi::c_uint,
+    samplesSizes: &[usize],
     params: ZDICT_legacy_params_t,
 ) -> size_t {
+    let nbSamples = samplesSizes.len() as u32;
     let dictListSize =
         if (if 10000 > nbSamples { 10000 } else { nbSamples }) > (maxDictSize / 16) as u32 {
             if 10000 > nbSamples {
@@ -1384,7 +1362,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         nbSamples >> selectivity
     };
     let targetDictSize = maxDictSize;
-    let samplesBuffSize = ZDICT_totalSampleSize(samplesSizes, nbSamples);
+    let samplesBuffSize = samplesSizes.iter().sum();
     let mut dictSize = 0;
     let notificationLevel = params.zParams.notificationLevel;
     if dictList.is_null() {
@@ -1404,7 +1382,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         dictListSize,
         samplesBuffer,
         samplesBuffSize,
-        samplesSizes,
+        samplesSizes.as_ptr(),
         nbSamples,
         minRep,
         notificationLevel,
@@ -1555,12 +1533,12 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         maxDictSize,
         samplesBuffer,
         samplesSizes,
-        nbSamples,
         params.zParams,
     );
     free(dictList as *mut core::ffi::c_void);
     dictSize
 }
+
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_trainFromBuffer_legacy))]
 pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     dictBuffer: *mut core::ffi::c_void,
@@ -1570,7 +1548,13 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     nbSamples: core::ffi::c_uint,
     params: ZDICT_legacy_params_t,
 ) -> size_t {
-    let sBuffSize = ZDICT_totalSampleSize(samplesSizes, nbSamples);
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+
+    let sBuffSize: size_t = samplesSizes.iter().sum();
     if sBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
         return 0;
     }
@@ -1582,7 +1566,6 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
         dictBufferCapacity,
         new_buf.as_ptr().cast::<core::ffi::c_void>(),
         samplesSizes,
-        nbSamples,
         params,
     )
 }
@@ -1656,6 +1639,12 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
 ) -> size_t {
+    let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
+    };
+
     let params = ZDICT_params_t::default();
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
@@ -1663,7 +1652,6 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
         dictBufferCapacity,
         samplesBuffer,
         samplesSizes,
-        nbSamples,
         params,
     )
 }
