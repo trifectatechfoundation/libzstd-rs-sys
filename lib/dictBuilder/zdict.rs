@@ -854,7 +854,7 @@ unsafe fn ZDICT_analyzeEntropy(
     };
 
     let eSize = analyze_entropy_internal(
-        dstBuffer,
+        dstBuffer as *mut u8,
         maxDstSize,
         compressionLevel,
         srcBuffer,
@@ -873,7 +873,7 @@ unsafe fn ZDICT_analyzeEntropy(
 }
 
 unsafe fn analyze_entropy_internal(
-    dstBuffer: *mut core::ffi::c_void,
+    mut dstPtr: *mut u8,
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
     srcBuffer: *const core::ffi::c_void,
@@ -884,27 +884,17 @@ unsafe fn analyze_entropy_internal(
     esr: &mut EStats_ress_t,
 ) -> Result<size_t, Error> {
     let mut hufTable: [HUF_CElt; 257] = [0; 257];
-    let mut offcodeNCount: [core::ffi::c_short; 31] = [0; 31];
-    let offcodeMax =
-        ZSTD_highbit32(dictBufferSize.wrapping_add((128 * ((1) << 10)) as size_t) as u32);
-    let mut matchLengthNCount: [core::ffi::c_short; 53] = [0; 53];
-    let mut litLengthNCount: [core::ffi::c_short; 36] = [0; 36];
-    let mut params = ZSTD_parameters::default();
-    let mut huffLog = 11;
-    let mut offLog = OffFSELog;
-    let mut mlLog = MLFSELog;
-    let mut llLog = LLFSELog;
-    let mut errorCode: size_t = 0;
-    let averageSampleSize = if fileSizes.is_empty() {
-        0
-    } else {
-        fileSizes.iter().sum::<usize>() / fileSizes.len()
-    };
-    let mut dstPtr = dstBuffer as *mut u8;
-    let mut wksp: [u32; 1216] = [0; 1216];
+
+    const KB: usize = 1 << 10;
+    let offcodeMax = ZSTD_highbit32(dictBufferSize.wrapping_add(128 * KB) as u32);
     if offcodeMax > OFFCODE_MAX {
         return Err(Error::dictionaryCreation_failed);
     }
+
+    let mut offcodeNCount = [0i16; (OFFCODE_MAX + 1) as usize];
+    let mut matchLengthNCount = [0i16; (MaxML + 1) as usize];
+    let mut litLengthNCount = [0i16; (MaxLL + 1) as usize];
+
     let mut countLit = [1u32; 256];
     let mut offcodeCount = [1u32; (OFFCODE_MAX + 1) as usize];
     let mut matchLengthCount = [1u32; (MaxML + 1) as usize];
@@ -917,10 +907,15 @@ unsafe fn analyze_entropy_internal(
 
     let mut bestRepOffset = [offsetCount_t::default(); ZSTD_REP_NUM as usize + 1];
 
+    let averageSampleSize = if fileSizes.is_empty() {
+        0
+    } else {
+        fileSizes.iter().sum::<usize>() / fileSizes.len()
+    };
     if compressionLevel == 0 {
         compressionLevel = ZSTD_CLEVEL_DEFAULT;
     }
-    params = ZSTD_getParams(
+    let params = ZSTD_getParams(
         compressionLevel,
         averageSampleSize as core::ffi::c_ulonglong,
         dictBufferSize,
@@ -941,6 +936,8 @@ unsafe fn analyze_entropy_internal(
         }
         return Err(Error::memory_allocation);
     }
+
+    // collect stats on all samples
     let mut pos = 0usize;
     for fileSize in fileSizes {
         ZDICT_countEStats(
@@ -963,6 +960,10 @@ unsafe fn analyze_entropy_internal(
             eprintln!("{:>2} :{:>7} ", i, count);
         }
     }
+
+    // analyze, build stats, starting with literals
+    let mut wksp: [u32; 1216] = [0; 1216];
+    let huffLog = 11;
     let mut maxNbBits = HUF_buildCTable_wksp(
         hufTable.as_mut_ptr(),
         countLit.as_mut_ptr(),
@@ -979,9 +980,7 @@ unsafe fn analyze_entropy_internal(
     }
     if maxNbBits == 8 {
         if notificationLevel >= 2 {
-            eprintln!(
-                            "warning : pathological dataset : literals are not compressible : samples are noisy or too regular "
-                        );
+            eprintln!("warning : pathological dataset : literals are not compressible : samples are noisy or too regular ");
         }
         ZDICT_flatLit(&mut countLit);
         maxNbBits = HUF_buildCTable_wksp(
@@ -993,17 +992,17 @@ unsafe fn analyze_entropy_internal(
             ::core::mem::size_of::<[u32; 1216]>(),
         );
     }
-    huffLog = maxNbBits as u32;
-    let mut offset: u32 = 0;
-    offset = 1;
-    while offset < MAXREPOFFSET {
+    let huffLog = maxNbBits as u32;
+
+    // look for most common first offsets
+    for offset in 1..MAXREPOFFSET {
         ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
-        offset = offset.wrapping_add(1);
     }
+
     let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
-    errorCode = FSE_normalizeCount(
+    let errorCode = FSE_normalizeCount(
         offcodeNCount.as_mut_ptr(),
-        offLog,
+        OffFSELog,
         offcodeCount.as_mut_ptr(),
         total as size_t,
         offcodeMax,
@@ -1015,11 +1014,12 @@ unsafe fn analyze_entropy_internal(
         }
         return Err(err);
     }
-    offLog = errorCode as u32;
+    let offLog = errorCode as u32;
+
     let total: u32 = matchLengthCount.iter().sum();
-    errorCode = FSE_normalizeCount(
+    let errorCode = FSE_normalizeCount(
         matchLengthNCount.as_mut_ptr(),
-        mlLog,
+        MLFSELog,
         matchLengthCount.as_mut_ptr(),
         total as size_t,
         MaxML,
@@ -1031,11 +1031,12 @@ unsafe fn analyze_entropy_internal(
         }
         return Err(err);
     }
-    mlLog = errorCode as u32;
+    let mlLog = errorCode as u32;
+
     let total: u32 = litLengthCount.iter().sum();
-    errorCode = FSE_normalizeCount(
+    let errorCode = FSE_normalizeCount(
         litLengthNCount.as_mut_ptr(),
-        llLog,
+        LLFSELog,
         litLengthCount.as_mut_ptr(),
         total as size_t,
         MaxLL,
@@ -1047,7 +1048,9 @@ unsafe fn analyze_entropy_internal(
         }
         return Err(err);
     }
-    llLog = errorCode as u32;
+    let llLog = errorCode as u32;
+
+    // write result to buffer
     let hhSize = HUF_writeCTable_wksp(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
@@ -1066,6 +1069,7 @@ unsafe fn analyze_entropy_internal(
     dstPtr = dstPtr.add(hhSize);
     maxDstSize = maxDstSize.wrapping_sub(hhSize);
     let mut eSize = hhSize;
+
     let ohSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
@@ -1082,6 +1086,7 @@ unsafe fn analyze_entropy_internal(
     dstPtr = dstPtr.add(ohSize);
     maxDstSize = maxDstSize.wrapping_sub(ohSize);
     eSize = eSize.wrapping_add(ohSize);
+
     let mhSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
@@ -1098,6 +1103,7 @@ unsafe fn analyze_entropy_internal(
     dstPtr = dstPtr.add(mhSize);
     maxDstSize = maxDstSize.wrapping_sub(mhSize);
     eSize = eSize.wrapping_add(mhSize);
+
     let lhSize = FSE_writeNCount(
         dstPtr as *mut core::ffi::c_void,
         maxDstSize,
@@ -1114,12 +1120,14 @@ unsafe fn analyze_entropy_internal(
     dstPtr = dstPtr.add(lhSize);
     maxDstSize = maxDstSize.wrapping_sub(lhSize);
     eSize = eSize.wrapping_add(lhSize);
+
     if maxDstSize < 12 {
         if notificationLevel >= 1 {
             eprintln!("not enough space to write RepOffsets ");
         }
         return Err(Error::dstSize_tooSmall);
     }
+
     MEM_writeLE32(dstPtr as *mut core::ffi::c_void, *repStartValue.as_ptr());
     MEM_writeLE32(
         dstPtr.add(4) as *mut core::ffi::c_void,
@@ -1129,6 +1137,7 @@ unsafe fn analyze_entropy_internal(
         dstPtr.add(8) as *mut core::ffi::c_void,
         *repStartValue.as_ptr().add(2),
     );
+
     Ok(eSize.wrapping_add(12))
 }
 
