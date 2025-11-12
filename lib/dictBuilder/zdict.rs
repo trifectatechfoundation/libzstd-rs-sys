@@ -5,7 +5,7 @@ use libc::{free, malloc, memcpy, size_t};
 
 use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
-use crate::lib::common::huf::{HUF_CElt, HUF_WORKSPACE_SIZE};
+use crate::lib::common::huf::{HUF_CElt, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
 use crate::lib::common::mem::{MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
@@ -962,7 +962,7 @@ unsafe fn analyze_entropy_internal(
     }
 
     // analyze, build stats, starting with literals
-    let mut wksp: [u32; 1216] = [0; 1216];
+    let mut wksp = [0u32; HUF_CTABLE_WORKSPACE_SIZE_U32];
     let huffLog = 11;
     let mut maxNbBits = HUF_buildCTable_wksp(
         hufTable.as_mut_ptr(),
@@ -970,7 +970,7 @@ unsafe fn analyze_entropy_internal(
         255,
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 1216]>(),
+        ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
     );
     if let Some(err) = Error::from_error_code(maxNbBits) {
         if notificationLevel >= 1 {
@@ -989,7 +989,7 @@ unsafe fn analyze_entropy_internal(
             255,
             huffLog,
             wksp.as_mut_ptr() as *mut core::ffi::c_void,
-            ::core::mem::size_of::<[u32; 1216]>(),
+            ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
         );
     }
     let huffLog = maxNbBits as u32;
@@ -1058,7 +1058,7 @@ unsafe fn analyze_entropy_internal(
         255,
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 1216]>(),
+        ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
     );
     if let Some(err) = Error::from_error_code(hhSize) {
         if notificationLevel >= 1 {
