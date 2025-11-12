@@ -837,7 +837,7 @@ unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     maxDstSize: size_t,
     compressionLevel: core::ffi::c_int,
-    srcBuffer: *const core::ffi::c_void,
+    src: &[u8],
     fileSizes: &[usize],
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
@@ -853,7 +853,7 @@ unsafe fn ZDICT_analyzeEntropy(
         dstBuffer as *mut u8,
         maxDstSize,
         compressionLevel,
-        srcBuffer,
+        src,
         fileSizes,
         dictBuffer,
         dictBufferSize,
@@ -872,7 +872,7 @@ unsafe fn analyze_entropy_internal(
     mut dstPtr: *mut u8,
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
-    srcBuffer: *const core::ffi::c_void,
+    src: &[u8],
     fileSizes: &[usize],
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
@@ -944,7 +944,7 @@ unsafe fn analyze_entropy_internal(
             &mut matchLengthCount,
             &mut litLengthCount,
             &mut repOffset,
-            srcBuffer.byte_add(pos),
+            src.as_ptr().add(pos) as *const core::ffi::c_void,
             *fileSize,
             notificationLevel,
         );
@@ -1153,13 +1153,19 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     } else {
         core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
     };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
 
     finalize_dictionary(
         dictBuffer,
         dictBufferCapacity,
         customDictContent,
         dictContentSize,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params,
     )
@@ -1172,7 +1178,7 @@ unsafe fn finalize_dictionary(
     dictBufferCapacity: size_t,
     customDictContent: *const core::ffi::c_void,
     mut dictContentSize: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> Result<usize, Error> {
@@ -1213,7 +1219,7 @@ unsafe fn finalize_dictionary(
         header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
         (HBUFFSIZE as size_t).wrapping_sub(hSize),
         compressionLevel,
-        samplesBuffer,
+        samples,
         samplesSizes,
         customDictContent,
         dictContentSize,
@@ -1252,7 +1258,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     dictBuffer: *mut core::ffi::c_void,
     dictContentSize: size_t,
     dictBufferCapacity: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> size_t {
@@ -1273,7 +1279,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer.byte_add(hSize),
         dictBufferCapacity.wrapping_sub(hSize),
         compressionLevel,
-        samplesBuffer,
+        samples,
         samplesSizes,
         dictBuffer
             .byte_add(dictBufferCapacity)
@@ -1320,7 +1326,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
 unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictBuffer: *mut core::ffi::c_void,
     maxDictSize: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_legacy_params_t,
 ) -> size_t {
@@ -1366,7 +1372,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     ZDICT_trainBuffer_legacy(
         dictList,
         dictListSize,
-        samplesBuffer,
+        samples.as_ptr() as *mut core::ffi::c_void,
         samplesBuffSize,
         samplesSizes.as_ptr(),
         nbSamples,
@@ -1412,7 +1418,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                 );
             }
             ZDICT_printHex(
-                samplesBuffer.byte_offset(pos as isize),
+                samples.as_ptr().offset(pos as isize) as *const core::ffi::c_void,
                 printedLength as size_t,
             );
             if notificationLevel >= 3 {
@@ -1505,7 +1511,10 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
         memcpy(
             ptr as *mut core::ffi::c_void,
-            samplesBuffer.byte_offset((*dictList.offset(u_0 as isize)).pos as isize),
+            samples
+                .as_ptr()
+                .offset((*dictList.offset(u_0 as isize)).pos as isize)
+                as *const core::ffi::c_void,
             l as size_t,
         );
         u_0 = u_0.wrapping_add(1);
@@ -1514,7 +1523,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         dictBuffer,
         dictContentSize_0 as size_t,
         maxDictSize,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params.zParams,
     );
@@ -1582,7 +1591,7 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     ZDICT_trainFromBuffer_unsafe_legacy(
         dictBuffer,
         dictBufferCapacity,
-        new_buf.as_ptr().cast::<core::ffi::c_void>(),
+        &new_buf,
         samplesSizes,
         params,
     )
@@ -1662,13 +1671,19 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     } else {
         core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
     };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
 
     let params = ZDICT_params_t::default();
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize,
         dictBufferCapacity,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params,
     )
