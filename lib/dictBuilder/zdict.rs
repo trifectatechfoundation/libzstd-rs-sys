@@ -50,6 +50,14 @@ struct DictItem {
     savings: u32,
 }
 
+impl DictItem {
+    fn init(&mut self) {
+        self.pos = 1;
+        self.length = 0;
+        self.savings = -1i32 as u32;
+    }
+}
+
 const MINRATIO: core::ffi::c_int = 4;
 const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 #[expect(deprecated)]
@@ -132,12 +140,6 @@ unsafe fn ZDICT_count(
             return pIn.byte_offset_from(pStart) as core::ffi::c_long as size_t;
         }
     }
-}
-
-unsafe fn ZDICT_initDictItem(d: *mut DictItem) {
-    (*d).pos = 1;
-    (*d).length = 0;
-    (*d).savings = -(1 as core::ffi::c_int) as u32;
 }
 
 const LLIMIT: core::ffi::c_int = 64;
@@ -1335,7 +1337,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
-    ZDICT_initDictItem(dictList);
+    dictList.as_mut().unwrap().init();
     ZDICT_trainBuffer_legacy(
         dictList,
         dictListSize,
