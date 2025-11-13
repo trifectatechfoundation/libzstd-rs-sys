@@ -124,15 +124,11 @@ unsafe fn ZDICT_count(
     loop {
         let diff = MEM_readST(pMatch) ^ MEM_readST(pIn);
         if diff == 0 {
-            pIn = (pIn as *const core::ffi::c_char).add(::core::mem::size_of::<size_t>())
-                as *const core::ffi::c_void;
-            pMatch = (pMatch as *const core::ffi::c_char).add(::core::mem::size_of::<size_t>())
-                as *const core::ffi::c_void;
+            pIn = pIn.byte_add(::core::mem::size_of::<size_t>());
+            pMatch = pMatch.byte_add(::core::mem::size_of::<size_t>());
         } else {
-            pIn = (pIn as *const core::ffi::c_char).offset(ZSTD_NbCommonBytes(diff) as isize)
-                as *const core::ffi::c_void;
-            return (pIn as *const core::ffi::c_char).offset_from(pStart) as core::ffi::c_long
-                as size_t;
+            pIn = pIn.byte_offset(ZSTD_NbCommonBytes(diff) as isize);
+            return pIn.byte_offset_from(pStart) as core::ffi::c_long as size_t;
         }
     }
 }
@@ -891,14 +887,14 @@ unsafe fn analyze_entropy_internal(
         return Err(Error::dictionaryCreation_failed);
     }
 
-    let mut offcodeNCount = [0i16; (OFFCODE_MAX + 1) as usize];
-    let mut matchLengthNCount = [0i16; (MaxML + 1) as usize];
-    let mut litLengthNCount = [0i16; (MaxLL + 1) as usize];
+    let mut offcodeNCount = [0i16; OFFCODE_MAX as usize + 1];
+    let mut matchLengthNCount = [0i16; MaxML as usize + 1];
+    let mut litLengthNCount = [0i16; MaxLL as usize + 1];
 
     let mut countLit = [1u32; 256];
-    let mut offcodeCount = [1u32; (OFFCODE_MAX + 1) as usize];
-    let mut matchLengthCount = [1u32; (MaxML + 1) as usize];
-    let mut litLengthCount = [1u32; (MaxLL + 1) as usize];
+    let mut offcodeCount = [1u32; OFFCODE_MAX as usize + 1];
+    let mut matchLengthCount = [1u32; MaxML as usize + 1];
+    let mut litLengthCount = [1u32; MaxLL as usize + 1];
 
     let mut repOffset = [0; MAXREPOFFSET as usize];
     repOffset[1] = 1;
@@ -907,11 +903,11 @@ unsafe fn analyze_entropy_internal(
 
     let mut bestRepOffset = [offsetCount_t::default(); ZSTD_REP_NUM as usize + 1];
 
-    let averageSampleSize = if fileSizes.is_empty() {
-        0
-    } else {
-        fileSizes.iter().sum::<usize>() / fileSizes.len()
-    };
+    let averageSampleSize = fileSizes
+        .iter()
+        .sum::<usize>()
+        .checked_div(fileSizes.len())
+        .unwrap_or(0);
     if compressionLevel == 0 {
         compressionLevel = ZSTD_CLEVEL_DEFAULT;
     }
@@ -948,7 +944,7 @@ unsafe fn analyze_entropy_internal(
             &mut matchLengthCount,
             &mut litLengthCount,
             &mut repOffset,
-            (srcBuffer as *const core::ffi::c_char).add(pos) as *const core::ffi::c_void,
+            srcBuffer.byte_add(pos),
             *fileSize,
             notificationLevel,
         );
@@ -1273,27 +1269,27 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     if notificationLevel >= 2 {
         eprintln!("statistics ...");
     }
-    let eSize = match ZDICT_analyzeEntropy(
-        (dictBuffer as *mut core::ffi::c_char).add(hSize) as *mut core::ffi::c_void,
+    let res = ZDICT_analyzeEntropy(
+        dictBuffer.byte_add(hSize),
         dictBufferCapacity.wrapping_sub(hSize),
         compressionLevel,
         samplesBuffer,
         samplesSizes,
-        (dictBuffer as *mut core::ffi::c_char)
-            .add(dictBufferCapacity)
-            .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
+        dictBuffer
+            .byte_add(dictBufferCapacity)
+            .byte_offset(-(dictContentSize as isize)),
         dictContentSize,
         notificationLevel,
-    ) {
-        Ok(eSize) => eSize,
+    );
+    match res {
+        Ok(eSize) => hSize = hSize.wrapping_add(eSize),
         Err(err) => return err.to_error_code(),
     };
-    hSize = hSize.wrapping_add(eSize);
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);
     let randomID = ZSTD_XXH64(
-        (dictBuffer as *mut core::ffi::c_char)
-            .add(dictBufferCapacity)
-            .offset(-(dictContentSize as isize)) as *const core::ffi::c_void,
+        dictBuffer
+            .byte_add(dictBufferCapacity)
+            .byte_offset(-(dictContentSize as isize)),
         dictContentSize,
         0,
     );
@@ -1304,10 +1300,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     } else {
         compliantID
     };
-    MEM_writeLE32(
-        (dictBuffer as *mut core::ffi::c_char).add(4) as *mut core::ffi::c_void,
-        dictID,
-    );
+    MEM_writeLE32(dictBuffer.byte_add(4), dictID);
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
         core::ptr::copy(
             (dictBuffer as *mut core::ffi::c_char)
@@ -1419,8 +1412,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                 );
             }
             ZDICT_printHex(
-                (samplesBuffer as *const core::ffi::c_char).offset(pos as isize)
-                    as *const core::ffi::c_void,
+                samplesBuffer.byte_offset(pos as isize),
                 printedLength as size_t,
             );
             if notificationLevel >= 3 {
@@ -1513,9 +1505,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
         memcpy(
             ptr as *mut core::ffi::c_void,
-            (samplesBuffer as *const core::ffi::c_char)
-                .offset((*dictList.offset(u_0 as isize)).pos as isize)
-                as *const core::ffi::c_void,
+            samplesBuffer.byte_offset((*dictList.offset(u_0 as isize)).pos as isize),
             l as size_t,
         );
         u_0 = u_0.wrapping_add(1);
