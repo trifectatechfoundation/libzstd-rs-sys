@@ -502,23 +502,19 @@ unsafe fn ZDICT_tryMerge(
                     (*table.offset(u as isize)).length as size_t,
                 ) != 0
             {
-                let addedLength_1 =
-                    (if (elt.length).wrapping_sub((*table.offset(u as isize)).length) > 1 {
-                        (elt.length).wrapping_sub((*table.offset(u as isize)).length)
-                    } else {
-                        1
-                    }) as size_t;
+                let addedLength_1 = Ord::max(
+                    (elt.length).wrapping_sub((*table.offset(u as isize)).length),
+                    1,
+                ) as size_t;
                 (*table.offset(u as isize)).pos = elt.pos;
                 let fresh8 = &mut (*table.offset(u as isize)).savings;
                 *fresh8 = (*fresh8).wrapping_add(
                     (elt.savings as size_t * addedLength_1 / elt.length as size_t) as u32,
                 );
-                (*table.offset(u as isize)).length =
-                    if elt.length < ((*table.offset(u as isize)).length).wrapping_add(1) {
-                        elt.length
-                    } else {
-                        ((*table.offset(u as isize)).length).wrapping_add(1)
-                    };
+                (*table.offset(u as isize)).length = Ord::min(
+                    elt.length,
+                    ((*table.offset(u as isize)).length).wrapping_add(1),
+                );
                 return u;
             }
         }
@@ -736,11 +732,7 @@ unsafe fn ZDICT_countEStats(
     mut srcSize: size_t,
     notificationLevel: u32,
 ) {
-    let blockSizeMax = (if ((1) << 17) < (1) << params.cParams.windowLog {
-        (1) << 17
-    } else {
-        (1) << params.cParams.windowLog
-    }) as size_t;
+    let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
     let mut cSize: size_t = 0;
     if srcSize > blockSizeMax {
         srcSize = blockSizeMax;
@@ -1315,11 +1307,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
             dictContentSize,
         )
     }
-    if dictBufferCapacity < hSize.wrapping_add(dictContentSize) {
-        dictBufferCapacity
-    } else {
-        hSize.wrapping_add(dictContentSize)
-    }
+    Ord::min(dictBufferCapacity, hSize.wrapping_add(dictContentSize))
 }
 
 unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
@@ -1330,16 +1318,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     params: ZDICT_legacy_params_t,
 ) -> size_t {
     let nbSamples = samplesSizes.len() as u32;
-    let dictListSize =
-        if (if 10000 > nbSamples { 10000 } else { nbSamples }) > (maxDictSize / 16) as u32 {
-            if 10000 > nbSamples {
-                10000
-            } else {
-                nbSamples
-            }
-        } else {
-            (maxDictSize / 16) as u32
-        };
+    let dictListSize = Ord::max(Ord::max(10000, nbSamples), (maxDictSize / 16) as u32);
     let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>()))
         as *mut dictItem;
     let selectivity = if params.selectivityLevel == 0 {
@@ -1379,11 +1358,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         notificationLevel,
     );
     if params.zParams.notificationLevel >= 3 {
-        let nb = if (25) < (*dictList).pos {
-            25
-        } else {
-            (*dictList).pos
-        };
+        let nb = Ord::min(25, (*dictList).pos);
         let dictContentSize = ZDICT_dictSize(dictList);
         let mut u: core::ffi::c_uint = 0;
         if notificationLevel >= 3 {
@@ -1400,7 +1375,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         while u < nb {
             let pos = (*dictList.offset(u as isize)).pos;
             let length = (*dictList.offset(u as isize)).length;
-            let printedLength = if (40) < length { 40 } else { length };
+            let printedLength = Ord::min(40, length);
             if pos as size_t > samplesBuffSize
                 || pos.wrapping_add(length) as size_t > samplesBuffSize
             {
