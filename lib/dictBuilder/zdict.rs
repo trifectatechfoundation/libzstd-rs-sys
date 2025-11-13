@@ -228,16 +228,12 @@ unsafe fn ZDICT_analyzePos(
     let mut refinedEnd = end;
     if notificationLevel >= 4 {
         eprintln!();
-    }
-    if notificationLevel >= 4 {
         eprint!(
             "found {:>3} matches of length >= {} at pos {:>7}  ",
             end.wrapping_sub(start),
             MINMATCHLENGTH,
             pos as core::ffi::c_uint,
         );
-    }
-    if notificationLevel >= 4 {
         eprintln!();
     }
     mml = MINMATCHLENGTH as u32;
@@ -1190,8 +1186,6 @@ unsafe fn finalize_dictionary(
     hSize = 8;
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", "");
-    }
-    if notificationLevel >= 2 {
         eprintln!("statistics ...");
     }
     let eSize = ZDICT_analyzeEntropy(
@@ -1250,8 +1244,6 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     let mut hSize = 8;
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", "");
-    }
-    if notificationLevel >= 2 {
         eprintln!("statistics ...");
     }
     let res = ZDICT_analyzeEntropy(
@@ -1349,16 +1341,12 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         let nb = Ord::min(25, (*dictList).pos);
         let dictContentSize = ZDICT_dictSize(dictList);
         let mut u: core::ffi::c_uint = 0;
-        if notificationLevel >= 3 {
-            eprintln!(
-                "\n {} segments found, of total size {} ",
-                ((*dictList).pos).wrapping_sub(1),
-                dictContentSize,
-            );
-        }
-        if notificationLevel >= 3 {
-            eprintln!("list {} best segments ", nb.wrapping_sub(1));
-        }
+        eprintln!(
+            "\n {} segments found, of total size {} ",
+            ((*dictList).pos).wrapping_sub(1),
+            dictContentSize,
+        );
+        eprintln!("list {} best segments ", nb.wrapping_sub(1));
         u = 1;
         while u < nb {
             let pos = (*dictList.offset(u as isize)).pos;
@@ -1370,19 +1358,15 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                 free(dictList as *mut core::ffi::c_void);
                 return Error::GENERIC.to_error_code();
             }
-            if notificationLevel >= 3 {
-                eprint!(
-                    "{:3}:{:3} bytes at pos {:8}, savings {:7} bytes |",
-                    u,
-                    length,
-                    pos,
-                    (*dictList.offset(u as isize)).savings,
-                );
-            }
+            eprint!(
+                "{:3}:{:3} bytes at pos {:8}, savings {:7} bytes |",
+                u,
+                length,
+                pos,
+                (*dictList.offset(u as isize)).savings,
+            );
             ZDICT_printHex(&samples[..printedLength as usize]);
-            if notificationLevel >= 3 {
-                eprintln!("|");
-            }
+            eprintln!("|");
             u = u.wrapping_add(1);
         }
     }
@@ -1392,56 +1376,45 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
-    if (dictContentSize_0 as size_t) < targetDictSize / 4 {
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  warning : selected content significantly smaller than requested ({} < {}) ",
-                dictContentSize_0, maxDictSize,
-            );
-        }
-        if samplesBuffSize < 10 * targetDictSize && notificationLevel >= 2 {
+    if (dictContentSize_0 as size_t) < targetDictSize / 4 && notificationLevel >= 2 {
+        eprintln!(
+            "!  warning : selected content significantly smaller than requested ({} < {}) ",
+            dictContentSize_0, maxDictSize,
+        );
+        if samplesBuffSize < 10 * targetDictSize {
             eprintln!(
                 "!  consider increasing the number of samples (total size : {} MB)",
                 samplesBuffSize >> 20,
             );
         }
         if minRep > MINRATIO as core::ffi::c_uint {
-            if notificationLevel >= 2 {
-                eprintln!(
-                    "!  consider increasing selectivity to produce larger dictionary (-s{}) ",
-                    selectivity.wrapping_add(1),
-                );
-            }
-            if notificationLevel >= 2 {
-                eprintln!(
-                    "!  note : larger dictionaries are not necessarily better, test its efficiency on samples "
-                );
-            }
+            eprintln!(
+                "!  consider increasing selectivity to produce larger dictionary (-s{}) ",
+                selectivity.wrapping_add(1),
+            );
+            eprintln!(
+                "!  note : larger dictionaries are not necessarily better, test its efficiency on samples "
+            );
         }
     }
     if dictContentSize_0 as size_t > targetDictSize * 3
         && nbSamples > (2 * MINRATIO) as core::ffi::c_uint
         && selectivity > 1
+        && notificationLevel >= 2
     {
         let mut proposedSelectivity = selectivity.wrapping_sub(1);
         while nbSamples >> proposedSelectivity <= MINRATIO as core::ffi::c_uint {
             proposedSelectivity = proposedSelectivity.wrapping_sub(1);
         }
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  note : calculated dictionary significantly larger than requested ({} > {}) ",
-                dictContentSize_0, maxDictSize,
-            );
-        }
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  consider increasing dictionary size, or produce denser dictionary (-s{}) ",
-                proposedSelectivity,
-            );
-        }
-        if notificationLevel >= 2 {
-            eprintln!("!  always test dictionary efficiency on real samples");
-        }
+        eprintln!(
+            "!  note : calculated dictionary significantly larger than requested ({} > {}) ",
+            dictContentSize_0, maxDictSize,
+        );
+        eprintln!(
+            "!  consider increasing dictionary size, or produce denser dictionary (-s{}) ",
+            proposedSelectivity,
+        );
+        eprintln!("!  always test dictionary efficiency on real samples");
     }
     let max = (*dictList).pos;
     let mut currentSize = 0u32;
