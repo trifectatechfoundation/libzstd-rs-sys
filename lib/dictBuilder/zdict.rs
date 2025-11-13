@@ -142,8 +142,8 @@ unsafe fn ZDICT_count(
     }
 }
 
-const LLIMIT: core::ffi::c_int = 64;
-const MINMATCHLENGTH: core::ffi::c_int = 7;
+const LLIMIT: usize = 64;
+const MINMATCHLENGTH: usize = 7;
 unsafe fn ZDICT_analyzePos(
     doneMarks: *mut u8,
     suffix: *const core::ffi::c_uint,
@@ -152,11 +152,11 @@ unsafe fn ZDICT_analyzePos(
     minRatio: u32,
     notificationLevel: u32,
 ) -> DictItem {
-    let mut lengthList: [u32; 64] = [0; 64];
-    let mut cumulLength: [u32; 64] = [0; 64];
-    let mut savings: [u32; 64] = [0; 64];
+    let mut lengthList = [0u32; LLIMIT];
+    let mut cumulLength = [0u32; LLIMIT];
+    let mut savings = [0u32; LLIMIT];
     let b = buffer as *const u8;
-    let mut maxLength = LLIMIT as size_t;
+    let mut maxLength = LLIMIT;
     let mut pos = *suffix.offset(start as isize) as size_t;
     let mut end = start;
     let mut solution = DictItem::default();
@@ -196,7 +196,7 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
-        if length < MINMATCHLENGTH as size_t {
+        if length < MINMATCHLENGTH {
             break;
         }
     }
@@ -206,10 +206,10 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start as isize).sub(1) as isize) as *const core::ffi::c_void,
         );
-        if length_0 >= MINMATCHLENGTH as size_t {
+        if length_0 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
-        if length_0 < MINMATCHLENGTH as size_t {
+        if length_0 < MINMATCHLENGTH {
             break;
         }
     }
@@ -233,7 +233,7 @@ unsafe fn ZDICT_analyzePos(
         eprint!(
             "found {:>3} matches of length >= {} at pos {:>7}  ",
             end.wrapping_sub(start),
-            7,
+            MINMATCHLENGTH,
             pos as core::ffi::c_uint,
         );
     }
@@ -291,31 +291,28 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
-        if length_1 >= LLIMIT as size_t {
-            length_1 = (LLIMIT - 1) as size_t;
+        if length_1 >= LLIMIT {
+            length_1 = LLIMIT - 1;
         }
         let fresh0 = &mut (*lengthList.as_mut_ptr().add(length_1));
         *fresh0 = (*fresh0).wrapping_add(1);
-        if length_1 < MINMATCHLENGTH as size_t {
+        if length_1 < MINMATCHLENGTH {
             break;
         }
     }
-    let mut length_2 = MINMATCHLENGTH as size_t;
-    while (length_2 >= MINMATCHLENGTH as size_t) as core::ffi::c_int
-        & (start > 0) as core::ffi::c_int
-        != 0
-    {
+    let mut length_2 = MINMATCHLENGTH;
+    while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start.wrapping_sub(1) as isize) as isize)
                 as *const core::ffi::c_void,
         );
-        if length_2 >= LLIMIT as size_t {
-            length_2 = (LLIMIT - 1) as size_t;
+        if length_2 >= LLIMIT {
+            length_2 = LLIMIT - 1;
         }
         let fresh1 = &mut (*lengthList.as_mut_ptr().add(length_2));
         *fresh1 = (*fresh1).wrapping_add(1);
-        if length_2 >= MINMATCHLENGTH as size_t {
+        if length_2 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
     }
@@ -350,7 +347,7 @@ unsafe fn ZDICT_analyzePos(
         l = l.wrapping_sub(1);
     }
     maxLength = l as size_t;
-    if maxLength < MINMATCHLENGTH as size_t {
+    if maxLength < MINMATCHLENGTH {
         return solution;
     }
     *savings.as_mut_ptr().add(5) = 0;
