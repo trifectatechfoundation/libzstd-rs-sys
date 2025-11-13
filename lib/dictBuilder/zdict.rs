@@ -511,15 +511,12 @@ unsafe fn ZDICT_tryMerge(
     0
 }
 unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
-    let max = (*table).pos;
-    let mut u: u32 = 0;
     if id == 0 {
-        return;
+        return; // protection, should never happen
     }
-    u = id;
-    while u < max.wrapping_sub(1) {
-        *table.offset(u as isize) = *table.offset(u.wrapping_add(1) as isize);
-        u = u.wrapping_add(1);
+    let max = (*table).pos as isize; // table[0].pos stores the number of elements
+    for u in id as isize..max.wrapping_sub(1) {
+        *table.offset(u) = *table.offset(u.wrapping_add(1));
     }
     (*table).pos = ((*table).pos).wrapping_sub(1);
 }
