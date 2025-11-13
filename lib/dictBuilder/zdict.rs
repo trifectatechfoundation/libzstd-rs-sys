@@ -58,12 +58,12 @@ impl DictItem {
     }
 }
 
-const MINRATIO: core::ffi::c_int = 4;
-const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
+const MINRATIO: u32 = 4;
+const ZDICT_MAX_SAMPLES_SIZE: usize = 2000 << 20;
 #[expect(deprecated)]
-const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
+const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN as usize * MINRATIO as usize;
 
-const NOISELENGTH: core::ffi::c_int = 32;
+const NOISELENGTH: usize = 32;
 static g_selectivity_default: u32 = 9;
 
 /// Prints the bytes as characters, with non-printable characters replaced by '.', used for debug output
@@ -597,17 +597,17 @@ unsafe fn ZDICT_trainBuffer_legacy(
     if suffix0.is_null() || reverseSuffix.is_null() || doneMarks.is_null() || filePos.is_null() {
         result = Error::memory_allocation.to_error_code();
     } else {
-        if minRatio < MINRATIO as core::ffi::c_uint {
-            minRatio = MINRATIO as core::ffi::c_uint;
+        if minRatio < MINRATIO {
+            minRatio = MINRATIO;
         }
         core::ptr::write_bytes(doneMarks, 0, bufferSize.wrapping_add(16));
-        if bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t && notificationLevel >= 3 {
+        if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
             eprintln!(
                 "sample set too large : reduced to {} MB ...",
                 (2000) << 20 >> 20,
             );
         }
-        while bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t {
+        while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
             nbFiles = nbFiles.wrapping_sub(1);
             bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
         }
@@ -1170,7 +1170,7 @@ unsafe fn finalize_dictionary(
     if dictBufferCapacity < dictContentSize {
         return Err(Error::dstSize_tooSmall);
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         return Err(Error::dstSize_tooSmall);
     }
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
@@ -1307,7 +1307,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         params.selectivityLevel
     };
     let minRep = if selectivity > 30 {
-        MINRATIO as core::ffi::c_uint
+        MINRATIO
     } else {
         nbSamples >> selectivity
     };
@@ -1318,11 +1318,11 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     if dictList.is_null() {
         return Error::memory_allocation.to_error_code();
     }
-    if maxDictSize < ZDICT_DICTSIZE_MIN as size_t {
+    if maxDictSize < ZDICT_DICTSIZE_MIN {
         free(dictList as *mut core::ffi::c_void);
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if samplesBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
+    if samplesBuffSize < ZDICT_MIN_SAMPLES_SIZE {
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
@@ -1372,7 +1372,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
     let mut dictContentSize_0 = ZDICT_dictSize(dictList);
     #[expect(deprecated)]
-    if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN as core::ffi::c_uint {
+    if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN {
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
@@ -1387,7 +1387,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                 samplesBuffSize >> 20,
             );
         }
-        if minRep > MINRATIO as core::ffi::c_uint {
+        if minRep > MINRATIO {
             eprintln!(
                 "!  consider increasing selectivity to produce larger dictionary (-s{}) ",
                 selectivity.wrapping_add(1),
@@ -1398,12 +1398,12 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
     }
     if dictContentSize_0 as size_t > targetDictSize * 3
-        && nbSamples > (2 * MINRATIO) as core::ffi::c_uint
+        && nbSamples > 2 * MINRATIO
         && selectivity > 1
         && notificationLevel >= 2
     {
         let mut proposedSelectivity = selectivity.wrapping_sub(1);
-        while nbSamples >> proposedSelectivity <= MINRATIO as core::ffi::c_uint {
+        while nbSamples >> proposedSelectivity <= MINRATIO {
             proposedSelectivity = proposedSelectivity.wrapping_sub(1);
         }
         eprintln!(
@@ -1514,10 +1514,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     };
 
     let sBuffSize: size_t = samplesSizes.iter().sum();
-    if sBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
+    if sBuffSize < ZDICT_MIN_SAMPLES_SIZE {
         return 0;
     }
-    let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH as size_t)];
+    let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH)];
     core::ptr::copy_nonoverlapping(samplesBuffer.cast::<u8>(), new_buf.as_mut_ptr(), sBuffSize);
     fill_noise(&mut new_buf[sBuffSize..]);
     ZDICT_trainFromBuffer_unsafe_legacy(
