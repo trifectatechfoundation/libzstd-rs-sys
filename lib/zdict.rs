@@ -33,10 +33,10 @@ pub use crate::lib::dictBuilder::zdict::{
 pub mod experimental {
     use super::*;
 
-    pub const ZDICT_DICTSIZE_MIN: core::ffi::c_int = 256;
+    pub const ZDICT_DICTSIZE_MIN: usize = 256;
 
     #[deprecated = "will be removed in v1.6.0"]
-    pub const ZDICT_CONTENTSIZE_MIN: core::ffi::c_int = 128;
+    pub const ZDICT_CONTENTSIZE_MIN: u32 = 128;
 
     /// `k` and `d` are the only required parameters. For others, value 0 means default.
     #[derive(Debug, Copy, Clone, Default)]

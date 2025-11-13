@@ -570,7 +570,7 @@ fn train_from_buffer_fastcover(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
@@ -773,7 +773,7 @@ fn optimize_train_from_buffer_fastcover(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dict.len() < ZDICT_DICTSIZE_MIN as size_t {
+    if dict.len() < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
