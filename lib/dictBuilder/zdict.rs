@@ -55,18 +55,17 @@ const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATI
 
 const NOISELENGTH: core::ffi::c_int = 32;
 static g_selectivity_default: u32 = 9;
-unsafe fn ZDICT_printHex(ptr: *const core::ffi::c_void, length: size_t) {
-    let b = ptr as *const u8;
-    let mut u: size_t = 0;
-    u = 0;
-    while u < length {
-        let mut c = *b.add(u);
-        if (c as core::ffi::c_int) < 32 || c as core::ffi::c_int > 126 {
-            c = b'.';
+
+/// Prints the bytes as characters, with non-printable characters replaced by '.', used for debug output
+fn ZDICT_printHex(bytes: &[u8]) {
+    let s = bytes.iter().map(|byte| {
+        if (32..=126).contains(byte) {
+            char::from(*byte)
+        } else {
+            '.' // non-printable character
         }
-        eprint!("{}", char::from(c));
-        u = u.wrapping_add(1);
-    }
+    });
+    eprint!("{}", s.collect::<String>())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
@@ -1417,10 +1416,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                     (*dictList.offset(u as isize)).savings,
                 );
             }
-            ZDICT_printHex(
-                samples.as_ptr().offset(pos as isize) as *const core::ffi::c_void,
-                printedLength as size_t,
-            );
+            ZDICT_printHex(&samples[..printedLength as usize]);
             if notificationLevel >= 3 {
                 eprintln!("|");
             }
