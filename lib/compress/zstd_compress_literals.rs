@@ -250,7 +250,7 @@ pub unsafe fn ZSTD_compressLiterals(
         dstCapacity.wrapping_sub(lhSize),
         src,
         srcSize,
-        HUF_SYMBOLVALUE_MAX as core::ffi::c_uint,
+        HUF_SYMBOLVALUE_MAX,
         LitHufLog,
         entropyWorkspace,
         entropyWorkspaceSize,

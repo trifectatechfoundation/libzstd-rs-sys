@@ -3,15 +3,15 @@ use libc::size_t;
 use crate::lib::common::fse::FSE_DECOMPRESS_WKSP_SIZE_U32;
 use crate::lib::zstd::ZSTD_btultra;
 
-pub(crate) const HUF_BLOCKSIZE_MAX: core::ffi::c_int = 128 * 1024;
+pub(crate) const HUF_BLOCKSIZE_MAX: usize = 128 * 1024;
 
-pub(crate) const HUF_WORKSPACE_SIZE: core::ffi::c_int = ((8) << 10) + 512;
+pub(crate) const HUF_WORKSPACE_SIZE: usize = (8 << 10) + 512;
 
 /// Max runtime value of tableLog (due to static allocation); can be modified up to HUF_TABLELOG_ABSOLUTEMAX.
 pub(crate) const HUF_TABLELOG_MAX: usize = 12;
 /// Default tableLog value when none specified
-pub(crate) const HUF_TABLELOG_DEFAULT: core::ffi::c_int = 11;
-pub(crate) const HUF_SYMBOLVALUE_MAX: core::ffi::c_int = 255;
+pub(crate) const HUF_TABLELOG_DEFAULT: u32 = 11;
+pub(crate) const HUF_SYMBOLVALUE_MAX: u32 = 255;
 
 pub(crate) const HUF_CTABLE_WORKSPACE_SIZE_U32: usize =
     (4 * (HUF_SYMBOLVALUE_MAX as usize + 1)) + 192;
@@ -23,7 +23,7 @@ const _: () = assert!(
     "HUF_TABLELOG_MAX is too large !"
 );
 
-pub(crate) const HUF_CTABLEBOUND: core::ffi::c_int = 129;
+pub(crate) const HUF_CTABLEBOUND: usize = 129;
 
 pub(crate) type HUF_CElt = size_t;
 
