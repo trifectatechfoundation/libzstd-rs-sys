@@ -261,7 +261,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     if workspaceSize < ::core::mem::size_of::<HUF_WriteCTableWksp>() {
         return Error::GENERIC.to_error_code();
     }
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX as core::ffi::c_uint {
+    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     *((*wksp).bitsToWeight).as_mut_ptr() = 0;
@@ -672,7 +672,7 @@ unsafe fn HUF_sort(
         n = n.wrapping_add(1);
     }
 }
-pub const STARTNODE: core::ffi::c_int = HUF_SYMBOLVALUE_MAX + 1;
+pub const STARTNODE: core::ffi::c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;
 unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> core::ffi::c_int {
     let huffNode0 = huffNode.sub(1);
     let mut nonNullRank: core::ffi::c_int = 0;
@@ -817,9 +817,9 @@ pub unsafe fn HUF_buildCTable_wksp(
         return Error::workSpace_tooSmall.to_error_code();
     }
     if maxNbBits == 0 {
-        maxNbBits = HUF_TABLELOG_DEFAULT as u32;
+        maxNbBits = HUF_TABLELOG_DEFAULT;
     }
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX as u32 {
+    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     ptr::write_bytes(
@@ -879,7 +879,7 @@ pub unsafe fn HUF_validateCTable(
     (bad == 0) as core::ffi::c_int
 }
 pub fn HUF_compressBound(size: size_t) -> size_t {
-    (HUF_CTABLEBOUND as size_t).wrapping_add(size.wrapping_add(size >> 8).wrapping_add(8))
+    HUF_CTABLEBOUND.wrapping_add(size.wrapping_add(size >> 8).wrapping_add(8))
 }
 pub const HUF_BITS_IN_CONTAINER: size_t = (::core::mem::size_of::<size_t>()).wrapping_mul(8);
 unsafe fn HUF_initCStream(
@@ -1418,20 +1418,20 @@ unsafe fn HUF_compress_internal(
     if dstSize == 0 {
         return 0;
     }
-    if srcSize > HUF_BLOCKSIZE_MAX as size_t {
+    if srcSize > HUF_BLOCKSIZE_MAX {
         return Error::srcSize_wrong.to_error_code();
     }
     if huffLog > HUF_TABLELOG_MAX as core::ffi::c_uint {
         return Error::tableLog_tooLarge.to_error_code();
     }
-    if maxSymbolValue > HUF_SYMBOLVALUE_MAX as core::ffi::c_uint {
+    if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
     if maxSymbolValue == 0 {
-        maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
+        maxSymbolValue = HUF_SYMBOLVALUE_MAX;
     }
     if huffLog == 0 {
-        huffLog = HUF_TABLELOG_DEFAULT as core::ffi::c_uint;
+        huffLog = HUF_TABLELOG_DEFAULT;
     }
     if flags & HUF_flags_preferRepeat as core::ffi::c_int != 0
         && !repeat.is_null()

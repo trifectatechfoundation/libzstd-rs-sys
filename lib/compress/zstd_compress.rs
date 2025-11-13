@@ -5658,7 +5658,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>());
     let nodeWksp = countWkspStart.add(countWkspSize);
     let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
-    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
+    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
     let mut huffLog = LitHufLog;
     let mut repeat = (*prevHuf).repeatMode;
     libc::memcpy(
@@ -5904,7 +5904,7 @@ unsafe fn ZSTD_estimateBlockSize_literal(
     writeEntropy: core::ffi::c_int,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
-    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX as core::ffi::c_uint;
+    let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
     let literalSectionHeaderSize =
         (3 + (litSize >= ((1) << 10) as size_t) as core::ffi::c_int
             + (litSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
@@ -8494,7 +8494,7 @@ pub unsafe extern "C" fn ZSTD_estimateCDictSize_advanced(
     dictLoadMethod: ZSTD_dictLoadMethod_e,
 ) -> size_t {
     (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>()))
-        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
+        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             ZSTD_resolveRowMatchFinderMode(ZSTD_ParamSwitch_e::ZSTD_ps_auto, &cParams),
@@ -8569,8 +8569,7 @@ unsafe fn ZSTD_initCDict_internal(
     (*cdict).dictContentSize = dictSize;
     (*cdict).dictContentType = dictContentType;
     (*cdict).entropyWorkspace =
-        ZSTD_cwksp_reserve_object(&mut (*cdict).workspace, HUF_WORKSPACE_SIZE as size_t)
-            as *mut u32;
+        ZSTD_cwksp_reserve_object(&mut (*cdict).workspace, HUF_WORKSPACE_SIZE) as *mut u32;
     ZSTD_reset_compressedBlockState(&mut (*cdict).cBlockState);
     let err_code = ZSTD_reset_matchState(
         &mut (*cdict).matchState,
@@ -8615,7 +8614,7 @@ unsafe fn ZSTD_createCDict_advanced_internal(
     customMem: ZSTD_customMem,
 ) -> *mut ZSTD_CDict {
     let workspaceSize = (ZSTD_cwksp_alloc_size(::core::mem::size_of::<ZSTD_CDict>()))
-        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
+        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
         .wrapping_add(ZSTD_sizeof_matchState(
             &cParams,
             useRowMatchFinder,
@@ -8896,7 +8895,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCDict(
                 ::core::mem::size_of::<*mut core::ffi::c_void>(),
             ))
         })
-        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE as size_t))
+        .wrapping_add(ZSTD_cwksp_alloc_size(HUF_WORKSPACE_SIZE))
         .wrapping_add(matchStateSize);
     let mut cdict = core::ptr::null_mut::<ZSTD_CDict>();
     let mut params = ZSTD_CCtx_params_s {

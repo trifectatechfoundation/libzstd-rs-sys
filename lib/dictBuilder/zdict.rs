@@ -115,7 +115,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     let mut bs = Box::<ZSTD_compressedBlockState_t>::new_uninit();
     unsafe { ZSTD_reset_compressedBlockState(bs.as_mut_ptr()) };
 
-    let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE as size_t / 4);
+    let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE / 4);
 
     ZSTD_loadCEntropy(
         bs.as_mut_ptr(),
