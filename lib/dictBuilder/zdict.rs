@@ -41,13 +41,15 @@ struct offsetCount_t {
     offset: u32,
     count: u32,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
-struct dictItem {
+struct DictItem {
     pos: u32,
     length: u32,
     savings: u32,
 }
+
 const MINRATIO: core::ffi::c_int = 4;
 const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
 #[expect(deprecated)]
@@ -132,7 +134,7 @@ unsafe fn ZDICT_count(
     }
 }
 
-unsafe fn ZDICT_initDictItem(d: *mut dictItem) {
+unsafe fn ZDICT_initDictItem(d: *mut DictItem) {
     (*d).pos = 1;
     (*d).length = 0;
     (*d).savings = -(1 as core::ffi::c_int) as u32;
@@ -147,7 +149,7 @@ unsafe fn ZDICT_analyzePos(
     buffer: *const core::ffi::c_void,
     minRatio: u32,
     notificationLevel: u32,
-) -> dictItem {
+) -> DictItem {
     let mut lengthList: [u32; 64] = [0; 64];
     let mut cumulLength: [u32; 64] = [0; 64];
     let mut savings: [u32; 64] = [0; 64];
@@ -155,16 +157,7 @@ unsafe fn ZDICT_analyzePos(
     let mut maxLength = LLIMIT as size_t;
     let mut pos = *suffix.offset(start as isize) as size_t;
     let mut end = start;
-    let mut solution = dictItem {
-        pos: 0,
-        length: 0,
-        savings: 0,
-    };
-    ptr::write_bytes(
-        &mut solution as *mut dictItem as *mut u8,
-        0,
-        ::core::mem::size_of::<dictItem>(),
-    );
+    let mut solution = DictItem::default();
     *doneMarks.add(pos) = 1;
     if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
         == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
@@ -427,8 +420,8 @@ unsafe fn isIncluded(
     (u == length) as core::ffi::c_int
 }
 unsafe fn ZDICT_tryMerge(
-    table: *mut dictItem,
-    mut elt: dictItem,
+    table: *mut DictItem,
+    mut elt: DictItem,
     eltNbToSkip: u32,
     buffer: *const core::ffi::c_void,
 ) -> u32 {
@@ -522,7 +515,7 @@ unsafe fn ZDICT_tryMerge(
     }
     0
 }
-unsafe fn ZDICT_removeDictItem(table: *mut dictItem, id: u32) {
+unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
     let max = (*table).pos;
     let mut u: u32 = 0;
     if id == 0 {
@@ -536,9 +529,9 @@ unsafe fn ZDICT_removeDictItem(table: *mut dictItem, id: u32) {
     (*table).pos = ((*table).pos).wrapping_sub(1);
 }
 unsafe fn ZDICT_insertDictItem(
-    table: *mut dictItem,
+    table: *mut DictItem,
     maxSize: u32,
-    elt: dictItem,
+    elt: DictItem,
     buffer: *const core::ffi::c_void,
 ) {
     let mut mergeId = ZDICT_tryMerge(table, elt, 0, buffer);
@@ -566,7 +559,7 @@ unsafe fn ZDICT_insertDictItem(
     *table.offset(current.wrapping_add(1) as isize) = elt;
     (*table).pos = nextElt.wrapping_add(1);
 }
-unsafe fn ZDICT_dictSize(dictList: *const dictItem) -> u32 {
+unsafe fn ZDICT_dictSize(dictList: *const DictItem) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
@@ -577,7 +570,7 @@ unsafe fn ZDICT_dictSize(dictList: *const dictItem) -> u32 {
     dictSize
 }
 unsafe fn ZDICT_trainBuffer_legacy(
-    dictList: *mut dictItem,
+    dictList: *mut DictItem,
     dictListSize: u32,
     buffer: *const core::ffi::c_void,
     mut bufferSize: size_t,
@@ -663,11 +656,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             let mut cursor: u32 = 0;
             cursor = 0;
             while (cursor as size_t) < bufferSize {
-                let mut solution = dictItem {
-                    pos: 0,
-                    length: 0,
-                    savings: 0,
-                };
+                let mut solution = DictItem::default();
                 if *doneMarks.offset(cursor as isize) != 0 {
                     cursor = cursor.wrapping_add(1);
                 } else {
@@ -1319,8 +1308,8 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
 ) -> size_t {
     let nbSamples = samplesSizes.len() as u32;
     let dictListSize = Ord::max(Ord::max(10000, nbSamples), (maxDictSize / 16) as u32);
-    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>()))
-        as *mut dictItem;
+    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<DictItem>()))
+        as *mut DictItem;
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {
