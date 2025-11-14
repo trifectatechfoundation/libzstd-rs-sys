@@ -31,42 +31,55 @@ use crate::lib::zstd::*;
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct EStats_ress_t {
+    /// dictionary
     dict: *mut ZSTD_CDict,
+    /// working context
     zc: *mut ZSTD_CCtx,
+    /// must be ZSTD_BLOCKSIZE_MAX allocated
     workPlace: *mut core::ffi::c_void,
 }
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct offsetCount_t {
     offset: u32,
     count: u32,
 }
-#[derive(Copy, Clone)]
+
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
-struct dictItem {
+struct DictItem {
     pos: u32,
     length: u32,
     savings: u32,
 }
-const MINRATIO: core::ffi::c_int = 4;
-const ZDICT_MAX_SAMPLES_SIZE: core::ffi::c_uint = (2000) << 20;
-#[expect(deprecated)]
-const ZDICT_MIN_SAMPLES_SIZE: core::ffi::c_int = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
-const NOISELENGTH: core::ffi::c_int = 32;
-static g_selectivity_default: u32 = 9;
-unsafe fn ZDICT_printHex(ptr: *const core::ffi::c_void, length: size_t) {
-    let b = ptr as *const u8;
-    let mut u: size_t = 0;
-    u = 0;
-    while u < length {
-        let mut c = *b.add(u);
-        if (c as core::ffi::c_int) < 32 || c as core::ffi::c_int > 126 {
-            c = b'.';
-        }
-        eprint!("{}", char::from(c));
-        u = u.wrapping_add(1);
+impl DictItem {
+    fn init(&mut self) {
+        self.pos = 1;
+        self.length = 0;
+        self.savings = -1i32 as u32;
     }
+}
+
+const MINRATIO: u32 = 4;
+const ZDICT_MAX_SAMPLES_SIZE: usize = 2000 << 20;
+#[expect(deprecated)]
+const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN as usize * MINRATIO as usize;
+
+const NOISELENGTH: usize = 32;
+static g_selectivity_default: u32 = 9;
+
+/// Prints the bytes as characters, with non-printable characters replaced by '.', used for debug output
+fn ZDICT_printHex(bytes: &[u8]) {
+    let s = bytes.iter().map(|byte| {
+        if (32..=126).contains(byte) {
+            char::from(*byte)
+        } else {
+            '.' // non-printable character
+        }
+    });
+    eprint!("{}", s.collect::<String>())
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
@@ -106,7 +119,7 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     let mut bs = Box::<ZSTD_compressedBlockState_t>::new_uninit();
     unsafe { ZSTD_reset_compressedBlockState(bs.as_mut_ptr()) };
 
-    let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE as size_t / 4);
+    let mut wksp = Box::<[u32]>::new_uninit_slice(HUF_WORKSPACE_SIZE / 4);
 
     ZSTD_loadCEntropy(
         bs.as_mut_ptr(),
@@ -133,14 +146,8 @@ unsafe fn ZDICT_count(
     }
 }
 
-unsafe fn ZDICT_initDictItem(d: *mut dictItem) {
-    (*d).pos = 1;
-    (*d).length = 0;
-    (*d).savings = -(1 as core::ffi::c_int) as u32;
-}
-
-const LLIMIT: core::ffi::c_int = 64;
-const MINMATCHLENGTH: core::ffi::c_int = 7;
+const LLIMIT: usize = 64;
+const MINMATCHLENGTH: usize = 7;
 unsafe fn ZDICT_analyzePos(
     doneMarks: *mut u8,
     suffix: *const core::ffi::c_uint,
@@ -148,24 +155,15 @@ unsafe fn ZDICT_analyzePos(
     buffer: *const core::ffi::c_void,
     minRatio: u32,
     notificationLevel: u32,
-) -> dictItem {
-    let mut lengthList: [u32; 64] = [0; 64];
-    let mut cumulLength: [u32; 64] = [0; 64];
-    let mut savings: [u32; 64] = [0; 64];
+) -> DictItem {
+    let mut lengthList = [0u32; LLIMIT];
+    let mut cumulLength = [0u32; LLIMIT];
+    let mut savings = [0u32; LLIMIT];
     let b = buffer as *const u8;
-    let mut maxLength = LLIMIT as size_t;
+    let mut maxLength = LLIMIT;
     let mut pos = *suffix.offset(start as isize) as size_t;
     let mut end = start;
-    let mut solution = dictItem {
-        pos: 0,
-        length: 0,
-        savings: 0,
-    };
-    ptr::write_bytes(
-        &mut solution as *mut dictItem as *mut u8,
-        0,
-        ::core::mem::size_of::<dictItem>(),
-    );
+    let mut solution = DictItem::default();
     *doneMarks.add(pos) = 1;
     if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
         == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
@@ -202,7 +200,7 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
-        if length < MINMATCHLENGTH as size_t {
+        if length < MINMATCHLENGTH {
             break;
         }
     }
@@ -212,10 +210,10 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start as isize).sub(1) as isize) as *const core::ffi::c_void,
         );
-        if length_0 >= MINMATCHLENGTH as size_t {
+        if length_0 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
-        if length_0 < MINMATCHLENGTH as size_t {
+        if length_0 < MINMATCHLENGTH {
             break;
         }
     }
@@ -234,16 +232,12 @@ unsafe fn ZDICT_analyzePos(
     let mut refinedEnd = end;
     if notificationLevel >= 4 {
         eprintln!();
-    }
-    if notificationLevel >= 4 {
         eprint!(
             "found {:>3} matches of length >= {} at pos {:>7}  ",
             end.wrapping_sub(start),
-            7,
+            MINMATCHLENGTH,
             pos as core::ffi::c_uint,
         );
-    }
-    if notificationLevel >= 4 {
         eprintln!();
     }
     mml = MINMATCHLENGTH as u32;
@@ -297,31 +291,28 @@ unsafe fn ZDICT_analyzePos(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
         );
-        if length_1 >= LLIMIT as size_t {
-            length_1 = (LLIMIT - 1) as size_t;
+        if length_1 >= LLIMIT {
+            length_1 = LLIMIT - 1;
         }
         let fresh0 = &mut (*lengthList.as_mut_ptr().add(length_1));
         *fresh0 = (*fresh0).wrapping_add(1);
-        if length_1 < MINMATCHLENGTH as size_t {
+        if length_1 < MINMATCHLENGTH {
             break;
         }
     }
-    let mut length_2 = MINMATCHLENGTH as size_t;
-    while (length_2 >= MINMATCHLENGTH as size_t) as core::ffi::c_int
-        & (start > 0) as core::ffi::c_int
-        != 0
-    {
+    let mut length_2 = MINMATCHLENGTH;
+    while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(*suffix.offset(start.wrapping_sub(1) as isize) as isize)
                 as *const core::ffi::c_void,
         );
-        if length_2 >= LLIMIT as size_t {
-            length_2 = (LLIMIT - 1) as size_t;
+        if length_2 >= LLIMIT {
+            length_2 = LLIMIT - 1;
         }
         let fresh1 = &mut (*lengthList.as_mut_ptr().add(length_2));
         *fresh1 = (*fresh1).wrapping_add(1);
-        if length_2 >= MINMATCHLENGTH as size_t {
+        if length_2 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
     }
@@ -356,7 +347,7 @@ unsafe fn ZDICT_analyzePos(
         l = l.wrapping_sub(1);
     }
     maxLength = l as size_t;
-    if maxLength < MINMATCHLENGTH as size_t {
+    if maxLength < MINMATCHLENGTH {
         return solution;
     }
     *savings.as_mut_ptr().add(5) = 0;
@@ -410,6 +401,7 @@ unsafe fn ZDICT_analyzePos(
     }
     solution
 }
+
 unsafe fn isIncluded(
     in_0: *const core::ffi::c_void,
     container: *const core::ffi::c_void,
@@ -427,9 +419,10 @@ unsafe fn isIncluded(
     }
     (u == length) as core::ffi::c_int
 }
+
 unsafe fn ZDICT_tryMerge(
-    table: *mut dictItem,
-    mut elt: dictItem,
+    table: *mut DictItem,
+    mut elt: DictItem,
     eltNbToSkip: u32,
     buffer: *const core::ffi::c_void,
 ) -> u32 {
@@ -503,23 +496,19 @@ unsafe fn ZDICT_tryMerge(
                     (*table.offset(u as isize)).length as size_t,
                 ) != 0
             {
-                let addedLength_1 =
-                    (if (elt.length).wrapping_sub((*table.offset(u as isize)).length) > 1 {
-                        (elt.length).wrapping_sub((*table.offset(u as isize)).length)
-                    } else {
-                        1
-                    }) as size_t;
+                let addedLength_1 = Ord::max(
+                    (elt.length).wrapping_sub((*table.offset(u as isize)).length),
+                    1,
+                ) as size_t;
                 (*table.offset(u as isize)).pos = elt.pos;
                 let fresh8 = &mut (*table.offset(u as isize)).savings;
                 *fresh8 = (*fresh8).wrapping_add(
                     (elt.savings as size_t * addedLength_1 / elt.length as size_t) as u32,
                 );
-                (*table.offset(u as isize)).length =
-                    if elt.length < ((*table.offset(u as isize)).length).wrapping_add(1) {
-                        elt.length
-                    } else {
-                        ((*table.offset(u as isize)).length).wrapping_add(1)
-                    };
+                (*table.offset(u as isize)).length = Ord::min(
+                    elt.length,
+                    ((*table.offset(u as isize)).length).wrapping_add(1),
+                );
                 return u;
             }
         }
@@ -527,25 +516,26 @@ unsafe fn ZDICT_tryMerge(
     }
     0
 }
-unsafe fn ZDICT_removeDictItem(table: *mut dictItem, id: u32) {
-    let max = (*table).pos;
-    let mut u: u32 = 0;
+
+unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
+    debug_assert_ne!(id, 0);
     if id == 0 {
-        return;
+        return; // protection, should never happen
     }
-    u = id;
-    while u < max.wrapping_sub(1) {
-        *table.offset(u as isize) = *table.offset(u.wrapping_add(1) as isize);
-        u = u.wrapping_add(1);
+    let max = (*table).pos as isize; // convention: table[0].pos stores the number of elements
+    for u in id as isize..max.wrapping_sub(1) {
+        *table.offset(u) = *table.offset(u.wrapping_add(1));
     }
     (*table).pos = ((*table).pos).wrapping_sub(1);
 }
+
 unsafe fn ZDICT_insertDictItem(
-    table: *mut dictItem,
+    table: *mut DictItem,
     maxSize: u32,
-    elt: dictItem,
+    elt: DictItem,
     buffer: *const core::ffi::c_void,
 ) {
+    // merge if possible
     let mut mergeId = ZDICT_tryMerge(table, elt, 0, buffer);
     if mergeId != 0 {
         let mut newMerge = 1;
@@ -558,6 +548,8 @@ unsafe fn ZDICT_insertDictItem(
         }
         return;
     }
+
+    // insert
     let mut current: u32 = 0;
     let mut nextElt = (*table).pos;
     if nextElt >= maxSize {
@@ -571,7 +563,8 @@ unsafe fn ZDICT_insertDictItem(
     *table.offset(current.wrapping_add(1) as isize) = elt;
     (*table).pos = nextElt.wrapping_add(1);
 }
-unsafe fn ZDICT_dictSize(dictList: *const dictItem) -> u32 {
+
+unsafe fn ZDICT_dictSize(dictList: *const DictItem) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
@@ -581,8 +574,9 @@ unsafe fn ZDICT_dictSize(dictList: *const dictItem) -> u32 {
     }
     dictSize
 }
+
 unsafe fn ZDICT_trainBuffer_legacy(
-    dictList: *mut dictItem,
+    dictList: *mut DictItem,
     dictListSize: u32,
     buffer: *const core::ffi::c_void,
     mut bufferSize: size_t,
@@ -608,26 +602,32 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let mut result = 0;
     let mut displayClock = Instant::now();
     let refresh_rate = Duration::from_millis(300);
+
+    // init
     if notificationLevel >= 2 {
-        eprintln!("\r{:70 }\r", "");
+        eprintln!("\r{:70 }\r", ""); // clean display line
     }
     if suffix0.is_null() || reverseSuffix.is_null() || doneMarks.is_null() || filePos.is_null() {
         result = Error::memory_allocation.to_error_code();
     } else {
-        if minRatio < MINRATIO as core::ffi::c_uint {
-            minRatio = MINRATIO as core::ffi::c_uint;
+        if minRatio < MINRATIO {
+            minRatio = MINRATIO;
         }
         core::ptr::write_bytes(doneMarks, 0, bufferSize.wrapping_add(16));
-        if bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t && notificationLevel >= 3 {
+
+        // limit sample set size (divsufsort limitation)
+        if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
             eprintln!(
                 "sample set too large : reduced to {} MB ...",
                 (2000) << 20 >> 20,
             );
         }
-        while bufferSize > ZDICT_MAX_SAMPLES_SIZE as size_t {
+        while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
             nbFiles = nbFiles.wrapping_sub(1);
             bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
         }
+
+        // sort
         if notificationLevel >= 2 {
             eprintln!(
                 "sorting {} files of total size {} MB ...",
@@ -645,12 +645,16 @@ unsafe fn ZDICT_trainBuffer_legacy(
         } else {
             *suffix.add(bufferSize) = bufferSize as core::ffi::c_uint;
             *suffix0 = bufferSize as core::ffi::c_uint;
+
+            // build reverse suffix sort
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
                 *reverseSuffix.offset(*suffix.add(pos) as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
             }
+            // Note: filePos tracks borders between samples.
+            // It's not used at this stage, but planned to become useful in a later update
             *filePos = 0;
             pos = 1;
             while pos < nbFiles as size_t {
@@ -659,20 +663,18 @@ unsafe fn ZDICT_trainBuffer_legacy(
                     as u32;
                 pos = pos.wrapping_add(1);
             }
+
             if notificationLevel >= 2 {
                 eprintln!("finding patterns ...");
             }
             if notificationLevel >= 3 {
                 eprintln!("minimum ratio : {} ", minRatio);
             }
+
             let mut cursor: u32 = 0;
             cursor = 0;
             while (cursor as size_t) < bufferSize {
-                let mut solution = dictItem {
-                    pos: 0,
-                    length: 0,
-                    savings: 0,
-                };
+                let mut solution = DictItem::default();
                 if *doneMarks.offset(cursor as isize) != 0 {
                     cursor = cursor.wrapping_add(1);
                 } else {
@@ -737,11 +739,7 @@ unsafe fn ZDICT_countEStats(
     mut srcSize: size_t,
     notificationLevel: u32,
 ) {
-    let blockSizeMax = (if ((1) << 17) < (1) << params.cParams.windowLog {
-        (1) << 17
-    } else {
-        (1) << params.cParams.windowLog
-    }) as size_t;
+    let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
     let mut cSize: size_t = 0;
     if srcSize > blockSizeMax {
         srcSize = blockSizeMax;
@@ -766,17 +764,19 @@ unsafe fn ZDICT_countEStats(
         }
         return;
     }
+
+    // if cSize is 0, the block is not compressible
     if cSize != 0 {
         let seqStorePtr = ZSTD_getSeqStore(esr.zc);
 
-        /* literals stats */
+        // literals stats
         let mut bytePtr = (*seqStorePtr).litStart as *const u8;
         while bytePtr < (*seqStorePtr).lit as *const u8 {
             countLit[usize::from(*bytePtr)] += 1;
             bytePtr = bytePtr.add(1);
         }
 
-        /* seqStats */
+        // seqStats
         let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
             as core::ffi::c_long as u32;
         ZSTD_seqToCodes(seqStorePtr);
@@ -795,6 +795,7 @@ unsafe fn ZDICT_countEStats(
         }
 
         if nbSeq >= 2 {
+            // rep offsets
             let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
             let mut offset1 = ((*seq).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
             let mut offset2 = ((*seq.add(1)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
@@ -824,6 +825,8 @@ fn ZDICT_insertSortCount(
     }
 }
 
+/// Rewrite `countLit` to contain a mostly flat but still compressible distribution of literals.
+/// Necessary to avoid generating a non-compressible distribution that HUF_writeCTable() cannot encode.
 fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit.fill(2);
 
@@ -832,12 +835,12 @@ fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit[254] = 1;
 }
 
-const OFFCODE_MAX: u32 = 30;
+const OFFCODE_MAX: u32 = 30; // only applicable to first block
 unsafe fn ZDICT_analyzeEntropy(
     dstBuffer: *mut core::ffi::c_void,
     maxDstSize: size_t,
     compressionLevel: core::ffi::c_int,
-    srcBuffer: *const core::ffi::c_void,
+    src: &[u8],
     fileSizes: &[usize],
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
@@ -853,7 +856,7 @@ unsafe fn ZDICT_analyzeEntropy(
         dstBuffer as *mut u8,
         maxDstSize,
         compressionLevel,
-        srcBuffer,
+        src,
         fileSizes,
         dictBuffer,
         dictBufferSize,
@@ -872,7 +875,7 @@ unsafe fn analyze_entropy_internal(
     mut dstPtr: *mut u8,
     mut maxDstSize: size_t,
     mut compressionLevel: core::ffi::c_int,
-    srcBuffer: *const core::ffi::c_void,
+    src: &[u8],
     fileSizes: &[usize],
     dictBuffer: *const core::ffi::c_void,
     dictBufferSize: size_t,
@@ -884,14 +887,14 @@ unsafe fn analyze_entropy_internal(
     const KB: usize = 1 << 10;
     let offcodeMax = ZSTD_highbit32(dictBufferSize.wrapping_add(128 * KB) as u32);
     if offcodeMax > OFFCODE_MAX {
-        return Err(Error::dictionaryCreation_failed);
+        return Err(Error::dictionaryCreation_failed); // dictionary too large
     }
 
     let mut offcodeNCount = [0i16; OFFCODE_MAX as usize + 1];
     let mut matchLengthNCount = [0i16; MaxML as usize + 1];
     let mut litLengthNCount = [0i16; MaxLL as usize + 1];
 
-    let mut countLit = [1u32; 256];
+    let mut countLit = [1u32; 256]; // any character must be described
     let mut offcodeCount = [1u32; OFFCODE_MAX as usize + 1];
     let mut matchLengthCount = [1u32; MaxML as usize + 1];
     let mut litLengthCount = [1u32; MaxLL as usize + 1];
@@ -944,7 +947,7 @@ unsafe fn analyze_entropy_internal(
             &mut matchLengthCount,
             &mut litLengthCount,
             &mut repOffset,
-            srcBuffer.byte_add(pos),
+            src[pos..].as_ptr() as *const core::ffi::c_void,
             *fileSize,
             notificationLevel,
         );
@@ -975,10 +978,11 @@ unsafe fn analyze_entropy_internal(
         return Err(err);
     }
     if maxNbBits == 8 {
+        // not compressible: will fail on HUF_writeCTable
         if notificationLevel >= 2 {
             eprintln!("warning : pathological dataset : literals are not compressible : samples are noisy or too regular ");
         }
-        ZDICT_flatLit(&mut countLit);
+        ZDICT_flatLit(&mut countLit); // replace distribution by a fake "mostly flat but still compressible" distribution, that HUF_writeCTable can encode
         maxNbBits = HUF_buildCTable_wksp(
             hufTable.as_mut_ptr(),
             countLit.as_mut_ptr(),
@@ -1124,15 +1128,9 @@ unsafe fn analyze_entropy_internal(
         return Err(Error::dstSize_tooSmall);
     }
 
-    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, *repStartValue.as_ptr());
-    MEM_writeLE32(
-        dstPtr.add(4) as *mut core::ffi::c_void,
-        *repStartValue.as_ptr().add(1),
-    );
-    MEM_writeLE32(
-        dstPtr.add(8) as *mut core::ffi::c_void,
-        *repStartValue.as_ptr().add(2),
-    );
+    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, repStartValue[0]);
+    MEM_writeLE32(dstPtr.add(4) as *mut core::ffi::c_void, repStartValue[1]);
+    MEM_writeLE32(dstPtr.add(8) as *mut core::ffi::c_void, repStartValue[2]);
 
     Ok(eSize.wrapping_add(12))
 }
@@ -1153,13 +1151,19 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     } else {
         core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
     };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
 
     finalize_dictionary(
         dictBuffer,
         dictBufferCapacity,
         customDictContent,
         dictContentSize,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params,
     )
@@ -1167,12 +1171,14 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     .unwrap_or_else(|e| e)
 }
 
+const HBUFFSIZE: core::ffi::c_int = 256; // should be large enough for all entropy headers
+
 unsafe fn finalize_dictionary(
     dictBuffer: *mut core::ffi::c_void,
     dictBufferCapacity: size_t,
     customDictContent: *const core::ffi::c_void,
     mut dictContentSize: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> Result<usize, Error> {
@@ -1184,14 +1190,19 @@ unsafe fn finalize_dictionary(
         params.compressionLevel
     };
     let notificationLevel = params.notificationLevel;
+    // the final dictionary content must be at least as large as the largest repcode
     let minContentSize = *repStartValue.iter().max().unwrap() as size_t;
     let mut paddingSize: size_t = 0;
+
+    // check conditions
     if dictBufferCapacity < dictContentSize {
         return Err(Error::dstSize_tooSmall);
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         return Err(Error::dstSize_tooSmall);
     }
+
+    // dictionary header
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
     let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
     let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
@@ -1203,26 +1214,30 @@ unsafe fn finalize_dictionary(
     };
     header[4..][..4].copy_from_slice(&dictID.to_le_bytes());
     hSize = 8;
+
+    // entropy tables
     if notificationLevel >= 2 {
-        eprintln!("\r{:70 }\r", "");
-    }
-    if notificationLevel >= 2 {
+        eprintln!("\r{:70 }\r", ""); // clean display line
         eprintln!("statistics ...");
     }
     let eSize = ZDICT_analyzeEntropy(
         header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
         (HBUFFSIZE as size_t).wrapping_sub(hSize),
         compressionLevel,
-        samplesBuffer,
+        samples,
         samplesSizes,
         customDictContent,
         dictContentSize,
         notificationLevel,
     )?;
     hSize = hSize.wrapping_add(eSize);
+
+    // shrink the content size if it doesn't fit in the buffer
     if hSize.wrapping_add(dictContentSize) > dictBufferCapacity {
         dictContentSize = dictBufferCapacity.wrapping_sub(hSize);
     }
+
+    // pad the dictionary content with zeros if it is too small
     if dictContentSize < minContentSize {
         if hSize.wrapping_add(minContentSize) > dictBufferCapacity {
             return Err(Error::dstSize_tooSmall);
@@ -1231,28 +1246,38 @@ unsafe fn finalize_dictionary(
     } else {
         paddingSize = 0;
     }
+
     let dictSize = hSize
         .wrapping_add(paddingSize)
         .wrapping_add(dictContentSize);
+
+    // The dictionary consists of the header, optional padding, and the content.
+    // The padding comes before the content because the "best" position in the
+    // dictionary is the last byte.
     let outDictHeader = dictBuffer as *mut u8;
     let outDictPadding = outDictHeader.add(hSize);
     let outDictContent = outDictPadding.add(paddingSize);
+
+    // First copy the `customDictContent` into its final location.
+    // `customDictContent` and `dictBuffer` may overlap, so we must do this before
+    // any other writes into the output buffer.
     core::ptr::copy(
         customDictContent.cast::<u8>(),
         outDictContent,
         dictContentSize,
     );
+    // Then copy the header & padding into the output buffer.
     core::ptr::copy_nonoverlapping(header.as_ptr(), outDictHeader, hSize);
     core::ptr::write_bytes(outDictPadding, 0, paddingSize);
+
     Ok(dictSize)
 }
 
-const HBUFFSIZE: core::ffi::c_int = 256;
 unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     dictBuffer: *mut core::ffi::c_void,
     dictContentSize: size_t,
     dictBufferCapacity: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> size_t {
@@ -1263,17 +1288,17 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     };
     let notificationLevel = params.notificationLevel;
     let mut hSize = 8;
+
+    // calculate entropy tables
     if notificationLevel >= 2 {
-        eprintln!("\r{:70 }\r", "");
-    }
-    if notificationLevel >= 2 {
+        eprintln!("\r{:70 }\r", ""); // clean display line
         eprintln!("statistics ...");
     }
     let res = ZDICT_analyzeEntropy(
         dictBuffer.byte_add(hSize),
         dictBufferCapacity.wrapping_sub(hSize),
         compressionLevel,
-        samplesBuffer,
+        samples,
         samplesSizes,
         dictBuffer
             .byte_add(dictBufferCapacity)
@@ -1285,6 +1310,8 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         Ok(eSize) => hSize = hSize.wrapping_add(eSize),
         Err(err) => return err.to_error_code(),
     };
+
+    // add dictionary header (after entropy tables)
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);
     let randomID = ZSTD_XXH64(
         dictBuffer
@@ -1301,6 +1328,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         compliantID
     };
     MEM_writeLE32(dictBuffer.byte_add(4), dictID);
+
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
         core::ptr::copy(
             (dictBuffer as *mut core::ffi::c_char)
@@ -1310,178 +1338,158 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
             dictContentSize,
         )
     }
-    if dictBufferCapacity < hSize.wrapping_add(dictContentSize) {
-        dictBufferCapacity
-    } else {
-        hSize.wrapping_add(dictContentSize)
-    }
+    Ord::min(dictBufferCapacity, hSize.wrapping_add(dictContentSize))
 }
 
+/// Warning: `samplesBuffer` must be followed by the noisy guard band!!!
+///
+/// # Returns
+///
+/// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
+/// - an error code, which can be tested with [`ZDICT_isError`]
 unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictBuffer: *mut core::ffi::c_void,
     maxDictSize: size_t,
-    samplesBuffer: *const core::ffi::c_void,
+    samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_legacy_params_t,
 ) -> size_t {
     let nbSamples = samplesSizes.len() as u32;
-    let dictListSize =
-        if (if 10000 > nbSamples { 10000 } else { nbSamples }) > (maxDictSize / 16) as u32 {
-            if 10000 > nbSamples {
-                10000
-            } else {
-                nbSamples
-            }
-        } else {
-            (maxDictSize / 16) as u32
-        };
-    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<dictItem>()))
-        as *mut dictItem;
+    let dictListSize = Ord::max(Ord::max(10000, nbSamples), (maxDictSize / 16) as u32);
+    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<DictItem>()))
+        as *mut DictItem;
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {
         params.selectivityLevel
     };
     let minRep = if selectivity > 30 {
-        MINRATIO as core::ffi::c_uint
+        MINRATIO
     } else {
         nbSamples >> selectivity
     };
     let targetDictSize = maxDictSize;
     let samplesBuffSize = samplesSizes.iter().sum();
-    let mut dictSize = 0;
     let notificationLevel = params.zParams.notificationLevel;
+
+    // checks
     if dictList.is_null() {
         return Error::memory_allocation.to_error_code();
     }
-    if maxDictSize < ZDICT_DICTSIZE_MIN as size_t {
+    if maxDictSize < ZDICT_DICTSIZE_MIN {
+        // requested dictionary size is too small
         free(dictList as *mut core::ffi::c_void);
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if samplesBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
+    if samplesBuffSize < ZDICT_MIN_SAMPLES_SIZE {
+        // not enough source to create dictionary
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
-    ZDICT_initDictItem(dictList);
+
+    dictList.as_mut().unwrap().init();
+
+    // build dictionary
     ZDICT_trainBuffer_legacy(
         dictList,
         dictListSize,
-        samplesBuffer,
+        samples.as_ptr() as *mut core::ffi::c_void,
         samplesBuffSize,
         samplesSizes.as_ptr(),
         nbSamples,
         minRep,
         notificationLevel,
     );
+
+    // display best matches
     if params.zParams.notificationLevel >= 3 {
-        let nb = if (25) < (*dictList).pos {
-            25
-        } else {
-            (*dictList).pos
-        };
+        let nb = Ord::min(25, (*dictList).pos);
         let dictContentSize = ZDICT_dictSize(dictList);
-        let mut u: core::ffi::c_uint = 0;
-        if notificationLevel >= 3 {
-            eprintln!(
-                "\n {} segments found, of total size {} ",
-                ((*dictList).pos).wrapping_sub(1),
-                dictContentSize,
-            );
-        }
-        if notificationLevel >= 3 {
-            eprintln!("list {} best segments ", nb.wrapping_sub(1));
-        }
-        u = 1;
-        while u < nb {
+        eprintln!(
+            "\n {} segments found, of total size {} ",
+            ((*dictList).pos).wrapping_sub(1),
+            dictContentSize,
+        );
+        eprintln!("list {} best segments ", nb.wrapping_sub(1));
+        for u in 1..nb {
             let pos = (*dictList.offset(u as isize)).pos;
             let length = (*dictList.offset(u as isize)).length;
-            let printedLength = if (40) < length { 40 } else { length };
+            let printedLength = Ord::min(40, length);
+
+            debug_assert!((pos + length) as size_t <= samplesBuffSize);
             if pos as size_t > samplesBuffSize
                 || pos.wrapping_add(length) as size_t > samplesBuffSize
             {
                 free(dictList as *mut core::ffi::c_void);
-                return Error::GENERIC.to_error_code();
+                return Error::GENERIC.to_error_code(); // should never happen
             }
-            if notificationLevel >= 3 {
-                eprint!(
-                    "{:3}:{:3} bytes at pos {:8}, savings {:7} bytes |",
-                    u,
-                    length,
-                    pos,
-                    (*dictList.offset(u as isize)).savings,
-                );
-            }
-            ZDICT_printHex(
-                samplesBuffer.byte_offset(pos as isize),
-                printedLength as size_t,
+            eprint!(
+                "{:3}:{:3} bytes at pos {:8}, savings {:7} bytes |",
+                u,
+                length,
+                pos,
+                (*dictList.offset(u as isize)).savings,
             );
-            if notificationLevel >= 3 {
-                eprintln!("|");
-            }
-            u = u.wrapping_add(1);
+            ZDICT_printHex(&samples[..printedLength as usize]);
+            eprintln!("|");
         }
     }
+
+    // create dictionary
     let mut dictContentSize_0 = ZDICT_dictSize(dictList);
     #[expect(deprecated)]
-    if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN as core::ffi::c_uint {
+    if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN {
+        // dictionary content too small
         free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
-    if (dictContentSize_0 as size_t) < targetDictSize / 4 {
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  warning : selected content significantly smaller than requested ({} < {}) ",
-                dictContentSize_0, maxDictSize,
-            );
-        }
-        if samplesBuffSize < 10 * targetDictSize && notificationLevel >= 2 {
+
+    if (dictContentSize_0 as size_t) < targetDictSize / 4 && notificationLevel >= 2 {
+        eprintln!(
+            "!  warning : selected content significantly smaller than requested ({} < {}) ",
+            dictContentSize_0, maxDictSize,
+        );
+        if samplesBuffSize < 10 * targetDictSize {
             eprintln!(
                 "!  consider increasing the number of samples (total size : {} MB)",
                 samplesBuffSize >> 20,
             );
         }
-        if minRep > MINRATIO as core::ffi::c_uint {
-            if notificationLevel >= 2 {
-                eprintln!(
-                    "!  consider increasing selectivity to produce larger dictionary (-s{}) ",
-                    selectivity.wrapping_add(1),
-                );
-            }
-            if notificationLevel >= 2 {
-                eprintln!(
-                    "!  note : larger dictionaries are not necessarily better, test its efficiency on samples "
-                );
-            }
+        if minRep > MINRATIO {
+            eprintln!(
+                "!  consider increasing selectivity to produce larger dictionary (-s{}) ",
+                selectivity.wrapping_add(1),
+            );
+            eprintln!(
+                "!  note : larger dictionaries are not necessarily better, test its efficiency on samples "
+            );
         }
     }
+
     if dictContentSize_0 as size_t > targetDictSize * 3
-        && nbSamples > (2 * MINRATIO) as core::ffi::c_uint
+        && nbSamples > 2 * MINRATIO
         && selectivity > 1
+        && notificationLevel >= 2
     {
         let mut proposedSelectivity = selectivity.wrapping_sub(1);
-        while nbSamples >> proposedSelectivity <= MINRATIO as core::ffi::c_uint {
+        while nbSamples >> proposedSelectivity <= MINRATIO {
             proposedSelectivity = proposedSelectivity.wrapping_sub(1);
         }
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  note : calculated dictionary significantly larger than requested ({} > {}) ",
-                dictContentSize_0, maxDictSize,
-            );
-        }
-        if notificationLevel >= 2 {
-            eprintln!(
-                "!  consider increasing dictionary size, or produce denser dictionary (-s{}) ",
-                proposedSelectivity,
-            );
-        }
-        if notificationLevel >= 2 {
-            eprintln!("!  always test dictionary efficiency on real samples");
-        }
+        eprintln!(
+            "!  note : calculated dictionary significantly larger than requested ({} > {}) ",
+            dictContentSize_0, maxDictSize,
+        );
+        eprintln!(
+            "!  consider increasing dictionary size, or produce denser dictionary (-s{}) ",
+            proposedSelectivity,
+        );
+        eprintln!("!  always test dictionary efficiency on real samples");
     }
-    let max = (*dictList).pos;
+
+    // limit dictionary size
+    let max = (*dictList).pos; // convention: dictList[0].pos contains the number of useful elements
     let mut currentSize = 0u32;
-    let mut n: u32 = 0;
-    n = 1;
+    let mut n: u32 = 1;
     while n < max {
         currentSize = currentSize.wrapping_add((*dictList.offset(n as isize)).length);
         if currentSize as size_t > targetDictSize {
@@ -1493,31 +1501,34 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
     (*dictList).pos = n;
     dictContentSize_0 = currentSize;
-    let mut u_0: u32 = 0;
+
+    // build dictionary content
     let mut ptr = (dictBuffer as *mut u8).add(maxDictSize);
-    u_0 = 1;
-    while u_0 < (*dictList).pos {
-        let l = (*dictList.offset(u_0 as isize)).length;
+    for u in 1..(*dictList).pos {
+        let l = (*dictList.offset(u as isize)).length;
         ptr = ptr.offset(-(l as isize));
+        debug_assert!(ptr >= dictBuffer as *mut u8);
         if ptr < dictBuffer as *mut u8 {
             free(dictList as *mut core::ffi::c_void);
-            return Error::GENERIC.to_error_code();
+            return Error::GENERIC.to_error_code(); // should not happen
         }
         memcpy(
             ptr as *mut core::ffi::c_void,
-            samplesBuffer.byte_offset((*dictList.offset(u_0 as isize)).pos as isize),
+            samples[(*dictList.offset(u as isize)).pos as usize..].as_ptr()
+                as *const core::ffi::c_void,
             l as size_t,
         );
-        u_0 = u_0.wrapping_add(1);
     }
-    dictSize = ZDICT_addEntropyTablesFromBuffer_advanced(
+
+    let dictSize = ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize_0 as size_t,
         maxDictSize,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params.zParams,
     );
+
     free(dictList as *mut core::ffi::c_void);
     dictSize
 }
@@ -1573,16 +1584,19 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer_legacy(
     };
 
     let sBuffSize: size_t = samplesSizes.iter().sum();
-    if sBuffSize < ZDICT_MIN_SAMPLES_SIZE as size_t {
+    if sBuffSize < ZDICT_MIN_SAMPLES_SIZE {
+        // not enough content => no dictionary
         return 0;
     }
-    let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH as size_t)];
+
+    let mut new_buf = vec![0u8; sBuffSize.wrapping_add(NOISELENGTH)];
     core::ptr::copy_nonoverlapping(samplesBuffer.cast::<u8>(), new_buf.as_mut_ptr(), sBuffSize);
-    fill_noise(&mut new_buf[sBuffSize..]);
+    fill_noise(&mut new_buf[sBuffSize..]); // guard band, for end of buffer condition
+
     ZDICT_trainFromBuffer_unsafe_legacy(
         dictBuffer,
         dictBufferCapacity,
-        new_buf.as_ptr().cast::<core::ffi::c_void>(),
+        &new_buf,
         samplesSizes,
         params,
     )
@@ -1636,7 +1650,10 @@ pub unsafe extern "C" fn ZDICT_trainFromBuffer(
         steps: 4,
         ..Default::default()
     };
+
+    // Use default level since no compression level information is available
     params.zParams.compressionLevel = ZSTD_CLEVEL_DEFAULT;
+
     ZDICT_optimizeTrainFromBuffer_fastCover(
         dictBuffer,
         dictBufferCapacity,
@@ -1662,13 +1679,19 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     } else {
         core::slice::from_raw_parts(samplesSizes, nbSamples as usize)
     };
+    let totalSamplesSize = samplesSizes.iter().sum::<usize>();
+    let samples = if samplesBuffer.is_null() || totalSamplesSize == 0 {
+        &[]
+    } else {
+        core::slice::from_raw_parts(samplesBuffer.cast::<u8>(), totalSamplesSize)
+    };
 
     let params = ZDICT_params_t::default();
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize,
         dictBufferCapacity,
-        samplesBuffer,
+        samples,
         samplesSizes,
         params,
     )

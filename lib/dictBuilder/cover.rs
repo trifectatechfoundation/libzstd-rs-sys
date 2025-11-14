@@ -883,7 +883,7 @@ fn train_from_buffer_cover(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dictBufferCapacity < ZDICT_DICTSIZE_MIN as size_t {
+    if dictBufferCapacity < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256,);
         }
@@ -1129,7 +1129,7 @@ pub(super) fn COVER_selectDict(
     }
     largestDict = dictContentSize;
     largestCompressed = totalCompressedSize;
-    dictContentSize = ZDICT_DICTSIZE_MIN as size_t;
+    dictContentSize = ZDICT_DICTSIZE_MIN;
     while dictContentSize < largestDict {
         candidateDictBuffer[..largestDict].copy_from_slice(&largestDictbuffer[..largestDict]);
         dictContentSize = unsafe {
@@ -1349,7 +1349,7 @@ unsafe fn optimize_train_from_buffer_cover(
         }
         return Error::srcSize_wrong.to_error_code();
     }
-    if dict.len() < ZDICT_DICTSIZE_MIN as size_t {
+    if dict.len() < ZDICT_DICTSIZE_MIN {
         if displayLevel >= 1 {
             eprintln!("dictBufferCapacity must be at least {}", 256);
         }
