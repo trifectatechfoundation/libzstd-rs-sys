@@ -518,6 +518,7 @@ unsafe fn ZDICT_tryMerge(
 }
 
 unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
+    debug_assert_ne!(id, 0);
     if id == 0 {
         return; // protection, should never happen
     }
@@ -1414,6 +1415,8 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
             let pos = (*dictList.offset(u as isize)).pos;
             let length = (*dictList.offset(u as isize)).length;
             let printedLength = Ord::min(40, length);
+
+            debug_assert!((pos + length) as size_t <= samplesBuffSize);
             if pos as size_t > samplesBuffSize
                 || pos.wrapping_add(length) as size_t > samplesBuffSize
             {
@@ -1504,6 +1507,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     for u in 1..(*dictList).pos {
         let l = (*dictList.offset(u as isize)).length;
         ptr = ptr.offset(-(l as isize));
+        debug_assert!(ptr >= dictBuffer as *mut u8);
         if ptr < dictBuffer as *mut u8 {
             free(dictList as *mut core::ffi::c_void);
             return Error::GENERIC.to_error_code(); // should not happen
