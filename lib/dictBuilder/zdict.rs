@@ -946,7 +946,7 @@ unsafe fn analyze_entropy_internal(
             &mut matchLengthCount,
             &mut litLengthCount,
             &mut repOffset,
-            src.as_ptr().add(pos) as *const core::ffi::c_void,
+            src[pos..].as_ptr() as *const core::ffi::c_void,
             *fileSize,
             notificationLevel,
         );
@@ -1127,15 +1127,9 @@ unsafe fn analyze_entropy_internal(
         return Err(Error::dstSize_tooSmall);
     }
 
-    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, *repStartValue.as_ptr());
-    MEM_writeLE32(
-        dstPtr.add(4) as *mut core::ffi::c_void,
-        *repStartValue.as_ptr().add(1),
-    );
-    MEM_writeLE32(
-        dstPtr.add(8) as *mut core::ffi::c_void,
-        *repStartValue.as_ptr().add(2),
-    );
+    MEM_writeLE32(dstPtr as *mut core::ffi::c_void, repStartValue[0]);
+    MEM_writeLE32(dstPtr.add(4) as *mut core::ffi::c_void, repStartValue[1]);
+    MEM_writeLE32(dstPtr.add(8) as *mut core::ffi::c_void, repStartValue[2]);
 
     Ok(eSize.wrapping_add(12))
 }
@@ -1516,9 +1510,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
         memcpy(
             ptr as *mut core::ffi::c_void,
-            samples
-                .as_ptr()
-                .offset((*dictList.offset(u as isize)).pos as isize)
+            samples[(*dictList.offset(u as isize)).pos as usize..].as_ptr()
                 as *const core::ffi::c_void,
             l as size_t,
         );
