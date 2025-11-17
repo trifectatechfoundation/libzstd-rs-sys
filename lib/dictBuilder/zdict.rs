@@ -583,8 +583,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
     mut minRatio: core::ffi::c_uint,
     notificationLevel: u32,
 ) -> size_t {
-    let mut suffix = vec![0u32; bufferSize + 1];
-    let reverseSuffix = malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let doneMarks = malloc(
         bufferSize
             .wrapping_add(16)
@@ -600,7 +598,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
     }
-    if reverseSuffix.is_null() || doneMarks.is_null() || filePos.is_null() {
+    if doneMarks.is_null() || filePos.is_null() {
         result = Error::memory_allocation.to_error_code();
     } else {
         if minRatio < MINRATIO {
@@ -628,6 +626,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
                 bufferSize >> 20,
             );
         }
+        let mut suffix = vec![0u32; bufferSize + 1];
         let divSuftSortResult = divsufsort(
             core::slice::from_raw_parts(buffer as *const u8, bufferSize),
             std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[0..bufferSize]),
@@ -639,10 +638,11 @@ unsafe fn ZDICT_trainBuffer_legacy(
             suffix[bufferSize] = bufferSize as core::ffi::c_uint;
 
             // build reverse suffix sort
+            let mut reverseSuffix = vec![0u32; bufferSize];
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
-                *reverseSuffix.offset(suffix[pos] as isize) = pos as u32;
+                reverseSuffix[suffix[pos] as usize] = pos as u32;
                 pos = pos.wrapping_add(1);
             }
             // Note: filePos tracks borders between samples.
@@ -673,7 +673,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
                     solution = ZDICT_analyzePos(
                         doneMarks,
                         &suffix,
-                        *reverseSuffix.offset(cursor as isize),
+                        reverseSuffix[cursor as usize],
                         buffer,
                         minRatio,
                         notificationLevel,
@@ -699,7 +699,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
             }
         }
     }
-    free(reverseSuffix as *mut core::ffi::c_void);
     free(doneMarks as *mut core::ffi::c_void);
     free(filePos as *mut core::ffi::c_void);
     result
