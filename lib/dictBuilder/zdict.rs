@@ -583,7 +583,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     mut minRatio: core::ffi::c_uint,
     notificationLevel: u32,
 ) -> size_t {
-    let mut suffix = vec![0u32; bufferSize + 2];
+    let mut suffix = vec![0u32; bufferSize + 1];
     let reverseSuffix = malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let doneMarks = malloc(
         bufferSize
@@ -630,20 +630,19 @@ unsafe fn ZDICT_trainBuffer_legacy(
         }
         let divSuftSortResult = divsufsort(
             core::slice::from_raw_parts(buffer as *const u8, bufferSize),
-            std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[1..bufferSize + 1]),
+            std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[0..bufferSize]),
             false,
         );
         if divSuftSortResult != 0 {
             result = Error::GENERIC.to_error_code();
         } else {
-            suffix[bufferSize + 1] = bufferSize as core::ffi::c_uint;
-            suffix[0] = bufferSize as core::ffi::c_uint;
+            suffix[bufferSize] = bufferSize as core::ffi::c_uint;
 
             // build reverse suffix sort
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
-                *reverseSuffix.offset(suffix[pos + 1] as isize) = pos as u32;
+                *reverseSuffix.offset(suffix[pos] as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
             }
             // Note: filePos tracks borders between samples.
@@ -673,7 +672,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
                 } else {
                     solution = ZDICT_analyzePos(
                         doneMarks,
-                        &suffix[1..],
+                        &suffix,
                         *reverseSuffix.offset(cursor as isize),
                         buffer,
                         minRatio,
