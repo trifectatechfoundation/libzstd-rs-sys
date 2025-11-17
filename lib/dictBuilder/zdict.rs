@@ -6,7 +6,7 @@ use libc::{free, malloc, memcpy, size_t};
 use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{HUF_CElt, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
-use crate::lib::common::mem::{MEM_read16, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
+use crate::lib::common::mem::{MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -152,14 +152,13 @@ unsafe fn ZDICT_analyzePos(
     doneMarks: &mut [u8],
     suffix: &[u32],
     mut start: u32,
-    buffer: *const core::ffi::c_void,
+    buffer: &[u8],
     minRatio: u32,
     notificationLevel: u32,
 ) -> DictItem {
     let mut lengthList = [0u32; LLIMIT];
     let mut cumulLength = [0u32; LLIMIT];
     let mut savings = [0u32; LLIMIT];
-    let b = buffer as *const u8;
     let mut maxLength = LLIMIT;
     let mut pos = suffix[start as usize] as size_t;
     let mut end = start;
@@ -168,29 +167,20 @@ unsafe fn ZDICT_analyzePos(
     doneMarks[pos] = 1;
 
     // trivial repetition cases
-    if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
-        == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
-        || MEM_read16(b.add(pos).add(1) as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(b.add(pos).add(3) as *const core::ffi::c_void) as core::ffi::c_int
-        || MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void) as core::ffi::c_int
+    if buffer[pos..pos + 2] == buffer[pos + 2..pos + 4]
+        || buffer[pos + 1..pos + 3] == buffer[pos + 3..pos + 5]
+        || buffer[pos + 2..pos + 4] == buffer[pos + 4..pos + 6]
     {
         // skip and mark segment
-        let pattern16 = MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void);
-        let mut u: u32 = 0;
-        let mut patternEnd = 6u32;
-        while MEM_read16(b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void)
-            as core::ffi::c_int
-            == pattern16 as core::ffi::c_int
-        {
-            patternEnd = patternEnd.wrapping_add(2);
+        let pattern16 = &buffer[pos + 4..pos + 6];
+        let mut patternEnd = 6usize;
+        while buffer[pos + patternEnd..pos + patternEnd + 2] == *pattern16 {
+            patternEnd += 2;
         }
-        if *b.add(pos.wrapping_add(patternEnd as size_t)) as core::ffi::c_int
-            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1)) as core::ffi::c_int
-        {
-            patternEnd = patternEnd.wrapping_add(1);
+        if buffer[pos + patternEnd] == buffer[pos + patternEnd - 1] {
+            patternEnd += 1;
         }
-        u = 1;
+        let mut u = 1;
         while u < patternEnd {
             doneMarks[pos.wrapping_add(u as size_t)] = 1;
             u = u.wrapping_add(1);
@@ -203,8 +193,8 @@ unsafe fn ZDICT_analyzePos(
     loop {
         end = end.wrapping_add(1);
         length = ZDICT_count(
-            b.add(pos) as *const core::ffi::c_void,
-            b.offset(suffix[end as usize] as isize) as *const core::ffi::c_void,
+            buffer[pos..].as_ptr() as *const core::ffi::c_void,
+            buffer[suffix[end as usize] as usize..].as_ptr() as *const core::ffi::c_void,
         );
         if length < MINMATCHLENGTH {
             break;
@@ -215,8 +205,8 @@ unsafe fn ZDICT_analyzePos(
     let mut length_0: size_t = 0;
     loop {
         length_0 = ZDICT_count(
-            b.add(pos) as *const core::ffi::c_void,
-            b.offset(suffix[start as usize - 1] as isize) as *const core::ffi::c_void,
+            buffer[pos..].as_ptr() as *const core::ffi::c_void,
+            buffer[suffix[start as usize - 1] as usize..].as_ptr() as *const core::ffi::c_void,
         );
         if length_0 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
@@ -263,15 +253,13 @@ unsafe fn ZDICT_analyzePos(
         let mut selectedID = currentID;
         id = refinedStart;
         while id < refinedEnd {
-            if *b.offset((suffix[id as usize]).wrapping_add(mml) as isize) as core::ffi::c_int
-                != currentChar as core::ffi::c_int
-            {
+            if buffer[(suffix[id as usize] + mml) as usize] != currentChar {
                 if currentCount > selectedCount {
                     selectedCount = currentCount;
                     selectedID = currentID;
                 }
                 currentID = id;
-                currentChar = *b.offset((suffix[id as usize]).wrapping_add(mml) as isize);
+                currentChar = buffer[(suffix[id as usize] + mml) as usize];
                 currentCount = 0;
             }
             currentCount = currentCount.wrapping_add(1);
@@ -304,8 +292,8 @@ unsafe fn ZDICT_analyzePos(
     loop {
         end = end.wrapping_add(1);
         length_1 = ZDICT_count(
-            b.add(pos) as *const core::ffi::c_void,
-            b.offset(suffix[end as usize] as isize) as *const core::ffi::c_void,
+            buffer[pos..].as_ptr() as *const core::ffi::c_void,
+            buffer[suffix[end as usize] as usize..].as_ptr() as *const core::ffi::c_void,
         );
         if length_1 >= LLIMIT {
             length_1 = LLIMIT - 1;
@@ -321,8 +309,9 @@ unsafe fn ZDICT_analyzePos(
     let mut length_2 = MINMATCHLENGTH;
     while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
-            b.add(pos) as *const core::ffi::c_void,
-            b.offset(suffix[start.wrapping_sub(1) as usize] as isize) as *const core::ffi::c_void,
+            buffer[pos..].as_ptr() as *const core::ffi::c_void,
+            buffer[suffix[start.wrapping_sub(1) as usize] as usize..].as_ptr()
+                as *const core::ffi::c_void,
         );
         if length_2 >= LLIMIT {
             length_2 = LLIMIT - 1;
@@ -361,10 +350,8 @@ unsafe fn ZDICT_analyzePos(
 
     // reduce maxLength in case of final into repetitive data
     let mut l = maxLength as u32;
-    let c = *b.add(pos.wrapping_add(maxLength).wrapping_sub(1));
-    while *b.add(pos.wrapping_add(l as size_t).wrapping_sub(2)) as core::ffi::c_int
-        == c as core::ffi::c_int
-    {
+    let c = buffer[pos + maxLength - 1];
+    while buffer[pos + l as usize - 2] == c {
         l = l.wrapping_sub(1);
     }
     maxLength = l as size_t;
@@ -411,8 +398,8 @@ unsafe fn ZDICT_analyzePos(
             length_3 = solution.length;
         } else {
             length_3 = ZDICT_count(
-                b.add(pos) as *const core::ffi::c_void,
-                b.offset(testedPos as isize) as *const core::ffi::c_void,
+                buffer[pos..].as_ptr() as *const core::ffi::c_void,
+                buffer[testedPos as usize..].as_ptr() as *const core::ffi::c_void,
             ) as u32;
             if length_3 > solution.length {
                 length_3 = solution.length;
@@ -616,6 +603,8 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let mut displayClock = Instant::now();
     let refresh_rate = Duration::from_millis(300);
 
+    let buffer = core::slice::from_raw_parts(buffer as *const u8, bufferSize);
+
     // init
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
@@ -647,7 +636,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     }
     let mut suffix = vec![0u32; bufferSize + 1];
     let divSuftSortResult = divsufsort(
-        core::slice::from_raw_parts(buffer as *const u8, bufferSize),
+        buffer,
         std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[0..bufferSize]),
         false,
     );
@@ -700,7 +689,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             continue;
         }
 
-        ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
+        ZDICT_insertDictItem(dictList, dictListSize, solution, buffer.as_ptr().cast());
         cursor += solution.length as usize;
 
         if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
