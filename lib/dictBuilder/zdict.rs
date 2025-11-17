@@ -149,7 +149,7 @@ unsafe fn ZDICT_count(
 const LLIMIT: usize = 64;
 const MINMATCHLENGTH: usize = 7;
 unsafe fn ZDICT_analyzePos(
-    doneMarks: *mut u8,
+    doneMarks: &mut [u8],
     suffix_slice: &[u32],
     mut start: u32,
     buffer: *const core::ffi::c_void,
@@ -174,7 +174,7 @@ unsafe fn ZDICT_analyzePos(
     let mut pos = suffix(start as usize) as size_t;
     let mut end = start;
     let mut solution = DictItem::default();
-    *doneMarks.add(pos) = 1;
+    doneMarks[pos] = 1;
     if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
         == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
         || MEM_read16(b.add(pos).add(1) as *const core::ffi::c_void) as core::ffi::c_int
@@ -198,7 +198,7 @@ unsafe fn ZDICT_analyzePos(
         }
         u = 1;
         while u < patternEnd {
-            *doneMarks.add(pos.wrapping_add(u as size_t)) = 1;
+            doneMarks[pos.wrapping_add(u as size_t)] = 1;
             u = u.wrapping_add(1);
         }
         return solution;
@@ -231,7 +231,7 @@ unsafe fn ZDICT_analyzePos(
         let mut idx: u32 = 0;
         idx = start;
         while idx < end {
-            *doneMarks.offset(suffix(idx as usize) as isize) = 1;
+            doneMarks[suffix(idx as usize) as usize] = 1;
             idx = idx.wrapping_add(1);
         }
         return solution;
@@ -402,7 +402,7 @@ unsafe fn ZDICT_analyzePos(
         pEnd = testedPos.wrapping_add(length_3);
         p = testedPos;
         while p < pEnd {
-            *doneMarks.offset(p as isize) = 1;
+            doneMarks[p as usize] = 1;
             p = p.wrapping_add(1);
         }
         id_0 = id_0.wrapping_add(1);
@@ -593,11 +593,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
     mut minRatio: core::ffi::c_uint,
     notificationLevel: u32,
 ) -> size_t {
-    let doneMarks = malloc(
-        bufferSize
-            .wrapping_add(16)
-            .wrapping_mul(::core::mem::size_of::<u8>()),
-    ) as *mut u8;
     let filePos =
         malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let mut result = 0;
@@ -608,13 +603,12 @@ unsafe fn ZDICT_trainBuffer_legacy(
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
     }
-    if doneMarks.is_null() || filePos.is_null() {
+    if filePos.is_null() {
         result = Error::memory_allocation.to_error_code();
     } else {
         if minRatio < MINRATIO {
             minRatio = MINRATIO;
         }
-        core::ptr::write_bytes(doneMarks, 0, bufferSize.wrapping_add(16));
 
         // limit sample set size (divsufsort limitation)
         if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
@@ -667,15 +661,16 @@ unsafe fn ZDICT_trainBuffer_legacy(
                 eprintln!("minimum ratio : {} ", minRatio);
             }
 
+            let mut doneMarks = vec![0u8; bufferSize + 16];
             let mut cursor = 0usize;
             while cursor < bufferSize {
-                if *doneMarks.add(cursor) != 0 {
+                if doneMarks[cursor] != 0 {
                     cursor += 1;
                     continue;
                 }
 
                 let solution = ZDICT_analyzePos(
-                    doneMarks,
+                    &mut doneMarks,
                     &suffix,
                     reverseSuffix[cursor],
                     buffer,
@@ -701,7 +696,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
             }
         }
     }
-    free(doneMarks as *mut core::ffi::c_void);
     free(filePos as *mut core::ffi::c_void);
     result
 }
