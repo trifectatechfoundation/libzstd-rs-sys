@@ -150,7 +150,7 @@ const LLIMIT: usize = 64;
 const MINMATCHLENGTH: usize = 7;
 unsafe fn ZDICT_analyzePos(
     doneMarks: *mut u8,
-    suffix: *const core::ffi::c_uint,
+    suffix_slice: &[u32],
     mut start: u32,
     buffer: *const core::ffi::c_void,
     minRatio: u32,
@@ -161,7 +161,17 @@ unsafe fn ZDICT_analyzePos(
     let mut savings = [0u32; LLIMIT];
     let b = buffer as *const u8;
     let mut maxLength = LLIMIT;
-    let mut pos = *suffix.offset(start as isize) as size_t;
+
+    // The C implementation maps index `len` and `-1` to the length of the suffix array.
+    let suffix = |index| {
+        if index == usize::MAX || index == suffix_slice.len() {
+            suffix_slice.len() as u32
+        } else {
+            suffix_slice[index]
+        }
+    };
+
+    let mut pos = suffix(start as usize) as size_t;
     let mut end = start;
     let mut solution = DictItem::default();
     *doneMarks.add(pos) = 1;
@@ -198,7 +208,7 @@ unsafe fn ZDICT_analyzePos(
         end = end.wrapping_add(1);
         length = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
+            b.offset(suffix(end as usize) as isize) as *const core::ffi::c_void,
         );
         if length < MINMATCHLENGTH {
             break;
@@ -208,7 +218,7 @@ unsafe fn ZDICT_analyzePos(
     loop {
         length_0 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(start as isize).sub(1) as isize) as *const core::ffi::c_void,
+            b.offset(suffix((start as usize).wrapping_sub(1)) as isize) as *const core::ffi::c_void,
         );
         if length_0 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
@@ -221,7 +231,7 @@ unsafe fn ZDICT_analyzePos(
         let mut idx: u32 = 0;
         idx = start;
         while idx < end {
-            *doneMarks.offset(*suffix.offset(idx as isize) as isize) = 1;
+            *doneMarks.offset(suffix(idx as usize) as isize) = 1;
             idx = idx.wrapping_add(1);
         }
         return solution;
@@ -250,8 +260,7 @@ unsafe fn ZDICT_analyzePos(
         let mut selectedID = currentID;
         id = refinedStart;
         while id < refinedEnd {
-            if *b.offset((*suffix.offset(id as isize)).wrapping_add(mml) as isize)
-                as core::ffi::c_int
+            if *b.offset((suffix(id as usize)).wrapping_add(mml) as isize) as core::ffi::c_int
                 != currentChar as core::ffi::c_int
             {
                 if currentCount > selectedCount {
@@ -259,7 +268,7 @@ unsafe fn ZDICT_analyzePos(
                     selectedID = currentID;
                 }
                 currentID = id;
-                currentChar = *b.offset((*suffix.offset(id as isize)).wrapping_add(mml) as isize);
+                currentChar = *b.offset((suffix(id as usize)).wrapping_add(mml) as isize);
                 currentCount = 0;
             }
             currentCount = currentCount.wrapping_add(1);
@@ -277,7 +286,7 @@ unsafe fn ZDICT_analyzePos(
         mml = mml.wrapping_add(1);
     }
     start = refinedStart;
-    pos = *suffix.offset(refinedStart as isize) as size_t;
+    pos = suffix(refinedStart as usize) as size_t;
     end = start;
     ptr::write_bytes(
         lengthList.as_mut_ptr() as *mut u8,
@@ -289,7 +298,7 @@ unsafe fn ZDICT_analyzePos(
         end = end.wrapping_add(1);
         length_1 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(end as isize) as isize) as *const core::ffi::c_void,
+            b.offset(suffix(end as usize) as isize) as *const core::ffi::c_void,
         );
         if length_1 >= LLIMIT {
             length_1 = LLIMIT - 1;
@@ -304,8 +313,7 @@ unsafe fn ZDICT_analyzePos(
     while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
-            b.offset(*suffix.offset(start.wrapping_sub(1) as isize) as isize)
-                as *const core::ffi::c_void,
+            b.offset(suffix(start.wrapping_sub(1) as usize) as isize) as *const core::ffi::c_void,
         );
         if length_2 >= LLIMIT {
             length_2 = LLIMIT - 1;
@@ -379,7 +387,7 @@ unsafe fn ZDICT_analyzePos(
         let mut p: u32 = 0;
         let mut pEnd: u32 = 0;
         let mut length_3: u32 = 0;
-        let testedPos = *suffix.offset(id_0 as isize);
+        let testedPos = suffix(id_0 as usize);
         if testedPos as size_t == pos {
             length_3 = solution.length;
         } else {
@@ -585,12 +593,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     mut minRatio: core::ffi::c_uint,
     notificationLevel: u32,
 ) -> size_t {
-    let suffix0 = malloc(
-        bufferSize
-            .wrapping_add(2)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>()),
-    ) as *mut core::ffi::c_uint;
-    let suffix = suffix0.add(1);
+    let mut suffix = vec![0u32; bufferSize];
     let reverseSuffix = malloc(bufferSize.wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
     let doneMarks = malloc(
         bufferSize
@@ -607,7 +610,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
     }
-    if suffix0.is_null() || reverseSuffix.is_null() || doneMarks.is_null() || filePos.is_null() {
+    if reverseSuffix.is_null() || doneMarks.is_null() || filePos.is_null() {
         result = Error::memory_allocation.to_error_code();
     } else {
         if minRatio < MINRATIO {
@@ -637,20 +640,17 @@ unsafe fn ZDICT_trainBuffer_legacy(
         }
         let divSuftSortResult = divsufsort(
             core::slice::from_raw_parts(buffer as *const u8, bufferSize),
-            core::slice::from_raw_parts_mut(suffix as *mut i32, bufferSize),
+            std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[..]),
             false,
         );
         if divSuftSortResult != 0 {
             result = Error::GENERIC.to_error_code();
         } else {
-            *suffix.add(bufferSize) = bufferSize as core::ffi::c_uint;
-            *suffix0 = bufferSize as core::ffi::c_uint;
-
             // build reverse suffix sort
             let mut pos: size_t = 0;
             pos = 0;
             while pos < bufferSize {
-                *reverseSuffix.offset(*suffix.add(pos) as isize) = pos as u32;
+                *reverseSuffix.offset(suffix[pos] as isize) = pos as u32;
                 pos = pos.wrapping_add(1);
             }
             // Note: filePos tracks borders between samples.
@@ -680,7 +680,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
                 } else {
                     solution = ZDICT_analyzePos(
                         doneMarks,
-                        suffix,
+                        &suffix,
                         *reverseSuffix.offset(cursor as isize),
                         buffer,
                         minRatio,
@@ -707,7 +707,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
             }
         }
     }
-    free(suffix0 as *mut core::ffi::c_void);
     free(reverseSuffix as *mut core::ffi::c_void);
     free(doneMarks as *mut core::ffi::c_void);
     free(filePos as *mut core::ffi::c_void);
