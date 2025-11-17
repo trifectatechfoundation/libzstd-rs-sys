@@ -174,7 +174,10 @@ unsafe fn ZDICT_analyzePos(
     let mut pos = suffix(start as usize) as size_t;
     let mut end = start;
     let mut solution = DictItem::default();
+
     doneMarks[pos] = 1;
+
+    // trivial repetition cases
     if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
         == MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
         || MEM_read16(b.add(pos).add(1) as *const core::ffi::c_void) as core::ffi::c_int
@@ -182,6 +185,7 @@ unsafe fn ZDICT_analyzePos(
         || MEM_read16(b.add(pos).add(2) as *const core::ffi::c_void) as core::ffi::c_int
             == MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void) as core::ffi::c_int
     {
+        // skip and mark segment
         let pattern16 = MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void);
         let mut u: u32 = 0;
         let mut patternEnd = 6u32;
@@ -203,6 +207,8 @@ unsafe fn ZDICT_analyzePos(
         }
         return solution;
     }
+
+    // look forward
     let mut length: size_t = 0;
     loop {
         end = end.wrapping_add(1);
@@ -214,6 +220,8 @@ unsafe fn ZDICT_analyzePos(
             break;
         }
     }
+
+    // look backward
     let mut length_0: size_t = 0;
     loop {
         length_0 = ZDICT_count(
@@ -227,6 +235,8 @@ unsafe fn ZDICT_analyzePos(
             break;
         }
     }
+
+    // exit if not found a minimum number of repetitions
     if end.wrapping_sub(start) < minRatio {
         let mut idx: u32 = 0;
         idx = start;
@@ -236,10 +246,12 @@ unsafe fn ZDICT_analyzePos(
         }
         return solution;
     }
+
     let mut i: core::ffi::c_int = 0;
     let mut mml: u32 = 0;
     let mut refinedStart = start;
     let mut refinedEnd = end;
+
     if notificationLevel >= 4 {
         eprintln!();
         eprint!(
@@ -250,6 +262,7 @@ unsafe fn ZDICT_analyzePos(
         );
         eprintln!();
     }
+
     mml = MINMATCHLENGTH as u32;
     loop {
         let mut currentChar = 0;
@@ -285,6 +298,8 @@ unsafe fn ZDICT_analyzePos(
         refinedEnd = refinedStart.wrapping_add(selectedCount);
         mml = mml.wrapping_add(1);
     }
+
+    // evaluate gain based on new dict
     start = refinedStart;
     pos = suffix(refinedStart as usize) as size_t;
     end = start;
@@ -293,6 +308,8 @@ unsafe fn ZDICT_analyzePos(
         0,
         ::core::mem::size_of::<[u32; 64]>(),
     );
+
+    // look forward
     let mut length_1: size_t = 0;
     loop {
         end = end.wrapping_add(1);
@@ -309,6 +326,8 @@ unsafe fn ZDICT_analyzePos(
             break;
         }
     }
+
+    // look backward
     let mut length_2 = MINMATCHLENGTH;
     while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
@@ -324,6 +343,8 @@ unsafe fn ZDICT_analyzePos(
             start = start.wrapping_sub(1);
         }
     }
+
+    // largest useful length
     ptr::write_bytes(
         cumulLength.as_mut_ptr() as *mut u8,
         0,
@@ -347,6 +368,8 @@ unsafe fn ZDICT_analyzePos(
         u_0 = u_0.wrapping_sub(1);
     }
     maxLength = u_0 as size_t;
+
+    // reduce maxLength in case of final into repetitive data
     let mut l = maxLength as u32;
     let c = *b.add(pos.wrapping_add(maxLength).wrapping_sub(1));
     while *b.add(pos.wrapping_add(l as size_t).wrapping_sub(2)) as core::ffi::c_int
@@ -356,8 +379,10 @@ unsafe fn ZDICT_analyzePos(
     }
     maxLength = l as size_t;
     if maxLength < MINMATCHLENGTH {
-        return solution;
+        return solution; // skip: no long-enough solution available
     }
+
+    // calculate savings
     *savings.as_mut_ptr().add(5) = 0;
     let mut u_1: core::ffi::c_uint = 0;
     u_1 = MINMATCHLENGTH as core::ffi::c_uint;
@@ -368,6 +393,7 @@ unsafe fn ZDICT_analyzePos(
             );
         u_1 = u_1.wrapping_add(1);
     }
+
     if notificationLevel >= 4 {
         eprintln!(
             "Selected dict at position {}, of length {} : saves {} (ratio: {:.2})  ",
@@ -378,9 +404,12 @@ unsafe fn ZDICT_analyzePos(
                 / maxLength as core::ffi::c_double,
         );
     }
+
     solution.pos = pos as u32;
     solution.length = maxLength as u32;
     solution.savings = *savings.as_mut_ptr().add(maxLength);
+
+    // mark positions done
     let mut id_0: u32 = 0;
     id_0 = start;
     while id_0 < end {
@@ -407,6 +436,7 @@ unsafe fn ZDICT_analyzePos(
         }
         id_0 = id_0.wrapping_add(1);
     }
+
     solution
 }
 
