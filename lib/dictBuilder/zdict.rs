@@ -583,9 +583,6 @@ unsafe fn ZDICT_trainBuffer_legacy(
     mut minRatio: core::ffi::c_uint,
     notificationLevel: u32,
 ) -> size_t {
-    let filePos =
-        malloc((nbFiles as size_t).wrapping_mul(::core::mem::size_of::<u32>())) as *mut u32;
-    let mut result = 0;
     let mut displayClock = Instant::now();
     let refresh_rate = Duration::from_millis(300);
 
@@ -593,103 +590,99 @@ unsafe fn ZDICT_trainBuffer_legacy(
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
     }
-    if filePos.is_null() {
-        result = Error::memory_allocation.to_error_code();
-    } else {
-        if minRatio < MINRATIO {
-            minRatio = MINRATIO;
-        }
 
-        // limit sample set size (divsufsort limitation)
-        if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
-            eprintln!(
-                "sample set too large : reduced to {} MB ...",
-                (2000) << 20 >> 20,
-            );
-        }
-        while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
-            nbFiles = nbFiles.wrapping_sub(1);
-            bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
-        }
+    if minRatio < MINRATIO {
+        minRatio = MINRATIO;
+    }
 
-        // sort
-        if notificationLevel >= 2 {
-            eprintln!(
-                "sorting {} files of total size {} MB ...",
-                nbFiles,
-                bufferSize >> 20,
-            );
-        }
-        let mut suffix = vec![0u32; bufferSize + 1];
-        let divSuftSortResult = divsufsort(
-            core::slice::from_raw_parts(buffer as *const u8, bufferSize),
-            std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[0..bufferSize]),
-            false,
+    // limit sample set size (divsufsort limitation)
+    if bufferSize > ZDICT_MAX_SAMPLES_SIZE && notificationLevel >= 3 {
+        eprintln!(
+            "sample set too large : reduced to {} MB ...",
+            (2000) << 20 >> 20,
         );
-        if divSuftSortResult != 0 {
-            result = Error::GENERIC.to_error_code();
-        } else {
-            suffix[bufferSize] = bufferSize as core::ffi::c_uint;
+    }
+    while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
+        nbFiles = nbFiles.wrapping_sub(1);
+        bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
+    }
 
-            // build reverse suffix sort
-            let mut reverseSuffix = vec![0u32; bufferSize];
-            for pos in 0..bufferSize {
-                reverseSuffix[suffix[pos] as usize] = pos as u32;
-            }
+    // sort
+    if notificationLevel >= 2 {
+        eprintln!(
+            "sorting {} files of total size {} MB ...",
+            nbFiles,
+            bufferSize >> 20,
+        );
+    }
+    let mut suffix = vec![0u32; bufferSize + 1];
+    let divSuftSortResult = divsufsort(
+        core::slice::from_raw_parts(buffer as *const u8, bufferSize),
+        std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[0..bufferSize]),
+        false,
+    );
+    if divSuftSortResult != 0 {
+        return Error::GENERIC.to_error_code();
+    }
 
-            // Note: filePos tracks borders between samples.
-            // It's not used at this stage, but planned to become useful in a later update
-            *filePos = 0;
-            for pos in 1..nbFiles as size_t {
-                *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1)) as size_t)
-                    .wrapping_add(*fileSizes.add(pos.wrapping_sub(1)))
-                    as u32;
-            }
+    suffix[bufferSize] = bufferSize as core::ffi::c_uint;
 
-            if notificationLevel >= 2 {
-                eprintln!("finding patterns ...");
-            }
-            if notificationLevel >= 3 {
-                eprintln!("minimum ratio : {} ", minRatio);
-            }
+    // build reverse suffix sort
+    let mut reverseSuffix = vec![0u32; bufferSize];
+    for pos in 0..bufferSize {
+        reverseSuffix[suffix[pos] as usize] = pos as u32;
+    }
 
-            let mut doneMarks = vec![0u8; bufferSize + 16];
-            let mut cursor = 0usize;
-            while cursor < bufferSize {
-                if doneMarks[cursor] != 0 {
-                    cursor += 1;
-                    continue;
-                }
+    // Note: filePos tracks borders between samples.
+    // It's not used at this stage, but planned to become useful in a later update
+    let mut filePos = vec![0u32; nbFiles as usize];
+    // filePos[0] is intentionally left 0
+    for pos in 1..nbFiles as size_t {
+        filePos[pos] =
+            (filePos[pos - 1] as size_t).wrapping_add(*fileSizes.add(pos.wrapping_sub(1))) as u32;
+    }
 
-                let solution = ZDICT_analyzePos(
-                    &mut doneMarks,
-                    &suffix,
-                    reverseSuffix[cursor],
-                    buffer,
-                    minRatio,
-                    notificationLevel,
-                );
-                if solution.length == 0 {
-                    cursor += 1;
-                    continue;
-                }
+    if notificationLevel >= 2 {
+        eprintln!("finding patterns ...");
+    }
+    if notificationLevel >= 3 {
+        eprintln!("minimum ratio : {} ", minRatio);
+    }
 
-                ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
-                cursor += solution.length as usize;
+    let mut doneMarks = vec![0u8; bufferSize + 16];
+    let mut cursor = 0usize;
+    while cursor < bufferSize {
+        if doneMarks[cursor] != 0 {
+            cursor += 1;
+            continue;
+        }
 
-                if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
-                    displayClock = Instant::now();
-                    eprint!(
-                        "\r{:4.2} % \r",
-                        cursor as core::ffi::c_double / bufferSize as core::ffi::c_double
-                            * 100.0f64,
-                    );
-                }
-            }
+        let solution = ZDICT_analyzePos(
+            &mut doneMarks,
+            &suffix,
+            reverseSuffix[cursor],
+            buffer,
+            minRatio,
+            notificationLevel,
+        );
+        if solution.length == 0 {
+            cursor += 1;
+            continue;
+        }
+
+        ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
+        cursor += solution.length as usize;
+
+        if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
+            displayClock = Instant::now();
+            eprint!(
+                "\r{:4.2} % \r",
+                cursor as core::ffi::c_double / bufferSize as core::ffi::c_double * 100.0f64,
+            );
         }
     }
-    free(filePos as *mut core::ffi::c_void);
-    result
+
+    0
 }
 
 fn fill_noise(buffer: &mut [u8]) {
