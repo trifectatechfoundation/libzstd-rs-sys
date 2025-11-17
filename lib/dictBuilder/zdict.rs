@@ -647,21 +647,17 @@ unsafe fn ZDICT_trainBuffer_legacy(
         } else {
             // build reverse suffix sort
             let mut reverseSuffix = vec![0u32; bufferSize];
-            let mut pos: size_t = 0;
-            pos = 0;
-            while pos < bufferSize {
+            for pos in 0..bufferSize {
                 reverseSuffix[suffix[pos] as usize] = pos as u32;
-                pos = pos.wrapping_add(1);
             }
+
             // Note: filePos tracks borders between samples.
             // It's not used at this stage, but planned to become useful in a later update
             *filePos = 0;
-            pos = 1;
-            while pos < nbFiles as size_t {
+            for pos in 1..nbFiles as size_t {
                 *filePos.add(pos) = (*filePos.add(pos.wrapping_sub(1)) as size_t)
                     .wrapping_add(*fileSizes.add(pos.wrapping_sub(1)))
                     as u32;
-                pos = pos.wrapping_add(1);
             }
 
             if notificationLevel >= 2 {
@@ -671,38 +667,36 @@ unsafe fn ZDICT_trainBuffer_legacy(
                 eprintln!("minimum ratio : {} ", minRatio);
             }
 
-            let mut cursor: u32 = 0;
-            cursor = 0;
-            while (cursor as size_t) < bufferSize {
-                let mut solution = DictItem::default();
-                if *doneMarks.offset(cursor as isize) != 0 {
-                    cursor = cursor.wrapping_add(1);
-                } else {
-                    solution = ZDICT_analyzePos(
-                        doneMarks,
-                        &suffix,
-                        reverseSuffix[cursor as usize],
-                        buffer,
-                        minRatio,
-                        notificationLevel,
+            let mut cursor = 0usize;
+            while cursor < bufferSize {
+                if *doneMarks.add(cursor) != 0 {
+                    cursor += 1;
+                    continue;
+                }
+
+                let solution = ZDICT_analyzePos(
+                    doneMarks,
+                    &suffix,
+                    reverseSuffix[cursor],
+                    buffer,
+                    minRatio,
+                    notificationLevel,
+                );
+                if solution.length == 0 {
+                    cursor += 1;
+                    continue;
+                }
+
+                ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
+                cursor += solution.length as usize;
+
+                if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
+                    displayClock = Instant::now();
+                    eprint!(
+                        "\r{:4.2} % \r",
+                        cursor as core::ffi::c_double / bufferSize as core::ffi::c_double
+                            * 100.0f64,
                     );
-                    if solution.length == 0 {
-                        cursor = cursor.wrapping_add(1);
-                    } else {
-                        ZDICT_insertDictItem(dictList, dictListSize, solution, buffer);
-                        cursor = cursor.wrapping_add(solution.length);
-                        if notificationLevel >= 2 {
-                            if displayClock.elapsed() > refresh_rate {
-                                displayClock = Instant::now();
-                                eprint!(
-                                    "\r{:4.2} % \r",
-                                    cursor as core::ffi::c_double
-                                        / bufferSize as core::ffi::c_double
-                                        * 100.0f64,
-                                );
-                            }
-                        }
-                    }
                 }
             }
         }
