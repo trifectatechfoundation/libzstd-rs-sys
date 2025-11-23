@@ -354,7 +354,7 @@ unsafe extern "C" fn INThandler(sig: core::ffi::c_int) {
 unsafe fn addHandler(dstFileName: *const core::ffi::c_char) {
     if UTIL_isRegularFile(dstFileName) != 0 {
         g_artefact = dstFileName;
-        signal(SIGINT, INThandler as sighandler_t);
+        signal(SIGINT, INThandler as *const () as sighandler_t);
     } else {
         g_artefact = core::ptr::null();
     };
