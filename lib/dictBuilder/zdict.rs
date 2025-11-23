@@ -349,9 +349,9 @@ unsafe fn ZDICT_analyzePos(
     let mut savings = [0u32; LLIMIT];
     savings[5] = 0;
 
-    for u_1 in MINMATCHLENGTH as usize..=maxLength {
-        savings[u_1 as usize] = (savings[u_1.wrapping_sub(1) as usize])
-            .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3) as u32));
+    for u_1 in MINMATCHLENGTH..=maxLength {
+        savings[u_1] = (savings[u_1.wrapping_sub(1)])
+            .wrapping_add((lengthList[u_1]).wrapping_mul(u_1.wrapping_sub(3) as u32));
     }
 
     if notificationLevel >= 4 {
