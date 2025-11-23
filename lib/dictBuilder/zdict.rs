@@ -1,4 +1,3 @@
-use core::ptr;
 use std::time::{Duration, Instant};
 
 use libc::{free, malloc, memcpy, size_t};
@@ -157,8 +156,6 @@ unsafe fn ZDICT_analyzePos(
     notificationLevel: u32,
 ) -> DictItem {
     let mut lengthList = [0u32; LLIMIT];
-    let mut cumulLength = [0u32; LLIMIT];
-    let mut savings = [0u32; LLIMIT];
     let b = buffer as *const u8;
     let mut maxLength = LLIMIT;
 
@@ -323,23 +320,18 @@ unsafe fn ZDICT_analyzePos(
     }
 
     // largest useful length
-    ptr::write_bytes(
-        cumulLength.as_mut_ptr() as *mut u8,
-        0,
-        ::core::mem::size_of::<[u32; 64]>(),
-    );
-    *cumulLength.as_mut_ptr().add(maxLength.wrapping_sub(1)) = lengthList[maxLength - 1];
+    let mut cumulLength = [0u32; LLIMIT];
+    cumulLength[maxLength.wrapping_sub(1)] = lengthList[maxLength - 1];
     i = maxLength.wrapping_sub(2) as core::ffi::c_int;
     while i >= 0 {
-        *cumulLength.as_mut_ptr().offset(i as isize) =
-            (*cumulLength.as_mut_ptr().offset((i + 1) as isize))
-                .wrapping_add(lengthList[i as usize]);
+        cumulLength[i as usize] =
+            (cumulLength[(i + 1) as usize]).wrapping_add(lengthList[i as usize]);
         i -= 1;
     }
     let mut u_0: core::ffi::c_uint = 0;
     u_0 = (LLIMIT - 1) as core::ffi::c_uint;
     while u_0 >= MINMATCHLENGTH as core::ffi::c_uint {
-        if *cumulLength.as_mut_ptr().offset(u_0 as isize) >= minRatio {
+        if cumulLength[u_0 as usize] >= minRatio {
             break;
         }
         u_0 = u_0.wrapping_sub(1);
@@ -360,13 +352,14 @@ unsafe fn ZDICT_analyzePos(
     }
 
     // calculate savings
-    *savings.as_mut_ptr().add(5) = 0;
+    let mut savings = [0u32; LLIMIT];
+    savings[5] = 0;
+
     let mut u_1: core::ffi::c_uint = 0;
     u_1 = MINMATCHLENGTH as core::ffi::c_uint;
     while u_1 as size_t <= maxLength {
-        *savings.as_mut_ptr().offset(u_1 as isize) =
-            (*savings.as_mut_ptr().offset(u_1.wrapping_sub(1) as isize))
-                .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3)));
+        savings[u_1 as usize] = (savings[u_1.wrapping_sub(1) as usize])
+            .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3)));
         u_1 = u_1.wrapping_add(1);
     }
 
@@ -375,15 +368,14 @@ unsafe fn ZDICT_analyzePos(
             "Selected dict at position {}, of length {} : saves {} (ratio: {:.2})  ",
             pos,
             maxLength,
-            *savings.as_mut_ptr().add(maxLength),
-            *savings.as_mut_ptr().add(maxLength) as core::ffi::c_double
-                / maxLength as core::ffi::c_double,
+            savings[maxLength],
+            savings[maxLength] as core::ffi::c_double / maxLength as core::ffi::c_double,
         );
     }
 
     solution.pos = pos as u32;
     solution.length = maxLength as u32;
-    solution.savings = *savings.as_mut_ptr().add(maxLength);
+    solution.savings = savings[maxLength];
 
     // mark positions done
     let mut id_0: u32 = 0;
