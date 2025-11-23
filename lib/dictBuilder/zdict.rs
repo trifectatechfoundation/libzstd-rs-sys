@@ -398,21 +398,17 @@ unsafe fn ZDICT_analyzePos(
 }
 
 unsafe fn isIncluded(
-    in_0: *const core::ffi::c_void,
-    container: *const core::ffi::c_void,
+    ip: *const core::ffi::c_char,
+    into: *const core::ffi::c_char,
     length: size_t,
-) -> core::ffi::c_int {
-    let ip = in_0 as *const core::ffi::c_char;
-    let into = container as *const core::ffi::c_char;
-    let mut u: size_t = 0;
-    u = 0;
-    while u < length {
-        if *ip.add(u) as core::ffi::c_int != *into.add(u) as core::ffi::c_int {
-            break;
+) -> bool {
+    for u in 0..length {
+        if *ip.add(u) != *into.add(u) {
+            return false;
         }
-        u = u.wrapping_add(1);
     }
-    (u == length) as core::ffi::c_int
+
+    true
 }
 
 unsafe fn ZDICT_tryMerge(
@@ -485,11 +481,10 @@ unsafe fn ZDICT_tryMerge(
                 buf.offset((*table.offset(u as isize)).pos as isize) as *const core::ffi::c_void
             ) == MEM_read64(buf.offset(elt.pos as isize).add(1) as *const core::ffi::c_void)
                 && isIncluded(
-                    buf.offset((*table.offset(u as isize)).pos as isize)
-                        as *const core::ffi::c_void,
-                    buf.offset(elt.pos as isize).add(1) as *const core::ffi::c_void,
+                    buf.offset((*table.offset(u as isize)).pos as isize),
+                    buf.offset(elt.pos as isize).add(1),
                     (*table.offset(u as isize)).length as size_t,
-                ) != 0
+                )
             {
                 let addedLength_1 = Ord::max(
                     (elt.length).wrapping_sub((*table.offset(u as isize)).length),
