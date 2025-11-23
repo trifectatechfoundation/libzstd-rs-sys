@@ -187,11 +187,8 @@ unsafe fn ZDICT_analyzePos(
     {
         // skip and mark segment
         let pattern16 = MEM_read16(b.add(pos).add(4) as *const core::ffi::c_void);
-        let mut u: u32 = 0;
-        let mut patternEnd = 6u32;
-        while MEM_read16(b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void)
-            == pattern16
-        {
+        let mut patternEnd = 6usize;
+        while MEM_read16(b.add(pos).add(patternEnd) as *const core::ffi::c_void) == pattern16 {
             patternEnd = patternEnd.wrapping_add(2);
         }
         if *b.add(pos.wrapping_add(patternEnd as size_t))
@@ -199,11 +196,7 @@ unsafe fn ZDICT_analyzePos(
         {
             patternEnd = patternEnd.wrapping_add(1);
         }
-        u = 1;
-        while u < patternEnd {
-            doneMarks[pos.wrapping_add(u as size_t)] = true;
-            u = u.wrapping_add(1);
-        }
+        doneMarks[pos..][1..patternEnd].fill(true);
         return solution;
     }
 
