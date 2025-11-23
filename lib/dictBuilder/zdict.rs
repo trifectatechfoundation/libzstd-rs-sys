@@ -5,7 +5,7 @@ use libc::{free, malloc, memcpy, size_t};
 use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{HUF_CElt, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
-use crate::lib::common::mem::{MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE32};
+use crate::lib::common::mem::{MEM_readLE32, MEM_readST, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -391,142 +391,120 @@ unsafe fn ZDICT_analyzePos(
     solution
 }
 
-unsafe fn isIncluded(
-    ip: *const core::ffi::c_char,
-    into: *const core::ffi::c_char,
-    length: size_t,
-) -> bool {
-    for u in 0..length {
-        if *ip.add(u) != *into.add(u) {
-            return false;
-        }
-    }
+fn isIncluded(ip: &[u8], into: &[u8], length: size_t) -> bool {
+    // NOTE: the slices may not actually have `length` elements,
+    // that is OK if there is an unequal value before that.
+    let a = ip.iter().take(length);
+    let b = into.iter().take(length);
 
-    true
+    a.eq(b)
 }
 
-unsafe fn ZDICT_tryMerge(
-    table: *mut DictItem,
+fn ZDICT_tryMerge(
+    table: &mut [DictItem],
     mut elt: DictItem,
     eltNbToSkip: u32,
-    buffer: *const core::ffi::c_void,
+    buffer: &[u8],
 ) -> u32 {
-    let tableSize = (*table).pos;
+    let tableSize = table[0].pos;
     let eltEnd = (elt.pos).wrapping_add(elt.length);
-    let buf = buffer as *const core::ffi::c_char;
-    let mut u: u32 = 0;
-    u = 1;
-    while u < tableSize {
-        if (u != eltNbToSkip)
-            && (*table.offset(u as isize)).pos > elt.pos
-            && (*table.offset(u as isize)).pos <= eltEnd
+    let buf = buffer;
+
+    /* tail overlap */
+    let mut u = 1usize;
+    while u < tableSize as usize {
+        if (u as u32 != eltNbToSkip)
+            && table[u].pos > elt.pos
+            && table[u].pos <= eltEnd
         {
-            let addedLength = ((*table.offset(u as isize)).pos).wrapping_sub(elt.pos);
-            let fresh2 = &mut (*table.offset(u as isize)).length;
-            *fresh2 = (*fresh2).wrapping_add(addedLength);
-            (*table.offset(u as isize)).pos = elt.pos;
-            let fresh3 = &mut (*table.offset(u as isize)).savings;
-            *fresh3 = (*fresh3).wrapping_add(elt.savings * addedLength / elt.length);
-            let fresh4 = &mut (*table.offset(u as isize)).savings;
-            *fresh4 = (*fresh4).wrapping_add(elt.length / 8);
-            elt = *table.offset(u as isize);
-            while u > 1 && (*table.offset(u.wrapping_sub(1) as isize)).savings < elt.savings {
-                *table.offset(u as isize) = *table.offset(u.wrapping_sub(1) as isize);
-                u = u.wrapping_sub(1);
+            /* append */
+            let addedLength = table[u].pos - elt.pos;
+            table[u].length += addedLength;
+            table[u].pos = elt.pos;
+            table[u].savings += elt.savings * addedLength / elt.length; /* rough approx */
+            table[u].savings += elt.length / 8; /* rough approx bonus */
+            elt = table[u];
+            /* sort : improve rank */
+            while (u > 1) && (table[u - 1].savings < elt.savings) {
+                table[u] = table[u - 1];
+                u -= 1;
             }
-            *table.offset(u as isize) = elt;
-            return u;
+            table[u] = elt;
+            return u as u32;
         }
         u = u.wrapping_add(1);
     }
-    u = 1;
-    while u < tableSize {
-        if u != eltNbToSkip {
-            if ((*table.offset(u as isize)).pos).wrapping_add((*table.offset(u as isize)).length)
-                >= elt.pos
-                && (*table.offset(u as isize)).pos < elt.pos
-            {
-                let addedLength_0 = eltEnd as core::ffi::c_int
-                    - ((*table.offset(u as isize)).pos)
-                        .wrapping_add((*table.offset(u as isize)).length)
-                        as core::ffi::c_int;
-                let fresh5 = &mut (*table.offset(u as isize)).savings;
-                *fresh5 = (*fresh5).wrapping_add(elt.length / 8);
-                if addedLength_0 > 0 {
-                    let fresh6 = &mut (*table.offset(u as isize)).length;
-                    *fresh6 = (*fresh6 as core::ffi::c_uint)
-                        .wrapping_add(addedLength_0 as core::ffi::c_uint);
-                    let fresh7 = &mut (*table.offset(u as isize)).savings;
-                    *fresh7 = (*fresh7 as core::ffi::c_uint).wrapping_add(
-                        (elt.savings)
-                            .wrapping_mul(addedLength_0 as core::ffi::c_uint)
-                            .wrapping_div(elt.length),
-                    );
-                }
-                elt = *table.offset(u as isize);
-                while u > 1 && (*table.offset(u.wrapping_sub(1) as isize)).savings < elt.savings {
-                    *table.offset(u as isize) = *table.offset(u.wrapping_sub(1) as isize);
-                    u = u.wrapping_sub(1);
-                }
-                *table.offset(u as isize) = elt;
-                return u;
+
+    /* front overlap */
+    let mut u = 1usize;
+    while u < tableSize as usize {
+        if u == eltNbToSkip as usize {
+            u = u.wrapping_add(1);
+            continue;
+        }
+
+        /* overlap, existing < new */
+        if (table[u].pos + table[u].length >= elt.pos) && (table[u].pos < elt.pos) {
+            /* append */
+            let addedLength = eltEnd as i32 - (table[u].pos + table[u].length) as i32; /* note: can be negative */
+            table[u].savings += elt.length / 8; /* rough approx bonus */
+            if addedLength > 0 {
+                /* otherwise, elt fully included into existing */
+                table[u].length += addedLength.unsigned_abs();
+                /* rough approx */
+                table[u].savings += elt.savings * addedLength.unsigned_abs() / elt.length;
             }
-            if MEM_read64(
-                buf.offset((*table.offset(u as isize)).pos as isize) as *const core::ffi::c_void
-            ) == MEM_read64(buf.offset(elt.pos as isize).add(1) as *const core::ffi::c_void)
-                && isIncluded(
-                    buf.offset((*table.offset(u as isize)).pos as isize),
-                    buf.offset(elt.pos as isize).add(1),
-                    (*table.offset(u as isize)).length as size_t,
-                )
-            {
-                let addedLength_1 = Ord::max(
-                    (elt.length).wrapping_sub((*table.offset(u as isize)).length),
-                    1,
-                ) as size_t;
-                (*table.offset(u as isize)).pos = elt.pos;
-                let fresh8 = &mut (*table.offset(u as isize)).savings;
-                *fresh8 = (*fresh8).wrapping_add(
-                    (elt.savings as size_t * addedLength_1 / elt.length as size_t) as u32,
-                );
-                (*table.offset(u as isize)).length = Ord::min(
-                    elt.length,
-                    ((*table.offset(u as isize)).length).wrapping_add(1),
-                );
-                return u;
+            /* sort : improve rank */
+            elt = table[u];
+            while (u > 1) && (table[u - 1].savings < elt.savings) {
+                table[u] = table[u - 1];
+                u -= 1;
+            }
+            table[u] = elt;
+            return u as u32;
+        }
+
+        if buf[table[u].pos as usize..][..8] == buf[elt.pos as usize + 1..][..8] {
+            if isIncluded(
+                &buf[table[u].pos as usize..],
+                &buf[elt.pos as usize + 1..],
+                table[u].length as usize,
+            ) {
+                let addedLength = elt.length.checked_sub(table[u].length).unwrap_or(1);
+                table[u].pos = elt.pos;
+                table[u].savings += elt.savings * addedLength / elt.length;
+                table[u].length = Ord::min(elt.length, table[u].length + 1);
+                return u as u32;
             }
         }
+
         u = u.wrapping_add(1);
     }
+
     0
 }
 
-unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
+fn ZDICT_removeDictItem(table: &mut [DictItem], id: u32) {
     debug_assert_ne!(id, 0);
     if id == 0 {
         return; // protection, should never happen
     }
-    let max = (*table).pos as isize; // convention: table[0].pos stores the number of elements
-    for u in id as isize..max.wrapping_sub(1) {
-        *table.offset(u) = *table.offset(u.wrapping_add(1));
+    let max = table[0].pos as usize; // convention: table[0].pos stores the number of elements
+    for u in id as usize..max.wrapping_sub(1) {
+        table[u] = table[u + 1];
     }
-    (*table).pos = ((*table).pos).wrapping_sub(1);
+    table[0].pos -= 1;
 }
 
-unsafe fn ZDICT_insertDictItem(
-    table: &mut [DictItem],
-    elt: DictItem,
-    buffer: *const core::ffi::c_void,
-) {
+fn ZDICT_insertDictItem(table: &mut [DictItem], elt: DictItem, buffer: &[u8]) {
     let maxSize = table.len() as u32;
-    let table = table.as_mut_ptr();
 
     // merge if possible
     let mut mergeId = ZDICT_tryMerge(table, elt, 0, buffer);
     if mergeId != 0 {
         let mut newMerge = 1;
         while newMerge != 0 {
-            newMerge = ZDICT_tryMerge(table, *table.offset(mergeId as isize), mergeId, buffer);
+            newMerge = ZDICT_tryMerge(table, table[mergeId as usize], mergeId, buffer);
             if newMerge != 0 {
                 ZDICT_removeDictItem(table, mergeId);
             }
@@ -537,17 +515,17 @@ unsafe fn ZDICT_insertDictItem(
 
     // insert
     let mut current: u32 = 0;
-    let mut nextElt = (*table).pos;
+    let mut nextElt = table[0].pos;
     if nextElt >= maxSize {
         nextElt = maxSize.wrapping_sub(1);
     }
     current = nextElt.wrapping_sub(1);
-    while (*table.offset(current as isize)).savings < elt.savings {
-        *table.offset(current.wrapping_add(1) as isize) = *table.offset(current as isize);
+    while (table[current as usize]).savings < elt.savings {
+        table[current.wrapping_add(1) as usize] = table[current as usize];
         current = current.wrapping_sub(1);
     }
-    *table.offset(current.wrapping_add(1) as isize) = elt;
-    (*table).pos = nextElt.wrapping_add(1);
+    table[current as usize + 1] = elt;
+    table[0].pos = nextElt.wrapping_add(1);
 }
 
 unsafe fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
@@ -655,7 +633,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             continue;
         }
 
-        ZDICT_insertDictItem(dictList, solution, buffer.as_ptr().cast());
+        ZDICT_insertDictItem(dictList, solution, buffer);
         cursor += solution.length as usize;
 
         if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
