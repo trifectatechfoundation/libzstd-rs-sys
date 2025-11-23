@@ -149,7 +149,7 @@ unsafe fn ZDICT_count(
 const LLIMIT: usize = 64;
 const MINMATCHLENGTH: usize = 7;
 unsafe fn ZDICT_analyzePos(
-    doneMarks: &mut [u8],
+    doneMarks: &mut [bool],
     suffix_slice: &[u32],
     mut start: u32,
     buffer: *const core::ffi::c_void,
@@ -175,7 +175,7 @@ unsafe fn ZDICT_analyzePos(
     let mut end = start;
     let mut solution = DictItem::default();
 
-    doneMarks[pos] = 1;
+    doneMarks[pos] = true;
 
     // trivial repetition cases
     if MEM_read16(b.add(pos) as *const core::ffi::c_void) as core::ffi::c_int
@@ -202,7 +202,7 @@ unsafe fn ZDICT_analyzePos(
         }
         u = 1;
         while u < patternEnd {
-            doneMarks[pos.wrapping_add(u as size_t)] = 1;
+            doneMarks[pos.wrapping_add(u as size_t)] = true;
             u = u.wrapping_add(1);
         }
         return solution;
@@ -241,7 +241,7 @@ unsafe fn ZDICT_analyzePos(
         let mut idx: u32 = 0;
         idx = start;
         while idx < end {
-            doneMarks[suffix(idx as usize) as usize] = 1;
+            doneMarks[suffix(idx as usize) as usize] = true;
             idx = idx.wrapping_add(1);
         }
         return solution;
@@ -431,7 +431,7 @@ unsafe fn ZDICT_analyzePos(
         pEnd = testedPos.wrapping_add(length_3);
         p = testedPos;
         while p < pEnd {
-            doneMarks[p as usize] = 1;
+            doneMarks[p as usize] = true;
             p = p.wrapping_add(1);
         }
         id_0 = id_0.wrapping_add(1);
@@ -687,10 +687,10 @@ unsafe fn ZDICT_trainBuffer_legacy(
         eprintln!("minimum ratio : {} ", minRatio);
     }
 
-    let mut doneMarks = vec![0u8; bufferSize + 16];
+    let mut doneMarks = vec![false; bufferSize + 16];
     let mut cursor = 0usize;
     while cursor < bufferSize {
-        if doneMarks[cursor] != 0 {
+        if doneMarks[cursor] {
             cursor += 1;
             continue;
         }

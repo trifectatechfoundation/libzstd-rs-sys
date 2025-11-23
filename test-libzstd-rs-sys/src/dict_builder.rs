@@ -196,7 +196,7 @@ fn test_train_from_buffer_fastcover() {
 
 #[test]
 #[cfg(not(target_family = "wasm"))]
-#[cfg_attr(miri, ignore = "slow")]
+// #[cfg_attr(miri, ignore = "slow")]
 fn test_train_from_buffer_legacy() {
     let input_data = "The quick brown fox jumps high";
 
