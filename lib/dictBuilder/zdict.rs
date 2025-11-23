@@ -289,26 +289,19 @@ unsafe fn ZDICT_analyzePos(
     start = refinedStart;
     pos = suffix(refinedStart as usize) as size_t;
     end = start;
-    ptr::write_bytes(
-        lengthList.as_mut_ptr() as *mut u8,
-        0,
-        ::core::mem::size_of::<[u32; 64]>(),
-    );
 
     // look forward
-    let mut length_1: size_t = 0;
     loop {
         end = end.wrapping_add(1);
-        length_1 = ZDICT_count(
+        let mut length = ZDICT_count(
             b.add(pos) as *const core::ffi::c_void,
             b.offset(suffix(end as usize) as isize) as *const core::ffi::c_void,
         );
-        if length_1 >= LLIMIT {
-            length_1 = LLIMIT - 1;
+        if length >= LLIMIT {
+            length = LLIMIT - 1;
         }
-        let fresh0 = &mut (*lengthList.as_mut_ptr().add(length_1));
-        *fresh0 = (*fresh0).wrapping_add(1);
-        if length_1 < MINMATCHLENGTH {
+        lengthList[length] += 1;
+        if length < MINMATCHLENGTH {
             break;
         }
     }
@@ -323,8 +316,7 @@ unsafe fn ZDICT_analyzePos(
         if length_2 >= LLIMIT {
             length_2 = LLIMIT - 1;
         }
-        let fresh1 = &mut (*lengthList.as_mut_ptr().add(length_2));
-        *fresh1 = (*fresh1).wrapping_add(1);
+        lengthList[length_2] += 1;
         if length_2 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
         }
@@ -336,13 +328,12 @@ unsafe fn ZDICT_analyzePos(
         0,
         ::core::mem::size_of::<[u32; 64]>(),
     );
-    *cumulLength.as_mut_ptr().add(maxLength.wrapping_sub(1)) =
-        *lengthList.as_mut_ptr().add(maxLength.wrapping_sub(1));
+    *cumulLength.as_mut_ptr().add(maxLength.wrapping_sub(1)) = lengthList[maxLength - 1];
     i = maxLength.wrapping_sub(2) as core::ffi::c_int;
     while i >= 0 {
         *cumulLength.as_mut_ptr().offset(i as isize) =
             (*cumulLength.as_mut_ptr().offset((i + 1) as isize))
-                .wrapping_add(*lengthList.as_mut_ptr().offset(i as isize));
+                .wrapping_add(lengthList[i as usize]);
         i -= 1;
     }
     let mut u_0: core::ffi::c_uint = 0;
@@ -374,9 +365,8 @@ unsafe fn ZDICT_analyzePos(
     u_1 = MINMATCHLENGTH as core::ffi::c_uint;
     while u_1 as size_t <= maxLength {
         *savings.as_mut_ptr().offset(u_1 as isize) =
-            (*savings.as_mut_ptr().offset(u_1.wrapping_sub(1) as isize)).wrapping_add(
-                (*lengthList.as_mut_ptr().offset(u_1 as isize)).wrapping_mul(u_1.wrapping_sub(3)),
-            );
+            (*savings.as_mut_ptr().offset(u_1.wrapping_sub(1) as isize))
+                .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3)));
         u_1 = u_1.wrapping_add(1);
     }
 
