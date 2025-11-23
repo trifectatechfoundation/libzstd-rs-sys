@@ -230,11 +230,8 @@ unsafe fn ZDICT_analyzePos(
 
     // exit if not found a minimum number of repetitions
     if end.wrapping_sub(start) < minRatio {
-        let mut idx: u32 = 0;
-        idx = start;
-        while idx < end {
+        for idx in start..end {
             doneMarks[suffix(idx as usize) as usize] = true;
-            idx = idx.wrapping_add(1);
         }
         return solution;
     }
@@ -260,14 +257,11 @@ unsafe fn ZDICT_analyzePos(
         let mut currentChar = 0;
         let mut currentCount = 0u32;
         let mut currentID = refinedStart;
-        let mut id: u32 = 0;
         let mut selectedCount = 0;
         let mut selectedID = currentID;
-        id = refinedStart;
-        while id < refinedEnd {
-            if *b.offset((suffix(id as usize)).wrapping_add(mml) as isize) as core::ffi::c_int
-                != currentChar as core::ffi::c_int
-            {
+
+        for id in refinedStart..refinedEnd {
+            if *b.offset((suffix(id as usize)).wrapping_add(mml) as isize) != currentChar {
                 if currentCount > selectedCount {
                     selectedCount = currentCount;
                     selectedID = currentID;
@@ -277,8 +271,8 @@ unsafe fn ZDICT_analyzePos(
                 currentCount = 0;
             }
             currentCount = currentCount.wrapping_add(1);
-            id = id.wrapping_add(1);
         }
+
         if currentCount > selectedCount {
             selectedCount = currentCount;
             selectedID = currentID;
