@@ -45,7 +45,7 @@ struct offsetCount_t {
     count: u32,
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 struct DictItem {
     pos: u32,
@@ -514,11 +514,13 @@ unsafe fn ZDICT_removeDictItem(table: *mut DictItem, id: u32) {
 }
 
 unsafe fn ZDICT_insertDictItem(
-    table: *mut DictItem,
-    maxSize: u32,
+    table: &mut [DictItem],
     elt: DictItem,
     buffer: *const core::ffi::c_void,
 ) {
+    let maxSize = table.len() as u32;
+    let table = table.as_mut_ptr();
+
     // merge if possible
     let mut mergeId = ZDICT_tryMerge(table, elt, 0, buffer);
     if mergeId != 0 {
@@ -548,20 +550,19 @@ unsafe fn ZDICT_insertDictItem(
     (*table).pos = nextElt.wrapping_add(1);
 }
 
-unsafe fn ZDICT_dictSize(dictList: *const DictItem) -> u32 {
+unsafe fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
-    while u < (*dictList).pos {
-        dictSize = dictSize.wrapping_add((*dictList.offset(u as isize)).length);
+    while u < dictList[0].pos {
+        dictSize = dictSize.wrapping_add((dictList[u as usize]).length);
         u = u.wrapping_add(1);
     }
     dictSize
 }
 
 unsafe fn ZDICT_trainBuffer_legacy(
-    dictList: *mut DictItem,
-    dictListSize: u32,
+    dictList: &mut [DictItem],
     buffer: &[u8],
     mut bufferSize: size_t,
     fileSizes: *const size_t,
@@ -654,7 +655,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
             continue;
         }
 
-        ZDICT_insertDictItem(dictList, dictListSize, solution, buffer.as_ptr().cast());
+        ZDICT_insertDictItem(dictList, solution, buffer.as_ptr().cast());
         cursor += solution.length as usize;
 
         if notificationLevel >= 2 && displayClock.elapsed() > refresh_rate {
@@ -1311,8 +1312,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
 ) -> size_t {
     let nbSamples = samplesSizes.len() as u32;
     let dictListSize = Ord::max(Ord::max(10000, nbSamples), (maxDictSize / 16) as u32);
-    let dictList = malloc((dictListSize as size_t).wrapping_mul(::core::mem::size_of::<DictItem>()))
-        as *mut DictItem;
+    let mut dictList = vec![DictItem::default(); dictListSize as size_t];
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
     } else {
@@ -1328,29 +1328,23 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     let notificationLevel = params.zParams.notificationLevel;
 
     // checks
-    if dictList.is_null() {
-        return Error::memory_allocation.to_error_code();
-    }
     if maxDictSize < ZDICT_DICTSIZE_MIN {
         // requested dictionary size is too small
-        free(dictList as *mut core::ffi::c_void);
         return Error::dstSize_tooSmall.to_error_code();
     }
     if samplesBuffSize < ZDICT_MIN_SAMPLES_SIZE {
         // not enough source to create dictionary
-        free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
 
-    dictList.as_mut().unwrap().init();
+    dictList[0].init();
 
     // The samples must be followed by the noise band.
     debug_assert!(samples.len() >= samplesBuffSize + NOISELENGTH);
 
     // build dictionary
     ZDICT_trainBuffer_legacy(
-        dictList,
-        dictListSize,
+        &mut dictList,
         samples,
         samplesBuffSize,
         samplesSizes.as_ptr(),
@@ -1361,24 +1355,23 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
 
     // display best matches
     if params.zParams.notificationLevel >= 3 {
-        let nb = Ord::min(25, (*dictList).pos);
-        let dictContentSize = ZDICT_dictSize(dictList);
+        let nb = Ord::min(25, dictList[0].pos);
+        let dictContentSize = ZDICT_dictSize(&dictList);
         eprintln!(
             "\n {} segments found, of total size {} ",
-            ((*dictList).pos).wrapping_sub(1),
+            (dictList[0].pos).wrapping_sub(1),
             dictContentSize,
         );
         eprintln!("list {} best segments ", nb.wrapping_sub(1));
         for u in 1..nb {
-            let pos = (*dictList.offset(u as isize)).pos;
-            let length = (*dictList.offset(u as isize)).length;
+            let pos = dictList[u as usize].pos;
+            let length = dictList[u as usize].length;
             let printedLength = Ord::min(40, length);
 
             debug_assert!((pos + length) as size_t <= samplesBuffSize);
             if pos as size_t > samplesBuffSize
                 || pos.wrapping_add(length) as size_t > samplesBuffSize
             {
-                free(dictList as *mut core::ffi::c_void);
                 return Error::GENERIC.to_error_code(); // should never happen
             }
             eprint!(
@@ -1386,7 +1379,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
                 u,
                 length,
                 pos,
-                (*dictList.offset(u as isize)).savings,
+                (dictList[u as usize]).savings,
             );
             ZDICT_printHex(&samples[..printedLength as usize]);
             eprintln!("|");
@@ -1394,11 +1387,10 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
 
     // create dictionary
-    let mut dictContentSize_0 = ZDICT_dictSize(dictList);
+    let mut dictContentSize_0 = ZDICT_dictSize(&dictList);
     #[expect(deprecated)]
     if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN {
         // dictionary content too small
-        free(dictList as *mut core::ffi::c_void);
         return Error::dictionaryCreation_failed.to_error_code();
     }
 
@@ -1445,50 +1437,47 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
 
     // limit dictionary size
-    let max = (*dictList).pos; // convention: dictList[0].pos contains the number of useful elements
+    let max = dictList[0].pos; // convention: dictList[0].pos contains the number of useful elements
     let mut currentSize = 0u32;
     let mut n: u32 = 1;
     while n < max {
-        currentSize = currentSize.wrapping_add((*dictList.offset(n as isize)).length);
+        currentSize = currentSize.wrapping_add((dictList[n as usize]).length);
         if currentSize as size_t > targetDictSize {
-            currentSize = currentSize.wrapping_sub((*dictList.offset(n as isize)).length);
+            currentSize = currentSize.wrapping_sub((dictList[n as usize]).length);
             break;
         } else {
             n = n.wrapping_add(1);
         }
     }
-    (*dictList).pos = n;
+    dictList[0].pos = n;
     dictContentSize_0 = currentSize;
 
     // build dictionary content
     let mut ptr = (dictBuffer as *mut u8).add(maxDictSize);
-    for u in 1..(*dictList).pos {
-        let l = (*dictList.offset(u as isize)).length;
+    for u in 1..dictList[0].pos {
+        let l = (dictList[u as usize]).length;
         ptr = ptr.offset(-(l as isize));
         debug_assert!(ptr >= dictBuffer as *mut u8);
         if ptr < dictBuffer as *mut u8 {
-            free(dictList as *mut core::ffi::c_void);
             return Error::GENERIC.to_error_code(); // should not happen
         }
         memcpy(
             ptr as *mut core::ffi::c_void,
-            samples[(*dictList.offset(u as isize)).pos as usize..].as_ptr()
-                as *const core::ffi::c_void,
+            samples[(dictList[u as usize]).pos as usize..].as_ptr() as *const core::ffi::c_void,
             l as size_t,
         );
     }
 
-    let dictSize = ZDICT_addEntropyTablesFromBuffer_advanced(
+    
+
+    ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize_0 as size_t,
         maxDictSize,
         samples,
         samplesSizes,
         params.zParams,
-    );
-
-    free(dictList as *mut core::ffi::c_void);
-    dictSize
+    )
 }
 
 /// Train a dictionary from an array of samples.
