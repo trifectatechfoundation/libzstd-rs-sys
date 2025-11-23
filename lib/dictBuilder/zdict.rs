@@ -190,13 +190,12 @@ unsafe fn ZDICT_analyzePos(
         let mut u: u32 = 0;
         let mut patternEnd = 6u32;
         while MEM_read16(b.add(pos).offset(patternEnd as isize) as *const core::ffi::c_void)
-            as core::ffi::c_int
-            == pattern16 as core::ffi::c_int
+            == pattern16
         {
             patternEnd = patternEnd.wrapping_add(2);
         }
-        if *b.add(pos.wrapping_add(patternEnd as size_t)) as core::ffi::c_int
-            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1)) as core::ffi::c_int
+        if *b.add(pos.wrapping_add(patternEnd as size_t))
+            == *b.add(pos.wrapping_add(patternEnd as size_t).wrapping_sub(1))
         {
             patternEnd = patternEnd.wrapping_add(1);
         }
