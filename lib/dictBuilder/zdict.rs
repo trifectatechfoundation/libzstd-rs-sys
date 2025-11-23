@@ -355,12 +355,9 @@ unsafe fn ZDICT_analyzePos(
     let mut savings = [0u32; LLIMIT];
     savings[5] = 0;
 
-    let mut u_1: core::ffi::c_uint = 0;
-    u_1 = MINMATCHLENGTH as core::ffi::c_uint;
-    while u_1 as size_t <= maxLength {
+    for u_1 in MINMATCHLENGTH as usize..=maxLength {
         savings[u_1 as usize] = (savings[u_1.wrapping_sub(1) as usize])
-            .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3)));
-        u_1 = u_1.wrapping_add(1);
+            .wrapping_add((lengthList[u_1 as usize]).wrapping_mul(u_1.wrapping_sub(3) as u32));
     }
 
     if notificationLevel >= 4 {
@@ -378,10 +375,7 @@ unsafe fn ZDICT_analyzePos(
     solution.savings = savings[maxLength];
 
     // mark positions done
-    let mut id_0: u32 = 0;
-    id_0 = start;
-    while id_0 < end {
-        let mut p: u32 = 0;
+    for id_0 in start..end {
         let mut pEnd: u32 = 0;
         let mut length_3: u32 = 0;
         let testedPos = suffix(id_0 as usize);
@@ -397,12 +391,7 @@ unsafe fn ZDICT_analyzePos(
             }
         }
         pEnd = testedPos.wrapping_add(length_3);
-        p = testedPos;
-        while p < pEnd {
-            doneMarks[p as usize] = true;
-            p = p.wrapping_add(1);
-        }
-        id_0 = id_0.wrapping_add(1);
+        doneMarks[testedPos as usize..pEnd as usize].fill(true);
     }
 
     solution
