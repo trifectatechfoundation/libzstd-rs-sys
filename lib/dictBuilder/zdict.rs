@@ -61,10 +61,10 @@ impl DictItem {
     }
 }
 
-const MINRATIO: u32 = 4;
+const MINRATIO: usize = 4;
 const ZDICT_MAX_SAMPLES_SIZE: usize = 2000 << 20;
 #[expect(deprecated)]
-const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN as usize * MINRATIO as usize;
+const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN as usize * MINRATIO;
 
 const NOISELENGTH: usize = 32;
 static g_selectivity_default: u32 = 9;
@@ -152,7 +152,7 @@ unsafe fn ZDICT_analyzePos(
     suffix_slice: &[u32],
     mut start: u32,
     buffer: &[u8],
-    minRatio: u32,
+    minRatio: usize,
     notificationLevel: u32,
 ) -> DictItem {
     let mut lengthList = [0u32; LLIMIT];
@@ -221,7 +221,7 @@ unsafe fn ZDICT_analyzePos(
     }
 
     // exit if not found a minimum number of repetitions
-    if end.wrapping_sub(start) < minRatio {
+    if end.wrapping_sub(start) < minRatio as u32 {
         for idx in start..end {
             doneMarks[suffix(idx as usize) as usize] = true;
         }
@@ -269,7 +269,7 @@ unsafe fn ZDICT_analyzePos(
             selectedCount = currentCount;
             selectedID = currentID;
         }
-        if selectedCount < minRatio {
+        if selectedCount < minRatio as u32 {
             break;
         }
         refinedStart = selectedID;
@@ -327,7 +327,7 @@ unsafe fn ZDICT_analyzePos(
     let mut u_0: core::ffi::c_uint = 0;
     u_0 = (LLIMIT - 1) as core::ffi::c_uint;
     while u_0 >= MINMATCHLENGTH as core::ffi::c_uint {
-        if cumulLength[u_0 as usize] >= minRatio {
+        if cumulLength[u_0 as usize] >= minRatio as u32 {
             break;
         }
         u_0 = u_0.wrapping_sub(1);
@@ -525,7 +525,7 @@ fn ZDICT_insertDictItem(table: &mut [DictItem], elt: DictItem, buffer: &[u8]) {
     table[0].pos = nextElt.wrapping_add(1);
 }
 
-unsafe fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
+fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
     let mut u: u32 = 0;
     let mut dictSize = 0u32;
     u = 1;
@@ -540,9 +540,9 @@ unsafe fn ZDICT_trainBuffer_legacy(
     dictList: &mut [DictItem],
     buffer: &[u8],
     mut bufferSize: size_t,
-    fileSizes: *const size_t,
-    mut nbFiles: core::ffi::c_uint,
-    mut minRatio: core::ffi::c_uint,
+    fileSizes: &[size_t],
+    mut nbFiles: usize,
+    mut minRatio: usize,
     notificationLevel: u32,
 ) -> size_t {
     let mut displayClock = Instant::now();
@@ -566,7 +566,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     }
     while bufferSize > ZDICT_MAX_SAMPLES_SIZE {
         nbFiles = nbFiles.wrapping_sub(1);
-        bufferSize = bufferSize.wrapping_sub(*fileSizes.offset(nbFiles as isize));
+        bufferSize = bufferSize.wrapping_sub(fileSizes[nbFiles]);
     }
 
     // sort
@@ -599,7 +599,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     // filePos[0] is intentionally left 0
     for pos in 1..nbFiles as size_t {
         filePos[pos] =
-            (filePos[pos - 1] as size_t).wrapping_add(*fileSizes.add(pos.wrapping_sub(1))) as u32;
+            (filePos[pos - 1] as size_t).wrapping_add(fileSizes[pos.wrapping_sub(1)]) as u32;
     }
 
     if notificationLevel >= 2 {
@@ -1285,8 +1285,8 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     samplesSizes: &[usize],
     params: ZDICT_legacy_params_t,
 ) -> size_t {
-    let nbSamples = samplesSizes.len() as u32;
-    let dictListSize = Ord::max(Ord::max(10000, nbSamples), (maxDictSize / 16) as u32);
+    let nbSamples = samplesSizes.len();
+    let dictListSize = Ord::max(Ord::max(10000, nbSamples), maxDictSize / 16);
     let mut dictList = vec![DictItem::default(); dictListSize as size_t];
     let selectivity = if params.selectivityLevel == 0 {
         g_selectivity_default
@@ -1322,7 +1322,7 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         &mut dictList,
         samples,
         samplesBuffSize,
-        samplesSizes.as_ptr(),
+        samplesSizes,
         nbSamples,
         minRep,
         notificationLevel,
@@ -1442,8 +1442,6 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
             l as size_t,
         );
     }
-
-    
 
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
