@@ -2,10 +2,10 @@ use std::time::{Duration, Instant};
 
 use libc::{free, malloc, memcpy, size_t};
 
-use crate::lib::common::bits::{ZSTD_NbCommonBytes, ZSTD_highbit32};
+use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
 use crate::lib::common::huf::{HUF_CElt, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
-use crate::lib::common::mem::{MEM_readLE32, MEM_readST, MEM_writeLE32};
+use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
     repStartValue, LLFSELog, MLFSELog, MaxLL, MaxML, OffFSELog, ZSTD_REP_NUM,
@@ -128,26 +128,16 @@ pub unsafe extern "C" fn ZDICT_getDictHeaderSize(
     )
 }
 
-unsafe fn ZDICT_count(
-    mut pIn: *const core::ffi::c_void,
-    mut pMatch: *const core::ffi::c_void,
-) -> size_t {
-    let pStart = pIn as *const core::ffi::c_char;
-    loop {
-        let diff = MEM_readST(pMatch) ^ MEM_readST(pIn);
-        if diff == 0 {
-            pIn = pIn.byte_add(::core::mem::size_of::<size_t>());
-            pMatch = pMatch.byte_add(::core::mem::size_of::<size_t>());
-        } else {
-            pIn = pIn.byte_offset(ZSTD_NbCommonBytes(diff) as isize);
-            return pIn.byte_offset_from(pStart) as core::ffi::c_long as size_t;
-        }
-    }
+fn ZDICT_count(pIn: &[u8], pMatch: &[u8]) -> size_t {
+    pIn.iter()
+        .zip(pMatch)
+        .position(|(a, b)| a != b)
+        .unwrap_or(0)
 }
 
 const LLIMIT: usize = 64;
 const MINMATCHLENGTH: usize = 7;
-unsafe fn ZDICT_analyzePos(
+fn ZDICT_analyzePos(
     doneMarks: &mut [bool],
     suffix_slice: &[u32],
     mut start: u32,
@@ -195,10 +185,7 @@ unsafe fn ZDICT_analyzePos(
     let mut length: size_t = 0;
     loop {
         end = end.wrapping_add(1);
-        length = ZDICT_count(
-            buffer[pos..].as_ptr() as *const core::ffi::c_void,
-            buffer[suffix(end as usize) as usize..].as_ptr() as *const core::ffi::c_void,
-        );
+        length = ZDICT_count(&buffer[pos..], &buffer[suffix(end as usize) as usize..]);
         if length < MINMATCHLENGTH {
             break;
         }
@@ -208,9 +195,8 @@ unsafe fn ZDICT_analyzePos(
     let mut length_0: size_t = 0;
     loop {
         length_0 = ZDICT_count(
-            buffer[pos..].as_ptr() as *const core::ffi::c_void,
-            buffer[suffix((start as usize).wrapping_sub(1)) as usize..].as_ptr()
-                as *const core::ffi::c_void,
+            &buffer[pos..],
+            &buffer[suffix((start as usize).wrapping_sub(1)) as usize..],
         );
         if length_0 >= MINMATCHLENGTH {
             start = start.wrapping_sub(1);
@@ -285,10 +271,7 @@ unsafe fn ZDICT_analyzePos(
     // look forward
     loop {
         end = end.wrapping_add(1);
-        let mut length = ZDICT_count(
-            buffer[pos..].as_ptr() as *const core::ffi::c_void,
-            buffer[suffix(end as usize) as usize..].as_ptr() as *const core::ffi::c_void,
-        );
+        let mut length = ZDICT_count(&buffer[pos..], &buffer[suffix(end as usize) as usize..]);
         if length >= LLIMIT {
             length = LLIMIT - 1;
         }
@@ -302,9 +285,8 @@ unsafe fn ZDICT_analyzePos(
     let mut length_2 = MINMATCHLENGTH;
     while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
         length_2 = ZDICT_count(
-            buffer[pos..].as_ptr() as *const core::ffi::c_void,
-            buffer[suffix(start.wrapping_sub(1) as usize) as usize..].as_ptr()
-                as *const core::ffi::c_void,
+            &buffer[pos..],
+            &buffer[suffix(start.wrapping_sub(1) as usize) as usize..],
         );
         if length_2 >= LLIMIT {
             length_2 = LLIMIT - 1;
@@ -376,10 +358,7 @@ unsafe fn ZDICT_analyzePos(
         if testedPos as size_t == pos {
             length_3 = solution.length;
         } else {
-            length_3 = ZDICT_count(
-                buffer[pos..].as_ptr() as *const core::ffi::c_void,
-                buffer[testedPos as usize..].as_ptr() as *const core::ffi::c_void,
-            ) as u32;
+            length_3 = ZDICT_count(&buffer[pos..], &buffer[testedPos as usize..]) as u32;
             if length_3 > solution.length {
                 length_3 = solution.length;
             }
