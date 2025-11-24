@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use libc::{free, malloc, memcpy, size_t};
+use libc::{free, malloc, size_t};
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
@@ -515,7 +515,7 @@ fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
     dictSize
 }
 
-unsafe fn ZDICT_trainBuffer_legacy(
+fn ZDICT_trainBuffer_legacy(
     dictList: &mut [DictItem],
     buffer: &[u8],
     mut bufferSize: size_t,
@@ -559,7 +559,7 @@ unsafe fn ZDICT_trainBuffer_legacy(
     let mut suffix = vec![0u32; bufferSize];
     let divSuftSortResult = divsufsort(
         &buffer[..bufferSize],
-        std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix),
+        unsafe { std::mem::transmute::<&mut [u32], &mut [i32]>(&mut suffix[..]) },
         false,
     );
     if divSuftSortResult != 0 {
@@ -1415,9 +1415,9 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
         if ptr < dictBuffer as *mut u8 {
             return Error::GENERIC.to_error_code(); // should not happen
         }
-        memcpy(
-            ptr as *mut core::ffi::c_void,
-            samples[(dictList[u as usize]).pos as usize..].as_ptr() as *const core::ffi::c_void,
+        core::ptr::copy_nonoverlapping(
+            samples[(dictList[u as usize]).pos as usize..].as_ptr(),
+            ptr,
             l as size_t,
         );
     }
