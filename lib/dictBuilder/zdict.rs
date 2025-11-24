@@ -413,10 +413,7 @@ fn ZDICT_tryMerge(
     /* tail overlap */
     let mut u = 1usize;
     while u < tableSize as usize {
-        if (u as u32 != eltNbToSkip)
-            && table[u].pos > elt.pos
-            && table[u].pos <= eltEnd
-        {
+        if (u as u32 != eltNbToSkip) && table[u].pos > elt.pos && table[u].pos <= eltEnd {
             /* append */
             let addedLength = table[u].pos - elt.pos;
             table[u].length += addedLength;
@@ -470,7 +467,7 @@ fn ZDICT_tryMerge(
                 &buf[elt.pos as usize + 1..],
                 table[u].length as usize,
             ) {
-                let addedLength = elt.length.checked_sub(table[u].length).unwrap_or(1);
+                let addedLength = Ord::max(1, elt.length.checked_sub(table[u].length).unwrap_or(1));
                 table[u].pos = elt.pos;
                 table[u].savings += elt.savings * addedLength / elt.length;
                 table[u].length = Ord::min(elt.length, table[u].length + 1);
