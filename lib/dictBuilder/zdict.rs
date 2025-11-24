@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
-use libc::{free, malloc, size_t};
+use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
@@ -28,7 +28,7 @@ use crate::lib::zdict::experimental::{
 use crate::lib::zdict::ZDICT_params_t;
 use crate::lib::zstd::*;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 struct EStats_ress_t {
     /// dictionary
@@ -36,7 +36,7 @@ struct EStats_ress_t {
     /// working context
     zc: *mut ZSTD_CCtx,
     /// must be ZSTD_BLOCKSIZE_MAX allocated
-    workPlace: *mut core::ffi::c_void,
+    workPlace: Box<[MaybeUninit<u8>]>,
 }
 
 #[derive(Copy, Clone, Default)]
@@ -575,7 +575,7 @@ fn ZDICT_trainBuffer_legacy(
 
     // Note: filePos tracks borders between samples.
     // It's not used at this stage, but planned to become useful in a later update
-    let mut filePos = vec![0u32; nbFiles as usize];
+    let mut filePos = vec![0u32; nbFiles];
     // filePos[0] is intentionally left 0
     for pos in 1..nbFiles as size_t {
         filePos[pos] =
@@ -639,22 +639,19 @@ fn fill_noise(buffer: &mut [u8]) {
 
 const MAXREPOFFSET: u32 = 1024;
 unsafe fn ZDICT_countEStats(
-    esr: EStats_ress_t,
+    esr: &mut EStats_ress_t,
     params: &ZSTD_parameters,
     countLit: &mut [u32; 256],
     offsetcodeCount: &mut [u32; 31],
     matchlengthCount: &mut [u32; 53],
     litlengthCount: &mut [u32; 36],
     repOffsets: &mut [u32; 1024],
-    src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    src: &[u8],
     notificationLevel: u32,
 ) {
     let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
     let mut cSize: size_t = 0;
-    if srcSize > blockSizeMax {
-        srcSize = blockSizeMax;
-    }
+    let srcSize = Ord::min(src.len(), blockSizeMax);
     let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
     if ERR_isError(errorCode) {
         if notificationLevel >= 1 {
@@ -664,9 +661,9 @@ unsafe fn ZDICT_countEStats(
     }
     cSize = ZSTD_compressBlock_deprecated(
         esr.zc,
-        esr.workPlace,
+        esr.workPlace.as_mut_ptr().cast(),
         ZSTD_BLOCKSIZE_MAX as size_t,
-        src,
+        src.as_ptr().cast::<core::ffi::c_void>(),
         srcSize,
     );
     if ERR_isError(cSize) {
@@ -760,7 +757,7 @@ unsafe fn ZDICT_analyzeEntropy(
     let mut esr = EStats_ress_t {
         dict: core::ptr::null_mut(),
         zc: core::ptr::null_mut(),
-        workPlace: core::ptr::null_mut(),
+        workPlace: Box::default(),
     };
 
     let eSize = analyze_entropy_internal(
@@ -777,7 +774,6 @@ unsafe fn ZDICT_analyzeEntropy(
 
     ZSTD_freeCDict(esr.dict);
     ZSTD_freeCCtx(esr.zc);
-    free(esr.workPlace);
 
     eSize
 }
@@ -839,8 +835,8 @@ unsafe fn analyze_entropy_internal(
         ZSTD_customMem::default(),
     );
     esr.zc = ZSTD_createCCtx();
-    esr.workPlace = malloc(ZSTD_BLOCKSIZE_MAX as size_t);
-    if (esr.dict).is_null() || (esr.zc).is_null() || (esr.workPlace).is_null() {
+    esr.workPlace = Box::new_uninit_slice(ZSTD_BLOCKSIZE_MAX as size_t);
+    if (esr.dict).is_null() || (esr.zc).is_null() {
         if notificationLevel >= 1 {
             eprintln!("Not enough memory");
         }
@@ -851,15 +847,14 @@ unsafe fn analyze_entropy_internal(
     let mut pos = 0usize;
     for fileSize in fileSizes {
         ZDICT_countEStats(
-            *esr,
+            esr,
             &params,
             &mut countLit,
             &mut offcodeCount,
             &mut matchLengthCount,
             &mut litLengthCount,
             &mut repOffset,
-            src[pos..].as_ptr() as *const core::ffi::c_void,
-            *fileSize,
+            &src[pos..][..*fileSize],
             notificationLevel,
         );
         pos = pos.wrapping_add(*fileSize);
