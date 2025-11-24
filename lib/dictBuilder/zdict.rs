@@ -1257,7 +1257,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
 ///
 /// - the size of the dictionary stored into `dictBuffer` (<= `dictBufferCapacity`)
 /// - an error code, which can be tested with [`ZDICT_isError`]
-unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
+fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictBuffer: *mut core::ffi::c_void,
     maxDictSize: size_t,
     samples: &[u8],
@@ -1406,30 +1406,43 @@ unsafe fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictList[0].pos = n;
     dictContentSize_0 = currentSize;
 
-    // build dictionary content
+    unsafe {
+        if let Err(e) = build_dictionary_content(dictBuffer, maxDictSize, samples, &dictList) {
+            return e.to_error_code();
+        }
+
+        ZDICT_addEntropyTablesFromBuffer_advanced(
+            dictBuffer,
+            dictContentSize_0 as size_t,
+            maxDictSize,
+            samples,
+            samplesSizes,
+            params.zParams,
+        )
+    }
+}
+
+unsafe fn build_dictionary_content(
+    dictBuffer: *mut core::ffi::c_void,
+    maxDictSize: size_t,
+    samples: &[u8],
+    dictList: &[DictItem],
+) -> Result<(), Error> {
+    // convention: table[0].pos stores the number of elements
+    let max = dictList[0].pos;
+
     let mut ptr = (dictBuffer as *mut u8).add(maxDictSize);
-    for u in 1..dictList[0].pos {
-        let l = (dictList[u as usize]).length;
-        ptr = ptr.offset(-(l as isize));
+    for item in &dictList[1..max as usize] {
+        let l = item.length;
+        ptr = ptr.sub(l as usize);
         debug_assert!(ptr >= dictBuffer as *mut u8);
         if ptr < dictBuffer as *mut u8 {
-            return Error::GENERIC.to_error_code(); // should not happen
+            return Err(Error::GENERIC); // should not happen
         }
-        core::ptr::copy_nonoverlapping(
-            samples[(dictList[u as usize]).pos as usize..].as_ptr(),
-            ptr,
-            l as size_t,
-        );
+        core::ptr::copy_nonoverlapping(samples[item.pos as usize..].as_ptr(), ptr, l as size_t);
     }
 
-    ZDICT_addEntropyTablesFromBuffer_advanced(
-        dictBuffer,
-        dictContentSize_0 as size_t,
-        maxDictSize,
-        samples,
-        samplesSizes,
-        params.zParams,
-    )
+    Ok(())
 }
 
 /// Train a dictionary from an array of samples.
