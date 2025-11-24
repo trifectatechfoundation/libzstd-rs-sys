@@ -1,3 +1,4 @@
+use std::mem::MaybeUninit;
 use std::time::{Duration, Instant};
 
 use libc::{free, malloc, size_t};
@@ -1184,13 +1185,15 @@ unsafe fn finalize_dictionary(
 }
 
 unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
-    dictBuffer: *mut core::ffi::c_void,
+    dictBuffer: &mut [MaybeUninit<u8>],
     dictContentSize: size_t,
-    dictBufferCapacity: size_t,
     samples: &[u8],
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> size_t {
+    let dictBufferCapacity = dictBuffer.len();
+    let dictBuffer = dictBuffer.as_mut_ptr().cast::<core::ffi::c_void>();
+
     let compressionLevel = if params.compressionLevel == 0 {
         ZSTD_CLEVEL_DEFAULT
     } else {
@@ -1212,7 +1215,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         samplesSizes,
         dictBuffer
             .byte_add(dictBufferCapacity)
-            .byte_offset(-(dictContentSize as isize)),
+            .byte_sub(dictContentSize),
         dictContentSize,
         notificationLevel,
     );
@@ -1226,7 +1229,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     let randomID = ZSTD_XXH64(
         dictBuffer
             .byte_add(dictBufferCapacity)
-            .byte_offset(-(dictContentSize as isize)),
+            .byte_sub(dictContentSize),
         dictContentSize,
         0,
     );
@@ -1241,10 +1244,10 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
 
     if hSize.wrapping_add(dictContentSize) < dictBufferCapacity {
         core::ptr::copy(
-            (dictBuffer as *mut core::ffi::c_char)
-                .add(dictBufferCapacity)
-                .sub(dictContentSize),
-            (dictBuffer as *mut core::ffi::c_char).add(hSize),
+            dictBuffer
+                .byte_add(dictBufferCapacity)
+                .byte_sub(dictContentSize),
+            dictBuffer.byte_add(hSize),
             dictContentSize,
         )
     }
@@ -1406,15 +1409,22 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
     dictList[0].pos = n;
     dictContentSize_0 = currentSize;
 
-    unsafe {
-        if let Err(e) = build_dictionary_content(dictBuffer, maxDictSize, samples, &dictList) {
-            return e.to_error_code();
+    let dictBuffer = unsafe {
+        if dictBuffer.is_null() || maxDictSize == 0 {
+            &mut []
+        } else {
+            core::slice::from_raw_parts_mut(dictBuffer.cast::<MaybeUninit<u8>>(), maxDictSize)
         }
+    };
 
+    if let Err(e) = build_dictionary_content(dictBuffer, samples, &dictList) {
+        return e.to_error_code();
+    }
+
+    unsafe {
         ZDICT_addEntropyTablesFromBuffer_advanced(
             dictBuffer,
             dictContentSize_0 as size_t,
-            maxDictSize,
             samples,
             samplesSizes,
             params.zParams,
@@ -1422,27 +1432,31 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
 }
 
-unsafe fn build_dictionary_content(
-    dictBuffer: *mut core::ffi::c_void,
-    maxDictSize: size_t,
+fn build_dictionary_content(
+    dictBuffer: &mut [MaybeUninit<u8>],
     samples: &[u8],
     dictList: &[DictItem],
 ) -> Result<(), Error> {
     // convention: table[0].pos stores the number of elements
     let max = dictList[0].pos;
 
-    let mut ptr = (dictBuffer as *mut u8).add(maxDictSize);
+    let mut ptr = dictBuffer.len();
     for item in &dictList[1..max as usize] {
-        let l = item.length;
-        ptr = ptr.sub(l as usize);
-        debug_assert!(ptr >= dictBuffer as *mut u8);
-        if ptr < dictBuffer as *mut u8 {
-            return Err(Error::GENERIC); // should not happen
-        }
-        core::ptr::copy_nonoverlapping(samples[item.pos as usize..].as_ptr(), ptr, l as size_t);
+        let l = item.length as usize;
+        ptr = match ptr.checked_sub(l) {
+            None => return Err(Error::GENERIC), // should not happen
+            Some(v) => v,
+        };
+
+        let src = uninit_slice(&samples[item.pos as usize..][..l]);
+        dictBuffer[ptr..][..l].copy_from_slice(src);
     }
 
     Ok(())
+}
+
+fn uninit_slice<T>(slice: &[T]) -> &[MaybeUninit<T>] {
+    unsafe { &*(slice as *const [T] as *const [MaybeUninit<T>]) }
 }
 
 /// Train a dictionary from an array of samples.
@@ -1586,6 +1600,12 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     samplesSizes: *const size_t,
     nbSamples: core::ffi::c_uint,
 ) -> size_t {
+    let dictBuffer = if dictBuffer.is_null() || dictBufferCapacity == 0 {
+        &mut []
+    } else {
+        core::slice::from_raw_parts_mut(dictBuffer.cast::<MaybeUninit<u8>>(), dictBufferCapacity)
+    };
+
     let samplesSizes = if samplesSizes.is_null() || nbSamples == 0 {
         &[]
     } else {
@@ -1602,7 +1622,6 @@ pub unsafe extern "C" fn ZDICT_addEntropyTablesFromBuffer(
     ZDICT_addEntropyTablesFromBuffer_advanced(
         dictBuffer,
         dictContentSize,
-        dictBufferCapacity,
         samples,
         samplesSizes,
         params,
