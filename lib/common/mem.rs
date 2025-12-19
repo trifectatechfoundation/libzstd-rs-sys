@@ -12,11 +12,6 @@ pub(crate) const fn MEM_64bits() -> bool {
 }
 
 #[inline]
-pub(crate) const fn MEM_isLittleEndian() -> bool {
-    cfg!(target_endian = "little")
-}
-
-#[inline]
 pub(crate) unsafe fn MEM_read16(ptr: *const c_void) -> u16 {
     ptr.cast::<u16>().read_unaligned()
 }

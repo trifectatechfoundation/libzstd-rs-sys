@@ -867,8 +867,8 @@ use crate::lib::common::huf::{
     HUF_repeat_valid, HUF_OPTIMAL_DEPTH_THRESHOLD, HUF_SYMBOLVALUE_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{
-    MEM_32bits, MEM_64bits, MEM_isLittleEndian, MEM_read64, MEM_readLE32, MEM_readST,
-    MEM_writeLE16, MEM_writeLE24, MEM_writeLE32, MEM_writeLE64,
+    MEM_32bits, MEM_64bits, MEM_read64, MEM_readLE32, MEM_readST, MEM_writeLE16, MEM_writeLE24,
+    MEM_writeLE32, MEM_writeLE64,
 };
 use crate::lib::common::pool::ZSTD_threadPool;
 use crate::lib::common::xxhash::{
@@ -10845,14 +10845,16 @@ pub unsafe fn ZSTD_convertBlockSequences(
     );
     0
 }
+
 #[inline(always)]
-unsafe fn matchLengthHalfIsZero(litMatchLength: u64) -> core::ffi::c_int {
-    if MEM_isLittleEndian() {
+const fn matchLengthHalfIsZero(litMatchLength: u64) -> core::ffi::c_int {
+    if cfg!(target_endian = "little") {
         (litMatchLength <= 0xffffffff) as core::ffi::c_int
     } else {
         (litMatchLength as u32 == 0) as core::ffi::c_int
     }
 }
+
 pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) -> BlockSummary {
     let mut current_block: u64;
     let mut litMatchSize0 = 0u64;
@@ -10926,7 +10928,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
                     litSize: 0,
                 };
                 bs_0.nbSequences = n.wrapping_add(1);
-                if MEM_isLittleEndian() {
+                if cfg!(target_endian = "little") {
                     bs_0.litSize = litMatchSize0 as u32 as size_t;
                     bs_0.blockSize =
                         (bs_0.litSize as u64).wrapping_add(litMatchSize0 >> 32) as usize;
