@@ -1,5 +1,4 @@
 use crate::internal::MEM_readLE32;
-use crate::lib::common::bits::ZSTD_NbCommonBytes;
 use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, MEM_readST};
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
@@ -143,6 +142,15 @@ pub(crate) unsafe fn ZSTD_safecopyLiterals(
         let fresh1 = op;
         op = op.add(1);
         *fresh1 = *fresh0;
+    }
+}
+
+#[inline]
+const fn ZSTD_NbCommonBytes(val: usize) -> u32 {
+    if cfg!(target_endian = "little") {
+        val.trailing_zeros() >> 3
+    } else {
+        val.leading_zeros() >> 3
     }
 }
 
