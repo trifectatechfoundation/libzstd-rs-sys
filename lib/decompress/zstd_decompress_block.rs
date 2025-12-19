@@ -9,7 +9,7 @@ use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::huf::{HUF_flags_bmi2, HUF_flags_disableAsm};
-use crate::lib::common::mem::{MEM_32bits, MEM_64bits, MEM_readLE24};
+use crate::lib::common::mem::{MEM_32bits, MEM_readLE24};
 use crate::lib::common::reader::Reader;
 use crate::lib::common::zstd_internal::{
     LLFSELog, LL_bits, MLFSELog, ML_bits, MaxFSELog, MaxLL, MaxLLBits, MaxML, MaxMLBits, MaxOff,
@@ -2359,8 +2359,8 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
     if dst.is_empty() && nbSeq > 0 {
         return Err(Error::dstSize_tooSmall);
     }
-    if MEM_64bits()
-        && ::core::mem::size_of::<size_t>() == ::core::mem::size_of::<*mut core::ffi::c_void>()
+    if size_of::<usize>() == 8
+        && size_of::<size_t>() == size_of::<*mut core::ffi::c_void>()
         && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
         return Err(Error::dstSize_tooSmall);
@@ -2378,7 +2378,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
         }
 
         if !use_prefetch_decoder {
-            let minShare = (if MEM_64bits() { 7 } else { 20 }) as u32;
+            let minShare = (if size_of::<usize>() == 8 { 7 } else { 20 }) as u32;
             use_prefetch_decoder = info.longOffsetShare >= minShare;
         }
     }
