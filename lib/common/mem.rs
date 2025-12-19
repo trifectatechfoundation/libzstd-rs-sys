@@ -47,35 +47,13 @@ pub(crate) unsafe fn MEM_write64(memPtr: *mut c_void, value: u64) {
 }
 
 #[inline]
-pub(crate) fn MEM_swap16(in_0: u16) -> u16 {
-    in_0.swap_bytes()
-}
-#[inline]
-pub(crate) fn MEM_swap32(in_0: u32) -> u32 {
-    in_0.swap_bytes()
-}
-#[inline]
-pub(crate) fn MEM_swap64(in_0: u64) -> u64 {
-    in_0.swap_bytes()
-}
-
-#[inline]
 pub(crate) unsafe fn MEM_readLE16(memPtr: *const c_void) -> u16 {
-    if cfg!(target_endian = "little") {
-        MEM_read16(memPtr)
-    } else {
-        let p = memPtr as *const u8;
-        (*p as core::ffi::c_int + ((*p.add(1) as core::ffi::c_int) << 8)) as u16
-    }
+    MEM_read16(memPtr).to_le()
 }
 
 #[inline]
 pub(crate) unsafe fn MEM_writeLE16(memPtr: *mut c_void, val32: u16) {
-    if cfg!(target_endian = "little") {
-        MEM_write16(memPtr, val32);
-    } else {
-        MEM_write16(memPtr, MEM_swap16(val32));
-    };
+    MEM_write16(memPtr, val32.to_le());
 }
 
 #[inline]
@@ -91,38 +69,22 @@ pub(crate) unsafe fn MEM_writeLE24(memPtr: *mut c_void, val: u32) {
 
 #[inline]
 pub unsafe fn MEM_readLE32(memPtr: *const c_void) -> u32 {
-    if cfg!(target_endian = "little") {
-        MEM_read32(memPtr)
-    } else {
-        MEM_swap32(MEM_read32(memPtr))
-    }
+    MEM_read32(memPtr).to_le()
 }
 
 #[inline]
 pub(crate) unsafe fn MEM_writeLE32(memPtr: *mut c_void, val32: u32) {
-    if cfg!(target_endian = "little") {
-        MEM_write32(memPtr, val32);
-    } else {
-        MEM_write32(memPtr, MEM_swap32(val32));
-    };
+    MEM_write32(memPtr, val32.to_le());
 }
 
 #[inline]
 pub(crate) unsafe fn MEM_readLE64(memPtr: *const c_void) -> u64 {
-    if cfg!(target_endian = "little") {
-        MEM_read64(memPtr)
-    } else {
-        MEM_swap64(MEM_read64(memPtr))
-    }
+    MEM_read64(memPtr).to_le()
 }
 
 #[inline]
 pub(crate) unsafe fn MEM_writeLE64(memPtr: *mut c_void, val64: u64) {
-    if cfg!(target_endian = "little") {
-        MEM_write64(memPtr, val64);
-    } else {
-        MEM_write64(memPtr, MEM_swap64(val64));
-    };
+    MEM_write64(memPtr, val64.to_le());
 }
 
 #[inline]
