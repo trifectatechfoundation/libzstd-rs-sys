@@ -59,7 +59,7 @@ use crate::lib::common::fse::{
     FSE_CState_t, FSE_CTable, FSE_getMaxNbBits, FSE_initCState, FSE_repeat,
 };
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat, HUF_repeat_valid};
-use crate::lib::common::mem::{MEM_isLittleEndian, MEM_read32};
+use crate::lib::common::mem::MEM_read32;
 use crate::lib::common::zstd_internal::{
     LL_bits, ML_bits, MaxLL, MaxLit, MaxML, MaxOff, MINMATCH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
 };
@@ -531,7 +531,7 @@ unsafe fn ZSTD_updateStats(
 unsafe fn ZSTD_readMINMATCH(memPtr: *const core::ffi::c_void, length: u32) -> u32 {
     match length {
         3 => {
-            if MEM_isLittleEndian() {
+            if cfg!(target_endian = "little") {
                 MEM_read32(memPtr) << 8
             } else {
                 MEM_read32(memPtr) >> 8
