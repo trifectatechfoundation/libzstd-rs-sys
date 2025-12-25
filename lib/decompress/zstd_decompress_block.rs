@@ -2404,6 +2404,9 @@ pub fn ZSTD_checkContinuity(dctx: &mut ZSTD_DCtx, range: Range<*const u8>) {
     }
 }
 
+#[deprecated(
+    note = "The block API is deprecated in favor of the normal compression API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_decompressBlock))]
 pub unsafe extern "C" fn ZSTD_decompressBlock(
     dctx: *mut ZSTD_DCtx,

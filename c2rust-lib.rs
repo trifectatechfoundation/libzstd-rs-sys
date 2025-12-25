@@ -111,6 +111,7 @@ pub use crate::lib::zstd::{
     ZSTD_WINDOWLOG_MAX_64,
 };
 
+#[allow(deprecated)] // We still export deprecated functions
 pub use crate::lib::decompress::{
     zstd_ddict::{
         ZSTD_DDict, ZSTD_createDDict, ZSTD_createDDict_byReference, ZSTD_estimateDDictSize,
@@ -150,6 +151,7 @@ pub use crate::lib::zdict::{
     ZDICT_getDictID, ZDICT_getErrorName, ZDICT_isError, ZDICT_params_t, ZDICT_trainFromBuffer,
 };
 
+#[allow(deprecated)] // We still export deprecated functions
 pub use crate::lib::compress::zstd_compress::{
     ZSTD_CCtx, ZSTD_CCtx_getParameter, ZSTD_CCtx_loadDictionary, ZSTD_CCtx_refCDict,
     ZSTD_CCtx_refPrefix, ZSTD_CCtx_reset, ZSTD_CCtx_setParameter, ZSTD_CCtx_setPledgedSrcSize,
