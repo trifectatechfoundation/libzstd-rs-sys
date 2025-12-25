@@ -15,7 +15,7 @@ use crate::lib::compress::fse_compress::{
     FSE_writeNCount,
 };
 use crate::lib::compress::zstd_compress::SeqDef;
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_lazy, ZSTD_strategy};
 use crate::ZSTD_isError;
 
 pub type SymbolEncodingType_e = core::ffi::c_uint;

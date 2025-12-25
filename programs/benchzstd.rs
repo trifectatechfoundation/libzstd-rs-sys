@@ -17,7 +17,11 @@ use libzstd_rs_sys::lib::decompress::zstd_decompress::{
     ZSTD_findDecompressedSize, ZSTD_freeDCtx,
 };
 use libzstd_rs_sys::lib::decompress::ZSTD_DCtx;
-use libzstd_rs_sys::lib::zstd::*;
+use libzstd_rs_sys::lib::zstd::{
+    ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_cParameter, ZSTD_compressionParameters,
+    ZSTD_error_dstSize_tooSmall, ZSTD_inBuffer_s, ZSTD_outBuffer_s, ZSTD_CONTENTSIZE_ERROR,
+    ZSTD_CONTENTSIZE_UNKNOWN,
+};
 
 use crate::benchfn::{
     BMK_benchParams_t, BMK_benchTimedFn, BMK_createTimedFnState, BMK_extract_runTime,

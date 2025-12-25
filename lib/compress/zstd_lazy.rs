@@ -69,7 +69,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_storeSeq,
 };
 use crate::lib::polyfill::{prefetch_read_data, Locality};
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 pub const ZSTD_ROW_HASH_CACHE_SIZE: core::ffi::c_int = 8;

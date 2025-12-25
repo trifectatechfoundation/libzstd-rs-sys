@@ -31,7 +31,7 @@ pub use crate::lib::dictBuilder::zdict::{
 };
 
 pub mod experimental {
-    use super::*;
+    use super::ZDICT_params_t;
 
     pub const ZDICT_DICTSIZE_MIN: usize = 256;
 

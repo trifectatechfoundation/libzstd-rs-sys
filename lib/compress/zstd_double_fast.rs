@@ -61,7 +61,7 @@ use crate::lib::compress::zstd_compress_internal::{
     ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
     ZSTD_getLowestPrefixIndex, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq,
 };
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_compressionParameters};
 pub const kSearchStrength: core::ffi::c_int = 8;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const REPCODE1_TO_OFFBASE: core::ffi::c_int = 1;

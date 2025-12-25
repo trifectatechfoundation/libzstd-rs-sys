@@ -26,7 +26,10 @@ use crate::lib::zdict::experimental::{
     ZDICT_fastCover_params_t, ZDICT_legacy_params_t, ZDICT_CONTENTSIZE_MIN, ZDICT_DICTSIZE_MIN,
 };
 use crate::lib::zdict::ZDICT_params_t;
-use crate::lib::zstd::*;
+use crate::lib::zstd::{
+    ZSTD_customMem, ZSTD_dct_rawContent, ZSTD_dlm_byRef, ZSTD_parameters, ZSTD_BLOCKSIZE_MAX,
+    ZSTD_CLEVEL_DEFAULT, ZSTD_MAGIC_DICTIONARY,
+};
 
 #[derive(Clone)]
 #[repr(C)]

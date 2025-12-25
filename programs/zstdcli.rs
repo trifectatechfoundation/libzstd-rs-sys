@@ -10,7 +10,10 @@ use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_cover_params_t, ZDICT_fastCover_params_t, ZDICT_legacy_params_t,
 };
 use libzstd_rs_sys::lib::zdict::ZDICT_params_t;
-use libzstd_rs_sys::lib::zstd::*;
+use libzstd_rs_sys::lib::zstd::{
+    ZSTD_ParamSwitch_e, ZSTD_btultra2, ZSTD_cParameter, ZSTD_compressionParameters, ZSTD_strategy,
+    ZSTD_BLOCKSIZELOG_MAX, ZSTD_WINDOWLOG_MAX_32, ZSTD_WINDOWLOG_MAX_64,
+};
 
 use crate::benchzstd::{BMK_benchFilesAdvanced, BMK_initAdvancedParams, BMK_syntheticTest};
 use crate::dibio::DiB_trainFromFiles;

@@ -26,7 +26,7 @@ use crate::lib::decompress::{
     ZSTD_seqSymbol_header,
 };
 use crate::lib::polyfill::{likely, prefetch_read_data, unlikely, Locality};
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_BLOCKSIZE_MAX, ZSTD_WINDOWLOG_MAX, ZSTD_WINDOWLOG_MAX_32};
 
 pub type BIT_DStream_status = core::ffi::c_uint;
 pub const BIT_DStream_overflow: BIT_DStream_status = 3;
