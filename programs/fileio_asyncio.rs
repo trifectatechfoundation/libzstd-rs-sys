@@ -821,11 +821,7 @@ unsafe fn AIO_ReadPool_findNextWaitingOffsetCompletedJob_locked(
     core::ptr::null_mut()
 }
 unsafe fn AIO_ReadPool_numReadsInFlight(ctx: *mut ReadPoolCtx_t) -> size_t {
-    let jobsHeld = if ((*ctx).currentJobHeld).is_null() {
-        0
-    } else {
-        1
-    };
+    let jobsHeld = i32::from(!((*ctx).currentJobHeld).is_null());
     ((*ctx).base.totalIoJobs
         - ((*ctx).base.availableJobsCount + (*ctx).completedJobsCount + jobsHeld)) as size_t
 }
