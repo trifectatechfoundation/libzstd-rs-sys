@@ -1068,7 +1068,7 @@ pub(super) fn COVER_dictSelectionIsError(selection: &COVER_dictSelection_t) -> b
 }
 
 pub(super) fn COVER_dictSelectionFree(selection: COVER_dictSelection_t) {
-    drop(selection)
+    drop(selection);
 }
 
 pub(super) fn COVER_selectDict(
@@ -1181,7 +1181,7 @@ pub(super) fn COVER_selectDict(
 }
 
 unsafe fn COVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
-    COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
+    COVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) });
 }
 
 fn COVER_tryParameters(data: Box<COVER_tryParameters_data_t>) {

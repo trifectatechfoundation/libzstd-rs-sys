@@ -337,7 +337,7 @@ fn ZSTD_decodeLiteralsBlock(
                         let len = litSize - ZSTD_LITBUFFEREXTRASIZE;
                         let src = &src[lhSize..][..len];
 
-                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, len)
+                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, len);
                     };
 
                     dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].copy_from_slice(
@@ -348,7 +348,7 @@ fn ZSTD_decodeLiteralsBlock(
                     unsafe {
                         let src = &src[lhSize..][..litSize];
 
-                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, litSize)
+                        core::ptr::copy_nonoverlapping(src.as_ptr(), dctx.litBuffer, litSize);
                     };
                 }
                 dctx.litPtr = dctx.litBuffer;
@@ -402,7 +402,7 @@ fn ZSTD_decodeLiteralsBlock(
                         dctx.litBuffer,
                         src[lhSize],
                         litSize - ZSTD_LITBUFFEREXTRASIZE,
-                    )
+                    );
                 };
 
                 dctx.litExtraBuffer[..ZSTD_LITBUFFEREXTRASIZE].fill(src[lhSize]);
@@ -1814,7 +1814,7 @@ fn ZSTD_decompressSequences_bodySplitLitBuffer(
                         "nop",
                         ".p2align 3",
                         options(preserves_flags)
-                    )
+                    );
                 }
             }
 
@@ -1974,7 +1974,7 @@ fn prefetch_area<T>(ptr: *const T, bytes: usize) {
 
 #[inline(always)]
 fn prefetch_val<T>(ptr: *const T) {
-    prefetch_area(ptr, size_of::<T>())
+    prefetch_area(ptr, size_of::<T>());
 }
 
 #[inline(always)]

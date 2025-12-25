@@ -30,15 +30,15 @@ pub(crate) unsafe fn MEM_readST(ptr: *const c_void) -> size_t {
 
 #[inline]
 pub(crate) unsafe fn MEM_write16(memPtr: *mut c_void, value: u16) {
-    memPtr.cast::<u16>().write_unaligned(value)
+    memPtr.cast::<u16>().write_unaligned(value);
 }
 #[inline]
 pub(crate) unsafe fn MEM_write32(memPtr: *mut c_void, value: u32) {
-    memPtr.cast::<u32>().write_unaligned(value)
+    memPtr.cast::<u32>().write_unaligned(value);
 }
 #[inline]
 pub(crate) unsafe fn MEM_write64(memPtr: *mut c_void, value: u64) {
-    memPtr.cast::<u64>().write_unaligned(value)
+    memPtr.cast::<u64>().write_unaligned(value);
 }
 
 #[inline]
