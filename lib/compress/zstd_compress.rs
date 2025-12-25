@@ -3705,6 +3705,9 @@ unsafe fn ZSTD_copyCCtx_internal(
     Ok(())
 }
 
+#[deprecated(
+    note = "This function will likely be removed in a future release. It is misleading and has very limited utility."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyCCtx))]
 pub unsafe extern "C" fn ZSTD_copyCCtx(
     dstCCtx: *mut ZSTD_CCtx,
@@ -4673,6 +4676,10 @@ pub extern "C" fn ZSTD_sequenceBound(srcSize: size_t) -> size_t {
     maxNbSeq.wrapping_add(maxNbDelims)
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.6",
+    note = "For debugging only, will be replaced by `ZSTD_extractSequences`"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_generateSequences))]
 pub unsafe extern "C" fn ZSTD_generateSequences(
     zc: *mut ZSTD_CCtx,
@@ -6293,6 +6300,10 @@ pub unsafe extern "C" fn ZSTD_compressContinue_public(
     }
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.5",
+    note = "The buffer-less API is deprecated in favor of the normal streaming API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressContinue))]
 pub unsafe extern "C" fn ZSTD_compressContinue(
     cctx: *mut ZSTD_CCtx,
@@ -6304,6 +6315,7 @@ pub unsafe extern "C" fn ZSTD_compressContinue(
     ZSTD_compressContinue_public(cctx, dst, dstCapacity, src, srcSize)
 }
 
+#[deprecated]
 unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> size_t {
     let cParams = (*cctx).appliedParams.cParams;
     (*cctx)
@@ -6312,11 +6324,16 @@ unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> size_t {
         .min(1 << cParams.windowLog)
 }
 
+#[deprecated(
+    note = "The block API is deprecated in favor of the normal compression API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getBlockSize))]
 pub unsafe extern "C" fn ZSTD_getBlockSize(cctx: *const ZSTD_CCtx) -> size_t {
+    #[allow(deprecated)]
     ZSTD_getBlockSize_deprecated(cctx)
 }
 
+#[deprecated(note = "Deprecated definitions that are still used internally.")]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     cctx: *mut ZSTD_CCtx,
@@ -6325,6 +6342,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
+    #[allow(deprecated)]
     let blockSizeMax = ZSTD_getBlockSize_deprecated(cctx);
     if srcSize > blockSizeMax {
         return Error::srcSize_wrong.to_error_code();
@@ -6336,6 +6354,9 @@ pub unsafe extern "C" fn ZSTD_compressBlock_deprecated(
     }
 }
 
+#[deprecated(
+    note = "The block API is deprecated in favor of the normal compression API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBlock))]
 pub unsafe extern "C" fn ZSTD_compressBlock(
     cctx: *mut ZSTD_CCtx,
@@ -6344,6 +6365,7 @@ pub unsafe extern "C" fn ZSTD_compressBlock(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
+    #[allow(deprecated)]
     ZSTD_compressBlock_deprecated(cctx, dst, dstCapacity, src, srcSize)
 }
 
@@ -6824,6 +6846,10 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
 /// # Returns
 ///
 /// 0, or an error code.
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use the advanced API to access custom parameters."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_advanced))]
 pub unsafe extern "C" fn ZSTD_compressBegin_advanced(
     cctx: *mut ZSTD_CCtx,
@@ -6882,6 +6908,10 @@ unsafe fn ZSTD_compressBegin_usingDict_deprecated(
     )
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.5",
+    note = "The buffer-less API is deprecated in favor of the normal streaming API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
     cctx: *mut ZSTD_CCtx,
@@ -6895,6 +6925,10 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingDict(
     }
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.5",
+    note = "The buffer-less API is deprecated in favor of the normal streaming API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin))]
 pub unsafe extern "C" fn ZSTD_compressBegin(
     cctx: *mut ZSTD_CCtx,
@@ -7016,6 +7050,10 @@ pub(crate) unsafe fn ZSTD_compressEnd_internal(
     Ok(cSize.wrapping_add(endResult))
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.5",
+    note = "The buffer-less API is deprecated in favor of the normal streaming API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressEnd))]
 pub unsafe extern "C" fn ZSTD_compressEnd(
     cctx: *mut ZSTD_CCtx,
@@ -7027,6 +7065,10 @@ pub unsafe extern "C" fn ZSTD_compressEnd(
     ZSTD_compressEnd_public(cctx, dst, dstCapacity, src, srcSize)
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "It can be replaced by [`ZSTD_compress2`], in combination with [`ZSTD_CCtx_setParameter`] and other parameter setters."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_advanced(
     cctx: *mut ZSTD_CCtx,
@@ -7659,6 +7701,10 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
 
 /// This function is DEPRECATED.
 /// cdict must be != NULL
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use the advanced API to access custom parameters."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
     cctx: *mut ZSTD_CCtx,
@@ -7673,6 +7719,7 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_advanced(
 }
 
 /// cdict must be != NULL
+#[deprecated(note = "Deprecated definitions that are still used internally.")]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict_deprecated))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
     cctx: *mut ZSTD_CCtx,
@@ -7691,11 +7738,16 @@ pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict_deprecated(
     }
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.5",
+    note = "The buffer-less API is deprecated in favor of the normal streaming API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compressBegin_usingCDict))]
 pub unsafe extern "C" fn ZSTD_compressBegin_usingCDict(
     cctx: *mut ZSTD_CCtx,
     cdict: *const ZSTD_CDict,
 ) -> size_t {
+    #[allow(deprecated)]
     ZSTD_compressBegin_usingCDict_deprecated(cctx, cdict)
 }
 
@@ -7719,6 +7771,10 @@ unsafe fn ZSTD_compress_usingCDict_internal(
 }
 
 /// This function is DEPRECATED.
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "It can be replaced by [` ZSTD_compress2`], in combination with [`ZSTD_CCtx_loadDictionary`] and other parameter setters."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_compress_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_compress_usingCDict_advanced(
     cctx: *mut ZSTD_CCtx,
@@ -7807,6 +7863,10 @@ unsafe fn ZSTD_getCParamMode(
 }
 
 /// pledgedSrcSize == 0 means "unknown"
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use [`ZSTD_CCtx_reset`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetCStream))]
 pub unsafe extern "C" fn ZSTD_resetCStream(
     zcs: *mut ZSTD_CStream,
@@ -7870,6 +7930,10 @@ pub unsafe fn ZSTD_initCStream_internal(
 }
 
 /// same as ZSTD_initCStream_usingCDict(), with control over frame parameters
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use [`ZSTD_CCtx_reset`] and [`ZSTD_CCtx_refCDict`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
     zcs: *mut ZSTD_CStream,
@@ -7895,6 +7959,9 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict_advanced(
 }
 
 /// cdict must outlive compression session
+#[deprecated(
+    note = "Use [`ZSTD_CCtx_reset`] and [`ZSTD_CCtx_refCDict`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingCDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
     zcs: *mut ZSTD_CStream,
@@ -7914,6 +7981,10 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingCDict(
 /// pledgedSrcSize must be exact.
 /// if srcSize is not known at init time, use value ZSTD_CONTENTSIZE_UNKNOWN.
 /// dict is loaded with default parameters ZSTD_dct_auto and ZSTD_dlm_byCopy.
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use [`ZSTD_CCtx_reset`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_advanced))]
 pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     zcs: *mut ZSTD_CStream,
@@ -7951,6 +8022,10 @@ pub unsafe extern "C" fn ZSTD_initCStream_advanced(
     0
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use [`ZSTD_CCtx_reset`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     zcs: *mut ZSTD_CStream,
@@ -7978,6 +8053,10 @@ pub unsafe extern "C" fn ZSTD_initCStream_usingDict(
     0
 }
 
+#[deprecated(
+    since = "0.0.0+zstd.1.5.0",
+    note = "Use [`ZSTD_CCtx_reset`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initCStream_srcSize))]
 pub unsafe extern "C" fn ZSTD_initCStream_srcSize(
     zcs: *mut ZSTD_CStream,
