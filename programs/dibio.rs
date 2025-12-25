@@ -9,7 +9,7 @@ use libzstd_rs_sys::lib::zdict::experimental::{
     ZDICT_trainFromBuffer_cover, ZDICT_trainFromBuffer_fastCover, ZDICT_trainFromBuffer_legacy,
 };
 use libzstd_rs_sys::lib::zdict::{ZDICT_getErrorName, ZDICT_isError};
-use libzstd_rs_sys::lib::zstd::*;
+use libzstd_rs_sys::lib::zstd::ZSTD_error_GENERIC;
 
 use crate::timefn::{PTime, UTIL_clockSpanMicro, UTIL_getTime, UTIL_time_t};
 use crate::util::UTIL_getFileSize;

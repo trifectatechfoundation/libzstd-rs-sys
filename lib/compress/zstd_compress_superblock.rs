@@ -28,7 +28,7 @@ use crate::lib::compress::zstd_compress_literals::{
 use crate::lib::compress::zstd_compress_sequences::{
     ZSTD_crossEntropyCost, ZSTD_encodeSequences, ZSTD_fseBitCost,
 };
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_dictContentType_e};
 
 #[derive(Copy, Clone)]
 #[repr(C)]

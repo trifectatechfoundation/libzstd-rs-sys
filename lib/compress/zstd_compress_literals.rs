@@ -10,7 +10,7 @@ use crate::lib::common::mem::{MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::LitHufLog;
 use crate::lib::compress::huf_compress::{HUF_compress1X_repeat, HUF_compress4X_repeat};
 use crate::lib::compress::zstd_compress::ZSTD_hufCTables_t;
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_btultra, ZSTD_lazy, ZSTD_strategy};
 
 const MIN_LITERALS_FOR_4_STREAMS: usize = 6;
 

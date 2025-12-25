@@ -26,7 +26,12 @@ use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
 };
-use crate::lib::zstd::*;
+use crate::lib::zstd::{
+    ZSTD_ParamSwitch_e, ZSTD_cParameter, ZSTD_customMem, ZSTD_dct_auto, ZSTD_dct_rawContent,
+    ZSTD_dictContentType_e, ZSTD_dlm_byCopy, ZSTD_dlm_byRef, ZSTD_frameProgression, ZSTD_inBuffer,
+    ZSTD_outBuffer_s, ZSTD_strategy, ZSTD_BLOCKSIZELOG_MAX, ZSTD_BLOCKSIZE_MAX,
+    ZSTD_CONTENTSIZE_UNKNOWN,
+};
 #[repr(C)]
 pub struct ZSTDMT_CCtx {
     factory: *mut ZSTD_threadPool,

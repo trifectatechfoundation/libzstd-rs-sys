@@ -73,7 +73,7 @@ use crate::lib::compress::zstd_compress_internal::{
     zop_dynamic, zop_predef, ZSTD_count, ZSTD_count_2segments, ZSTD_getLowestMatchIndex,
     ZSTD_hash3Ptr, ZSTD_hashPtr, ZSTD_index_overlap_check, ZSTD_storeSeq, ZSTD_updateRep,
 };
-use crate::lib::zstd::*;
+use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,
