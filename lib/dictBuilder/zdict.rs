@@ -38,7 +38,7 @@ struct EStats_ress_t {
     dict: *mut ZSTD_CDict,
     /// working context
     zc: *mut ZSTD_CCtx,
-    /// must be ZSTD_BLOCKSIZE_MAX allocated
+    /// must be [`ZSTD_BLOCKSIZE_MAX`] allocated
     workPlace: Box<[MaybeUninit<u8>]>,
 }
 
@@ -737,7 +737,7 @@ fn ZDICT_insertSortCount(
 }
 
 /// Rewrite `countLit` to contain a mostly flat but still compressible distribution of literals.
-/// Necessary to avoid generating a non-compressible distribution that HUF_writeCTable() cannot encode.
+/// Necessary to avoid generating a non-compressible distribution that [`HUF_writeCTable`] cannot encode.
 fn ZDICT_flatLit(countLit: &mut [core::ffi::c_uint; 256]) {
     countLit.fill(2);
 

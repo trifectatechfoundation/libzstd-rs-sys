@@ -1943,8 +1943,8 @@ enum Decoder {
 ///  Tells which decoder is likely to decode faster,
 ///  based on a set of pre-computed metrics.
 ///
-/// @return : 0==HUF_decompress4X1, 1==HUF_decompress4X2 .
-///  Assumption : 0 < dst_size <= 128 KB */
+/// @return : `0==HUF_decompress4X1`, `1==HUF_decompress4X2` .
+///  Assumption : 0 < `dst_size` <= 128 KB */
 fn HUF_selectDecoder(dst_size: usize, src_size: usize) -> Decoder {
     let D256 = (dst_size >> 8) as u32;
 

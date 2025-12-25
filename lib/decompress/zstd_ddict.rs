@@ -227,7 +227,7 @@ pub unsafe extern "C" fn ZSTD_createDDict_advanced(
 /// The `dict`'s content is copied inside the [`ZSTD_DDict`], so `dict` can be released after
 /// [`ZSTD_DDict`] creation.
 ///
-/// The DDict can be freed using [`ZSTD_freeDDict`].
+/// The [`ZSTD_DDict`] can be freed using [`ZSTD_freeDDict`].
 ///
 /// # Returns
 ///
@@ -344,7 +344,7 @@ pub const extern "C" fn ZSTD_estimateDDictSize(
 ///
 /// # Returns
 ///
-/// - the size of the DDict, including the size of the DDict's `dictBuffer` if present
+/// - the size of the [`ZSTD_DDict`], including the size of the [`ZSTD_DDict`]'s `dictBuffer` if present
 /// - 0 if the `ddict` is NULL
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_sizeof_DDict))]
 pub unsafe extern "C" fn ZSTD_sizeof_DDict(ddict: *const ZSTD_DDict) -> size_t {

@@ -2340,11 +2340,11 @@ unsafe fn ZSTDv06_frameHeaderSize(src: *const core::ffi::c_void, srcSize: size_t
     ZSTDv06_frameHeaderSize_min.wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize))
 }
 
-/// ZSTDv06_getFrameParams() :
+/// [`ZSTDv06_getFrameParams`] :
 /// decode Frame Header, or provide expected `srcSize`.
 /// @return : 0, `fparamsPtr` is correctly filled,
 ///          >0, `srcSize` is too small, result is expected `srcSize`,
-///           or an error code, which can be tested using ZSTDv06_isError()
+///           or an error code, which can be tested using [`ZSTDv06_isError`]
 pub(crate) unsafe fn ZSTDv06_getFrameParams(
     fparamsPtr: *mut ZSTDv06_frameParams,
     src: *const core::ffi::c_void,

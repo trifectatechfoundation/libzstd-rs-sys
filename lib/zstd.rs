@@ -158,7 +158,7 @@ pub type ZSTD_allocFunction =
 pub struct ZSTD_format_e(u32);
 
 impl ZSTD_format_e {
-    /// zstd frame format, specified in zstd_compression_format.md (default)
+    /// zstd frame format, specified in `zstd_compression_format.md` (default)
     pub const ZSTD_f_zstd1: Self = Self(Format::ZSTD_f_zstd1 as u32);
 
     /// Variant of zstd frame format, without initial 4-bytes magic number.
@@ -359,8 +359,8 @@ impl ZSTD_dParameter {
     /// Experimental parameter: if enabled and [`ZSTD_DCtx`] is allocated on the heap, then
     /// additional memory will be allocated to store references to multiple [`ZSTD_DDict`]. That
     /// is, multiple calls of [`ZSTD_DCtx_refDDict`] using a given [`ZSTD_DCtx`], rather than
-    /// overwriting the previous DDict reference, will instead store all references. At
-    /// decompression time, the appropriate `dictID` is selected from the set of DDicts based on
+    /// overwriting the previous `DDict` reference, will instead store all references. At
+    /// decompression time, the appropriate `dictID` is selected from the set of `DDict`s based on
     /// the `dictID` in the frame.
     ///
     /// **Warning:** Enabling this parameter and calling [`ZSTD_DCtx_refDDict`] will trigger memory
@@ -506,21 +506,21 @@ impl ZSTD_ResetDirective {
 ///
 /// Zstd currently supports the use of a [`ZSTD_CDict`] in three ways:
 ///
-/// - The contents of the CDict can be copied into the working context. This
+/// - The contents of the `CDict` can be copied into the working context. This
 ///   means that the compression can search both the dictionary and input
 ///   while operating on a single set of internal tables. This makes
 ///   the compression faster per byte of input. However, the initial copy of
-///   the CDict's tables incurs a fixed cost at the beginning of the
+///   the `CDict`'s tables incurs a fixed cost at the beginning of the
 ///   compression. For small compressions (< 8 KB), that copy can dominate
 ///   the cost of the compression.
 ///
-/// - The CDict's tables can be used in-place. In this model, compression is
+/// - The `CDict`'s tables can be used in-place. In this model, compression is
 ///   slower per input byte, because the compressor has to search two sets of
 ///   tables. However, this model incurs no start-up cost (as long as the
 ///   working context's tables can be reused). For small inputs, this can be
-///   faster than copying the CDict's tables.
+///   faster than copying the `CDict`'s tables.
 ///
-/// - The CDict's tables are not used at all, and instead we use the working
+/// - The `CDict`'s tables are not used at all, and instead we use the working
 ///   context alone to reload the dictionary and use params based on the source
 ///   size. See [`ZSTD_compress_insertDictionary`] and [`ZSTD_compress_usingDict`].
 ///   This method is effective when the dictionary sizes are very small relative
