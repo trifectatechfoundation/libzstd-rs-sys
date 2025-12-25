@@ -394,7 +394,7 @@ fn FASTCOVER_buildDictionary<'a>(
 }
 
 unsafe fn FASTCOVER_tryParameters_wrapper(opaque: *mut core::ffi::c_void) {
-    FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) })
+    FASTCOVER_tryParameters(unsafe { Box::from_raw(opaque.cast()) });
 }
 
 fn FASTCOVER_tryParameters(data: Box<FASTCOVER_tryParameters_data_t>) {
@@ -870,7 +870,7 @@ fn optimize_train_from_buffer_fastcover(
                             pool,
                             FASTCOVER_tryParameters_wrapper,
                             Box::leak(data) as *mut _ as *mut core::ffi::c_void,
-                        )
+                        );
                     }
                 } else {
                     FASTCOVER_tryParameters(data);
