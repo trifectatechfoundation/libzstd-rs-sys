@@ -1068,14 +1068,14 @@ unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t
     debug_assert!(unsafe { (*op).offset_from(*ip) } >= 8);
 }
 
-/// Specialized version of memcpy() that is allowed to READ up to WILDCOPY_OVERLENGTH past the input buffer
-/// and write up to 16 bytes past oend_w (op >= oend_w is allowed).
+/// Specialized version of `memcpy` that is allowed to READ up to [`WILDCOPY_OVERLENGTH`] past the input buffer
+/// and write up to 16 bytes past `oend_w` (op >= `oend_w` is allowed).
 /// This function is only called in the uncommon case where the sequence is near the end of the block. It
 /// should be fast for a single long sequence, but can be slow for several short sequences.
 ///
 /// @param ovtype controls the overlap detection
-///     - Overlap::NoOverlap: The source and destination are guaranteed to be at least WILDCOPY_VECLEN bytes apart.
-///     - Overlap::OverlapSrcBeforeDst: The src and dst may overlap and may be any distance apart.
+///     - [`Overlap::NoOverlap`]: The source and destination are guaranteed to be at least [`WILDCOPY_VECLEN`] bytes apart.
+///     - [`Overlap::OverlapSrcBeforeDst`]: The src and dst may overlap and may be any distance apart.
 ///     The src buffer must be before the dst buffer.
 unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
@@ -1131,7 +1131,7 @@ unsafe fn ZSTD_safecopy(
 }
 
 /// This version allows overlap with dst before src, or handles the non-overlap case with dst after src
-/// Kept separate from more common ZSTD_safecopy case to avoid performance impact to the safecopy common case */
+/// Kept separate from more common [`ZSTD_safecopy`] case to avoid performance impact to the safecopy common case */
 unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
     let diff = op.offset_from(ip) as ptrdiff_t;
     let oend = op.add(length);
@@ -1168,7 +1168,7 @@ unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: 
 /// and unlikely cases, we can speed up the common cases.
 ///
 /// NOTE: This function needs to be fast for a single long sequence, but doesn't need
-/// to be optimized for many small sequences, since those fall into ZSTD_execSequence().
+/// to be optimized for many small sequences, since those fall into [`ZSTD_execSequence`].
 #[inline(never)]
 unsafe fn ZSTD_execSequenceEnd(
     mut op: *mut u8,
@@ -1558,8 +1558,8 @@ fn ZSTD_updateFseStateWithDInfo(
     DStatePtr.state = usize::from(nextState) + lowBits;
 }
 
-/// We need to add at most (ZSTD_WINDOWLOG_MAX_32 - 1) bits to read the maximum
-/// offset bits. But we can only read at most STREAM_ACCUMULATOR_MIN_32
+/// We need to add at most `(ZSTD_WINDOWLOG_MAX_32 - 1)` bits to read the maximum
+/// offset bits. But we can only read at most [`STREAM_ACCUMULATOR_MIN_32`]
 /// bits before reloading. This value is the maximum number of bytes we read
 /// after reloading when we are decoding long offsets.
 const LONG_OFFSETS_MAX_EXTRA_BITS_32: i32 =

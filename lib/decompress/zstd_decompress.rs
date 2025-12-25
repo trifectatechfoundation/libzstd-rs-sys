@@ -728,7 +728,7 @@ fn ZSTD_initDCtx_internal(dctx: &mut MaybeUninit<ZSTD_DCtx>) {
 /// # Limitations
 ///
 /// - currently not compatible with internal dictionary creation, triggered by [`ZSTD_initDStream_usingDict`]
-/// - static DCtx is incompatible with legacy support
+/// - static `DCtx` is incompatible with legacy support
 ///
 /// # Returns
 ///
@@ -2848,7 +2848,7 @@ pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
 /// This function is deprecated, and is equivalent to first using [`ZSTD_DCtx_reset`] to reset the
 /// decompression context and then using [`ZSTD_DCtx_refDDict`] to reference the dictionary.
 ///
-/// Note: DDict will just be referenced, and must outlive decompression session
+/// Note: `DDict` will just be referenced, and must outlive decompression session
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     dctx: *mut ZSTD_DStream,
@@ -2885,7 +2885,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
 /// active for decompression of future frames using same [`ZSTD_DCtx`] decompression context.
 ///
 /// If called with [`ZSTD_dParameter::ZSTD_d_refMultipleDDicts`] enabled, repeated calls of this
-/// function will store the [`ZSTD_DDict`] references in a table, and the DDict used for
+/// function will store the [`ZSTD_DDict`] references in a table, and the `DDict` used for
 /// decompression will be determined at decompression time, as per the dict ID in the frame. The
 /// memory for the table is allocated on the first call to [`ZSTD_DCtx_refDDict`], and can be freed
 /// with [`ZSTD_freeDCtx`].
@@ -2894,7 +2894,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
 /// dictionary will be managed, and referencing a dictionary effectively "discards" any previous
 /// one.
 ///
-/// Referencing a NULL DDict means "return to no-dictionary mode".
+/// Referencing a NULL `DDict` means "return to no-dictionary mode".
 ///
 /// # Returns
 ///
@@ -2903,7 +2903,7 @@ pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
 ///
 /// # Safety
 ///
-/// The DDict is just referenced, its lifetime must outlive its usage from [`ZSTD_DCtx`].
+/// The `DDict` is just referenced, its lifetime must outlive its usage from [`ZSTD_DCtx`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_refDDict))]
 pub unsafe extern "C" fn ZSTD_DCtx_refDDict(
     dctx: *mut ZSTD_DCtx,
@@ -3297,7 +3297,7 @@ pub extern "C" fn ZSTD_decodingBufferSize_min(
 /// Instead of providing the `windowSize` manually, you can also deduce it from a valid frame
 /// header using [`ZSTD_estimateDStreamSize_fromFrame`]
 ///
-/// Note: if streaming is initialized with [`ZSTD_initDStream_usingDict`], an internal DDict
+/// Note: if streaming is initialized with [`ZSTD_initDStream_usingDict`], an internal `DDict`
 /// will be created, whose additional size is not estimated here. In this case, get total size by
 /// adding [`crate::ZSTD_estimateDDictSize`].
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateDStreamSize))]

@@ -7,7 +7,7 @@ pub(crate) const HUF_BLOCKSIZE_MAX: usize = 128 * 1024;
 
 pub(crate) const HUF_WORKSPACE_SIZE: usize = (8 << 10) + 512;
 
-/// Max runtime value of tableLog (due to static allocation); can be modified up to HUF_TABLELOG_ABSOLUTEMAX.
+/// Max runtime value of tableLog (due to static allocation); can be modified up to [`HUF_TABLELOG_ABSOLUTEMAX`].
 pub(crate) const HUF_TABLELOG_MAX: usize = 12;
 /// Default tableLog value when none specified
 pub(crate) const HUF_TABLELOG_DEFAULT: u32 = 11;
@@ -16,7 +16,7 @@ pub(crate) const HUF_SYMBOLVALUE_MAX: u32 = 255;
 pub(crate) const HUF_CTABLE_WORKSPACE_SIZE_U32: usize =
     (4 * (HUF_SYMBOLVALUE_MAX as usize + 1)) + 192;
 
-/// Absolute limit of HUF_MAX_TABLELOG. Beyond that value, code does not work
+/// Absolute limit of [`HUF_MAX_TABLELOG`]. Beyond that value, code does not work
 const HUF_TABLELOG_ABSOLUTEMAX: usize = 12;
 const _: () = assert!(
     HUF_TABLELOG_MAX <= HUF_TABLELOG_ABSOLUTEMAX,
@@ -39,7 +39,7 @@ pub(crate) const HUF_OPTIMAL_DEPTH_THRESHOLD: core::ffi::c_int = ZSTD_btultra as
 pub(crate) type HUF_repeat = core::ffi::c_uint;
 /// Cannot use the previous table
 pub(crate) const HUF_repeat_none: HUF_repeat = 0;
-/// Can use the previous table but it must be checked. Note : The previous table must have been constructed by HUF_compress{1, 4}X_repeat
+/// Can use the previous table but it must be checked. Note : The previous table must have been constructed by `HUF_compress{1, 4}X_repeat`
 pub(crate) const HUF_repeat_check: HUF_repeat = 1;
 /// Can use the previous table and it is assumed to be valid
 pub(crate) const HUF_repeat_valid: HUF_repeat = 2;

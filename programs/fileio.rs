@@ -5231,7 +5231,7 @@ unsafe fn FIO_getLargestFileSize(
     maxFileSize
 }
 
-/// FIO_compressMultipleFilenames() :
+/// [`FIO_compressMultipleFilenames`] :
 /// compress nbFiles files
 /// into either one destination (outFileName),
 /// or into one file each (outFileName == NULL, but suffix != NULL),

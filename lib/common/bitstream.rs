@@ -105,9 +105,9 @@ pub(crate) unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
 /// *  Local register size is 64-bits on 64-bits systems, 32-bits on 32-bits systems.
 /// *  You can then retrieve bitFields stored into the local register, **in reverse order**.
 /// *  Local register is explicitly reloaded from memory by the [`reload`] method.
-/// *  A reload guarantee a minimum of ((8*sizeof(bitD->bitContainer))-7) bits when its result is BIT_DStream_unfinished.
+/// *  A reload guarantee a minimum of ((8*sizeof(bitD->bitContainer))-7) bits when its result is [`StreamStatus::Unfinished`].
 /// *  Otherwise, it can be less than that, so proceed accordingly.
-/// *  Checking if DStream has reached its end can be performed with BIT_endOfDStream().
+/// *  Checking if `DStream` has reached its end can be performed with [`BIT_endOfDStream`].
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub(crate) struct BIT_DStream_t<'a> {
