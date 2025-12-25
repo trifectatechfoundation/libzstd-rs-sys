@@ -328,7 +328,7 @@ unsafe fn LOREM_rand(range: core::ffi::c_uint) -> core::ffi::c_uint {
     rand32 ^= prime2;
     rand32 = rand32.rotate_left(13);
     g_randRoot = rand32;
-    ((rand32 as core::ffi::c_ulonglong).wrapping_mul(range as core::ffi::c_ulonglong) >> 32)
+    (core::ffi::c_ulonglong::from(rand32).wrapping_mul(core::ffi::c_ulonglong::from(range)) >> 32)
         as core::ffi::c_uint
 }
 unsafe fn writeLastCharacters() {
@@ -365,8 +365,8 @@ unsafe fn generateWord(
     );
     if upCase != 0 {
         static toUp: core::ffi::c_char = ('A' as i32 - 'a' as i32) as core::ffi::c_char;
-        *g_ptr.add(g_nbChars) = (*g_ptr.add(g_nbChars) as core::ffi::c_int
-            + toUp as core::ffi::c_int) as core::ffi::c_char;
+        *g_ptr.add(g_nbChars) = (core::ffi::c_int::from(*g_ptr.add(g_nbChars))
+            + core::ffi::c_int::from(toUp)) as core::ffi::c_char;
     }
     g_nbChars = g_nbChars.wrapping_add(strlen(word));
     memcpy(
@@ -384,7 +384,7 @@ unsafe fn about(target: core::ffi::c_uint) -> core::ffi::c_int {
 unsafe fn generateSentence(nbWords: core::ffi::c_int) {
     let commaPos = about(9);
     let comma2 = commaPos + about(7);
-    let qmark = (LOREM_rand(11) == 7) as core::ffi::c_int;
+    let qmark = core::ffi::c_int::from(LOREM_rand(11) == 7);
     let endSep = if qmark != 0 {
         b"? \0" as *const u8 as *const core::ffi::c_char
     } else {
@@ -405,7 +405,7 @@ unsafe fn generateSentence(nbWords: core::ffi::c_int) {
         if i == nbWords - 1 {
             sep = endSep;
         }
-        generateWord(word, sep, (i == 0) as core::ffi::c_int);
+        generateWord(word, sep, core::ffi::c_int::from(i == 0));
         i += 1;
     }
 }
@@ -439,7 +439,7 @@ unsafe fn generateFirstSentence() {
         if i == 7 {
             separator = b", \0" as *const u8 as *const core::ffi::c_char;
         }
-        generateWord(word, separator, (i == 0) as core::ffi::c_int);
+        generateWord(word, separator, core::ffi::c_int::from(i == 0));
         i += 1;
     }
     generateWord(

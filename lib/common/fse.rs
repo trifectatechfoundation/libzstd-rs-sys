@@ -53,7 +53,7 @@ pub(crate) struct FSE_symbolCompressionTransform {
 pub(crate) unsafe fn FSE_initCState(statePtr: *mut FSE_CState_t, ct: *const FSE_CTable) {
     let ptr = ct as *const core::ffi::c_void;
     let u16ptr = ptr as *const u16;
-    let tableLog = MEM_read16(ptr) as u32;
+    let tableLog = u32::from(MEM_read16(ptr));
     (*statePtr).value = (1) << tableLog;
     (*statePtr).stateTable = u16ptr.add(2) as *const core::ffi::c_void;
     (*statePtr).symbolTT = ct.add(1).offset(

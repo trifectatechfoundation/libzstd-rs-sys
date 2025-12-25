@@ -240,8 +240,8 @@ unsafe fn ZSTD_getSequenceLength(
         litLength: 0,
         matchLength: 0,
     };
-    seqLen.litLength = (*seq).litLength as u32;
-    seqLen.matchLength = ((*seq).mlBase as core::ffi::c_int + MINMATCH) as u32;
+    seqLen.litLength = u32::from((*seq).litLength);
+    seqLen.matchLength = (core::ffi::c_int::from((*seq).mlBase) + MINMATCH) as u32;
     if (*seqStore).longLengthPos
         == seq.offset_from((*seqStore).sequencesStart) as core::ffi::c_long as u32
     {
@@ -296,13 +296,13 @@ unsafe fn ZSTD_compressSubBlock_literal(
 ) -> size_t {
     let header = (if writeEntropy != 0 { 200 } else { 0 }) as size_t;
     let lhSize = (3
-        + (litSize >= (((1) << 10) as size_t).wrapping_sub(header)) as core::ffi::c_int
-        + (litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)) as core::ffi::c_int)
+        + core::ffi::c_int::from(litSize >= (((1) << 10) as size_t).wrapping_sub(header))
+        + core::ffi::c_int::from(litSize >= ((16 * ((1) << 10)) as size_t).wrapping_sub(header)))
         as size_t;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstSize);
     let mut op = ostart.add(lhSize);
-    let singleStream = (lhSize == 3) as core::ffi::c_int as u32;
+    let singleStream = core::ffi::c_int::from(lhSize == 3) as u32;
     let hType = (if writeEntropy != 0 {
         (*hufMetadata).hType as core::ffi::c_uint
     } else {
@@ -380,8 +380,8 @@ unsafe fn ZSTD_compressSubBlock_literal(
         );
     }
     if lhSize
-        < (3 + (cLitSize >= ((1) << 10) as size_t) as core::ffi::c_int
-            + (cLitSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t
+        < (3 + core::ffi::c_int::from(cLitSize >= ((1) << 10) as size_t)
+            + core::ffi::c_int::from(cLitSize >= (16 * ((1) << 10)) as size_t)) as size_t
     {
         return ZSTD_noCompressLiterals(
             dst,
@@ -393,7 +393,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     match lhSize {
         3 => {
             let lhc = (hType as core::ffi::c_uint)
-                .wrapping_add(((singleStream == 0) as core::ffi::c_int as u32) << 2)
+                .wrapping_add((core::ffi::c_int::from(singleStream == 0) as u32) << 2)
                 .wrapping_add((litSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);
@@ -459,18 +459,20 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     writeEntropy: core::ffi::c_int,
     entropyWritten: *mut core::ffi::c_int,
 ) -> size_t {
-    let longOffsets = ((*cctxParams).cParams.windowLog
-        > (if MEM_32bits() {
-            STREAM_ACCUMULATOR_MIN_32
-        } else {
-            STREAM_ACCUMULATOR_MIN_64
-        }) as u32) as core::ffi::c_int;
+    let longOffsets = core::ffi::c_int::from(
+        (*cctxParams).cParams.windowLog
+            > (if MEM_32bits() {
+                STREAM_ACCUMULATOR_MIN_32
+            } else {
+                STREAM_ACCUMULATOR_MIN_64
+            }) as u32,
+    );
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
     let mut seqHead = core::ptr::null_mut::<u8>();
     *entropyWritten = 0;
-    if (oend.offset_from(op) as core::ffi::c_long) < (3 + 1) as core::ffi::c_long {
+    if (oend.offset_from(op) as core::ffi::c_long) < core::ffi::c_long::from(3 + 1) {
         return Error::dstSize_tooSmall.to_error_code();
     }
     if nbSeq < 128 {
@@ -878,15 +880,15 @@ unsafe fn sizeBlockSequences(
     if budget > targetBudget {
         return 1;
     }
-    inSize = ((*sp).litLength as core::ffi::c_int + ((*sp).mlBase as core::ffi::c_int + MINMATCH))
-        as size_t;
+    inSize = (core::ffi::c_int::from((*sp).litLength)
+        + (core::ffi::c_int::from((*sp).mlBase) + MINMATCH)) as size_t;
     n = 1;
     while n < nbSeqs {
         let currentCost = ((*sp.add(n)).litLength as size_t * avgLitCost).wrapping_add(avgSeqCost);
         budget = budget.wrapping_add(currentCost);
         inSize = inSize.wrapping_add(
-            ((*sp.add(n)).litLength as core::ffi::c_int
-                + ((*sp.add(n)).mlBase as core::ffi::c_int + MINMATCH)) as size_t,
+            (core::ffi::c_int::from((*sp.add(n)).litLength)
+                + (core::ffi::c_int::from((*sp.add(n)).mlBase) + MINMATCH)) as size_t,
         );
         if budget > targetBudget && budget < inSize * BYTESCALE as size_t {
             break;
@@ -932,9 +934,10 @@ unsafe fn ZSTD_compressSubBlock_multi(
     } else {
         (*cctxParams).targetCBlockSize
     };
-    let mut writeLitEntropy = ((*entropyMetadata).hufMetadata.hType as core::ffi::c_uint
-        == set_compressed as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let mut writeLitEntropy = core::ffi::c_int::from(
+        (*entropyMetadata).hufMetadata.hType as core::ffi::c_uint
+            == set_compressed as core::ffi::c_int as core::ffi::c_uint,
+    );
     let mut writeSeqEntropy = 1;
     if nbSeqs > 0 {
         let ebs = ZSTD_estimateSubBlockSize(
@@ -979,7 +982,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 avgBlockBudget.wrapping_add(blockBudgetSupp),
                 avgLitCost,
                 avgSeqCost,
-                (n == 0) as core::ffi::c_int,
+                core::ffi::c_int::from(n == 0),
             );
             if sp.add(seqCount) == send {
                 break;
@@ -1113,8 +1116,9 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 ZSTD_updateRep(
                     (rep.rep).as_mut_ptr(),
                     (*seq).offBase,
-                    ((ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0) as core::ffi::c_int
-                        as u32,
+                    core::ffi::c_int::from(
+                        (ZSTD_getSequenceLength(seqStorePtr, seq)).litLength == 0,
+                    ) as u32,
                 );
                 seq = seq.add(1);
             }

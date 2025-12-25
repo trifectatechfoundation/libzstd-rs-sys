@@ -52,7 +52,7 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
         let job = *((*ctx).queue).add((*ctx).queueHead);
         (*ctx).queueHead = ((*ctx).queueHead).wrapping_add(1) % (*ctx).queueSize;
         (*ctx).numThreadsBusy += 1;
-        (*ctx).queueEmpty = ((*ctx).queueHead == (*ctx).queueTail) as core::ffi::c_int;
+        (*ctx).queueEmpty = core::ffi::c_int::from((*ctx).queueHead == (*ctx).queueTail);
         (*ctx).queuePushCond.notify_one();
         drop(guard);
         (job.function)(job.opaque);
@@ -222,10 +222,13 @@ pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> core
 }
 unsafe fn isQueueFull(ctx: *const POOL_ctx) -> core::ffi::c_int {
     if (*ctx).queueSize > 1 {
-        ((*ctx).queueHead == ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize)
-            as core::ffi::c_int
+        core::ffi::c_int::from(
+            (*ctx).queueHead == ((*ctx).queueTail).wrapping_add(1) % (*ctx).queueSize,
+        )
     } else {
-        ((*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0) as core::ffi::c_int
+        core::ffi::c_int::from(
+            (*ctx).numThreadsBusy == (*ctx).threadLimit || (*ctx).queueEmpty == 0,
+        )
     }
 }
 unsafe fn POOL_add_internal(

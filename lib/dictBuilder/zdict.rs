@@ -84,7 +84,7 @@ fn ZDICT_printHex(bytes: &[u8]) {
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
 pub extern "C" fn ZDICT_isError(errorCode: size_t) -> core::ffi::c_uint {
-    ERR_isError(errorCode) as _
+    ERR_isError(errorCode).into()
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_getErrorName))]
@@ -284,7 +284,9 @@ fn ZDICT_analyzePos(
 
     // look backward
     let mut length_2 = MINMATCHLENGTH;
-    while (length_2 >= MINMATCHLENGTH) as core::ffi::c_int & (start > 0) as core::ffi::c_int != 0 {
+    while core::ffi::c_int::from(length_2 >= MINMATCHLENGTH) & core::ffi::c_int::from(start > 0)
+        != 0
+    {
         length_2 = ZDICT_count(
             &buffer[pos..],
             &buffer[suffix(start.wrapping_sub(1) as usize) as usize..],
@@ -343,7 +345,7 @@ fn ZDICT_analyzePos(
             pos,
             maxLength,
             savings[maxLength],
-            savings[maxLength] as core::ffi::c_double / maxLength as core::ffi::c_double,
+            core::ffi::c_double::from(savings[maxLength]) / maxLength as core::ffi::c_double,
         );
     }
 
@@ -1111,7 +1113,7 @@ unsafe fn finalize_dictionary(
     // dictionary header
     header[..4].copy_from_slice(&ZSTD_MAGIC_DICTIONARY.to_le_bytes());
     let randomID = ZSTD_XXH64(customDictContent, dictContentSize, 0);
-    let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
+    let compliantID = (randomID % u64::from(((1 as core::ffi::c_uint) << 31).wrapping_sub(32768)))
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID
@@ -1228,7 +1230,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
         dictContentSize,
         0,
     );
-    let compliantID = (randomID % ((1 as core::ffi::c_uint) << 31).wrapping_sub(32768) as u64)
+    let compliantID = (randomID % u64::from(((1 as core::ffi::c_uint) << 31).wrapping_sub(32768)))
         .wrapping_add(32768) as u32;
     let dictID = if params.dictID != 0 {
         params.dictID

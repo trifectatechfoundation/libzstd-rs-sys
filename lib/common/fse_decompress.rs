@@ -30,7 +30,7 @@ struct FSE_DState_t<'a> {
 
 impl<'a> FSE_DState_t<'a> {
     fn new(bitD: &mut BIT_DStream_t, dt: &'a DTable) -> Self {
-        let state = bitD.read_bits(dt.header.tableLog as core::ffi::c_uint);
+        let state = bitD.read_bits(core::ffi::c_uint::from(dt.header.tableLog));
         let _ = bitD.reload();
         let table = &dt.elements;
 
@@ -79,7 +79,7 @@ fn FSE_buildDTable_internal(
     let mut highThreshold = tableSize.wrapping_sub(1);
 
     if ((::core::mem::size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-        .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
+        .wrapping_mul(core::ffi::c_ulong::from(maxSymbolValue.wrapping_add(1)))
         as core::ffi::c_ulonglong)
         .wrapping_add((1) << tableLog)
         .wrapping_add(8)
@@ -105,13 +105,15 @@ fn FSE_buildDTable_internal(
     let mut s: u32 = 0;
     s = 0;
     while s < maxSV1 {
-        if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
+        if core::ffi::c_int::from(normalizedCounter[s as usize]) == -(1) {
             let fresh0 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             elements[fresh0 as usize].symbol = s as u8;
             symbols[s as usize] = 1;
         } else {
-            if normalizedCounter[s as usize] as core::ffi::c_int >= largeLimit as core::ffi::c_int {
+            if core::ffi::c_int::from(normalizedCounter[s as usize])
+                >= core::ffi::c_int::from(largeLimit)
+            {
                 DTableH.fastMode = 0;
             }
             symbols[s as usize] = normalizedCounter[s as usize] as u16;
@@ -132,7 +134,7 @@ fn FSE_buildDTable_internal(
 
         for s_0 in 0..maxSV1 {
             let mut i: core::ffi::c_int = 0;
-            let n = normalizedCounter[s_0 as usize] as core::ffi::c_int;
+            let n = core::ffi::c_int::from(normalizedCounter[s_0 as usize]);
             spread[pos as usize..][..8].copy_from_slice(&sv.to_le_bytes());
             i = 8;
             while i < n {
@@ -186,8 +188,8 @@ fn FSE_buildDTable_internal(
         symbols[symbol] += 1;
         (elements[u as usize]).nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
         (elements[u as usize]).newState = (nextState
-            << (elements[u as usize]).nbBits as core::ffi::c_int)
-            .wrapping_sub(tableSize) as u16;
+            << core::ffi::c_int::from((elements[u as usize]).nbBits))
+        .wrapping_sub(tableSize) as u16;
     }
 
     Ok(())
@@ -341,7 +343,7 @@ fn FSE_decompress_wksp_body(
     if ((1 + ((1) << tableLog) + 1) as core::ffi::c_ulonglong)
         .wrapping_add(
             ((::core::mem::size_of::<core::ffi::c_short>() as core::ffi::c_ulong)
-                .wrapping_mul(maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
+                .wrapping_mul(core::ffi::c_ulong::from(maxSymbolValue.wrapping_add(1)))
                 as core::ffi::c_ulonglong)
                 .wrapping_add((1) << tableLog)
                 .wrapping_add(8)

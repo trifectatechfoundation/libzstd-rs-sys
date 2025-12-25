@@ -437,7 +437,7 @@ fn ZSTD_decodeLiteralsBlock(
         bmi_flag | disable_asm_flag
     };
 
-    let lhlCode = (src[0] >> 2 & 0b11) as u32;
+    let lhlCode = u32::from(src[0] >> 2 & 0b11);
     let singleStream = lhlCode == 0;
 
     let (lhSize, litSize, litCSize) = match lhlCode {
@@ -745,7 +745,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
         for s in (0..tableSize).step_by(2) {
             for u in 0..2 {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
-                tableDecode[uPosition].baseValue = wksp.spread[s + u] as u32;
+                tableDecode[uPosition].baseValue = u32::from(wksp.spread[s + u]);
             }
             position = position.wrapping_add(2 * step) & tableMask;
         }
@@ -766,7 +766,7 @@ fn ZSTD_buildFSETable_body<const N: usize>(
 
     for seq_symbol in tableDecode[..tableSize].iter_mut() {
         let symbol = seq_symbol.baseValue as usize;
-        let nextState = wksp.symbols[symbol] as u32;
+        let nextState = u32::from(wksp.symbols[symbol]);
         wksp.symbols[symbol] += 1;
 
         let nbBits = tableLog.wrapping_sub(nextState.ilog2()) as u8;
@@ -1588,21 +1588,21 @@ fn ZSTD_decodeSequence(
     let mlBits = mlDInfo.nbAdditionalBits;
     let ofBits = ofDInfo.nbAdditionalBits;
 
-    let totalBits = (llBits as core::ffi::c_int
-        + mlBits as core::ffi::c_int
-        + ofBits as core::ffi::c_int) as u8;
+    let totalBits = (core::ffi::c_int::from(llBits)
+        + core::ffi::c_int::from(mlBits)
+        + core::ffi::c_int::from(ofBits)) as u8;
 
     let llNext = llDInfo.nextState;
     let mlNext = mlDInfo.nextState;
     let ofNext = ofDInfo.nextState;
 
-    let llnbBits = llDInfo.nbBits as u32;
-    let mlnbBits = mlDInfo.nbBits as u32;
-    let ofnbBits = ofDInfo.nbBits as u32;
+    let llnbBits = u32::from(llDInfo.nbBits);
+    let mlnbBits = u32::from(mlDInfo.nbBits);
+    let ofnbBits = u32::from(ofDInfo.nbBits);
 
     assert!(llBits <= MaxLLBits);
     assert!(mlBits <= MaxMLBits);
-    assert!(ofBits as u32 <= MaxOff);
+    assert!(u32::from(ofBits) <= MaxOff);
 
     let mut offset: size_t = 0;
     if ofBits > 1 {
@@ -1613,7 +1613,7 @@ fn ZSTD_decodeSequence(
 
         if MEM_32bits()
             && longOffsets != Offset::Regular
-            && ofBits as core::ffi::c_int >= STREAM_ACCUMULATOR_MIN_32
+            && core::ffi::c_int::from(ofBits) >= STREAM_ACCUMULATOR_MIN_32
         {
             // Always read extra bits, this keeps the logic simple,
             // avoids branches, and avoids accidentally reading 0 bits.
@@ -1621,7 +1621,7 @@ fn ZSTD_decodeSequence(
             offset = (ofBase as size_t).wrapping_add(
                 (seqState
                     .DStream
-                    .read_bits_fast((ofBits as u32).wrapping_sub(extraBits))
+                    .read_bits_fast(u32::from(ofBits).wrapping_sub(extraBits))
                     as size_t)
                     << extraBits,
             );
@@ -1629,7 +1629,9 @@ fn ZSTD_decodeSequence(
             offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as size_t);
         } else {
             offset = (ofBase as size_t).wrapping_add(
-                seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as size_t,
+                seqState
+                    .DStream
+                    .read_bits_fast(core::ffi::c_uint::from(ofBits)) as size_t,
             );
             if MEM_32bits() {
                 seqState.DStream.reload();
@@ -1653,7 +1655,7 @@ fn ZSTD_decodeSequence(
                 3 => seqState.prevOffset[0] - 1,
                 _ => seqState.prevOffset[offset as usize],
             };
-            temp = temp.wrapping_sub((temp == 0) as _); /* 0 is not valid: input corrupted => force offset to -1 => corruption detected at execSequence */
+            temp = temp.wrapping_sub((temp == 0).into()); /* 0 is not valid: input corrupted => force offset to -1 => corruption detected at execSequence */
 
             if offset != 1 {
                 seqState.prevOffset[2] = seqState.prevOffset[1];
@@ -1666,9 +1668,11 @@ fn ZSTD_decodeSequence(
     seq.offset = offset;
 
     if mlBits > 0 {
-        seq.matchLength = seq
-            .matchLength
-            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as size_t);
+        seq.matchLength = seq.matchLength.wrapping_add(
+            seqState
+                .DStream
+                .read_bits_fast(core::ffi::c_uint::from(mlBits)) as size_t,
+        );
     }
 
     if cfg!(target_pointer_width = "32")
@@ -1685,8 +1689,11 @@ fn ZSTD_decodeSequence(
     const { assert!(16 + LLFSELog + MLFSELog + OffFSELog < STREAM_ACCUMULATOR_MIN_64 as u32) };
 
     if llBits > 0 {
-        seq.litLength = (seq.litLength)
-            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as size_t);
+        seq.litLength = (seq.litLength).wrapping_add(
+            seqState
+                .DStream
+                .read_bits_fast(core::ffi::c_uint::from(llBits)) as size_t,
+        );
     }
     if MEM_32bits() {
         seqState.DStream.reload();

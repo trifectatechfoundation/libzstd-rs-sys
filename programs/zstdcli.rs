@@ -216,10 +216,11 @@ unsafe fn exeNameMatch(
     exeName: *const core::ffi::c_char,
     test: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
-    (strncmp(exeName, test, strlen(test)) == 0
-        && (*exeName.add(strlen(test)) as core::ffi::c_int == '\0' as i32
-            || *exeName.add(strlen(test)) as core::ffi::c_int == '.' as i32))
-        as core::ffi::c_int
+    core::ffi::c_int::from(
+        strncmp(exeName, test, strlen(test)) == 0
+            && (core::ffi::c_int::from(*exeName.add(strlen(test))) == '\0' as i32
+                || core::ffi::c_int::from(*exeName.add(strlen(test))) == '.' as i32),
+    )
 }
 unsafe fn usage(f: *mut FILE, programName: *const core::ffi::c_char) {
     fprintf(
@@ -734,8 +735,8 @@ unsafe fn readU32FromCharChecked(
     value: *mut core::ffi::c_uint,
 ) -> core::ffi::c_int {
     let mut result = 0;
-    while **stringPtr as core::ffi::c_int >= '0' as i32
-        && **stringPtr as core::ffi::c_int <= '9' as i32
+    while core::ffi::c_int::from(**stringPtr) >= '0' as i32
+        && core::ffi::c_int::from(**stringPtr) <= '9' as i32
     {
         let max = (-(1 as core::ffi::c_int) as core::ffi::c_uint).wrapping_div(10);
         let last = result;
@@ -744,31 +745,31 @@ unsafe fn readU32FromCharChecked(
         }
         result = result.wrapping_mul(10);
         result = result
-            .wrapping_add((**stringPtr as core::ffi::c_int - '0' as i32) as core::ffi::c_uint);
+            .wrapping_add((core::ffi::c_int::from(**stringPtr) - '0' as i32) as core::ffi::c_uint);
         if result < last {
             return 1;
         }
         *stringPtr = (*stringPtr).offset(1);
     }
-    if **stringPtr as core::ffi::c_int == 'K' as i32
-        || **stringPtr as core::ffi::c_int == 'M' as i32
+    if core::ffi::c_int::from(**stringPtr) == 'K' as i32
+        || core::ffi::c_int::from(**stringPtr) == 'M' as i32
     {
         let maxK = -(1 as core::ffi::c_int) as core::ffi::c_uint >> 10;
         if result > maxK {
             return 1;
         }
         result <<= 10;
-        if **stringPtr as core::ffi::c_int == 'M' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'M' as i32 {
             if result > maxK {
                 return 1;
             }
             result <<= 10;
         }
         *stringPtr = (*stringPtr).offset(1);
-        if **stringPtr as core::ffi::c_int == 'i' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'i' as i32 {
             *stringPtr = (*stringPtr).offset(1);
         }
-        if **stringPtr as core::ffi::c_int == 'B' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'B' as i32 {
             *stringPtr = (*stringPtr).offset(1);
         }
     }
@@ -785,7 +786,7 @@ unsafe fn readU32FromChar(stringPtr: *mut *const core::ffi::c_char) -> core::ffi
 unsafe fn readIntFromChar(stringPtr: *mut *const core::ffi::c_char) -> core::ffi::c_int {
     let mut sign = 1;
     let mut result: core::ffi::c_uint = 0;
-    if **stringPtr as core::ffi::c_int == '-' as i32 {
+    if core::ffi::c_int::from(**stringPtr) == '-' as i32 {
         *stringPtr = (*stringPtr).offset(1);
         sign = -(1);
     }
@@ -799,8 +800,8 @@ unsafe fn readSizeTFromCharChecked(
     value: *mut size_t,
 ) -> core::ffi::c_int {
     let mut result = 0;
-    while **stringPtr as core::ffi::c_int >= '0' as i32
-        && **stringPtr as core::ffi::c_int <= '9' as i32
+    while core::ffi::c_int::from(**stringPtr) >= '0' as i32
+        && core::ffi::c_int::from(**stringPtr) <= '9' as i32
     {
         let max = -(1 as core::ffi::c_int) as size_t / 10;
         let last = result;
@@ -808,31 +809,31 @@ unsafe fn readSizeTFromCharChecked(
             return 1;
         }
         result *= 10;
-        result = result.wrapping_add((**stringPtr as core::ffi::c_int - '0' as i32) as size_t);
+        result = result.wrapping_add((core::ffi::c_int::from(**stringPtr) - '0' as i32) as size_t);
         if result < last {
             return 1;
         }
         *stringPtr = (*stringPtr).offset(1);
     }
-    if **stringPtr as core::ffi::c_int == 'K' as i32
-        || **stringPtr as core::ffi::c_int == 'M' as i32
+    if core::ffi::c_int::from(**stringPtr) == 'K' as i32
+        || core::ffi::c_int::from(**stringPtr) == 'M' as i32
     {
         let maxK = -(1 as core::ffi::c_int) as size_t >> 10;
         if result > maxK {
             return 1;
         }
         result <<= 10;
-        if **stringPtr as core::ffi::c_int == 'M' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'M' as i32 {
             if result > maxK {
                 return 1;
             }
             result <<= 10;
         }
         *stringPtr = (*stringPtr).offset(1);
-        if **stringPtr as core::ffi::c_int == 'i' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'i' as i32 {
             *stringPtr = (*stringPtr).offset(1);
         }
-        if **stringPtr as core::ffi::c_int == 'B' as i32 {
+        if core::ffi::c_int::from(**stringPtr) == 'B' as i32 {
             *stringPtr = (*stringPtr).offset(1);
         }
     }
@@ -851,7 +852,7 @@ unsafe fn longCommandWArg(
     longCommand: *const core::ffi::c_char,
 ) -> core::ffi::c_int {
     let comSize = strlen(longCommand);
-    let result = (strncmp(*stringPtr, longCommand, comSize) == 0) as core::ffi::c_int;
+    let result = core::ffi::c_int::from(strncmp(*stringPtr, longCommand, comSize) == 0);
     if result != 0 {
         *stringPtr = (*stringPtr).add(comSize);
     }
@@ -874,7 +875,7 @@ unsafe fn parseCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -884,7 +885,7 @@ unsafe fn parseCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -894,7 +895,7 @@ unsafe fn parseCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -904,8 +905,8 @@ unsafe fn parseCoverParameters(
         ) != 0
         {
             let splitPercentage = readU32FromChar(&mut stringPtr);
-            (*params).splitPoint = splitPercentage as core::ffi::c_double / 100.0f64;
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            (*params).splitPoint = core::ffi::c_double::from(splitPercentage) / 100.0f64;
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -916,11 +917,11 @@ unsafe fn parseCoverParameters(
         {
             (*params).shrinkDictMaxRegression = kDefaultRegression;
             (*params).shrinkDict = 1;
-            if *stringPtr.offset(0) as core::ffi::c_int == '=' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) == '=' as i32 {
                 stringPtr = stringPtr.offset(1);
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -928,7 +929,7 @@ unsafe fn parseCoverParameters(
             return 0;
         }
     }
-    if *stringPtr.offset(0) as core::ffi::c_int != 0 {
+    if core::ffi::c_int::from(*stringPtr.offset(0)) != 0 {
         return 0;
     }
     if g_displayLevel >= 4 {
@@ -961,7 +962,7 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             (*params).k = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -971,7 +972,7 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             (*params).d = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -981,7 +982,7 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             (*params).f = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -991,7 +992,7 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             (*params).steps = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1001,7 +1002,7 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             (*params).accel = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1011,8 +1012,8 @@ unsafe fn parseFastCoverParameters(
         ) != 0
         {
             let splitPercentage = readU32FromChar(&mut stringPtr);
-            (*params).splitPoint = splitPercentage as core::ffi::c_double / 100.0f64;
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            (*params).splitPoint = core::ffi::c_double::from(splitPercentage) / 100.0f64;
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1023,11 +1024,11 @@ unsafe fn parseFastCoverParameters(
         {
             (*params).shrinkDictMaxRegression = kDefaultRegression;
             (*params).shrinkDict = 1;
-            if *stringPtr.offset(0) as core::ffi::c_int == '=' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) == '=' as i32 {
                 stringPtr = stringPtr.offset(1);
                 (*params).shrinkDictMaxRegression = readU32FromChar(&mut stringPtr);
             }
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1035,7 +1036,7 @@ unsafe fn parseFastCoverParameters(
             return 0;
         }
     }
-    if *stringPtr.offset(0) as core::ffi::c_int != 0 {
+    if core::ffi::c_int::from(*stringPtr.offset(0)) != 0 {
         return 0;
     }
     if g_displayLevel >= 4 {
@@ -1070,7 +1071,7 @@ unsafe fn parseLegacyParameters(
         return 0;
     }
     *selectivity = readU32FromChar(&mut stringPtr);
-    if *stringPtr.offset(0) as core::ffi::c_int != 0 {
+    if core::ffi::c_int::from(*stringPtr.offset(0)) != 0 {
         return 0;
     }
     if g_displayLevel >= 4 {
@@ -1117,7 +1118,7 @@ unsafe fn parseAdaptParameters(
         ) != 0
         {
             *adaptMinPtr = readIntFromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1127,7 +1128,7 @@ unsafe fn parseAdaptParameters(
         ) != 0
         {
             *adaptMaxPtr = readIntFromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1141,7 +1142,7 @@ unsafe fn parseAdaptParameters(
             return 0;
         }
     }
-    if *stringPtr.offset(0) as core::ffi::c_int != 0 {
+    if core::ffi::c_int::from(*stringPtr.offset(0)) != 0 {
         return 0;
     }
     if *adaptMinPtr > *adaptMaxPtr {
@@ -1170,7 +1171,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).windowLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1184,7 +1185,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).chainLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1198,7 +1199,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).hashLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1212,7 +1213,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).searchLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1226,7 +1227,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).minMatch = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1240,7 +1241,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).targetLength = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1254,7 +1255,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             (*params).strategy = readU32FromChar(&mut stringPtr) as ZSTD_strategy;
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1268,7 +1269,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             g_overlapLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1282,7 +1283,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1296,7 +1297,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             g_ldmMinMatch = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1310,7 +1311,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             g_ldmBucketSizeLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1324,7 +1325,7 @@ unsafe fn parseCompressionParameters(
             ) != 0
         {
             g_ldmHashRateLog = readU32FromChar(&mut stringPtr);
-            if *stringPtr.offset(0) as core::ffi::c_int != ',' as i32 {
+            if core::ffi::c_int::from(*stringPtr.offset(0)) != ',' as i32 {
                 break;
             }
             stringPtr = stringPtr.offset(1);
@@ -1338,7 +1339,7 @@ unsafe fn parseCompressionParameters(
             return 0;
         }
     }
-    if *stringPtr.offset(0) as core::ffi::c_int != 0 {
+    if core::ffi::c_int::from(*stringPtr.offset(0)) != 0 {
         return 0;
     }
     1
@@ -1621,13 +1622,14 @@ unsafe fn init_cLevel() -> core::ffi::c_int {
     if !env.is_null() {
         let mut ptr = env;
         let mut sign = 1;
-        if *ptr as core::ffi::c_int == '-' as i32 {
+        if core::ffi::c_int::from(*ptr) == '-' as i32 {
             sign = -(1);
             ptr = ptr.offset(1);
-        } else if *ptr as core::ffi::c_int == '+' as i32 {
+        } else if core::ffi::c_int::from(*ptr) == '+' as i32 {
             ptr = ptr.offset(1);
         }
-        if *ptr as core::ffi::c_int >= '0' as i32 && *ptr as core::ffi::c_int <= '9' as i32 {
+        if core::ffi::c_int::from(*ptr) >= '0' as i32 && core::ffi::c_int::from(*ptr) <= '9' as i32
+        {
             let mut absLevel: core::ffi::c_uint = 0;
             if readU32FromCharChecked(&mut ptr, &mut absLevel) != 0 {
                 if g_displayLevel >= 2 {
@@ -1640,7 +1642,7 @@ unsafe fn init_cLevel() -> core::ffi::c_int {
                     );
                 }
                 return ZSTDCLI_CLEVEL_DEFAULT;
-            } else if *ptr as core::ffi::c_int == 0 {
+            } else if core::ffi::c_int::from(*ptr) == 0 {
                 return sign * absLevel as core::ffi::c_int;
             }
         }
@@ -1660,7 +1662,8 @@ unsafe fn init_nbWorkers() -> core::ffi::c_uint {
     let env: *const core::ffi::c_char = getenv(ENV_NBWORKERS.as_ptr());
     if !env.is_null() {
         let mut ptr = env;
-        if *ptr as core::ffi::c_int >= '0' as i32 && *ptr as core::ffi::c_int <= '9' as i32 {
+        if core::ffi::c_int::from(*ptr) >= '0' as i32 && core::ffi::c_int::from(*ptr) <= '9' as i32
+        {
             let mut nbThreads: core::ffi::c_uint = 0;
             if readU32FromCharChecked(&mut ptr, &mut nbThreads) != 0 {
                 if g_displayLevel >= 2 {
@@ -1684,7 +1687,7 @@ unsafe fn init_nbWorkers() -> core::ffi::c_uint {
                 } else {
                     UTIL_countLogicalCores() / 4
                 }) as core::ffi::c_uint;
-            } else if *ptr as core::ffi::c_int == 0 {
+            } else if core::ffi::c_int::from(*ptr) == 0 {
                 return nbThreads;
             }
         }
@@ -1954,8 +1957,8 @@ unsafe fn main_0(
                     UTIL_refFilename(filenames, argument);
                 } else if strcmp(argument, b"-\0" as *const u8 as *const core::ffi::c_char) == 0 {
                     UTIL_refFilename(filenames, stdinmark.as_ptr());
-                } else if *argument.offset(0) as core::ffi::c_int == '-' as i32 {
-                    if *argument.offset(1) as core::ffi::c_int == '-' as i32 {
+                } else if core::ffi::c_int::from(*argument.offset(0)) == '-' as i32 {
+                    if core::ffi::c_int::from(*argument.offset(1)) == '-' as i32 {
                         if strcmp(argument, b"--\0" as *const u8 as *const core::ffi::c_char) == 0 {
                             nextArgumentsAreFiles = 1;
                         } else if strcmp(
@@ -2331,7 +2334,7 @@ unsafe fn main_0(
                                     outFileName = g_defaultDictName;
                                 }
                                 dict = cover;
-                                if *argument as core::ffi::c_int == 0 {
+                                if core::ffi::c_int::from(*argument) == 0 {
                                     ptr::write_bytes(
                                         &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
                                         0,
@@ -2340,7 +2343,7 @@ unsafe fn main_0(
                                 } else {
                                     let fresh0 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh0 as core::ffi::c_int != '=' as i32 {
+                                    if core::ffi::c_int::from(*fresh0) != '=' as i32 {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
                                         break 'end;
@@ -2361,7 +2364,7 @@ unsafe fn main_0(
                                     outFileName = g_defaultDictName;
                                 }
                                 dict = fastCover;
-                                if *argument as core::ffi::c_int == 0 {
+                                if core::ffi::c_int::from(*argument) == 0 {
                                     ptr::write_bytes(
                                         &mut fastCoverParams as *mut ZDICT_fastCover_params_t
                                             as *mut u8,
@@ -2371,7 +2374,7 @@ unsafe fn main_0(
                                 } else {
                                     let fresh1 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh1 as core::ffi::c_int != '=' as i32 {
+                                    if core::ffi::c_int::from(*fresh1) != '=' as i32 {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
                                         break 'end;
@@ -2395,10 +2398,10 @@ unsafe fn main_0(
                                     outFileName = g_defaultDictName;
                                 }
                                 dict = legacy;
-                                if *argument as core::ffi::c_int != 0 {
+                                if core::ffi::c_int::from(*argument) != 0 {
                                     let fresh2 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh2 as core::ffi::c_int != '=' as i32 {
+                                    if core::ffi::c_int::from(*fresh2) != '=' as i32 {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
                                         break 'end;
@@ -2415,7 +2418,7 @@ unsafe fn main_0(
                             ) != 0
                             {
                                 NEXT_UINT32!(nbWorkers);
-                                setThreads_non1 = (nbWorkers != 1) as core::ffi::c_int;
+                                setThreads_non1 = core::ffi::c_int::from(nbWorkers != 1);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--memlimit\0" as *const u8 as *const core::ffi::c_char,
@@ -2580,10 +2583,10 @@ unsafe fn main_0(
                                 let mut ldmWindowLog = 0;
                                 ldmFlag = 1;
                                 ultra = 1;
-                                if *argument as core::ffi::c_int == '=' as i32 {
+                                if core::ffi::c_int::from(*argument) == '=' as i32 {
                                     argument = argument.offset(1);
                                     ldmWindowLog = readU32FromChar(&mut argument);
-                                } else if *argument as core::ffi::c_int != 0 {
+                                } else if core::ffi::c_int::from(*argument) != 0 {
                                     badUsage(programName, originalArgument);
                                     operationResult = 1;
                                     break 'end;
@@ -2598,7 +2601,7 @@ unsafe fn main_0(
                                 b"--fast\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
                             {
-                                if *argument as core::ffi::c_int == '=' as i32 {
+                                if core::ffi::c_int::from(*argument) == '=' as i32 {
                                     let maxFast = -ZSTD_minCLevel() as u32;
                                     let mut fastLevel: u32 = 0;
                                     argument = argument.offset(1);
@@ -2614,7 +2617,7 @@ unsafe fn main_0(
                                         operationResult = 1;
                                         break 'end;
                                     }
-                                } else if *argument as core::ffi::c_int != 0 {
+                                } else if core::ffi::c_int::from(*argument) != 0 {
                                     badUsage(programName, originalArgument);
                                     operationResult = 1;
                                     break 'end;
@@ -2637,14 +2640,14 @@ unsafe fn main_0(
                         }
                     } else {
                         argument = argument.offset(1);
-                        while *argument.offset(0) as core::ffi::c_int != 0 {
-                            if *argument as core::ffi::c_int >= '0' as i32
-                                && *argument as core::ffi::c_int <= '9' as i32
+                        while core::ffi::c_int::from(*argument.offset(0)) != 0 {
+                            if core::ffi::c_int::from(*argument) >= '0' as i32
+                                && core::ffi::c_int::from(*argument) <= '9' as i32
                             {
                                 cLevel = readU32FromChar(&mut argument) as core::ffi::c_int;
                                 dictCLevel = cLevel;
                             } else {
-                                match *argument.offset(0) as core::ffi::c_int {
+                                match core::ffi::c_int::from(*argument.offset(0)) {
                                     86 => {
                                         printVersion();
                                         operationResult = 0;
@@ -2755,7 +2758,7 @@ unsafe fn main_0(
                                     84 => {
                                         argument = argument.offset(1);
                                         nbWorkers = readU32FromChar(&mut argument);
-                                        setThreads_non1 = (nbWorkers != 1) as core::ffi::c_int;
+                                        setThreads_non1 = core::ffi::c_int::from(nbWorkers != 1);
                                     }
                                     115 => {
                                         argument = argument.offset(1);
@@ -2763,8 +2766,8 @@ unsafe fn main_0(
                                     }
                                     112 => {
                                         argument = argument.offset(1);
-                                        if *argument as core::ffi::c_int >= '0' as i32
-                                            && *argument as core::ffi::c_int <= '9' as i32
+                                        if core::ffi::c_int::from(*argument) >= '0' as i32
+                                            && core::ffi::c_int::from(*argument) <= '9' as i32
                                         {
                                             benchParams.additionalParam =
                                                 readU32FromChar(&mut argument) as core::ffi::c_int;
@@ -2774,9 +2777,9 @@ unsafe fn main_0(
                                     }
                                     80 => {
                                         argument = argument.offset(1);
-                                        compressibility = readU32FromChar(&mut argument)
-                                            as core::ffi::c_double
-                                            / 100.0;
+                                        compressibility = core::ffi::c_double::from(
+                                            readU32FromChar(&mut argument),
+                                        ) / 100.0;
                                     }
                                     _ => {
                                         let mut shortArgument: [core::ffi::c_char; 3] =
@@ -3051,7 +3054,7 @@ unsafe fn main_0(
                 dictID: dictID,
             };
             if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
-                let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
+                let optimize = core::ffi::c_int::from(coverParams.k == 0 || coverParams.d == 0);
                 coverParams.nbThreads = nbWorkers;
                 coverParams.zParams = zParams;
                 operationResult = DiB_trainFromFiles(
@@ -3070,7 +3073,7 @@ unsafe fn main_0(
                 == fastCover as core::ffi::c_int as core::ffi::c_uint
             {
                 let optimize_0 =
-                    (fastCoverParams.k == 0 || fastCoverParams.d == 0) as core::ffi::c_int;
+                    core::ffi::c_int::from(fastCoverParams.k == 0 || fastCoverParams.d == 0);
                 fastCoverParams.nbThreads = nbWorkers;
                 fastCoverParams.zParams = zParams;
                 operationResult = DiB_trainFromFiles(
@@ -3209,9 +3212,9 @@ unsafe fn main_0(
                     }
                     operationResult = 1;
                 } else {
-                    hasStdout = (!outFileName.is_null()
-                        && strcmp(outFileName, stdoutmark.as_ptr()) == 0)
-                        as core::ffi::c_int;
+                    hasStdout = core::ffi::c_int::from(
+                        !outFileName.is_null() && strcmp(outFileName, stdoutmark.as_ptr()) == 0,
+                    );
                     if hasStdout != 0 && g_displayLevel == 2 {
                         g_displayLevel = 1;
                     }
@@ -3241,7 +3244,7 @@ unsafe fn main_0(
                     FIO_setAllowBlockDevices(prefs, allowBlockDevices);
                     FIO_setPatchFromMode(
                         prefs,
-                        (!patchFromDictFileName.is_null()) as core::ffi::c_int,
+                        core::ffi::c_int::from(!patchFromDictFileName.is_null()),
                     );
                     FIO_setMMapDict(prefs, mmapDict);
                     if memLimit == 0 {

@@ -174,9 +174,9 @@ pub unsafe fn UTIL_fstat(
         g_traceDepth += 1;
     }
     if fd >= 0 {
-        ret = (fstat(fd, statbuf) == 0) as core::ffi::c_int;
+        ret = core::ffi::c_int::from(fstat(fd, statbuf) == 0);
     } else {
-        ret = (stat(filename, statbuf) == 0) as core::ffi::c_int;
+        ret = core::ffi::c_int::from(stat(filename, statbuf) == 0);
     }
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
@@ -214,13 +214,15 @@ pub unsafe fn UTIL_isFdRegularFile(fd: core::ffi::c_int) -> core::ffi::c_int {
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (fd >= 0
-        && UTIL_fstat(
-            fd,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-            &mut statbuf,
-        ) != 0
-        && UTIL_isRegularFileStat(&statbuf) != 0) as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        fd >= 0
+            && UTIL_fstat(
+                fd,
+                b"\0" as *const u8 as *const core::ffi::c_char,
+                &mut statbuf,
+            ) != 0
+            && UTIL_isRegularFileStat(&statbuf) != 0,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -251,8 +253,9 @@ pub unsafe fn UTIL_isRegularFile(infilename: *const core::ffi::c_char) -> core::
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isRegularFileStat(&statbuf) != 0)
-        as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isRegularFileStat(&statbuf) != 0,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -266,9 +269,11 @@ pub unsafe fn UTIL_isRegularFile(infilename: *const core::ffi::c_char) -> core::
     ret
 }
 pub unsafe fn UTIL_isRegularFileStat(statbuf: *const stat_t) -> core::ffi::c_int {
-    (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as core::ffi::c_int as __mode_t)
-        as core::ffi::c_int
-        != 0) as core::ffi::c_int
+    core::ffi::c_int::from(
+        core::ffi::c_int::from(
+            (*statbuf).st_mode & __S_IFMT as __mode_t == 0o100000 as core::ffi::c_int as __mode_t,
+        ) != 0,
+    )
 }
 pub unsafe fn UTIL_chmod(
     filename: *const core::ffi::c_char,
@@ -594,8 +599,9 @@ pub unsafe fn UTIL_isDirectory(infilename: *const core::ffi::c_char) -> core::ff
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isDirectoryStat(&statbuf) != 0)
-        as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        UTIL_stat(infilename, &mut statbuf) != 0 && UTIL_isDirectoryStat(&statbuf) != 0,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -624,9 +630,11 @@ pub unsafe fn UTIL_isDirectoryStat(statbuf: *const stat_t) -> core::ffi::c_int {
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = (((*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as core::ffi::c_int as __mode_t)
-        as core::ffi::c_int
-        != 0) as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        core::ffi::c_int::from(
+            (*statbuf).st_mode & __S_IFMT as __mode_t == 0o40000 as core::ffi::c_int as __mode_t,
+        ) != 0,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -723,10 +731,11 @@ pub unsafe fn UTIL_isSameFile(
         },
         __glibc_reserved: [0; 3],
     };
-    ret = (UTIL_stat(fName1, &mut file1Stat) != 0
-        && UTIL_stat(fName2, &mut file2Stat) != 0
-        && UTIL_isSameFileStat(fName1, fName2, &file1Stat, &file2Stat) != 0)
-        as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        UTIL_stat(fName1, &mut file1Stat) != 0
+            && UTIL_stat(fName2, &mut file2Stat) != 0
+            && UTIL_isSameFileStat(fName1, fName2, &file1Stat, &file2Stat) != 0,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -764,8 +773,9 @@ pub unsafe fn UTIL_isSameFileStat(
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    ret = ((*file1Stat).st_dev == (*file2Stat).st_dev && (*file1Stat).st_ino == (*file2Stat).st_ino)
-        as core::ffi::c_int;
+    ret = core::ffi::c_int::from(
+        (*file1Stat).st_dev == (*file2Stat).st_dev && (*file1Stat).st_ino == (*file2Stat).st_ino,
+    );
     if g_traceFileStat != 0 {
         g_traceDepth -= 1;
         fprintf(
@@ -867,7 +877,7 @@ pub unsafe fn UTIL_isFileDescriptorPipe(filename: *const core::ffi::c_char) -> c
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    if *filename.offset(0) as core::ffi::c_int == '/' as i32
+    if core::ffi::c_int::from(*filename.offset(0)) == '/' as i32
         && strncmp(
             filename,
             b"/dev/fd/\0" as *const u8 as *const core::ffi::c_char,
@@ -886,7 +896,7 @@ pub unsafe fn UTIL_isFileDescriptorPipe(filename: *const core::ffi::c_char) -> c
         }
         return 1;
     }
-    if *filename.offset(0) as core::ffi::c_int == '/' as i32
+    if core::ffi::c_int::from(*filename.offset(0)) == '/' as i32
         && strncmp(
             filename,
             b"/proc/self/fd/\0" as *const u8 as *const core::ffi::c_char,
@@ -1280,14 +1290,14 @@ unsafe fn UTIL_processLines(buffer: *mut core::ffi::c_char, bufferSize: size_t) 
     let mut lineCount = 0 as size_t;
     let mut i = 0;
     while i < bufferSize {
-        if *buffer.add(i) as core::ffi::c_int == '\n' as i32 {
+        if core::ffi::c_int::from(*buffer.add(i)) == '\n' as i32 {
             *buffer.add(i) = '\0' as i32 as core::ffi::c_char;
             lineCount = lineCount.wrapping_add(1);
         }
         i = i.wrapping_add(1);
     }
     if bufferSize > 0
-        && (i == 0 || *buffer.add(i.wrapping_sub(1)) as core::ffi::c_int != '\0' as i32)
+        && (i == 0 || core::ffi::c_int::from(*buffer.add(i.wrapping_sub(1))) != '\0' as i32)
     {
         lineCount = lineCount.wrapping_add(1);
     }
@@ -1313,7 +1323,7 @@ unsafe fn UTIL_createLinePointers(
         let fresh1 = &mut (*linePointers.add(fresh0));
         *fresh1 = buffer.add(pos);
         while pos.wrapping_add(len) < bufferSize
-            && *buffer.add(pos.wrapping_add(len)) as core::ffi::c_int != '\0' as i32
+            && core::ffi::c_int::from(*buffer.add(pos.wrapping_add(len))) != '\0' as i32
         {
             len = len.wrapping_add(1);
         }
@@ -1726,9 +1736,9 @@ unsafe fn pathnameHas2Dots(pathname: *const core::ffi::c_char) -> core::ffi::c_i
         if needle.is_null() {
             return 0;
         }
-        if (needle == pathname || *needle.offset(-1_isize) as core::ffi::c_int == PATH_SEP)
-            && (*needle.offset(2) as core::ffi::c_int == '\0' as i32
-                || *needle.offset(2) as core::ffi::c_int == PATH_SEP)
+        if (needle == pathname || core::ffi::c_int::from(*needle.offset(-1_isize)) == PATH_SEP)
+            && (core::ffi::c_int::from(*needle.offset(2)) == '\0' as i32
+                || core::ffi::c_int::from(*needle.offset(2)) == PATH_SEP)
         {
             return 1;
         }
@@ -1736,7 +1746,7 @@ unsafe fn pathnameHas2Dots(pathname: *const core::ffi::c_char) -> core::ffi::c_i
     }
 }
 unsafe fn isFileNameValidForMirroredOutput(filename: *const core::ffi::c_char) -> core::ffi::c_int {
-    (pathnameHas2Dots(filename) == 0) as core::ffi::c_int
+    core::ffi::c_int::from(pathnameHas2Dots(filename) == 0)
 }
 pub const DIR_DEFAULT_MODE: core::ffi::c_int = 0o755 as core::ffi::c_int;
 unsafe fn getDirMode(dirName: *const core::ffi::c_char) -> mode_t {
@@ -1804,7 +1814,7 @@ unsafe fn convertPathnameToDirName(pathname: *mut core::ffi::c_char) {
     assert!(!pathname.is_null());
     len = strlen(pathname);
     assert!(len > 0);
-    while *pathname.add(len) as core::ffi::c_int == PATH_SEP {
+    while core::ffi::c_int::from(*pathname.add(len)) == PATH_SEP {
         *pathname.add(len) = 0;
         len = len.wrapping_sub(1);
     }
@@ -1821,7 +1831,7 @@ unsafe fn convertPathnameToDirName(pathname: *mut core::ffi::c_char) {
 }
 unsafe fn trimLeadingRootChar(pathname: *const core::ffi::c_char) -> *const core::ffi::c_char {
     assert!(!pathname.is_null());
-    if *pathname.offset(0) as core::ffi::c_int == PATH_SEP {
+    if core::ffi::c_int::from(*pathname.offset(0)) == PATH_SEP {
         return pathname.offset(1);
     }
     pathname
@@ -1830,8 +1840,8 @@ unsafe fn trimLeadingCurrentDirConst(
     pathname: *const core::ffi::c_char,
 ) -> *const core::ffi::c_char {
     assert!(!pathname.is_null());
-    if *pathname.offset(0) as core::ffi::c_int == '.' as i32
-        && *pathname.offset(1) as core::ffi::c_int == PATH_SEP
+    if core::ffi::c_int::from(*pathname.offset(0)) == '.' as i32
+        && core::ffi::c_int::from(*pathname.offset(1)) == PATH_SEP
     {
         return pathname.offset(2);
     }
@@ -1877,7 +1887,7 @@ unsafe fn mallocAndJoin2Dir(
     );
     *outDirBuffer.add(dir1Size) = 0;
     buffer = outDirBuffer.add(dir1Size);
-    if dir1Size > 0 && *buffer.offset(-(1)) as core::ffi::c_int != PATH_SEP {
+    if dir1Size > 0 && core::ffi::c_int::from(*buffer.offset(-(1))) != PATH_SEP {
         *buffer = PATH_SEP as core::ffi::c_char;
         buffer = buffer.offset(1);
     }
@@ -1959,10 +1969,12 @@ unsafe fn firstIsParentOrSameDirOfSecond(
 ) -> core::ffi::c_int {
     let firstDirLen = strlen(firstDir);
     let secondDirLen = strlen(secondDir);
-    (firstDirLen <= secondDirLen
-        && (*secondDir.add(firstDirLen) as core::ffi::c_int == PATH_SEP
-            || *secondDir.add(firstDirLen) as core::ffi::c_int == '\0' as i32)
-        && 0 == strncmp(firstDir, secondDir, firstDirLen)) as core::ffi::c_int
+    core::ffi::c_int::from(
+        firstDirLen <= secondDirLen
+            && (core::ffi::c_int::from(*secondDir.add(firstDirLen)) == PATH_SEP
+                || core::ffi::c_int::from(*secondDir.add(firstDirLen)) == '\0' as i32)
+            && 0 == strncmp(firstDir, secondDir, firstDirLen),
+    )
 }
 unsafe extern "C" fn compareDir(
     pathname1: *const core::ffi::c_void,
@@ -2247,7 +2259,7 @@ pub unsafe fn UTIL_countCores(logical: bool) -> core::ffi::c_int {
         while feof(cpuinfo) == 0 {
             if !fgets(buff.as_mut_ptr(), BUF_SIZE as _, cpuinfo).is_null() {
                 if strncmp(buff.as_mut_ptr(), c"siblings".as_ptr(), 8) == 0 {
-                    let sep = strchr(buff.as_mut_ptr(), b':' as core::ffi::c_int);
+                    let sep = strchr(buff.as_mut_ptr(), core::ffi::c_int::from(b':'));
                     if sep.is_null() || *sep == 0 {
                         // formatting was broken?
                         break 'failed;
@@ -2256,7 +2268,7 @@ pub unsafe fn UTIL_countCores(logical: bool) -> core::ffi::c_int {
                     siblings = atoi(sep.offset(1));
                 }
                 if strncmp(buff.as_mut_ptr(), c"cpu cores".as_ptr(), 9) == 0 {
-                    let sep = strchr(buff.as_mut_ptr(), b':' as core::ffi::c_int);
+                    let sep = strchr(buff.as_mut_ptr(), core::ffi::c_int::from(b':'));
                     if sep.is_null() || *sep == 0 {
                         // formatting was broken?
                         break 'failed;

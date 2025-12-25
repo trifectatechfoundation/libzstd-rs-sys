@@ -65,7 +65,7 @@ pub type check_size = [core::ffi::c_char; 1];
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub unsafe fn BMK_isSuccessful_runOutcome(outcome: BMK_runOutcome_t) -> core::ffi::c_int {
-    (outcome.error_tag_never_ever_use_directly == 0) as core::ffi::c_int
+    core::ffi::c_int::from(outcome.error_tag_never_ever_use_directly == 0)
 }
 pub unsafe fn BMK_extract_runTime(outcome: BMK_runOutcome_t) -> BMK_runTime_t {
     if outcome.error_tag_never_ever_use_directly != 0 {
@@ -114,7 +114,7 @@ pub unsafe fn BMK_benchFunction(
     p: BMK_benchParams_t,
     mut nbLoops: core::ffi::c_uint,
 ) -> BMK_runOutcome_t {
-    nbLoops = nbLoops.wrapping_add((nbLoops == 0) as core::ffi::c_int as core::ffi::c_uint);
+    nbLoops = nbLoops.wrapping_add(core::ffi::c_int::from(nbLoops == 0) as core::ffi::c_uint);
     let mut i: size_t = 0;
     i = 0;
     while i < p.blockCount {
@@ -157,7 +157,7 @@ pub unsafe fn BMK_benchFunction(
         nanoSecPerRun: 0.,
         sumOfReturn: 0,
     };
-    rt.nanoSecPerRun = totalTime as core::ffi::c_double / nbLoops as core::ffi::c_double;
+    rt.nanoSecPerRun = totalTime as core::ffi::c_double / core::ffi::c_double::from(nbLoops);
     rt.sumOfReturn = dstSize;
     BMK_setValid_runTime(rt)
 }
@@ -210,10 +210,10 @@ pub unsafe fn BMK_resetTimedFnState(
         run_ms = total_ms;
     }
     (*timedFnState).timeSpent_ns = 0;
-    (*timedFnState).timeBudget_ns = (total_ms as PTime as core::ffi::c_ulonglong)
+    (*timedFnState).timeBudget_ns = (PTime::from(total_ms) as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
         .wrapping_div(1000) as PTime;
-    (*timedFnState).runBudget_ns = (run_ms as PTime as core::ffi::c_ulonglong)
+    (*timedFnState).runBudget_ns = (PTime::from(run_ms) as core::ffi::c_ulonglong)
         .wrapping_mul(TIMELOOP_NANOSEC)
         .wrapping_div(1000) as PTime;
     (*timedFnState).fastestRun.nanoSecPerRun =
@@ -223,7 +223,7 @@ pub unsafe fn BMK_resetTimedFnState(
     (*timedFnState).coolTime = UTIL_getTime();
 }
 pub unsafe fn BMK_isCompleted_TimedFn(timedFnState: *const BMK_timedFnState_t) -> core::ffi::c_int {
-    ((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns) as core::ffi::c_int
+    core::ffi::c_int::from((*timedFnState).timeSpent_ns >= (*timedFnState).timeBudget_ns)
 }
 pub unsafe fn BMK_benchTimedFn(
     cont: *mut BMK_timedFnState_t,
@@ -239,7 +239,7 @@ pub unsafe fn BMK_benchTimedFn(
             return runResult;
         }
         let newRunTime = BMK_extract_runTime(runResult);
-        let loopDuration_ns = newRunTime.nanoSecPerRun * (*cont).nbLoops as core::ffi::c_double;
+        let loopDuration_ns = newRunTime.nanoSecPerRun * core::ffi::c_double::from((*cont).nbLoops);
         (*cont).timeSpent_ns = ((*cont).timeSpent_ns as core::ffi::c_ulonglong)
             .wrapping_add(loopDuration_ns as core::ffi::c_ulonglong)
             as PTime as PTime;

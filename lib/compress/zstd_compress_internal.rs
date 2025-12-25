@@ -50,8 +50,9 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     offBase: u32,
     matchLength: usize,
 ) {
-    if (litLength > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long
-        != 0
+    if core::ffi::c_long::from(core::ffi::c_int::from(
+        litLength > 0xffff as core::ffi::c_int as usize,
+    )) != 0
     {
         seqStorePtr.longLengthType = ZSTD_llt_literalLength;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
@@ -184,13 +185,13 @@ pub(crate) unsafe fn ZSTD_count(
         pMatch = pMatch.add(4);
     }
     if pIn < pInLimit.sub(1)
-        && MEM_read16(pMatch as *const core::ffi::c_void) as core::ffi::c_int
-            == MEM_read16(pIn as *const core::ffi::c_void) as core::ffi::c_int
+        && core::ffi::c_int::from(MEM_read16(pMatch as *const core::ffi::c_void))
+            == core::ffi::c_int::from(MEM_read16(pIn as *const core::ffi::c_void))
     {
         pIn = pIn.add(2);
         pMatch = pMatch.add(2);
     }
-    if pIn < pInLimit && *pMatch as core::ffi::c_int == *pIn as core::ffi::c_int {
+    if pIn < pInLimit && core::ffi::c_int::from(*pMatch) == core::ffi::c_int::from(*pIn) {
         pIn = pIn.add(1);
     }
     pIn.offset_from_unsigned(pStart)
@@ -328,7 +329,7 @@ pub(crate) unsafe fn ZSTD_getLowestMatchIndex(
     } else {
         lowestValid
     };
-    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
+    let isDictionary = core::ffi::c_int::from((*ms).loadedDictEnd != 0) as u32;
 
     if isDictionary != 0 {
         lowestValid
@@ -350,7 +351,7 @@ pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
     } else {
         lowestValid
     };
-    let isDictionary = ((*ms).loadedDictEnd != 0) as core::ffi::c_int as u32;
+    let isDictionary = core::ffi::c_int::from((*ms).loadedDictEnd != 0) as u32;
 
     if isDictionary != 0 {
         lowestValid
@@ -361,7 +362,7 @@ pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
 
 #[inline]
 pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
-    (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
+    core::ffi::c_int::from(prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3)
 }
 
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
@@ -410,8 +411,8 @@ unsafe fn ZSTD_window_canOverflowCorrect(
     } else {
         minIndexToOverflowCorrect
     };
-    let indexLargeEnough = (curr > adjustedIndex) as core::ffi::c_int as u32;
+    let indexLargeEnough = core::ffi::c_int::from(curr > adjustedIndex) as u32;
     let dictionaryInvalidated =
-        (curr > maxDist.wrapping_add(loadedDictEnd)) as core::ffi::c_int as u32;
-    (indexLargeEnough != 0 && dictionaryInvalidated != 0) as core::ffi::c_int as u32
+        core::ffi::c_int::from(curr > maxDist.wrapping_add(loadedDictEnd)) as u32;
+    core::ffi::c_int::from(indexLargeEnough != 0 && dictionaryInvalidated != 0) as u32
 }

@@ -257,7 +257,7 @@ unsafe fn BITv06_initDStream(
         if lastByte == 0 {
             return Error::GENERIC.to_error_code(); // endMark not present
         }
-        bitD.bitsConsumed = 8 - BITv06_highbit32(lastByte as u32);
+        bitD.bitsConsumed = 8 - BITv06_highbit32(u32::from(lastByte));
     } else {
         bitD.start = srcBuffer as *const core::ffi::c_char;
         bitD.ptr = bitD.start;
@@ -295,7 +295,7 @@ unsafe fn BITv06_initDStream(
             // endMark not present
             return Error::GENERIC.to_error_code();
         }
-        bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv06_highbit32(lastByte as u32);
+        bitD.bitsConsumed = (8 as core::ffi::c_uint) - BITv06_highbit32(u32::from(lastByte));
         bitD.bitsConsumed += (::core::mem::size_of::<size_t>() - srcSize) as u32 * 8;
     }
     srcSize
@@ -364,9 +364,11 @@ unsafe fn BITv06_reloadDStream(bitD: *mut BITv06_DStream_t) -> BITv06_DStream_st
 }
 #[inline]
 unsafe fn BITv06_endOfDStream(DStream: *const BITv06_DStream_t) -> core::ffi::c_uint {
-    ((*DStream).ptr == (*DStream).start
-        && (*DStream).bitsConsumed as size_t == (::core::mem::size_of::<size_t>()).wrapping_mul(8))
-        as core::ffi::c_int as core::ffi::c_uint
+    core::ffi::c_int::from(
+        (*DStream).ptr == (*DStream).start
+            && (*DStream).bitsConsumed as size_t
+                == (::core::mem::size_of::<size_t>()).wrapping_mul(8),
+    ) as core::ffi::c_uint
 }
 #[inline]
 unsafe fn FSEv06_initDState(
@@ -376,7 +378,7 @@ unsafe fn FSEv06_initDState(
 ) {
     let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const FSEv06_DTableHeader;
-    (*DStatePtr).state = BITv06_readBits(bitD, (*DTableH).tableLog as core::ffi::c_uint);
+    (*DStatePtr).state = BITv06_readBits(bitD, core::ffi::c_uint::from((*DTableH).tableLog));
     BITv06_reloadDStream(bitD);
     (*DStatePtr).table = dt.add(1) as *const core::ffi::c_void;
 }
@@ -388,7 +390,7 @@ unsafe fn FSEv06_peekSymbol(DStatePtr: *const FSEv06_DState_t) -> u8 {
 #[inline]
 unsafe fn FSEv06_updateState(DStatePtr: *mut FSEv06_DState_t, bitD: *mut BITv06_DStream_t) {
     let DInfo = *((*DStatePtr).table as *const FSEv06_decode_t).add((*DStatePtr).state);
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let lowBits = BITv06_readBits(bitD, nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
 }
@@ -398,7 +400,7 @@ unsafe fn FSEv06_decodeSymbol(
     bitD: *mut BITv06_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = *((*DStatePtr).table as *const FSEv06_decode_t).add((*DStatePtr).state);
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = BITv06_readBits(bitD, nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
@@ -410,7 +412,7 @@ unsafe fn FSEv06_decodeSymbolFast(
     bitD: *mut BITv06_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = *((*DStatePtr).table as *const FSEv06_decode_t).add((*DStatePtr).state);
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = BITv06_readBitsFast(bitD, nbBits);
     (*DStatePtr).state = (DInfo.newState as size_t).wrapping_add(lowBits);
@@ -422,13 +424,13 @@ const FSEv06_MAX_TABLELOG: core::ffi::c_int = FSEv06_MAX_MEMORY_USAGE - 2;
 const FSEv06_MIN_TABLELOG: core::ffi::c_int = 5;
 const FSEv06_TABLELOG_ABSOLUTE_MAX: core::ffi::c_int = 15;
 unsafe fn HUFv06_isError(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code) as _
+    ERR_isError(code).into()
 }
 unsafe fn FSEv06_abs(a: core::ffi::c_short) -> core::ffi::c_short {
-    (if (a as core::ffi::c_int) < 0 {
-        -(a as core::ffi::c_int)
+    (if core::ffi::c_int::from(a) < 0 {
+        -core::ffi::c_int::from(a)
     } else {
-        a as core::ffi::c_int
+        core::ffi::c_int::from(a)
     }) as core::ffi::c_short
 }
 unsafe fn FSEv06_readNCount(
@@ -507,17 +509,18 @@ unsafe fn FSEv06_readNCount(
             bitCount += nbBits - 1;
         } else {
             count = (bitStream & (2 * threshold - 1) as u32) as core::ffi::c_short;
-            if count as core::ffi::c_int >= threshold {
-                count = (count as core::ffi::c_int - max as core::ffi::c_int) as core::ffi::c_short;
+            if core::ffi::c_int::from(count) >= threshold {
+                count = (core::ffi::c_int::from(count) - core::ffi::c_int::from(max))
+                    as core::ffi::c_short;
             }
             bitCount += nbBits;
         }
         count -= 1;
-        remaining -= FSEv06_abs(count) as core::ffi::c_int;
+        remaining -= core::ffi::c_int::from(FSEv06_abs(count));
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
         *normalizedCounter.offset(fresh1 as isize) = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = core::ffi::c_int::from(count == 0);
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
@@ -569,14 +572,14 @@ unsafe fn FSEv06_buildDTable(
     let mut s: u32 = 0;
     s = 0;
     while s < maxSV1 {
-        if *normalizedCounter.offset(s as isize) as core::ffi::c_int == -(1) {
+        if core::ffi::c_int::from(*normalizedCounter.offset(s as isize)) == -(1) {
             let fresh2 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             (*tableDecode.offset(fresh2 as isize)).symbol = s as u8;
             *symbolNext.as_mut_ptr().offset(s as isize) = 1;
         } else {
-            if *normalizedCounter.offset(s as isize) as core::ffi::c_int
-                >= largeLimit as core::ffi::c_int
+            if core::ffi::c_int::from(*normalizedCounter.offset(s as isize))
+                >= core::ffi::c_int::from(largeLimit)
             {
                 DTableH.fastMode = 0;
             }
@@ -600,7 +603,7 @@ unsafe fn FSEv06_buildDTable(
     while s_0 < maxSV1 {
         let mut i: core::ffi::c_int = 0;
         i = 0;
-        while i < *normalizedCounter.offset(s_0 as isize) as core::ffi::c_int {
+        while i < core::ffi::c_int::from(*normalizedCounter.offset(s_0 as isize)) {
             (*tableDecode.offset(position as isize)).symbol = s_0 as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
@@ -622,9 +625,9 @@ unsafe fn FSEv06_buildDTable(
         *fresh3 = (*fresh3).wrapping_add(1);
         let nextState = fresh4;
         (*tableDecode.offset(u as isize)).nbBits =
-            tableLog.wrapping_sub(BITv06_highbit32(nextState as u32)) as u8;
-        (*tableDecode.offset(u as isize)).newState = (((nextState as core::ffi::c_int)
-            << (*tableDecode.offset(u as isize)).nbBits as core::ffi::c_int)
+            tableLog.wrapping_sub(BITv06_highbit32(u32::from(nextState))) as u8;
+        (*tableDecode.offset(u as isize)).newState = ((core::ffi::c_int::from(nextState)
+            << core::ffi::c_int::from((*tableDecode.offset(u as isize)).nbBits))
             as u32)
             .wrapping_sub(tableSize) as u16;
         u = u.wrapping_add(1);
@@ -681,9 +684,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         && op < olimit
     {
         *op = (if fast != 0 {
-            FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if (FSEv06_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -691,9 +694,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             BITv06_reloadDStream(&mut bitD);
         }
         *op.add(1) = (if fast != 0 {
-            FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state2, &mut bitD))
         } else {
-            FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state2, &mut bitD))
         }) as u8;
         if (FSEv06_MAX_TABLELOG * 4 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -704,9 +707,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             break;
         }
         *op.add(2) = (if fast != 0 {
-            FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if (FSEv06_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -714,9 +717,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             BITv06_reloadDStream(&mut bitD);
         }
         *op.add(3) = (if fast != 0 {
-            FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state2, &mut bitD))
         } else {
-            FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state2, &mut bitD))
         }) as u8;
         op = op.add(4);
     }
@@ -727,9 +730,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
         let fresh5 = op;
         op = op.add(1);
         *fresh5 = (if fast != 0 {
-            FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
             == BITv06_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
@@ -737,9 +740,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             let fresh6 = op;
             op = op.add(1);
             *fresh6 = (if fast != 0 {
-                FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state2, &mut bitD))
             } else {
-                FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state2, &mut bitD))
             }) as u8;
             break;
         } else {
@@ -749,9 +752,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             let fresh7 = op;
             op = op.add(1);
             *fresh7 = (if fast != 0 {
-                FSEv06_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state2, &mut bitD))
             } else {
-                FSEv06_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state2, &mut bitD))
             }) as u8;
             if BITv06_reloadDStream(&mut bitD) as core::ffi::c_uint
                 != BITv06_DStream_overflow as core::ffi::c_int as core::ffi::c_uint
@@ -761,9 +764,9 @@ unsafe fn FSEv06_decompress_usingDTable_generic(
             let fresh8 = op;
             op = op.add(1);
             *fresh8 = (if fast != 0 {
-                FSEv06_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbolFast(&mut state1, &mut bitD))
             } else {
-                FSEv06_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+                core::ffi::c_int::from(FSEv06_decodeSymbol(&mut state1, &mut bitD))
             }) as u8;
             break;
         }
@@ -779,7 +782,7 @@ unsafe fn FSEv06_decompress_usingDTable(
 ) -> size_t {
     let ptr = dt as *const core::ffi::c_void;
     let DTableH = ptr as *const FSEv06_DTableHeader;
-    let fastMode = (*DTableH).fastMode as u32;
+    let fastMode = u32::from((*DTableH).fastMode);
     if fastMode != 0 {
         return FSEv06_decompress_usingDTable_generic(dst, originalSize, cSrc, cSrcSize, dt, 1);
     }
@@ -873,9 +876,9 @@ unsafe fn HUFv06_readStats(
             n = 0;
             while (n as size_t) < oSize {
                 *huffWeight.offset(n as isize) =
-                    (*ip.offset((n / 2) as isize) as core::ffi::c_int >> 4) as u8;
+                    (core::ffi::c_int::from(*ip.offset((n / 2) as isize)) >> 4) as u8;
                 *huffWeight.offset(n.wrapping_add(1) as isize) =
-                    (*ip.offset((n / 2) as isize) as core::ffi::c_int & 15) as u8;
+                    (core::ffi::c_int::from(*ip.offset((n / 2) as isize)) & 15) as u8;
                 n = n.wrapping_add(2);
             }
         }
@@ -898,13 +901,13 @@ unsafe fn HUFv06_readStats(
     let mut n_0: u32 = 0;
     n_0 = 0;
     while (n_0 as size_t) < oSize {
-        if *huffWeight.offset(n_0 as isize) as core::ffi::c_int >= HUFv06_ABSOLUTEMAX_TABLELOG {
+        if core::ffi::c_int::from(*huffWeight.offset(n_0 as isize)) >= HUFv06_ABSOLUTEMAX_TABLELOG {
             return Error::corruption_detected.to_error_code();
         }
         let fresh9 = &mut (*rankStats.offset(*huffWeight.offset(n_0 as isize) as isize));
         *fresh9 = (*fresh9).wrapping_add(1);
         weightTotal = weightTotal.wrapping_add(
-            ((1) << *huffWeight.offset(n_0 as isize) as core::ffi::c_int >> 1) as u32,
+            ((1) << core::ffi::c_int::from(*huffWeight.offset(n_0 as isize)) >> 1) as u32,
         );
         n_0 = n_0.wrapping_add(1);
     }
@@ -958,7 +961,7 @@ unsafe fn HUFv06_readDTableX2(
     if HUFv06_isError(iSize) != 0 {
         return iSize;
     }
-    if tableLog > *DTable as u32 {
+    if tableLog > u32::from(*DTable) {
         return Error::tableLog_tooLarge.to_error_code();
     }
     *DTable = tableLog as u16;
@@ -973,7 +976,7 @@ unsafe fn HUFv06_readDTableX2(
     }
     n = 0;
     while n < nbSymbols {
-        let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
+        let w = u32::from(*huffWeight.as_mut_ptr().offset(n as isize));
         let length = ((1) << w >> 1) as u32;
         let mut i: u32 = 0;
         let mut D = HUFv06_DEltX2 { byte: 0, nbBits: 0 };
@@ -997,7 +1000,7 @@ unsafe fn HUFv06_decodeSymbolX2(
 ) -> u8 {
     let val = BITv06_lookBitsFast(Dstream, dtLog);
     let c = (*dt.add(val)).byte;
-    BITv06_skipBits(Dstream, (*dt.add(val)).nbBits as u32);
+    BITv06_skipBits(Dstream, u32::from((*dt.add(val)).nbBits));
     c
 }
 #[inline]
@@ -1056,7 +1059,7 @@ unsafe fn HUFv06_decompress1X2_usingDTable(
 ) -> size_t {
     let op = dst as *mut u8;
     let oend = op.add(dstSize);
-    let dtLog = *DTable as u32;
+    let dtLog = u32::from(*DTable);
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv06_DEltX2).add(1);
     let mut bitD = BITv06_DStream_t {
@@ -1115,7 +1118,7 @@ unsafe fn HUFv06_decompress4X2_usingDTable(
     let oend = ostart.add(dstSize);
     let dtPtr = DTable as *const core::ffi::c_void;
     let dt = (dtPtr as *const HUFv06_DEltX2).add(1);
-    let dtLog = *DTable as u32;
+    let dtLog = u32::from(*DTable);
     let mut errorCode: size_t = 0;
     let mut bitD1 = BITv06_DStream_t {
         bitContainer: 0,
@@ -1352,8 +1355,8 @@ unsafe fn HUFv06_fillDTableX4Level2(
     let mut s: u32 = 0;
     s = 0;
     while s < sortedListSize {
-        let symbol = (*sortedSymbols.offset(s as isize)).symbol as u32;
-        let weight = (*sortedSymbols.offset(s as isize)).weight as u32;
+        let symbol = u32::from((*sortedSymbols.offset(s as isize)).symbol);
+        let weight = u32::from((*sortedSymbols.offset(s as isize)).weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
@@ -1361,7 +1364,7 @@ unsafe fn HUFv06_fillDTableX4Level2(
         let end = start.wrapping_add(length);
         MEM_writeLE16(
             &mut DElt.sequence as *mut u16 as *mut core::ffi::c_void,
-            (baseSeq as u32).wrapping_add(symbol << 8) as u16,
+            u32::from(baseSeq).wrapping_add(symbol << 8) as u16,
         );
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
@@ -1399,8 +1402,8 @@ unsafe fn HUFv06_fillDTableX4(
     );
     s = 0;
     while s < sortedListSize {
-        let symbol = (*sortedList.offset(s as isize)).symbol as u16;
-        let weight = (*sortedList.offset(s as isize)).weight as u32;
+        let symbol = u16::from((*sortedList.offset(s as isize)).symbol);
+        let weight = u32::from((*sortedList.offset(s as isize)).weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start = *rankVal.as_mut_ptr().offset(weight as isize);
         let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
@@ -1505,7 +1508,7 @@ unsafe fn HUFv06_readDTableX4(
     let mut s: u32 = 0;
     s = 0;
     while s < nbSymbols {
-        let w_0 = *weightList.as_mut_ptr().offset(s as isize) as u32;
+        let w_0 = u32::from(*weightList.as_mut_ptr().offset(s as isize));
         let fresh37 = &mut (*rankStart.offset(w_0 as isize));
         let fresh38 = *fresh37;
         *fresh37 = (*fresh37).wrapping_add(1);
@@ -1561,8 +1564,8 @@ unsafe fn HUFv06_decodeSymbolX4(
 ) -> u32 {
     let val = BITv06_lookBitsFast(DStream, dtLog);
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 2);
-    BITv06_skipBits(DStream, (*dt.add(val)).nbBits as u32);
-    (*dt.add(val)).length as u32
+    BITv06_skipBits(DStream, u32::from((*dt.add(val)).nbBits));
+    u32::from((*dt.add(val)).length)
 }
 unsafe fn HUFv06_decodeLastSymbolX4(
     op: *mut core::ffi::c_void,
@@ -1572,12 +1575,12 @@ unsafe fn HUFv06_decodeLastSymbolX4(
 ) -> u32 {
     let val = BITv06_lookBitsFast(DStream, dtLog);
     memcpy(op, dt.add(val) as *const core::ffi::c_void, 1);
-    if (*dt.add(val)).length as core::ffi::c_int == 1 {
-        BITv06_skipBits(DStream, (*dt.add(val)).nbBits as u32);
+    if core::ffi::c_int::from((*dt.add(val)).length) == 1 {
+        BITv06_skipBits(DStream, u32::from((*dt.add(val)).nbBits));
     } else if ((*DStream).bitsConsumed as size_t)
         < (::core::mem::size_of::<size_t>()).wrapping_mul(8)
     {
-        BITv06_skipBits(DStream, (*dt.add(val)).nbBits as u32);
+        BITv06_skipBits(DStream, u32::from((*dt.add(val)).nbBits));
         if (*DStream).bitsConsumed as size_t > (::core::mem::size_of::<size_t>()).wrapping_mul(8) {
             (*DStream).bitsConsumed =
                 (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_uint;
@@ -2336,7 +2339,7 @@ unsafe fn ZSTDv06_frameHeaderSize(src: *const core::ffi::c_void, srcSize: size_t
     if srcSize < ZSTDv06_frameHeaderSize_min {
         return Error::srcSize_wrong.to_error_code();
     }
-    let fcsId = (*(src as *const u8).add(4) as core::ffi::c_int >> 6) as u32;
+    let fcsId = (core::ffi::c_int::from(*(src as *const u8).add(4)) >> 6) as u32;
     ZSTDv06_frameHeaderSize_min.wrapping_add(*ZSTDv06_fcs_fieldSize.as_ptr().offset(fcsId as isize))
 }
 
@@ -2372,19 +2375,20 @@ pub(crate) unsafe fn ZSTDv06_getFrameParams(
     );
 
     let frameDesc = *ip.add(4);
-    (*fparamsPtr).windowLog =
-        (frameDesc & 0xf) as core::ffi::c_uint + ZSTDv06_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
+    (*fparamsPtr).windowLog = core::ffi::c_uint::from(frameDesc & 0xf)
+        + ZSTDv06_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint;
     if frameDesc & 0x20 != 0 {
         // reserved 1 bit
         return Error::frameParameter_unsupported.to_error_code();
     }
-    match frameDesc as core::ffi::c_int >> 6 {
+    match core::ffi::c_int::from(frameDesc) >> 6 {
         // fcsId
         0 => (*fparamsPtr).frameContentSize = 0,
-        1 => (*fparamsPtr).frameContentSize = *ip.add(5) as core::ffi::c_ulonglong,
+        1 => (*fparamsPtr).frameContentSize = core::ffi::c_ulonglong::from(*ip.add(5)),
         2 => {
             (*fparamsPtr).frameContentSize =
-                MEM_readLE16(ip.add(5) as *const core::ffi::c_void) as core::ffi::c_ulonglong + 256;
+                core::ffi::c_ulonglong::from(MEM_readLE16(ip.add(5) as *const core::ffi::c_void))
+                    + 256;
         }
         3 => {
             (*fparamsPtr).frameContentSize =
@@ -2416,10 +2420,10 @@ unsafe fn ZSTDv06_getcBlockSize(
     if srcSize < ZSTDv06_blockHeaderSize {
         return Error::srcSize_wrong.to_error_code();
     }
-    (*bpPtr).blockType = (*in_0 as core::ffi::c_int >> 6) as blockType_t;
-    cSize = (*in_0.add(2) as core::ffi::c_int
-        + ((*in_0.add(1) as core::ffi::c_int) << 8)
-        + ((*in_0 as core::ffi::c_int & 7) << 16)) as u32;
+    (*bpPtr).blockType = (core::ffi::c_int::from(*in_0) >> 6) as blockType_t;
+    cSize = (core::ffi::c_int::from(*in_0.add(2))
+        + (core::ffi::c_int::from(*in_0.add(1)) << 8)
+        + ((core::ffi::c_int::from(*in_0) & 7) << 16)) as u32;
     (*bpPtr).origSize = if (*bpPtr).blockType as core::ffi::c_uint
         == bt_rle as core::ffi::c_int as core::ffi::c_uint
     {
@@ -2459,45 +2463,45 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
     if srcSize < MIN_CBLOCK_SIZE as size_t {
         return Error::corruption_detected.to_error_code();
     }
-    match *istart as core::ffi::c_int >> 6 {
+    match core::ffi::c_int::from(*istart) >> 6 {
         IS_HUF => {
             let mut litSize: size_t = 0;
             let mut litCSize: size_t = 0;
             let mut singleStream = 0;
-            let mut lhSize = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             if srcSize < 5 {
                 return Error::corruption_detected.to_error_code();
             }
             match lhSize {
                 2 => {
                     lhSize = 4;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 10)
-                        + ((*istart.add(1) as core::ffi::c_int) << 2)
-                        + (*istart.add(2) as core::ffi::c_int >> 6))
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 10)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 2)
+                        + (core::ffi::c_int::from(*istart.add(2)) >> 6))
                         as size_t;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 63) << 8)
-                        + *istart.add(3) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(2)) & 63) << 8)
+                        + core::ffi::c_int::from(*istart.add(3)))
                         as size_t;
                 }
                 3 => {
                     lhSize = 5;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 14)
-                        + ((*istart.add(1) as core::ffi::c_int) << 6)
-                        + (*istart.add(2) as core::ffi::c_int >> 2))
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 14)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 6)
+                        + (core::ffi::c_int::from(*istart.add(2)) >> 2))
                         as size_t;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 3) << 16)
-                        + ((*istart.add(3) as core::ffi::c_int) << 8)
-                        + *istart.add(4) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(2)) & 3) << 16)
+                        + (core::ffi::c_int::from(*istart.add(3)) << 8)
+                        + core::ffi::c_int::from(*istart.add(4)))
                         as size_t;
                 }
                 0 | 1 => {
                     lhSize = 3;
-                    singleStream = (*istart as core::ffi::c_int & 16) as size_t;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 6)
-                        + (*istart.add(1) as core::ffi::c_int >> 2))
+                    singleStream = (core::ffi::c_int::from(*istart) & 16) as size_t;
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 6)
+                        + (core::ffi::c_int::from(*istart.add(1)) >> 2))
                         as size_t;
-                    litCSize = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(1)) & 3) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                 }
                 _ => unreachable!(),
@@ -2537,7 +2541,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
         IS_PCH => {
             let mut litSize_0: size_t = 0;
             let mut litCSize_0: size_t = 0;
-            let mut lhSize_0 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize_0 = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             if lhSize_0 != 1 {
                 return Error::corruption_detected.to_error_code();
             }
@@ -2545,10 +2549,10 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 return Error::dictionary_corrupted.to_error_code();
             }
             lhSize_0 = 3;
-            litSize_0 = (((*istart as core::ffi::c_int & 15) << 6)
-                + (*istart.add(1) as core::ffi::c_int >> 2)) as size_t;
-            litCSize_0 = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                + *istart.add(2) as core::ffi::c_int) as size_t;
+            litSize_0 = (((core::ffi::c_int::from(*istart) & 15) << 6)
+                + (core::ffi::c_int::from(*istart.add(1)) >> 2)) as size_t;
+            litCSize_0 = (((core::ffi::c_int::from(*istart.add(1)) & 3) << 8)
+                + core::ffi::c_int::from(*istart.add(2))) as size_t;
             if litCSize_0.wrapping_add(lhSize_0 as size_t) > srcSize {
                 return Error::corruption_detected.to_error_code();
             }
@@ -2573,22 +2577,22 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
         }
         IS_RAW => {
             let mut litSize_1: size_t = 0;
-            let mut lhSize_1 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize_1 = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             match lhSize_1 {
                 2 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
+                    litSize_1 = (((core::ffi::c_int::from(*istart) & 15) << 8)
+                        + core::ffi::c_int::from(*istart.add(1)))
                         as size_t;
                 }
                 3 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litSize_1 = (((core::ffi::c_int::from(*istart) & 15) << 16)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                 }
                 0 | 1 => {
                     lhSize_1 = 1;
-                    litSize_1 = (*istart as core::ffi::c_int & 31) as size_t;
+                    litSize_1 = (core::ffi::c_int::from(*istart) & 31) as size_t;
                 }
                 _ => unreachable!(),
             }
@@ -2620,17 +2624,17 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
         }
         IS_RLE => {
             let mut litSize_2: size_t = 0;
-            let mut lhSize_2 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize_2 = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             match lhSize_2 {
                 2 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
+                    litSize_2 = (((core::ffi::c_int::from(*istart) & 15) << 8)
+                        + core::ffi::c_int::from(*istart.add(1)))
                         as size_t;
                 }
                 3 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litSize_2 = (((core::ffi::c_int::from(*istart) & 15) << 16)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                     if srcSize < 4 {
                         return Error::corruption_detected.to_error_code();
@@ -2638,7 +2642,7 @@ unsafe fn ZSTDv06_decodeLiteralsBlock(
                 }
                 0 | 1 => {
                     lhSize_2 = 1;
-                    litSize_2 = (*istart as core::ffi::c_int & 31) as size_t;
+                    litSize_2 = (core::ffi::c_int::from(*istart) & 31) as size_t;
                 }
                 _ => unreachable!(),
             }
@@ -2673,7 +2677,7 @@ unsafe fn ZSTDv06_buildSeqTable(
             if srcSize == 0 {
                 return Error::srcSize_wrong.to_error_code();
             }
-            if *(src as *const u8) as u32 > max {
+            if u32::from(*(src as *const u8)) > max {
                 return Error::corruption_detected.to_error_code();
             }
             FSEv06_buildDTable_rle(DTable, *(src as *const u8));
@@ -2723,7 +2727,7 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
     }
     let fresh41 = ip;
     ip = ip.add(1);
-    let mut nbSeq = *fresh41 as core::ffi::c_int;
+    let mut nbSeq = core::ffi::c_int::from(*fresh41);
     if nbSeq == 0 {
         *nbSeqPtr = 0;
         return 1;
@@ -2733,7 +2737,8 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
             if ip.add(2) > iend {
                 return Error::srcSize_wrong.to_error_code();
             }
-            nbSeq = MEM_readLE16(ip as *const core::ffi::c_void) as core::ffi::c_int + LONGNBSEQ;
+            nbSeq =
+                core::ffi::c_int::from(MEM_readLE16(ip as *const core::ffi::c_void)) + LONGNBSEQ;
             ip = ip.add(2);
         } else {
             if ip >= iend {
@@ -2741,16 +2746,16 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
             }
             let fresh42 = ip;
             ip = ip.add(1);
-            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + *fresh42 as core::ffi::c_int;
+            nbSeq = ((nbSeq - 0x80 as core::ffi::c_int) << 8) + core::ffi::c_int::from(*fresh42);
         }
     }
     *nbSeqPtr = nbSeq;
     if ip.add(4) > iend {
         return Error::srcSize_wrong.to_error_code();
     }
-    let LLtype = (*ip as core::ffi::c_int >> 6) as u32;
-    let Offtype = (*ip as core::ffi::c_int >> 4 & 3) as u32;
-    let MLtype = (*ip as core::ffi::c_int >> 2 & 3) as u32;
+    let LLtype = (core::ffi::c_int::from(*ip) >> 6) as u32;
+    let Offtype = (core::ffi::c_int::from(*ip) >> 4 & 3) as u32;
+    let MLtype = (core::ffi::c_int::from(*ip) >> 2 & 3) as u32;
     ip = ip.add(1);
     let bhSize = ZSTDv06_buildSeqTable(
         DTableLL,
@@ -2800,9 +2805,9 @@ unsafe fn ZSTDv06_decodeSeqHeaders(
     ip.offset_from_unsigned(istart)
 }
 unsafe fn ZSTDv06_decodeSequence(seq: *mut seq_t, seqState: *mut seqState_t) {
-    let llCode = FSEv06_peekSymbol(&(*seqState).stateLL) as u32;
-    let mlCode = FSEv06_peekSymbol(&(*seqState).stateML) as u32;
-    let ofCode = FSEv06_peekSymbol(&(*seqState).stateOffb) as u32;
+    let llCode = u32::from(FSEv06_peekSymbol(&(*seqState).stateLL));
+    let mlCode = u32::from(FSEv06_peekSymbol(&(*seqState).stateML));
+    let ofCode = u32::from(FSEv06_peekSymbol(&(*seqState).stateOffb));
     let llBits = *LL_bits.as_ptr().offset(llCode as isize);
     let mlBits = *ML_bits.as_ptr().offset(mlCode as isize);
     let ofBits = ofCode;

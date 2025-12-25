@@ -881,7 +881,7 @@ pub unsafe extern "C" fn ZSTD_isFrame(
         core::slice::from_raw_parts(buffer.cast(), size)
     };
 
-    is_frame(src) as core::ffi::c_uint
+    core::ffi::c_uint::from(is_frame(src))
 }
 
 fn is_frame(src: &[u8]) -> bool {
@@ -919,7 +919,7 @@ pub unsafe extern "C" fn ZSTD_isSkippableFrame(
         core::slice::from_raw_parts(buffer.cast(), size)
     };
 
-    is_skippable_frame(src) as core::ffi::c_uint
+    core::ffi::c_uint::from(is_skippable_frame(src))
 }
 
 fn is_skippable_frame(src: &[u8]) -> bool {
@@ -1122,7 +1122,7 @@ fn get_frame_header_advanced(
         }
 
         windowSize = 1u64 << windowLog;
-        windowSize = windowSize.wrapping_add((windowSize / 8) * (wlByte & 7) as u64);
+        windowSize = windowSize.wrapping_add((windowSize / 8) * u64::from(wlByte & 7));
     }
 
     let dictID;
@@ -1491,7 +1491,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
             zfh.frameContentSize
         } else {
             (nbBlocks as core::ffi::c_ulonglong)
-                .wrapping_mul(zfh.blockSizeMax as core::ffi::c_ulonglong)
+                .wrapping_mul(core::ffi::c_ulonglong::from(zfh.blockSizeMax))
         };
         Ok(frameSizeInfo)
     }
@@ -3092,7 +3092,9 @@ pub unsafe extern "C" fn ZSTD_DCtx_getParameter(
             (*dctx).forceIgnoreChecksum as core::ffi::c_int
         }
         ZSTD_dParameter::ZSTD_d_refMultipleDDicts => (*dctx).refMultipleDDicts as core::ffi::c_int,
-        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => (*dctx).disableHufAsm as core::ffi::c_int,
+        ZSTD_dParameter::ZSTD_d_disableHuffmanAssembly => {
+            core::ffi::c_int::from((*dctx).disableHufAsm)
+        }
         ZSTD_dParameter::ZSTD_d_maxBlockSize => (*dctx).maxBlockSizeParam,
         _ => return Error::parameter_unsupported.to_error_code(),
     };
@@ -3939,7 +3941,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
     }
     // preload header of next block
     nextSrcSizeHint = nextSrcSizeHint.wrapping_add(
-        ZSTD_blockHeaderSize * (zds.stage.to_next_input_type() == NextInputType::Block) as size_t,
+        ZSTD_blockHeaderSize * size_t::from(zds.stage.to_next_input_type() == NextInputType::Block),
     );
     debug_assert!(zds.inPos <= nextSrcSizeHint);
     // part already loaded

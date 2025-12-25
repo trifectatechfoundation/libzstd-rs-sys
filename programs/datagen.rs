@@ -20,17 +20,17 @@ unsafe fn RDG_rand(src: *mut u32) -> u32 {
     rand32 >> 5
 }
 unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, mut ld: fixedPoint_24_8) {
-    let firstChar = (if ld as core::ffi::c_double <= 0.0f64 {
+    let firstChar = (if core::ffi::c_double::from(ld) <= 0.0f64 {
         0
     } else {
         '(' as i32
     }) as u8;
-    let lastChar = (if ld as core::ffi::c_double <= 0.0f64 {
+    let lastChar = (if core::ffi::c_double::from(ld) <= 0.0f64 {
         255
     } else {
         '}' as i32
     }) as u8;
-    let mut character = (if ld as core::ffi::c_double <= 0.0f64 {
+    let mut character = (if core::ffi::c_double::from(ld) <= 0.0f64 {
         0
     } else {
         '0' as i32
@@ -53,7 +53,7 @@ unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, mut ld: fixedPoint_24_8) {
             *ldt.offset(fresh0 as isize) = character;
         }
         character = character.wrapping_add(1);
-        if character as core::ffi::c_int > lastChar as core::ffi::c_int {
+        if core::ffi::c_int::from(character) > core::ffi::c_int::from(lastChar) {
             character = firstChar;
         }
     }
@@ -110,7 +110,7 @@ unsafe fn RDG_genBlock(
             } else {
                 buffSize
             }) as u32;
-            let repeatOffset = (RDG_rand(seedPtr) & 15 == 2) as core::ffi::c_int as u32;
+            let repeatOffset = core::ffi::c_int::from(RDG_rand(seedPtr) & 15 == 2) as u32;
             let randOffset = (RDG_rand15Bits(seedPtr)).wrapping_add(1);
             let offset = if repeatOffset != 0 {
                 prevOffset

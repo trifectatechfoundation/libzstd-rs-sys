@@ -295,7 +295,7 @@ unsafe fn AIO_fwriteSparse(
         let mut restPtr = restStart;
         let restEnd = (buffer as *const core::ffi::c_char).add(bufferSize);
         assert!(restEnd > restStart && restEnd < restStart.add(::core::mem::size_of::<size_t>()));
-        while restPtr < restEnd && *restPtr as core::ffi::c_int == 0 {
+        while restPtr < restEnd && core::ffi::c_int::from(*restPtr) == 0 {
             restPtr = restPtr.offset(1);
         }
         storedSkips = storedSkips
@@ -592,7 +592,7 @@ unsafe fn AIO_IOPool_init(
     (*ctx).file = core::ptr::null_mut();
 }
 unsafe fn AIO_IOPool_threadPoolActive(ctx: *mut IOPoolCtx_t) -> core::ffi::c_int {
-    (!((*ctx).threadPool).is_null() && (*ctx).threadPoolActive != 0) as core::ffi::c_int
+    core::ffi::c_int::from(!((*ctx).threadPool).is_null() && (*ctx).threadPoolActive != 0)
 }
 unsafe fn AIO_IOPool_lockJobsMutex(ctx: *mut IOPoolCtx_t) {
     if AIO_IOPool_threadPoolActive(ctx) != 0 {

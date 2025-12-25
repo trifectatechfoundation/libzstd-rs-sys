@@ -52,7 +52,7 @@ pub unsafe fn ZSTD_noCompressLiterals(
 ) -> size_t {
     let ostart = dst as *mut u8;
     let flSize =
-        (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
+        (1 + core::ffi::c_int::from(srcSize > 31) + core::ffi::c_int::from(srcSize > 4095)) as u32;
     if srcSize.wrapping_add(flSize as size_t) > dstCapacity {
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -89,7 +89,7 @@ unsafe fn allBytesIdentical(src: *const core::ffi::c_void, srcSize: size_t) -> b
     let mut p: size_t = 0;
     p = 1;
     while p < srcSize {
-        if *(src as *const u8).add(p) as core::ffi::c_int != b as core::ffi::c_int {
+        if core::ffi::c_int::from(*(src as *const u8).add(p)) != core::ffi::c_int::from(b) {
             return false;
         }
         p = p.wrapping_add(1);
@@ -104,7 +104,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
 ) -> size_t {
     let ostart = dst as *mut u8;
     let flSize =
-        (1 + (srcSize > 31) as core::ffi::c_int + (srcSize > 4095) as core::ffi::c_int) as u32;
+        (1 + core::ffi::c_int::from(srcSize > 31) + core::ffi::c_int::from(srcSize > 4095)) as u32;
 
     assert!(dstCapacity >= 4);
     assert!(allBytesIdentical(src, srcSize));
@@ -161,11 +161,11 @@ pub unsafe fn ZSTD_compressLiterals(
     suspectUncompressible: core::ffi::c_int,
     bmi2: core::ffi::c_int,
 ) -> size_t {
-    let lhSize = (3
-        + (srcSize >= ((1) << 10) as size_t) as core::ffi::c_int
-        + (srcSize >= (16 * ((1) << 10)) as size_t) as core::ffi::c_int) as size_t;
+    let lhSize =
+        (3 + core::ffi::c_int::from(srcSize >= ((1) << 10) as size_t)
+            + core::ffi::c_int::from(srcSize >= (16 * ((1) << 10)) as size_t)) as size_t;
     let ostart = dst as *mut u8;
-    let mut singleStream = (srcSize < 256) as core::ffi::c_int as u32;
+    let mut singleStream = core::ffi::c_int::from(srcSize < 256) as u32;
     let mut hType = set_compressed;
     let mut cLitSize: size_t = 0;
     libc::memcpy(
@@ -288,7 +288,7 @@ pub unsafe fn ZSTD_compressLiterals(
             }
 
             let lhc = (hType as core::ffi::c_uint)
-                .wrapping_add(((singleStream == 0) as core::ffi::c_int as u32) << 2)
+                .wrapping_add((core::ffi::c_int::from(singleStream == 0) as u32) << 2)
                 .wrapping_add((srcSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);

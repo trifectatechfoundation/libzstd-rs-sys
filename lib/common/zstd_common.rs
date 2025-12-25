@@ -67,5 +67,5 @@ pub extern "C" fn ZSTD_getErrorString(code: ZSTD_ErrorCode) -> *const core::ffi:
 ///   the compressor.
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_isDeterministicBuild))]
 pub extern "C" fn ZSTD_isDeterministicBuild() -> core::ffi::c_int {
-    true as core::ffi::c_int
+    core::ffi::c_int::from(true)
 }

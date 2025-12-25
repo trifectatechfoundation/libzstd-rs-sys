@@ -367,11 +367,11 @@ unsafe fn clearHandler() {
 }
 pub unsafe fn FIO_addAbortHandler() {}
 unsafe fn FIO_shouldDisplayFileSummary(fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
-    ((*fCtx).nbFilesTotal <= 1 || g_display_prefs.displayLevel >= 3) as core::ffi::c_int
+    core::ffi::c_int::from((*fCtx).nbFilesTotal <= 1 || g_display_prefs.displayLevel >= 3)
 }
 unsafe fn FIO_shouldDisplayMultipleFileSummary(fCtx: *const FIO_ctx_t) -> core::ffi::c_int {
     let shouldDisplay =
-        ((*fCtx).nbFilesProcessed >= 1 && (*fCtx).nbFilesTotal > 1) as core::ffi::c_int;
+        core::ffi::c_int::from((*fCtx).nbFilesProcessed >= 1 && (*fCtx).nbFilesTotal > 1);
     assert!(
         shouldDisplay != 0
             || FIO_shouldDisplayFileSummary(fCtx) != 0
@@ -515,7 +515,7 @@ pub unsafe fn FIO_setChecksumFlag(prefs: *mut FIO_prefs_t, checksumFlag: core::f
     (*prefs).checksumFlag = checksumFlag;
 }
 pub unsafe fn FIO_setRemoveSrcFile(prefs: *mut FIO_prefs_t, flag: core::ffi::c_int) {
-    (*prefs).removeSrcFile = (flag != 0) as core::ffi::c_int;
+    (*prefs).removeSrcFile = core::ffi::c_int::from(flag != 0);
 }
 pub unsafe fn FIO_setMemLimit(prefs: *mut FIO_prefs_t, memLimit: core::ffi::c_uint) {
     (*prefs).memLimit = memLimit;
@@ -643,7 +643,7 @@ pub unsafe fn FIO_setSrcSizeHint(prefs: *mut FIO_prefs_t, srcSizeHint: size_t) {
     }) as core::ffi::c_int;
 }
 pub unsafe fn FIO_setTestMode(prefs: *mut FIO_prefs_t, testMode: core::ffi::c_int) {
-    (*prefs).testMode = (testMode != 0) as core::ffi::c_int;
+    (*prefs).testMode = core::ffi::c_int::from(testMode != 0);
 }
 pub unsafe fn FIO_setLiteralCompressionMode(prefs: *mut FIO_prefs_t, mode: ZSTD_ParamSwitch_e) {
     (*prefs).literalCompressionMode = mode;
@@ -656,7 +656,7 @@ pub unsafe fn FIO_setAdaptMax(prefs: *mut FIO_prefs_t, maxCLevel: core::ffi::c_i
     (*prefs).maxAdaptLevel = maxCLevel;
 }
 pub unsafe fn FIO_setLdmFlag(prefs: *mut FIO_prefs_t, ldmFlag: core::ffi::c_uint) {
-    (*prefs).ldmFlag = (ldmFlag > 0) as core::ffi::c_int;
+    (*prefs).ldmFlag = core::ffi::c_int::from(ldmFlag > 0);
 }
 pub unsafe fn FIO_setLdmHashLog(prefs: *mut FIO_prefs_t, ldmHashLog: core::ffi::c_int) {
     (*prefs).ldmHashLog = ldmHashLog;
@@ -671,16 +671,16 @@ pub unsafe fn FIO_setLdmHashRateLog(prefs: *mut FIO_prefs_t, ldmHashRateLog: cor
     (*prefs).ldmHashRateLog = ldmHashRateLog;
 }
 pub unsafe fn FIO_setPatchFromMode(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
-    (*prefs).patchFromMode = (value != 0) as core::ffi::c_int;
+    (*prefs).patchFromMode = core::ffi::c_int::from(value != 0);
 }
 pub unsafe fn FIO_setContentSize(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
-    (*prefs).contentSize = (value != 0) as core::ffi::c_int;
+    (*prefs).contentSize = core::ffi::c_int::from(value != 0);
 }
 pub unsafe fn FIO_setAsyncIOFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
     (*prefs).asyncIO = value;
 }
 pub unsafe fn FIO_setPassThroughFlag(prefs: *mut FIO_prefs_t, value: core::ffi::c_int) {
-    (*prefs).passThrough = (value != 0) as core::ffi::c_int;
+    (*prefs).passThrough = core::ffi::c_int::from(value != 0);
 }
 pub unsafe fn FIO_setMMapDict(prefs: *mut FIO_prefs_t, value: ZSTD_ParamSwitch_e) {
     (*prefs).mmapDict = value;
@@ -1411,7 +1411,7 @@ unsafe fn extractFilename(
     path: *const core::ffi::c_char,
     separator: core::ffi::c_char,
 ) -> *const core::ffi::c_char {
-    let search: *const core::ffi::c_char = strrchr(path, separator as core::ffi::c_int);
+    let search: *const core::ffi::c_char = strrchr(path, core::ffi::c_int::from(separator));
     if search.is_null() {
         return path;
     }
@@ -1467,8 +1467,8 @@ unsafe fn FIO_createFilename_fromOutDir(
         outDirName as *const core::ffi::c_void,
         strlen(outDirName),
     );
-    if *outDirName.add((strlen(outDirName)).wrapping_sub(1)) as core::ffi::c_int
-        == separator as core::ffi::c_int
+    if core::ffi::c_int::from(*outDirName.add((strlen(outDirName)).wrapping_sub(1)))
+        == core::ffi::c_int::from(separator)
     {
         memcpy(
             result.add(strlen(outDirName)) as *mut core::ffi::c_void,
@@ -1504,13 +1504,13 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
     dictSize: core::ffi::c_ulonglong,
     maxSrcFileSize: core::ffi::c_ulonglong,
 ) {
-    let maxSize = if (*prefs).memLimit as core::ffi::c_ulonglong
+    let maxSize = if core::ffi::c_ulonglong::from((*prefs).memLimit)
         > (if dictSize > maxSrcFileSize {
             dictSize
         } else {
             maxSrcFileSize
         }) {
-        (*prefs).memLimit as core::ffi::c_ulonglong
+        core::ffi::c_ulonglong::from((*prefs).memLimit)
     } else if dictSize > maxSrcFileSize {
         dictSize
     } else {
@@ -1554,7 +1554,7 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
         exit(42);
     }
     assert!(maxSize != UTIL_FILESIZE_UNKNOWN as core::ffi::c_ulonglong);
-    if maxSize > maxWindowSize as core::ffi::c_ulonglong {
+    if maxSize > core::ffi::c_ulonglong::from(maxWindowSize) {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
         }
@@ -1753,7 +1753,7 @@ unsafe fn setOutBuffer(buf: *mut core::ffi::c_void, s: size_t, pos: size_t) -> Z
     o
 }
 unsafe fn ZSTD_cycleLog(hashLog: u32, strat: ZSTD_strategy) -> u32 {
-    let btScale = (strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as core::ffi::c_int as u32;
+    let btScale = core::ffi::c_int::from(strat >= ZSTD_btlazy2 as core::ffi::c_int as u32) as u32;
     assert!(hashLog > 1);
     hashLog.wrapping_sub(btScale)
 }
@@ -1899,9 +1899,10 @@ unsafe fn FIO_createCResources(
     cLevel: core::ffi::c_int,
     mut comprParams: ZSTD_compressionParameters,
 ) -> cRess_t {
-    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+    let mut useMMap =
+        core::ffi::c_int::from((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable);
     let forceNoUseMMap =
-        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
+        core::ffi::c_int::from((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable);
     let mut dictBufferType = FIO_mallocDict;
     let mut ress = cRess_t {
         dict: FIO_Dict_t {
@@ -1986,7 +1987,7 @@ unsafe fn FIO_createCResources(
     if (*prefs).patchFromMode != 0 {
         let dictSize = UTIL_getFileSizeStat(&ress.dictFileStat);
         let ssSize = (*prefs).streamSrcSize as core::ffi::c_ulonglong;
-        useMMap |= (dictSize > (*prefs).memLimit as u64) as core::ffi::c_int;
+        useMMap |= core::ffi::c_int::from(dictSize > u64::from((*prefs).memLimit));
         FIO_adjustParamsForPatchFromMode(
             prefs,
             &mut comprParams,
@@ -4213,8 +4214,8 @@ unsafe fn FIO_compressZstdFrame(
                                         as *const u8 as *const core::ffi::c_char,
                                     inputBlocked,
                                     inputPresented,
-                                    inputBlocked as core::ffi::c_double
-                                        / inputPresented as core::ffi::c_double
+                                    core::ffi::c_double::from(inputBlocked)
+                                        / core::ffi::c_double::from(inputPresented)
                                         * 100.0,
                                     newlyIngested as core::ffi::c_uint,
                                     newlyConsumed as core::ffi::c_uint,
@@ -4261,7 +4262,7 @@ unsafe fn FIO_compressZstdFrame(
                         if compressionLevel > (*prefs).maxAdaptLevel {
                             compressionLevel = (*prefs).maxAdaptLevel;
                         }
-                        compressionLevel += (compressionLevel == 0) as core::ffi::c_int;
+                        compressionLevel += core::ffi::c_int::from(compressionLevel == 0);
                         ZSTD_CCtx_setParameter(
                             ress.cctx,
                             ZSTD_cParameter::ZSTD_c_compressionLevel,
@@ -4282,7 +4283,7 @@ unsafe fn FIO_compressZstdFrame(
                         if compressionLevel < (*prefs).minAdaptLevel {
                             compressionLevel = (*prefs).minAdaptLevel;
                         }
-                        compressionLevel -= (compressionLevel == 0) as core::ffi::c_int;
+                        compressionLevel -= core::ffi::c_int::from(compressionLevel == 0);
                         ZSTD_CCtx_setParameter(
                             ress.cctx,
                             ZSTD_cParameter::ZSTD_c_compressionLevel,
@@ -4304,7 +4305,7 @@ unsafe fn FIO_compressZstdFrame(
                 let zfp_0 = ZSTD_getFrameProgression(ress.cctx);
                 let cShare = zfp_0.produced as core::ffi::c_double
                     / (zfp_0.consumed).wrapping_add(
-                        (zfp_0.consumed == 0) as core::ffi::c_int as core::ffi::c_ulonglong,
+                        core::ffi::c_int::from(zfp_0.consumed == 0) as core::ffi::c_ulonglong
                     ) as core::ffi::c_double
                     * 100.0;
                 let buffered_hrs = UTIL_makeHumanReadableSize(
@@ -4517,9 +4518,10 @@ unsafe fn FIO_compressFilename_internal(
                 fileSize,
                 compressionLevel,
                 &mut readsize,
-                ((*prefs).compressionType as core::ffi::c_uint
-                    == FIO_lzmaCompression as core::ffi::c_int as core::ffi::c_uint)
-                    as core::ffi::c_int,
+                core::ffi::c_int::from(
+                    (*prefs).compressionType as core::ffi::c_uint
+                        == FIO_lzmaCompression as core::ffi::c_int as core::ffi::c_uint,
+                ),
             ) as u64;
         }
         4 => {
@@ -5429,9 +5431,10 @@ unsafe fn FIO_createDResources(
     prefs: *mut FIO_prefs_t,
     dictFileName: *const core::ffi::c_char,
 ) -> dRess_t {
-    let mut useMMap = ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable) as core::ffi::c_int;
+    let mut useMMap =
+        core::ffi::c_int::from((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_enable);
     let forceNoUseMMap =
-        ((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable) as core::ffi::c_int;
+        core::ffi::c_int::from((*prefs).mmapDict == ZSTD_ParamSwitch_e::ZSTD_ps_disable);
     let mut statbuf = stat {
         st_dev: 0,
         st_ino: 0,
@@ -5481,7 +5484,7 @@ unsafe fn FIO_createDResources(
     FIO_getDictFileStat(dictFileName, &mut statbuf);
     if (*prefs).patchFromMode != 0 {
         let dictSize = UTIL_getFileSizeStat(&statbuf);
-        useMMap |= (dictSize > (*prefs).memLimit as u64) as core::ffi::c_int;
+        useMMap |= core::ffi::c_int::from(dictSize > u64::from((*prefs).memLimit));
         FIO_adjustMemLimitForPatchFromMode(prefs, dictSize as core::ffi::c_ulonglong, 0);
     }
     ress.dctx = ZSTD_createDStream();
@@ -5557,7 +5560,7 @@ unsafe fn FIO_createDResources(
     err_0 = ZSTD_DCtx_setParameter(
         ress.dctx,
         ZSTD_dParameter::ZSTD_d_experimentalParam3,
-        ((*prefs).checksumFlag == 0) as core::ffi::c_int,
+        core::ffi::c_int::from((*prefs).checksumFlag == 0),
     );
     if ZSTD_isError(err_0) != 0 {
         if g_display_prefs.displayLevel >= 5 {
@@ -5859,9 +5862,9 @@ unsafe fn FIO_zstdErrorHelp(
     );
     if err == 0 {
         let windowSize = header.windowSize;
-        let windowLog = (FIO_highbit64(windowSize)).wrapping_add(
-            (windowSize & windowSize.wrapping_sub(1) != 0) as core::ffi::c_int as core::ffi::c_uint,
-        );
+        let windowLog = (FIO_highbit64(windowSize)).wrapping_add(core::ffi::c_int::from(
+            windowSize & windowSize.wrapping_sub(1) != 0,
+        ) as core::ffi::c_uint);
         assert!((*prefs).memLimit > 0);
         if g_display_prefs.displayLevel >= 1 {
             fprintf(
@@ -5880,10 +5883,9 @@ unsafe fn FIO_zstdErrorHelp(
                 ZSTD_WINDOWLOG_MAX_64
             }) as core::ffi::c_uint
         {
-            let windowMB = (windowSize >> 20).wrapping_add(
-                (windowSize & (((1) << 20) - 1) as core::ffi::c_ulonglong != 0) as core::ffi::c_int
-                    as core::ffi::c_ulonglong,
-            ) as core::ffi::c_uint;
+            let windowMB = (windowSize >> 20).wrapping_add(core::ffi::c_int::from(
+                windowSize & (((1) << 20) - 1) as core::ffi::c_ulonglong != 0,
+            ) as core::ffi::c_ulonglong) as core::ffi::c_uint;
             assert!(windowSize < ((1 as core::ffi::c_ulonglong) << 52) as core::ffi::c_ulonglong);
             if g_display_prefs.displayLevel >= 1 {
                 fprintf(
@@ -6281,8 +6283,9 @@ unsafe fn FIO_decompressFrames(
     let mut filesize = 0 as core::ffi::c_ulonglong;
     let mut passThrough = (*prefs).passThrough;
     if passThrough == -(1) {
-        passThrough = ((*prefs).overwrite != 0 && strcmp(dstFileName, stdoutmark.as_ptr()) == 0)
-            as core::ffi::c_int;
+        passThrough = core::ffi::c_int::from(
+            (*prefs).overwrite != 0 && strcmp(dstFileName, stdoutmark.as_ptr()) == 0,
+        );
     }
     assert!(passThrough == 0 || passThrough == 1);
     loop {
@@ -6329,24 +6332,25 @@ unsafe fn FIO_decompressFrames(
                     return 1;
                 }
                 filesize = filesize.wrapping_add(frameSize);
-            } else if *buf.offset(0) as core::ffi::c_int == 31
-                && *buf.offset(1) as core::ffi::c_int == 139
+            } else if core::ffi::c_int::from(*buf.offset(0)) == 31
+                && core::ffi::c_int::from(*buf.offset(1)) == 139
             {
                 let frameSize_0 = FIO_decompressGzFrame(&mut ress, srcFileName);
                 if frameSize_0 == FIO_ERROR_FRAME_DECODING as core::ffi::c_ulonglong {
                     return 1;
                 }
                 filesize = filesize.wrapping_add(frameSize_0);
-            } else if *buf.offset(0) as core::ffi::c_int == 0xfd as core::ffi::c_int
-                && *buf.offset(1) as core::ffi::c_int == 0x37 as core::ffi::c_int
-                || *buf.offset(0) as core::ffi::c_int == 0x5d as core::ffi::c_int
-                    && *buf.offset(1) as core::ffi::c_int == 0
+            } else if core::ffi::c_int::from(*buf.offset(0)) == 0xfd as core::ffi::c_int
+                && core::ffi::c_int::from(*buf.offset(1)) == 0x37 as core::ffi::c_int
+                || core::ffi::c_int::from(*buf.offset(0)) == 0x5d as core::ffi::c_int
+                    && core::ffi::c_int::from(*buf.offset(1)) == 0
             {
                 let frameSize_1 = FIO_decompressLzmaFrame(
                     &mut ress,
                     srcFileName,
-                    (*buf.offset(0) as core::ffi::c_int != 0xfd as core::ffi::c_int)
-                        as core::ffi::c_int,
+                    core::ffi::c_int::from(
+                        core::ffi::c_int::from(*buf.offset(0)) != 0xfd as core::ffi::c_int,
+                    ),
                 );
                 if frameSize_1 == FIO_ERROR_FRAME_DECODING as core::ffi::c_ulonglong {
                     return 1;
@@ -6617,7 +6621,7 @@ unsafe fn FIO_determineDstName(
         }
         return core::ptr::null();
     }
-    if *matchedSuffix.unwrap().as_ptr().offset(1) as core::ffi::c_int == 't' as i32 {
+    if core::ffi::c_int::from(*matchedSuffix.unwrap().as_ptr().offset(1)) == 't' as i32 {
         dstSuffix = b".tar\0" as *const u8 as *const core::ffi::c_char;
         dstSuffixLen = strlen(dstSuffix);
     }
@@ -7034,8 +7038,8 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                     let blockHeader =
                         MEM_readLE24(blockHeaderBuffer.as_mut_ptr() as *const core::ffi::c_void);
                     let blockTypeID = blockHeader >> 1 & 3;
-                    let isRLE = (blockTypeID == 1) as core::ffi::c_int as u32;
-                    let isWrongBlock = (blockTypeID == 3) as core::ffi::c_int as u32;
+                    let isRLE = core::ffi::c_int::from(blockTypeID == 1) as u32;
+                    let isWrongBlock = core::ffi::c_int::from(blockTypeID == 3) as u32;
                     let blockSize = if isRLE != 0 {
                         1
                     } else {
@@ -7074,7 +7078,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
                 }
                 let frameHeaderDescriptor = *headerBuffer.as_mut_ptr().offset(4);
                 let contentChecksumFlag =
-                    (frameHeaderDescriptor as core::ffi::c_int & (1) << 2) >> 2;
+                    (core::ffi::c_int::from(frameHeaderDescriptor) & (1) << 2) >> 2;
                 if contentChecksumFlag != 0 {
                     (*info).usesCheck = 1;
                     if fread(
@@ -7301,10 +7305,10 @@ unsafe fn displayInfo(
                 stdout,
                 b"Check: %s %02x%02x%02x%02x\n\0" as *const u8 as *const core::ffi::c_char,
                 checkString,
-                *((*info).checksum).as_ptr().offset(3) as core::ffi::c_int,
-                *((*info).checksum).as_ptr().offset(2) as core::ffi::c_int,
-                *((*info).checksum).as_ptr().offset(1) as core::ffi::c_int,
-                *((*info).checksum).as_ptr().offset(0) as core::ffi::c_int,
+                core::ffi::c_int::from(*((*info).checksum).as_ptr().offset(3)),
+                core::ffi::c_int::from(*((*info).checksum).as_ptr().offset(2)),
+                core::ffi::c_int::from(*((*info).checksum).as_ptr().offset(1)),
+                core::ffi::c_int::from(*((*info).checksum).as_ptr().offset(0)),
             );
         } else {
             fprintf(

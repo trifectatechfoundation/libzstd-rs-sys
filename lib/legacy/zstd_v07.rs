@@ -240,7 +240,7 @@ impl<'a> BITv07_DStream_t<'a> {
             bitD.bitContainer = unsafe { MEM_readLEST(bitD.ptr as *const core::ffi::c_void) };
             let lastByte = src[src.len() - 1];
             bitD.bitsConsumed = if lastByte != 0 {
-                8 - BITv07_highbit32(lastByte as u32)
+                8 - BITv07_highbit32(u32::from(lastByte))
             } else {
                 0
             };
@@ -286,7 +286,7 @@ impl<'a> BITv07_DStream_t<'a> {
 
             let lastByte = src[src.len() - 1];
             bitD.bitsConsumed = if lastByte != 0 {
-                8 - BITv07_highbit32(lastByte as u32)
+                8 - BITv07_highbit32(u32::from(lastByte))
             } else {
                 0
             };
@@ -386,7 +386,7 @@ fn FSEv07_updateState<const N: usize>(
     bitD: &mut BITv07_DStream_t,
 ) {
     let DInfo = DStatePtr.table[DStatePtr.state];
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let lowBits = bitD.read_bits(nbBits);
     DStatePtr.state = (DInfo.newState as usize).wrapping_add(lowBits);
 }
@@ -396,7 +396,7 @@ fn FSEv07_decodeSymbol<const N: usize>(
     bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits(nbBits);
     DStatePtr.state = (DInfo.newState as usize).wrapping_add(lowBits);
@@ -408,7 +408,7 @@ fn FSEv07_decodeSymbolFast<const N: usize>(
     bitD: &mut BITv07_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits_fast(nbBits);
     DStatePtr.state = (DInfo.newState as usize).wrapping_add(lowBits);
@@ -492,17 +492,18 @@ unsafe fn FSEv07_readNCount(
             bitCount += nbBits - 1;
         } else {
             count = (bitStream & (2 * threshold - 1) as u32) as core::ffi::c_short;
-            if count as core::ffi::c_int >= threshold {
-                count = (count as core::ffi::c_int - max as core::ffi::c_int) as core::ffi::c_short;
+            if core::ffi::c_int::from(count) >= threshold {
+                count = (core::ffi::c_int::from(count) - core::ffi::c_int::from(max))
+                    as core::ffi::c_short;
             }
             bitCount += nbBits;
         }
         count -= 1;
-        remaining -= count.abs() as core::ffi::c_int;
+        remaining -= core::ffi::c_int::from(count.abs());
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
         normalizedCounter[fresh1 as usize] = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = core::ffi::c_int::from(count == 0);
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
@@ -583,7 +584,7 @@ fn HUFv07_readStats(
         }
         rankStats[usize::from(huffWeight[n_0])] += 1;
         weightTotal =
-            weightTotal.wrapping_add(((1) << huffWeight[n_0] as core::ffi::c_int >> 1) as u32);
+            weightTotal.wrapping_add(((1) << core::ffi::c_int::from(huffWeight[n_0]) >> 1) as u32);
         n_0 += 1;
     }
     if weightTotal == 0 {
@@ -655,7 +656,7 @@ fn FSEv07_buildDTable<const N: usize>(
     #[allow(clippy::needless_range_loop)]
     for s in 0..maxSV1 {
         let mut i: core::ffi::c_int = 0;
-        while i < normalizedCounter[s] as core::ffi::c_int {
+        while i < core::ffi::c_int::from(normalizedCounter[s]) {
             tableDecode[position as usize].symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
@@ -674,9 +675,9 @@ fn FSEv07_buildDTable<const N: usize>(
         let nextState = symbolNext[usize::from(symbol)];
         symbolNext[usize::from(symbol)] += 1;
         tableDecode[u as usize].nbBits =
-            tableLog.wrapping_sub(BITv07_highbit32(nextState as u32)) as u8;
-        tableDecode[u as usize].newState = (((nextState as core::ffi::c_int)
-            << tableDecode[u as usize].nbBits as core::ffi::c_int)
+            tableLog.wrapping_sub(BITv07_highbit32(u32::from(nextState))) as u8;
+        tableDecode[u as usize].newState = ((core::ffi::c_int::from(nextState)
+            << core::ffi::c_int::from(tableDecode[u as usize].nbBits))
             as u32)
             .wrapping_sub(tableSize) as u16;
         u = u.wrapping_add(1);
@@ -827,7 +828,7 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
         src,
     )?;
     let mut dtd = DTable.description;
-    if tableLog > (dtd.maxTableLog as core::ffi::c_int + 1) as u32 {
+    if tableLog > (core::ffi::c_int::from(dtd.maxTableLog) + 1) as u32 {
         return Err(Error::tableLog_tooLarge);
     }
     dtd.tableType = 0;
@@ -846,7 +847,7 @@ fn HUFv07_readDTableX2(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
         let length = (1 << w >> 1) as u32;
         let D = HUFv07_DEltX2 {
             byte: n as u8,
-            nbBits: tableLog.wrapping_add(1).wrapping_sub(w as u32) as u8,
+            nbBits: tableLog.wrapping_add(1).wrapping_sub(u32::from(w)) as u8,
         };
         let mut i = rankVal[usize::from(w)];
         while i < (rankVal[usize::from(w)]).wrapping_add(length) {
@@ -864,7 +865,7 @@ fn HUFv07_decodeSymbolX2(
 ) -> u8 {
     let val = Dstream.look_bits_fast(dtLog);
     let c = dt[val].byte;
-    Dstream.skip_bits(dt[val].nbBits as u32);
+    Dstream.skip_bits(u32::from(dt[val].nbBits));
     c
 }
 #[inline]
@@ -902,7 +903,7 @@ fn HUFv07_decompress1X2_usingDTable_internal(
 ) -> Result<(), Error> {
     let dt = DTable.as_x2();
     let dtd = DTable.description;
-    let dtLog = dtd.tableLog as u32;
+    let dtLog = u32::from(dtd.tableLog);
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
     HUFv07_decodeStreamX2(dst, &mut bitD, dt, dtLog);
     if !bitD.is_empty() {
@@ -953,7 +954,7 @@ fn HUFv07_decompress4X2_usingDTable_internal(
     let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
         return Err(Error::corruption_detected);
     };
-    let dtLog = DTable.description.tableLog as u32;
+    let dtLog = u32::from(DTable.description.tableLog);
     let mut bitD1 = BITv07_DStream_t::new(istart1)?;
     let mut bitD2 = BITv07_DStream_t::new(istart2)?;
     let mut bitD3 = BITv07_DStream_t::new(istart3)?;
@@ -1044,13 +1045,13 @@ fn HUFv07_fillDTableX4Level2(
         }
     }
     for sym in sortedSymbols {
-        let symbol = sym.symbol as u32;
-        let weight = sym.weight as u32;
+        let symbol = u32::from(sym.symbol);
+        let weight = u32::from(sym.weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
         DElt.sequence = LE16(u16::to_le_bytes(
-            (baseSeq as u32).wrapping_add(symbol << 8) as u16
+            u32::from(baseSeq).wrapping_add(symbol << 8) as u16,
         ));
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
@@ -1073,8 +1074,8 @@ fn HUFv07_fillDTableX4(
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
     let mut rankVal: [u32; 17] = rankValOrigin[0];
     for sym in sortedList {
-        let symbol = sym.symbol as u16;
-        let weight = sym.weight as u32;
+        let symbol = u16::from(sym.symbol);
+        let weight = u32::from(sym.weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start = rankVal[weight as usize];
         let length = (1 << targetLog.wrapping_sub(nbBits)) as u32;
@@ -1127,7 +1128,7 @@ fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
     let mut sizeOfSort: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let mut dtd = DTable.description;
-    let maxTableLog = dtd.maxTableLog as u32;
+    let maxTableLog = u32::from(dtd.maxTableLog);
     let mut iSize: usize = 0;
     let dt = DTable.as_x4_mut();
     if maxTableLog > HUFv07_TABLELOG_ABSOLUTEMAX as u32 {
@@ -1198,7 +1199,7 @@ fn HUFv07_decodeSymbolX4(
 ) {
     let val = DStream.look_bits_fast(dtLog);
     dst.write_symbol_x2(u16::from_le_bytes(dt[val].sequence.0), dt[val].length);
-    DStream.skip_bits(dt[val].nbBits as u32);
+    DStream.skip_bits(u32::from(dt[val].nbBits));
 }
 fn HUFv07_decodeLastSymbolX4(
     dst: &mut Writer<'_>,
@@ -1209,9 +1210,9 @@ fn HUFv07_decodeLastSymbolX4(
     let val = DStream.look_bits_fast(dtLog);
     dst.write_u8(dt[val].sequence.0[0]);
     if (dt[val]).length == 1 {
-        DStream.skip_bits(dt[val].nbBits as u32);
+        DStream.skip_bits(u32::from(dt[val].nbBits));
     } else if DStream.bitsConsumed < usize::BITS {
-        DStream.skip_bits(dt[val].nbBits as u32);
+        DStream.skip_bits(u32::from(dt[val].nbBits));
         if DStream.bitsConsumed > usize::BITS {
             DStream.bitsConsumed = usize::BITS;
         }
@@ -1256,7 +1257,7 @@ fn HUFv07_decompress1X4_usingDTable_internal(
     let mut bitD = BITv07_DStream_t::new(cSrc)?;
     let dt = DTable.as_x4();
     let dtd = DTable.description;
-    HUFv07_decodeStreamX4(dst, &mut bitD, dt, dtd.tableLog as u32);
+    HUFv07_decodeStreamX4(dst, &mut bitD, dt, u32::from(dtd.tableLog));
     if !bitD.is_empty() {
         return Err(Error::corruption_detected);
     }
@@ -1302,7 +1303,7 @@ fn HUFv07_decompress4X4_usingDTable_internal(
     let Some((mut op1, mut op2, mut op3, mut op4)) = dst.quarter() else {
         return Err(Error::corruption_detected);
     };
-    let dtLog = DTable.description.tableLog as u32;
+    let dtLog = u32::from(DTable.description.tableLog);
     let mut bitD1 = BITv07_DStream_t::new(istart1)?;
     let mut bitD2 = BITv07_DStream_t::new(istart2)?;
     let mut bitD3 = BITv07_DStream_t::new(istart3)?;
@@ -1659,14 +1660,14 @@ fn ZSTDv07_frameHeaderSize(src: Reader<'_>) -> Result<usize, Error> {
     let src = src.as_slice();
     let fhd = src[4];
     let dictID = (fhd & 3) as usize;
-    let directMode = (fhd >> 5 & 1) as u32;
+    let directMode = u32::from(fhd >> 5 & 1);
     let fcsId = (fhd >> 6) as usize;
     Ok(ZSTDv07_frameHeaderSize_min
-        .wrapping_add((directMode == 0) as usize)
+        .wrapping_add(usize::from(directMode == 0))
         .wrapping_add(ZSTDv07_did_fieldSize[dictID])
         .wrapping_add(ZSTDv07_fcs_fieldSize[fcsId])
         .wrapping_add(
-            (directMode != 0 && ZSTDv07_fcs_fieldSize[fcsId] == 0) as core::ffi::c_int as usize,
+            core::ffi::c_int::from(directMode != 0 && ZSTDv07_fcs_fieldSize[fcsId] == 0) as usize,
         ))
 }
 pub(crate) fn ZSTDv07_getFrameParams(
@@ -1686,7 +1687,7 @@ pub(crate) fn ZSTDv07_getFrameParams(
                 return Ok(ZSTDv07_skippableHeaderSize);
             }
             fparamsPtr.frameContentSize =
-                u32::from_le_bytes(*ip.first_chunk().unwrap()) as core::ffi::c_ulonglong;
+                core::ffi::c_ulonglong::from(u32::from_le_bytes(*ip.first_chunk().unwrap()));
             fparamsPtr.windowSize = 0;
             return Ok(0);
         }
@@ -1698,10 +1699,10 @@ pub(crate) fn ZSTDv07_getFrameParams(
     }
     let fhdByte = ip[0];
     let mut pos = 1_usize;
-    let dictIDSizeCode = (fhdByte & 3) as u32;
-    let checksumFlag = (fhdByte >> 2 & 1) as u32;
-    let directMode = (fhdByte >> 5 & 1) as u32;
-    let fcsID = (fhdByte as core::ffi::c_int >> 6) as u32;
+    let dictIDSizeCode = u32::from(fhdByte & 3);
+    let checksumFlag = u32::from(fhdByte >> 2 & 1);
+    let directMode = u32::from(fhdByte >> 5 & 1);
+    let fcsID = (core::ffi::c_int::from(fhdByte) >> 6) as u32;
     let windowSizeMax = (1)
         << (if MEM_32bits() {
             ZSTDv07_WINDOWLOG_MAX_32
@@ -1717,7 +1718,8 @@ pub(crate) fn ZSTDv07_getFrameParams(
     if directMode == 0 {
         let wlByte = ip[pos];
         pos += 1;
-        let windowLog = ((wlByte as core::ffi::c_int >> 3) + ZSTDv07_WINDOWLOG_ABSOLUTEMIN) as u32;
+        let windowLog =
+            ((core::ffi::c_int::from(wlByte) >> 3) + ZSTDv07_WINDOWLOG_ABSOLUTEMIN) as u32;
         if windowLog
             > (if MEM_32bits() {
                 ZSTDv07_WINDOWLOG_MAX_32
@@ -1728,8 +1730,8 @@ pub(crate) fn ZSTDv07_getFrameParams(
             return Err(Error::frameParameter_unsupported);
         }
         windowSize = (1) << windowLog;
-        windowSize =
-            windowSize.wrapping_add((windowSize >> 3) * (wlByte as core::ffi::c_int & 7) as u32);
+        windowSize = windowSize
+            .wrapping_add((windowSize >> 3) * (core::ffi::c_int::from(wlByte) & 7) as u32);
     }
     match dictIDSizeCode {
         0 => {}
@@ -1750,13 +1752,13 @@ pub(crate) fn ZSTDv07_getFrameParams(
     match fcsID {
         0 => {
             if directMode != 0 {
-                frameContentSize = ip[pos] as u64;
+                frameContentSize = u64::from(ip[pos]);
             }
         }
         1 => {
-            frameContentSize = (u16::from_le_bytes(ip[pos..pos + 2].try_into().unwrap())
-                as core::ffi::c_int
-                + 256) as u64;
+            frameContentSize =
+                (core::ffi::c_int::from(u16::from_le_bytes(ip[pos..pos + 2].try_into().unwrap()))
+                    + 256) as u64;
         }
         2 => {
             frameContentSize = u64::from(u32::from_le_bytes(ip[pos..pos + 4].try_into().unwrap()));
@@ -1795,7 +1797,7 @@ fn ZSTDv07_getcBlockSize(src: Reader<'_>, bpPtr: &mut blockProperties_t) -> Resu
     }
     let src = src.subslice(..ZSTDv07_blockHeaderSize);
     let src = src.as_slice();
-    bpPtr.blockType = (src[0] >> 6) as blockType_t;
+    bpPtr.blockType = blockType_t::from(src[0] >> 6);
     cSize = u32::from(src[2]) + (u32::from(src[1]) << 8) + (u32::from(src[0] & 7) << 16);
     bpPtr.origSize = if bpPtr.blockType == bt_rle { cSize } else { 0 };
     if bpPtr.blockType == bt_end {
@@ -1823,7 +1825,7 @@ unsafe fn ZSTDv07_decodeLiteralsBlock(dctx: &mut ZSTDv07_DCtx, src: &[u8]) -> Re
     if src.len() < MIN_CBLOCK_SIZE as usize {
         return Err(Error::corruption_detected);
     }
-    match (src[0] >> 6) as litBlockType_t {
+    match litBlockType_t::from(src[0] >> 6) {
         0 => {
             let mut litSize: usize = 0;
             let mut litCSize: usize = 0;
@@ -1995,7 +1997,7 @@ fn ZSTDv07_buildSeqTable<const N: usize>(
             if src.is_empty() {
                 return Err(Error::srcSize_wrong);
             }
-            if src[0] as u32 > max {
+            if u32::from(src[0]) > max {
                 return Err(Error::corruption_detected);
             }
             FSEv07_buildDTable_rle(DTable, src[0]);
@@ -2038,7 +2040,7 @@ fn ZSTDv07_decodeSeqHeaders(
     if src.len() < MIN_SEQUENCES_SIZE as usize {
         return Err(Error::srcSize_wrong);
     }
-    let mut nbSeq = ip[0] as core::ffi::c_int;
+    let mut nbSeq = core::ffi::c_int::from(ip[0]);
     ip = &ip[1..];
     if nbSeq == 0 {
         *nbSeqPtr = 0;
@@ -2049,13 +2051,14 @@ fn ZSTDv07_decodeSeqHeaders(
             if ip.len() < 2 {
                 return Err(Error::srcSize_wrong);
             }
-            nbSeq = u16::from_le_bytes(ip[..2].try_into().unwrap()) as core::ffi::c_int + LONGNBSEQ;
+            nbSeq =
+                core::ffi::c_int::from(u16::from_le_bytes(ip[..2].try_into().unwrap())) + LONGNBSEQ;
             ip = &ip[2..];
         } else {
             if ip.is_empty() {
                 return Err(Error::srcSize_wrong);
             }
-            nbSeq = ((nbSeq - 0x80) << 8) + ip[0] as core::ffi::c_int;
+            nbSeq = ((nbSeq - 0x80) << 8) + core::ffi::c_int::from(ip[0]);
             ip = &ip[1..];
         }
     }
@@ -2063,9 +2066,9 @@ fn ZSTDv07_decodeSeqHeaders(
     if ip.len() < 4 {
         return Err(Error::srcSize_wrong);
     }
-    let LLtype = (ip[0] >> 6) as u32;
-    let OFtype = (ip[0] >> 4 & 3) as u32;
-    let MLtype = (ip[0] >> 2 & 3) as u32;
+    let LLtype = u32::from(ip[0] >> 6);
+    let OFtype = u32::from(ip[0] >> 4 & 3);
+    let MLtype = u32::from(ip[0] >> 2 & 3);
     ip = &ip[1..];
     let llhSize = ZSTDv07_buildSeqTable(
         DTableLL,
@@ -2111,9 +2114,9 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
         matchLength: 0,
         offset: 0,
     };
-    let llCode = FSEv07_peekSymbol(&seqState.stateLL) as u32;
-    let mlCode = FSEv07_peekSymbol(&seqState.stateML) as u32;
-    let ofCode = FSEv07_peekSymbol(&seqState.stateOffb) as u32;
+    let llCode = u32::from(FSEv07_peekSymbol(&seqState.stateLL));
+    let mlCode = u32::from(FSEv07_peekSymbol(&seqState.stateML));
+    let ofCode = u32::from(FSEv07_peekSymbol(&seqState.stateOffb));
     let llBits = LL_bits[llCode as usize];
     let mlBits = ML_bits[mlCode as usize];
     let ofBits = ofCode;
@@ -2143,7 +2146,7 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
         }
     }
     if ofCode <= 1 {
-        if (llCode == 0) as core::ffi::c_int & (offset <= 1) as core::ffi::c_int != 0 {
+        if core::ffi::c_int::from(llCode == 0) & core::ffi::c_int::from(offset <= 1) != 0 {
             offset = 1_usize.wrapping_sub(offset);
         }
         if offset != 0 {

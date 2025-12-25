@@ -1089,7 +1089,7 @@ pub(super) fn COVER_selectDict(
     let mut largestDictbuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let mut candidateDictBuffer: Box<[u8]> = Box::from(vec![0u8; dictBufferCapacity]);
     let regressionTolerance =
-        params.shrinkDictMaxRegression as core::ffi::c_double / 100.0f64 + 1.00f64;
+        core::ffi::c_double::from(params.shrinkDictMaxRegression) / 100.0f64 + 1.00f64;
     largestDictbuffer[..customDictContent.len()].copy_from_slice(customDictContent);
     dictContentSize = unsafe {
         ZDICT_finalizeDictionary(

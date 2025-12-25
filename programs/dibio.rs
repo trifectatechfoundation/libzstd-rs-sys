@@ -106,10 +106,10 @@ unsafe fn DiB_loadFiles(
                     targetChunkSize as i64
                 }) as size_t
             } else {
-                (if fileSize < (128 * ((1) << 10)) as i64 {
+                (if fileSize < i64::from(128 * ((1) << 10)) {
                     fileSize
                 } else {
-                    (128 * ((1) << 10)) as i64
+                    i64::from(128 * ((1) << 10))
                 }) as size_t
             };
             if totalDataLoaded.wrapping_add(fileDataLoaded) > *bufferSizePtr {
@@ -342,9 +342,9 @@ unsafe fn DiB_fileStats(
                 / chunkSize) as core::ffi::c_int;
             fs.totalSizeToLoad += fileSize;
         } else {
-            if fileSize > SAMPLESIZE_MAX as i64 {
+            if fileSize > i64::from(SAMPLESIZE_MAX) {
                 fs.oneSampleTooLarge |=
-                    (fileSize > (2 * SAMPLESIZE_MAX) as i64) as core::ffi::c_int;
+                    core::ffi::c_int::from(fileSize > i64::from(2 * SAMPLESIZE_MAX));
                 if displayLevel >= 3 {
                     fprintf(
                         stderr,
@@ -356,10 +356,10 @@ unsafe fn DiB_fileStats(
                 }
             }
             fs.nbSamples += 1;
-            fs.totalSizeToLoad += if fileSize < (128 * ((1) << 10)) as i64 {
+            fs.totalSizeToLoad += if fileSize < i64::from(128 * ((1) << 10)) {
                 fileSize
             } else {
-                (128 * ((1) << 10)) as i64
+                i64::from(128 * ((1) << 10))
             };
         }
         n += 1;
@@ -370,7 +370,7 @@ unsafe fn DiB_fileStats(
             b"Found training data %d files, %d KB, %d samples\n\0" as *const u8
                 as *const core::ffi::c_char,
             nbFiles,
-            (fs.totalSizeToLoad / ((1) << 10) as i64) as core::ffi::c_int,
+            (fs.totalSizeToLoad / i64::from((1) << 10)) as core::ffi::c_int,
             fs.nbSamples,
         );
     }
@@ -423,22 +423,23 @@ pub unsafe fn DiB_trainFromFiles(
     } else {
         FASTCOVER_MEMMULT
     };
-    let maxMem = DiB_findMaxMem((fs.totalSizeToLoad * memMult as i64) as core::ffi::c_ulonglong)
-        / memMult as size_t;
+    let maxMem =
+        DiB_findMaxMem((fs.totalSizeToLoad * i64::from(memMult)) as core::ffi::c_ulonglong)
+            / memMult as size_t;
     loadedSize = (if (if (maxMem as i64) < fs.totalSizeToLoad {
         maxMem as i64
     } else {
         fs.totalSizeToLoad
-    }) < (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30)
-        as i64
-    {
+    }) < i64::from(
+        (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30),
+    ) {
         if (maxMem as i64) < fs.totalSizeToLoad {
             maxMem as i64
         } else {
             fs.totalSizeToLoad
         }
     } else {
-        (2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30) as i64
+        i64::from((2 as core::ffi::c_uint).wrapping_mul((1 as core::ffi::c_uint) << 30))
     }) as size_t;
     if memLimit != 0 {
         if displayLevel >= 2 {
@@ -554,7 +555,7 @@ pub unsafe fn DiB_trainFromFiles(
             stderr,
             b"Training samples set too large (%u MB); training on %u MB only...\n\0" as *const u8
                 as *const core::ffi::c_char,
-            (fs.totalSizeToLoad / ((1) << 20) as i64) as core::ffi::c_uint,
+            (fs.totalSizeToLoad / i64::from((1) << 20)) as core::ffi::c_uint,
             (loadedSize / ((1) << 20) as size_t) as core::ffi::c_uint,
         );
     }

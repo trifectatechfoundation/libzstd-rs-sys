@@ -27,9 +27,9 @@ pub const KNUTH: core::ffi::c_uint = 0x9e3779b9;
 #[inline(always)]
 unsafe fn hash2(p: *const core::ffi::c_void, hashLog: core::ffi::c_uint) -> core::ffi::c_uint {
     if hashLog == 8 {
-        return *(p as *const u8) as u32;
+        return u32::from(*(p as *const u8));
     }
-    (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as core::ffi::c_uint).wrapping_sub(hashLog)
+    u32::from(MEM_read16(p)).wrapping_mul(KNUTH) >> (32 as core::ffi::c_uint).wrapping_sub(hashLog)
 }
 unsafe fn initStats(fpstats: *mut FPStats) {
     ptr::write_bytes(fpstats as *mut u8, 0, ::core::mem::size_of::<FPStats>());
@@ -112,8 +112,8 @@ unsafe fn fpDistance(
     n = 0;
     while n < (1) << hashLog {
         distance = distance.wrapping_add(abs64(
-            *((*fp1).events).as_ptr().add(n) as i64 * (*fp2).nbEvents as i64
-                - *((*fp2).events).as_ptr().add(n) as i64 * (*fp1).nbEvents as i64,
+            i64::from(*((*fp1).events).as_ptr().add(n)) * (*fp2).nbEvents as i64
+                - i64::from(*((*fp2).events).as_ptr().add(n)) * (*fp1).nbEvents as i64,
         ));
         n = n.wrapping_add(1);
     }
@@ -128,7 +128,7 @@ unsafe fn compareFingerprints(
     let p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
     let deviation = fpDistance(ref_0, newfp, hashLog);
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
-    (deviation >= threshold) as core::ffi::c_int
+    core::ffi::c_int::from(deviation >= threshold)
 }
 unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
     let mut n: size_t = 0;

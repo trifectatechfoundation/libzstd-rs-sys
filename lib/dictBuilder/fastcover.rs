@@ -231,7 +231,7 @@ fn FASTCOVER_ctx_init<'a>(
     let nbSamples = samplesSizes.len() as core::ffi::c_uint;
     let totalSamplesSize = samplesSizes.iter().sum::<usize>();
     let nbTrainSamples = if splitPoint < 1.0f64 {
-        (nbSamples as core::ffi::c_double * splitPoint) as core::ffi::c_uint
+        (core::ffi::c_double::from(nbSamples) * splitPoint) as core::ffi::c_uint
     } else {
         nbSamples
     };

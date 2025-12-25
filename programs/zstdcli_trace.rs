@@ -19,7 +19,7 @@ static g_traceFile: Mutex<Option<File>> = Mutex::new(None);
 static g_enableTime: OnceLock<UTIL_time_t> = OnceLock::new();
 
 pub unsafe fn TRACE_enable(filename: *const core::ffi::c_char) {
-    let writeHeader = (UTIL_isRegularFile(filename) == 0) as core::ffi::c_int;
+    let writeHeader = core::ffi::c_int::from(UTIL_isRegularFile(filename) == 0);
     let mut traceFile = g_traceFile.lock().unwrap();
     assert!(traceFile.is_none());
     let traceFile = traceFile.insert(

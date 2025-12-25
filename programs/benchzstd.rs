@@ -114,7 +114,7 @@ unsafe fn writeUint_varLen(
     assert!(uintSize(value) >= 1);
     assert!(uintSize(value) < capacity);
     while endPos >= 0 {
-        let c = ('0' as i32 + value.wrapping_rem(10) as core::ffi::c_char as core::ffi::c_int)
+        let c = ('0' as i32 + core::ffi::c_int::from(value.wrapping_rem(10) as core::ffi::c_char))
             as core::ffi::c_char;
         let fresh1 = endPos;
         endPos -= 1;
@@ -132,16 +132,16 @@ unsafe fn formatString_u(
     let mut written = 0;
     let mut i: core::ffi::c_int = 0;
     i = 0;
-    while *formatString.offset(i as isize) as core::ffi::c_int != '\0' as i32
+    while core::ffi::c_int::from(*formatString.offset(i as isize)) != '\0' as i32
         && written < buffer_size.wrapping_sub(1)
     {
-        if *formatString.offset(i as isize) as core::ffi::c_int != '%' as i32 {
+        if core::ffi::c_int::from(*formatString.offset(i as isize)) != '%' as i32 {
             let fresh2 = written;
             written = written.wrapping_add(1);
             *buffer.add(fresh2) = *formatString.offset(i as isize);
         } else {
             i += 1;
-            if *formatString.offset(i as isize) as core::ffi::c_int == 'u' as i32 {
+            if core::ffi::c_int::from(*formatString.offset(i as isize)) == 'u' as i32 {
                 if written.wrapping_add(valueSize) >= buffer_size {
                     abort();
                 }
@@ -151,7 +151,7 @@ unsafe fn formatString_u(
                     value,
                 );
                 written = written.wrapping_add(valueSize);
-            } else if *formatString.offset(i as isize) as core::ffi::c_int == '%' as i32 {
+            } else if core::ffi::c_int::from(*formatString.offset(i as isize)) == '%' as i32 {
                 let fresh3 = written;
                 written = written.wrapping_add(1);
                 *buffer.add(fresh3) = '%' as i32 as core::ffi::c_char;
@@ -724,7 +724,7 @@ unsafe fn local_defaultDecompress(
     out.pos
 }
 pub unsafe fn BMK_isSuccessful_benchOutcome(outcome: BMK_benchOutcome_t) -> core::ffi::c_int {
-    (outcome.tag == 0) as core::ffi::c_int
+    core::ffi::c_int::from(outcome.tag == 0)
 }
 pub unsafe fn BMK_extract_benchResult(outcome: BMK_benchOutcome_t) -> BMK_benchResult_t {
     assert!(outcome.tag == 0);
@@ -797,7 +797,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
+    .wrapping_add(core::ffi::c_int::from(srcSize == 0) as size_t);
     let mut benchResult = BMK_benchResult_t {
         cSize: 0,
         cSpeed: 0,
@@ -1078,12 +1078,13 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         b" \\\0" as *const u8 as *const core::ffi::c_char,
     ];
     let mut markNb = 0u32;
-    let mut compressionCompleted = ((*adv).mode as core::ffi::c_uint
-        == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
-    let mut decompressionCompleted = ((*adv).mode as core::ffi::c_uint
-        == BMK_compressOnly as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let mut compressionCompleted = core::ffi::c_int::from(
+        (*adv).mode as core::ffi::c_uint == BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint,
+    );
+    let mut decompressionCompleted = core::ffi::c_int::from(
+        (*adv).mode as core::ffi::c_uint
+            == BMK_compressOnly as core::ffi::c_int as core::ffi::c_uint,
+    );
     let mut cbp = BMK_benchParams_t {
         benchFn: None,
         benchPayload: core::ptr::null_mut::<core::ffi::c_void>(),
@@ -1247,8 +1248,9 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             if newResult.cSpeed > benchResult.cSpeed {
                 benchResult.cSpeed = newResult.cSpeed;
             }
-            let ratioDigits =
-                1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
+            let ratioDigits = 1
+                + core::ffi::c_int::from(ratio < 100.0f64)
+                + core::ffi::c_int::from(ratio < 10.0f64);
             assert!(cSize < core::ffi::c_uint::MAX as size_t);
             if displayLevel >= 2 {
                 fprintf(
@@ -1318,8 +1320,9 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             if newDSpeed as core::ffi::c_ulonglong > benchResult.dSpeed {
                 benchResult.dSpeed = newDSpeed as core::ffi::c_ulonglong;
             }
-            let ratioDigits_0 =
-                1 + (ratio < 100.0f64) as core::ffi::c_int + (ratio < 10.0f64) as core::ffi::c_int;
+            let ratioDigits_0 = 1
+                + core::ffi::c_int::from(ratio < 100.0f64)
+                + core::ffi::c_int::from(ratio < 10.0f64);
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
@@ -1362,8 +1365,8 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         fflush(core::ptr::null_mut());
         u = 0;
         while u < srcSize {
-            if *(srcBuffer as *const u8).add(u) as core::ffi::c_int
-                != *resultBuffer.add(u) as core::ffi::c_int
+            if core::ffi::c_int::from(*(srcBuffer as *const u8).add(u))
+                != core::ffi::c_int::from(*resultBuffer.add(u))
             {
                 let mut segNb: core::ffi::c_uint = 0;
                 let mut bNb: core::ffi::c_uint = 0;
@@ -1405,7 +1408,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).add(u.wrapping_sub(n)) as core::ffi::c_int,
+                        core::ffi::c_int::from(*(srcBuffer as *const u8).add(u.wrapping_sub(n))),
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_sub(1);
@@ -1413,7 +1416,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
-                    *(srcBuffer as *const u8).add(u) as core::ffi::c_int,
+                    core::ffi::c_int::from(*(srcBuffer as *const u8).add(u)),
                 );
                 fflush(core::ptr::null_mut());
                 n = 1;
@@ -1421,7 +1424,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *(srcBuffer as *const u8).add(u.wrapping_add(n)) as core::ffi::c_int,
+                        core::ffi::c_int::from(*(srcBuffer as *const u8).add(u.wrapping_add(n))),
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_add(1);
@@ -1438,7 +1441,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *resultBuffer.add(u.wrapping_sub(n)) as core::ffi::c_int,
+                        core::ffi::c_int::from(*resultBuffer.add(u.wrapping_sub(n))),
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_sub(1);
@@ -1446,7 +1449,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 fprintf(
                     stderr,
                     b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
-                    *resultBuffer.add(u) as core::ffi::c_int,
+                    core::ffi::c_int::from(*resultBuffer.add(u)),
                 );
                 fflush(core::ptr::null_mut());
                 n = 1;
@@ -1454,7 +1457,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     fprintf(
                         stderr,
                         b"%02X \0" as *const u8 as *const core::ffi::c_char,
-                        *resultBuffer.add(u.wrapping_add(n)) as core::ffi::c_int,
+                        core::ffi::c_int::from(*resultBuffer.add(u.wrapping_add(n))),
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_add(1);
@@ -1475,8 +1478,8 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         }
     }
     if displayLevel == 1 {
-        let cSpeed = benchResult.cSpeed as core::ffi::c_double / MB_UNIT as core::ffi::c_double;
-        let dSpeed = benchResult.dSpeed as core::ffi::c_double / MB_UNIT as core::ffi::c_double;
+        let cSpeed = benchResult.cSpeed as core::ffi::c_double / core::ffi::c_double::from(MB_UNIT);
+        let dSpeed = benchResult.dSpeed as core::ffi::c_double / core::ffi::c_double::from(MB_UNIT);
         if (*adv).additionalParam != 0 {
             fprintf(
                 stdout,
@@ -1536,7 +1539,7 @@ pub unsafe fn BMK_benchMemAdvanced(
     adv: *const BMK_advancedParams_t,
 ) -> BMK_benchOutcome_t {
     let dstParamsError =
-        dstBuffer.is_null() as core::ffi::c_int ^ (dstCapacity == 0) as core::ffi::c_int;
+        core::ffi::c_int::from(dstBuffer.is_null()) ^ core::ffi::c_int::from(dstCapacity == 0);
     let chunkSize = (if (*adv).chunkSizeMax >= 32
         && (*adv).mode as core::ffi::c_uint
             != BMK_decodeOnly as core::ffi::c_int as core::ffi::c_uint
@@ -1545,7 +1548,7 @@ pub unsafe fn BMK_benchMemAdvanced(
     } else {
         srcSize
     })
-    .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
+    .wrapping_add(core::ffi::c_int::from(srcSize == 0) as size_t);
     let nbChunksMax = ((srcSize.wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize) as u32)
         .wrapping_add(nbFiles);
     let srcPtrs = malloc(
@@ -1596,19 +1599,21 @@ pub unsafe fn BMK_benchMemAdvanced(
     } else {
         core::ptr::null_mut()
     };
-    let allocationincomplete = (srcPtrs.is_null()
-        || srcSizes.is_null()
-        || cPtrs.is_null()
-        || cSizes.is_null()
-        || cCapacities.is_null()
-        || resPtrs.is_null()
-        || resSizes.is_null()
-        || timeStateCompress.is_null()
-        || timeStateDecompress.is_null()
-        || cctx.is_null()
-        || dctx.is_null()
-        || compressedBuffer.is_null()
-        || resultBuffer.is_null()) as core::ffi::c_int;
+    let allocationincomplete = core::ffi::c_int::from(
+        srcPtrs.is_null()
+            || srcSizes.is_null()
+            || cPtrs.is_null()
+            || cSizes.is_null()
+            || cCapacities.is_null()
+            || resPtrs.is_null()
+            || resSizes.is_null()
+            || timeStateCompress.is_null()
+            || timeStateDecompress.is_null()
+            || cctx.is_null()
+            || dctx.is_null()
+            || compressedBuffer.is_null()
+            || resultBuffer.is_null(),
+    );
     if allocationincomplete == 0 && dstParamsError == 0 {
         outcome = BMK_benchMemAdvancedNoAlloc(
             srcPtrs,

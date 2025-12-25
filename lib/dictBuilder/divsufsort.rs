@@ -22,14 +22,14 @@ fn sort_typeBstar(
 
     i = n - 1;
     m = n;
-    c0 = T[(n - 1) as usize] as i32;
+    c0 = i32::from(T[(n - 1) as usize]);
     while 0 <= i {
         loop {
             c1 = c0;
             bucket_A[c1 as usize] += 1;
             i -= 1;
             if !(0 <= i && {
-                c0 = T[i as usize] as i32;
+                c0 = i32::from(T[i as usize]);
                 c0 >= c1
             }) {
                 break;
@@ -42,7 +42,7 @@ fn sort_typeBstar(
             i -= 1;
             c1 = c0;
             while 0 <= i && {
-                c0 = T[i as usize] as i32;
+                c0 = i32::from(T[i as usize]);
                 c0 <= c1
             } {
                 bucket_B[(c1 << 8 | c0) as usize] += 1;
@@ -75,16 +75,16 @@ fn sort_typeBstar(
         i = m - 2;
         while 0 <= i {
             t = SA[(PAb + i) as usize];
-            c0 = T[t as usize] as i32;
-            c1 = T[(t + 1) as usize] as i32;
+            c0 = i32::from(T[t as usize]);
+            c1 = i32::from(T[(t + 1) as usize]);
             let fresh189 = &mut (bucket_B[(c0 << 8 | c1) as usize]);
             *fresh189 -= 1;
             SA[*fresh189 as usize] = i;
             i -= 1;
         }
         t = SA[(PAb + (m - 1)) as usize];
-        c0 = T[t as usize] as i32;
-        c1 = T[(t + 1) as usize] as i32;
+        c0 = i32::from(T[t as usize]);
+        c1 = i32::from(T[(t + 1) as usize]);
         let fresh190 = &mut (bucket_B[(c0 << 8 | c1) as usize]);
         *fresh190 -= 1;
         SA[*fresh190 as usize] = m - 1;
@@ -142,12 +142,12 @@ fn sort_typeBstar(
 
         i = n - 1;
         j = m;
-        c0 = T[(n - 1) as usize] as i32;
+        c0 = i32::from(T[(n - 1) as usize]);
         while 0 <= i {
             i -= 1;
             c1 = c0;
             while 0 <= i && {
-                c0 = T[i as usize] as i32;
+                c0 = i32::from(T[i as usize]);
                 c0 >= c1
             } {
                 i -= 1;
@@ -158,7 +158,7 @@ fn sort_typeBstar(
                 i -= 1;
                 c1 = c0;
                 while 0 <= i && {
-                    c0 = T[i as usize] as i32;
+                    c0 = i32::from(T[i as usize]);
                     c0 <= c1
                 } {
                     i -= 1;
@@ -216,13 +216,15 @@ fn construct_SA(
             while i <= j {
                 s = SA[j as usize];
                 if (0) < s {
-                    assert_eq!(T[s as usize] as i32, c1);
-                    assert!((s + 1) < n && T[s as usize] as i32 <= T[(s + 1) as usize] as i32);
-                    assert!(T[(s - 1) as usize] as i32 <= T[s as usize] as i32);
+                    assert_eq!(i32::from(T[s as usize]), c1);
+                    assert!(
+                        (s + 1) < n && i32::from(T[s as usize]) <= i32::from(T[(s + 1) as usize])
+                    );
+                    assert!(i32::from(T[(s - 1) as usize]) <= i32::from(T[s as usize]));
                     SA[j as usize] = !s;
                     s -= 1;
-                    c0 = T[s as usize] as i32;
-                    if (0) < s && T[(s - 1) as usize] as i32 > c0 {
+                    c0 = i32::from(T[s as usize]);
+                    if (0) < s && i32::from(T[(s - 1) as usize]) > c0 {
                         s = !s;
                     }
                     if c0 != c2 {
@@ -237,7 +239,7 @@ fn construct_SA(
                     SA[k as usize] = s;
                     k -= 1;
                 } else {
-                    assert!(s == 0 && T[s as usize] as i32 == c1 || s < 0);
+                    assert!(s == 0 && i32::from(T[s as usize]) == c1 || s < 0);
                     SA[j as usize] = !s;
                 }
                 j -= 1;
@@ -245,10 +247,10 @@ fn construct_SA(
             c1 -= 1;
         }
     }
-    c2 = T[(n - 1) as usize] as i32;
+    c2 = i32::from(T[(n - 1) as usize]);
 
     let mut k = bucket_A[c2 as usize] as usize;
-    SA[k] = if (T[(n - 2) as usize] as i32) < c2 {
+    SA[k] = if i32::from(T[(n - 2) as usize]) < c2 {
         !(n - 1)
     } else {
         n - 1
@@ -261,10 +263,10 @@ fn construct_SA(
     while i < j {
         s = SA[i];
         if (0) < s {
-            assert!(T[(s - 1) as usize] as i32 >= T[s as usize] as i32);
+            assert!(i32::from(T[(s - 1) as usize]) >= i32::from(T[s as usize]));
             s -= 1;
-            c0 = T[s as usize] as i32;
-            if s == 0 || (T[(s - 1) as usize] as i32) < c0 {
+            c0 = i32::from(T[s as usize]);
+            if s == 0 || i32::from(T[(s - 1) as usize]) < c0 {
                 s = !s;
             }
             if c0 != c2 {
@@ -295,7 +297,7 @@ pub(super) fn divsufsort(T: &[u8], SA: &mut [i32], openMP: bool) -> i32 {
         SA[0] = 0;
         return 0;
     } else if n == 2 {
-        m = ((T[0] as i32) < T[1] as i32) as i32;
+        m = i32::from(i32::from(T[0]) < i32::from(T[1]));
         SA[(m ^ 1) as usize] = 0;
         SA[m as usize] = 1;
         return 0;

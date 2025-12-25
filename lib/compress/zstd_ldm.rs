@@ -126,7 +126,7 @@ pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
 
 #[inline]
 unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
-    (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
+    core::ffi::c_int::from(window.lowLimit < window.dictLimit) as u32
 }
 #[inline]
 unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
@@ -494,7 +494,7 @@ unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const l
         64
     };
     let hashRateLog = (*params).hashRateLog;
-    (*state).rolling = !0u32 as u64;
+    (*state).rolling = u64::from(!0u32);
     if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
         (*state).stopMask =
             (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
@@ -510,37 +510,32 @@ unsafe fn ZSTD_ldm_gear_reset(
     let mut hash = (*state).rolling;
     let mut n = 0 as size_t;
     while n.wrapping_add(3) < minMatchLength {
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
     }
     while n < minMatchLength {
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
     }
 }
@@ -563,11 +558,10 @@ unsafe fn ZSTD_ldm_gear_feed(
             current_block = 5689316957504528238;
             break;
         }
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
         if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -577,11 +571,10 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
         if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -591,11 +584,10 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
         if hash & mask == 0 {
             *splits.offset(*numSplits as isize) = n;
@@ -605,13 +597,12 @@ unsafe fn ZSTD_ldm_gear_feed(
                 break;
             }
         }
-        hash = (hash << 1).wrapping_add(
-            *ZSTD_ldm_gearTab
-                .as_ptr()
-                .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
-        );
+        hash =
+            (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
+                (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
+            ));
         n = n.wrapping_add(1);
-        if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
+        if core::ffi::c_long::from(core::ffi::c_int::from(hash & mask == 0)) == 0 {
             continue;
         }
         *splits.offset(*numSplits as isize) = n;
@@ -633,10 +624,10 @@ unsafe fn ZSTD_ldm_gear_feed(
                     continue;
                 }
                 hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-                    (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
+                    (core::ffi::c_int::from(*data.add(n)) & 0xff as core::ffi::c_int) as isize,
                 ));
                 n = n.wrapping_add(1);
-                if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
+                if core::ffi::c_long::from(core::ffi::c_int::from(hash & mask == 0)) == 0 {
                     current_block = 5689316957504528238;
                     continue;
                 }
@@ -803,7 +794,7 @@ unsafe fn ZSTD_ldm_insertEntry(
     bucketSizeLog: u32,
 ) {
     let pOffset = ((*ldmState).bucketOffsets).add(hash);
-    let offset = *pOffset as core::ffi::c_uint;
+    let offset = core::ffi::c_uint::from(*pOffset);
     *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
     *pOffset = (offset.wrapping_add(1)
         & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1)) as u8;
@@ -817,7 +808,7 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     let mut matchLength = 0 as size_t;
     while pIn > pAnchor
         && pMatch > pMatchBase
-        && *pIn.sub(1) as core::ffi::c_int == *pMatch.sub(1) as core::ffi::c_int
+        && core::ffi::c_int::from(*pIn.sub(1)) == core::ffi::c_int::from(*pMatch.sub(1))
     {
         pIn = pIn.sub(1);
         pMatch = pMatch.sub(1);
@@ -911,7 +902,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                     minMatchLength as usize,
                     0,
                 );
-                let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
+                let hash = (xxhash & u64::from((1u32 << hBits).wrapping_sub(1))) as u32;
                 let mut entry = ldmEntry_t {
                     offset: 0,
                     checksum: 0,
@@ -1010,7 +1001,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 minMatchLength as usize,
                 0,
             );
-            let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
+            let hash = (xxhash & u64::from((1u32 << hBits).wrapping_sub(1))) as u32;
             let fresh2 = &mut (*candidates.offset(n as isize)).split;
             *fresh2 = split;
             (*candidates.offset(n as isize)).hash = hash;
@@ -1187,7 +1178,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     let iend = istart.add(srcSize);
     let kMaxChunkSize = ((1) << 20) as size_t;
     let nbChunks = (srcSize / kMaxChunkSize)
-        .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
+        .wrapping_add(core::ffi::c_int::from(!srcSize.is_multiple_of(kMaxChunkSize)) as size_t);
     let mut chunk: size_t = 0;
     let mut leftoverSize = 0;
     chunk = 0;

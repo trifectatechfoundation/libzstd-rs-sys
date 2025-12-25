@@ -162,7 +162,7 @@ impl<'a> HUF_DecompressFastArgs<'a> {
         // Must have at least 8 bytes per stream because we don't handle initializing smaller bit containers.
         // If table log is not correct at this point, fallback to the old decoder.
         // On small inputs we don't have enough data to trigger the fast loop, so use the old decoder.
-        let dtLog = DTable.description.tableLog as u32;
+        let dtLog = u32::from(DTable.description.tableLog);
         if dtLog != HUF_DECODER_FAST_TABLELOG as u32 {
             return Ok(None);
         }
@@ -336,7 +336,7 @@ pub fn HUF_readDTableX1_wksp(
         return iSize;
     }
 
-    let maxTableLog = (dtd.maxTableLog as core::ffi::c_int + 1) as u32;
+    let maxTableLog = (core::ffi::c_int::from(dtd.maxTableLog) + 1) as u32;
     let targetTableLog = if maxTableLog < 11 { maxTableLog } else { 11 };
     tableLog = HUF_rescaleStats(
         &mut wksp.huffWeight,
@@ -345,7 +345,7 @@ pub fn HUF_readDTableX1_wksp(
         tableLog,
         targetTableLog,
     );
-    if tableLog > (dtd.maxTableLog as core::ffi::c_int + 1) as u32 {
+    if tableLog > (core::ffi::c_int::from(dtd.maxTableLog) + 1) as u32 {
         return Error::tableLog_tooLarge.to_error_code();
     }
     dtd.tableType = 0;
@@ -459,7 +459,7 @@ fn HUF_decompress1X1_usingDTable_internal_body(
 ) -> size_t {
     let dt = DTable.data.as_x1();
     let dtd = DTable.description;
-    let dtLog = dtd.tableLog as u32;
+    let dtLog = u32::from(dtd.tableLog);
 
     let mut bitD = match BIT_DStream_t::new(src) {
         Ok(v) => v,
@@ -527,7 +527,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     };
 
     let dt = DTable.data.as_x1();
-    let dtLog = DTable.description.tableLog as u32;
+    let dtLog = u32::from(DTable.description.tableLog);
 
     if w4.capacity() >= size_of::<size_t>() {
         while end_signal && w4.capacity() >= 4 {
@@ -889,9 +889,9 @@ fn HUF_buildDEltX2U32(symbol: u32, nbBits: u32, baseSeq: u32, level: core::ffi::
 
 fn HUF_buildDEltX2(symbol: u8, nbBits: u32, baseSeq: u16, level: core::ffi::c_int) -> HUF_DEltX2 {
     HUF_DEltX2::from_u32(HUF_buildDEltX2U32(
-        symbol as u32,
+        u32::from(symbol),
         nbBits,
-        baseSeq as u32,
+        u32::from(baseSeq),
         level,
     ))
 }
@@ -927,7 +927,7 @@ fn HUF_fillDTableX2Level2(
 ) {
     if minWeight > 1 {
         let length = 1 << (targetLog.wrapping_sub(consumedBits) & 0x1f);
-        let elem = HUF_DEltX2::from_u32(HUF_buildDEltX2U32(baseSeq as u32, consumedBits, 0, 1));
+        let elem = HUF_DEltX2::from_u32(HUF_buildDEltX2U32(u32::from(baseSeq), consumedBits, 0, 1));
         let skipSize = rankVal[minWeight as usize];
         match length {
             2 => {
@@ -1020,7 +1020,7 @@ pub fn HUF_readDTableX2_wksp(
 
     let mut tableLog: u32 = 0;
     let mut nbSymbols: u32 = 0;
-    let mut maxTableLog = dtd.maxTableLog as u32;
+    let mut maxTableLog = u32::from(dtd.maxTableLog);
     let mut iSize: size_t = 0;
 
     let dt = DTable.data.as_x2_mut();
@@ -1139,7 +1139,7 @@ fn HUF_decodeSymbolX2(
         length,
     } = dt[DStream.look_bits_fast(dtLog)];
 
-    DStream.skip_bits(nbBits as u32);
+    DStream.skip_bits(u32::from(nbBits));
     w.write_symbol_x2(sequence, length);
 }
 
@@ -1253,7 +1253,7 @@ fn HUF_decompress1X2_usingDTable_internal_body(
 
     let dt = DTable.data.as_x2();
     let dtd = DTable.description;
-    HUF_decodeStreamX2(dst.subslice(..), &mut bitD, dt, dtd.tableLog as u32);
+    HUF_decodeStreamX2(dst.subslice(..), &mut bitD, dt, u32::from(dtd.tableLog));
     if !bitD.is_empty() {
         return Error::corruption_detected.to_error_code();
     }
@@ -1296,7 +1296,7 @@ fn HUF_decompress4X2_usingDTable_internal_body(
 
     let mut end_signal = true;
 
-    let dtLog = DTable.description.tableLog as u32;
+    let dtLog = u32::from(DTable.description.tableLog);
 
     if op4.is_empty() {
         return Error::corruption_detected.to_error_code();

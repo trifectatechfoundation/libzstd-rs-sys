@@ -12,7 +12,7 @@ pub const HIST_WKSP_SIZE: size_t =
     (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 pub unsafe fn HIST_isError(code: size_t) -> core::ffi::c_uint {
-    ERR_isError(code) as _
+    ERR_isError(code).into()
 }
 pub unsafe fn HIST_add(
     count: *mut core::ffi::c_uint,
@@ -41,7 +41,7 @@ pub unsafe fn HIST_count_simple(
     ptr::write_bytes(
         count as *mut u8,
         0,
-        (maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
+        core::ffi::c_ulong::from(maxSymbolValue.wrapping_add(1))
             .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
             as libc::size_t,
     );
@@ -79,7 +79,7 @@ unsafe fn HIST_count_parallel_wksp(
 ) -> size_t {
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
-    let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as core::ffi::c_ulong)
+    let countSize = core::ffi::c_ulong::from((*maxSymbolValuePtr).wrapping_add(1))
         .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
     let mut max = 0;
     let Counting1 = workSpace;

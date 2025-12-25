@@ -96,7 +96,7 @@ pub(crate) unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
         return 0;
     }
     (((*bitC).ptr).offset_from((*bitC).startPtr) as usize)
-        .wrapping_add(((*bitC).bitPos > 0) as usize)
+        .wrapping_add(usize::from((*bitC).bitPos > 0))
 }
 
 /// Bitstream decoder

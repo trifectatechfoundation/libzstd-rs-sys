@@ -239,7 +239,7 @@ impl<'a> BITv05_DStream_t<'a> {
             };
 
             bitD.bitContainer = usize::from_le_bytes(*src.last_chunk().unwrap());
-            let contain32 = src[src.len() - 1] as u32;
+            let contain32 = u32::from(src[src.len() - 1]);
             if contain32 == 0 {
                 return Err(Error::GENERIC); // endMark not present
             }
@@ -281,7 +281,7 @@ impl<'a> BITv05_DStream_t<'a> {
 
             bitD.bitContainer += usize::from(src[0]);
 
-            let contain32 = src[src.len() - 1] as u32;
+            let contain32 = u32::from(src[src.len() - 1]);
             if contain32 == 0 {
                 // endMark not present
                 return Err(Error::GENERIC);
@@ -363,7 +363,7 @@ fn FSEv05_initDState<'a, const N: usize>(
     bitD: &mut BITv05_DStream_t,
     dt: &'a FSEv05_DTable<N>,
 ) -> FSEv05_DState_t<'a, N> {
-    let state = bitD.read_bits(dt.header.tableLog as core::ffi::c_uint);
+    let state = bitD.read_bits(core::ffi::c_uint::from(dt.header.tableLog));
     bitD.reload();
 
     FSEv05_DState_t {
@@ -382,7 +382,7 @@ fn FSEv05_decodeSymbol<const N: usize>(
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits(nbBits);
     DStatePtr.state = (DInfo.newState as size_t).wrapping_add(lowBits);
@@ -394,7 +394,7 @@ fn FSEv05_decodeSymbolFast<const N: usize>(
     bitD: &mut BITv05_DStream_t,
 ) -> core::ffi::c_uchar {
     let DInfo = DStatePtr.table[DStatePtr.state];
-    let nbBits = DInfo.nbBits as u32;
+    let nbBits = u32::from(DInfo.nbBits);
     let symbol = DInfo.symbol;
     let lowBits = bitD.read_bits_fast(nbBits);
     DStatePtr.state = (DInfo.newState as size_t).wrapping_add(lowBits);
@@ -402,7 +402,7 @@ fn FSEv05_decodeSymbolFast<const N: usize>(
 }
 #[inline]
 fn FSEv05_endOfDState<const N: usize>(DStatePtr: &FSEv05_DState_t<N>) -> core::ffi::c_uint {
-    (DStatePtr.state == 0) as core::ffi::c_int as core::ffi::c_uint
+    core::ffi::c_int::from(DStatePtr.state == 0) as core::ffi::c_uint
 }
 const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
 const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
@@ -446,7 +446,7 @@ fn FSEv05_buildDTable<const N: usize>(
     });
     DTableH.tableLog = tableLog as u16;
     for s in 0..maxSymbolValue + 1 {
-        if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
+        if core::ffi::c_int::from(normalizedCounter[s as usize]) == -(1) {
             let fresh0 = highThreshold;
             highThreshold = highThreshold.wrapping_sub(1);
             tableDecode[fresh0 as usize].symbol = s as u8;
@@ -461,7 +461,7 @@ fn FSEv05_buildDTable<const N: usize>(
     for s in 0..maxSymbolValue + 1 {
         let mut i: core::ffi::c_int = 0;
         i = 0;
-        while i < normalizedCounter[s as usize] as core::ffi::c_int {
+        while i < core::ffi::c_int::from(normalizedCounter[s as usize]) {
             tableDecode[position as usize].symbol = s as u8;
             position = position.wrapping_add(step) & tableMask;
             while position > highThreshold {
@@ -481,9 +481,9 @@ fn FSEv05_buildDTable<const N: usize>(
         *fresh1 = (*fresh1).wrapping_add(1);
         let nextState = fresh2;
         tableDecode[i_0 as usize].nbBits =
-            tableLog.wrapping_sub(BITv05_highbit32(nextState as u32)) as u8;
-        tableDecode[i_0 as usize].newState = (((nextState as core::ffi::c_int)
-            << (tableDecode[i_0 as usize]).nbBits as core::ffi::c_int)
+            tableLog.wrapping_sub(BITv05_highbit32(u32::from(nextState))) as u8;
+        tableDecode[i_0 as usize].newState = ((core::ffi::c_int::from(nextState)
+            << core::ffi::c_int::from((tableDecode[i_0 as usize]).nbBits))
             as u32)
             .wrapping_sub(tableSize) as u16;
         i_0 = i_0.wrapping_add(1);
@@ -563,17 +563,18 @@ unsafe fn FSEv05_readNCount(
             bitCount += nbBits - 1;
         } else {
             count = (bitStream & (2 * threshold - 1) as u32) as core::ffi::c_short;
-            if count as core::ffi::c_int >= threshold {
-                count = (count as core::ffi::c_int - max as core::ffi::c_int) as core::ffi::c_short;
+            if core::ffi::c_int::from(count) >= threshold {
+                count = (core::ffi::c_int::from(count) - core::ffi::c_int::from(max))
+                    as core::ffi::c_short;
             }
             bitCount += nbBits;
         }
         count -= 1;
-        remaining -= count.abs() as core::ffi::c_int;
+        remaining -= core::ffi::c_int::from(count.abs());
         let fresh4 = charnum;
         charnum = charnum.wrapping_add(1);
         normalizedCounter[fresh4 as usize] = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = core::ffi::c_int::from(count == 0);
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
@@ -640,9 +641,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
     let mut state2 = FSEv05_initDState(&mut bitD, dt);
     while bitD.reload() == StreamStatus::Unfinished && op.len() < 3 {
         op[0] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -650,9 +651,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             bitD.reload();
         }
         op[1] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state2, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state2, &mut bitD))
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 4 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -662,9 +663,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             break;
         }
         op[2] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
             > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
@@ -672,9 +673,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             bitD.reload();
         }
         op[3] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state2, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state2, &mut bitD))
         }) as u8;
         op = &mut op[4..];
     }
@@ -685,9 +686,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         let fresh5: &mut [u8; 1];
         (fresh5, op) = op.split_first_chunk_mut::<1>().unwrap();
         fresh5[0] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state1, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state1, &mut bitD))
         }) as u8;
         if bitD.reload() > StreamStatus::Completed
             || op.is_empty()
@@ -698,9 +699,9 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         let fresh6: &mut [u8; 1];
         (fresh6, op) = op.split_first_chunk_mut::<1>().unwrap();
         fresh6[0] = (if fast != 0 {
-            FSEv05_decodeSymbolFast(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbolFast(&mut state2, &mut bitD))
         } else {
-            FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
+            core::ffi::c_int::from(FSEv05_decodeSymbol(&mut state2, &mut bitD))
         }) as u8;
     }
     if bitD.is_empty() && FSEv05_endOfDState(&state1) != 0 && FSEv05_endOfDState(&state2) != 0 {
@@ -716,7 +717,7 @@ fn FSEv05_decompress_usingDTable(
     cSrc: &[u8],
     dt: &FSEv05_DTable<4096>,
 ) -> Result<size_t, Error> {
-    let fastMode = dt.header.fastMode as u32;
+    let fastMode = u32::from(dt.header.fastMode);
     if fastMode != 0 {
         return FSEv05_decompress_usingDTable_generic(dst, cSrc, dt, 1);
     }
@@ -783,8 +784,8 @@ fn HUFv05_readStats(
             ip = &ip[1..];
             let mut n = 0;
             while n < oSize {
-                huffWeight[n] = (ip[n / 2] as core::ffi::c_int >> 4) as u8;
-                huffWeight[n + 1] = (ip[n / 2] as core::ffi::c_int & 15) as u8;
+                huffWeight[n] = (core::ffi::c_int::from(ip[n / 2]) >> 4) as u8;
+                huffWeight[n + 1] = (core::ffi::c_int::from(ip[n / 2]) & 15) as u8;
                 n = n.wrapping_add(2);
             }
         }
@@ -803,7 +804,7 @@ fn HUFv05_readStats(
         }
         let fresh7 = &mut rankStats[w as usize];
         *fresh7 = (*fresh7).wrapping_add(1);
-        weightTotal = weightTotal.wrapping_add(((1) << w as core::ffi::c_int >> 1) as u32);
+        weightTotal = weightTotal.wrapping_add(((1) << core::ffi::c_int::from(w) >> 1) as u32);
     }
     if weightTotal == 0 {
         return Err(Error::corruption_detected);
@@ -842,7 +843,7 @@ unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> Result<size_t, Er
         &mut tableLog,
         src,
     )?;
-    if tableLog > *DTable as u32 {
+    if tableLog > u32::from(*DTable) {
         return Err(Error::tableLog_tooLarge);
     }
     *DTable = tableLog as u16;
@@ -857,7 +858,7 @@ unsafe fn HUFv05_readDTableX2(DTable: *mut u16, src: &[u8]) -> Result<size_t, Er
     }
     n = 0;
     while n < nbSymbols {
-        let w = *huffWeight.as_mut_ptr().offset(n as isize) as u32;
+        let w = u32::from(*huffWeight.as_mut_ptr().offset(n as isize));
         let length = ((1) << w >> 1) as u32;
         let mut i: u32 = 0;
         let mut D = HUFv05_DEltX2 { byte: 0, nbBits: 0 };
@@ -881,7 +882,7 @@ unsafe fn HUFv05_decodeSymbolX2(
 ) -> u8 {
     let val = Dstream.look_bits_fast(dtLog);
     let c = (*dt.add(val)).byte;
-    Dstream.skip_bits((*dt.add(val)).nbBits as u32);
+    Dstream.skip_bits(u32::from((*dt.add(val)).nbBits));
     c
 }
 #[inline]
@@ -932,7 +933,7 @@ unsafe fn HUFv05_decompress1X2_usingDTable(
 ) -> Result<size_t, Error> {
     let op = dst.as_mut_ptr();
     let oend = op.add(dst.capacity());
-    let dtLog = *DTable.add(0) as u32;
+    let dtLog = u32::from(*DTable.add(0));
     let dt = (DTable as *const HUFv05_DEltX2).add(1);
     if dst.capacity() <= cSrc.len() {
         return Err(Error::dstSize_tooSmall);
@@ -966,7 +967,7 @@ unsafe fn HUFv05_decompress4X2_usingDTable(
     let ostart = dst.as_mut_ptr();
     let oend = ostart.add(dst.capacity());
     let dt = (DTable as *const HUFv05_DEltX2).add(1);
-    let dtLog = *DTable as u32;
+    let dtLog = u32::from(*DTable);
     let length1 = MEM_readLE16(istart as *const core::ffi::c_void) as size_t;
     let length2 = MEM_readLE16(istart.add(2) as *const core::ffi::c_void) as size_t;
     let length3 = MEM_readLE16(istart.add(4) as *const core::ffi::c_void) as size_t;
@@ -1134,14 +1135,14 @@ fn HUFv05_fillDTableX4Level2(
     }
     let mut s: usize = 0;
     while s < sortedSymbols.len() {
-        let symbol = (sortedSymbols[s]).symbol as u32;
-        let weight = (sortedSymbols[s]).weight as u32;
+        let symbol = u32::from((sortedSymbols[s]).symbol);
+        let weight = u32::from((sortedSymbols[s]).weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let length = ((1) << sizeLog.wrapping_sub(nbBits)) as u32;
         let start = rankVal[weight as usize];
         let mut i_0 = start;
         let end = start.wrapping_add(length);
-        DElt.sequence.0 = u16::to_le_bytes((baseSeq as u32).wrapping_add(symbol << 8) as u16);
+        DElt.sequence.0 = u16::to_le_bytes(u32::from(baseSeq).wrapping_add(symbol << 8) as u16);
         DElt.nbBits = nbBits.wrapping_add(consumed) as u8;
         DElt.length = 2;
         loop {
@@ -1171,8 +1172,8 @@ fn HUFv05_fillDTableX4(
     let minBits = nbBitsBaseline.wrapping_sub(maxWeight);
     let mut s = 0;
     while s < sortedList.len() {
-        let symbol = (sortedList[s]).symbol as u16;
-        let weight = (sortedList[s]).weight as u32;
+        let symbol = u16::from((sortedList[s]).symbol);
+        let weight = u32::from((sortedList[s]).weight);
         let nbBits = nbBitsBaseline.wrapping_sub(weight);
         let start: u32 = rankVal[weight as usize];
         let length = ((1) << targetLog.wrapping_sub(nbBits)) as u32;
@@ -1257,7 +1258,7 @@ unsafe fn HUFv05_readDTableX4(DTable: &mut [u32; 4097], src: &[u8]) -> Result<si
     let sizeOfSort = nextRankStart;
     let mut s: u32 = 0;
     while s < nbSymbols {
-        let w_0 = weightList[s as usize] as u32;
+        let w_0 = u32::from(weightList[s as usize]);
         let fresh35 = &mut (*rankStart.offset(w_0 as isize));
         let fresh36 = *fresh35;
         *fresh35 = (*fresh35).wrapping_add(1);
@@ -1310,8 +1311,8 @@ unsafe fn HUFv05_decodeSymbolX4(
 ) -> u32 {
     let val = DStream.look_bits_fast(dtLog);
     op.cast::<[u8; 2]>().write((*dt.add(val)).sequence.0);
-    DStream.skip_bits((*dt.add(val)).nbBits as u32);
-    (*dt.add(val)).length as u32
+    DStream.skip_bits(u32::from((*dt.add(val)).nbBits));
+    u32::from((*dt.add(val)).length)
 }
 unsafe fn HUFv05_decodeLastSymbolX4(
     op: *mut u8,
@@ -1322,9 +1323,9 @@ unsafe fn HUFv05_decodeLastSymbolX4(
     let val = DStream.look_bits_fast(dtLog);
     ptr::copy_nonoverlapping(dt.add(val).cast::<u8>(), op.cast::<u8>(), 1);
     if (*dt.add(val)).length == 1 {
-        DStream.skip_bits((*dt.add(val)).nbBits as u32);
+        DStream.skip_bits(u32::from((*dt.add(val)).nbBits));
     } else if DStream.bitsConsumed < usize::BITS {
-        DStream.skip_bits((*dt.add(val)).nbBits as u32);
+        DStream.skip_bits(u32::from((*dt.add(val)).nbBits));
         if DStream.bitsConsumed > usize::BITS {
             DStream.bitsConsumed = usize::BITS;
         }
@@ -1935,7 +1936,7 @@ pub(crate) fn ZSTDv05_getFrameParams(
             ::core::mem::size_of::<ZSTDv05_parameters>(),
         );
     }
-    params.windowLog = ((src[4] & 15) + ZSTDv05_WINDOWLOG_ABSOLUTEMIN) as u32;
+    params.windowLog = u32::from((src[4] & 15) + ZSTDv05_WINDOWLOG_ABSOLUTEMIN);
     if src[4] >> 4 != 0 {
         return Err(Error::frameParameter_unsupported);
     }
@@ -1959,10 +1960,10 @@ fn ZSTDv05_getcBlockSize(src: &[u8], bpPtr: &mut blockProperties_t) -> Result<si
         return Err(Error::srcSize_wrong);
     }
     let headerFlags = src[0];
-    let cSize = (src[2] as core::ffi::c_int
-        + ((src[1] as core::ffi::c_int) << 8)
-        + ((src[0] as core::ffi::c_int & 7) << 16)) as u32;
-    bpPtr.blockType = (headerFlags as core::ffi::c_int >> 6) as blockType_t;
+    let cSize = (core::ffi::c_int::from(src[2])
+        + (core::ffi::c_int::from(src[1]) << 8)
+        + ((core::ffi::c_int::from(src[0]) & 7) << 16)) as u32;
+    bpPtr.blockType = (core::ffi::c_int::from(headerFlags) >> 6) as blockType_t;
     bpPtr.origSize = if bpPtr.blockType == bt_rle { cSize } else { 0 };
     if bpPtr.blockType == bt_end {
         return Ok(0);
@@ -1994,45 +1995,45 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
     if src.len() < MIN_CBLOCK_SIZE as size_t {
         return Err(Error::corruption_detected);
     }
-    match *istart as core::ffi::c_int >> 6 {
+    match core::ffi::c_int::from(*istart) >> 6 {
         IS_HUFv05 => {
             let mut litSize: size_t = 0;
             let mut litCSize: size_t = 0;
             let mut singleStream = 0;
-            let mut lhSize = (*istart.add(0) as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize = (core::ffi::c_int::from(*istart.add(0)) >> 4 & 3) as u32;
             if src.len() < 5 {
                 return Err(Error::corruption_detected);
             }
             match lhSize {
                 2 => {
                     lhSize = 4;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 10)
-                        + ((*istart.add(1) as core::ffi::c_int) << 2)
-                        + (*istart.add(2) as core::ffi::c_int >> 6))
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 10)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 2)
+                        + (core::ffi::c_int::from(*istart.add(2)) >> 6))
                         as size_t;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 63) << 8)
-                        + *istart.add(3) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(2)) & 63) << 8)
+                        + core::ffi::c_int::from(*istart.add(3)))
                         as size_t;
                 }
                 3 => {
                     lhSize = 5;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 14)
-                        + ((*istart.add(1) as core::ffi::c_int) << 6)
-                        + (*istart.add(2) as core::ffi::c_int >> 2))
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 14)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 6)
+                        + (core::ffi::c_int::from(*istart.add(2)) >> 2))
                         as size_t;
-                    litCSize = (((*istart.add(2) as core::ffi::c_int & 3) << 16)
-                        + ((*istart.add(3) as core::ffi::c_int) << 8)
-                        + *istart.add(4) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(2)) & 3) << 16)
+                        + (core::ffi::c_int::from(*istart.add(3)) << 8)
+                        + core::ffi::c_int::from(*istart.add(4)))
                         as size_t;
                 }
                 0 | 1 => {
                     lhSize = 3;
-                    singleStream = (*istart as core::ffi::c_int & 16) as size_t;
-                    litSize = (((*istart as core::ffi::c_int & 15) << 6)
-                        + (*istart.add(1) as core::ffi::c_int >> 2))
+                    singleStream = (core::ffi::c_int::from(*istart) & 16) as size_t;
+                    litSize = (((core::ffi::c_int::from(*istart) & 15) << 6)
+                        + (core::ffi::c_int::from(*istart.add(1)) >> 2))
                         as size_t;
-                    litCSize = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litCSize = (((core::ffi::c_int::from(*istart.add(1)) & 3) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                 }
                 _ => unreachable!(),
@@ -2068,7 +2069,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
         IS_PCH => {
             let mut litSize_0: size_t = 0;
             let mut litCSize_0: size_t = 0;
-            let mut lhSize = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             if lhSize != 1 {
                 return Err(Error::corruption_detected);
             }
@@ -2076,10 +2077,10 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 return Err(Error::dictionary_corrupted);
             }
             lhSize = 3;
-            litSize_0 = (((*istart.add(0) as core::ffi::c_int & 15) << 6)
-                + (*istart.add(1) as core::ffi::c_int >> 2)) as size_t;
-            litCSize_0 = (((*istart.add(1) as core::ffi::c_int & 3) << 8)
-                + *istart.add(2) as core::ffi::c_int) as size_t;
+            litSize_0 = (((core::ffi::c_int::from(*istart.add(0)) & 15) << 6)
+                + (core::ffi::c_int::from(*istart.add(1)) >> 2)) as size_t;
+            litCSize_0 = (((core::ffi::c_int::from(*istart.add(1)) & 3) << 8)
+                + core::ffi::c_int::from(*istart.add(2))) as size_t;
             if litCSize_0.wrapping_add(lhSize as size_t) > src.len() {
                 return Err(Error::corruption_detected);
             }
@@ -2100,22 +2101,22 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
         }
         IS_RAW => {
             let mut litSize_1: size_t = 0;
-            let mut lhSize_1 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize_1 = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             match lhSize_1 {
                 2 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
+                    litSize_1 = (((core::ffi::c_int::from(*istart) & 15) << 8)
+                        + core::ffi::c_int::from(*istart.add(1)))
                         as size_t;
                 }
                 3 => {
-                    litSize_1 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litSize_1 = (((core::ffi::c_int::from(*istart) & 15) << 16)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                 }
                 0 | 1 => {
                     lhSize_1 = 1;
-                    litSize_1 = (*istart as core::ffi::c_int & 31) as size_t;
+                    litSize_1 = (core::ffi::c_int::from(*istart) & 31) as size_t;
                 }
                 _ => unreachable!(),
             }
@@ -2147,17 +2148,17 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
         }
         IS_RLE => {
             let mut litSize_2: size_t = 0;
-            let mut lhSize_2 = (*istart as core::ffi::c_int >> 4 & 3) as u32;
+            let mut lhSize_2 = (core::ffi::c_int::from(*istart) >> 4 & 3) as u32;
             match lhSize_2 {
                 2 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 8)
-                        + *istart.add(1) as core::ffi::c_int)
+                    litSize_2 = (((core::ffi::c_int::from(*istart) & 15) << 8)
+                        + core::ffi::c_int::from(*istart.add(1)))
                         as size_t;
                 }
                 3 => {
-                    litSize_2 = (((*istart as core::ffi::c_int & 15) << 16)
-                        + ((*istart.add(1) as core::ffi::c_int) << 8)
-                        + *istart.add(2) as core::ffi::c_int)
+                    litSize_2 = (((core::ffi::c_int::from(*istart) & 15) << 16)
+                        + (core::ffi::c_int::from(*istart.add(1)) << 8)
+                        + core::ffi::c_int::from(*istart.add(2)))
                         as size_t;
                     if src.len() < 4 {
                         return Err(Error::corruption_detected);
@@ -2165,7 +2166,7 @@ unsafe fn ZSTDv05_decodeLiteralsBlock(
                 }
                 0 | 1 => {
                     lhSize_2 = 1;
-                    litSize_2 = (*istart as core::ffi::c_int & 31) as size_t;
+                    litSize_2 = (core::ffi::c_int::from(*istart) & 31) as size_t;
                 }
                 _ => unreachable!(),
             }
@@ -2208,7 +2209,7 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
     }
     let fresh39 = ip;
     ip = ip.add(1);
-    *nbSeq = *fresh39 as core::ffi::c_int;
+    *nbSeq = core::ffi::c_int::from(*fresh39);
     if *nbSeq == 0 {
         return Ok(1);
     }
@@ -2218,27 +2219,27 @@ unsafe fn ZSTDv05_decodeSeqHeaders(
         }
         let fresh40 = ip;
         ip = ip.add(1);
-        *nbSeq = ((*nbSeq - 128) << 8) + *fresh40 as core::ffi::c_int;
+        *nbSeq = ((*nbSeq - 128) << 8) + core::ffi::c_int::from(*fresh40);
     }
     if ip >= iend {
         return Err(Error::srcSize_wrong);
     }
-    LLtype = (*ip as core::ffi::c_int >> 6) as u32;
-    Offtype = (*ip as core::ffi::c_int >> 4 & 3) as u32;
-    MLtype = (*ip as core::ffi::c_int >> 2 & 3) as u32;
-    if *ip as core::ffi::c_int & 2 != 0 {
+    LLtype = (core::ffi::c_int::from(*ip) >> 6) as u32;
+    Offtype = (core::ffi::c_int::from(*ip) >> 4 & 3) as u32;
+    MLtype = (core::ffi::c_int::from(*ip) >> 2 & 3) as u32;
+    if core::ffi::c_int::from(*ip) & 2 != 0 {
         if ip.add(3) > iend {
             return Err(Error::srcSize_wrong);
         }
         dumpsLength = *ip.add(2) as size_t;
-        dumpsLength = dumpsLength.wrapping_add(((*ip.add(1) as core::ffi::c_int) << 8) as size_t);
+        dumpsLength = dumpsLength.wrapping_add((core::ffi::c_int::from(*ip.add(1)) << 8) as size_t);
         ip = ip.add(3);
     } else {
         if ip.add(2) > iend {
             return Err(Error::srcSize_wrong);
         }
         dumpsLength = *ip.add(1) as size_t;
-        dumpsLength = dumpsLength.wrapping_add(((*ip as core::ffi::c_int & 1) << 8) as size_t);
+        dumpsLength = dumpsLength.wrapping_add(((core::ffi::c_int::from(*ip) & 1) << 8) as size_t);
         ip = ip.add(2);
     }
     *dumpsPtr = core::slice::from_raw_parts(ip, dumpsLength);
@@ -2374,14 +2375,15 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
     if litLength == MaxLL as size_t {
         let fresh44 = dumps;
         dumps = dumps.add(1);
-        let add = *fresh44 as u32;
+        let add = u32::from(*fresh44);
         if add < 255 {
             litLength = litLength.wrapping_add(add as size_t);
         } else if dumps.add(2) <= de {
             litLength = MEM_readLE16(dumps as *const core::ffi::c_void) as size_t;
             dumps = dumps.add(2);
             if litLength & 1 != 0 && dumps < de {
-                litLength = litLength.wrapping_add(((*dumps as core::ffi::c_int) << 16) as size_t);
+                litLength =
+                    litLength.wrapping_add((core::ffi::c_int::from(*dumps) << 16) as size_t);
                 dumps = dumps.add(1);
             }
             litLength >>= 1;
@@ -2395,7 +2397,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
         131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 1, 1, 1, 1,
         1,
     ];
-    let offsetCode = FSEv05_peakSymbol(&mut seqState.stateOffb) as u32;
+    let offsetCode = u32::from(FSEv05_peakSymbol(&mut seqState.stateOffb));
     let mut nbBits = offsetCode.wrapping_sub(1);
     if offsetCode == 0 {
         nbBits = 0;
@@ -2408,7 +2410,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
     if offsetCode == 0 {
         offset = prevOffset;
     }
-    if offsetCode | (litLength == 0) as core::ffi::c_int as u32 != 0 {
+    if offsetCode | core::ffi::c_int::from(litLength == 0) as u32 != 0 {
         seqState.prevOffset = seq.offset;
     }
     FSEv05_decodeSymbol(&mut seqState.stateOffb, &mut seqState.DStream);
@@ -2421,7 +2423,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
         let add_0 = (if dumps < de {
             let fresh45 = dumps;
             dumps = dumps.add(1);
-            *fresh45 as core::ffi::c_int
+            core::ffi::c_int::from(*fresh45)
         } else {
             0
         }) as u32;
@@ -2432,7 +2434,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
             dumps = dumps.add(2);
             if matchLength & 1 != 0 && dumps < de {
                 matchLength =
-                    matchLength.wrapping_add(((*dumps as core::ffi::c_int) << 16) as size_t);
+                    matchLength.wrapping_add((core::ffi::c_int::from(*dumps) << 16) as size_t);
                 dumps = dumps.add(1);
             }
             matchLength >>= 1;
