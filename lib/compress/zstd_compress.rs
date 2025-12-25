@@ -794,7 +794,7 @@ unsafe fn ZSTD_checkDictValidity(
     } else {
         // FIXME: add log
         // *loadedDictEndPtr != 0;
-    };
+    }
 }
 #[inline]
 unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
@@ -1292,7 +1292,7 @@ unsafe fn ZSTD_cwksp_bump_oversized_duration(ws: *mut ZSTD_cwksp, additionalNeed
         (*ws).workspaceOversizedDuration += 1;
     } else {
         (*ws).workspaceOversizedDuration = 0;
-    };
+    }
 }
 pub const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 
@@ -4335,7 +4335,7 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
             src as *const core::ffi::c_void,
             tableSize.wrapping_mul(::core::mem::size_of::<u32>()),
         );
-    };
+    }
 }
 unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     cctx: *mut ZSTD_CCtx,
@@ -11227,7 +11227,7 @@ unsafe fn ZSTD_dedicatedDictSearch_revertCParams(cParams: *mut ZSTD_compressionP
         if (*cParams).hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
             (*cParams).hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
         }
-    };
+    }
 }
 unsafe fn ZSTD_getCParamRowSize(
     srcSizeHint: u64,
@@ -12401,5 +12401,5 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_registerSequenceProducer(
     } else {
         (*params).extSeqProdFunc = None;
         (*params).extSeqProdState = core::ptr::null_mut();
-    };
+    }
 }

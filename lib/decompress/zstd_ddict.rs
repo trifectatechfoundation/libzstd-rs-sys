@@ -104,7 +104,7 @@ pub fn ZSTD_copyDDictParameters(dctx: &mut MaybeUninit<ZSTD_DCtx>, ddict: &ZSTD_
         } else {
             (*dctx).litEntropy = false;
             (*dctx).fseEntropy = false;
-        };
+        }
     }
 }
 

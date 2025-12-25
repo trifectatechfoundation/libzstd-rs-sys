@@ -678,7 +678,7 @@ unsafe fn AIO_IOPool_enqueueJob(job: *mut IOJob_t) {
         );
     } else {
         ((*ctx).poolFunction)(job as *mut core::ffi::c_void);
-    };
+    }
 }
 pub unsafe fn AIO_WritePool_acquireJob(ctx: *mut WritePoolCtx_t) -> *mut IOJob_t {
     AIO_IOPool_acquireJob(&mut (*ctx).base)

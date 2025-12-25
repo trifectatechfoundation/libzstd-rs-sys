@@ -261,7 +261,7 @@ fn ZSTD_allocateLiteralsBuffer(
             dctx.litBufferEnd = dst.wrapping_add(expectedWriteSize);
         }
         dctx.litBufferLocation = LitLocation::ZSTD_split;
-    };
+    }
 }
 
 const ZSTD_LBMIN: usize = 64;

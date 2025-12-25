@@ -1220,7 +1220,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
     match res {
         Ok(eSize) => hSize = hSize.wrapping_add(eSize),
         Err(err) => return err.to_error_code(),
-    };
+    }
 
     // add dictionary header (after entropy tables)
     MEM_writeLE32(dictBuffer, ZSTD_MAGIC_DICTIONARY);

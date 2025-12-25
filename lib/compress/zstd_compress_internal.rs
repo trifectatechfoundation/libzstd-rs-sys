@@ -117,7 +117,7 @@ pub(crate) unsafe fn ZSTD_updateRep(rep: *mut u32, offBase: u32, ll0: u32) {
             *rep.add(1) = *rep;
             *rep = currentOffset;
         }
-    };
+    }
 }
 
 pub(crate) unsafe fn ZSTD_safecopyLiterals(

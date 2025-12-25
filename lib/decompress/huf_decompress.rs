@@ -2177,7 +2177,7 @@ impl<'a> Writer<'a> {
 
         if (range.end as usize - range.start as usize) < 6 {
             panic!("length must be at least six when splitting into 4 streams");
-        };
+        }
 
         unsafe {
             let w1 = Self::from_raw_parts(range.start, segment_size);

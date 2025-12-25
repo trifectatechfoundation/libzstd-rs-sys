@@ -1361,7 +1361,7 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
             match totalDstSize.checked_add(fcs) {
                 None => return ZSTD_CONTENTSIZE_ERROR,
                 Some(size) => totalDstSize = size,
-            };
+            }
 
             // skip to next frame
             let Ok(frameSrcSize) = ZSTD_findFrameCompressedSize_advanced(src, Format::ZSTD_f_zstd1)
@@ -3366,7 +3366,7 @@ fn ZSTD_DCtx_updateOversizedDuration(
         zds.oversizedDuration = zds.oversizedDuration.wrapping_add(1);
     } else {
         zds.oversizedDuration = 0;
-    };
+    }
 }
 
 fn ZSTD_DCtx_isOversizedTooLong(zds: &ZSTD_DStream) -> bool {
@@ -3661,7 +3661,7 @@ pub unsafe extern "C" fn ZSTD_decompressStream(
                         zds.format,
                     ) {
                         return err.to_error_code();
-                    };
+                    }
                     // remaining header bytes + next block header
                     return Ord::max(ZSTD_FRAMEHEADERSIZE_MIN(zds.format), hSize)
                         .wrapping_sub(zds.lhSize)

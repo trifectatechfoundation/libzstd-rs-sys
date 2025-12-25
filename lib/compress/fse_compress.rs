@@ -651,7 +651,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
-        };
+        }
     } else {
         ip = ip.sub(1);
         FSE_initCState2(&mut CState2, ct, *ip as u32);
@@ -671,7 +671,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
-        };
+        }
     }
     while ip > istart {
         ip = ip.sub(1);
@@ -683,7 +683,7 @@ unsafe fn FSE_compress_usingCTable_generic(
                 BIT_flushBitsFast(&mut bitC);
             } else {
                 BIT_flushBits(&mut bitC);
-            };
+            }
         }
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
@@ -699,7 +699,7 @@ unsafe fn FSE_compress_usingCTable_generic(
             BIT_flushBitsFast(&mut bitC);
         } else {
             BIT_flushBits(&mut bitC);
-        };
+        }
     }
     FSE_flushCState(&mut bitC, &CState2);
     FSE_flushCState(&mut bitC, &CState1);
