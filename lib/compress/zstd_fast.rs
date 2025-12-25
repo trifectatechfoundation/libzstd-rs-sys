@@ -162,7 +162,7 @@ pub unsafe fn ZSTD_fillHashTable(
         ZSTD_fillHashTableForCDict(ms, end, dtlm);
     } else {
         ZSTD_fillHashTableForCCtx(ms, end, dtlm);
-    };
+    }
 }
 
 unsafe fn ZSTD_match4Found_cmov(

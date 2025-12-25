@@ -1817,7 +1817,7 @@ unsafe fn convertPathnameToDirName(pathname: *mut core::ffi::c_char) {
         *pathname.offset(1) = '\0' as i32 as core::ffi::c_char;
     } else {
         *pos = '\0' as i32 as core::ffi::c_char;
-    };
+    }
 }
 unsafe fn trimLeadingRootChar(pathname: *const core::ffi::c_char) -> *const core::ffi::c_char {
     assert!(!pathname.is_null());

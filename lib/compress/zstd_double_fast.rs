@@ -174,7 +174,7 @@ pub unsafe fn ZSTD_fillDoubleHashTable(
         ZSTD_fillDoubleHashTableForCDict(ms, end, dtlm);
     } else {
         ZSTD_fillDoubleHashTableForCCtx(ms, end, dtlm);
-    };
+    }
 }
 #[inline(always)]
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(

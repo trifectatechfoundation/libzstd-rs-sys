@@ -500,7 +500,7 @@ unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const l
             (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
     } else {
         (*state).stopMask = (1u64 << hashRateLog).wrapping_sub(1);
-    };
+    }
 }
 unsafe fn ZSTD_ldm_gear_reset(
     state: *mut ldmRollingHashState_t,

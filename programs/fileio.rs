@@ -365,7 +365,7 @@ unsafe fn addHandler(dstFileName: *const core::ffi::c_char) {
         signal(SIGINT, INThandler as *const () as sighandler_t);
     } else {
         g_artefact = core::ptr::null();
-    };
+    }
 }
 unsafe fn clearHandler() {
     if !g_artefact.is_null() {
@@ -1329,7 +1329,7 @@ unsafe fn FIO_freeDict(dict: *mut FIO_Dict_t) {
         FIO_munmap(dict);
     } else {
         unreachable!();
-    };
+    }
 }
 unsafe fn FIO_initDict(
     dict: *mut FIO_Dict_t,
@@ -1349,7 +1349,7 @@ unsafe fn FIO_initDict(
         (*dict).dictBufferSize = FIO_setDictBufferMMap(dict, fileName, prefs, dictFileStat);
     } else {
         unreachable!();
-    };
+    }
 }
 pub unsafe fn FIO_checkFilenameCollisions(
     filenameTable: *mut *const core::ffi::c_char,
@@ -7322,7 +7322,7 @@ unsafe fn displayInfo(
             );
         }
         fprintf(stdout, b"\n\0" as *const u8 as *const core::ffi::c_char);
-    };
+    }
 }
 unsafe fn FIO_addFInfo(fi1: fileInfo_t, fi2: fileInfo_t) -> fileInfo_t {
     let mut total = fileInfo_t {

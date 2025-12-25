@@ -1664,7 +1664,7 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
             &mut (*optLdm).seqStore,
             literalsBytesRemaining.wrapping_add(matchBytesRemaining) as size_t,
         );
-    };
+    }
 }
 unsafe fn ZSTD_optLdm_maybeAddMatch(
     matches: *mut ZSTD_match_t,
