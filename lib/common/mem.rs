@@ -2,6 +2,16 @@ use core::ffi::c_void;
 
 use libc::size_t;
 
+pub(crate) type BYTE = u8;
+// pub(crate) type U8 = u8;
+// pub(crate) type S8 = i8;
+// pub(crate) type U16 = u16;
+// pub(crate) type S16 = i16;
+pub(crate) type U32 = u32;
+// pub(crate) type S32 = i32;
+// pub(crate) type U64 = u64;
+// pub(crate) type S64 = i64;
+
 #[inline]
 pub(crate) const fn MEM_32bits() -> bool {
     size_of::<usize>() == 4
