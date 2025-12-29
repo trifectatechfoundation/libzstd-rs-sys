@@ -17,7 +17,7 @@ pub(crate) const HUF_CTABLE_WORKSPACE_SIZE_U32: usize =
     (4 * (HUF_SYMBOLVALUE_MAX as usize + 1)) + 192;
 
 /// Absolute limit of [`HUF_MAX_TABLELOG`]. Beyond that value, code does not work
-const HUF_TABLELOG_ABSOLUTEMAX: usize = 12;
+pub(crate) const HUF_TABLELOG_ABSOLUTEMAX: usize = 12;
 const _: () = assert!(
     HUF_TABLELOG_MAX <= HUF_TABLELOG_ABSOLUTEMAX,
     "HUF_TABLELOG_MAX is too large !"

@@ -1,14 +1,41 @@
+use core::mem;
+
 use libc::ptrdiff_t;
 
 use crate::lib::common::bitstream::{BIT_CStream_t, BIT_addBits, BIT_flushBits, BitContainerType};
-use crate::lib::common::mem::MEM_read16;
+use crate::lib::common::mem::{MEM_read16, U32, U64};
 
 pub(crate) type FSE_CTable = core::ffi::c_uint;
 
+/* *****************************************
+*  Static allocation
+*******************************************/
+/* FSE buffer bounds */
 pub(crate) const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
+
+pub(crate) const fn FSE_CTABLE_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
+    1 + (1 << ((maxTableLog) - 1)) + (((maxSymbolValue) + 1) * 2)
+}
 
 pub(crate) const fn FSE_DTABLE_SIZE_U32(maxTableLog: usize) -> usize {
     1 + (1 << (maxTableLog))
+}
+
+pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
+    maxSymbolValue: usize,
+    tableLog: usize,
+) -> usize {
+    ((maxSymbolValue + 2) + (1_usize << (tableLog))) / 2
+        + mem::size_of::<U64>() / mem::size_of::<U32>()
+}
+
+#[allow(dead_code)]
+pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE(
+    maxSymbolValue: usize,
+    tableLog: usize,
+) -> usize {
+    mem::size_of::<core::ffi::c_uint>()
+        * FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(maxSymbolValue, tableLog)
 }
 
 pub(crate) const fn FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog: usize, maxSymbolValue: usize) -> usize {

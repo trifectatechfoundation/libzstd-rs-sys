@@ -2,14 +2,19 @@ use core::ffi::c_void;
 
 use libc::size_t;
 
+#[allow(clippy::upper_case_acronyms)]
 pub(crate) type BYTE = u8;
 // pub(crate) type U8 = u8;
 // pub(crate) type S8 = i8;
 // pub(crate) type U16 = u16;
 // pub(crate) type S16 = i16;
+
+#[allow(clippy::upper_case_acronyms)]
 pub(crate) type U32 = u32;
 // pub(crate) type S32 = i32;
-// pub(crate) type U64 = u64;
+
+#[allow(clippy::upper_case_acronyms)]
+pub(crate) type U64 = u64;
 // pub(crate) type S64 = i64;
 
 #[inline]
