@@ -243,10 +243,8 @@ unsafe fn ZSTD_rescaleFreqs(
                 lit = 0;
                 while lit <= MaxLit {
                     let scaleLog = 11u32;
-                    let bitCost = HUF_getNbBitsFromCTable(
-                        ((*(*optPtr).symbolCosts).huf.CTable).as_ptr(),
-                        lit,
-                    );
+                    let bitCost =
+                        HUF_getNbBitsFromCTable(&((*(*optPtr).symbolCosts).huf.CTable), lit);
                     *((*optPtr).litFreq).offset(lit as isize) = (if bitCost != 0 {
                         (1) << scaleLog.wrapping_sub(bitCost)
                     } else {

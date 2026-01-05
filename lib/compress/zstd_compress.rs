@@ -5715,7 +5715,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return 0;
     }
     if repeat as core::ffi::c_uint == HUF_repeat_check as core::ffi::c_int as core::ffi::c_uint
-        && HUF_validateCTable(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue) == 0
+        && HUF_validateCTable(&((*prevHuf).CTable), countWksp, maxSymbolValue) == 0
     {
         repeat = HUF_repeat_none;
     }
@@ -5730,12 +5730,12 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         maxSymbolValue,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-        ((*nextHuf).CTable).as_mut_ptr(),
+        &mut ((*nextHuf).CTable),
         countWksp,
         hufFlags,
     );
     let maxBits = HUF_buildCTable_wksp(
-        ((*nextHuf).CTable).as_mut_ptr(),
+        &mut ((*nextHuf).CTable),
         countWksp,
         maxSymbolValue,
         huffLog,
@@ -5752,7 +5752,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let hSize = HUF_writeCTable_wksp(
         ((*hufMetadata).hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         ::core::mem::size_of::<[u8; 128]>(),
-        ((*nextHuf).CTable).as_mut_ptr(),
+        &((*nextHuf).CTable),
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
@@ -7364,7 +7364,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     let mut maxSymbolValue = 255;
     let mut hasZeroWeights = 1;
     let hufHeaderSize = HUF_readCTable(
-        ((*bs).entropy.huf.CTable).as_mut_ptr(),
+        &mut ((*bs).entropy.huf.CTable),
         &mut maxSymbolValue,
         dictPtr as *const core::ffi::c_void,
         dictEnd.offset_from_unsigned(dictPtr),

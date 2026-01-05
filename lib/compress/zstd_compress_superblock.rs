@@ -283,8 +283,9 @@ static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
+
 unsafe fn ZSTD_compressSubBlock_literal(
-    hufTable: *const HUF_CElt,
+    hufTable: &[HUF_CElt; 257],
     hufMetadata: *const ZSTD_hufCTablesMetadata_t,
     literals: *const u8,
     litSize: size_t,
@@ -569,7 +570,7 @@ unsafe fn ZSTD_compressSubBlock(
     let oend = ostart.add(dstCapacity);
     let mut op = ostart.add(ZSTD_blockHeaderSize);
     let cLitSize = ZSTD_compressSubBlock_literal(
-        ((*entropy).huf.CTable).as_ptr(),
+        &((*entropy).huf.CTable),
         &(*entropyMetadata).hufMetadata,
         literals,
         litSize,
