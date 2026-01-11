@@ -1,4 +1,5 @@
 #![no_main]
+#![allow(deprecated)]
 
 use libfuzzer_sys::{arbitrary, fuzz_target};
 use libzstd_rs_sys::{
