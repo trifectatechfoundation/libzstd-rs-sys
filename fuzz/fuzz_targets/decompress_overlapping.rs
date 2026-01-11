@@ -1,4 +1,5 @@
 #![no_main]
+#![allow(deprecated)]
 
 use libfuzzer_sys::fuzz_target;
 use libzstd_rs_sys_fuzz::{to_result, Error};
