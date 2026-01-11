@@ -287,7 +287,7 @@ fn find_frame_size_info_legacy(src: &[u8]) -> Result<ZSTD_frameSizeInfo, Error> 
                 src.len(),
                 &mut frameSizeInfo.compressedSize,
                 &mut frameSizeInfo.decompressedBound,
-            )
+            );
         },
         7 => {
             ZSTDv07_findFrameSizeInfoLegacy(
@@ -1649,7 +1649,7 @@ fn decompression_margin(mut src: &[u8]) -> Result<size_t, Error> {
             margin += zfh.headerSize as size_t;
             margin += if zfh.checksumFlag != 0 { 4 } else { 0 };
             margin += 3 * frameSizeInfo.nbBlocks;
-            maxBlockSize = Ord::max(maxBlockSize, zfh.blockSizeMax)
+            maxBlockSize = Ord::max(maxBlockSize, zfh.blockSizeMax);
         } else {
             debug_assert!(zfh.frameType == ZSTD_skippableFrame);
             // add the entire skippable frame size to our margin.
@@ -1939,7 +1939,7 @@ unsafe fn ZSTD_decompressMultiFrame<'a>(
 
             if let Some(ddict) = ddict {
                 Error::from_error_code(ZSTD_decompressBegin_usingDDict(dctx, ddict))
-                    .map_or(Ok(()), Err)?
+                    .map_or(Ok(()), Err)?;
             } else {
                 // this will initialize correctly with no dict if `dict == NULL`, so
                 // use this in all cases but for ddict

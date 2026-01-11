@@ -82,7 +82,7 @@ fn ZDICT_printHex(bytes: &[u8]) {
             '.' // non-printable character
         }
     });
-    eprint!("{}", s.collect::<String>())
+    eprint!("{}", s.collect::<String>());
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZDICT_isError))]
@@ -1247,7 +1247,7 @@ unsafe fn ZDICT_addEntropyTablesFromBuffer_advanced(
                 .byte_sub(dictContentSize),
             dictBuffer.byte_add(hSize),
             dictContentSize,
-        )
+        );
     }
     Ord::min(dictBufferCapacity, hSize.wrapping_add(dictContentSize))
 }

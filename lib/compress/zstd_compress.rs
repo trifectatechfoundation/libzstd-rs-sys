@@ -3801,7 +3801,7 @@ pub unsafe extern "C" fn ZSTD_getFrameProgression(cctx: *const ZSTD_CCtx) -> ZST
     };
 
     if buffered != 0 {
-        assert!((*cctx).inBuffPos >= (*cctx).inToCompress)
+        assert!((*cctx).inBuffPos >= (*cctx).inToCompress);
     }
     assert!(buffered <= ZSTD_BLOCKSIZE_MAX as usize);
 

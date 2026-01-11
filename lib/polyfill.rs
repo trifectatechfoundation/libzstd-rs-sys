@@ -49,7 +49,7 @@ unsafe fn prefetch_read_data_internal<T, const LOCALITY: i32>(ptr: *const T) {
         }
         target_arch = "x86_64" => {
             use core::arch::x86_64;
-            x86_64::_mm_prefetch(ptr as *const i8, LOCALITY)
+            x86_64::_mm_prefetch(ptr as *const i8, LOCALITY);
         }
         target_arch = "x86" => {
             use core::arch::x86;
