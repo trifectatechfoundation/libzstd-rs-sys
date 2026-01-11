@@ -13,6 +13,8 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::fse_compress::{FSE_normalizeCount, FSE_writeNCount};
 use crate::lib::compress::huf_compress::{HUF_buildCTable_wksp, HUF_writeCTable_wksp};
+
+#[allow(deprecated)] // We still use deprecated functions internally
 use crate::lib::compress::zstd_compress::{
     SeqDef, ZSTD_CCtx, ZSTD_CDict, ZSTD_compressBegin_usingCDict_deprecated,
     ZSTD_compressBlock_deprecated, ZSTD_compressedBlockState_t, ZSTD_createCCtx,
@@ -653,8 +655,9 @@ unsafe fn ZDICT_countEStats(
     notificationLevel: u32,
 ) {
     let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
-    let mut cSize: size_t = 0;
     let srcSize = Ord::min(src.len(), blockSizeMax);
+
+    #[allow(deprecated)] // Still used internally
     let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
     if ERR_isError(errorCode) {
         if notificationLevel >= 1 {
@@ -662,13 +665,16 @@ unsafe fn ZDICT_countEStats(
         }
         return;
     }
-    cSize = ZSTD_compressBlock_deprecated(
+
+    #[allow(deprecated)] // Still used internally
+    let cSize: size_t = ZSTD_compressBlock_deprecated(
         esr.zc,
         esr.workPlace.as_mut_ptr().cast(),
         ZSTD_BLOCKSIZE_MAX as size_t,
         src.as_ptr().cast::<core::ffi::c_void>(),
         srcSize,
     );
+
     if ERR_isError(cSize) {
         if notificationLevel >= 3 {
             eprintln!("warning : could not compress sample size {} ", srcSize);
