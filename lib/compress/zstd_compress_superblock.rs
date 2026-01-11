@@ -2,7 +2,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::FSE_CTable;
-use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2};
+use crate::lib::common::huf::{HUF_CElt, HUF_flags_bmi2, HUF_SYMBOLVALUE_MAX};
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLE24, MEM_writeLE32};
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, DefaultMaxOff, LL_bits, LL_defaultNorm, LL_defaultNormLog, ML_bits,
@@ -628,6 +628,18 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     writeEntropy: core::ffi::c_int,
 ) -> size_t {
     let countWksp = workspace as *mut core::ffi::c_uint;
+
+    // TODO: This is hopefully just temperorary until more cleanup is done.
+    const countWkspSize: usize =
+        ((HUF_SYMBOLVALUE_MAX + 1) as size_t) * (::core::mem::size_of::<core::ffi::c_uint>());
+    let countWksp: &mut [u32; countWkspSize / ::core::mem::size_of::<core::ffi::c_uint>()] =
+        core::slice::from_raw_parts_mut(
+            countWksp,
+            countWkspSize / ::core::mem::size_of::<core::ffi::c_uint>(),
+        )
+        .try_into()
+        .unwrap();
+
     let mut maxSymbolValue = 255;
     let literalSectionHeaderSize = 3;
     if (*hufMetadata).hType as core::ffi::c_uint
@@ -644,7 +656,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             == set_repeat as core::ffi::c_int as core::ffi::c_uint
     {
         let largest = HIST_count_wksp(
-            countWksp,
+            countWksp.as_mut_ptr(),
             &mut maxSymbolValue,
             literals as *const core::ffi::c_void,
             litSize,
@@ -655,7 +667,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             return litSize;
         }
         let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize(((*huf).CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize(&((*huf).CTable), countWksp, maxSymbolValue);
         if writeEntropy != 0 {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add((*hufMetadata).hufDesSize);
         }
@@ -663,6 +675,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     }
     0
 }
+
 unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     type_0: SymbolEncodingType_e,
     codeTable: *const u8,

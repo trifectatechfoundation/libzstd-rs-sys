@@ -1,4 +1,5 @@
 use core::ptr;
+use std::ptr::slice_from_raw_parts;
 
 use crate::lib::polyfill::PointerExt;
 
@@ -5667,13 +5668,23 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let wkspEnd = wkspStart.add(wkspSize);
     let countWkspStart = wkspStart;
     let countWksp = workspace as *mut core::ffi::c_uint;
-    let countWkspSize = ((HUF_SYMBOLVALUE_MAX + 1) as size_t)
-        .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>());
+    const countWkspSize: usize =
+        ((HUF_SYMBOLVALUE_MAX + 1) as size_t) * (::core::mem::size_of::<core::ffi::c_uint>());
     let nodeWksp = countWkspStart.add(countWkspSize);
     let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
     let mut huffLog = LitHufLog;
     let mut repeat = (*prevHuf).repeatMode;
+
+    // TODO: This is hopefully just temperorary until more cleanup is done.
+    let countWksp: &mut [u32; countWkspSize / ::core::mem::size_of::<core::ffi::c_uint>()] =
+        core::slice::from_raw_parts_mut(
+            countWksp,
+            countWkspSize / ::core::mem::size_of::<core::ffi::c_uint>(),
+        )
+        .try_into()
+        .unwrap();
+
     libc::memcpy(
         nextHuf as *mut core::ffi::c_void,
         prevHuf as *const core::ffi::c_void,
@@ -5695,7 +5706,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return 0;
     }
     let largest = HIST_count_wksp(
-        countWksp,
+        countWksp.as_mut_ptr(),
         &mut maxSymbolValue,
         src as *const u8 as *const core::ffi::c_void,
         srcSize,
@@ -5715,7 +5726,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return 0;
     }
     if repeat as core::ffi::c_uint == HUF_repeat_check as core::ffi::c_int as core::ffi::c_uint
-        && HUF_validateCTable(&((*prevHuf).CTable), countWksp, maxSymbolValue) == 0
+        && HUF_validateCTable(&((*prevHuf).CTable), countWksp, maxSymbolValue) == false
     {
         repeat = HUF_repeat_none;
     }
@@ -5747,8 +5758,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         return err_code_0;
     }
     huffLog = maxBits as u32;
-    let newCSize =
-        HUF_estimateCompressedSize(((*nextHuf).CTable).as_mut_ptr(), countWksp, maxSymbolValue);
+    let newCSize = HUF_estimateCompressedSize(&((*nextHuf).CTable), countWksp, maxSymbolValue);
     let hSize = HUF_writeCTable_wksp(
         ((*hufMetadata).hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         ::core::mem::size_of::<[u8; 128]>(),
@@ -5759,8 +5769,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         nodeWkspSize,
     );
     if repeat as core::ffi::c_uint != HUF_repeat_none as core::ffi::c_int as core::ffi::c_uint {
-        let oldCSize =
-            HUF_estimateCompressedSize(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue);
+        let oldCSize = HUF_estimateCompressedSize(&((*prevHuf).CTable), countWksp, maxSymbolValue);
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
@@ -5946,8 +5955,13 @@ unsafe fn ZSTD_estimateBlockSize_literal(
         if ERR_isError(largest) {
             return litSize;
         }
+
+        // TODO: This is hopefully just temperorary until more cleanup is done.
+        let countWksp = core::slice::from_raw_parts(countWksp, 256)
+            .try_into()
+            .unwrap();
         let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize(((*huf).CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize((&(*huf).CTable), countWksp, maxSymbolValue);
         if writeEntropy != 0 {
             cLitSizeEstimate = cLitSizeEstimate.wrapping_add((*hufMetadata).hufDesSize);
         }
