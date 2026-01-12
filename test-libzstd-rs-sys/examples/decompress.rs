@@ -17,12 +17,16 @@ fn main() {
 
     match variant.as_str() {
         "c" => {
-            let err = c(&input);
-            assert_eq!(err, 0);
+            for _ in 0..20 {
+                let err = c(&input);
+                assert_eq!(err, 0);
+            }
         }
         "rs" => {
-            let err = rs(&input);
-            assert_eq!(err, 0);
+            for _ in 0..20 {
+                let err = rs(&input);
+                assert_eq!(err, 0);
+            }
         }
         bad => panic!("invalid command {bad}"),
     }
