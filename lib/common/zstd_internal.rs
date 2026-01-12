@@ -1,3 +1,5 @@
+use core::mem::MaybeUninit;
+
 use libc::size_t;
 
 const fn const_max(a: usize, b: usize) -> usize {
@@ -68,12 +70,28 @@ pub(crate) static OF_defaultNorm: [i16; 29] = [
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
 pub(crate) static OF_defaultNormLog: u32 = OF_DEFAULTNORMLOG;
 
+#[inline]
 pub(crate) unsafe fn ZSTD_copy16(dst: *mut u8, src: *const u8) {
     // We use `copy` instead of `copy_nonoverlapping` here because the literal buffer can now
     // be located within the dst buffer. In circumstances where the op "catches up" to where the
     // literal buffer is, there can be partial overlaps in this call on the final
     // copy if the literal is being shifted by less than 16 bytes.
-    core::ptr::copy(src, dst, 16)
+    crate::cfg_select!(
+        target_arch = "x86_64" => {
+            #[repr(C)]
+            struct V {
+                x: i64,
+                y: i64,
+            }
+
+            // This generates the same instructions, but surrounding code optimizes better.
+            let v = core::ptr::read_unaligned(src as *const MaybeUninit<V>);
+            core::ptr::write_unaligned(dst as *mut MaybeUninit<V>, v);
+        }
+        _ => {
+            core::ptr::copy(src, dst, 16);
+        }
+    );
 }
 
 pub(crate) const WILDCOPY_OVERLENGTH: usize = 32;
@@ -126,7 +144,7 @@ pub(crate) unsafe fn ZSTD_wildcopy(
         // probabilities. Since it is almost certain to be short, only do
         // one 16-byte copy in the first call. Then, do two calls per loop since
         // at that point it is more likely to have a high trip count.
-        core::ptr::copy(ip, op, 16);
+        ZSTD_copy16(op, ip);
 
         if 16 >= length {
             return;
@@ -136,11 +154,11 @@ pub(crate) unsafe fn ZSTD_wildcopy(
         ip = ip.add(16);
 
         loop {
-            core::ptr::copy(ip, op, 16);
+            ZSTD_copy16(op, ip);
             op = op.add(16);
             ip = ip.add(16);
 
-            core::ptr::copy(ip, op, 16);
+            ZSTD_copy16(op, ip);
             op = op.add(16);
             ip = ip.add(16);
 
