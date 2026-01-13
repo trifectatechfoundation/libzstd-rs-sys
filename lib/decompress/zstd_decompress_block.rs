@@ -1547,15 +1547,12 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     Ok(sequenceLength)
 }
 
-#[inline(always)]
-fn ZSTD_updateFseStateWithDInfo(
-    DStatePtr: &mut ZSTD_fseState,
-    bitD: &mut BIT_DStream_t,
-    nextState: u16,
-    nbBits: u32,
-) {
-    let lowBits = bitD.read_bits(nbBits);
-    DStatePtr.state = usize::from(nextState) + lowBits;
+impl ZSTD_fseState<'_> {
+    #[inline(always)]
+    fn update_with_d_info(&mut self, bitD: &mut BIT_DStream_t, nextState: u16, nbBits: u32) {
+        let lowBits = bitD.read_bits(nbBits);
+        self.state = usize::from(nextState) + lowBits;
+    }
 }
 
 /// We need to add at most `(ZSTD_WINDOWLOG_MAX_32 - 1)` bits to read the maximum
@@ -1694,27 +1691,18 @@ fn ZSTD_decodeSequence(
 
     // Don't update FSE state for last Sequence.
     if !is_last_sequence {
-        ZSTD_updateFseStateWithDInfo(
-            &mut seqState.stateLL,
-            &mut seqState.DStream,
-            llNext,
-            llnbBits,
-        );
-        ZSTD_updateFseStateWithDInfo(
-            &mut seqState.stateML,
-            &mut seqState.DStream,
-            mlNext,
-            mlnbBits,
-        );
+        seqState
+            .stateLL
+            .update_with_d_info(&mut seqState.DStream, llNext, llnbBits);
+        seqState
+            .stateML
+            .update_with_d_info(&mut seqState.DStream, mlNext, mlnbBits);
         if MEM_32bits() {
             seqState.DStream.reload();
         }
-        ZSTD_updateFseStateWithDInfo(
-            &mut seqState.stateOffb,
-            &mut seqState.DStream,
-            ofNext,
-            ofnbBits,
-        );
+        seqState
+            .stateOffb
+            .update_with_d_info(&mut seqState.DStream, ofNext, ofnbBits);
         seqState.DStream.reload();
     }
 
