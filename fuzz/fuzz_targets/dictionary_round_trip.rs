@@ -1,4 +1,5 @@
 #![no_main]
+#![allow(deprecated)]
 
 use c2rust_out_fuzz::ArbitrarySamples;
 use libfuzzer_sys::{arbitrary, fuzz_target};
