@@ -87,7 +87,7 @@ unsafe fn HUF_compressWeights(
         &mut workspaceSize,
         ::core::mem::align_of::<u32>(),
     ) as *mut HUF_CompressWeightsWksp;
-    if workspaceSize < ::core::mem::size_of::<HUF_CompressWeightsWksp>() {
+    if workspaceSize < size_of::<HUF_CompressWeightsWksp>() {
         return Error::GENERIC.to_error_code();
     }
     if wtSize <= 1 {
@@ -134,7 +134,7 @@ unsafe fn HUF_compressWeights(
         maxSymbolValue,
         tableLog,
         ((*wksp).scratchBuffer).as_mut_ptr() as *mut c_void,
-        ::core::mem::size_of::<[u32; 41]>(),
+        size_of::<[u32; 41]>(),
     );
     if ERR_isError(_var_err___0) {
         return _var_err___0;
@@ -194,7 +194,7 @@ pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTable
     libc::memcpy(
         &mut header as *mut HUF_CTableHeader as *mut c_void,
         ctable as *const c_void,
-        ::core::mem::size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
+        size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
     );
     header
 }
@@ -211,7 +211,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     ptr::write_bytes(
         &mut header as *mut HUF_CTableHeader as *mut u8,
         0,
-        ::core::mem::size_of::<HUF_CTableHeader>(),
+        size_of::<HUF_CTableHeader>(),
     );
     debug_assert!(tableLog < 256);
     header.tableLog = tableLog as u8;
@@ -220,7 +220,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     libc::memcpy(
         ctable as *mut c_void,
         &mut header as *mut HUF_CTableHeader as *const c_void,
-        ::core::mem::size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
+        size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
     );
 }
 
@@ -257,7 +257,7 @@ pub unsafe fn HUF_writeCTable_wksp(
     debug_assert!(HUF_readCTableHeader(CTable).maxSymbolValue as c_uint == maxSymbolValue);
     debug_assert!(HUF_readCTableHeader(CTable).tableLog as c_uint == huffLog);
 
-    if workspaceSize < ::core::mem::size_of::<HUF_WriteCTableWksp>() {
+    if workspaceSize < size_of::<HUF_WriteCTableWksp>() {
         return Error::GENERIC.to_error_code();
     }
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
@@ -285,7 +285,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         ((*wksp).huffWeight).as_mut_ptr() as *const c_void,
         maxSymbolValue as size_t,
         &mut (*wksp).wksp as *mut HUF_CompressWeightsWksp as *mut c_void,
-        ::core::mem::size_of::<HUF_CompressWeightsWksp>(),
+        size_of::<HUF_CompressWeightsWksp>(),
     );
     if ERR_isError(hSize) {
         return hSize;
@@ -439,7 +439,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
     ptr::write_bytes(
         rankLast.as_mut_ptr() as *mut u8,
         0xf0,
-        ::core::mem::size_of::<[u32; 14]>(),
+        size_of::<[u32; 14]>(),
     );
     let mut currentNbBits = targetNbBits;
     let mut pos: c_int = 0;
@@ -634,11 +634,7 @@ unsafe fn HUF_sort(
 ) {
     let mut n: u32 = 0;
     let maxSymbolValue1 = maxSymbolValue + 1;
-    ptr::write_bytes(
-        rankPosition as *mut u8,
-        0,
-        ::core::mem::size_of::<rankPos>() * 192,
-    );
+    ptr::write_bytes(rankPosition as *mut u8, 0, size_of::<rankPos>() * 192);
     n = 0;
     while n < maxSymbolValue1 {
         let lowerRank = HUF_getIndex(*count.offset(n as isize));
@@ -829,10 +825,10 @@ pub unsafe fn HUF_buildCTable_wksp(
     let mut nonNullRank: c_int = 0;
 
     const {
-        assert!(HUF_CTABLE_WORKSPACE_SIZE == ::core::mem::size_of::<HUF_buildCTable_wksp_tables>());
+        assert!(HUF_CTABLE_WORKSPACE_SIZE == size_of::<HUF_buildCTable_wksp_tables>());
     }
 
-    if wkspSize < ::core::mem::size_of::<HUF_buildCTable_wksp_tables>() {
+    if wkspSize < size_of::<HUF_buildCTable_wksp_tables>() {
         return Error::workSpace_tooSmall.to_error_code();
     }
     if maxNbBits == 0 {
@@ -841,11 +837,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxSymbolValue > HUF_SYMBOLVALUE_MAX {
         return Error::maxSymbolValue_tooLarge.to_error_code();
     }
-    ptr::write_bytes(
-        huffNode0 as *mut u8,
-        0,
-        ::core::mem::size_of::<huffNodeTable>(),
-    );
+    ptr::write_bytes(huffNode0 as *mut u8, 0, size_of::<huffNodeTable>());
     HUF_sort(
         huffNode,
         count,
@@ -905,7 +897,7 @@ pub fn HUF_compressBound(size: size_t) -> size_t {
     HUF_CTABLEBOUND + (size + (size >> 8) + (8))
 }
 
-pub const HUF_BITS_IN_CONTAINER: size_t = (::core::mem::size_of::<size_t>()) * 8;
+pub const HUF_BITS_IN_CONTAINER: size_t = size_t::BITS as usize;
 
 #[repr(C)]
 pub struct HUF_CStream_t {
@@ -921,13 +913,13 @@ unsafe fn HUF_initCStream(
     startPtr: *mut c_void,
     dstCapacity: size_t,
 ) -> size_t {
-    ptr::write_bytes(bitC as *mut u8, 0, ::core::mem::size_of::<HUF_CStream_t>());
+    ptr::write_bytes(bitC as *mut u8, 0, size_of::<HUF_CStream_t>());
     (*bitC).startPtr = startPtr as *mut u8;
     (*bitC).ptr = (*bitC).startPtr;
     (*bitC).endPtr = ((*bitC).startPtr)
         .add(dstCapacity)
-        .offset(-(::core::mem::size_of::<size_t>() as c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<size_t>() {
+        .offset(-(size_of::<size_t>() as c_ulong as isize));
+    if dstCapacity <= size_of::<size_t>() {
         return Error::dstSize_tooSmall.to_error_code();
     }
     0
@@ -1422,14 +1414,13 @@ pub unsafe fn HUF_optimalTableLog(
     flags: c_int,
 ) -> c_uint {
     debug_assert!(srcSize > 1); /* Not supported, RLE should be used instead */
-    debug_assert!(wkspSize >= ::core::mem::size_of::<HUF_buildCTable_wksp_tables>());
+    debug_assert!(wkspSize >= size_of::<HUF_buildCTable_wksp_tables>());
 
     if flags & HUF_flags_optimalDepth as c_int == 0 {
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
-    let dst = (workSpace as *mut u8)
-        .offset(::core::mem::size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
-    let dstSize = wkspSize - (::core::mem::size_of::<HUF_WriteCTableWksp>());
+    let dst = (workSpace as *mut u8).offset(size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
+    let dstSize = wkspSize - (size_of::<HUF_WriteCTableWksp>());
     let mut hSize: size_t = 0;
     let mut newSize: size_t = 0;
     let symbolCardinality = HUF_cardinality(count, maxSymbolValue);
@@ -1502,12 +1493,11 @@ unsafe fn HUF_compress_internal(
 
     const {
         assert!(
-            ::core::mem::size_of::<HUF_compress_tables_t>() + HUF_WORKSPACE_MAX_ALIGNMENT
-                <= HUF_WORKSPACE_SIZE
+            size_of::<HUF_compress_tables_t>() + HUF_WORKSPACE_MAX_ALIGNMENT <= HUF_WORKSPACE_SIZE
         );
     }
 
-    if wkspSize < ::core::mem::size_of::<HUF_compress_tables_t>() {
+    if wkspSize < size_of::<HUF_compress_tables_t>() {
         return Error::workSpace_tooSmall.to_error_code();
     }
     if srcSize == 0 {
@@ -1583,7 +1573,7 @@ unsafe fn HUF_compress_internal(
         src as *const u8 as *const c_void,
         srcSize,
         ((*table).wksps.hist_wksp).as_mut_ptr() as *mut c_void,
-        ::core::mem::size_of::<[u32; 1024]>(),
+        size_of::<[u32; 1024]>(),
     );
     if ERR_isError(largest) {
         return largest;
@@ -1621,7 +1611,7 @@ unsafe fn HUF_compress_internal(
         srcSize,
         maxSymbolValue,
         &mut (*table).wksps as *mut C2RustUnnamed_1 as *mut c_void,
-        ::core::mem::size_of::<C2RustUnnamed_1>(),
+        size_of::<C2RustUnnamed_1>(),
         ((*table).CTable).as_mut_ptr(),
         ((*table).count).as_mut_ptr(),
         flags,
@@ -1632,7 +1622,7 @@ unsafe fn HUF_compress_internal(
         maxSymbolValue,
         huffLog,
         &mut (*table).wksps.buildCTable_wksp as *mut HUF_buildCTable_wksp_tables as *mut c_void,
-        ::core::mem::size_of::<HUF_buildCTable_wksp_tables>(),
+        size_of::<HUF_buildCTable_wksp_tables>(),
     );
     let _var_err__ = maxBits;
     if ERR_isError(_var_err__) {
@@ -1646,7 +1636,7 @@ unsafe fn HUF_compress_internal(
         maxSymbolValue,
         huffLog,
         &mut (*table).wksps.writeCTable_wksp as *mut HUF_WriteCTableWksp as *mut c_void,
-        ::core::mem::size_of::<HUF_WriteCTableWksp>(),
+        size_of::<HUF_WriteCTableWksp>(),
     );
     if ERR_isError(hSize) {
         return hSize;
@@ -1683,7 +1673,7 @@ unsafe fn HUF_compress_internal(
         libc::memcpy(
             oldHufTable as *mut c_void,
             ((*table).CTable).as_mut_ptr() as *const c_void,
-            ::core::mem::size_of::<[HUF_CElt; 257]>() as c_ulong as libc::size_t,
+            size_of::<[HUF_CElt; 257]>() as c_ulong as libc::size_t,
         );
     }
     HUF_compressCTable_internal(
