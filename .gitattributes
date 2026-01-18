@@ -12,6 +12,7 @@
 
 *.zst binary
 *.tar.zst binary
+*.tar binary
 
 # Visual Studio
 *.sln text eol=crlf
