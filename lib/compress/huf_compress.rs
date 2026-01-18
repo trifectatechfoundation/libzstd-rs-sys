@@ -6,20 +6,22 @@ use libc::size_t;
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::entropy_common::HUF_readStats;
 use crate::lib::common::error_private::{ERR_isError, Error};
-use crate::lib::common::fse::FSE_CTable;
+use crate::lib::common::fse::{
+    FSE_CTable, FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32, FSE_CTABLE_SIZE_U32,
+};
 use crate::lib::common::huf::{
     HUF_CElt, HUF_CTableHeader, HUF_flags_bmi2, HUF_flags_optimalDepth, HUF_flags_preferRepeat,
     HUF_flags_suspectUncompressible, HUF_repeat, HUF_repeat_check, HUF_repeat_none,
-    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_WORKSPACE_SIZE,
-    HUF_SYMBOLVALUE_MAX, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT, HUF_TABLELOG_MAX,
-    HUF_WORKSPACE_SIZE,
+    HUF_repeat_valid, HUF_BLOCKSIZE_MAX, HUF_CTABLEBOUND, HUF_CTABLE_SIZE_ST,
+    HUF_CTABLE_WORKSPACE_SIZE, HUF_SYMBOLVALUE_MAX, HUF_TABLELOG_ABSOLUTEMAX, HUF_TABLELOG_DEFAULT,
+    HUF_TABLELOG_MAX, HUF_WORKSPACE_SIZE,
 };
 use crate::lib::common::mem::{MEM_32bits, MEM_writeLE16, MEM_writeLEST};
 use crate::lib::compress::fse_compress::{
     FSE_buildCTable_wksp, FSE_compress_usingCTable, FSE_normalizeCount, FSE_optimalTableLog,
     FSE_optimalTableLog_internal, FSE_writeNCount,
 };
-use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp};
+use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp, HIST_WKSP_SIZE_U32};
 
 pub type nodeElt = nodeElt_s;
 
@@ -58,15 +60,19 @@ unsafe fn HUF_alignUpWorkspace(
     }
 }
 
-pub const MAX_FSE_TABLELOG_FOR_HUFF_HEADER: c_int = 6;
+pub const MAX_FSE_TABLELOG_FOR_HUFF_HEADER: usize = 6;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_CompressWeightsWksp {
-    pub CTable: [FSE_CTable; 59],
-    pub scratchBuffer: [u32; 41],
-    pub count: [c_uint; 13],
-    pub norm: [i16; 13],
+    pub CTable:
+        [FSE_CTable; FSE_CTABLE_SIZE_U32(MAX_FSE_TABLELOG_FOR_HUFF_HEADER, HUF_TABLELOG_MAX)],
+    pub scratchBuffer: [u32; FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
+        HUF_TABLELOG_MAX,
+        MAX_FSE_TABLELOG_FOR_HUFF_HEADER,
+    )],
+    pub count: [c_uint; HUF_TABLELOG_MAX + 1],
+    pub norm: [i16; HUF_TABLELOG_MAX + 1],
 }
 
 unsafe fn HUF_compressWeights(
@@ -225,8 +231,8 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
 #[repr(C)]
 pub struct HUF_WriteCTableWksp {
     pub wksp: HUF_CompressWeightsWksp,
-    pub bitsToWeight: [u8; 13],
-    pub huffWeight: [u8; 255],
+    pub bitsToWeight: [u8; HUF_TABLELOG_MAX + 1],
+    pub huffWeight: [u8; HUF_SYMBOLVALUE_MAX as usize],
 }
 
 pub unsafe fn HUF_writeCTable_wksp(
@@ -318,8 +324,9 @@ pub unsafe fn HUF_readCTable(
 ) -> size_t {
     let src = core::slice::from_raw_parts(src.cast(), srcSize);
 
-    let mut huffWeight: [u8; 256] = [0; 256];
-    let mut rankVal: [u32; 13] = [0; 13];
+    let mut huffWeight: [u8; HUF_SYMBOLVALUE_MAX as usize + 1] =
+        [0; HUF_SYMBOLVALUE_MAX as usize + 1];
+    let mut rankVal: [u32; HUF_TABLELOG_ABSOLUTEMAX + 1] = [0; HUF_TABLELOG_ABSOLUTEMAX + 1];
     let mut tableLog = 0;
     let mut nbSymbols = 0;
     let ct = CTable.add(1);
@@ -362,8 +369,8 @@ pub unsafe fn HUF_readCTable(
         );
         n_0 += 1;
     }
-    let mut nbPerRank: [u16; 14] = [0; 14];
-    let mut valPerRank: [u16; 14] = [0; 14];
+    let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
+    let mut valPerRank: [u16; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
     let mut n_1: u32 = 0;
     n_1 = 0;
     while n_1 < nbSymbols {
@@ -429,11 +436,11 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
     totalCost >>= largestBits - (targetNbBits);
     debug_assert!(totalCost > 0);
     let noSymbol = 0xf0f0f0f0 as c_uint;
-    let mut rankLast: [u32; 14] = [0; 14];
+    let mut rankLast: [u32; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
     ptr::write_bytes(
         rankLast.as_mut_ptr() as *mut u8,
         0xf0,
-        size_of::<[u32; 14]>(),
+        size_of::<[u32; HUF_TABLELOG_MAX + 2]>(),
     );
     let mut currentNbBits = targetNbBits;
     let mut pos: c_int = 0;
@@ -526,7 +533,7 @@ pub struct rankPos {
     pub curr: u16,
 }
 
-pub type huffNodeTable = [nodeElt; 512];
+pub type huffNodeTable = [nodeElt; 2 * (HUF_SYMBOLVALUE_MAX as usize + 1)];
 
 pub const RANK_POSITION_TABLE_SIZE: usize = 192;
 
@@ -534,7 +541,7 @@ pub const RANK_POSITION_TABLE_SIZE: usize = 192;
 #[repr(C)]
 pub struct HUF_buildCTable_wksp_tables {
     pub huffNodeTbl: huffNodeTable,
-    pub rankPosition: [rankPos; 192],
+    pub rankPosition: [rankPos; RANK_POSITION_TABLE_SIZE],
 }
 
 pub const RANK_POSITION_MAX_COUNT_LOG: c_int = 32;
@@ -761,8 +768,8 @@ unsafe fn HUF_buildCTableFromTree(
 ) {
     let ct = CTable.add(1);
     let mut n: c_int = 0;
-    let mut nbPerRank: [u16; 13] = [0; 13];
-    let mut valPerRank: [u16; 13] = [0; 13];
+    let mut nbPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
+    let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
     n = 0;
     while n <= nonNullRank {
@@ -1360,18 +1367,18 @@ unsafe fn HUF_compressCTable_internal(
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub union C2RustUnnamed_1 {
+pub union workspace_union {
     pub buildCTable_wksp: HUF_buildCTable_wksp_tables,
     pub writeCTable_wksp: HUF_WriteCTableWksp,
-    pub hist_wksp: [u32; 1024],
+    pub hist_wksp: [u32; HIST_WKSP_SIZE_U32 as usize],
 }
 
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct HUF_compress_tables_t {
-    pub count: [c_uint; 256],
-    pub CTable: [HUF_CElt; 257],
-    pub wksps: C2RustUnnamed_1,
+    pub count: [c_uint; HUF_SYMBOLVALUE_MAX as usize + 1],
+    pub CTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    pub wksps: workspace_union,
 }
 
 pub const SUSPECT_INCOMPRESSIBLE_SAMPLE_SIZE: c_int = 4096;
@@ -1598,8 +1605,8 @@ unsafe fn HUF_compress_internal(
         huffLog,
         srcSize,
         maxSymbolValue,
-        &mut (*table).wksps as *mut C2RustUnnamed_1 as *mut c_void,
-        size_of::<C2RustUnnamed_1>(),
+        &mut (*table).wksps as *mut workspace_union as *mut c_void,
+        size_of::<workspace_union>(),
         ((*table).CTable).as_mut_ptr(),
         ((*table).count).as_mut_ptr(),
         flags,

@@ -7,8 +7,29 @@ pub(crate) type FSE_CTable = core::ffi::c_uint;
 
 pub(crate) const FSE_NCOUNTBOUND: core::ffi::c_int = 512;
 
+/* It is possible to statically allocate FSE CTable/DTable as a table of FSE_CTable/FSE_DTable using below macros */
+pub(crate) const fn FSE_CTABLE_SIZE_U32(maxTableLog: usize, maxSymbolValue: usize) -> usize {
+    1 + (1 << ((maxTableLog) - 1)) + (((maxSymbolValue) + 1) * 2)
+}
+
 pub(crate) const fn FSE_DTABLE_SIZE_U32(maxTableLog: usize) -> usize {
     1 + (1 << (maxTableLog))
+}
+
+pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(
+    maxSymbolValue: usize,
+    tableLog: usize,
+) -> usize {
+    ((maxSymbolValue + 2) + (1 << (tableLog))) / 2 + size_of::<u64>() / size_of::<u32>()
+    /* additional 8 bytes for potential table overwrite */
+}
+
+#[allow(dead_code)] // TODO: Remove when used
+pub(crate) const fn FSE_BUILD_CTABLE_WORKSPACE_SIZE(
+    maxSymbolValue: usize,
+    tableLog: usize,
+) -> usize {
+    size_of::<core::ffi::c_uint>() * FSE_BUILD_CTABLE_WORKSPACE_SIZE_U32(maxSymbolValue, tableLog)
 }
 
 pub(crate) const fn FSE_BUILD_DTABLE_WKSP_SIZE(maxTableLog: usize, maxSymbolValue: usize) -> usize {
