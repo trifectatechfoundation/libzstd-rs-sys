@@ -192,6 +192,12 @@ pub struct Workspace {
     data: [u32; 640],
 }
 
+impl Default for Workspace {
+    fn default() -> Self {
+        Self { data: [0; 640] }
+    }
+}
+
 impl Workspace {
     fn as_x1_mut(&mut self) -> &mut huf_decompress::HUF_ReadDTableX1_Workspace {
         const { assert!(size_of::<Self>() >= size_of::<huf_decompress::HUF_ReadDTableX1_Workspace>()) }

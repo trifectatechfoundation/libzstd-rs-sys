@@ -29,6 +29,7 @@ pub struct algo_time_t {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
+#[derive(Default)]
 pub struct DTable {
     pub description: DTableDesc,
     pub data: DTableData,
@@ -59,6 +60,12 @@ impl DTableData {
 
     fn as_symbols(&self) -> &[u16; 2 * 4096] {
         unsafe { core::mem::transmute(&self.data) }
+    }
+}
+
+impl Default for DTableData {
+    fn default() -> Self {
+        Self { data: [0; 4096] }
     }
 }
 
@@ -115,6 +122,21 @@ pub struct HUF_ReadDTableX2_Workspace {
     weightList: [u8; 256],
     calleeWksp: crate::lib::common::entropy_common::Workspace,
 }
+
+impl Default for HUF_ReadDTableX2_Workspace {
+    fn default() -> Self {
+        Self {
+            rankVal: [[0; 13]; 12],
+            rankStats: [0; 13],
+            rankStart0: [0; 15],
+            sortedSymbol: [sortedSymbol_t::default(); 256],
+            weightList: [0; 256],
+            calleeWksp: crate::lib::common::entropy_common::Workspace::default(),
+        }
+    }
+}
+
+#[derive(Default, Copy, Clone)]
 #[repr(C)]
 pub struct sortedSymbol_t {
     pub symbol: u8,
@@ -2049,7 +2071,7 @@ impl<'a> Writer<'a> {
     ///
     /// - `ptr` must point to `len` readable and writable bytes
     /// - `ptr` may be NULL only if `len == 0`
-    pub(crate) unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
+    pub unsafe fn from_raw_parts(ptr: *mut u8, len: usize) -> Self {
         let ptr = NonNull::new(ptr);
 
         if ptr.is_none() {

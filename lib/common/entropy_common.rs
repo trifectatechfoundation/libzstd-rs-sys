@@ -355,6 +355,12 @@ pub(super) struct DTable {
     pub(super) elements: [FSE_decode_t; 90],
 }
 
+impl Default for DTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DTable {
     const fn new() -> Self {
         Self {
@@ -394,7 +400,7 @@ impl DTable {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub(crate) struct Workspace {
     pub(super) a: FSE_DecompressWksp,
     pub(super) dtable: DTable,

@@ -158,14 +158,14 @@ pub(crate) unsafe fn FSE_bitCost(
     (minNbBits.wrapping_add(1) * bitMultiplier).wrapping_sub(normalizedDeltaFromThreshold)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[repr(C)]
 pub(crate) struct FSE_DTableHeader {
     pub(crate) tableLog: u16,
     pub(crate) fastMode: u16,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Default)]
 #[repr(C)]
 pub(crate) struct FSE_decode_t {
     pub(crate) newState: u16,
