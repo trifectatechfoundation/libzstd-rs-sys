@@ -5,7 +5,7 @@ use crate::lib::zstd::ZSTD_btultra;
 
 pub(crate) const HUF_BLOCKSIZE_MAX: usize = 128 * 1024;
 
-pub(crate) const HUF_WORKSPACE_SIZE: usize = (8 << 10) + 512;
+pub const HUF_WORKSPACE_SIZE: usize = (8 << 10) + 512;
 
 /// Max runtime value of tableLog (due to static allocation); can be modified up to [`HUF_TABLELOG_ABSOLUTEMAX`].
 pub(crate) const HUF_TABLELOG_MAX: usize = 12;
@@ -34,8 +34,7 @@ pub(crate) const fn HUF_CTABLE_SIZE_ST(maxSymbolValue: usize) -> usize {
     (maxSymbolValue) + 2 /* Use tables of size_t, for proper alignment */
 }
 
-#[expect(dead_code)] // TODO: Remove when used
-pub(crate) const fn HUF_CTABLE_SIZE(maxSymbolValue: usize) -> usize {
+pub const fn HUF_CTABLE_SIZE(maxSymbolValue: usize) -> usize {
     HUF_CTABLE_SIZE_ST(maxSymbolValue) * size_of::<size_t>()
 }
 

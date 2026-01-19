@@ -21,6 +21,12 @@ pub(crate) struct FSE_DecompressWksp {
     pub ncount: [core::ffi::c_short; 256],
 }
 
+impl Default for FSE_DecompressWksp {
+    fn default() -> Self {
+        Self { ncount: [0; 256] }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct FSE_DState_t<'a> {

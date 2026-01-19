@@ -51,7 +51,7 @@ pub mod lib {
         pub(crate) mod error_private;
         pub(crate) mod fse;
         pub(crate) mod fse_decompress;
-        pub(crate) mod huf;
+        pub mod huf;
         pub(crate) mod mem;
         pub(crate) mod pool;
         pub(crate) mod reader;

@@ -10,6 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 zstd-sys = { version = "2.0.15", features = ["experimental"] }
+arbitrary = { version = "1", features = ["derive"] }
 
 [dependencies.libzstd-rs-sys]
 path = ".."
@@ -53,6 +54,13 @@ bench = false
 [[bin]]
 name = "dictionary_train_legacy"
 path = "fuzz_targets/dictionary_train_legacy.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "huf_round_trip"
+path = "fuzz_targets/huf_round_trip.rs"
 test = false
 doc = false
 bench = false
