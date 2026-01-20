@@ -5,6 +5,7 @@ use libfuzzer_sys::fuzz_target;
 use libzstd_rs_sys::*;
 use libzstd_rs_sys::lib::common::huf::*;
 use libzstd_rs_sys::lib::zstd::ZSTD_error_tableLog_tooLarge;
+use libzstd_rs_sys::lib::zstd::{ZSTD_error_maxCode, ZSTD_ErrorCode};
 use std::ffi::*;
 
 #[derive(Arbitrary, Debug)]
@@ -209,7 +210,7 @@ fuzz_target!(|input: HufRoundTripInput| {
         // Fall back to X1 if tableLog_tooLarge
         if ZSTD_isError(result) == 1 {
             let err_code = ERR_getErrorCode(result);
-            if err_code ==  ZSTD_error_tableLog_tooLarge as usize {
+            if err_code ==  ZSTD_error_tableLog_tooLarge as u32 {
                 // tableLog_tooLarge error code
                 let mut x1_workspace: lib::decompress::Workspace = lib::decompress::Workspace::default();
                 lib::decompress::huf_decompress::HUF_readDTableX1_wksp(
@@ -305,16 +306,14 @@ fuzz_target!(|input: HufRoundTripInput| {
     assert_eq!(&r_buf[..size], &input.data[..size], "Decompressed data doesn't match original");
 });
 
-#[allow(non_snake_case)]
-const fn ERR_getErrorCode(code: usize) -> usize {
-    if ERR_isError(code) == 0 {
-        return 0;
-    }
-    (0 as c_int as usize).wrapping_sub(code) as usize
+const fn ERR_isError(code: usize) -> bool {
+    code > -(ZSTD_error_maxCode as core::ffi::c_int) as usize
 }
 
-#[allow(non_snake_case)]
-const fn ERR_isError(code: usize) -> c_uint {
-    use zstd_sys::ZSTD_ErrorCode::ZSTD_error_maxCode;
-    (code > -(ZSTD_error_maxCode as c_int) as usize) as c_int as c_uint
+const fn ERR_getErrorCode(code: usize) -> ZSTD_ErrorCode {
+    if !ERR_isError(code) {
+        return 0;
+    }
+
+    code.wrapping_neg() as _
 }
