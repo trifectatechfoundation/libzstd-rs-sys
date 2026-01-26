@@ -1894,8 +1894,9 @@ unsafe fn ZSTD_decompressSequences_body(
             asm!(".p2align 3", options(preserves_flags, att_syntax));
         }
 
-        for nbSeq in (1..=nbSeq).rev() {
-            let sequence = ZSTD_decodeSequence(&mut seqState, offset, nbSeq == 1);
+        for i in 0..nbSeq {
+            let is_last = i == nbSeq - 1;
+            let sequence = ZSTD_decodeSequence(&mut seqState, offset, is_last);
             let oneSeqSize = ZSTD_execSequence(
                 op.subslice(..),
                 oend,
