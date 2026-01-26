@@ -152,6 +152,11 @@ const fn get_middle_bits(
     // if start > regMask, the bitstream is corrupted, and the result is undefined.
     debug_assert!(nbBits < MASK.len() as u32);
 
+    #[cfg(feature = "unsafe-performance-experimental")]
+    if nbBits >= MASK.len() as u32 {
+        unsafe { std::hint::unreachable_unchecked() };
+    }
+
     if cfg!(target_arch = "x86_64") {
         // x86 transform & ((1 << nbBits) - 1) to bzhi instruction, it is better
         // than accessing memory. When bmi2 instruction is not present, we consider

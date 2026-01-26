@@ -5,6 +5,7 @@ use core::ptr::{self, NonNull};
 
 use libc::{ptrdiff_t, size_t};
 
+use crate::cfg_select;
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
 use crate::lib::common::error_private::{ERR_isError, Error};
@@ -1573,9 +1574,23 @@ fn ZSTD_decodeSequence(
         matchLength: 0,
         offset: 0,
     };
-    let llDInfo = seqState.stateLL.table[seqState.stateLL.state];
-    let mlDInfo = seqState.stateML.table[seqState.stateML.state];
-    let ofDInfo = seqState.stateOffb.table[seqState.stateOffb.state];
+    cfg_select! {
+        feature = "unsafe-performance-experimental" => {
+            let llDInfo = unsafe { seqState.stateLL.table.get_unchecked(seqState.stateLL.state) };
+            let mlDInfo = unsafe { seqState.stateML.table.get_unchecked(seqState.stateML.state) };
+            let ofDInfo = unsafe {
+                seqState
+                    .stateOffb
+                    .table
+                    .get_unchecked(seqState.stateOffb.state)
+            };
+        }
+        _ => {
+            let llDInfo = seqState.stateLL.table[seqState.stateLL.state];
+            let mlDInfo = seqState.stateML.table[seqState.stateML.state];
+            let ofDInfo = seqState.stateOffb.table[seqState.stateOffb.state];
+        }
+    }
 
     seq.matchLength = mlDInfo.baseValue as size_t;
     seq.litLength = llDInfo.baseValue as size_t;
