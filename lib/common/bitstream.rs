@@ -245,22 +245,6 @@ impl<'a> BIT_DStream_t<'a> {
         Ok(bitD)
     }
 
-    /// Provides the next n bits from local register.
-    /// The local register is not modified.
-    ///
-    /// - On 32-bit systems, `maxNbBits==24`.
-    /// - On 64-bit systems, `maxNbBits==56`.
-    #[inline(always)]
-    const fn look_bits(&self, nbBits: u32) -> BitContainerType {
-        get_middle_bits(
-            self.bitContainer,
-            BitContainerType::BITS
-                .wrapping_sub(self.bitsConsumed)
-                .wrapping_sub(nbBits),
-            nbBits,
-        )
-    }
-
     /// Like [`look_bits`], but only works when `nbBits >= 1`
     #[inline]
     pub(crate) const fn look_bits_fast(&self, nbBits: u32) -> BitContainerType {
@@ -282,9 +266,13 @@ impl<'a> BIT_DStream_t<'a> {
     /// Pay attention to not read more than nbBits contained into local register.
     #[inline(always)]
     pub(crate) const fn read_bits(&mut self, nbBits: core::ffi::c_uint) -> BitContainerType {
-        let value = self.look_bits(nbBits);
-        self.skip_bits(nbBits);
-        value
+        self.bitsConsumed += nbBits;
+
+        get_middle_bits(
+            self.bitContainer,
+            BitContainerType::BITS.wrapping_sub(self.bitsConsumed),
+            nbBits,
+        )
     }
 
     /// Like [`read_bits`], but only works when `nbBits >= 1`
@@ -407,11 +395,8 @@ mod tests {
 
         let consumed = stream.bitsConsumed;
 
-        let bits = stream.look_bits(12 + END_MARK_LOG);
-        assert_eq!(bits, 0b1100_1100_1010);
-
         let read = stream.read_bits(12 + END_MARK_LOG);
-        assert_eq!(bits, read);
+        assert_eq!(read, 0b1100_1100_1010);
 
         assert_eq!(stream.bitsConsumed - consumed, 12 + END_MARK_LOG);
     }
@@ -442,11 +427,8 @@ mod tests {
 
         let consumed = stream.bitsConsumed;
 
-        let bits = stream.look_bits(12 + end_mark_log);
-        assert_eq!(bits, 0b1100_1100_1010);
-
         let read = stream.read_bits(12 + end_mark_log);
-        assert_eq!(bits, read);
+        assert_eq!(read, 0b1100_1100_1010);
 
         assert_eq!(stream.bitsConsumed - consumed, 12 + end_mark_log);
     }
