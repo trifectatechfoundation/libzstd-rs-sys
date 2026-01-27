@@ -16,3 +16,8 @@ features = ["semver-prefix"]
 
 [dependencies]
 zstd-sys = { version = "2.0.15", features = ["experimental"] }
+
+[features]
+unsafe-performance-experimental = [
+    "libzstd-rs-sys/unsafe-performance-experimental",
+]
