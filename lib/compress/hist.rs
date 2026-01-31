@@ -57,6 +57,7 @@ pub unsafe fn HIST_count_simple(
     let end = ip.add(srcSize);
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
+
     ptr::write_bytes(
         count as *mut u8,
         0,
@@ -68,24 +69,31 @@ pub unsafe fn HIST_count_simple(
         *maxSymbolValuePtr = 0;
         return 0;
     }
+
     while ip < end {
+        debug_assert!(*ip as u32 <= maxSymbolValue);
         let fresh2 = ip;
         ip = ip.add(1);
         let fresh3 = &mut (*count.offset(*fresh2 as isize));
         *fresh3 = (*fresh3).wrapping_add(1);
     }
+
     while *count.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    let mut s: u32 = 0;
-    s = 0;
-    while s <= maxSymbolValue {
-        if *count.offset(s as isize) > largestCount {
-            largestCount = *count.offset(s as isize);
+
+    {
+        let mut s: u32 = 0;
+        s = 0;
+        while s <= maxSymbolValue {
+            if *count.offset(s as isize) > largestCount {
+                largestCount = *count.offset(s as isize);
+            }
+            s = s.wrapping_add(1);
         }
-        s = s.wrapping_add(1);
     }
+
     largestCount
 }
 
@@ -157,6 +165,7 @@ unsafe fn HIST_count_parallel_wksp(
     let Counting4 = Counting3.add(256);
 
     /* safety checks */
+    debug_assert!(*maxSymbolValuePtr <= 255);
     if sourceSize == 0 {
         ptr::write_bytes(count as *mut u8, 0, countSize as libc::size_t);
         *maxSymbolValuePtr = 0;
