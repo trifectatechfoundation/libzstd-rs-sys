@@ -1,19 +1,21 @@
-pub type HIST_checkInput_e = core::ffi::c_uint;
-pub const checkMaxSymbolValue: HIST_checkInput_e = 1;
-pub const trustInput: HIST_checkInput_e = 0;
 use core::ptr;
 
 use libc::size_t;
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_read32;
+
 pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
+
 pub const HIST_WKSP_SIZE: size_t =
-    (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>());
+    (HIST_WKSP_SIZE_U32 as size_t) * (size_of::<core::ffi::c_uint>());
+
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
+
 pub unsafe fn HIST_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code) as _
 }
+
 pub unsafe fn HIST_add(
     count: *mut core::ffi::c_uint,
     src: *const core::ffi::c_void,
@@ -28,6 +30,7 @@ pub unsafe fn HIST_add(
         *fresh1 = (*fresh1).wrapping_add(1);
     }
 }
+
 pub unsafe fn HIST_count_simple(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -69,6 +72,12 @@ pub unsafe fn HIST_count_simple(
     }
     largestCount
 }
+
+enum HIST_checkInput_e {
+    checkMaxSymbolValue = 1,
+    trustInput = 0,
+}
+
 unsafe fn HIST_count_parallel_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -178,6 +187,7 @@ unsafe fn HIST_count_parallel_wksp(
     core::ptr::copy(Counting1 as *const u8, count as *mut u8, countSize as usize);
     max as size_t
 }
+
 pub unsafe fn HIST_countFast_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -200,10 +210,11 @@ pub unsafe fn HIST_countFast_wksp(
         maxSymbolValuePtr,
         source,
         sourceSize,
-        trustInput,
+        HIST_checkInput_e::trustInput,
         workSpace as *mut u32,
     )
 }
+
 pub unsafe fn HIST_count_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -224,7 +235,7 @@ pub unsafe fn HIST_count_wksp(
             maxSymbolValuePtr,
             source,
             sourceSize,
-            checkMaxSymbolValue,
+            HIST_checkInput_e::checkMaxSymbolValue,
             workSpace as *mut u32,
         );
     }
@@ -238,6 +249,7 @@ pub unsafe fn HIST_count_wksp(
         workSpaceSize,
     )
 }
+
 pub unsafe fn HIST_countFast(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -254,6 +266,7 @@ pub unsafe fn HIST_countFast(
         ::core::mem::size_of::<[core::ffi::c_uint; 1024]>(),
     )
 }
+
 pub unsafe fn HIST_count(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
