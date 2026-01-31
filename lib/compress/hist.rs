@@ -216,7 +216,7 @@ unsafe fn HIST_count_parallel_wksp(
     {
         for s in 0..256 {
             Counting1[s] += Counting2[s] + Counting3[s] + Counting4[s];
-            if (Counting1[s] > max) {
+            if Counting1[s] > max {
                 max = Counting1[s];
             }
         }
