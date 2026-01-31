@@ -198,12 +198,12 @@ fn HUF_getValueFast(elt: HUF_CElt) -> size_t {
     elt
 }
 
-unsafe fn HUF_setNbBits(elt: *mut HUF_CElt, nbBits: size_t) {
+fn HUF_setNbBits(elt: &mut HUF_CElt, nbBits: size_t) {
     debug_assert!(nbBits <= HUF_TABLELOG_ABSOLUTEMAX);
     *elt = nbBits;
 }
 
-unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
+fn HUF_setValue(elt: &mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
         debug_assert!((value >> nbBits) == 0);
@@ -410,7 +410,7 @@ pub unsafe fn HUF_readCTable(
         while n_0 < nbSymbols {
             let w = *huffWeight.as_mut_ptr().offset(n_0 as isize) as u32;
             HUF_setNbBits(
-                ct.offset(n_0 as isize),
+                &mut *ct.offset(n_0 as isize),
                 ((tableLog + 1 - w) as u8 as c_int & -((w != 0) as c_int) as c_int) as size_t,
             );
             n_0 += 1;
@@ -458,7 +458,7 @@ pub unsafe fn HUF_readCTable(
                     .add(HUF_getNbBits(*ct.offset(n_3 as isize))));
                 let fresh2 = *fresh1;
                 *fresh1 += 1;
-                HUF_setValue(ct.offset(n_3 as isize), fresh2 as size_t);
+                HUF_setValue(&mut *ct.offset(n_3 as isize), fresh2 as size_t);
                 n_3 += 1;
             }
         }
@@ -826,7 +826,7 @@ fn HUF_sort(
 
         rankPosition[lowerRank as usize].base += 1;
     }
-    debug_assert!(rankPosition[((RANK_POSITION_TABLE_SIZE - 1))].base == 0);
+    debug_assert!(rankPosition[RANK_POSITION_TABLE_SIZE - 1].base == 0);
 
     /* Set up the rankPosition table */
     for n in (1..(RANK_POSITION_TABLE_SIZE - 1)).rev() {
@@ -999,7 +999,7 @@ unsafe fn HUF_buildCTableFromTree(
     n = 0;
     while n < alphabetSize {
         HUF_setNbBits(
-            ct.offset((*huffNode.offset(n as isize)).byte as c_int as isize),
+            &mut *ct.offset((*huffNode.offset(n as isize)).byte as isize),
             (*huffNode.offset(n as isize)).nbBits as size_t,
         ); /* push nbBits per symbol, symbol order */
         n += 1;
@@ -1012,7 +1012,7 @@ unsafe fn HUF_buildCTableFromTree(
             .add(HUF_getNbBits(*ct.offset(n as isize))));
         let fresh20 = *fresh19;
         *fresh19 += 1;
-        HUF_setValue(ct.offset(n as isize), fresh20 as size_t); /* assign value within rank, symbol order */
+        HUF_setValue(&mut *ct.offset(n as isize), fresh20 as size_t); /* assign value within rank, symbol order */
         n += 1;
     }
     HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
@@ -1139,6 +1139,7 @@ pub const HUF_BITS_IN_CONTAINER: size_t = size_t::BITS as usize;
 ///   3. The bitstream has two bit containers. You can add
 ///      bits to the second container and merge them into
 ///      the first container.
+#[derive(Default)]
 #[repr(C)]
 pub struct HUF_CStream_t {
     pub bitContainer: [size_t; 2],
@@ -1154,16 +1155,17 @@ pub struct HUF_CStream_t {
 ///
 /// 0 or an error code.
 unsafe fn HUF_initCStream(
-    bitC: *mut HUF_CStream_t,
+    bitC: &mut HUF_CStream_t,
     startPtr: *mut c_void,
     dstCapacity: size_t,
 ) -> size_t {
-    ptr::write_bytes(bitC as *mut u8, 0, size_of::<HUF_CStream_t>());
-    (*bitC).startPtr = startPtr as *mut u8;
-    (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
+    *bitC = HUF_CStream_t::default();
+
+    bitC.startPtr = startPtr as *mut u8;
+    bitC.ptr = bitC.startPtr;
+    bitC.endPtr = (bitC.startPtr)
         .add(dstCapacity)
-        .offset(-(size_of::<size_t>() as c_ulong as isize));
+        .offset(-(size_of::<size_t>() as isize));
     if dstCapacity <= size_of::<size_t>() {
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -1181,7 +1183,7 @@ unsafe fn HUF_initCStream(
 ///   to have at least 4 unused bits after this call it may be 1,
 ///   otherwise it must be 0. HUF_addBits() is faster when fast is set.
 #[inline(always)]
-unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
+fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
     debug_assert!(idx <= 1);
     debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
     /* This is efficient on x86-64 with BMI2 because shrx
@@ -1189,8 +1191,8 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
      * knows this and elides the mask. When fast is set,
      * every operation can use the same value loaded from elt.
      */
-    *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) >>= HUF_getNbBits(elt);
-    *((*bitC).bitContainer).as_mut_ptr().offset(idx as isize) |= if kFast != 0 {
+    bitC.bitContainer[idx as usize] >>= HUF_getNbBits(elt);
+    bitC.bitContainer[idx as usize] |= if kFast != 0 {
         HUF_getValueFast(elt)
     } else {
         HUF_getValue(elt)
@@ -1198,11 +1200,8 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
     /* We only read the low 8 bits of bitC->bitPos[idx] so it
      * doesn't matter that the high bits have noise from the value.
      */
-    let fresh21 = &mut (*((*bitC).bitPos).as_mut_ptr().offset(idx as isize));
-    *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
-    debug_assert!(
-        (*((*bitC).bitPos).as_ptr().offset(idx as isize) & 0xFF) <= HUF_BITS_IN_CONTAINER
-    );
+    bitC.bitPos[idx as usize] = bitC.bitPos[idx as usize].wrapping_add(HUF_getNbBitsFast(elt));
+    debug_assert!((bitC.bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     /* The last 4-bits of elt are dirty if fast is set,
      * so we must not be overwriting bits that have already been
      * inserted into the bit container.
@@ -1210,21 +1209,20 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
 }
 
 #[inline(always)]
-unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
-    *((*bitC).bitContainer).as_mut_ptr().add(1) = 0;
-    *((*bitC).bitPos).as_mut_ptr().add(1) = 0;
+fn HUF_zeroIndex1(bitC: &mut HUF_CStream_t) {
+    bitC.bitContainer[1] = 0;
+    bitC.bitPos[1] = 0;
 }
 
 /// Merges the bit container @ index 1 into the bit container @ index 0
 /// and zeros the bit container @ index 1.
 #[inline(always)]
-unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
-    debug_assert!((*((*bitC).bitPos).as_ptr().add(1) & 0xFF) < HUF_BITS_IN_CONTAINER);
-    *((*bitC).bitContainer).as_mut_ptr() >>=
-        *((*bitC).bitPos).as_mut_ptr().add(1) & 0xff as c_int as size_t;
-    *((*bitC).bitContainer).as_mut_ptr() |= *((*bitC).bitContainer).as_mut_ptr().add(1);
-    *((*bitC).bitPos).as_mut_ptr() += *((*bitC).bitPos).as_mut_ptr().add(1);
-    debug_assert!((*((*bitC).bitPos).as_ptr() & 0xFF) <= HUF_BITS_IN_CONTAINER);
+fn HUF_mergeIndex1(bitC: &mut HUF_CStream_t) {
+    debug_assert!((bitC.bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
+    bitC.bitContainer[0] >>= bitC.bitPos[1] & 0xFF;
+    bitC.bitContainer[0] |= bitC.bitContainer[1];
+    bitC.bitPos[0] += bitC.bitPos[1];
+    debug_assert!((bitC.bitPos[0] & 0xFF) <= HUF_BITS_IN_CONTAINER);
 }
 
 /// Flushes the bits in the bit container @ index 0.
@@ -1238,22 +1236,22 @@ unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
 ///
 /// bitPos will be < 8.
 #[inline(always)]
-unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: c_int) {
+unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
-    let nbBits = *((*bitC).bitPos).as_mut_ptr() & 0xff as c_int as size_t;
+    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     let nbBytes = nbBits >> 3;
     /* The top nbBits bits of bitContainer are the ones we need. */
-    let bitContainer = *((*bitC).bitContainer).as_mut_ptr() >> (HUF_BITS_IN_CONTAINER - (nbBits));
+    let bitContainer = bitC.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
     /* Mask bitPos to account for the bytes we consumed. */
-    *((*bitC).bitPos).as_mut_ptr() &= 7;
+    bitC.bitPos[0] &= 7;
     debug_assert!(nbBits > 0);
     debug_assert!(nbBits <= core::mem::size_of::<size_t>() * 8);
-    debug_assert!((*bitC).ptr <= (*bitC).endPtr);
-    MEM_writeLEST((*bitC).ptr as *mut c_void, bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    debug_assert!(kFast == 0 || (*bitC).ptr <= (*bitC).endPtr);
-    if kFast == 0 && (*bitC).ptr > (*bitC).endPtr {
-        (*bitC).ptr = (*bitC).endPtr;
+    debug_assert!(bitC.ptr <= bitC.endPtr);
+    MEM_writeLEST(bitC.ptr as *mut c_void, bitContainer);
+    bitC.ptr = (bitC.ptr).add(nbBytes);
+    debug_assert!(kFast == 0 || bitC.ptr <= bitC.endPtr);
+    if kFast == 0 && bitC.ptr > bitC.endPtr {
+        bitC.ptr = bitC.endPtr;
     }
     /* bitContainer doesn't need to be modified because the leftover
      * bits are already the top bitPos bits. And we don't care about
@@ -1264,7 +1262,7 @@ unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: c_int) {
 /// # Returns
 ///
 /// The Huffman stream end mark: A 1-bit value = 1.
-unsafe fn HUF_endMark() -> HUF_CElt {
+fn HUF_endMark() -> HUF_CElt {
     let mut endMark: HUF_CElt = 0;
     HUF_setNbBits(&mut endMark, 1);
     HUF_setValue(&mut endMark, 1);
@@ -1274,19 +1272,19 @@ unsafe fn HUF_endMark() -> HUF_CElt {
 /// # Returns
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
-unsafe fn HUF_closeCStream(bitC: *mut HUF_CStream_t) -> size_t {
+unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), 0, 0);
     HUF_flushBits(bitC, 0);
-    let nbBits = *((*bitC).bitPos).as_mut_ptr() & 0xff as c_int as size_t;
-    if (*bitC).ptr >= (*bitC).endPtr {
+    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
+    if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
+    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
 }
 
 #[inline(always)]
 unsafe fn HUF_encodeSymbol(
-    bitCPtr: *mut HUF_CStream_t,
+    bitCPtr: &mut HUF_CStream_t,
     symbol: u32,
     CTable: *const HUF_CElt,
     idx: c_int,
@@ -1297,7 +1295,7 @@ unsafe fn HUF_encodeSymbol(
 
 #[inline(always)]
 unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
-    bitC: *mut HUF_CStream_t,
+    bitC: &mut HUF_CStream_t,
     ip: *const u8,
     srcSize: size_t,
     ct: *const HUF_CElt,
