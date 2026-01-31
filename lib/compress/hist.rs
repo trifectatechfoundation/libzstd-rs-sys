@@ -55,8 +55,8 @@ pub unsafe fn HIST_count_simple(
     ptr::write_bytes(
         count as *mut u8,
         0,
-        (maxSymbolValue.wrapping_add(1) as c_ulong)
-            .wrapping_mul(size_of::<c_uint>() as c_ulong) as libc::size_t,
+        (maxSymbolValue.wrapping_add(1) as c_ulong).wrapping_mul(size_of::<c_uint>() as c_ulong)
+            as libc::size_t,
     );
     if srcSize == 0 {
         *maxSymbolValuePtr = 0;
@@ -178,73 +178,47 @@ unsafe fn HIST_count_parallel_wksp(
             let mut c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            let fresh4 = &mut Counting1[c as u8 as usize];
-            *fresh4 = (*fresh4).wrapping_add(1);
-            let fresh5 = &mut Counting2[(c >> 8) as u8 as usize];
-            *fresh5 = (*fresh5).wrapping_add(1);
-            let fresh6 = &mut Counting3[(c >> 16) as u8 as usize];
-            *fresh6 = (*fresh6).wrapping_add(1);
-            let fresh7 = &mut Counting4[(c >> 24) as usize];
-            *fresh7 = (*fresh7).wrapping_add(1);
+            Counting1[c as u8 as usize] += 1;
+            Counting2[(c >> 8) as u8 as usize] += 1;
+            Counting3[(c >> 16) as u8 as usize] += 1;
+            Counting4[(c >> 24) as usize] += 1;
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            let fresh8 = &mut Counting1[c as u8 as usize];
-            *fresh8 = (*fresh8).wrapping_add(1);
-            let fresh9 = &mut Counting2[(c >> 8) as u8 as usize];
-            *fresh9 = (*fresh9).wrapping_add(1);
-            let fresh10 = &mut Counting3[(c >> 16) as u8 as usize];
-            *fresh10 = (*fresh10).wrapping_add(1);
-            let fresh11 = &mut Counting4[(c >> 24) as usize];
-            *fresh11 = (*fresh11).wrapping_add(1);
+            Counting1[c as u8 as usize] += 1;
+            Counting2[(c >> 8) as u8 as usize] += 1;
+            Counting3[(c >> 16) as u8 as usize] += 1;
+            Counting4[(c >> 24) as usize] += 1;
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            let fresh12 = &mut Counting1[c as u8 as usize];
-            *fresh12 = (*fresh12).wrapping_add(1);
-            let fresh13 = &mut Counting2[(c >> 8) as u8 as usize];
-            *fresh13 = (*fresh13).wrapping_add(1);
-            let fresh14 = &mut Counting3[(c >> 16) as u8 as usize];
-            *fresh14 = (*fresh14).wrapping_add(1);
-            let fresh15 = &mut Counting4[(c >> 24) as usize];
-            *fresh15 = (*fresh15).wrapping_add(1);
+            Counting1[c as u8 as usize] += 1;
+            Counting2[(c >> 8) as u8 as usize] += 1;
+            Counting3[(c >> 16) as u8 as usize] += 1;
+            Counting4[(c >> 24) as usize] += 1;
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            let fresh16 = &mut Counting1[c as u8 as usize];
-            *fresh16 = (*fresh16).wrapping_add(1);
-            let fresh17 = &mut Counting2[(c >> 8) as u8 as usize];
-            *fresh17 = (*fresh17).wrapping_add(1);
-            let fresh18 = &mut Counting3[(c >> 16) as u8 as usize];
-            *fresh18 = (*fresh18).wrapping_add(1);
-            let fresh19 = &mut Counting4[(c >> 24) as usize];
-            *fresh19 = (*fresh19).wrapping_add(1);
+            Counting1[c as u8 as usize] += 1;
+            Counting2[(c >> 8) as u8 as usize] += 1;
+            Counting3[(c >> 16) as u8 as usize] += 1;
+            Counting4[(c >> 24) as usize] += 1;
         }
         ip = ip.sub(4);
     }
 
     /* finish last symbols */
     while ip < iend {
-        let fresh20 = ip;
+        Counting1[*ip as usize] += 1;
         ip = ip.add(1);
-        let fresh21 = &mut Counting1[*fresh20 as usize];
-        *fresh21 = (*fresh21).wrapping_add(1);
     }
 
     {
-        let mut s: u32 = 0;
-        s = 0;
-        while s < 256 {
-            let fresh22 = &mut Counting1[s as usize];
-            *fresh22 = (*fresh22).wrapping_add(
-                (Counting2[s as usize])
-                    .wrapping_add(Counting3[s as usize])
-                    .wrapping_add(Counting4[s as usize]),
-            );
-            if Counting1[s as usize] > max {
-                max = Counting1[s as usize];
+        for s in 0..256 {
+            Counting1[s] += Counting2[s] + Counting3[s] + Counting4[s];
+            if (Counting1[s] > max) {
+                max = Counting1[s];
             }
-            s = s.wrapping_add(1);
         }
     }
 
