@@ -1704,7 +1704,7 @@ unsafe fn HUF_compressCTable_internal(
 pub union workspace_union {
     pub buildCTable_wksp: HUF_buildCTable_wksp_tables,
     pub writeCTable_wksp: HUF_WriteCTableWksp,
-    pub hist_wksp: [u32; HIST_WKSP_SIZE_U32 as usize],
+    pub hist_wksp: [u32; HIST_WKSP_SIZE_U32],
 }
 
 #[derive(Copy, Clone)]

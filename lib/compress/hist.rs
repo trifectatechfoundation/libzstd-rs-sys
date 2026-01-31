@@ -1,3 +1,4 @@
+use core::ffi::{c_int, c_uint, c_ulong, c_void};
 use core::ptr;
 
 use libc::size_t;
@@ -11,26 +12,22 @@ pub const HIST_WKSP_SIZE_U32: usize = 0;
 #[cfg(not(target_feature = "sve2"))]
 pub const HIST_WKSP_SIZE_U32: usize = 1024;
 
-pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32 * size_of::<core::ffi::c_uint>();
+pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32 * size_of::<c_uint>();
 
 #[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
-pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 500;
+pub const HIST_FAST_THRESHOLD: c_int = 500;
 
 #[cfg(not(target_feature = "sve2"))]
-pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
+pub const HIST_FAST_THRESHOLD: c_int = 1500;
 
-pub unsafe fn HIST_isError(code: size_t) -> core::ffi::c_uint {
+pub unsafe fn HIST_isError(code: size_t) -> c_uint {
     ERR_isError(code) as _
 }
 
 /// Lowest level: just add nb of occurrences of characters from `src` into `count`.
 /// `count` is not reset. `count` array is presumed large enough (i.e. 1 KB).
 /// This function does not need any additional stack memory.
-pub unsafe fn HIST_add(
-    count: *mut core::ffi::c_uint,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-) {
+pub unsafe fn HIST_add(count: *mut c_uint, src: *const c_void, srcSize: size_t) {
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
     while ip < end {
@@ -48,11 +45,11 @@ pub unsafe fn HIST_add(
 /// @return : count of the most frequent symbol.
 /// Note this function doesn't produce any error (i.e. it must succeed).
 pub unsafe fn HIST_count_simple(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    src: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    src: *const c_void,
     srcSize: size_t,
-) -> core::ffi::c_uint {
+) -> c_uint {
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
     let mut maxSymbolValue = *maxSymbolValuePtr;
@@ -61,9 +58,8 @@ pub unsafe fn HIST_count_simple(
     ptr::write_bytes(
         count as *mut u8,
         0,
-        (maxSymbolValue.wrapping_add(1) as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
-            as libc::size_t,
+        (maxSymbolValue.wrapping_add(1) as c_ulong)
+            .wrapping_mul(::core::mem::size_of::<c_uint>() as c_ulong) as libc::size_t,
     );
     if srcSize == 0 {
         *maxSymbolValuePtr = 0;
@@ -147,17 +143,17 @@ unsafe fn HIST_count_sve2(
 /// @return : largest histogram frequency,
 ///           or an error code (notably when histogram's alphabet is larger than *maxSymbolValuePtr)
 unsafe fn HIST_count_parallel_wksp(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    source: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    source: *const c_void,
     sourceSize: size_t,
     check: HIST_checkInput_e,
     workSpace: *mut u32,
 ) -> size_t {
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
-    let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as core::ffi::c_ulong)
-        .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong);
+    let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as c_ulong)
+        .wrapping_mul(::core::mem::size_of::<c_uint>() as c_ulong);
     let mut max = 0;
     let Counting1 = workSpace;
     let Counting2 = Counting1.add(256);
@@ -174,18 +170,17 @@ unsafe fn HIST_count_parallel_wksp(
     ptr::write_bytes(
         workSpace as *mut u8,
         0,
-        ((4 * 256) as core::ffi::c_ulong)
-            .wrapping_mul(::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
+        ((4 * 256) as c_ulong).wrapping_mul(::core::mem::size_of::<c_uint>() as c_ulong)
             as libc::size_t,
     );
 
     /* by stripes of 16 bytes */
     {
-        let mut cached = MEM_read32(ip as *const core::ffi::c_void);
+        let mut cached = MEM_read32(ip as *const c_void);
         ip = ip.add(4);
         while ip < iend.sub(15) {
             let mut c = cached;
-            cached = MEM_read32(ip as *const core::ffi::c_void);
+            cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
             let fresh4 = &mut (*Counting1.offset(c as u8 as isize));
             *fresh4 = (*fresh4).wrapping_add(1);
@@ -196,7 +191,7 @@ unsafe fn HIST_count_parallel_wksp(
             let fresh7 = &mut (*Counting4.offset((c >> 24) as isize));
             *fresh7 = (*fresh7).wrapping_add(1);
             c = cached;
-            cached = MEM_read32(ip as *const core::ffi::c_void);
+            cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
             let fresh8 = &mut (*Counting1.offset(c as u8 as isize));
             *fresh8 = (*fresh8).wrapping_add(1);
@@ -207,7 +202,7 @@ unsafe fn HIST_count_parallel_wksp(
             let fresh11 = &mut (*Counting4.offset((c >> 24) as isize));
             *fresh11 = (*fresh11).wrapping_add(1);
             c = cached;
-            cached = MEM_read32(ip as *const core::ffi::c_void);
+            cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
             let fresh12 = &mut (*Counting1.offset(c as u8 as isize));
             *fresh12 = (*fresh12).wrapping_add(1);
@@ -218,7 +213,7 @@ unsafe fn HIST_count_parallel_wksp(
             let fresh15 = &mut (*Counting4.offset((c >> 24) as isize));
             *fresh15 = (*fresh15).wrapping_add(1);
             c = cached;
-            cached = MEM_read32(ip as *const core::ffi::c_void);
+            cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
             let fresh16 = &mut (*Counting1.offset(c as u8 as isize));
             *fresh16 = (*fresh16).wrapping_add(1);
@@ -258,11 +253,11 @@ unsafe fn HIST_count_parallel_wksp(
     }
 
     {
-        let mut maxSymbolValue = 255 as core::ffi::c_uint;
+        let mut maxSymbolValue = 255 as c_uint;
         while *Counting1.offset(maxSymbolValue as isize) == 0 {
             maxSymbolValue = maxSymbolValue.wrapping_sub(1);
         }
-        if check as core::ffi::c_uint != 0 && maxSymbolValue > *maxSymbolValuePtr {
+        if check as c_uint != 0 && maxSymbolValue > *maxSymbolValuePtr {
             return Error::maxSymbolValue_tooSmall.to_error_code();
         }
         *maxSymbolValuePtr = maxSymbolValue;
@@ -277,11 +272,11 @@ unsafe fn HIST_count_parallel_wksp(
 /// `workSpace` is a writable buffer which must be 4-bytes aligned,
 /// `workSpaceSize` must be >= `HIST_WKSP_SIZE`
 pub unsafe fn HIST_countFast_wksp(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    source: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    source: *const c_void,
     sourceSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: *mut c_void,
     workSpaceSize: size_t,
 ) -> size_t {
     // heuristic threshold
@@ -326,11 +321,11 @@ pub unsafe fn HIST_countFast_wksp(
 /// `workSpace` is a writable buffer which must be 4-bytes aligned,
 /// `workSpaceSize` must be >= HIST_WKSP_SIZE
 pub unsafe fn HIST_count_wksp(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    source: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    source: *const c_void,
     sourceSize: size_t,
-    workSpace: *mut core::ffi::c_void,
+    workSpace: *mut c_void,
     workSpaceSize: size_t,
 ) -> size_t {
     #[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
@@ -381,19 +376,19 @@ pub unsafe fn HIST_count_wksp(
 /// This function is unsafe, and will segfault if any value within `src` is `> *maxSymbolValuePtr`
 /// fast variant (unsafe : won't check if src contains values beyond count[] limit)
 pub unsafe fn HIST_countFast(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    source: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    source: *const c_void,
     sourceSize: size_t,
 ) -> size_t {
-    let mut tmpCounters: [core::ffi::c_uint; 1024] = [0; 1024];
+    let mut tmpCounters: [c_uint; 1024] = [0; 1024];
     HIST_countFast_wksp(
         count,
         maxSymbolValuePtr,
         source,
         sourceSize,
-        tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>(),
+        tmpCounters.as_mut_ptr() as *mut c_void,
+        ::core::mem::size_of::<[c_uint; 1024]>(),
     )
 }
 
@@ -404,18 +399,18 @@ pub unsafe fn HIST_countFast(
 ///           or an error code, which can be tested using HIST_isError().
 ///           note : if return == srcSize, there is only one symbol.
 pub unsafe fn HIST_count(
-    count: *mut core::ffi::c_uint,
-    maxSymbolValuePtr: *mut core::ffi::c_uint,
-    src: *const core::ffi::c_void,
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    src: *const c_void,
     srcSize: size_t,
 ) -> size_t {
-    let mut tmpCounters: [core::ffi::c_uint; 1024] = [0; 1024];
+    let mut tmpCounters: [c_uint; 1024] = [0; 1024];
     HIST_count_wksp(
         count,
         maxSymbolValuePtr,
         src,
         srcSize,
-        tmpCounters.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[core::ffi::c_uint; 1024]>(),
+        tmpCounters.as_mut_ptr() as *mut c_void,
+        ::core::mem::size_of::<[c_uint; 1024]>(),
     )
 }
