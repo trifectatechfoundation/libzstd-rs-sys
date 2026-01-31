@@ -27,7 +27,7 @@ use crate::lib::common::bitstream::BIT_CStream_t;
 
 pub type nodeElt = nodeElt_s;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct nodeElt_s {
     pub count: u32,
@@ -563,7 +563,7 @@ fn HUF_setMaxHeight(huffNode: &mut [nodeElt], lastNonNull: u32, targetNbBits: u3
     targetNbBits
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct rankPos {
     pub base: u16,
@@ -683,7 +683,7 @@ fn HUF_sort(
      * We attribute each symbol to lowerRank's base value, because we want to know where
      * each rank begins in the output, so for rank R we want to count ranks R+1 and above.
      */
-    rankPosition.fill(rankPos { base: 0, curr: 0 });
+    rankPosition.fill(rankPos::default());
     for &c in &count[..maxSymbolValue1 as usize] {
         let lowerRank = HUF_getIndex(c);
         debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
@@ -872,12 +872,7 @@ pub unsafe fn HUF_buildCTable_wksp(
     if maxNbBits == 0 {
         maxNbBits = HUF_TABLELOG_DEFAULT;
     }
-    huffNodeTbl.fill(nodeElt {
-        count: 0,
-        parent: 0,
-        byte: 0,
-        nbBits: 0,
-    });
+    huffNodeTbl.fill(nodeElt_s::default());
     /* sort, decreasing order */
     HUF_sort(
         &mut huffNodeTbl[1..],
