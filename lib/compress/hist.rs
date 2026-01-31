@@ -27,14 +27,11 @@ pub unsafe fn HIST_isError(code: size_t) -> c_uint {
 /// Lowest level: just add nb of occurrences of characters from `src` into `count`.
 /// `count` is not reset. `count` array is presumed large enough (i.e. 1 KB).
 /// This function does not need any additional stack memory.
-pub unsafe fn HIST_add(count: *mut c_uint, src: *const c_void, srcSize: size_t) {
-    let mut ip = src as *const u8;
-    let end = ip.add(srcSize);
-    while ip < end {
-        let fresh0 = ip;
-        ip = ip.add(1);
-        let fresh1 = &mut (*count.offset(*fresh0 as isize));
-        *fresh1 = (*fresh1).wrapping_add(1);
+pub unsafe fn HIST_add(count: &mut [c_uint], src: *const c_void, srcSize: size_t) {
+    let ip = core::slice::from_raw_parts(src as *const u8, srcSize);
+
+    for item in ip.iter() {
+        count[*item as usize] += 1;
     }
 }
 
@@ -59,7 +56,7 @@ pub unsafe fn HIST_count_simple(
         count as *mut u8,
         0,
         (maxSymbolValue.wrapping_add(1) as c_ulong)
-            .wrapping_mul(::core::mem::size_of::<c_uint>() as c_ulong) as libc::size_t,
+            .wrapping_mul(size_of::<c_uint>() as c_ulong) as libc::size_t,
     );
     if srcSize == 0 {
         *maxSymbolValuePtr = 0;
@@ -153,7 +150,7 @@ unsafe fn HIST_count_parallel_wksp(
     let mut ip = source as *const u8;
     let iend = ip.add(sourceSize);
     let countSize = ((*maxSymbolValuePtr).wrapping_add(1) as c_ulong)
-        .wrapping_mul(::core::mem::size_of::<c_uint>() as c_ulong);
+        .wrapping_mul(size_of::<c_uint>() as c_ulong);
     let mut max = 0;
 
     debug_assert!(workSpace.len() >= HIST_WKSP_SIZE_U32);
@@ -393,7 +390,7 @@ pub unsafe fn HIST_countFast(
         source,
         sourceSize,
         &mut tmpCounters,
-        ::core::mem::size_of::<[c_uint; 1024]>(),
+        size_of::<[c_uint; 1024]>(),
     )
 }
 
@@ -416,6 +413,6 @@ pub unsafe fn HIST_count(
         src,
         srcSize,
         &mut tmpCounters,
-        ::core::mem::size_of::<[c_uint; 1024]>(),
+        size_of::<[c_uint; 1024]>(),
     )
 }
