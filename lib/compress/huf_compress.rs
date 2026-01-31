@@ -1920,7 +1920,7 @@ unsafe fn HUF_compress_internal(
         &mut maxSymbolValue,
         src as *const u8 as *const c_void,
         srcSize,
-        ((*table).wksps.hist_wksp).as_mut_ptr() as *mut c_void,
+        &mut ((*table).wksps.hist_wksp),
         size_of::<[u32; 1024]>(),
     );
     if ERR_isError(largest) {
