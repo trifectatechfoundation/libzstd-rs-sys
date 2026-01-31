@@ -5,11 +5,18 @@ use libc::size_t;
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::mem::MEM_read32;
 
-pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+pub const HIST_WKSP_SIZE_U32: usize = 0;
 
-pub const HIST_WKSP_SIZE: size_t =
-    (HIST_WKSP_SIZE_U32 as size_t) * (size_of::<core::ffi::c_uint>());
+#[cfg(not(target_feature = "sve2"))]
+pub const HIST_WKSP_SIZE_U32: usize = 1024;
 
+pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32 * size_of::<core::ffi::c_uint>();
+
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 500;
+
+#[cfg(not(target_feature = "sve2"))]
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
 
 pub unsafe fn HIST_isError(code: size_t) -> core::ffi::c_uint {
@@ -76,6 +83,43 @@ pub unsafe fn HIST_count_simple(
 enum HIST_checkInput_e {
     checkMaxSymbolValue = 1,
     trustInput = 0,
+}
+
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+#[inline(always)]
+fn min_size(a: usize, b: usize) -> usize {
+    return if a < b { a } else { b };
+}
+
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+use core::arch::aarch64::{svuint16_t, svuint8_t};
+
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+unsafe fn HIST_count_6_sve2(
+    src: *const BYTE,
+    size: usize,
+    dst: *const U32,
+    c0: svuint8_t,
+    c1: svuint8_t,
+    c2: svuint8_t,
+    c3: svuint8_t,
+    c4: svuint8_t,
+    c5: svuint8_t,
+    histmax: svuint16_t,
+    maxCount: usize,
+) -> svuint16_t {
+    unimplemented!("SVE2 histogram counting not yet implemented");
+}
+
+#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+unsafe fn HIST_count_sve2(
+    count: *mut c_uint,
+    maxSymbolValuePtr: *mut c_uint,
+    source: *const c_void,
+    sourceSize: usize,
+    check: HIST_checkInput_e,
+) -> usize {
+    unimplemented!("SVE2 histogram counting not yet implemented");
 }
 
 unsafe fn HIST_count_parallel_wksp(
@@ -199,20 +243,37 @@ pub unsafe fn HIST_countFast_wksp(
     if sourceSize < HIST_FAST_THRESHOLD as size_t {
         return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
     }
-    if workSpace as size_t & 3 != 0 {
-        return Error::GENERIC.to_error_code();
+
+    #[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+    {
+        return HIST_count_sve2(
+            count,
+            maxSymbolValuePtr,
+            source,
+            sourceSize,
+            HIST_checkInput_e::trustInput,
+        );
     }
-    if workSpaceSize < HIST_WKSP_SIZE {
-        return Error::workSpace_tooSmall.to_error_code();
+
+    #[cfg(not(target_feature = "sve2"))]
+    {
+        if workSpace as size_t & 3 != 0 {
+            // must be aligned on 4-bytes boundaries
+            return Error::GENERIC.to_error_code();
+        }
+
+        if workSpaceSize < HIST_WKSP_SIZE {
+            return Error::workSpace_tooSmall.to_error_code();
+        }
+        HIST_count_parallel_wksp(
+            count,
+            maxSymbolValuePtr,
+            source,
+            sourceSize,
+            HIST_checkInput_e::trustInput,
+            workSpace as *mut u32,
+        )
     }
-    HIST_count_parallel_wksp(
-        count,
-        maxSymbolValuePtr,
-        source,
-        sourceSize,
-        HIST_checkInput_e::trustInput,
-        workSpace as *mut u32,
-    )
 }
 
 pub unsafe fn HIST_count_wksp(
@@ -223,22 +284,39 @@ pub unsafe fn HIST_count_wksp(
     workSpace: *mut core::ffi::c_void,
     workSpaceSize: size_t,
 ) -> size_t {
-    if workSpace as size_t & 3 != 0 {
-        return Error::GENERIC.to_error_code();
-    }
-    if workSpaceSize < HIST_WKSP_SIZE {
-        return Error::workSpace_tooSmall.to_error_code();
-    }
-    if *maxSymbolValuePtr < 255 {
-        return HIST_count_parallel_wksp(
+    #[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
+    if (*maxSymbolValuePtr < 255) {
+        return HIST_count_sve2(
             count,
             maxSymbolValuePtr,
             source,
             sourceSize,
-            HIST_checkInput_e::checkMaxSymbolValue,
-            workSpace as *mut u32,
+            checkMaxSymbolValue,
         );
     }
+
+    #[cfg(not(target_feature = "sve2"))]
+    {
+        if workSpace as size_t & 3 != 0 {
+            // must be aligned on 4-bytes boundaries
+            return Error::GENERIC.to_error_code();
+        }
+        if workSpaceSize < HIST_WKSP_SIZE {
+            return Error::workSpace_tooSmall.to_error_code();
+        }
+
+        if *maxSymbolValuePtr < 255 {
+            return HIST_count_parallel_wksp(
+                count,
+                maxSymbolValuePtr,
+                source,
+                sourceSize,
+                HIST_checkInput_e::checkMaxSymbolValue,
+                workSpace as *mut u32,
+            );
+        }
+    }
+
     *maxSymbolValuePtr = 255;
     HIST_countFast_wksp(
         count,
