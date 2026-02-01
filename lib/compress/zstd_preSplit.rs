@@ -14,7 +14,7 @@ pub const THRESHOLD_BASE: c_int = THRESHOLD_PENALTY_RATE - 2;
 pub const THRESHOLD_PENALTY: c_int = 3;
 
 pub const HASHLENGTH: c_int = 2;
-pub const HASHLOG_MAX: c_int = 10;
+pub const HASHLOG_MAX: c_uint = 10;
 pub const HASHTABLESIZE: c_int = (1) << HASHLOG_MAX;
 pub const KNUTH: c_uint = 0x9e3779b9;
 
@@ -23,9 +23,11 @@ pub const KNUTH: c_uint = 0x9e3779b9;
 /// The speed of this method relies on compile-time constant propagation
 #[inline(always)]
 unsafe fn hash2(p: *const c_void, hashLog: c_uint) -> c_uint {
+    debug_assert!(hashLog >= 8);
     if hashLog == 8 {
         return *(p as *const u8) as u32;
     }
+    debug_assert!(hashLog <= HASHLOG_MAX);
     (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as c_uint).wrapping_sub(hashLog)
 }
 
@@ -56,7 +58,8 @@ unsafe fn addEvents_generic(
     let p = src as *const c_char;
     let limit = srcSize.wrapping_sub(HASHLENGTH as size_t).wrapping_add(1);
     let mut n: size_t = 0;
-    n = 0;
+
+    debug_assert!(srcSize >= HASHLENGTH as usize);
     while n < limit {
         let fresh0 = &mut (*((*fp).events)
             .as_mut_ptr()
@@ -105,7 +108,8 @@ fn abs64(s64: i64) -> u64 {
 unsafe fn fpDistance(fp1: *const Fingerprint, fp2: *const Fingerprint, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
     let mut n: size_t = 0;
-    n = 0;
+
+    debug_assert!(hashLog <= HASHLOG_MAX);
     while n < (1) << hashLog {
         distance = distance.wrapping_add(abs64(
             *((*fp1).events).as_ptr().add(n) as i64 * (*fp2).nbEvents as i64
@@ -125,6 +129,9 @@ unsafe fn compareFingerprints(
     penalty: c_int,
     hashLog: c_uint,
 ) -> c_int {
+    debug_assert!((*ref_0).nbEvents > 0);
+    debug_assert!((*newfp).nbEvents > 0);
+
     let p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
     let deviation = fpDistance(ref_0, newfp, hashLog);
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
@@ -158,17 +165,18 @@ unsafe fn ZSTD_splitBlock_byChunks(
         Some(ZSTD_recordFingerprint_1 as unsafe fn(*mut Fingerprint, *const c_void, size_t) -> ()),
     ];
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
+    debug_assert!((0..=3).contains(&level));
     let record_f: RecordEvents_f = *records_fs.as_ptr().offset(level as isize);
     let fpstats = workspace as *mut FPStats;
     let p = blockStart as *const c_char;
     let mut penalty = THRESHOLD_PENALTY;
     let mut pos = 0;
 
-    assert_eq!(blockSize, (128 << 10));
-    assert!(!workspace.is_null());
-    assert!(workspace.cast::<FPStats>().is_aligned());
-    const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
-    assert!(wkspSize >= size_of::<FPStats>());
+    debug_assert_eq!(blockSize, (128 << 10));
+    debug_assert!(!workspace.is_null());
+    debug_assert!(workspace.cast::<FPStats>().is_aligned());
+    const { debug_assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
+    debug_assert!(wkspSize >= size_of::<FPStats>());
 
     initStats(fpstats);
     record_f.unwrap_unchecked()(
@@ -199,6 +207,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
         }
         pos = pos.wrapping_add(CHUNKSIZE as size_t);
     }
+    debug_assert!(pos == blockSize);
     blockSize
 }
 
@@ -226,11 +235,11 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         .offset((512 as c_ulong).wrapping_mul(size_of::<c_uint>() as c_ulong) as isize)
         as *mut c_void as *mut Fingerprint;
 
-    assert_eq!(blockSize, (128 << 10));
-    assert!(!workspace.is_null());
-    assert!(workspace.cast::<FPStats>().is_aligned());
+    debug_assert_eq!(blockSize, (128 << 10));
+    debug_assert!(!workspace.is_null());
+    debug_assert!(workspace.cast::<FPStats>().is_aligned());
     const { assert!(ZSTD_SLIPBLOCK_WORKSPACESIZE >= size_of::<FPStats>()) }
-    assert!(wkspSize >= size_of::<FPStats>());
+    debug_assert!(wkspSize >= size_of::<FPStats>());
 
     initStats(fpstats);
     HIST_add(
@@ -293,6 +302,7 @@ pub unsafe fn ZSTD_splitBlock(
     workspace: *mut c_void,
     wkspSize: size_t,
 ) -> size_t {
+    debug_assert!((0..=4).contains(&level));
     if level == 0 {
         return ZSTD_splitBlock_fromBorders(blockStart, blockSize, workspace, wkspSize);
     }
