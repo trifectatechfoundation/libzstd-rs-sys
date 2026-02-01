@@ -17,6 +17,9 @@ pub const HASHLOG_MAX: core::ffi::c_int = 10;
 pub const HASHTABLESIZE: core::ffi::c_int = (1) << HASHLOG_MAX;
 pub const KNUTH: core::ffi::c_uint = 0x9e3779b9;
 
+/// for `hashLog` > 8, hash 2 bytes.
+/// for `hashLog` == 8, just take the byte, no hashing.
+/// The speed of this method relies on compile-time constant propagation
 #[inline(always)]
 unsafe fn hash2(p: *const core::ffi::c_void, hashLog: core::ffi::c_uint) -> core::ffi::c_uint {
     if hashLog == 8 {
@@ -137,6 +140,9 @@ unsafe fn fpDistance(
     distance
 }
 
+/// Compares new events with past events.
+///
+/// Returns `1` when the fingerprints are considered "too different", `0` otherwise.
 unsafe fn compareFingerprints(
     ref_0: *const Fingerprint,
     newfp: *const Fingerprint,
@@ -232,6 +238,17 @@ unsafe fn ZSTD_splitBlock_byChunks(
     blockSize
 }
 
+/// Very fast block splitting strategy.
+///
+/// Compares fingerprints from the beginning and end of the block, and derives from their
+/// difference whether it's preferable to split in the middle. The process is repeated a
+/// second time for finer-grained decisions.
+///
+/// Testing showed that 3 iterations did not bring improvements, so stopped at 2.
+/// Benefits are good enough for a cheap heuristic. More accurate splitting saves more,
+/// but speed impact is also more perceptible.
+///
+/// For better accuracy, use the more elaborate `*_byChunks` variant.
 unsafe fn ZSTD_splitBlock_fromBorders(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
@@ -292,6 +309,21 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     }) as size_t
 }
 
+/// Splits a block to find the optimal boundary for compression.
+///
+/// # Parameters
+///
+/// * `blockStart` - Pointer to the start of the block
+/// * `blockSize` - Size of the block (must be 128 KB)
+/// * `level` - Detection level (0-4). Higher levels spend more energy to detect block boundaries.
+/// * `workspace` - Workspace buffer (must be aligned for `size_t`)
+/// * `wkspSize` - Workspace size (must be at least `ZSTD_SLIPBLOCK_WORKSPACESIZE`)
+///
+/// # Note
+///
+/// For the time being, this function only accepts full 128 KB blocks.
+/// While this could be extended to smaller sizes in the future,
+/// it is not yet clear if this would be useful. TBD.
 pub unsafe fn ZSTD_splitBlock(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
@@ -302,5 +334,7 @@ pub unsafe fn ZSTD_splitBlock(
     if level == 0 {
         return ZSTD_splitBlock_fromBorders(blockStart, blockSize, workspace, wkspSize);
     }
+
+    // level >= 1
     ZSTD_splitBlock_byChunks(blockStart, blockSize, level - 1, workspace, wkspSize)
 }
