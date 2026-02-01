@@ -61,12 +61,10 @@ unsafe fn addEvents_generic(
 
     debug_assert!(srcSize >= HASHLENGTH as usize);
     while n < limit {
-        let fresh0 = &mut (*((*fp).events)
-            .as_mut_ptr()
-            .offset(hash2(p.add(n) as *const c_void, hashLog) as isize));
-        *fresh0 = (*fresh0).wrapping_add(1);
+        (*fp).events[hash2(p.add(n) as *const c_void, hashLog) as usize] += 1;
         n = n.wrapping_add(samplingRate);
     }
+
     (*fp).nbEvents = ((*fp).nbEvents).wrapping_add(limit / samplingRate);
 }
 
@@ -107,15 +105,14 @@ fn abs64(s64: i64) -> u64 {
 
 unsafe fn fpDistance(fp1: *const Fingerprint, fp2: *const Fingerprint, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
-    let mut n: size_t = 0;
 
     debug_assert!(hashLog <= HASHLOG_MAX);
-    while n < (1) << hashLog {
+
+    for n in 0..((1) << hashLog) {
         distance = distance.wrapping_add(abs64(
-            *((*fp1).events).as_ptr().add(n) as i64 * (*fp2).nbEvents as i64
-                - *((*fp2).events).as_ptr().add(n) as i64 * (*fp1).nbEvents as i64,
+            ((*fp1).events)[n as usize] as i64 * (*fp2).nbEvents as i64
+                - ((*fp2).events)[n as usize] as i64 * (*fp1).nbEvents as i64,
         ));
-        n = n.wrapping_add(1);
     }
     distance
 }
@@ -139,12 +136,8 @@ unsafe fn compareFingerprints(
 }
 
 unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
-    let mut n: size_t = 0;
-    n = 0;
-    while n < HASHTABLESIZE as size_t {
-        let fresh1 = &mut (*((*acc).events).as_mut_ptr().add(n));
-        *fresh1 = (*fresh1).wrapping_add(*((*newfp).events).as_ptr().add(n));
-        n = n.wrapping_add(1);
+    for n in 0..HASHTABLESIZE as usize {
+        (*acc).events[n] += (*newfp).events[n];
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
 }
