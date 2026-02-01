@@ -5,25 +5,18 @@ use libc::size_t;
 use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
 
-#[repr(C)]
-pub struct Fingerprint {
-    pub events: [core::ffi::c_uint; 1024],
-    pub nbEvents: size_t,
-}
-#[repr(C)]
-pub struct FPStats {
-    pub pastEvents: Fingerprint,
-    pub newEvents: Fingerprint,
-}
-pub type RecordEvents_f =
-    Option<unsafe fn(*mut Fingerprint, *const core::ffi::c_void, size_t) -> ()>;
+const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
+
+pub const BLOCKSIZE_MIN: core::ffi::c_int = 3500;
 pub const THRESHOLD_PENALTY_RATE: core::ffi::c_int = 16;
 pub const THRESHOLD_BASE: core::ffi::c_int = THRESHOLD_PENALTY_RATE - 2;
 pub const THRESHOLD_PENALTY: core::ffi::c_int = 3;
+
 pub const HASHLENGTH: core::ffi::c_int = 2;
 pub const HASHLOG_MAX: core::ffi::c_int = 10;
 pub const HASHTABLESIZE: core::ffi::c_int = (1) << HASHLOG_MAX;
 pub const KNUTH: core::ffi::c_uint = 0x9e3779b9;
+
 #[inline(always)]
 unsafe fn hash2(p: *const core::ffi::c_void, hashLog: core::ffi::c_uint) -> core::ffi::c_uint {
     if hashLog == 8 {
@@ -31,9 +24,23 @@ unsafe fn hash2(p: *const core::ffi::c_void, hashLog: core::ffi::c_uint) -> core
     }
     (MEM_read16(p) as u32).wrapping_mul(KNUTH) >> (32 as core::ffi::c_uint).wrapping_sub(hashLog)
 }
+
+#[repr(C)]
+pub struct Fingerprint {
+    pub events: [core::ffi::c_uint; 1024],
+    pub nbEvents: size_t,
+}
+
+#[repr(C)]
+pub struct FPStats {
+    pub pastEvents: Fingerprint,
+    pub newEvents: Fingerprint,
+}
+
 unsafe fn initStats(fpstats: *mut FPStats) {
     ptr::write_bytes(fpstats as *mut u8, 0, ::core::mem::size_of::<FPStats>());
 }
+
 #[inline(always)]
 unsafe fn addEvents_generic(
     fp: *mut Fingerprint,
@@ -55,6 +62,7 @@ unsafe fn addEvents_generic(
     }
     (*fp).nbEvents = ((*fp).nbEvents).wrapping_add(limit / samplingRate);
 }
+
 #[inline(always)]
 unsafe fn recordFingerprint_generic(
     fp: *mut Fingerprint,
@@ -71,6 +79,10 @@ unsafe fn recordFingerprint_generic(
     (*fp).nbEvents = 0;
     addEvents_generic(fp, src, srcSize, samplingRate, hashLog);
 }
+
+pub type RecordEvents_f =
+    Option<unsafe fn(*mut Fingerprint, *const core::ffi::c_void, size_t) -> ()>;
+
 unsafe fn ZSTD_recordFingerprint_1(
     fp: *mut Fingerprint,
     src: *const core::ffi::c_void,
@@ -78,6 +90,7 @@ unsafe fn ZSTD_recordFingerprint_1(
 ) {
     recordFingerprint_generic(fp, src, srcSize, 1, 10);
 }
+
 unsafe fn ZSTD_recordFingerprint_5(
     fp: *mut Fingerprint,
     src: *const core::ffi::c_void,
@@ -85,6 +98,7 @@ unsafe fn ZSTD_recordFingerprint_5(
 ) {
     recordFingerprint_generic(fp, src, srcSize, 5, 10);
 }
+
 unsafe fn ZSTD_recordFingerprint_11(
     fp: *mut Fingerprint,
     src: *const core::ffi::c_void,
@@ -92,6 +106,7 @@ unsafe fn ZSTD_recordFingerprint_11(
 ) {
     recordFingerprint_generic(fp, src, srcSize, 11, 9);
 }
+
 unsafe fn ZSTD_recordFingerprint_43(
     fp: *mut Fingerprint,
     src: *const core::ffi::c_void,
@@ -99,9 +114,11 @@ unsafe fn ZSTD_recordFingerprint_43(
 ) {
     recordFingerprint_generic(fp, src, srcSize, 43, 8);
 }
-unsafe fn abs64(s64: i64) -> u64 {
+
+fn abs64(s64: i64) -> u64 {
     (if s64 < 0 { -s64 } else { s64 }) as u64
 }
+
 unsafe fn fpDistance(
     fp1: *const Fingerprint,
     fp2: *const Fingerprint,
@@ -119,6 +136,7 @@ unsafe fn fpDistance(
     }
     distance
 }
+
 unsafe fn compareFingerprints(
     ref_0: *const Fingerprint,
     newfp: *const Fingerprint,
@@ -130,6 +148,7 @@ unsafe fn compareFingerprints(
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
     (deviation >= threshold) as core::ffi::c_int
 }
+
 unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
     let mut n: size_t = 0;
     n = 0;
@@ -140,8 +159,9 @@ unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
     }
     (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
 }
+
 pub const CHUNKSIZE: core::ffi::c_int = (8) << 10;
-const ZSTD_SLIPBLOCK_WORKSPACESIZE: usize = 8208;
+
 unsafe fn ZSTD_splitBlock_byChunks(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
@@ -211,12 +231,15 @@ unsafe fn ZSTD_splitBlock_byChunks(
     }
     blockSize
 }
+
 unsafe fn ZSTD_splitBlock_fromBorders(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
+    const SEGMENT_SIZE: core::ffi::c_int = 512;
+
     let fpstats = workspace as *mut FPStats;
     let middleEvents = (workspace as *mut core::ffi::c_char).offset(
         (512 as core::ffi::c_ulong)
@@ -268,7 +291,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         96 * ((1) << 10)
     }) as size_t
 }
-pub const SEGMENT_SIZE: core::ffi::c_int = 512;
+
 pub unsafe fn ZSTD_splitBlock(
     blockStart: *const core::ffi::c_void,
     blockSize: size_t,
