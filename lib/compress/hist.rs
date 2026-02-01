@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_uint, c_ulong, c_void};
+use core::ffi::{c_uint, c_ulong, c_void};
 use core::ptr;
 
 use libc::size_t;
@@ -14,11 +14,13 @@ pub const HIST_WKSP_SIZE_U32: usize = 1024;
 
 pub const HIST_WKSP_SIZE: usize = HIST_WKSP_SIZE_U32 * size_of::<c_uint>();
 
-#[cfg(all(target_arch = "aarch64", target_feature = "sve2"))]
-pub const HIST_FAST_THRESHOLD: c_int = 500;
-
-#[cfg(not(target_feature = "sve2"))]
-pub const HIST_FAST_THRESHOLD: c_int = 1500;
+pub const HIST_FAST_THRESHOLD: core::ffi::c_int = {
+    if cfg!(all(target_arch = "aarch64", target_feature = "sve2")) {
+        500
+    } else {
+        1500
+    }
+};
 
 pub unsafe fn HIST_isError(code: size_t) -> c_uint {
     ERR_isError(code) as _
@@ -166,9 +168,10 @@ unsafe fn HIST_count_parallel_wksp(
     workSpace[..1024].fill(0);
 
     // Split workspace into 4 counting tables of 256 u32 each
-    let (Counting1, remainder) = workSpace.split_at_mut(256);
-    let (Counting2, remainder) = remainder.split_at_mut(256);
-    let (Counting3, Counting4) = remainder.split_at_mut(256);
+    let ([Counting1, Counting2, Counting3, Counting4], &mut []) = workSpace.as_chunks_mut::<256>()
+    else {
+        unreachable!();
+    };
 
     /* by stripes of 16 bytes */
     {
@@ -178,31 +181,38 @@ unsafe fn HIST_count_parallel_wksp(
             let mut c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            Counting1[c as u8 as usize] += 1;
-            Counting2[(c >> 8) as u8 as usize] += 1;
-            Counting3[(c >> 16) as u8 as usize] += 1;
-            Counting4[(c >> 24) as usize] += 1;
+            let indices: [u8; 4] = c.to_le_bytes();
+            Counting1[indices[0] as usize] += 1;
+            Counting2[indices[1] as usize] += 1;
+            Counting3[indices[2] as usize] += 1;
+            Counting4[indices[3] as usize] += 1;
+
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            Counting1[c as u8 as usize] += 1;
-            Counting2[(c >> 8) as u8 as usize] += 1;
-            Counting3[(c >> 16) as u8 as usize] += 1;
-            Counting4[(c >> 24) as usize] += 1;
+            let indices: [u8; 4] = c.to_le_bytes();
+            Counting1[indices[0] as usize] += 1;
+            Counting2[indices[1] as usize] += 1;
+            Counting3[indices[2] as usize] += 1;
+            Counting4[indices[3] as usize] += 1;
+
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            Counting1[c as u8 as usize] += 1;
-            Counting2[(c >> 8) as u8 as usize] += 1;
-            Counting3[(c >> 16) as u8 as usize] += 1;
-            Counting4[(c >> 24) as usize] += 1;
+            let indices: [u8; 4] = c.to_le_bytes();
+            Counting1[indices[0] as usize] += 1;
+            Counting2[indices[1] as usize] += 1;
+            Counting3[indices[2] as usize] += 1;
+            Counting4[indices[3] as usize] += 1;
+
             c = cached;
             cached = MEM_read32(ip as *const c_void);
             ip = ip.add(4);
-            Counting1[c as u8 as usize] += 1;
-            Counting2[(c >> 8) as u8 as usize] += 1;
-            Counting3[(c >> 16) as u8 as usize] += 1;
-            Counting4[(c >> 24) as usize] += 1;
+            let indices: [u8; 4] = c.to_le_bytes();
+            Counting1[indices[0] as usize] += 1;
+            Counting2[indices[1] as usize] += 1;
+            Counting3[indices[2] as usize] += 1;
+            Counting4[indices[3] as usize] += 1;
         }
         ip = ip.sub(4);
     }

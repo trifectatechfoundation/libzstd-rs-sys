@@ -642,7 +642,7 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
         || (*hufMetadata).hType as core::ffi::c_uint
             == set_repeat as core::ffi::c_int as core::ffi::c_uint
     {
-        //SAFETY: workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+        //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
         let workspace_slice: &mut [u32] =
             core::slice::from_raw_parts_mut(workspace as *mut u32, wkspSize / size_of::<u32>());
 
@@ -686,7 +686,7 @@ unsafe fn ZSTD_estimateSubBlockSize_symbolType(
     let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
 
-    //SAFETY: workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
     let workspace_slice: &mut [u32] =
         core::slice::from_raw_parts_mut(workspace as *mut u32, wkspSize / size_of::<u32>());
 
