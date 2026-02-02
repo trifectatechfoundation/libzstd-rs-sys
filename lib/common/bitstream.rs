@@ -332,7 +332,7 @@ impl<'a> BIT_DStream_t<'a> {
     /// the internal register is filled with at least 25 or 57 bits.
     #[inline(always)]
     pub(crate) fn reload(&mut self) -> StreamStatus {
-        if self.bitsConsumed > BitContainerType::BITS {
+        if unlikely(self.bitsConsumed > BitContainerType::BITS) {
             static zeroFilled: BitContainerType = 0;
             self.ptr = &zeroFilled as *const BitContainerType as *const core::ffi::c_char;
 
