@@ -1362,7 +1362,7 @@ unsafe fn ZSTD_execSequence(
     // We likely don't need the full 32-byte wildcopy.
     const _: () = assert!(WILDCOPY_OVERLENGTH >= 16);
     ZSTD_copy16(op, *litPtr);
-    if sequence.litLength > 16 {
+    if unlikely(sequence.litLength > 16) {
         ZSTD_wildcopy(
             op.add(16),
             (*litPtr).add(16),
@@ -1376,7 +1376,7 @@ unsafe fn ZSTD_execSequence(
     // Copy match.
     if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
         // offset beyond prefix -> go into extDict.
-        if sequence.offset > (oLitEnd.addr() - virtualStart.addr()) {
+        if unlikely(sequence.offset > (oLitEnd.addr() - virtualStart.addr())) {
             return Err(Error::corruption_detected);
         }
         match_0 = dictEnd.offset(match_0.addr() as isize - prefixStart.addr() as isize);
@@ -1482,7 +1482,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     // We likely don't need the full 32-byte wildcopy.
     const _: () = assert!(WILDCOPY_OVERLENGTH >= 16);
     ZSTD_copy16(op.as_mut_ptr(), *litPtr);
-    if sequence.litLength > 16 {
+    if unlikely(sequence.litLength > 16) {
         ZSTD_wildcopy(
             op.as_mut_ptr().add(16),
             (*litPtr).add(16),
@@ -1494,7 +1494,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     *litPtr = iLitEnd; // Update for the next sequence.
 
     // Copy Match
-    if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
+    if unlikely(sequence.offset > oLitEnd.offset_from_unsigned(prefixStart)) {
         if sequence.offset > oLitEnd.offset_from_unsigned(virtualStart) {
             return Err(Error::corruption_detected);
         }
@@ -1600,9 +1600,7 @@ fn ZSTD_decodeSequence(
     let mlBits = mlDInfo.nbAdditionalBits;
     let ofBits = ofDInfo.nbAdditionalBits;
 
-    let totalBits = (llBits as core::ffi::c_int
-        + mlBits as core::ffi::c_int
-        + ofBits as core::ffi::c_int) as u8;
+    let totalBits = llBits + mlBits + ofBits;
 
     let llNext = llDInfo.nextState;
     let mlNext = mlDInfo.nextState;
@@ -1690,7 +1688,7 @@ fn ZSTD_decodeSequence(
     {
         seqState.DStream.reload();
     }
-    if cfg!(target_pointer_width = "64") && (totalBits >= 57 - (9 + 9 + 8)) {
+    if cfg!(target_pointer_width = "64") && unlikely(totalBits >= 57 - (9 + 9 + 8)) {
         seqState.DStream.reload();
     }
 
