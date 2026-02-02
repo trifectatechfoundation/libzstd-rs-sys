@@ -21,7 +21,6 @@ macro_rules! cfg_select {
 
 #[expect(dead_code)]
 pub enum Locality {
-    None = 0,
     L3 = 1,
     L2 = 2,
     L1 = 3,
@@ -34,7 +33,6 @@ pub fn prefetch_read_data<T>(data: *const T, locality: Locality) {
     // and do not produce a value. Hence it is safe to provide an arbitrary pointer.
     unsafe {
         match locality {
-            Locality::None => prefetch_read_data_internal::<_, 0>(data),
             Locality::L3 => prefetch_read_data_internal::<_, 1>(data),
             Locality::L2 => prefetch_read_data_internal::<_, 2>(data),
             Locality::L1 => prefetch_read_data_internal::<_, 3>(data),
@@ -46,6 +44,13 @@ unsafe fn prefetch_read_data_internal<T, const LOCALITY: i32>(ptr: *const T) {
     cfg_select! {
         feature = "no-prefetch" => {
             let _ = ptr;
+        }
+        feature = "nightly" => {
+            core::hint::prefetch_read(ptr, match locality {
+                1 => Locality::L3,
+                2 => Locality::L2,
+                3 => Locality::L1,
+            })
         }
         target_arch = "x86_64" => {
             use core::arch::x86_64;
