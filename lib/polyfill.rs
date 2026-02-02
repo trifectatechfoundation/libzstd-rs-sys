@@ -46,10 +46,15 @@ unsafe fn prefetch_read_data_internal<T, const LOCALITY: i32>(ptr: *const T) {
             let _ = ptr;
         }
         feature = "nightly" => {
-            core::hint::prefetch_read(ptr, match locality {
-                1 => Locality::L3,
-                2 => Locality::L2,
-                3 => Locality::L1,
+            use core::hint::Locality;
+
+            core::hint::prefetch_read(ptr, const {
+                match LOCALITY {
+                    1 => Locality::L3,
+                    2 => Locality::L2,
+                    3 => Locality::L1,
+                    _ => panic!(),
+                }
             })
         }
         target_arch = "x86_64" => {
