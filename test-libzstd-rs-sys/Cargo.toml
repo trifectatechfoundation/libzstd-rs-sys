@@ -21,3 +21,4 @@ zstd-sys = { version = "2.0.15", features = ["experimental"] }
 unsafe-performance-experimental = [
     "libzstd-rs-sys/unsafe-performance-experimental",
 ]
+nightly = ["libzstd-rs-sys/nightly"]
