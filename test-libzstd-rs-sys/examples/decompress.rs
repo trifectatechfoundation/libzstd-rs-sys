@@ -15,16 +15,27 @@ fn main() {
         Some(path) => std::fs::read(path).unwrap().into(),
     };
 
+    const N: usize = 20;
+
     match variant.as_str() {
         "c" => {
-            for _ in 0..20 {
+            for _ in 0..N {
                 let err = c(&input);
                 assert_eq!(err, 0);
             }
         }
         "rs" => {
-            for _ in 0..20 {
+            for _ in 0..N {
                 let err = rs(&input);
+                assert_eq!(err, 0);
+            }
+        }
+        "both" => {
+            for _ in 0..N {
+                let err = rs(&input);
+                assert_eq!(err, 0);
+
+                let err = c(&input);
                 assert_eq!(err, 0);
             }
         }
