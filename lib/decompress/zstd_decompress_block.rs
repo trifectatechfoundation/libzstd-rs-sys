@@ -1612,8 +1612,11 @@ fn ZSTD_decodeSequence(
     let mlnbBits = mlDInfo.nbBits as u32;
     let ofnbBits = ofDInfo.nbBits as u32;
 
-    assert!(llBits <= MaxLLBits);
-    assert!(mlBits <= MaxMLBits);
+    debug_assert!(llBits <= MaxLLBits);
+    debug_assert!(mlBits <= MaxMLBits);
+
+    // NOTE: experimentally this assert provides valuable information for downstream optimizations.
+    // it is deliberately not a debug_assert!.
     assert!(ofBits as u32 <= MaxOff);
 
     let mut offset: size_t = 0;
@@ -1625,7 +1628,7 @@ fn ZSTD_decodeSequence(
 
         if MEM_32bits()
             && longOffsets != Offset::Regular
-            && ofBits as core::ffi::c_int >= STREAM_ACCUMULATOR_MIN_32
+            && i32::from(ofBits) >= STREAM_ACCUMULATOR_MIN_32
         {
             // Always read extra bits, this keeps the logic simple,
             // avoids branches, and avoids accidentally reading 0 bits.
@@ -1633,16 +1636,14 @@ fn ZSTD_decodeSequence(
             offset = (ofBase as size_t).wrapping_add(
                 (seqState
                     .DStream
-                    .read_bits_fast((ofBits as u32).wrapping_sub(extraBits))
-                    as size_t)
+                    .read_bits_fast(u32::from(ofBits) - extraBits) as size_t)
                     << extraBits,
             );
             seqState.DStream.reload();
             offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as size_t);
         } else {
-            offset = (ofBase as size_t).wrapping_add(
-                seqState.DStream.read_bits_fast(ofBits as core::ffi::c_uint) as size_t,
-            );
+            offset = (ofBase as size_t)
+                .wrapping_add(seqState.DStream.read_bits_fast(u32::from(ofBits)) as size_t);
             if MEM_32bits() {
                 seqState.DStream.reload();
             }
