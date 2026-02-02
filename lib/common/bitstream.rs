@@ -4,6 +4,7 @@ use libc::size_t;
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::MEM_writeLEST;
+use crate::lib::polyfill::unlikely;
 
 pub(crate) type BitContainerType = usize;
 
@@ -120,6 +121,7 @@ pub(crate) struct BIT_DStream_t<'a> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
 pub(crate) enum StreamStatus {
     /// Fully refilled.
     Unfinished = 0,

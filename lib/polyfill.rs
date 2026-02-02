@@ -101,12 +101,27 @@ impl<T> PointerExt for *mut T {
 
 cfg_select! {
     feature = "nightly" => {
-        pub use core::hint::{likely, unlikely};
+        pub use core::hint::{likely, unlikely, cold_path};
     }
     _ => {
         #[inline(always)]
-        pub fn likely(b: bool) -> bool { b }
+        pub fn likely(b: bool) -> bool {
+            if !b {
+                cold_path()
+            }
+
+            b
+        }
         #[inline(always)]
-        pub fn unlikely(b: bool) -> bool { b }
+        pub fn unlikely(b: bool) -> bool {
+            if b {
+                cold_path();
+            }
+
+            b
+        }
+
+        #[cold]
+        pub fn cold_path() {}
     }
 }
