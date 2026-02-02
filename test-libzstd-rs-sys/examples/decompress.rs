@@ -20,23 +20,18 @@ fn main() {
     match variant.as_str() {
         "c" => {
             for _ in 0..N {
-                let err = c(&input);
-                assert_eq!(err, 0);
+                c(&input);
             }
         }
         "rs" => {
             for _ in 0..N {
-                let err = rs(&input);
-                assert_eq!(err, 0);
+                rs(&input);
             }
         }
         "both" => {
             for _ in 0..N {
-                let err = rs(&input);
-                assert_eq!(err, 0);
-
-                let err = c(&input);
-                assert_eq!(err, 0);
+                rs(&input);
+                c(&input);
             }
         }
         "rs-chunked" => {
@@ -44,8 +39,7 @@ fn main() {
             let dict = it.next().map(|path| std::fs::read(path).unwrap());
 
             for _ in 0..N {
-                let err = rs_chunked(&input, chunk_size, dict.as_deref());
-                assert_eq!(err, 0);
+                rs_chunked(&input, chunk_size, dict.as_deref());
             }
         }
         "c-chunked" => {
@@ -53,26 +47,22 @@ fn main() {
             let dict = it.next().map(|path| std::fs::read(path).unwrap());
 
             for _ in 0..N {
-                let err = c_chunked(&input, chunk_size, dict.as_deref());
-                assert_eq!(err, 0);
+                c_chunked(&input, chunk_size, dict.as_deref());
             }
         }
         "both-chunked" => {
             let chunk_size = it.next().unwrap().parse().unwrap();
             let dict = it.next().map(|path| std::fs::read(path).unwrap());
             for _ in 0..N {
-                let err = rs_chunked(&input, chunk_size, dict.as_deref());
-                assert_eq!(err, 0);
-
-                let err = c_chunked(&input, chunk_size, dict.as_deref());
-                assert_eq!(err, 0);
+                rs_chunked(&input, chunk_size, dict.as_deref());
+                c_chunked(&input, chunk_size, dict.as_deref());
             }
         }
         bad => panic!("invalid command {bad}"),
     }
 }
 
-fn rs(compressed: &[u8]) -> i32 {
+fn rs(compressed: &[u8]) {
     use libzstd_rs_sys::lib::{
         common::zstd_common::{ZSTD_getErrorName, ZSTD_isError},
         decompress::zstd_decompress::{ZSTD_decompress, ZSTD_getFrameContentSize},
@@ -111,11 +101,9 @@ fn rs(compressed: &[u8]) -> i32 {
         };
         panic!("Decompression failed: {}", err_msg);
     }
-
-    0
 }
 
-fn rs_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) -> i32 {
+fn rs_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) {
     use libzstd_rs_sys::{
         lib::{
             common::zstd_common::{ZSTD_getErrorName, ZSTD_isError},
@@ -183,11 +171,9 @@ fn rs_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) -> i32 
             panic!("Not all input data consumed");
         }
     }
-
-    0
 }
 
-fn c(compressed: &[u8]) -> i32 {
+fn c(compressed: &[u8]) {
     use zstd_sys::*;
 
     let compressed_ptr = compressed.as_ptr() as *const c_void;
@@ -222,11 +208,9 @@ fn c(compressed: &[u8]) -> i32 {
         };
         panic!("Decompression failed: {}", err_msg);
     }
-
-    0
 }
 
-fn c_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) -> i32 {
+fn c_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) {
     use zstd_sys::*;
 
     // Allocate and initialize a decompression context
@@ -287,6 +271,4 @@ fn c_chunked(compressed: &[u8], chunk_size: usize, dict: Option<&[u8]>) -> i32 {
             panic!("Not all input data consumed");
         }
     }
-
-    0
 }
