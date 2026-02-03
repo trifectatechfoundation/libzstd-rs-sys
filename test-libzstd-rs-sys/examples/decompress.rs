@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 use core::ffi::c_void;
 use std::borrow::Cow;
 

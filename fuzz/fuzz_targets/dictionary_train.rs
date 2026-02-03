@@ -1,4 +1,5 @@
 #![no_main]
+#![allow(deprecated)]
 
 use c2rust_out_fuzz::{assert_eq_rs_c, ArbitrarySamples};
 use libfuzzer_sys::fuzz_target;

@@ -837,6 +837,9 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
 }
 
 /// No longer useful.
+#[deprecated(
+    note = "This function will likely be removed in the next minor release. It is misleading and has very limited utility."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_copyDCtx))]
 pub unsafe extern "C" fn ZSTD_copyDCtx(dstDCtx: *mut ZSTD_DCtx, srcDCtx: *const ZSTD_DCtx) {
     core::ptr::copy_nonoverlapping(
@@ -1393,6 +1396,7 @@ fn find_decompressed_size(mut src: &[u8]) -> u64 {
 ///   - the decompressed size field is not present in frame header
 ///   - the frame header is unknown or not supported
 ///   - or the frame header is not complete (`srcSize` is too small)
+#[deprecated(note = "Replaced by [`ZSTD_getFrameContentSize`]")]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getDecompressedSize))]
 pub unsafe extern "C" fn ZSTD_getDecompressedSize(
     src: *const core::ffi::c_void,
@@ -1666,6 +1670,9 @@ fn decompression_margin(mut src: &[u8]) -> Result<size_t, Error> {
 }
 
 /// Insert `src` block into `dctx` history. Useful to track uncompressed blocks.
+#[deprecated(
+    note = "The block API is deprecated in favor of the normal compression API. See docs."
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_insertBlock))]
 pub unsafe extern "C" fn ZSTD_insertBlock(
     dctx: *mut ZSTD_DCtx,
@@ -2816,6 +2823,9 @@ pub unsafe extern "C" fn ZSTD_DCtx_refPrefix(
 ///
 /// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
+#[deprecated(
+    note = "use [`ZSTD_DCtx_reset`] + [`ZSTD_DCtx_loadDictionary`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDict(
     zds: *mut ZSTD_DStream,
@@ -2857,6 +2867,9 @@ pub unsafe extern "C" fn ZSTD_initDStream(zds: *mut ZSTD_DStream) -> size_t {
 /// decompression context and then using [`ZSTD_DCtx_refDDict`] to reference the dictionary.
 ///
 /// Note: `DDict` will just be referenced, and must outlive decompression session
+#[deprecated(
+    note = "use [`ZSTD_DCtx_reset`] + [`ZSTD_DCtx_refDDict`], see zstd.h for detailed instructions"
+)]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_initDStream_usingDDict))]
 pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
     dctx: *mut ZSTD_DStream,
@@ -2880,6 +2893,7 @@ pub unsafe extern "C" fn ZSTD_initDStream_usingDDict(
 ///
 /// - the expected size, aka [`Format::starting_input_length`]
 /// - an error code, which can be tested with [`ZSTD_isError`]
+#[deprecated(note = "use [`ZSTD_DCtx_reset`], see zstd.h for detailed instructions")]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_resetDStream))]
 pub unsafe extern "C" fn ZSTD_resetDStream(dctx: *mut ZSTD_DStream) -> size_t {
     let err_code = ZSTD_DCtx_reset(dctx, ZSTD_ResetDirective::ZSTD_reset_session_only);
@@ -2993,6 +3007,7 @@ pub unsafe extern "C" fn ZSTD_DCtx_setMaxWindowSize(
 ///
 /// - 0 if format was set successfully
 /// - an error code, which can be tested with [`ZSTD_isError`]
+#[deprecated(note = "use [`ZSTD_DCtx_setParameter`] instead")]
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_DCtx_setFormat))]
 pub unsafe extern "C" fn ZSTD_DCtx_setFormat(
     dctx: *mut ZSTD_DCtx,
