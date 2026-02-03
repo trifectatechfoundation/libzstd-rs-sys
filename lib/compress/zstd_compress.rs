@@ -4669,12 +4669,19 @@ unsafe fn ZSTD_buildSequencesStatistics(
     stats.lastCountSize = 0;
     stats.longOffsets = ZSTD_seqToCodes(seqStorePtr);
     let mut max = MaxLL;
+
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    let entropyWorkspace_slice: &mut [u32] = core::slice::from_raw_parts_mut(
+        entropyWorkspace as *mut u32,
+        entropyWkspSize / size_of::<u32>(),
+    );
+
     let mostFrequent = HIST_countFast_wksp(
         countWorkspace,
         &mut max,
         llCodeTable as *const core::ffi::c_void,
         nbSeq,
-        entropyWorkspace,
+        entropyWorkspace_slice,
         entropyWkspSize,
     );
     (*nextEntropy).litlength_repeatMode = (*prevEntropy).litlength_repeatMode;
@@ -4718,12 +4725,18 @@ unsafe fn ZSTD_buildSequencesStatistics(
     }
     op = op.add(countSize);
     let mut max_0 = MaxOff;
+
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    let entropyWorkspace_slice: &mut [u32] = core::slice::from_raw_parts_mut(
+        entropyWorkspace as *mut u32,
+        entropyWkspSize / size_of::<u32>(),
+    );
     let mostFrequent_0 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_0,
         ofCodeTable as *const core::ffi::c_void,
         nbSeq,
-        entropyWorkspace,
+        entropyWorkspace_slice,
         entropyWkspSize,
     );
     let defaultPolicy = (if max_0 <= DefaultMaxOff {
@@ -4772,12 +4785,18 @@ unsafe fn ZSTD_buildSequencesStatistics(
     }
     op = op.add(countSize_0);
     let mut max_1 = MaxML;
+
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    let entropyWorkspace_slice: &mut [u32] = core::slice::from_raw_parts_mut(
+        entropyWorkspace as *mut u32,
+        entropyWkspSize / size_of::<u32>(),
+    );
     let mostFrequent_1 = HIST_countFast_wksp(
         countWorkspace,
         &mut max_1,
         mlCodeTable as *const core::ffi::c_void,
         nbSeq,
-        entropyWorkspace,
+        entropyWorkspace_slice,
         entropyWkspSize,
     );
     (*nextEntropy).matchlength_repeatMode = (*prevEntropy).matchlength_repeatMode;
@@ -5694,12 +5713,16 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         (*hufMetadata).hType = set_basic;
         return 0;
     }
+
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    let workspace_slice: &mut [u32] =
+        core::slice::from_raw_parts_mut(workspace as *mut u32, wkspSize / size_of::<u32>());
     let largest = HIST_count_wksp(
         countWksp,
         &mut maxSymbolValue,
         src as *const u8 as *const core::ffi::c_void,
         srcSize,
-        workspace,
+        workspace_slice,
         wkspSize,
     );
     let err_code = largest;
@@ -5935,12 +5958,15 @@ unsafe fn ZSTD_estimateBlockSize_literal(
         || (*hufMetadata).hType as core::ffi::c_uint
             == set_repeat as core::ffi::c_int as core::ffi::c_uint
     {
+        //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+        let workspace_slice: &mut [u32] =
+            core::slice::from_raw_parts_mut(workspace as *mut u32, wkspSize / size_of::<u32>());
         let largest = HIST_count_wksp(
             countWksp,
             &mut maxSymbolValue,
             literals as *const core::ffi::c_void,
             litSize,
-            workspace,
+            workspace_slice,
             wkspSize,
         );
         if ERR_isError(largest) {
@@ -5977,12 +6003,16 @@ unsafe fn ZSTD_estimateBlockSize_symbolType(
     let ctEnd = ctStart.add(nbSeq);
     let mut cSymbolTypeSizeEstimateInBits = 0;
     let mut max = maxCode;
+
+    //NOTE: existing requirement of implementation is that workspace must be 4 bytes aligned and >= HIST_WKSP_SIZE in bytes
+    let workspace_slice: &mut [u32] =
+        core::slice::from_raw_parts_mut(workspace as *mut u32, wkspSize / size_of::<u32>());
     HIST_countFast_wksp(
         countWksp,
         &mut max,
         codeTable as *const core::ffi::c_void,
         nbSeq,
-        workspace,
+        workspace_slice,
         wkspSize,
     );
     if type_0 as core::ffi::c_uint == set_basic as core::ffi::c_int as core::ffi::c_uint {
