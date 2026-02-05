@@ -69,34 +69,14 @@ unsafe fn addEvents_generic(
 }
 
 #[inline(always)]
-unsafe fn recordFingerprint_generic(
+unsafe fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
     fp: &mut Fingerprint,
     src: *const c_void,
     srcSize: size_t,
-    samplingRate: size_t,
-    hashLog: c_uint,
 ) {
-    ptr::write_bytes(fp as *mut _ as *mut u8, 0, size_of::<c_uint>() << hashLog);
+    ptr::write_bytes(fp as *mut _ as *mut u8, 0, size_of::<c_uint>() << HASH_LOG);
     fp.nbEvents = 0;
-    addEvents_generic(fp, src, srcSize, samplingRate, hashLog);
-}
-
-pub type RecordEvents_f = unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ();
-
-unsafe fn ZSTD_recordFingerprint_1(fp: &mut Fingerprint, src: *const c_void, srcSize: size_t) {
-    recordFingerprint_generic(fp, src, srcSize, 1, 10);
-}
-
-unsafe fn ZSTD_recordFingerprint_5(fp: &mut Fingerprint, src: *const c_void, srcSize: size_t) {
-    recordFingerprint_generic(fp, src, srcSize, 5, 10);
-}
-
-unsafe fn ZSTD_recordFingerprint_11(fp: &mut Fingerprint, src: *const c_void, srcSize: size_t) {
-    recordFingerprint_generic(fp, src, srcSize, 11, 9);
-}
-
-unsafe fn ZSTD_recordFingerprint_43(fp: &mut Fingerprint, src: *const c_void, srcSize: size_t) {
-    recordFingerprint_generic(fp, src, srcSize, 43, 8);
+    addEvents_generic(fp, src, srcSize, SAMPLING_RATE, HASH_LOG);
 }
 
 fn abs64(s64: i64) -> u64 {
@@ -151,15 +131,16 @@ unsafe fn ZSTD_splitBlock_byChunks(
     workspace: *mut c_void,
     wkspSize: size_t,
 ) -> size_t {
-    static records_fs: [RecordEvents_f; 4] = [
-        ZSTD_recordFingerprint_43 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
-        ZSTD_recordFingerprint_11 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
-        ZSTD_recordFingerprint_5 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
-        ZSTD_recordFingerprint_1 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
+    static records_fs: [unsafe fn(&mut Fingerprint, *const c_void, size_t) -> (); 4] = [
+        recordFingerprint_generic::<1, 10>,
+        recordFingerprint_generic::<5, 10>,
+        recordFingerprint_generic::<11, 9>,
+        recordFingerprint_generic::<43, 8>,
     ];
+
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
     debug_assert!((0..=3).contains(&level));
-    let record_f: RecordEvents_f = *records_fs.as_ptr().offset(level as isize);
+    let record_f = *records_fs.as_ptr().offset(level as isize);
     let fpstats = workspace as *mut FPStats;
     let p = blockStart as *const c_char;
     let mut penalty = THRESHOLD_PENALTY;
