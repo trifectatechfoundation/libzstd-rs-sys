@@ -81,7 +81,7 @@ unsafe fn recordFingerprint_generic(
     addEvents_generic(fp, src, srcSize, samplingRate, hashLog);
 }
 
-pub type RecordEvents_f = Option<unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ()>;
+pub type RecordEvents_f = unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ();
 
 unsafe fn ZSTD_recordFingerprint_1(fp: &mut Fingerprint, src: *const c_void, srcSize: size_t) {
     recordFingerprint_generic(fp, src, srcSize, 1, 10);
@@ -152,10 +152,10 @@ unsafe fn ZSTD_splitBlock_byChunks(
     wkspSize: size_t,
 ) -> size_t {
     static records_fs: [RecordEvents_f; 4] = [
-        Some(ZSTD_recordFingerprint_43 as unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ()),
-        Some(ZSTD_recordFingerprint_11 as unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ()),
-        Some(ZSTD_recordFingerprint_5 as unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ()),
-        Some(ZSTD_recordFingerprint_1 as unsafe fn(&mut Fingerprint, *const c_void, size_t) -> ()),
+        ZSTD_recordFingerprint_43 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
+        ZSTD_recordFingerprint_11 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
+        ZSTD_recordFingerprint_5 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
+        ZSTD_recordFingerprint_1 as unsafe fn(&mut Fingerprint, *const c_void, size_t),
     ];
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
     debug_assert!((0..=3).contains(&level));
@@ -172,14 +172,14 @@ unsafe fn ZSTD_splitBlock_byChunks(
     debug_assert!(wkspSize >= size_of::<FPStats>());
 
     initStats(fpstats);
-    record_f.unwrap_unchecked()(
+    record_f(
         &mut (*fpstats).pastEvents,
         p as *const c_void,
         CHUNKSIZE as size_t,
     );
     pos = CHUNKSIZE as size_t;
     while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
-        record_f.unwrap_unchecked()(
+        record_f(
             &mut (*fpstats).newEvents,
             p.add(pos) as *const c_void,
             CHUNKSIZE as size_t,
