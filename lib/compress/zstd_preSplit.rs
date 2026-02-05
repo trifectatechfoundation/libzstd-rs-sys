@@ -100,18 +100,18 @@ unsafe fn ZSTD_recordFingerprint_43(fp: *mut Fingerprint, src: *const c_void, sr
 }
 
 fn abs64(s64: i64) -> u64 {
-    (if s64 < 0 { -s64 } else { s64 }) as u64
+    s64.unsigned_abs()
 }
 
-unsafe fn fpDistance(fp1: *const Fingerprint, fp2: *const Fingerprint, hashLog: c_uint) -> u64 {
+unsafe fn fpDistance(fp1: &Fingerprint, fp2: *const Fingerprint, hashLog: c_uint) -> u64 {
     let mut distance = 0u64;
 
     debug_assert!(hashLog <= HASHLOG_MAX);
 
     for n in 0..((1) << hashLog) {
         distance = distance.wrapping_add(abs64(
-            ((*fp1).events)[n as usize] as i64 * (*fp2).nbEvents as i64
-                - ((*fp2).events)[n as usize] as i64 * (*fp1).nbEvents as i64,
+            fp1.events[n as usize] as i64 * (*fp2).nbEvents as i64
+                - ((*fp2).events)[n as usize] as i64 * fp1.nbEvents as i64,
         ));
     }
     distance
@@ -121,15 +121,15 @@ unsafe fn fpDistance(fp1: *const Fingerprint, fp2: *const Fingerprint, hashLog: 
 ///
 /// Returns `1` when the fingerprints are considered "too different", `0` otherwise.
 unsafe fn compareFingerprints(
-    ref_0: *const Fingerprint,
-    newfp: *const Fingerprint,
+    ref_0: &Fingerprint,
+    newfp: &Fingerprint,
     penalty: c_int,
     hashLog: c_uint,
 ) -> c_int {
-    debug_assert!((*ref_0).nbEvents > 0);
-    debug_assert!((*newfp).nbEvents > 0);
+    debug_assert!(ref_0.nbEvents > 0);
+    debug_assert!(newfp.nbEvents > 0);
 
-    let p50 = (*ref_0).nbEvents * (*newfp).nbEvents;
+    let p50 = ref_0.nbEvents * newfp.nbEvents;
     let deviation = fpDistance(ref_0, newfp, hashLog);
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
     (deviation >= threshold) as c_int
