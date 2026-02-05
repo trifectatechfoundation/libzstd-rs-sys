@@ -135,11 +135,11 @@ unsafe fn compareFingerprints(
     (deviation >= threshold) as c_int
 }
 
-unsafe fn mergeEvents(acc: *mut Fingerprint, newfp: *const Fingerprint) {
+fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
     for n in 0..HASHTABLESIZE as usize {
-        (*acc).events[n] += (*newfp).events[n];
+        acc.events[n] += newfp.events[n];
     }
-    (*acc).nbEvents = ((*acc).nbEvents).wrapping_add((*newfp).nbEvents);
+    acc.nbEvents += newfp.nbEvents;
 }
 
 pub const CHUNKSIZE: c_int = (8) << 10;
