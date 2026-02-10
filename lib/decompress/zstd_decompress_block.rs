@@ -1374,7 +1374,7 @@ unsafe fn ZSTD_execSequence(
     *litPtr = iLitEnd; // Update for next sequence.
 
     // Copy match.
-    if sequence.offset > oLitEnd.offset_from_unsigned(prefixStart) {
+    if unlikely(sequence.offset > oLitEnd.offset_from_unsigned(prefixStart)) {
         // offset beyond prefix -> go into extDict.
         if unlikely(sequence.offset > (oLitEnd.addr() - virtualStart.addr())) {
             return Err(Error::corruption_detected);
