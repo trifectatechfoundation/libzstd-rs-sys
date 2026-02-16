@@ -2,10 +2,10 @@
 
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
-use libzstd_rs_sys::*;
 use libzstd_rs_sys::lib::common::huf::*;
 use libzstd_rs_sys::lib::zstd::ZSTD_error_tableLog_tooLarge;
-use libzstd_rs_sys::lib::zstd::{ZSTD_error_maxCode, ZSTD_ErrorCode};
+use libzstd_rs_sys::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
+use libzstd_rs_sys::*;
 use std::ffi::*;
 
 #[derive(Arbitrary, Debug)]
@@ -63,7 +63,6 @@ impl HufFlags {
 fn adjust_table_log(table_log: usize, max_symbol: usize) -> usize {
     let alphabet_size: usize = max_symbol + 1;
     let mut min_table_log: usize = (alphabet_size as u32).ilog2() as usize + 1;
-
 
     // If not a power of 2, need one more bit
     if (alphabet_size & (alphabet_size - 1)) != 0 {
@@ -126,7 +125,7 @@ fuzz_target!(|input: HufRoundTripInput| {
     }
 
     // Step 2: Adjust table_log based on alphabet size
-    table_log =  adjust_table_log(table_log as usize, max_symbol as usize) as u32;
+    table_log = adjust_table_log(table_log as usize, max_symbol as usize) as u32;
 
     // Step 3: Allocate buffers
     let mut workspace = vec![0u8; HUF_WORKSPACE_SIZE];
@@ -210,9 +209,10 @@ fuzz_target!(|input: HufRoundTripInput| {
         // Fall back to X1 if tableLog_tooLarge
         if ZSTD_isError(result) == 1 {
             let err_code = ERR_getErrorCode(result);
-            if err_code ==  ZSTD_error_tableLog_tooLarge as u32 {
+            if err_code == ZSTD_error_tableLog_tooLarge as u32 {
                 // tableLog_tooLarge error code
-                let mut x1_workspace: lib::decompress::Workspace = lib::decompress::Workspace::default();
+                let mut x1_workspace: lib::decompress::Workspace =
+                    lib::decompress::Workspace::default();
                 lib::decompress::huf_decompress::HUF_readDTableX1_wksp(
                     &mut dt,
                     &c_buf[..table_size],
@@ -302,8 +302,15 @@ fuzz_target!(|input: HufRoundTripInput| {
         panic!("Decompression failed");
     }
 
-    assert_eq!(decompress_size, size, "Decompressed size doesn't match original");
-    assert_eq!(&r_buf[..size], &input.data[..size], "Decompressed data doesn't match original");
+    assert_eq!(
+        decompress_size, size,
+        "Decompressed size doesn't match original"
+    );
+    assert_eq!(
+        &r_buf[..size],
+        &input.data[..size],
+        "Decompressed data doesn't match original"
+    );
 });
 
 const fn ERR_isError(code: usize) -> bool {
