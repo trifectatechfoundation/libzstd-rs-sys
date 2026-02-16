@@ -313,10 +313,12 @@ fuzz_target!(|input: HufRoundTripInput| {
     );
 });
 
+#[allow(non_snake_case)]
 const fn ERR_isError(code: usize) -> bool {
     code > -(ZSTD_error_maxCode as core::ffi::c_int) as usize
 }
 
+#[allow(non_snake_case)]
 const fn ERR_getErrorCode(code: usize) -> ZSTD_ErrorCode {
     if !ERR_isError(code) {
         return 0;
