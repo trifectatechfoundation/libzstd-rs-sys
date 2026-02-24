@@ -36,7 +36,7 @@ pub mod experimental {
     pub const ZDICT_DICTSIZE_MIN: usize = 256;
 
     #[deprecated = "will be removed in v1.6.0"]
-    pub const ZDICT_CONTENTSIZE_MIN: u32 = 128;
+    pub const ZDICT_CONTENTSIZE_MIN: usize = 128;
 
     /// `k` and `d` are the only required parameters. For others, value 0 means default.
     #[derive(Debug, Copy, Clone, Default)]
