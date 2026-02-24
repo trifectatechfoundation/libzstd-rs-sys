@@ -636,20 +636,19 @@ fn fill_noise(buffer: &mut [u8]) {
     }
 }
 
-const MAXREPOFFSET: u32 = 1024;
+const MAXREPOFFSET: usize = 1024;
 unsafe fn ZDICT_countEStats(
     esr: &mut EStats_ress_t,
     params: &ZSTD_parameters,
     countLit: &mut [u32; 256],
-    offsetcodeCount: &mut [u32; 31],
-    matchlengthCount: &mut [u32; 53],
-    litlengthCount: &mut [u32; 36],
-    repOffsets: &mut [u32; 1024],
+    offsetcodeCount: &mut [u32; OFFCODE_MAX as usize + 1],
+    matchlengthCount: &mut [u32; MaxML as usize + 1],
+    litlengthCount: &mut [u32; MaxLL as usize + 1],
+    repOffsets: &mut [u32; MAXREPOFFSET],
     src: &[u8],
     notificationLevel: u32,
 ) {
     let blockSizeMax = Ord::min(1 << 17, 1 << params.cParams.windowLog);
-    let mut cSize: size_t = 0;
     let srcSize = Ord::min(src.len(), blockSizeMax);
     let errorCode = ZSTD_compressBegin_usingCDict_deprecated(esr.zc, esr.dict);
     if ERR_isError(errorCode) {
@@ -658,7 +657,7 @@ unsafe fn ZDICT_countEStats(
         }
         return;
     }
-    cSize = ZSTD_compressBlock_deprecated(
+    let cSize = ZSTD_compressBlock_deprecated(
         esr.zc,
         esr.workPlace.as_mut_ptr().cast(),
         ZSTD_BLOCKSIZE_MAX as size_t,
@@ -673,48 +672,49 @@ unsafe fn ZDICT_countEStats(
     }
 
     // if cSize is 0, the block is not compressible
-    if cSize != 0 {
-        let seqStorePtr = ZSTD_getSeqStore(esr.zc);
+    if cSize == 0 {
+        return;
+    }
 
-        // literals stats
-        let mut bytePtr = (*seqStorePtr).litStart as *const u8;
-        while bytePtr < (*seqStorePtr).lit as *const u8 {
-            countLit[usize::from(*bytePtr)] += 1;
-            bytePtr = bytePtr.add(1);
-        }
+    let seqStorePtr = ZSTD_getSeqStore(esr.zc);
 
-        // seqStats
-        let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
-            as core::ffi::c_long as u32;
-        ZSTD_seqToCodes(seqStorePtr);
+    // literals stats
+    let mut bytePtr = (*seqStorePtr).litStart as *const u8;
+    while bytePtr < (*seqStorePtr).lit as *const u8 {
+        countLit[usize::from(*bytePtr)] += 1;
+        bytePtr = bytePtr.add(1);
+    }
 
-        let codePtr: *const u8 = (*seqStorePtr).ofCode;
-        for u in 0..nbSeq as usize {
-            offsetcodeCount[*codePtr.add(u) as usize] += 1;
-        }
-        let codePtr: *const u8 = (*seqStorePtr).mlCode;
-        for u in 0..nbSeq as usize {
-            matchlengthCount[*codePtr.add(u) as usize] += 1;
-        }
-        let codePtr: *const u8 = (*seqStorePtr).llCode;
-        for u in 0..nbSeq as usize {
-            litlengthCount[*codePtr.add(u) as usize] += 1;
-        }
+    // seqStats
+    let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as usize;
+    ZSTD_seqToCodes(seqStorePtr);
 
-        if nbSeq >= 2 {
-            // rep offsets
-            let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
-            let mut offset1 = ((*seq).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
-            let mut offset2 = ((*seq.add(1)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
-            if offset1 >= MAXREPOFFSET {
-                offset1 = 0;
-            }
-            if offset2 >= MAXREPOFFSET {
-                offset2 = 0;
-            }
-            repOffsets[offset1 as usize] += 3;
-            repOffsets[offset2 as usize] += 1;
+    let codePtr: *const u8 = (*seqStorePtr).ofCode;
+    for u in 0..nbSeq {
+        offsetcodeCount[*codePtr.add(u) as usize] += 1;
+    }
+    let codePtr: *const u8 = (*seqStorePtr).mlCode;
+    for u in 0..nbSeq {
+        matchlengthCount[*codePtr.add(u) as usize] += 1;
+    }
+    let codePtr: *const u8 = (*seqStorePtr).llCode;
+    for u in 0..nbSeq {
+        litlengthCount[*codePtr.add(u) as usize] += 1;
+    }
+
+    if nbSeq >= 2 {
+        // rep offsets
+        let seq: *const SeqDef = (*seqStorePtr).sequencesStart;
+        let mut offset1 = (*seq).offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize;
+        let mut offset2 = (*seq.add(1)).offBase.wrapping_sub(ZSTD_REP_NUM as u32) as usize;
+        if offset1 >= MAXREPOFFSET {
+            offset1 = 0;
         }
+        if offset2 >= MAXREPOFFSET {
+            offset2 = 0;
+        }
+        repOffsets[offset1] += 3;
+        repOffsets[offset2] += 1;
     }
 }
 
@@ -805,7 +805,7 @@ unsafe fn analyze_entropy_internal(
     let mut matchLengthCount = [1u32; MaxML as usize + 1];
     let mut litLengthCount = [1u32; MaxLL as usize + 1];
 
-    let mut repOffset = [0; MAXREPOFFSET as usize];
+    let mut repOffset = [0; MAXREPOFFSET];
     repOffset[1] = 1;
     repOffset[4] = 1;
     repOffset[8] = 1;
@@ -900,8 +900,8 @@ unsafe fn analyze_entropy_internal(
     let huffLog = maxNbBits as u32;
 
     // look for most common first offsets
-    for offset in 1..MAXREPOFFSET {
-        ZDICT_insertSortCount(&mut bestRepOffset, offset, repOffset[offset as usize]);
+    for (offset, rep) in repOffset[1..MAXREPOFFSET].iter().enumerate() {
+        ZDICT_insertSortCount(&mut bestRepOffset, offset as u32, *rep);
     }
 
     let total: u32 = offcodeCount[..offcodeMax as usize + 1].iter().sum();
