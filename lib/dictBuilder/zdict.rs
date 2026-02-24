@@ -1080,7 +1080,7 @@ pub unsafe extern "C" fn ZDICT_finalizeDictionary(
     .unwrap_or_else(|e| e)
 }
 
-const HBUFFSIZE: core::ffi::c_int = 256; // should be large enough for all entropy headers
+const HBUFFSIZE: usize = 256; // should be large enough for all entropy headers
 
 unsafe fn finalize_dictionary(
     dictBuffer: *mut core::ffi::c_void,
@@ -1091,7 +1091,6 @@ unsafe fn finalize_dictionary(
     samplesSizes: &[usize],
     params: ZDICT_params_t,
 ) -> Result<usize, Error> {
-    let mut hSize: size_t = 0;
     let mut header: [u8; 256] = [0; 256];
     let compressionLevel = if params.compressionLevel == 0 {
         ZSTD_CLEVEL_DEFAULT
@@ -1101,7 +1100,6 @@ unsafe fn finalize_dictionary(
     let notificationLevel = params.notificationLevel;
     // the final dictionary content must be at least as large as the largest repcode
     let minContentSize = *repStartValue.iter().max().unwrap() as size_t;
-    let mut paddingSize: size_t = 0;
 
     // check conditions
     if dictBufferCapacity < dictContentSize {
@@ -1122,16 +1120,16 @@ unsafe fn finalize_dictionary(
         compliantID
     };
     header[4..][..4].copy_from_slice(&dictID.to_le_bytes());
-    hSize = 8;
 
     // entropy tables
     if notificationLevel >= 2 {
         eprintln!("\r{:70 }\r", ""); // clean display line
         eprintln!("statistics ...");
     }
+    let hSize = 8;
     let eSize = ZDICT_analyzeEntropy(
         header[hSize..].as_mut_ptr() as *mut core::ffi::c_void,
-        (HBUFFSIZE as size_t).wrapping_sub(hSize),
+        HBUFFSIZE.wrapping_sub(hSize),
         compressionLevel,
         samples,
         samplesSizes,
@@ -1139,7 +1137,7 @@ unsafe fn finalize_dictionary(
         dictContentSize,
         notificationLevel,
     )?;
-    hSize = hSize.wrapping_add(eSize);
+    let hSize = hSize.wrapping_add(eSize);
 
     // shrink the content size if it doesn't fit in the buffer
     if hSize.wrapping_add(dictContentSize) > dictBufferCapacity {
@@ -1147,14 +1145,14 @@ unsafe fn finalize_dictionary(
     }
 
     // pad the dictionary content with zeros if it is too small
-    if dictContentSize < minContentSize {
+    let paddingSize = if dictContentSize < minContentSize {
         if hSize.wrapping_add(minContentSize) > dictBufferCapacity {
             return Err(Error::dstSize_tooSmall);
         }
-        paddingSize = minContentSize.wrapping_sub(dictContentSize);
+        minContentSize.wrapping_sub(dictContentSize)
     } else {
-        paddingSize = 0;
-    }
+        0
+    };
 
     let dictSize = hSize
         .wrapping_add(paddingSize)
