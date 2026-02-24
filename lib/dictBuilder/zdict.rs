@@ -68,7 +68,7 @@ impl DictItem {
 const MINRATIO: usize = 4;
 const ZDICT_MAX_SAMPLES_SIZE: usize = 2000 << 20;
 #[expect(deprecated)]
-const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN as usize * MINRATIO;
+const ZDICT_MIN_SAMPLES_SIZE: usize = ZDICT_CONTENTSIZE_MIN * MINRATIO;
 
 const NOISELENGTH: usize = 32;
 static g_selectivity_default: u32 = 9;
@@ -508,15 +508,11 @@ fn ZDICT_insertDictItem(table: &mut [DictItem], elt: DictItem, buffer: &[u8]) {
     table[0].pos = nextElt.wrapping_add(1);
 }
 
-fn ZDICT_dictSize(dictList: &[DictItem]) -> u32 {
-    let mut u: u32 = 0;
-    let mut dictSize = 0u32;
-    u = 1;
-    while u < dictList[0].pos {
-        dictSize = dictSize.wrapping_add((dictList[u as usize]).length);
-        u = u.wrapping_add(1);
-    }
-    dictSize
+fn ZDICT_dictSize(dictList: &[DictItem]) -> usize {
+    dictList[1..dictList[0].pos as usize]
+        .iter()
+        .map(|d| d.length as usize)
+        .sum()
 }
 
 fn ZDICT_trainBuffer_legacy(
@@ -1340,17 +1336,17 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
 
     // create dictionary
-    let mut dictContentSize_0 = ZDICT_dictSize(&dictList);
+    let dictContentSize = ZDICT_dictSize(&dictList);
     #[expect(deprecated)]
-    if dictContentSize_0 < ZDICT_CONTENTSIZE_MIN {
+    if dictContentSize < ZDICT_CONTENTSIZE_MIN {
         // dictionary content too small
         return Error::dictionaryCreation_failed.to_error_code();
     }
 
-    if (dictContentSize_0 as size_t) < targetDictSize / 4 && notificationLevel >= 2 {
+    if dictContentSize < targetDictSize / 4 && notificationLevel >= 2 {
         eprintln!(
             "!  warning : selected content significantly smaller than requested ({} < {}) ",
-            dictContentSize_0, maxDictSize,
+            dictContentSize, maxDictSize,
         );
         if samplesBuffSize < 10 * targetDictSize {
             eprintln!(
@@ -1369,7 +1365,7 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
     }
 
-    if dictContentSize_0 as size_t > targetDictSize * 3
+    if dictContentSize > targetDictSize * 3
         && nbSamples > 2 * MINRATIO
         && selectivity > 1
         && notificationLevel >= 2
@@ -1380,7 +1376,7 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
         }
         eprintln!(
             "!  note : calculated dictionary significantly larger than requested ({} > {}) ",
-            dictContentSize_0, maxDictSize,
+            dictContentSize, maxDictSize,
         );
         eprintln!(
             "!  consider increasing dictionary size, or produce denser dictionary (-s{}) ",
@@ -1390,20 +1386,20 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
     }
 
     // limit dictionary size
-    let max = dictList[0].pos; // convention: dictList[0].pos contains the number of useful elements
-    let mut currentSize = 0u32;
-    let mut n: u32 = 1;
+    let max = dictList[0].pos as usize; // convention: dictList[0].pos contains the number of useful elements
+    let mut currentSize = 0usize;
+    let mut n = 1usize;
     while n < max {
-        currentSize = currentSize.wrapping_add((dictList[n as usize]).length);
-        if currentSize as size_t > targetDictSize {
-            currentSize = currentSize.wrapping_sub((dictList[n as usize]).length);
+        currentSize = currentSize.wrapping_add(dictList[n].length as usize);
+        if currentSize > targetDictSize {
+            currentSize = currentSize.wrapping_sub(dictList[n].length as usize);
             break;
         } else {
             n = n.wrapping_add(1);
         }
     }
-    dictList[0].pos = n;
-    dictContentSize_0 = currentSize;
+    dictList[0].pos = n as u32;
+    let dictContentSize = currentSize;
 
     let dictBuffer = unsafe {
         if dictBuffer.is_null() || maxDictSize == 0 {
@@ -1420,7 +1416,7 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
     unsafe {
         ZDICT_addEntropyTablesFromBuffer_advanced(
             dictBuffer,
-            dictContentSize_0 as size_t,
+            dictContentSize,
             samples,
             samplesSizes,
             params.zParams,
