@@ -1304,33 +1304,28 @@ fn ZDICT_trainFromBuffer_unsafe_legacy(
 
     // display best matches
     if params.zParams.notificationLevel >= 3 {
-        let nb = Ord::min(25, dictList[0].pos);
+        let nb = Ord::min(25, dictList[0].pos as usize);
         let dictContentSize = ZDICT_dictSize(&dictList);
         eprintln!(
             "\n {} segments found, of total size {} ",
-            (dictList[0].pos).wrapping_sub(1),
+            dictList[0].pos - 1,
             dictContentSize,
         );
-        eprintln!("list {} best segments ", nb.wrapping_sub(1));
-        for u in 1..nb {
-            let pos = dictList[u as usize].pos;
-            let length = dictList[u as usize].length;
+        eprintln!("list {} best segments ", nb - 1);
+        for (u, dictItem) in dictList[1..nb].iter().enumerate() {
+            let pos = dictItem.pos as usize;
+            let length = dictItem.length as usize;
             let printedLength = Ord::min(40, length);
 
-            debug_assert!((pos + length) as size_t <= samplesBuffSize);
-            if pos as size_t > samplesBuffSize
-                || pos.wrapping_add(length) as size_t > samplesBuffSize
-            {
+            debug_assert!(pos + length <= samplesBuffSize);
+            if pos > samplesBuffSize || pos + length > samplesBuffSize {
                 return Error::GENERIC.to_error_code(); // should never happen
             }
             eprint!(
                 "{:3}:{:3} bytes at pos {:8}, savings {:7} bytes |",
-                u,
-                length,
-                pos,
-                (dictList[u as usize]).savings,
+                u, length, pos, dictItem.savings,
             );
-            ZDICT_printHex(&samples[..printedLength as usize]);
+            ZDICT_printHex(&samples[..printedLength]);
             eprintln!("|");
         }
     }
