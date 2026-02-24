@@ -44,27 +44,27 @@ pub(crate) const MaxFSELog: usize = const_max(
 pub(crate) const MaxMLBits: u8 = 16;
 pub(crate) const MaxLLBits: u8 = 16;
 
-pub(crate) static LL_bits: [u8; 36] = [
+pub(crate) static LL_bits: [u8; MaxLL as usize + 1] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11,
     12, 13, 14, 15, 16,
 ];
-pub(crate) static LL_defaultNorm: [i16; 36] = [
+pub(crate) static LL_defaultNorm: [i16; MaxLL as usize + 1] = [
     4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
     -1, -1, -1, -1,
 ];
 pub(crate) const LL_DEFAULTNORMLOG: u32 = 6;
 pub(crate) static LL_defaultNormLog: u32 = LL_DEFAULTNORMLOG;
-pub(crate) static ML_bits: [u8; 53] = [
+pub(crate) static ML_bits: [u8; MaxML as usize + 1] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 ];
-pub(crate) static ML_defaultNorm: [i16; 53] = [
+pub(crate) static ML_defaultNorm: [i16; MaxML as usize + 1] = [
     1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1,
 ];
 pub(crate) const ML_DEFAULTNORMLOG: u32 = 6;
 pub(crate) static ML_defaultNormLog: u32 = ML_DEFAULTNORMLOG;
-pub(crate) static OF_defaultNorm: [i16; 29] = [
+pub(crate) static OF_defaultNorm: [i16; DefaultMaxOff as usize + 1] = [
     1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1,
 ];
 pub(crate) const OF_DEFAULTNORMLOG: u32 = 5;
