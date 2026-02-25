@@ -1,5 +1,5 @@
 #![cfg(test)]
-
+#![allow(deprecated)]
 mod compress;
 mod decompress;
 mod dict_builder;
