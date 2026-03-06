@@ -1145,7 +1145,7 @@ fn HUFv07_readDTableX4(DTable: &mut HUFv07_DTable, src: &[u8]) -> Result<usize, 
     }
     let mut maxW = tableLog;
     while rankStats[maxW as usize] == 0 {
-        maxW -= 1
+        maxW -= 1;
     }
     let mut nextRankStart = 0u32;
     for w in 1..maxW + 1 {
