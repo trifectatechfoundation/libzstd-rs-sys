@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! cfg_select {
     ({ $($tt:tt)* }) => {{
         $crate::cfg_select! { $($tt)* }
@@ -11,13 +10,14 @@ macro_rules! cfg_select {
         $($( $rest:tt )+)?
     ) => {
         #[cfg($cfg)]
-        $crate::cfg_select! { _ => $output }
+        $crate::lib::polyfill::cfg_select! { _ => $output }
         $(
             #[cfg(not($cfg))]
-            $crate::cfg_select! { $($rest)+ }
+            $crate::lib::polyfill::cfg_select! { $($rest)+ }
         )?
     }
 }
+pub(crate) use cfg_select;
 
 #[expect(dead_code)]
 pub enum Locality {
