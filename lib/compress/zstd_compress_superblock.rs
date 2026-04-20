@@ -951,13 +951,14 @@ unsafe fn ZSTD_compressSubBlock_multi(
             writeLitEntropy,
             writeSeqEntropy,
         );
-        let avgLitCost = if nbLiterals != 0 {
-            ebs.estLitSize * BYTESCALE as size_t / nbLiterals
-        } else {
-            BYTESCALE as size_t
-        };
+
+        let avgLitCost = (ebs.estLitSize * BYTESCALE as size_t)
+            .checked_div(nbLiterals)
+            .unwrap_or(BYTESCALE as size_t);
+
         let avgSeqCost =
             (ebs.estBlockSize).wrapping_sub(ebs.estLitSize) * BYTESCALE as size_t / nbSeqs;
+
         let nbSubBlocks =
             if (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize > 1 {
                 (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize

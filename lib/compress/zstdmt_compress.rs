@@ -1556,8 +1556,7 @@ pub unsafe fn ZSTDMT_initCStream_internal(
         let jobSizeKB = ((*mtctx).targetSectionSize >> 10) as u32;
         let rsyncBits = (ZSTD_highbit32(jobSizeKB)).wrapping_add(10);
         (*mtctx).rsync.hash = 0;
-        (*mtctx).rsync.hitMask =
-            ((1 as core::ffi::c_ulonglong) << rsyncBits).wrapping_sub(1);
+        (*mtctx).rsync.hitMask = (1u64 << rsyncBits).wrapping_sub(1);
         (*mtctx).rsync.primePower = ZSTD_rollingHash_primePower(RSYNC_LENGTH as u32);
     }
     if (*mtctx).targetSectionSize < (*mtctx).targetPrefixSize {

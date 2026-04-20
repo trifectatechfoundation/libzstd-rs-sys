@@ -2598,10 +2598,7 @@ unsafe fn ZSTDv07_decompressContinue(
             let rSize = rSize?;
             dctx.previousDstEnd = dst.as_ptr().add(rSize);
             if dctx.fParams.checksumFlag != 0 {
-                ZSTD_XXH64_update_slice(
-                    &mut dctx.xxhState,
-                    dst.subslice(..rSize).as_slice(),
-                );
+                ZSTD_XXH64_update_slice(&mut dctx.xxhState, dst.subslice(..rSize).as_slice());
             }
             return Ok(rSize);
         }
