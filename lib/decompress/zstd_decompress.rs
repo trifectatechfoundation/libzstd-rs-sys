@@ -1478,7 +1478,7 @@ fn find_frame_size_info(src: &[u8], format: Format) -> Result<ZSTD_frameSizeInfo
                 return Err(Error::srcSize_wrong);
             }
 
-            ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize) as usize;
+            ip += ZSTD_blockHeaderSize.wrapping_add(cBlockSize);
             remainingSize =
                 remainingSize.wrapping_sub(ZSTD_blockHeaderSize.wrapping_add(cBlockSize));
             nbBlocks = nbBlocks.wrapping_add(1);
