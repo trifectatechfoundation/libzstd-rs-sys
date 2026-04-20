@@ -4,8 +4,8 @@ use libc::size_t;
 #[cfg(doc)]
 use crate::{
     lib::compress::zstd_compress::ZSTD_c_maxBlockSize, ZSTD_CDict, ZSTD_DCtx, ZSTD_DCtx_refDDict,
-    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compress_usingDict, ZSTD_decompress,
-    ZSTD_freeDCtx,
+    ZSTD_DCtx_reset, ZSTD_DCtx_setParameter, ZSTD_DDict, ZSTD_compressBound,
+    ZSTD_compress_usingDict, ZSTD_decompress, ZSTD_freeDCtx,
 };
 
 pub const ZSTD_FRAMEHEADERSIZE_MAX: core::ffi::c_int = 18;
@@ -522,7 +522,7 @@ impl ZSTD_ResetDirective {
 ///
 /// - The `CDict`'s tables are not used at all, and instead we use the working
 ///   context alone to reload the dictionary and use params based on the source
-///   size. See [`ZSTD_compress_insertDictionary`] and [`ZSTD_compress_usingDict`].
+///   size. See `ZSTD_compress_insertDictionary` and [`ZSTD_compress_usingDict`].
 ///   This method is effective when the dictionary sizes are very small relative
 ///   to the input size, and the input size is fairly large to begin with.
 ///
