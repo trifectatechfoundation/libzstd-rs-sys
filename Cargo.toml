@@ -45,6 +45,7 @@ features = ["xxh64", "xxh32"]
 [features]
 default = ["rust-allocator"]
 export-symbols = [] # whether the zlib api symbols are publicly exported
+custom-prefix = ["export-symbols"] # use the LIBZSTD_RS_SYS_PREFIX to prefix all exported symbols
 semver-prefix = ["export-symbols"] # prefix all symbols in a semver-compatible way
 no-prefetch = [] # do not prefetch
 trace = []
