@@ -7537,6 +7537,7 @@ unsafe fn ZSTD_loadZstdDictionary(
     }
     dictID
 }
+
 unsafe fn ZSTD_compress_insertDictionary(
     bs: *mut ZSTD_compressedBlockState_t,
     ms: &mut ZSTD_MatchState_t,

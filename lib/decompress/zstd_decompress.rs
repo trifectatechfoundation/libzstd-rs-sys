@@ -70,7 +70,10 @@ use crate::lib::decompress::zstd_ddict::{
 };
 
 #[cfg(doc)]
-use crate::ZSTD_isError;
+use crate::{
+    lib::zstd::ZSTD_error_memory_allocation, ZSTD_compress, ZSTD_compressCCtx,
+    ZSTD_compress_usingCDict, ZSTD_compress_usingDict, ZSTD_isError, ZSTD_FRAMEHEADERSIZE_MAX,
+};
 
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
 #[repr(C)]

@@ -23,6 +23,9 @@ use crate::lib::compress::fse_compress::{
 };
 use crate::lib::compress::hist::{HIST_count_simple, HIST_count_wksp, HIST_WKSP_SIZE_U32};
 
+#[cfg(doc)]
+use crate::lib::common::bitstream::BIT_CStream_t;
+
 pub type nodeElt = nodeElt_s;
 
 #[derive(Copy, Clone)]
@@ -687,7 +690,7 @@ pub struct rankPos {
 
 pub type huffNodeTable = [nodeElt; 2 * (HUF_SYMBOLVALUE_MAX as usize + 1)];
 
-/// Number of buckets available for [`HUF_sort`]
+/// Number of buckets available for `HUF_sort`
 pub const RANK_POSITION_TABLE_SIZE: usize = 192;
 
 #[derive(Copy, Clone)]
@@ -697,7 +700,7 @@ pub struct HUF_buildCTable_wksp_tables {
     pub rankPosition: [rankPos; RANK_POSITION_TABLE_SIZE],
 }
 
-/// [`RANK_POSITION_DISTINCT_COUNT_CUTOFF`] == Cutoff point in [`HUF_sort`] buckets for which we use log2 bucketing.
+/// [`RANK_POSITION_DISTINCT_COUNT_CUTOFF`] == Cutoff point in `HUF_sort` buckets for which we use log2 bucketing.
 /// Strategy is to use as many buckets as possible for representing distinct
 /// counts while using the remainder to represent all "large" counts.
 ///
@@ -1031,7 +1034,7 @@ unsafe fn HUF_buildCTableFromTree(
     HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
 }
 
-/// Same as [`HUF_buildCTable`], but using externally allocated scratch buffer.
+/// Same as `HUF_buildCTable`, but using externally allocated scratch buffer.
 /// `workSpace` must be aligned on 4-bytes boundaries, and be at least as large as sizeof([`HUF_buildCTable_wksp_tables`]).
 pub unsafe fn HUF_buildCTable_wksp(
     CTable: *mut HUF_CElt,
@@ -1128,9 +1131,9 @@ pub fn HUF_compressBound(size: size_t) -> size_t {
 
 pub const HUF_BITS_IN_CONTAINER: size_t = size_t::BITS as usize;
 
-/// Huffman uses its own [`BIT_CStream_t`] implementation.
-/// There are three major differences from [`BIT_CStream_t`]:
-///   1. [`HUF_addBits`] takes a [`HUF_CElt`] (size_t) which is
+/// Huffman uses its own `BIT_CStream_t` implementation.
+/// There are three major differences from `BIT_CStream_t`:
+///   1. `HUF_addBits` takes a `HUF_CElt` (size_t) which is
 ///      the pair (nbBits, value) in the format:
 ///      format:
 ///        - Bits [0, 4)            = nbBits

@@ -15,6 +15,9 @@ pub mod zstd_ddict;
 pub mod zstd_decompress;
 pub mod zstd_decompress_block;
 
+#[cfg(doc)]
+use crate::{ZSTD_CONTENTSIZE_UNKNOWN, ZSTD_FRAMEHEADERSIZE_MAX};
+
 static LL_base: [u32; 36] = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 28, 32, 40, 48, 64,
     0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000, 0x10000,
