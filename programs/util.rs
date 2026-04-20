@@ -9,7 +9,7 @@ use libc::{
     calloc, chmod, chown, closedir, dirent, exit, fchmod, fchown, fclose, feof, ferror, fgets,
     fileno, fopen, fprintf, fread, free, getchar, isatty, malloc, memcpy, mkdir, mode_t, opendir,
     readdir, realloc, size_t, strchr, strcmp, strdup, strlen, strncmp, strrchr, strstr, strtol,
-    sysconf, timespec, DIR, FILE, _SC_NPROCESSORS_ONLN,
+    sysconf, timespec, _SC_NPROCESSORS_ONLN, DIR, FILE,
 };
 
 extern "C" {
