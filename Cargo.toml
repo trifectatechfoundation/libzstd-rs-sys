@@ -8,12 +8,22 @@ edition = "2021"
 
 [package]
 name = "libzstd-rs-sys"
-version = "0.0.0"
+version = "0.0.1-prerelease.1"
 description = "a rust implementation of zstd compression and decompression"
 license = "BSD-3-Clause"
 publish = true
 edition = "2021"
 autobins = false
+include = [
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+    "*.rs",
+    "lib/**/*.rs",
+    "lib/common/portability_macros.h",
+    "zstd.h",
+    "lib/decompress/huf_decompress_amd64.S",
+]
 
 [lib]
 name = "libzstd_rs_sys"
