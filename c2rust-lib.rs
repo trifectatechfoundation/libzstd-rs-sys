@@ -184,26 +184,39 @@ pub mod internal {
     };
 }
 
-#[cfg(all(feature = "export-symbols", feature = "semver-prefix"))]
-macro_rules! prefix {
-    ($name:expr) => {
-        concat!(
-            "LIBZSTD_RS_SYS_v",
-            env!("CARGO_PKG_VERSION_MAJOR"),
-            "_",
-            env!("CARGO_PKG_VERSION_MINOR"),
-            "_x_",
-            stringify!($name)
-        )
-    };
-}
-
-#[cfg(all(feature = "export-symbols", not(feature = "semver-prefix")))]
-macro_rules! prefix {
-    ($name:expr) => {
-        stringify!($name)
-    };
-}
+cfg_select!(
+    feature = "custom-prefix" => {
+        #[cfg(feature = "export-symbols")]
+        macro_rules! prefix {
+            ($name:expr) => {
+                concat!(env!("LIBZSTD_RS_SYS_PREFIX"), stringify!($name))
+            };
+        }
+    }
+    feature = "semver-prefix" => {
+        #[cfg(feature = "export-symbols")]
+        macro_rules! prefix {
+            ($name:expr) => {
+                concat!(
+                    "LIBZSTD_RS_SYS_v",
+                    env!("CARGO_PKG_VERSION_MAJOR"),
+                    "_",
+                    env!("CARGO_PKG_VERSION_MINOR"),
+                    "_x_",
+                    stringify!($name)
+                )
+            };
+        }
+    }
+    _ => {
+        #[cfg(feature = "export-symbols")]
+        macro_rules! prefix {
+            ($name:expr) => {
+                stringify!($name)
+            };
+        }
+    }
+);
 
 #[cfg(feature = "export-symbols")]
 pub(crate) use prefix;

@@ -303,3 +303,33 @@ jobs:
 
       - name: run test
         run: ./zstreamtest -T60s
+
+  link-c-static-library:
+    name: vanilla static library
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+        features:
+          - ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          persist-credentials: false
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@be73d7920c329f220ce78e0234b8f96b7ae60248
+        with:
+          toolchain: stable
+          targets: ${{matrix.target}}
+      - name: "cdylib: custom-prefix"
+        env:
+          LIBZSTD_RS_SYS_PREFIX: "MY_CUSTOM_PREFIX_"
+        run: |
+          cargo build --release --target ${{matrix.target}} --features=custom-prefix
+          objdump -tT target/${{matrix.target}}/release/liblibzstd_rs_sys.a | grep -q "MY_CUSTOM_PREFIX_ZSTD_getErrorCode" || (echo "symbol not found!" && exit 1)
+      - name: "cdylib: semver-prefix"
+        run: |
+          cargo build --release --target ${{matrix.target}} --features=semver-prefix
+          objdump -t target/${{matrix.target}}/release/liblibzstd_rs_sys.a | grep -q -E "LIBZSTD_RS_SYS_v0.[0-9]+.x_ZSTD_getErrorCode" || (echo "symbol not found!" && exit 1)
