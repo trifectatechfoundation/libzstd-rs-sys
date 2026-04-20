@@ -997,7 +997,7 @@ fn ZSTD_decodeSeqHeaders(
     )
     .map_err(|_| Error::corruption_detected)?;
 
-    ip += llhSize as usize;
+    ip += llhSize;
     let ofhSize = ZSTD_buildSeqTableNew(
         &mut dctx.entropy.OFTable,
         &mut dctx.OFTptr,
@@ -1015,7 +1015,7 @@ fn ZSTD_decodeSeqHeaders(
     )
     .map_err(|_| Error::corruption_detected)?;
 
-    ip += ofhSize as usize;
+    ip += ofhSize;
     let mlhSize = ZSTD_buildSeqTableNew(
         &mut dctx.entropy.MLTable,
         &mut dctx.MLTptr,
@@ -1033,7 +1033,7 @@ fn ZSTD_decodeSeqHeaders(
     )
     .map_err(|_| Error::corruption_detected)?;
 
-    ip += mlhSize as usize;
+    ip += mlhSize;
 
     Ok(ip)
 }
@@ -2344,7 +2344,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
 
     let litCSize = ZSTD_decodeLiteralsBlock(dctx, src, dst.subslice(..), streaming)?;
 
-    let mut ip = &src[litCSize as usize..];
+    let mut ip = &src[litCSize..];
 
     let blockSizeMax = Ord::min(dst.capacity(), dctx.block_size_max());
     let totalHistorySize =
@@ -2357,7 +2357,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
     let mut use_prefetch_decoder = dctx.ddictIsCold;
     let mut nbSeq = 0;
     let seqHSize = ZSTD_decodeSeqHeaders(dctx, &mut nbSeq, ip)?;
-    ip = &ip[seqHSize as usize..];
+    ip = &ip[seqHSize..];
     if dst.is_empty() && nbSeq > 0 {
         return Err(Error::dstSize_tooSmall);
     }

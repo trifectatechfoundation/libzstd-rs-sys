@@ -2427,7 +2427,7 @@ fn ZSTDv07_decompressFrame(
         };
         if dctx.fParams.checksumFlag != 0 {
             ZSTD_XXH64_update_slice(&mut dctx.xxhState, unsafe {
-                op.subslice(..decodedSize as usize).as_slice()
+                op.subslice(..decodedSize).as_slice()
             });
         }
         op = op.subslice(decodedSize..);
@@ -2600,7 +2600,7 @@ unsafe fn ZSTDv07_decompressContinue(
             if dctx.fParams.checksumFlag != 0 {
                 ZSTD_XXH64_update_slice(
                     &mut dctx.xxhState,
-                    dst.subslice(..rSize as usize).as_slice(),
+                    dst.subslice(..rSize).as_slice(),
                 );
             }
             return Ok(rSize);
