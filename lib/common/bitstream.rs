@@ -44,8 +44,8 @@ static BIT_mask: [core::ffi::c_uint; 32] = [
 ];
 
 #[inline(always)]
-unsafe fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
-    bitContainer & *BIT_mask.as_ptr().offset(nbBits as isize) as BitContainerType
+fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitContainerType {
+    bitContainer & BIT_mask[nbBits as usize] as BitContainerType
 }
 
 #[inline]
