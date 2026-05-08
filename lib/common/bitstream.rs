@@ -28,10 +28,11 @@ pub(crate) unsafe fn BIT_initCStream(
     bitC.bitPos = 0;
     bitC.startPtr = startPtr as *mut core::ffi::c_char;
     bitC.ptr = bitC.startPtr;
-    bitC.endPtr = (bitC.startPtr)
+    bitC.endPtr = bitC
+        .startPtr
         .add(dstCapacity)
-        .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
-    if dstCapacity <= ::core::mem::size_of::<BitContainerType>() {
+        .sub(size_of::<BitContainerType>());
+    if dstCapacity <= size_of::<BitContainerType>() {
         return Error::dstSize_tooSmall.to_error_code();
     }
     0
