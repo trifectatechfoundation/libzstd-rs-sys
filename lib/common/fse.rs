@@ -105,7 +105,7 @@ pub(crate) unsafe fn FSE_initCState2(
 
 #[inline]
 pub(crate) unsafe fn FSE_encodeSymbol(
-    bitC: *mut BIT_CStream_t,
+    bitC: &mut BIT_CStream_t,
     statePtr: *mut FSE_CState_t,
     symbol: core::ffi::c_uint,
 ) {
@@ -120,7 +120,7 @@ pub(crate) unsafe fn FSE_encodeSymbol(
 }
 
 #[inline]
-pub(crate) unsafe fn FSE_flushCState(bitC: *mut BIT_CStream_t, statePtr: *const FSE_CState_t) {
+pub(crate) unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: *const FSE_CState_t) {
     BIT_addBits(
         bitC,
         (*statePtr).value as BitContainerType,

@@ -20,15 +20,15 @@ pub(crate) struct BIT_CStream_t {
 
 #[inline]
 pub(crate) unsafe fn BIT_initCStream(
-    bitC: *mut BIT_CStream_t,
+    bitC: &mut BIT_CStream_t,
     startPtr: *mut core::ffi::c_void,
     dstCapacity: size_t,
 ) -> size_t {
-    (*bitC).bitContainer = 0;
-    (*bitC).bitPos = 0;
-    (*bitC).startPtr = startPtr as *mut core::ffi::c_char;
-    (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
+    bitC.bitContainer = 0;
+    bitC.bitPos = 0;
+    bitC.startPtr = startPtr as *mut core::ffi::c_char;
+    bitC.ptr = bitC.startPtr;
+    bitC.endPtr = (bitC.startPtr)
         .add(dstCapacity)
         .offset(-(::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong as isize));
     if dstCapacity <= ::core::mem::size_of::<BitContainerType>() {
@@ -50,54 +50,53 @@ unsafe fn BIT_getLowerBits(bitContainer: BitContainerType, nbBits: u32) -> BitCo
 
 #[inline]
 pub(crate) unsafe fn BIT_addBits(
-    bitC: *mut BIT_CStream_t,
+    bitC: &mut BIT_CStream_t,
     value: BitContainerType,
     nbBits: core::ffi::c_uint,
 ) {
-    (*bitC).bitContainer |= BIT_getLowerBits(value, nbBits) << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
+    bitC.bitContainer |= BIT_getLowerBits(value, nbBits) << bitC.bitPos;
+    bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
 
 #[inline]
 unsafe fn BIT_addBitsFast(
-    bitC: *mut BIT_CStream_t,
+    bitC: &mut BIT_CStream_t,
     value: BitContainerType,
     nbBits: core::ffi::c_uint,
 ) {
-    (*bitC).bitContainer |= value << (*bitC).bitPos;
-    (*bitC).bitPos = ((*bitC).bitPos).wrapping_add(nbBits);
+    bitC.bitContainer |= value << bitC.bitPos;
+    bitC.bitPos = bitC.bitPos.wrapping_add(nbBits);
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_flushBits(bitC: *mut BIT_CStream_t) {
-    let nbBytes = ((*bitC).bitPos >> 3) as size_t;
-    MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    if (*bitC).ptr > (*bitC).endPtr {
-        (*bitC).ptr = (*bitC).endPtr;
+pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
+    let nbBytes = (bitC.bitPos >> 3) as size_t;
+    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
+    bitC.ptr = bitC.ptr.add(nbBytes);
+    if bitC.ptr > bitC.endPtr {
+        bitC.ptr = bitC.endPtr;
     }
-    (*bitC).bitPos &= 7;
-    (*bitC).bitContainer >>= nbBytes * 8;
+    bitC.bitPos &= 7;
+    bitC.bitContainer >>= nbBytes * 8;
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_flushBitsFast(bitC: *mut BIT_CStream_t) {
-    let nbBytes = ((*bitC).bitPos >> 3) as size_t;
-    MEM_writeLEST((*bitC).ptr as *mut core::ffi::c_void, (*bitC).bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    (*bitC).bitPos &= 7;
-    (*bitC).bitContainer >>= nbBytes * 8;
+pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
+    let nbBytes = (bitC.bitPos >> 3) as size_t;
+    MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
+    bitC.ptr = bitC.ptr.add(nbBytes);
+    bitC.bitPos &= 7;
+    bitC.bitContainer >>= nbBytes * 8;
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_closeCStream(bitC: *mut BIT_CStream_t) -> size_t {
+pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
     BIT_addBitsFast(bitC, 1, 1);
     BIT_flushBits(bitC);
-    if (*bitC).ptr >= (*bitC).endPtr {
+    if bitC.ptr >= bitC.endPtr {
         return 0;
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as usize)
-        .wrapping_add(((*bitC).bitPos > 0) as usize)
+    (bitC.ptr.offset_from(bitC.startPtr) as usize).wrapping_add((bitC.bitPos > 0) as usize)
 }
 
 /// Bitstream decoder
