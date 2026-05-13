@@ -184,7 +184,7 @@ pub mod internal {
     };
 }
 
-cfg_select!(
+crate::lib::polyfill::cfg_select!(
     feature = "custom-prefix" => {
         #[cfg(feature = "export-symbols")]
         macro_rules! prefix {
