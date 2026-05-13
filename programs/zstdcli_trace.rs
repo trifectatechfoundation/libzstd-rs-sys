@@ -24,6 +24,7 @@ pub unsafe fn TRACE_enable(filename: *const core::ffi::c_char) {
     assert!(traceFile.is_none());
     let traceFile = traceFile.insert(
         OpenOptions::new()
+            .create(true)
             .append(true)
             .open(CStr::from_ptr(filename).to_str().unwrap())
             .unwrap(),
