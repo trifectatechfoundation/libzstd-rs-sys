@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use libc::size_t;
+
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::mem::MEM_writeLEST;
@@ -22,8 +22,8 @@ pub(crate) struct BIT_CStream_t {
 pub(crate) unsafe fn BIT_initCStream(
     bitC: &mut BIT_CStream_t,
     startPtr: *mut core::ffi::c_void,
-    dstCapacity: size_t,
-) -> size_t {
+    dstCapacity: usize,
+) -> usize {
     bitC.bitContainer = 0;
     bitC.bitPos = 0;
     bitC.startPtr = startPtr as *mut core::ffi::c_char;
@@ -71,7 +71,7 @@ unsafe fn BIT_addBitsFast(
 
 #[inline]
 pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
-    let nbBytes = (bitC.bitPos >> 3) as size_t;
+    let nbBytes = (bitC.bitPos >> 3) as usize;
     MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
     bitC.ptr = bitC.ptr.add(nbBytes);
     if bitC.ptr > bitC.endPtr {
@@ -83,7 +83,7 @@ pub(crate) unsafe fn BIT_flushBits(bitC: &mut BIT_CStream_t) {
 
 #[inline]
 pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
-    let nbBytes = (bitC.bitPos >> 3) as size_t;
+    let nbBytes = (bitC.bitPos >> 3) as usize;
     MEM_writeLEST(bitC.ptr as *mut core::ffi::c_void, bitC.bitContainer);
     bitC.ptr = bitC.ptr.add(nbBytes);
     bitC.bitPos &= 7;
@@ -91,7 +91,7 @@ pub(crate) unsafe fn BIT_flushBitsFast(bitC: &mut BIT_CStream_t) {
 }
 
 #[inline]
-pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> size_t {
+pub(crate) unsafe fn BIT_closeCStream(bitC: &mut BIT_CStream_t) -> usize {
     BIT_addBitsFast(bitC, 1, 1);
     BIT_flushBits(bitC);
     if bitC.ptr >= bitC.endPtr {

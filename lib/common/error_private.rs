@@ -1,6 +1,6 @@
 use core::ffi::c_char;
 
-use libc::size_t;
+
 
 use crate::lib::zstd::{ZSTD_ErrorCode, ZSTD_error_maxCode};
 
@@ -45,12 +45,12 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn to_error_code(self) -> size_t {
-        -(self as core::ffi::c_int) as size_t
+    pub fn to_error_code(self) -> usize {
+        -(self as core::ffi::c_int) as usize
     }
 
     #[allow(unused)]
-    pub fn from_error_code(code: size_t) -> Option<Self> {
+    pub fn from_error_code(code: usize) -> Option<Self> {
         if !ERR_isError(code) {
             return None;
         }
@@ -108,11 +108,11 @@ impl TryFrom<u32> for Error {
 
 type ERR_enum = ZSTD_ErrorCode;
 
-pub(crate) const fn ERR_isError(code: size_t) -> bool {
-    code > -(ZSTD_error_maxCode as core::ffi::c_int) as size_t
+pub(crate) const fn ERR_isError(code: usize) -> bool {
+    code > -(ZSTD_error_maxCode as core::ffi::c_int) as usize
 }
 
-pub(crate) const fn ERR_getErrorCode(code: size_t) -> ZSTD_ErrorCode {
+pub(crate) const fn ERR_getErrorCode(code: usize) -> ZSTD_ErrorCode {
     if !ERR_isError(code) {
         return 0;
     }
@@ -178,6 +178,6 @@ pub(crate) fn ERR_getErrorString(code: ERR_enum) -> *const c_char {
     }
 }
 
-pub(crate) fn ERR_getErrorName(code: size_t) -> *const core::ffi::c_char {
+pub(crate) fn ERR_getErrorName(code: usize) -> *const core::ffi::c_char {
     ERR_getErrorString(ERR_getErrorCode(code))
 }

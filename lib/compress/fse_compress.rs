@@ -1,4 +1,4 @@
-use libc::{ptrdiff_t, size_t};
+use libc::ptrdiff_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::bitstream::{
@@ -55,8 +55,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
     workSpace: *mut core::ffi::c_void,
-    wkspSize: size_t,
-) -> size_t {
+    wkspSize: usize,
+) -> usize {
     let tableSize = ((1) << tableLog) as u32;
     let tableMask = tableSize.wrapping_sub(1);
     let ptr = ct as *mut core::ffi::c_void;
@@ -112,7 +112,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     if highThreshold == tableSize.wrapping_sub(1) {
         let spread = tableSymbol.offset(tableSize as isize);
         let add = 0x101010101010101u64;
-        let mut pos = 0 as size_t;
+        let mut pos = 0 as usize;
         let mut sv = 0u64;
         let mut s: u32 = 0;
         s = 0;
@@ -128,23 +128,23 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
                 );
                 i += 8;
             }
-            pos = pos.wrapping_add(n as size_t);
+            pos = pos.wrapping_add(n as usize);
             s = s.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
-        let mut position = 0 as size_t;
-        let mut s_0: size_t = 0;
+        let mut position = 0 as usize;
+        let mut s_0: usize = 0;
         let unroll = 2;
         s_0 = 0;
-        while s_0 < tableSize as size_t {
-            let mut u_0: size_t = 0;
+        while s_0 < tableSize as usize {
+            let mut u_0: usize = 0;
             u_0 = 0;
             while u_0 < unroll {
-                let uPosition = position.wrapping_add(u_0 * step as size_t) & tableMask as size_t;
+                let uPosition = position.wrapping_add(u_0 * step as usize) & tableMask as usize;
                 *tableSymbol.add(uPosition) = *spread.add(s_0.wrapping_add(u_0));
                 u_0 = u_0.wrapping_add(1);
             }
-            position = position.wrapping_add(unroll * step as size_t) & tableMask as size_t;
+            position = position.wrapping_add(unroll * step as usize) & tableMask as usize;
             s_0 = s_0.wrapping_add(unroll);
         }
     } else {
@@ -213,7 +213,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
 unsafe fn FSE_NCountWriteBound(
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     let maxHeaderSize = maxSymbolValue
         .wrapping_add(1)
         .wrapping_mul(tableLog)
@@ -221,21 +221,21 @@ unsafe fn FSE_NCountWriteBound(
         .wrapping_add(2)
         .wrapping_div(8)
         .wrapping_add(1)
-        .wrapping_add(2) as size_t;
+        .wrapping_add(2) as usize;
     if maxSymbolValue != 0 {
         maxHeaderSize
     } else {
-        FSE_NCOUNTBOUND as size_t
+        FSE_NCOUNTBOUND as usize
     }
 }
 unsafe fn FSE_writeNCount_generic(
     header: *mut core::ffi::c_void,
-    headerBufferSize: size_t,
+    headerBufferSize: usize,
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
     writeIsSafe: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     let ostart = header as *mut u8;
     let mut out = ostart;
     let oend = ostart.add(headerBufferSize);
@@ -338,11 +338,11 @@ unsafe fn FSE_writeNCount_generic(
 }
 pub(crate) unsafe fn FSE_writeNCount(
     buffer: *mut core::ffi::c_void,
-    bufferSize: size_t,
+    bufferSize: usize,
     normalizedCounter: *const core::ffi::c_short,
     maxSymbolValue: core::ffi::c_uint,
     tableLog: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     if tableLog > FSE_MAX_TABLELOG as core::ffi::c_uint {
         return Error::tableLog_tooLarge.to_error_code();
     }
@@ -368,7 +368,7 @@ pub(crate) unsafe fn FSE_writeNCount(
         1,
     )
 }
-unsafe fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) -> core::ffi::c_uint {
+unsafe fn FSE_minTableLog(srcSize: usize, maxSymbolValue: core::ffi::c_uint) -> core::ffi::c_uint {
     let minBitsSrc = (ZSTD_highbit32(srcSize as u32)).wrapping_add(1);
     let minBitsSymbols = (ZSTD_highbit32(maxSymbolValue)).wrapping_add(2);
     if minBitsSrc < minBitsSymbols {
@@ -379,7 +379,7 @@ unsafe fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) ->
 }
 pub(crate) unsafe fn FSE_optimalTableLog_internal(
     maxTableLog: core::ffi::c_uint,
-    srcSize: size_t,
+    srcSize: usize,
     maxSymbolValue: core::ffi::c_uint,
     minus: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
@@ -405,7 +405,7 @@ pub(crate) unsafe fn FSE_optimalTableLog_internal(
 }
 pub(crate) unsafe fn FSE_optimalTableLog(
     maxTableLog: core::ffi::c_uint,
-    srcSize: size_t,
+    srcSize: usize,
     maxSymbolValue: core::ffi::c_uint,
 ) -> core::ffi::c_uint {
     FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 2)
@@ -414,10 +414,10 @@ unsafe fn FSE_normalizeM2(
     norm: *mut core::ffi::c_short,
     tableLog: u32,
     count: *const core::ffi::c_uint,
-    mut total: size_t,
+    mut total: usize,
     maxSymbolValue: u32,
     lowProbCount: core::ffi::c_short,
-) -> size_t {
+) -> usize {
     let NOT_YET_ASSIGNED = -(2) as core::ffi::c_short;
     let mut s: u32 = 0;
     let mut distributed = 0u32;
@@ -431,11 +431,11 @@ unsafe fn FSE_normalizeM2(
         } else if *count.offset(s as isize) <= lowThreshold {
             *norm.offset(s as isize) = lowProbCount;
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+            total = total.wrapping_sub(*count.offset(s as isize) as usize);
         } else if *count.offset(s as isize) <= lowOne {
             *norm.offset(s as isize) = 1;
             distributed = distributed.wrapping_add(1);
-            total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+            total = total.wrapping_sub(*count.offset(s as isize) as usize);
         } else {
             *norm.offset(s as isize) = NOT_YET_ASSIGNED;
         }
@@ -445,8 +445,8 @@ unsafe fn FSE_normalizeM2(
     if ToDistribute == 0 {
         return 0;
     }
-    if total / ToDistribute as size_t > lowOne as size_t {
-        lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
+    if total / ToDistribute as usize > lowOne as usize {
+        lowOne = (total * 3 / (ToDistribute * 2) as usize) as u32;
         s = 0;
         while s <= maxSymbolValue {
             if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
@@ -454,7 +454,7 @@ unsafe fn FSE_normalizeM2(
             {
                 *norm.offset(s as isize) = 1;
                 distributed = distributed.wrapping_add(1);
-                total = total.wrapping_sub(*count.offset(s as isize) as size_t);
+                total = total.wrapping_sub(*count.offset(s as isize) as usize);
             }
             s = s.wrapping_add(1);
         }
@@ -514,10 +514,10 @@ pub(crate) unsafe fn FSE_normalizeCount(
     normalizedCounter: *mut core::ffi::c_short,
     mut tableLog: core::ffi::c_uint,
     count: *const core::ffi::c_uint,
-    total: size_t,
+    total: usize,
     maxSymbolValue: core::ffi::c_uint,
     useLowProbCount: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     if tableLog == 0 {
         tableLog = FSE_DEFAULT_TABLELOG as core::ffi::c_uint;
     }
@@ -542,7 +542,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let lowThreshold = (total >> tableLog) as u32;
     s = 0;
     while s <= maxSymbolValue {
-        if *count.offset(s as isize) as size_t == total {
+        if *count.offset(s as isize) as usize == total {
             return 0;
         }
         if *count.offset(s as isize) == 0 {
@@ -588,9 +588,9 @@ pub(crate) unsafe fn FSE_normalizeCount(
             + stillToDistribute as core::ffi::c_short as core::ffi::c_int)
             as core::ffi::c_short;
     }
-    tableLog as size_t
+    tableLog as usize
 }
-pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> size_t {
+pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -> usize {
     let ptr = ct as *mut core::ffi::c_void;
     let tableU16 = (ptr as *mut u16).add(2);
     let FSCTptr = (ptr as *mut u32).add(2) as *mut core::ffi::c_void;
@@ -605,12 +605,12 @@ pub(crate) unsafe fn FSE_buildCTable_rle(ct: *mut FSE_CTable, symbolValue: u8) -
 }
 unsafe fn FSE_compress_usingCTable_generic(
     dst: *mut core::ffi::c_void,
-    dstSize: size_t,
+    dstSize: usize,
     src: *const core::ffi::c_void,
-    mut srcSize: size_t,
+    mut srcSize: usize,
     ct: *const FSE_CTable,
     fast: core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
     let mut ip = iend;
@@ -707,16 +707,16 @@ unsafe fn FSE_compress_usingCTable_generic(
 }
 pub(crate) unsafe fn FSE_compress_usingCTable(
     dst: *mut core::ffi::c_void,
-    dstSize: size_t,
+    dstSize: usize,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
+    srcSize: usize,
     ct: *const FSE_CTable,
-) -> size_t {
+) -> usize {
     let fast = (dstSize
         >= srcSize
             .wrapping_add(srcSize >> 7)
             .wrapping_add(4)
-            .wrapping_add(::core::mem::size_of::<size_t>())) as core::ffi::c_int
+            .wrapping_add(::core::mem::size_of::<usize>())) as core::ffi::c_int
         as core::ffi::c_uint;
     if fast != 0 {
         FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 1)

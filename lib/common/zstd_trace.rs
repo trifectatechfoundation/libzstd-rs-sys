@@ -1,4 +1,4 @@
-use libc::size_t;
+
 
 use crate::lib::compress::zstd_compress::{ZSTD_CCtx, ZSTD_CCtx_params_s, ZSTD_CCtx_s};
 use crate::lib::decompress::{ZSTD_DCtx, ZSTD_DCtx_s};
@@ -11,9 +11,9 @@ pub struct ZSTD_Trace {
     pub dictionaryID: core::ffi::c_uint,
     pub dictionaryIsCold: bool,
     _padding: [u8; 3],
-    pub dictionarySize: size_t,
-    pub uncompressedSize: size_t,
-    pub compressedSize: size_t,
+    pub dictionarySize: usize,
+    pub uncompressedSize: usize,
+    pub compressedSize: usize,
     pub params: *const ZSTD_CCtx_params_s,
     pub cctx: *const ZSTD_CCtx_s,
     pub dctx: *const ZSTD_DCtx_s,

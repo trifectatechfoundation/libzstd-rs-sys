@@ -2,7 +2,7 @@ use core::ptr;
 use std::sync::{Condvar, Mutex};
 use std::thread::JoinHandle;
 
-use libc::size_t;
+
 
 use crate::lib::common::allocations::{ZSTD_customCalloc, ZSTD_customFree};
 use crate::lib::zstd::ZSTD_customMem;
@@ -10,13 +10,13 @@ use crate::lib::zstd::ZSTD_customMem;
 pub struct POOL_ctx {
     customMem: ZSTD_customMem,
     threads: *mut JoinHandle<()>,
-    threadCapacity: size_t,
-    threadLimit: size_t,
+    threadCapacity: usize,
+    threadLimit: usize,
     queue: *mut POOL_job,
-    queueHead: size_t,
-    queueTail: size_t,
-    queueSize: size_t,
-    numThreadsBusy: size_t,
+    queueHead: usize,
+    queueTail: usize,
+    queueSize: usize,
+    numThreadsBusy: usize,
     queueEmpty: core::ffi::c_int,
     queueMutex: Mutex<()>,
     queuePushCond: Condvar,
@@ -62,15 +62,15 @@ unsafe fn POOL_thread(ctx: *mut POOL_ctx) {
     }
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_createThreadPool))]
-pub unsafe extern "C" fn ZSTD_createThreadPool(numThreads: size_t) -> *mut ZSTD_threadPool {
+pub unsafe extern "C" fn ZSTD_createThreadPool(numThreads: usize) -> *mut ZSTD_threadPool {
     POOL_create(numThreads, 0)
 }
-pub unsafe fn POOL_create(numThreads: size_t, queueSize: size_t) -> *mut POOL_ctx {
+pub unsafe fn POOL_create(numThreads: usize, queueSize: usize) -> *mut POOL_ctx {
     POOL_create_advanced(numThreads, queueSize, ZSTD_customMem::default())
 }
 pub(crate) unsafe fn POOL_create_advanced(
-    numThreads: size_t,
-    queueSize: size_t,
+    numThreads: usize,
+    queueSize: usize,
     customMem: ZSTD_customMem,
 ) -> *mut POOL_ctx {
     let mut ctx = core::ptr::null_mut::<POOL_ctx>();
@@ -163,7 +163,7 @@ pub unsafe fn POOL_joinJobs(ctx: *mut POOL_ctx) {
 pub unsafe extern "C" fn ZSTD_freeThreadPool(pool: *mut ZSTD_threadPool) {
     POOL_free(pool);
 }
-pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
+pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> usize {
     if ctx.is_null() {
         return 0;
     }
@@ -171,7 +171,7 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
         + (*ctx).queueSize * ::core::mem::size_of::<POOL_job>()
         + (*ctx).threadCapacity * ::core::mem::size_of::<JoinHandle<()>>()
 }
-unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
+unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: usize) -> core::ffi::c_int {
     if numThreads <= (*ctx).threadCapacity {
         if numThreads == 0 {
             return 1;
@@ -211,7 +211,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     (*ctx).threadLimit = numThreads;
     0
 }
-pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
+pub(crate) unsafe fn POOL_resize(ctx: *mut POOL_ctx, numThreads: usize) -> core::ffi::c_int {
     if ctx.is_null() {
         return 1;
     }

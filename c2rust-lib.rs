@@ -42,6 +42,7 @@
 #![cfg_attr(feature = "nightly", feature(hint_prefetch))]
 // FIXME
 #![allow(clippy::missing_safety_doc)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod lib {
     pub mod common {

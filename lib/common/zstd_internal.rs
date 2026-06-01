@@ -1,6 +1,6 @@
 use core::mem::MaybeUninit;
 
-use libc::size_t;
+
 
 const fn const_max(a: usize, b: usize) -> usize {
     if a > b {
@@ -18,7 +18,7 @@ pub(crate) static repStartValue: [u32; ZSTD_REP_NUM as usize] = [1, 4, 8];
 pub(crate) const ZSTD_FRAMEIDSIZE: usize = 4;
 
 const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-pub(crate) static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+pub(crate) static ZSTD_blockHeaderSize: usize = ZSTD_BLOCKHEADERSIZE as usize;
 pub(crate) type blockType_e = core::ffi::c_uint;
 pub(crate) const bt_raw: blockType_e = 0;
 pub(crate) const bt_rle: blockType_e = 1;
@@ -113,7 +113,7 @@ pub(crate) enum Overlap {
 pub(crate) unsafe fn ZSTD_wildcopy(
     mut op: *mut u8,
     mut ip: *const u8,
-    length: size_t,
+    length: usize,
     ovtype: Overlap,
 ) {
     let diff = op as isize - ip as isize;
@@ -172,10 +172,10 @@ pub(crate) unsafe fn ZSTD_wildcopy(
 #[inline]
 pub(crate) unsafe fn ZSTD_limitCopy(
     dst: *mut u8,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: *const u8,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let length = Ord::min(dstCapacity, srcSize);
     core::ptr::copy_nonoverlapping(src, dst, length);
     length
