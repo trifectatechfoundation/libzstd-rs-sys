@@ -1,5 +1,5 @@
 use core::ffi::{c_int, c_uint, c_ulonglong};
-use libc::size_t;
+
 
 #[cfg(doc)]
 use crate::{
@@ -151,7 +151,7 @@ pub struct ZSTD_customMem {
 pub type ZSTD_freeFunction =
     Option<unsafe extern "C" fn(*mut core::ffi::c_void, *mut core::ffi::c_void) -> ()>;
 pub type ZSTD_allocFunction =
-    Option<unsafe extern "C" fn(*mut core::ffi::c_void, size_t) -> *mut core::ffi::c_void>;
+    Option<unsafe extern "C" fn(*mut core::ffi::c_void, usize) -> *mut core::ffi::c_void>;
 
 #[derive(PartialEq)]
 #[repr(transparent)]
@@ -235,9 +235,9 @@ pub struct ZSTD_inBuffer_s {
     /// Pointer to start of input buffer
     pub src: *const core::ffi::c_void,
     /// Size of input buffer
-    pub size: size_t,
+    pub size: usize,
     /// Position where reading stopped. Will be updated. Necessarily `0 <= pos <= size`.
-    pub pos: size_t,
+    pub pos: usize,
 }
 
 pub type ZSTD_outBuffer = ZSTD_outBuffer_s;
@@ -247,9 +247,9 @@ pub struct ZSTD_outBuffer_s {
     /// Pointer to start of output buffer
     pub dst: *mut core::ffi::c_void,
     /// Size of output buffer
-    pub size: size_t,
+    pub size: usize,
     /// Position where writing stopped. Will be updated. Necessarily `0 <= pos <= size`.
-    pub pos: size_t,
+    pub pos: usize,
 }
 
 pub type ZSTD_bufferMode_e = core::ffi::c_uint;

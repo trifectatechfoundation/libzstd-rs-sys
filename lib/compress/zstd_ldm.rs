@@ -49,7 +49,7 @@ pub struct ldmState_t {
     pub hashTable: *mut ldmEntry_t,
     pub loadedDictEnd: u32,
     pub bucketOffsets: *mut u8,
-    pub splitIndices: [size_t; 64],
+    pub splitIndices: [usize; 64],
     pub matchCandidates: [ldmMatchCandidate_t; 64],
 }
 #[derive(Copy, Clone)]
@@ -93,8 +93,8 @@ pub type ZSTD_BlockCompressor_f = Option<
         &mut SeqStore_t,
         *mut u32,
         *const core::ffi::c_void,
-        size_t,
-    ) -> size_t,
+        usize,
+    ) -> usize,
 >;
 #[repr(C)]
 pub struct ldmRollingHashState_t {
@@ -102,7 +102,7 @@ pub struct ldmRollingHashState_t {
     pub stopMask: u64,
 }
 
-use libc::size_t;
+
 
 use crate::lib::common::error_private::{ERR_isError, Error};
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
@@ -221,7 +221,7 @@ unsafe fn ZSTD_window_enforceMaxDist(
     }
 }
 #[inline]
-unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
+unsafe fn ZSTD_cwksp_alloc_size(size: usize) -> usize {
     if size == 0 {
         return 0;
     }
@@ -505,10 +505,10 @@ unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const l
 unsafe fn ZSTD_ldm_gear_reset(
     state: *mut ldmRollingHashState_t,
     data: *const u8,
-    minMatchLength: size_t,
+    minMatchLength: usize,
 ) {
     let mut hash = (*state).rolling;
-    let mut n = 0 as size_t;
+    let mut n = 0 as usize;
     while n.wrapping_add(3) < minMatchLength {
         hash = (hash << 1).wrapping_add(
             *ZSTD_ldm_gearTab
@@ -547,12 +547,12 @@ unsafe fn ZSTD_ldm_gear_reset(
 unsafe fn ZSTD_ldm_gear_feed(
     state: *mut ldmRollingHashState_t,
     data: *const u8,
-    size: size_t,
-    splits: *mut size_t,
+    size: usize,
+    splits: *mut usize,
     numSplits: *mut core::ffi::c_uint,
-) -> size_t {
+) -> usize {
     let mut current_block: u64;
-    let mut n: size_t = 0;
+    let mut n: usize = 0;
     let mut hash: u64 = 0;
     let mut mask: u64 = 0;
     hash = (*state).rolling;
@@ -670,13 +670,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
     if (*params).hashLog == 0 {
         (*params).hashLog = if 6
             > (if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-                < (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                < (if (if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
                 }) < 30
                 {
-                    if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                    if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                         30
                     } else {
                         31
@@ -687,13 +687,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
             {
                 ((*params).windowLog).wrapping_sub((*params).hashRateLog)
             } else {
-                (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                (if (if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
                 }) < 30
                 {
-                    if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                    if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                         30
                     } else {
                         31
@@ -704,13 +704,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
             }) {
             6
         } else if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-            < (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+            < (if (if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                 30
             } else {
                 31
             }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
@@ -721,13 +721,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         {
             ((*params).windowLog).wrapping_sub((*params).hashRateLog)
         } else {
-            (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+            (if (if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                 30
             } else {
                 31
             }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                if ::core::mem::size_of::<usize>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
@@ -765,14 +765,14 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         (*params).hashLog
     };
 }
-pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
-    let ldmHSize = (1 as size_t) << params.hashLog;
+pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> usize {
+    let ldmHSize = (1 as usize) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
         params.bucketSizeLog
     } else {
         params.hashLog
-    }) as size_t;
-    let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
+    }) as usize;
+    let ldmBucketSize = (1) << (params.hashLog as usize).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>()),
     ));
@@ -782,23 +782,23 @@ pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
         0
     }
 }
-pub unsafe fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
+pub unsafe fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: usize) -> usize {
     if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-        maxChunkSize / params.minMatchLength as size_t
+        maxChunkSize / params.minMatchLength as usize
     } else {
         0
     }
 }
 unsafe fn ZSTD_ldm_getBucket(
     ldmState: *const ldmState_t,
-    hash: size_t,
+    hash: usize,
     bucketSizeLog: u32,
 ) -> *mut ldmEntry_t {
     ((*ldmState).hashTable).add(hash << bucketSizeLog)
 }
 unsafe fn ZSTD_ldm_insertEntry(
     ldmState: *mut ldmState_t,
-    hash: size_t,
+    hash: usize,
     entry: ldmEntry_t,
     bucketSizeLog: u32,
 ) {
@@ -813,8 +813,8 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     pAnchor: *const u8,
     mut pMatch: *const u8,
     pMatchBase: *const u8,
-) -> size_t {
-    let mut matchLength = 0 as size_t;
+) -> usize {
+    let mut matchLength = 0 as usize;
     while pIn > pAnchor
         && pMatch > pMatchBase
         && *pIn.sub(1) as core::ffi::c_int == *pMatch.sub(1) as core::ffi::c_int
@@ -832,7 +832,7 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     pMatchBase: *const u8,
     pExtDictStart: *const u8,
     pExtDictEnd: *const u8,
-) -> size_t {
+) -> usize {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(pIn, pAnchor, pMatch, pMatchBase);
     if pMatch.offset(-(matchLength as isize)) != pMatchBase || pMatchBase == pExtDictStart {
         return matchLength;
@@ -848,7 +848,7 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
 unsafe fn ZSTD_ldm_fillFastTables(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
-) -> size_t {
+) -> usize {
     let iend = end as *const u8;
     match ms.cParams.strategy as core::ffi::c_uint {
         1 => {
@@ -890,7 +890,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     let mut numSplits: core::ffi::c_uint = 0;
     ZSTD_ldm_gear_init(&mut hashState, params);
     while ip < iend {
-        let mut hashed: size_t = 0;
+        let mut hashed: usize = 0;
         let mut n: core::ffi::c_uint = 0;
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
@@ -918,7 +918,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                 };
                 entry.offset = split.offset_from(base) as core::ffi::c_long as u32;
                 entry.checksum = (xxhash >> 32) as u32;
-                ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, (*params).bucketSizeLog);
+                ZSTD_ldm_insertEntry(ldmState, hash as usize, entry, (*params).bucketSizeLog);
             }
             n = n.wrapping_add(1);
         }
@@ -942,8 +942,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     rawSeqStore: *mut RawSeqStore_t,
     params: *const ldmParams_t,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let extDict = ZSTD_window_hasExtDict((*ldmState).window) as core::ffi::c_int;
     let minMatchLength = (*params).minMatchLength;
     let entsPerBucket = (1) << (*params).bucketSizeLog;
@@ -983,14 +983,14 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     let splits = ((*ldmState).splitIndices).as_mut_ptr();
     let candidates = ((*ldmState).matchCandidates).as_mut_ptr();
     let mut numSplits: core::ffi::c_uint = 0;
-    if srcSize < minMatchLength as size_t {
+    if srcSize < minMatchLength as usize {
         return iend.offset_from_unsigned(anchor);
     }
     ZSTD_ldm_gear_init(&mut hashState, params);
-    ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
+    ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as usize);
     ip = ip.offset(minMatchLength as isize);
     while ip < ilimit {
-        let mut hashed: size_t = 0;
+        let mut hashed: usize = 0;
         let mut n: core::ffi::c_uint = 0;
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
@@ -1016,7 +1016,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             (*candidates.offset(n as isize)).hash = hash;
             (*candidates.offset(n as isize)).checksum = (xxhash >> 32) as u32;
             let fresh3 = &mut (*candidates.offset(n as isize)).bucket;
-            *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
+            *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as usize, (*params).bucketSizeLog);
             n = n.wrapping_add(1);
         }
         n = 0;
@@ -1024,7 +1024,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
-            let mut mLength: size_t = 0;
+            let mut mLength: usize = 0;
             let mut offset: u32 = 0;
             let split_0 = (*candidates.offset(n as isize)).split;
             let checksum = (*candidates.offset(n as isize)).checksum;
@@ -1041,7 +1041,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             if split_0 < anchor {
                 ZSTD_ldm_insertEntry(
                     ldmState,
-                    hash_0 as size_t,
+                    hash_0 as usize,
                     newEntry,
                     (*params).bucketSizeLog,
                 );
@@ -1049,9 +1049,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 let mut current_block_30: u64;
                 cur = bucket;
                 while cur < bucket.offset(entsPerBucket as isize) as *const ldmEntry_t {
-                    let mut curForwardMatchLength: size_t = 0;
-                    let mut curBackwardMatchLength: size_t = 0;
-                    let mut curTotalMatchLength: size_t = 0;
+                    let mut curForwardMatchLength: usize = 0;
+                    let mut curBackwardMatchLength: usize = 0;
+                    let mut curTotalMatchLength: usize = 0;
                     if !((*cur).checksum != checksum || (*cur).offset <= lowestIndex) {
                         if extDict != 0 {
                             let curMatchBase = if (*cur).offset < dictLimit {
@@ -1072,7 +1072,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                             };
                             curForwardMatchLength =
                                 ZSTD_count_2segments(split_0, pMatch, iend, matchEnd, lowPrefixPtr);
-                            if curForwardMatchLength < minMatchLength as size_t {
+                            if curForwardMatchLength < minMatchLength as usize {
                                 current_block_30 = 17788412896529399552;
                             } else {
                                 curBackwardMatchLength = ZSTD_ldm_countBackwardsMatch_2segments(
@@ -1088,7 +1088,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         } else {
                             let pMatch_0 = base.offset((*cur).offset as isize);
                             curForwardMatchLength = ZSTD_count(split_0, pMatch_0, iend);
-                            if curForwardMatchLength < minMatchLength as size_t {
+                            if curForwardMatchLength < minMatchLength as usize {
                                 current_block_30 = 17788412896529399552;
                             } else {
                                 curBackwardMatchLength = ZSTD_ldm_countBackwardsMatch(
@@ -1119,7 +1119,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 if bestEntry.is_null() {
                     ZSTD_ldm_insertEntry(
                         ldmState,
-                        hash_0 as size_t,
+                        hash_0 as usize,
                         newEntry,
                         (*params).bucketSizeLog,
                     );
@@ -1140,7 +1140,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     (*rawSeqStore).size = ((*rawSeqStore).size).wrapping_add(1);
                     ZSTD_ldm_insertEntry(
                         ldmState,
-                        hash_0 as size_t,
+                        hash_0 as usize,
                         newEntry,
                         (*params).bucketSizeLog,
                     );
@@ -1149,7 +1149,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
                             anchor.offset(-(minMatchLength as isize)),
-                            minMatchLength as size_t,
+                            minMatchLength as usize,
                         );
                         ip = anchor.offset(-(hashed as isize));
                         break;
@@ -1180,15 +1180,15 @@ pub unsafe fn ZSTD_ldm_generateSequences(
     sequences: *mut RawSeqStore_t,
     params: *const ldmParams_t,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let maxDist = (1) << (*params).windowLog;
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
-    let kMaxChunkSize = ((1) << 20) as size_t;
+    let kMaxChunkSize = ((1) << 20) as usize;
     let nbChunks = (srcSize / kMaxChunkSize)
-        .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
-    let mut chunk: size_t = 0;
+        .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as usize);
+    let mut chunk: usize = 0;
     let mut leftoverSize = 0;
     chunk = 0;
     while chunk < nbChunks && (*sequences).size < (*sequences).capacity {
@@ -1200,7 +1200,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkStart.add(kMaxChunkSize)
         };
         let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
-        let mut newLeftoverSize: size_t = 0;
+        let mut newLeftoverSize: usize = 0;
         let prevSize = (*sequences).size;
         if ZSTD_window_needOverflowCorrection(
             (*ldmState).window,
@@ -1250,18 +1250,18 @@ pub unsafe fn ZSTD_ldm_generateSequences(
 }
 pub unsafe fn ZSTD_ldm_skipSequences(
     rawSeqStore: *mut RawSeqStore_t,
-    mut srcSize: size_t,
+    mut srcSize: usize,
     minMatch: u32,
 ) {
     while srcSize > 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
         let seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
-        if srcSize <= (*seq).litLength as size_t {
+        if srcSize <= (*seq).litLength as usize {
             (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
             return;
         }
-        srcSize = srcSize.wrapping_sub((*seq).litLength as size_t);
+        srcSize = srcSize.wrapping_sub((*seq).litLength as usize);
         (*seq).litLength = 0;
-        if srcSize < (*seq).matchLength as size_t {
+        if srcSize < (*seq).matchLength as usize {
             (*seq).matchLength = ((*seq).matchLength).wrapping_sub(srcSize as u32);
             if (*seq).matchLength < minMatch {
                 if ((*rawSeqStore).pos).wrapping_add(1) < (*rawSeqStore).size {
@@ -1272,7 +1272,7 @@ pub unsafe fn ZSTD_ldm_skipSequences(
             }
             return;
         }
-        srcSize = srcSize.wrapping_sub((*seq).matchLength as size_t);
+        srcSize = srcSize.wrapping_sub((*seq).matchLength as usize);
         (*seq).matchLength = 0;
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
     }
@@ -1295,10 +1295,10 @@ unsafe fn maybeSplitSequence(
             sequence.offset = 0;
         }
     }
-    ZSTD_ldm_skipSequences(rawSeqStore, remaining as size_t, minMatch);
+    ZSTD_ldm_skipSequences(rawSeqStore, remaining as usize, minMatch);
     sequence
 }
-pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: size_t) {
+pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: usize) {
     let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
         let currSeq = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
@@ -1306,7 +1306,7 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
             currPos = currPos.wrapping_sub((currSeq.litLength).wrapping_add(currSeq.matchLength));
             (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
         } else {
-            (*rawSeqStore).posInSequence = currPos as size_t;
+            (*rawSeqStore).posInSequence = currPos as usize;
             break;
         }
     }
@@ -1321,8 +1321,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     rep: *mut u32,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let minMatch = (*cParams).minMatch;
     let blockCompressor = ZSTD_selectBlockCompressor(
@@ -1336,7 +1336,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     if (*cParams).strategy as core::ffi::c_uint
         >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
     {
-        let mut lastLLSize: size_t = 0;
+        let mut lastLLSize: usize = 0;
         ms.ldmSeqStore = rawSeqStore;
         lastLLSize = blockCompressor.unwrap_unchecked()(ms, seqStore, rep, src, srcSize);
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
@@ -1359,7 +1359,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             seqStore,
             rep,
             ip as *const core::ffi::c_void,
-            sequence.litLength as size_t,
+            sequence.litLength as usize,
         );
         ip = ip.offset(sequence.litLength as isize);
         i = ZSTD_REP_NUM - 1;
@@ -1374,7 +1374,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             ip.offset(-(newLitLength as isize)),
             iend,
             (sequence.offset).wrapping_add(ZSTD_REP_NUM as u32),
-            sequence.matchLength as size_t,
+            sequence.matchLength as usize,
         );
         ip = ip.offset(sequence.matchLength as isize);
     }

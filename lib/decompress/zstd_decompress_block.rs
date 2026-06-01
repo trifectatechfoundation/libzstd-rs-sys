@@ -3,7 +3,7 @@ use core::ffi::c_void;
 use core::ops::Range;
 use core::ptr::{self, NonNull};
 
-use libc::{ptrdiff_t, size_t};
+use libc::ptrdiff_t;
 
 use crate::lib::common::bitstream::BIT_DStream_t;
 use crate::lib::common::entropy_common::FSE_readNCount_slice;
@@ -69,7 +69,7 @@ pub struct seqState_t<'a> {
     stateLL: ZSTD_fseState<'a>,
     stateOffb: ZSTD_fseState<'a>,
     stateML: ZSTD_fseState<'a>,
-    prevOffset: [size_t; 3],
+    prevOffset: [usize; 3],
 }
 
 impl ZSTD_DCtx {
@@ -94,14 +94,14 @@ impl ZSTD_DCtx {
             stateOffb,
             stateML,
             DStream: bit_stream,
-            prevOffset: self.entropy.rep.map(|v| v as size_t),
+            prevOffset: self.entropy.rep.map(|v| v as usize),
         }
     }
 }
 
 #[repr(C)]
 pub struct ZSTD_fseState<'a> {
-    pub state: size_t,
+    pub state: usize,
     pub table: &'a [ZSTD_seqSymbol],
 }
 
@@ -122,9 +122,9 @@ impl<'a> ZSTD_fseState<'a> {
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct seq_t {
-    pub litLength: size_t,
-    pub matchLength: size_t,
-    pub offset: size_t,
+    pub litLength: usize,
+    pub matchLength: usize,
+    pub offset: usize,
 }
 
 #[derive(Copy, Clone, Default)]
@@ -167,7 +167,7 @@ pub const STREAM_ACCUMULATOR_MIN_32: core::ffi::c_int = 25;
 pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 
 pub const ZSTD_BLOCKHEADERSIZE: core::ffi::c_int = 3;
-static ZSTD_blockHeaderSize: size_t = ZSTD_BLOCKHEADERSIZE as size_t;
+static ZSTD_blockHeaderSize: usize = ZSTD_BLOCKHEADERSIZE as usize;
 pub const LONGNBSEQ: core::ffi::c_int = 0x7f00 as core::ffi::c_int;
 
 impl ZSTD_DCtx {
@@ -183,7 +183,7 @@ impl ZSTD_DCtx {
 pub(crate) fn ZSTD_getcBlockSize(
     src: &[u8],
     bpPtr: &mut blockProperties_t,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if src.len() < ZSTD_blockHeaderSize {
         return Err(Error::srcSize_wrong);
     }
@@ -195,7 +195,7 @@ pub(crate) fn ZSTD_getcBlockSize(
     bpPtr.origSize = cSize;
 
     match bpPtr.blockType {
-        BlockType::Raw | BlockType::Compressed => Ok(cSize as size_t),
+        BlockType::Raw | BlockType::Compressed => Ok(cSize as usize),
         BlockType::Rle => Ok(1),
         BlockType::Reserved => Err(Error::corruption_detected),
     }
@@ -216,7 +216,7 @@ pub(crate) fn getc_block_size(src: &[u8]) -> Result<(blockProperties_t, usize), 
     };
 
     match bp.blockType {
-        BlockType::Raw | BlockType::Compressed => Ok((bp, cSize as size_t)),
+        BlockType::Raw | BlockType::Compressed => Ok((bp, cSize as usize)),
         BlockType::Rle => Ok((bp, 1)),
         BlockType::Reserved => Err(Error::corruption_detected),
     }
@@ -285,7 +285,7 @@ fn ZSTD_decodeLiteralsBlock(
     src: &[u8],
     dst: Writer<'_>,
     streaming: StreamingOperation,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     // for a non-null block
     const MIN_CBLOCK_SIZE: usize = 1 /*litCSize*/ + 1/* RLE or RAW */;
     if src.len() < MIN_CBLOCK_SIZE {
@@ -867,7 +867,7 @@ fn ZSTD_buildSeqTableNew<const N: usize>(
     nbSeq: core::ffi::c_int,
     wksp: &mut Workspace,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     match type_0 {
         SymbolEncodingType_e::set_rle => {
             let [symbol, ..] = *src else {
@@ -930,7 +930,7 @@ fn ZSTD_decodeSeqHeaders(
     dctx: &mut ZSTD_DCtx,
     nbSeqPtr: &mut core::ffi::c_int,
     src: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut ip = 0;
     let [nbSeq, ..] = *src else {
         return Err(Error::srcSize_wrong);
@@ -1044,7 +1044,7 @@ fn ZSTD_decodeSeqHeaders(
 ///  Precondition: *ip <= *op
 ///  Postcondition: *op - *ip >= 8
 #[inline(always)]
-unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: size_t) {
+unsafe fn ZSTD_overlapCopy8(op: &mut *mut u8, ip: &mut *const u8, offset: usize) {
     if offset < 8 {
         /* close range match, overlap */
         *(*op).add(0) = *(*ip).add(0);
@@ -1081,7 +1081,7 @@ unsafe fn ZSTD_safecopy(
     mut op: *mut u8,
     oend_w: *const u8,
     mut ip: *const u8,
-    mut length: size_t,
+    mut length: usize,
     ovtype: Overlap,
 ) {
     let diff = op as isize - ip as isize;
@@ -1105,7 +1105,7 @@ unsafe fn ZSTD_safecopy(
         /* Copy 8 bytes and ensure the offset >= 8 when there can be overlap. */
         debug_assert!(length >= 8);
         debug_assert!(diff > 0);
-        ZSTD_overlapCopy8(&mut op, &mut ip, diff as size_t);
+        ZSTD_overlapCopy8(&mut op, &mut ip, diff as usize);
         length = length.wrapping_sub(8);
         debug_assert!(op.offset_from(ip) >= 8);
         debug_assert!(op <= oend);
@@ -1132,7 +1132,7 @@ unsafe fn ZSTD_safecopy(
 
 /// This version allows overlap with dst before src, or handles the non-overlap case with dst after src
 /// Kept separate from more common [`ZSTD_safecopy`] case to avoid performance impact to the safecopy common case */
-unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: size_t) {
+unsafe fn ZSTD_safecopyDstBeforeSrc(mut op: *mut u8, mut ip: *const u8, length: usize) {
     let diff = op.offset_from(ip) as ptrdiff_t;
     let oend = op.add(length);
     if length < 8 || diff > -8 {
@@ -1179,7 +1179,7 @@ unsafe fn ZSTD_execSequenceEnd(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
@@ -1243,7 +1243,7 @@ unsafe fn ZSTD_execSequenceEndSplitLitBuffer(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let iLitEnd = (*litPtr).add(sequence.litLength);
@@ -1310,7 +1310,7 @@ unsafe fn ZSTD_execSequence(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut op = op.as_mut_ptr();
     let oLitEnd = op.add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
@@ -1435,7 +1435,7 @@ unsafe fn ZSTD_execSequenceSplitLitBuffer(
     prefixStart: *const u8,
     virtualStart: *const u8,
     dictEnd: *const u8,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let oLitEnd = op.as_mut_ptr().add(sequence.litLength);
     let sequenceLength = (sequence.litLength).wrapping_add(sequence.matchLength);
     let oMatchEnd = op.as_mut_ptr().add(sequenceLength);
@@ -1591,8 +1591,8 @@ fn ZSTD_decodeSequence(
         }
     }
 
-    seq.matchLength = mlDInfo.baseValue as size_t;
-    seq.litLength = llDInfo.baseValue as size_t;
+    seq.matchLength = mlDInfo.baseValue as usize;
+    seq.litLength = llDInfo.baseValue as usize;
     let ofBase = ofDInfo.baseValue;
 
     let llBits = llDInfo.nbAdditionalBits;
@@ -1616,7 +1616,7 @@ fn ZSTD_decodeSequence(
     // it is deliberately not a debug_assert!.
     assert!(ofBits as u32 <= MaxOff);
 
-    let mut offset: size_t = 0;
+    let mut offset: usize = 0;
     if ofBits > 1 {
         const { assert!(Offset::Long as usize == 1) };
         const { assert!(LONG_OFFSETS_MAX_EXTRA_BITS_32 == 5) };
@@ -1630,17 +1630,17 @@ fn ZSTD_decodeSequence(
             // Always read extra bits, this keeps the logic simple,
             // avoids branches, and avoids accidentally reading 0 bits.
             let extraBits = LONG_OFFSETS_MAX_EXTRA_BITS_32 as u32;
-            offset = (ofBase as size_t).wrapping_add(
+            offset = (ofBase as usize).wrapping_add(
                 (seqState
                     .DStream
-                    .read_bits_fast(u32::from(ofBits) - extraBits) as size_t)
+                    .read_bits_fast(u32::from(ofBits) - extraBits) as usize)
                     << extraBits,
             );
             seqState.DStream.reload();
-            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as size_t);
+            offset = offset.wrapping_add(seqState.DStream.read_bits_fast(extraBits) as usize);
         } else {
-            offset = (ofBase as size_t)
-                .wrapping_add(seqState.DStream.read_bits_fast(u32::from(ofBits)) as size_t);
+            offset = (ofBase as usize)
+                .wrapping_add(seqState.DStream.read_bits_fast(u32::from(ofBits)) as usize);
             if MEM_32bits() {
                 seqState.DStream.reload();
             }
@@ -1656,8 +1656,8 @@ fn ZSTD_decodeSequence(
             seqState.prevOffset[1] = seqState.prevOffset[usize::from(ll0 == 0)];
             seqState.prevOffset[0] = offset;
         } else {
-            offset = (ofBase.wrapping_add(ll0 as u32) as size_t)
-                .wrapping_add(seqState.DStream.read_bits_fast(1) as size_t);
+            offset = (ofBase.wrapping_add(ll0 as u32) as usize)
+                .wrapping_add(seqState.DStream.read_bits_fast(1) as usize);
 
             let mut temp = match offset {
                 3 => seqState.prevOffset[0] - 1,
@@ -1678,7 +1678,7 @@ fn ZSTD_decodeSequence(
     if mlBits > 0 {
         seq.matchLength = seq
             .matchLength
-            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as size_t);
+            .wrapping_add(seqState.DStream.read_bits_fast(mlBits as core::ffi::c_uint) as usize);
     }
 
     if cfg!(target_pointer_width = "32")
@@ -1696,7 +1696,7 @@ fn ZSTD_decodeSequence(
 
     if llBits > 0 {
         seq.litLength = (seq.litLength)
-            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as size_t);
+            .wrapping_add(seqState.DStream.read_bits_fast(llBits as core::ffi::c_uint) as usize);
     }
     if MEM_32bits() {
         seqState.DStream.reload();
@@ -1729,7 +1729,7 @@ fn ZSTD_decompressSequences_bodySplitLitBuffer(
     seq: &[u8],
     mut nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let maxDstSize = dst.capacity();
     let mut op = dst;
     let mut litPtr = dctx.litPtr;
@@ -1879,7 +1879,7 @@ unsafe fn ZSTD_decompressSequences_body(
     seq: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let capacity = dst.capacity();
 
     let oend = match dctx.litBufferLocation {
@@ -1932,7 +1932,7 @@ unsafe fn ZSTD_decompressSequences_body(
     }
 
     let lastLLSize = litEnd.offset_from_unsigned(litPtr);
-    if lastLLSize > oend.offset_from(op.as_mut_ptr()) as size_t {
+    if lastLLSize > oend.offset_from(op.as_mut_ptr()) as usize {
         return Err(Error::dstSize_tooSmall);
     }
 
@@ -1950,7 +1950,7 @@ fn ZSTD_decompressSequences_default(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     unsafe { ZSTD_decompressSequences_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
@@ -1960,13 +1960,13 @@ fn ZSTD_decompressSequencesSplitLitBuffer_default(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
 }
 
 #[inline(always)]
 fn prefetch_area<T>(ptr: *const T, bytes: usize) {
-    for pos in (0..bytes).step_by(CACHELINE_SIZE as size_t) {
+    for pos in (0..bytes).step_by(CACHELINE_SIZE as usize) {
         prefetch_read_data(ptr.wrapping_byte_add(pos), Locality::L2);
     }
 }
@@ -1978,11 +1978,11 @@ fn prefetch_val<T>(ptr: *const T) {
 
 #[inline(always)]
 fn ZSTD_prefetchMatch(
-    prefetchPos: size_t,
+    prefetchPos: usize,
     sequence: seq_t,
     prefixStart: *const u8,
     dictEnd: *const u8,
-) -> size_t {
+) -> usize {
     let matchBase = if sequence.offset > prefetchPos.wrapping_add(sequence.litLength) {
         dictEnd
     } else {
@@ -2006,7 +2006,7 @@ unsafe fn ZSTD_decompressSequencesLong_body(
     seq: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let dst_capacity = dst.capacity();
     let oend = if dctx.litBufferLocation == LitLocation::ZSTD_in_dst {
         dctx.litBuffer
@@ -2204,7 +2204,7 @@ fn ZSTD_decompressSequencesLong_default(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     unsafe { ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
@@ -2215,7 +2215,7 @@ fn ZSTD_decompressSequences_bmi2(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     unsafe { ZSTD_decompressSequences_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
@@ -2226,7 +2226,7 @@ fn ZSTD_decompressSequencesSplitLitBuffer_bmi2(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     ZSTD_decompressSequences_bodySplitLitBuffer(dctx, dst, seqStart, nbSeq, offset)
 }
 
@@ -2237,7 +2237,7 @@ fn ZSTD_decompressSequencesLong_bmi2(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     unsafe { ZSTD_decompressSequencesLong_body(dctx, dst, seqStart, nbSeq, offset) }
 }
 
@@ -2247,7 +2247,7 @@ fn ZSTD_decompressSequences(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if dctx.bmi2 {
         unsafe { ZSTD_decompressSequences_bmi2(dctx, dst, seqStart, nbSeq, offset) }
     } else {
@@ -2261,7 +2261,7 @@ fn ZSTD_decompressSequencesSplitLitBuffer(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if dctx.bmi2 {
         unsafe { ZSTD_decompressSequencesSplitLitBuffer_bmi2(dctx, dst, seqStart, nbSeq, offset) }
     } else {
@@ -2275,7 +2275,7 @@ fn ZSTD_decompressSequencesLong(
     seqStart: &[u8],
     nbSeq: core::ffi::c_int,
     offset: Offset,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if dctx.bmi2 {
         unsafe { ZSTD_decompressSequencesLong_bmi2(dctx, dst, seqStart, nbSeq, offset) }
     } else {
@@ -2311,22 +2311,22 @@ impl<const N: usize> SymbolTable<N> {
 /// @returns The maximum offset we can decode in one read of our bitstream, without
 /// reloading more bits in the middle of the offset bits read. Any offsets larger
 /// than this must use the long offset decoder.
-const fn ZSTD_maxShortOffset() -> size_t {
+const fn ZSTD_maxShortOffset() -> usize {
     match size_of::<usize>() {
         4 => {
             // The maximum offBase is (1 << (STREAM_ACCUMULATOR_MIN + 1)) - 1.
             // This offBase would require STREAM_ACCUMULATOR_MIN extra bits.
             // Then we have to subtract ZSTD_REP_NUM to get the maximum possible offset.
-            let maxOffbase = ((1 as size_t) << (STREAM_ACCUMULATOR_MIN as u32 + 1)).wrapping_sub(1);
+            let maxOffbase = ((1 as usize) << (STREAM_ACCUMULATOR_MIN as u32 + 1)).wrapping_sub(1);
 
-            maxOffbase.wrapping_sub(ZSTD_REP_NUM as size_t)
+            maxOffbase.wrapping_sub(ZSTD_REP_NUM as usize)
         }
         8 => {
             // We can decode any offset without reloading bits.
             // This might change if the max window size grows.
             const { assert!(ZSTD_WINDOWLOG_MAX <= 31) }
 
-            -(1 as core::ffi::c_int) as size_t
+            -(1 as core::ffi::c_int) as usize
         }
         _ => unreachable!(),
     }
@@ -2337,7 +2337,7 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
     mut dst: Writer<'_>,
     src: &[u8],
     streaming: StreamingOperation,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if src.len() > dctx.block_size_max() {
         return Err(Error::srcSize_wrong);
     }
@@ -2362,13 +2362,13 @@ pub(crate) fn ZSTD_decompressBlock_internal_help(
         return Err(Error::dstSize_tooSmall);
     }
     if size_of::<usize>() == 8
-        && size_of::<size_t>() == size_of::<*mut core::ffi::c_void>()
+        && size_of::<usize>() == size_of::<*mut core::ffi::c_void>()
         && (usize::MAX - dst.as_mut_ptr() as usize) < (1 << 20)
     {
         return Err(Error::dstSize_tooSmall);
     }
     if offset == Offset::Long
-        || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as size_t && nbSeq > 8
+        || !use_prefetch_decoder && totalHistorySize > ((1) << 24) as usize && nbSeq > 8
     {
         let info = match dctx.OFTptr {
             None => OF_defaultDTable.get_offset_info(nbSeq as usize),
@@ -2410,10 +2410,10 @@ pub fn ZSTD_checkContinuity(dctx: &mut ZSTD_DCtx, range: Range<*const u8>) {
 pub unsafe extern "C" fn ZSTD_decompressBlock(
     dctx: *mut ZSTD_DCtx,
     dst: *mut core::ffi::c_void,
-    dstCapacity: size_t,
+    dstCapacity: usize,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let dst = Writer::from_raw_parts(dst.cast::<u8>(), dstCapacity);
     let src = Reader::from_raw_parts(src.cast::<u8>(), srcSize);
 

@@ -1,7 +1,7 @@
 use core::ptr;
 
 use core::ffi::{c_char, c_int, c_uint, c_ulong, c_void};
-use libc::size_t;
+
 
 use crate::lib::common::mem::MEM_read16;
 use crate::lib::compress::hist::HIST_add;
@@ -34,7 +34,7 @@ unsafe fn hash2(p: *const c_void, hashLog: c_uint) -> c_uint {
 #[repr(C)]
 pub struct Fingerprint {
     pub events: [c_uint; 1024],
-    pub nbEvents: size_t,
+    pub nbEvents: usize,
 }
 
 #[repr(C)]
@@ -51,13 +51,13 @@ unsafe fn initStats(fpstats: *mut FPStats) {
 unsafe fn addEvents_generic(
     fp: &mut Fingerprint,
     src: *const c_void,
-    srcSize: size_t,
-    samplingRate: size_t,
+    srcSize: usize,
+    samplingRate: usize,
     hashLog: c_uint,
 ) {
     let p = src as *const c_char;
-    let limit = srcSize.wrapping_sub(HASHLENGTH as size_t).wrapping_add(1);
-    let mut n: size_t = 0;
+    let limit = srcSize.wrapping_sub(HASHLENGTH as usize).wrapping_add(1);
+    let mut n: usize = 0;
 
     debug_assert!(srcSize >= HASHLENGTH as usize);
     while n < limit {
@@ -69,10 +69,10 @@ unsafe fn addEvents_generic(
 }
 
 #[inline(always)]
-unsafe fn recordFingerprint_generic<const SAMPLING_RATE: size_t, const HASH_LOG: c_uint>(
+unsafe fn recordFingerprint_generic<const SAMPLING_RATE: usize, const HASH_LOG: c_uint>(
     fp: &mut Fingerprint,
     src: *const c_void,
-    srcSize: size_t,
+    srcSize: usize,
 ) {
     ptr::write_bytes(fp as *mut _ as *mut u8, 0, size_of::<c_uint>() << HASH_LOG);
     fp.nbEvents = 0;
@@ -126,12 +126,12 @@ pub const CHUNKSIZE: c_int = (8) << 10;
 
 unsafe fn ZSTD_splitBlock_byChunks(
     blockStart: *const c_void,
-    blockSize: size_t,
+    blockSize: usize,
     level: c_int,
     workspace: *mut c_void,
-    wkspSize: size_t,
-) -> size_t {
-    static records_fs: [unsafe fn(&mut Fingerprint, *const c_void, size_t) -> (); 4] = [
+    wkspSize: usize,
+) -> usize {
+    static records_fs: [unsafe fn(&mut Fingerprint, *const c_void, usize) -> (); 4] = [
         recordFingerprint_generic::<1, 10>,
         recordFingerprint_generic::<5, 10>,
         recordFingerprint_generic::<11, 9>,
@@ -156,14 +156,14 @@ unsafe fn ZSTD_splitBlock_byChunks(
     record_f(
         &mut (*fpstats).pastEvents,
         p as *const c_void,
-        CHUNKSIZE as size_t,
+        CHUNKSIZE as usize,
     );
-    pos = CHUNKSIZE as size_t;
-    while pos <= blockSize.wrapping_sub(CHUNKSIZE as size_t) {
+    pos = CHUNKSIZE as usize;
+    while pos <= blockSize.wrapping_sub(CHUNKSIZE as usize) {
         record_f(
             &mut (*fpstats).newEvents,
             p.add(pos) as *const c_void,
-            CHUNKSIZE as size_t,
+            CHUNKSIZE as usize,
         );
         if compareFingerprints(
             &(*fpstats).pastEvents,
@@ -179,7 +179,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
                 penalty -= 1;
             }
         }
-        pos = pos.wrapping_add(CHUNKSIZE as size_t);
+        pos = pos.wrapping_add(CHUNKSIZE as usize);
     }
     debug_assert!(pos == blockSize);
     blockSize
@@ -198,10 +198,10 @@ unsafe fn ZSTD_splitBlock_byChunks(
 /// For better accuracy, use the more elaborate `*_byChunks` variant.
 unsafe fn ZSTD_splitBlock_fromBorders(
     blockStart: *const c_void,
-    blockSize: size_t,
+    blockSize: usize,
     workspace: *mut c_void,
-    wkspSize: size_t,
-) -> size_t {
+    wkspSize: usize,
+) -> usize {
     const SEGMENT_SIZE: c_int = 512;
 
     let fpstats = workspace as *mut FPStats;
@@ -219,16 +219,16 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     HIST_add(
         ((*fpstats).pastEvents.events).as_mut_ptr(),
         blockStart,
-        SEGMENT_SIZE as size_t,
+        SEGMENT_SIZE as usize,
     );
     HIST_add(
         ((*fpstats).newEvents.events).as_mut_ptr(),
         (blockStart as *const c_char)
             .add(blockSize)
             .offset(-(SEGMENT_SIZE as isize)) as *const c_void,
-        SEGMENT_SIZE as size_t,
+        SEGMENT_SIZE as usize,
     );
-    (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
+    (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as usize;
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
     if compareFingerprints(&(*fpstats).pastEvents, &(*fpstats).newEvents, 0, 8) == 0 {
         return blockSize;
@@ -238,20 +238,20 @@ unsafe fn ZSTD_splitBlock_fromBorders(
         (blockStart as *const c_char)
             .add(blockSize / 2)
             .offset(-((SEGMENT_SIZE / 2) as isize)) as *const c_void,
-        SEGMENT_SIZE as size_t,
+        SEGMENT_SIZE as usize,
     );
-    (*middleEvents).nbEvents = SEGMENT_SIZE as size_t;
+    (*middleEvents).nbEvents = SEGMENT_SIZE as usize;
     let distFromBegin = fpDistance(&(*fpstats).pastEvents, middleEvents, 8);
     let distFromEnd = fpDistance(&(*fpstats).newEvents, middleEvents, 8);
     let minDistance = (SEGMENT_SIZE * SEGMENT_SIZE / 3) as u64;
     if abs64(distFromBegin as i64 - distFromEnd as i64) < minDistance {
-        return (64 * ((1) << 10)) as size_t;
+        return (64 * ((1) << 10)) as usize;
     }
     (if distFromBegin > distFromEnd {
         32 * ((1) << 10)
     } else {
         96 * ((1) << 10)
-    }) as size_t
+    }) as usize
 }
 
 /// Splits a block to find the optimal boundary for compression.
@@ -261,7 +261,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 /// * `blockStart` - Pointer to the start of the block
 /// * `blockSize` - Size of the block (must be 128 KB)
 /// * `level` - Detection level (0-4). Higher levels spend more energy to detect block boundaries.
-/// * `workspace` - Workspace buffer (must be aligned for `size_t`)
+/// * `workspace` - Workspace buffer (must be aligned for `usize`)
 /// * `wkspSize` - Workspace size (must be at least `ZSTD_SLIPBLOCK_WORKSPACESIZE`)
 ///
 /// # Note
@@ -271,11 +271,11 @@ unsafe fn ZSTD_splitBlock_fromBorders(
 /// it is not yet clear if this would be useful. TBD.
 pub unsafe fn ZSTD_splitBlock(
     blockStart: *const c_void,
-    blockSize: size_t,
+    blockSize: usize,
     level: c_int,
     workspace: *mut c_void,
-    wkspSize: size_t,
-) -> size_t {
+    wkspSize: usize,
+) -> usize {
     debug_assert!((0..=4).contains(&level));
     if level == 0 {
         return ZSTD_splitBlock_fromBorders(blockStart, blockSize, workspace, wkspSize);

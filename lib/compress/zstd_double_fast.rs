@@ -48,7 +48,7 @@ pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
 pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
-use libc::size_t;
+
 
 use crate::lib::common::fse::{FSE_CTable, FSE_repeat};
 use crate::lib::common::huf::{HUF_CElt, HUF_repeat};
@@ -70,15 +70,15 @@ pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 pub const ZSTD_SHORT_CACHE_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_SHORT_CACHE_TAG_BITS).wrapping_sub(1);
 #[inline]
-unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: u32) {
+unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: usize, index: u32) {
     let hash = hashAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
-    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+    let tag = (hashAndTag & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
     *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
 }
 #[inline]
-unsafe fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> core::ffi::c_int {
-    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
+unsafe fn ZSTD_comparePackedTags(packedTag1: usize, packedTag2: usize) -> core::ffi::c_int {
+    let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
+    let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as usize) as u32;
     (tag1 == tag2) as core::ffi::c_int
 }
 unsafe fn ZSTD_fillDoubleHashTableForCDict(
@@ -182,9 +182,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
+    srcSize: usize,
     mls: u32,
-) -> size_t {
+) -> usize {
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
@@ -202,14 +202,14 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_generic(
     let mut offset_2 = *rep.add(1);
     let mut offsetSaved1 = 0;
     let mut offsetSaved2 = 0;
-    let mut mLength: size_t = 0;
+    let mut mLength: usize = 0;
     let mut offset: u32 = 0;
     let mut curr: u32 = 0;
-    let kStepIncr = ((1) << kSearchStrength) as size_t;
+    let kStepIncr = ((1) << kSearchStrength) as usize;
     let mut nextStep = core::ptr::null::<u8>();
-    let mut step: size_t = 0;
-    let mut hl0: size_t = 0;
-    let mut hl1: size_t = 0;
+    let mut step: usize = 0;
+    let mut hl0: usize = 0;
+    let mut hl1: usize = 0;
     let mut idxl0: u32 = 0;
     let mut idxl1: u32 = 0;
     let mut matchl0 = core::ptr::null::<u8>();
@@ -483,9 +483,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
+    srcSize: usize,
     mls: u32,
-) -> size_t {
+) -> usize {
     let mut current_block: u64;
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let hashLong = ms.hashTable;
@@ -496,7 +496,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
     let istart = src as *const u8;
     let mut ip = istart;
     let mut anchor = istart;
-    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     let prefixLowestIndex = ZSTD_getLowestPrefixIndex(ms, endIndex, (*cParams).windowLog);
     let prefixLowest = base.wrapping_offset(prefixLowestIndex as isize);
     let iend = istart.add(srcSize);
@@ -521,27 +521,27 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         + dictEnd.offset_from(dictStart) as core::ffi::c_long) as u32;
     if ms.prefetchCDictTables != 0 {
         let hashTableBytes =
-            ((1 as size_t) << (*dictCParams).hashLog).wrapping_mul(::core::mem::size_of::<u32>());
+            ((1 as usize) << (*dictCParams).hashLog).wrapping_mul(::core::mem::size_of::<u32>());
         let chainTableBytes =
-            ((1 as size_t) << (*dictCParams).chainLog).wrapping_mul(::core::mem::size_of::<u32>());
+            ((1 as usize) << (*dictCParams).chainLog).wrapping_mul(::core::mem::size_of::<u32>());
         let _ptr = dictHashLong as *const core::ffi::c_char;
         let _size = hashTableBytes;
-        let mut _pos: size_t = 0;
+        let mut _pos: usize = 0;
         _pos = 0;
         while _pos < _size {
-            _pos = _pos.wrapping_add(CACHELINE_SIZE as size_t);
+            _pos = _pos.wrapping_add(CACHELINE_SIZE as usize);
         }
         let _ptr_0 = dictHashSmall as *const core::ffi::c_char;
         let _size_0 = chainTableBytes;
-        let mut _pos_0: size_t = 0;
+        let mut _pos_0: usize = 0;
         _pos_0 = 0;
         while _pos_0 < _size_0 {
-            _pos_0 = _pos_0.wrapping_add(CACHELINE_SIZE as size_t);
+            _pos_0 = _pos_0.wrapping_add(CACHELINE_SIZE as usize);
         }
     }
     ip = ip.offset((dictAndPrefixLength == 0) as core::ffi::c_int as isize);
     while ip < ilimit {
-        let mut mLength: size_t = 0;
+        let mut mLength: usize = 0;
         let mut offset: u32 = 0;
         let h2 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsL, 8);
         let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBitsS, mls);
@@ -551,9 +551,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         let dictMatchIndexAndTagS =
             *dictHashSmall.add(dictHashAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS);
         let dictTagsMatchL =
-            ZSTD_comparePackedTags(dictMatchIndexAndTagL as size_t, dictHashAndTagL);
+            ZSTD_comparePackedTags(dictMatchIndexAndTagL as usize, dictHashAndTagL);
         let dictTagsMatchS =
-            ZSTD_comparePackedTags(dictMatchIndexAndTagS as size_t, dictHashAndTagS);
+            ZSTD_comparePackedTags(dictMatchIndexAndTagS as usize, dictHashAndTagS);
         let curr = ip.wrapping_offset_from(base) as core::ffi::c_long as u32;
         let matchIndexL = *hashLong.add(h2);
         let mut matchIndexS = *hashSmall.add(h);
@@ -694,7 +694,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                 let dictMatchIndexAndTagL3 = *dictHashLong
                                     .add(dictHashAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS);
                                 let dictTagsMatchL3 = ZSTD_comparePackedTags(
-                                    dictMatchIndexAndTagL3 as size_t,
+                                    dictMatchIndexAndTagL3 as usize,
                                     dictHashAndTagL3,
                                 );
                                 let mut matchL3 = base.wrapping_offset(matchIndexL3 as isize);
@@ -896,8 +896,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_4(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_noDict_generic(ms, seqStore, rep, src, srcSize, 4)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_5(
@@ -905,8 +905,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_5(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_noDict_generic(ms, seqStore, rep, src, srcSize, 5)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_6(
@@ -914,8 +914,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_6(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_noDict_generic(ms, seqStore, rep, src, srcSize, 6)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_noDict_7(
@@ -923,8 +923,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_noDict_7(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_noDict_generic(ms, seqStore, rep, src, srcSize, 7)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_4(
@@ -932,8 +932,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_4(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_dictMatchState_generic(ms, seqStore, rep, src, srcSize, 4)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_5(
@@ -941,8 +941,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_5(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_dictMatchState_generic(ms, seqStore, rep, src, srcSize, 5)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_6(
@@ -950,8 +950,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_6(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_dictMatchState_generic(ms, seqStore, rep, src, srcSize, 6)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_7(
@@ -959,8 +959,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_7(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_dictMatchState_generic(ms, seqStore, rep, src, srcSize, 7)
 }
 pub unsafe fn ZSTD_compressBlock_doubleFast(
@@ -968,8 +968,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_noDict_5(ms, seqStore, rep, src, srcSize),
@@ -983,8 +983,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_dictMatchState_5(ms, seqStore, rep, src, srcSize),
@@ -998,9 +998,9 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
+    srcSize: usize,
     mls: u32,
-) -> size_t {
+) -> usize {
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
     let hashLong = ms.hashTable;
     let hBitsL = (*cParams).hashLog;
@@ -1012,7 +1012,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     let iend = istart.add(srcSize);
     let ilimit = iend.sub(8);
     let base = ms.window.base;
-    let endIndex = (istart.wrapping_offset_from(base) as size_t).wrapping_add(srcSize) as u32;
+    let endIndex = (istart.wrapping_offset_from(base) as usize).wrapping_add(srcSize) as u32;
     let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
@@ -1055,7 +1055,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
             base
         };
         let repMatch = repBase.wrapping_offset(repIndex as isize);
-        let mut mLength: size_t = 0;
+        let mut mLength: usize = 0;
         let fresh4 = &mut (*hashLong.add(hLong));
         *fresh4 = curr;
         *hashSmall.add(hSmall) = *fresh4;
@@ -1286,8 +1286,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_4(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 4)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_5(
@@ -1295,8 +1295,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_5(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 5)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_6(
@@ -1304,8 +1304,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_6(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 6)
 }
 unsafe fn ZSTD_compressBlock_doubleFast_extDict_7(
@@ -1313,8 +1313,8 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_7(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     ZSTD_compressBlock_doubleFast_extDict_generic(ms, seqStore, rep, src, srcSize, 7)
 }
 pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
@@ -1322,8 +1322,8 @@ pub unsafe fn ZSTD_compressBlock_doubleFast_extDict(
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
     src: *const core::ffi::c_void,
-    srcSize: size_t,
-) -> size_t {
+    srcSize: usize,
+) -> usize {
     let mls = ms.cParams.minMatch;
     match mls {
         5 => ZSTD_compressBlock_doubleFast_extDict_5(ms, seqStore, rep, src, srcSize),

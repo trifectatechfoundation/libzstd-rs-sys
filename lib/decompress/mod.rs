@@ -1,5 +1,5 @@
 use core::ptr::NonNull;
-use libc::size_t;
+
 
 use crate::lib::common::xxhash::XXH64_state_t;
 
@@ -247,7 +247,7 @@ pub struct ZSTD_DCtx_s {
     prefixStart: *const core::ffi::c_void,
     virtualStart: *const core::ffi::c_void,
     dictEnd: *const core::ffi::c_void,
-    expected: size_t,
+    expected: usize,
     fParams: ZSTD_FrameHeader,
     processedCSize: u64,
     decodedSize: u64,
@@ -258,7 +258,7 @@ pub struct ZSTD_DCtx_s {
     fseEntropy: bool,
     _padding1: [u8; 3],
     xxhState: XXH64_state_t,
-    headerSize: size_t,
+    headerSize: usize,
     format: Format,
     forceIgnoreChecksum: ForceIgnoreChecksum,
     _padding5: [u8; 3],
@@ -266,9 +266,9 @@ pub struct ZSTD_DCtx_s {
     _padding4: [u8; 3],
     litPtr: *const u8,
     customMem: ZSTD_customMem,
-    litSize: size_t,
-    rleSize: size_t,
-    staticSize: size_t,
+    litSize: usize,
+    rleSize: usize,
+    staticSize: usize,
     isFrameDecompression: bool,
     _padding7: [u8; 3],
     bmi2: bool,
@@ -288,14 +288,14 @@ pub struct ZSTD_DCtx_s {
 
     // The fields below are part of the workspace and not copied by `ZSTD_copyDCtx`.
     inBuff: *mut u8,
-    inBuffSize: size_t,
-    inPos: size_t,
-    maxWindowSize: size_t,
+    inBuffSize: usize,
+    inPos: usize,
+    maxWindowSize: usize,
     outBuff: *mut u8,
-    outBuffSize: size_t,
-    outStart: size_t,
-    outEnd: size_t,
-    lhSize: size_t,
+    outBuffSize: usize,
+    outStart: usize,
+    outEnd: usize,
+    lhSize: usize,
     legacyContext: *mut core::ffi::c_void,
     previousLegacyVersion: u32,
     legacyVersion: u32,
@@ -309,6 +309,6 @@ pub struct ZSTD_DCtx_s {
     // literal buffer can be split between storage within dst and within this scratch buffer.
     litExtraBuffer: [u8; ZSTD_LITBUFFEREXTRASIZE + WILDCOPY_OVERLENGTH],
     headerBuffer: [u8; 18],
-    oversizedDuration: size_t,
+    oversizedDuration: usize,
     traceCtx: ZSTD_TraceCtx,
 }

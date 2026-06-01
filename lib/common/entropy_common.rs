@@ -1,4 +1,4 @@
-use libc::size_t;
+
 
 use crate::lib::common::error_private::Error;
 use crate::lib::common::fse::{
@@ -16,7 +16,7 @@ fn FSE_readNCount_body(
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let hbSize = headerBuffer.len();
 
     let iend = hbSize;
@@ -173,7 +173,7 @@ fn FSE_readNCount_body_default(
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 fn FSE_readNCount_body_bmi2(
@@ -181,7 +181,7 @@ fn FSE_readNCount_body_bmi2(
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_readNCount_body(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
 }
 
@@ -191,7 +191,7 @@ pub(super) fn FSE_readNCount_bmi2(
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
     bmi2: core::ffi::c_int,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if bmi2 != 0 {
         FSE_readNCount_body_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer)
     } else {
@@ -204,8 +204,8 @@ pub(crate) unsafe fn FSE_readNCount(
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: *const core::ffi::c_void,
-    hbSize: size_t,
-) -> size_t {
+    hbSize: usize,
+) -> usize {
     let ret = FSE_readNCount_slice(
         normalizedCounter,
         maxSVPtr,
@@ -224,18 +224,18 @@ pub(crate) fn FSE_readNCount_slice(
     maxSVPtr: &mut core::ffi::c_uint,
     tableLogPtr: &mut core::ffi::c_uint,
     headerBuffer: &[u8],
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_readNCount_bmi2(normalizedCounter, maxSVPtr, tableLogPtr, headerBuffer, 0)
 }
 
 pub(crate) fn HUF_readStats(
     huffWeight: &mut [u8; 256],
-    hwSize: size_t,
+    hwSize: usize,
     rankStats: &mut [u32; 13],
     nbSymbolsPtr: &mut u32,
     tableLogPtr: &mut u32,
     src: &[u8],
-) -> size_t {
+) -> usize {
     // We can remove this at some point, it's just a check that the constants are correct.
     const _: () = assert!(HUF_READ_STATS_WORKSPACE_SIZE_U32 == 219);
 
@@ -257,19 +257,19 @@ pub(crate) fn HUF_readStats(
 #[inline(always)]
 fn HUF_readStats_body(
     huffWeight: &mut [u8; 256],
-    hwSize: size_t,
+    hwSize: usize,
     rankStats: &mut [u32; 13],
     nbSymbolsPtr: &mut u32,
     tableLogPtr: &mut u32,
     mut ip: &[u8],
     workspace: &mut Workspace,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let srcSize = ip.len();
 
     let mut weightTotal: u32 = 0;
-    let mut iSize: size_t = 0;
-    let mut oSize: size_t = 0;
+    let mut iSize: usize = 0;
+    let mut oSize: usize = 0;
     if srcSize == 0 {
         return Err(Error::srcSize_wrong);
     }
@@ -465,14 +465,14 @@ impl quickcheck::Arbitrary for DTable {
 
 pub(crate) fn HUF_readStats_wksp(
     huffWeight: &mut [u8; 256],
-    hwSize: size_t,
+    hwSize: usize,
     rankStats: &mut [u32; 13],
     nbSymbolsPtr: &mut u32,
     tableLogPtr: &mut u32,
     src: &[u8],
     workspace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let use_bmi2 = flags & HUF_flags_bmi2 as core::ffi::c_int != 0;
 
     let ret = HUF_readStats_body(
@@ -565,7 +565,7 @@ mod tests {
                     extern "C" {
                         fn HUF_readStats_wksp(
                             huffWeight: &mut [u8; 256],
-                            hwSize: size_t,
+                            hwSize: usize,
                             rankStats: &mut [u32; 13],
                             nbSymbolsPtr: &mut u32,
                             tableLogPtr: &mut u32,
@@ -574,7 +574,7 @@ mod tests {
                             workspace: &mut [u32; 219],
                             workspace_size: usize,
                             flags: core::ffi::c_int,
-                        ) -> size_t;
+                        ) -> usize;
                     }
 
                     let v = HUF_readStats_wksp(

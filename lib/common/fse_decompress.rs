@@ -1,4 +1,4 @@
-use libc::size_t;
+
 
 use crate::lib::common::fse::{
     FSE_DTableHeader, FSE_decode_t, FSE_MAX_SYMBOL_VALUE, FSE_MAX_TABLELOG,
@@ -128,12 +128,12 @@ fn FSE_buildDTable_internal(
     *header = DTableH;
 
     if highThreshold == tableSize.wrapping_sub(1) {
-        let tableMask = tableSize.wrapping_sub(1) as size_t;
+        let tableMask = tableSize.wrapping_sub(1) as usize;
         let step = (tableSize >> 1)
             .wrapping_add(tableSize >> 3)
-            .wrapping_add(3) as size_t;
+            .wrapping_add(3) as usize;
         let add = 0x101010101010101u64;
-        let mut pos = 0 as size_t;
+        let mut pos = 0 as usize;
         let mut sv = 0u64;
 
         for s_0 in 0..maxSV1 {
@@ -145,16 +145,16 @@ fn FSE_buildDTable_internal(
                 spread[pos as usize..][i as usize..][..8].copy_from_slice(&sv.to_le_bytes());
                 i += 8;
             }
-            pos = pos.wrapping_add(n as size_t);
+            pos = pos.wrapping_add(n as usize);
             sv = sv.wrapping_add(add);
         }
 
-        let mut position = 0 as size_t;
-        let mut s_1: size_t = 0;
+        let mut position = 0 as usize;
+        let mut s_1: usize = 0;
         let unroll = 2;
         s_1 = 0;
-        while s_1 < tableSize as size_t {
-            let mut u: size_t = 0;
+        while s_1 < tableSize as usize {
+            let mut u: usize = 0;
             u = 0;
             while u < unroll {
                 let uPosition = position.wrapping_add(u * step) & tableMask;
@@ -324,7 +324,7 @@ fn FSE_decompress_wksp_body(
     maxLog: core::ffi::c_uint,
     workspace: &mut Workspace,
     bmi2: core::ffi::c_int,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     let mut wkspSize = size_of::<Workspace>();
 
     let mut tableLog: core::ffi::c_uint = 0;
@@ -395,7 +395,7 @@ fn FSE_decompress_wksp_body_default(
     cSrc: &[u8],
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 0)
 }
 
@@ -404,7 +404,7 @@ fn FSE_decompress_wksp_body_bmi2(
     cSrc: &[u8],
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     FSE_decompress_wksp_body(dst, cSrc, maxLog, workSpace, 1)
 }
 
@@ -414,7 +414,7 @@ pub(super) fn FSE_decompress_wksp_bmi2(
     maxLog: core::ffi::c_uint,
     workSpace: &mut Workspace,
     bmi2: bool,
-) -> Result<size_t, Error> {
+) -> Result<usize, Error> {
     if bmi2 {
         FSE_decompress_wksp_body_bmi2(dst, cSrc, maxLog, workSpace)
     } else {

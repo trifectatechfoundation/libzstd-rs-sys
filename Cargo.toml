@@ -31,16 +31,12 @@ name = "libzstd_rs_sys"
 path = "c2rust-lib.rs"
 crate-type = ["staticlib", "rlib"]
 
-[[bin]]
-name = "programs"
-path = "programs/main.rs"
-
 [profile.relwithdebinfo]
 inherits = "release"
 debug = true
 
 [dependencies]
-libc = "0.2"
+libc = { version = "0.2", optional = true }
 
 [target.'cfg(target_arch = "x86_64")'.build-dependencies]
 cc = "1.2.30"
@@ -54,7 +50,8 @@ version = "0.8.15"
 features = ["xxh64", "xxh32"]
 
 [features]
-default = ["rust-allocator"]
+default = ["rust-allocator", "std"]
+std = ["dep:libc"]
 export-symbols = [] # whether the zlib api symbols are publicly exported
 custom-prefix = ["export-symbols"] # use the LIBZSTD_RS_SYS_PREFIX to prefix all exported symbols
 semver-prefix = ["export-symbols"] # prefix all symbols in a semver-compatible way

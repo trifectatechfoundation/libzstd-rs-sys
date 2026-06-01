@@ -1,6 +1,6 @@
 use core::ffi::c_void;
 
-use libc::size_t;
+
 
 #[inline]
 pub(crate) const fn MEM_32bits() -> bool {
@@ -24,7 +24,7 @@ pub(crate) unsafe fn MEM_read64(ptr: *const c_void) -> u64 {
     ptr.cast::<u64>().read_unaligned()
 }
 #[inline]
-pub(crate) unsafe fn MEM_readST(ptr: *const c_void) -> size_t {
+pub(crate) unsafe fn MEM_readST(ptr: *const c_void) -> usize {
     ptr.cast::<usize>().read_unaligned()
 }
 
@@ -83,17 +83,17 @@ pub(crate) unsafe fn MEM_writeLE64(memPtr: *mut c_void, val64: u64) {
 }
 
 #[inline]
-pub(crate) unsafe fn MEM_readLEST(memPtr: *const c_void) -> size_t {
-    match size_of::<size_t>() {
-        4 => MEM_readLE32(memPtr) as size_t,
-        8 => MEM_readLE64(memPtr) as size_t,
+pub(crate) unsafe fn MEM_readLEST(memPtr: *const c_void) -> usize {
+    match size_of::<usize>() {
+        4 => MEM_readLE32(memPtr) as usize,
+        8 => MEM_readLE64(memPtr) as usize,
         _ => unreachable!(),
     }
 }
 
 #[inline]
-pub(crate) unsafe fn MEM_writeLEST(memPtr: *mut c_void, val: size_t) {
-    match size_of::<size_t>() {
+pub(crate) unsafe fn MEM_writeLEST(memPtr: *mut c_void, val: usize) {
+    match size_of::<usize>() {
         4 => MEM_writeLE32(memPtr, val as u32),
         8 => MEM_writeLE64(memPtr, val as u64),
         _ => unreachable!(),
@@ -101,5 +101,5 @@ pub(crate) unsafe fn MEM_writeLEST(memPtr: *mut c_void, val: size_t) {
 }
 
 const _: () = {
-    assert!(size_of::<size_t>() == 4 || size_of::<size_t>() == 8);
+    assert!(size_of::<usize>() == 4 || size_of::<usize>() == 8);
 };

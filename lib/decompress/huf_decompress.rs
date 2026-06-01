@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 use core::ops::{Bound, Range};
 use core::ptr::NonNull;
 
-use libc::size_t;
+
 
 use crate::lib::common::bitstream::{BIT_DStream_t, BitContainerType, StreamStatus};
 use crate::lib::common::entropy_common::HUF_readStats_wksp;
@@ -155,7 +155,7 @@ pub struct HUF_DecompressFastArgs<'a> {
 pub const HUF_DECODER_FAST_TABLELOG: core::ffi::c_int = 11;
 pub const HUF_ENABLE_FAST_DECODE: core::ffi::c_int = 1;
 
-unsafe fn HUF_initFastDStream(ip: *const u8) -> size_t {
+unsafe fn HUF_initFastDStream(ip: *const u8) -> usize {
     let lastByte = *ip.add(7);
     let bitsConsumed = match lastByte.checked_ilog2() {
         Some(v) => 8 - v,
@@ -278,7 +278,7 @@ unsafe fn init_remaining_dstream<'a>(
     let bitContainer = MEM_readLEST(args.ip[stream] as *const core::ffi::c_void) as usize;
     let bitsConsumed = args.bits[stream].trailing_zeros();
     let start = args.ilowest as *const core::ffi::c_char;
-    let limitPtr = start.add(::core::mem::size_of::<size_t>());
+    let limitPtr = start.add(::core::mem::size_of::<usize>());
     let ptr = args.ip[stream] as *const core::ffi::c_char;
 
     Ok(BIT_DStream_t {
@@ -334,19 +334,19 @@ pub fn HUF_readDTableX1_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let mut dtd = DTable.description;
     let dt = DTable.data.as_x1_mut();
 
     let mut tableLog = 0;
     let mut nbSymbols = 0;
-    let mut iSize: size_t = 0;
+    let mut iSize: usize = 0;
 
     let wksp = workSpace.as_x1_mut();
 
     iSize = HUF_readStats_wksp(
         &mut wksp.huffWeight,
-        (HUF_SYMBOLVALUE_MAX + 1) as size_t,
+        (HUF_SYMBOLVALUE_MAX + 1) as usize,
         &mut wksp.rankVal,
         &mut nbSymbols,
         &mut tableLog,
@@ -440,7 +440,7 @@ fn HUF_decodeStreamX1(
     bitDPtr: &mut BIT_DStream_t,
     dt: &[HUF_DEltX1; 4096],
     dtLog: u32,
-) -> size_t {
+) -> usize {
     let capacity = p.capacity();
 
     if p.capacity() >= 4 {
@@ -478,7 +478,7 @@ fn HUF_decompress1X1_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     let dt = DTable.data.as_x1();
     let dtd = DTable.description;
     let dtLog = dtd.tableLog as u32;
@@ -502,7 +502,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     // strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
         return Error::corruption_detected.to_error_code();
@@ -551,7 +551,7 @@ fn HUF_decompress4X1_usingDTable_internal_body(
     let dt = DTable.data.as_x1();
     let dtLog = DTable.description.tableLog as u32;
 
-    if w4.capacity() >= size_of::<size_t>() {
+    if w4.capacity() >= size_of::<usize>() {
         while end_signal && w4.capacity() >= 4 {
             if cfg!(target_pointer_width = "64") {
                 w1.write_u8(HUF_decodeSymbolX1(&mut bitD1, dt, dtLog));
@@ -603,7 +603,7 @@ fn HUF_decompress4X1_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress4X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -611,7 +611,7 @@ fn HUF_decompress4X1_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress4X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -750,7 +750,7 @@ unsafe fn HUF_decompress4X1_usingDTable_internal_fast(
     src: &[u8],
     DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
-) -> size_t {
+) -> usize {
     let oend = dst.as_mut_ptr_range().end;
 
     let mut args = match HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable) {
@@ -806,7 +806,7 @@ fn HUF_decompress1X1_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress1X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -814,7 +814,7 @@ fn HUF_decompress1X1_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress1X1_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -823,7 +823,7 @@ fn HUF_decompress1X1_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     match flags & HUF_flags_bmi2 as i32 {
         0 => HUF_decompress1X1_usingDTable_internal_default(dst, src, DTable),
         _ => unsafe { HUF_decompress1X1_usingDTable_internal_bmi2(dst, src, DTable) },
@@ -835,7 +835,7 @@ fn HUF_decompress4X1_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as i32 {
             #[cfg(all(unix, target_arch = "x86_64"))]
@@ -865,7 +865,7 @@ fn HUF_decompress4X1_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let hSize = HUF_readDTableX1_wksp(dctx, src, workSpace, flags);
     if ERR_isError(hSize) {
         return hSize;
@@ -1037,13 +1037,13 @@ pub fn HUF_readDTableX2_wksp(
     src: &[u8],
     wksp: &mut HUF_ReadDTableX2_Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let mut dtd = DTable.description;
 
     let mut tableLog: u32 = 0;
     let mut nbSymbols: u32 = 0;
     let mut maxTableLog = dtd.maxTableLog as u32;
-    let mut iSize: size_t = 0;
+    let mut iSize: usize = 0;
 
     let dt = DTable.data.as_x2_mut();
 
@@ -1057,7 +1057,7 @@ pub fn HUF_readDTableX2_wksp(
 
     iSize = HUF_readStats_wksp(
         &mut wksp.weightList,
-        (HUF_SYMBOLVALUE_MAX + 1) as size_t,
+        (HUF_SYMBOLVALUE_MAX + 1) as usize,
         &mut wksp.rankStats,
         &mut nbSymbols,
         &mut tableLog,
@@ -1216,7 +1216,7 @@ fn HUF_decodeStreamX2(
     bitDPtr: &mut BIT_DStream_t,
     dt: &[HUF_DEltX2; 4096],
     dtLog: u32,
-) -> size_t {
+) -> usize {
     let capacity = p.capacity();
 
     /* up to 8 symbols at a time */
@@ -1267,7 +1267,7 @@ fn HUF_decompress1X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     let mut bitD = match BIT_DStream_t::new(src) {
         Ok(v) => v,
         Err(e) => return e.to_error_code(),
@@ -1288,7 +1288,7 @@ fn HUF_decompress4X2_usingDTable_internal_body(
     mut dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     // Strict minimum : jump table + 1 byte per stream.
     let [b0, b1, b2, b3, b4, b5, _, _, _, _, ..] = *src else {
         return Error::corruption_detected.to_error_code();
@@ -1430,7 +1430,7 @@ fn HUF_decompress4X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress4X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1438,7 +1438,7 @@ fn HUF_decompress4X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress4X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1584,7 +1584,7 @@ unsafe fn HUF_decompress4X2_usingDTable_internal_fast(
     src: &[u8],
     DTable: &DTable,
     loopFn: HUF_DecompressFastLoopFn,
-) -> size_t {
+) -> usize {
     let oend = dst.as_mut_ptr_range().end;
 
     let mut args = match HUF_DecompressFastArgs::new(dst.subslice(..), src, DTable) {
@@ -1642,7 +1642,7 @@ fn HUF_decompress4X2_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         let loopFn = match flags & HUF_flags_disableAsm as core::ffi::c_int {
             #[cfg(all(unix, target_arch = "x86_64"))]
@@ -1670,14 +1670,14 @@ fn HUF_decompress1X2_usingDTable_internal_bmi2(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
 fn HUF_decompress1X2_usingDTable_internal_default(
     dst: Writer<'_>,
     src: &[u8],
     DTable: &DTable,
-) -> size_t {
+) -> usize {
     HUF_decompress1X2_usingDTable_internal_body(dst, src, DTable)
 }
 
@@ -1686,7 +1686,7 @@ fn HUF_decompress1X2_usingDTable_internal(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     if flags & HUF_flags_bmi2 as core::ffi::c_int != 0 {
         HUF_decompress1X2_usingDTable_internal_bmi2(dst, src, DTable)
     } else {
@@ -1700,7 +1700,7 @@ pub fn HUF_decompress1X2_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
     if ERR_isError(hSize) {
         return hSize;
@@ -1718,7 +1718,7 @@ fn HUF_decompress4X2_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let hSize = HUF_readDTableX2_wksp(dctx, src, workSpace.as_x2_mut(), flags);
     if ERR_isError(hSize) {
         return hSize;
@@ -1992,7 +1992,7 @@ pub fn HUF_decompress1X_usingDTable(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     match DTable.description.tableType {
         0 => HUF_decompress1X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress1X2_usingDTable_internal(dst, src, DTable, flags),
@@ -2005,7 +2005,7 @@ pub fn HUF_decompress1X1_DCtx_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     let hSize = { HUF_readDTableX1_wksp(dctx, src, workSpace, flags) };
     if ERR_isError(hSize) {
         return hSize;
@@ -2022,7 +2022,7 @@ pub fn HUF_decompress4X_usingDTable(
     src: &[u8],
     DTable: &DTable,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     match DTable.description.tableType {
         0 => HUF_decompress4X1_usingDTable_internal(dst, src, DTable, flags),
         _ => HUF_decompress4X2_usingDTable_internal(dst, src, DTable, flags),
@@ -2035,7 +2035,7 @@ pub fn HUF_decompress4X_hufOnly_wksp(
     src: &[u8],
     workSpace: &mut Workspace,
     flags: core::ffi::c_int,
-) -> size_t {
+) -> usize {
     if dst.is_empty() {
         return Error::dstSize_tooSmall.to_error_code();
     }
