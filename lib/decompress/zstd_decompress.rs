@@ -521,7 +521,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
 ) -> size_t {
     let newTableSize = hashSet.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let newTable = ZSTD_customCalloc(
-        (size_of::<*mut ZSTD_DDict>()).wrapping_mul(newTableSize),
+        size_of::<*mut ZSTD_DDict>().wrapping_mul(newTableSize),
         customMem,
     ) as *mut *const ZSTD_DDict;
     let oldTable = hashSet.ddictPtrTable;
@@ -667,7 +667,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
         return 0;
     }
-    (size_of::<ZSTD_DCtx>())
+    size_of::<ZSTD_DCtx>()
         .wrapping_add(ZSTD_sizeof_DDict((*dctx).ddictLocal))
         .wrapping_add((*dctx).inBuffSize)
         .wrapping_add((*dctx).outBuffSize)

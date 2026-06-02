@@ -1756,7 +1756,7 @@ pub unsafe fn HUF_optimalTableLog(
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
     let dst = (workSpace as *mut u8).offset(size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
-    let dstSize = wkspSize - (size_of::<HUF_WriteCTableWksp>());
+    let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
     let mut hSize: size_t = 0;
     let mut newSize: size_t = 0;
     let symbolCardinality = HUF_cardinality(count, maxSymbolValue);

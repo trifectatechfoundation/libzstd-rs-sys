@@ -372,7 +372,7 @@ fn FSE_decompress_wksp_body(
         return Err(Error::tableLog_tooLarge);
     }
     wkspSize = wkspSize.wrapping_sub(
-        (size_of::<FSE_DecompressWksp>())
+        size_of::<FSE_DecompressWksp>()
             .wrapping_add((1usize + (1 << tableLog)).wrapping_mul(size_of::<FSE_DTable>())),
     );
 

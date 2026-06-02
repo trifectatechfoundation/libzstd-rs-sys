@@ -1360,7 +1360,7 @@ pub unsafe fn FIO_checkFilenameCollisions(
     let mut filename = core::ptr::null::<core::ffi::c_char>();
     let mut u: core::ffi::c_uint = 0;
     filenameTableSorted =
-        malloc((size_of::<*mut core::ffi::c_char>()).wrapping_mul(nbFiles as size_t))
+        malloc(size_of::<*mut core::ffi::c_char>().wrapping_mul(nbFiles as size_t))
             as *mut *const core::ffi::c_char;
     if filenameTableSorted.is_null() {
         if g_display_prefs.displayLevel >= 1 {
