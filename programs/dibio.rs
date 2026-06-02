@@ -30,10 +30,10 @@ pub const SAMPLESIZE_MAX: core::ffi::c_int = 128 * ((1) << 10);
 pub const MEMMULT: core::ffi::c_int = 11;
 pub const COVER_MEMMULT: core::ffi::c_int = 9;
 pub const FASTCOVER_MEMMULT: core::ffi::c_int = 1;
-static g_maxMemory: usize = if ::core::mem::size_of::<size_t>() == 4 {
+static g_maxMemory: usize = if size_of::<size_t>() == 4 {
     2usize * (1 << 30) - 64 * (1 << 20)
 } else {
-    (512usize * (1 << 20)) << ::core::mem::size_of::<size_t>()
+    (512usize * (1 << 20)) << size_of::<size_t>()
 };
 pub const NOISELENGTH: core::ffi::c_int = 32;
 static g_refreshRate: u64 = SEC_TO_MICRO as PTime / 6;
@@ -323,7 +323,7 @@ unsafe fn DiB_fileStats(
     ptr::write_bytes(
         &mut fs as *mut fileStats as *mut u8,
         0,
-        ::core::mem::size_of::<fileStats>(),
+        size_of::<fileStats>(),
     );
     n = 0;
     while n < nbFiles {
@@ -460,8 +460,7 @@ pub unsafe fn DiB_trainFromFiles(
         };
     }
     srcBuffer = malloc(loadedSize.wrapping_add(NOISELENGTH as size_t));
-    sampleSizes = malloc((fs.nbSamples as size_t).wrapping_mul(::core::mem::size_of::<size_t>()))
-        as *mut size_t;
+    sampleSizes = malloc((fs.nbSamples as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
     if fs.nbSamples != 0 && sampleSizes.is_null() || srcBuffer.is_null() || dictBuffer.is_null() {
         fprintf(
             stderr,

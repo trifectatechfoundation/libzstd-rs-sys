@@ -77,15 +77,13 @@ pub(crate) unsafe fn POOL_create_advanced(
     if numThreads == 0 {
         return core::ptr::null_mut();
     }
-    ctx = ZSTD_customCalloc(::core::mem::size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
+    ctx = ZSTD_customCalloc(size_of::<POOL_ctx>(), customMem) as *mut POOL_ctx;
     if ctx.is_null() {
         return core::ptr::null_mut();
     }
     (*ctx).queueSize = queueSize.wrapping_add(1);
-    (*ctx).queue = ZSTD_customCalloc(
-        (*ctx).queueSize * ::core::mem::size_of::<POOL_job>(),
-        customMem,
-    ) as *mut POOL_job;
+    (*ctx).queue =
+        ZSTD_customCalloc((*ctx).queueSize * size_of::<POOL_job>(), customMem) as *mut POOL_job;
     (*ctx).queueHead = 0;
     (*ctx).queueTail = 0;
     (*ctx).numThreadsBusy = 0;
@@ -94,10 +92,8 @@ pub(crate) unsafe fn POOL_create_advanced(
     ptr::write(ptr::addr_of_mut!((*ctx).queuePushCond), Condvar::new());
     ptr::write(ptr::addr_of_mut!((*ctx).queuePopCond), Condvar::new());
     (*ctx).shutdown = 0;
-    (*ctx).threads = ZSTD_customCalloc(
-        numThreads * ::core::mem::size_of::<JoinHandle<()>>(),
-        customMem,
-    ) as *mut JoinHandle<()>;
+    (*ctx).threads = ZSTD_customCalloc(numThreads * size_of::<JoinHandle<()>>(), customMem)
+        as *mut JoinHandle<()>;
     (*ctx).threadCapacity = 0;
     (*ctx).customMem = customMem;
     if (*ctx).threads.is_null() || (*ctx).queue.is_null() {
@@ -138,17 +134,17 @@ pub unsafe fn POOL_free(ctx: *mut POOL_ctx) {
     ptr::drop_in_place(ptr::addr_of_mut!((*ctx).queuePopCond));
     ZSTD_customFree(
         (*ctx).queue as *mut core::ffi::c_void,
-        (*ctx).queueSize * ::core::mem::size_of::<POOL_job>(),
+        (*ctx).queueSize * size_of::<POOL_job>(),
         (*ctx).customMem,
     );
     ZSTD_customFree(
         (*ctx).threads as *mut core::ffi::c_void,
-        (*ctx).threadCapacity * ::core::mem::size_of::<JoinHandle<()>>(),
+        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
         (*ctx).customMem,
     );
     ZSTD_customFree(
         ctx as *mut core::ffi::c_void,
-        ::core::mem::size_of::<POOL_ctx>(),
+        size_of::<POOL_ctx>(),
         (*ctx).customMem,
     );
 }
@@ -167,9 +163,9 @@ pub(crate) unsafe fn POOL_sizeof(ctx: *const POOL_ctx) -> size_t {
     if ctx.is_null() {
         return 0;
     }
-    ::core::mem::size_of::<POOL_ctx>()
-        + (*ctx).queueSize * ::core::mem::size_of::<POOL_job>()
-        + (*ctx).threadCapacity * ::core::mem::size_of::<JoinHandle<()>>()
+    size_of::<POOL_ctx>()
+        + (*ctx).queueSize * size_of::<POOL_job>()
+        + (*ctx).threadCapacity * size_of::<JoinHandle<()>>()
 }
 unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::ffi::c_int {
     if numThreads <= (*ctx).threadCapacity {
@@ -180,7 +176,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
         return 0;
     }
     let threadPool = ZSTD_customCalloc(
-        numThreads.wrapping_mul(::core::mem::size_of::<JoinHandle<()>>()),
+        numThreads.wrapping_mul(size_of::<JoinHandle<()>>()),
         (*ctx).customMem,
     ) as *mut JoinHandle<()>;
     if threadPool.is_null() {
@@ -189,11 +185,11 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
     libc::memcpy(
         threadPool as *mut core::ffi::c_void,
         (*ctx).threads as *const core::ffi::c_void,
-        (*ctx).threadCapacity * ::core::mem::size_of::<JoinHandle<()>>(),
+        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
     );
     ZSTD_customFree(
         (*ctx).threads as *mut core::ffi::c_void,
-        (*ctx).threadCapacity * ::core::mem::size_of::<JoinHandle<()>>(),
+        (*ctx).threadCapacity * size_of::<JoinHandle<()>>(),
         (*ctx).customMem,
     );
     (*ctx).threads = threadPool;

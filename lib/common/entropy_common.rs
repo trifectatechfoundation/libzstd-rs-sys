@@ -586,7 +586,7 @@ mod tests {
                         src.as_ptr().cast::<core::ffi::c_void>(),
                         src.len(),
                         &mut workspace,
-                        core::mem::size_of::<Workspace>(),
+                        size_of::<Workspace>(),
                         if bmi2 { HUF_flags_bmi2 as core::ffi::c_int } else { 0 },
                     );
 

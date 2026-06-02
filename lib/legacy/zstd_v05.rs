@@ -644,9 +644,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-        {
+        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t > (size_of::<size_t>()).wrapping_mul(8) {
             bitD.reload();
         }
         op[1] = (if fast != 0 {
@@ -654,8 +652,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 4 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
+        if (FSEv05_MAX_TABLELOG * 4 + 7) as size_t > (size_of::<size_t>()).wrapping_mul(8)
             && bitD.reload() > StreamStatus::Unfinished
         {
             op = &mut op[2..];
@@ -666,9 +663,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t
-            > (::core::mem::size_of::<size_t>()).wrapping_mul(8)
-        {
+        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t > (size_of::<size_t>()).wrapping_mul(8) {
             bitD.reload();
         }
         op[3] = (if fast != 0 {
@@ -1892,7 +1887,7 @@ unsafe fn ZSTDv05_decompressBegin(dctx: *mut ZSTDv05_DCtx) {
     (*dctx).flagStaticTables = 0;
 }
 pub(crate) unsafe fn ZSTDv05_createDCtx() -> *mut ZSTDv05_DCtx {
-    let dctx = malloc(::core::mem::size_of::<ZSTDv05_DCtx>()) as *mut ZSTDv05_DCtx;
+    let dctx = malloc(size_of::<ZSTDv05_DCtx>()) as *mut ZSTDv05_DCtx;
     if dctx.is_null() {
         return core::ptr::null_mut();
     }
@@ -1932,7 +1927,7 @@ pub(crate) fn ZSTDv05_getFrameParams(
         ptr::write_bytes(
             params as *mut ZSTDv05_parameters as *mut u8,
             0,
-            ::core::mem::size_of::<ZSTDv05_parameters>(),
+            size_of::<ZSTDv05_parameters>(),
         );
     }
     params.windowLog = ((src[4] & 15) + ZSTDv05_WINDOWLOG_ABSOLUTEMIN) as u32;
@@ -2667,7 +2662,7 @@ unsafe fn ZSTDv05_decompress_continueDCtx(
     ptr::write_bytes(
         &mut blockProperties as *mut blockProperties_t as *mut u8,
         0,
-        ::core::mem::size_of::<blockProperties_t>(),
+        size_of::<blockProperties_t>(),
     );
     let mut frameHeaderSize: size_t = 0;
     if src.len() < ZSTDv05_frameHeaderSize_min.wrapping_add(ZSTDv05_blockHeaderSize) {
@@ -2982,11 +2977,11 @@ unsafe fn ZBUFFv05_limitCopy(
 }
 const ZSTDv05_frameHeaderSize_max_0: core::ffi::c_int = 5;
 pub(crate) unsafe fn ZBUFFv05_createDCtx() -> *mut ZBUFFv05_DCtx {
-    let zbc = malloc(::core::mem::size_of::<ZBUFFv05_DCtx>()) as *mut ZBUFFv05_DCtx;
+    let zbc = malloc(size_of::<ZBUFFv05_DCtx>()) as *mut ZBUFFv05_DCtx;
     if zbc.is_null() {
         return core::ptr::null_mut();
     }
-    ptr::write_bytes(zbc as *mut u8, 0, ::core::mem::size_of::<ZBUFFv05_DCtx>());
+    ptr::write_bytes(zbc as *mut u8, 0, size_of::<ZBUFFv05_DCtx>());
     (*zbc).zc = ZSTDv05_createDCtx();
     (*zbc).stage = ZBUFFv05ds_init;
     zbc

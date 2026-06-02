@@ -73,14 +73,14 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     let cumul = workSpace as *mut u16;
     let tableSymbol = cumul.offset(maxSV1.wrapping_add(1) as isize) as *mut u8;
     let mut highThreshold = tableSize.wrapping_sub(1);
-    if (::core::mem::size_of::<core::ffi::c_uint>() as core::ffi::c_ulong as core::ffi::c_ulonglong)
+    if (size_of::<core::ffi::c_uint>() as core::ffi::c_ulong as core::ffi::c_ulonglong)
         .wrapping_mul(
             (maxSymbolValue.wrapping_add(2) as core::ffi::c_ulonglong)
                 .wrapping_add((1) << tableLog)
                 .wrapping_div(2)
                 .wrapping_add(
-                    (::core::mem::size_of::<u64>() as core::ffi::c_ulong)
-                        .wrapping_div(::core::mem::size_of::<u32>() as core::ffi::c_ulong)
+                    (size_of::<u64>() as core::ffi::c_ulong)
+                        .wrapping_div(size_of::<u32>() as core::ffi::c_ulong)
                         as core::ffi::c_ulonglong,
                 ),
         )
@@ -659,7 +659,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         FSE_initCState2(&mut CState1, ct, *ip as u32);
     }
     srcSize = srcSize.wrapping_sub(2);
-    if (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
+    if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
         > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
         && srcSize & 2 != 0
     {
@@ -676,7 +676,7 @@ unsafe fn FSE_compress_usingCTable_generic(
     while ip > istart {
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState2, *ip as core::ffi::c_uint);
-        if (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
             < (FSE_MAX_TABLELOG * 2 + 7) as core::ffi::c_ulong
         {
             if fast != 0 {
@@ -687,7 +687,7 @@ unsafe fn FSE_compress_usingCTable_generic(
         }
         ip = ip.sub(1);
         FSE_encodeSymbol(&mut bitC, &mut CState1, *ip as core::ffi::c_uint);
-        if (::core::mem::size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
+        if (size_of::<BitContainerType>() as core::ffi::c_ulong).wrapping_mul(8)
             > (FSE_MAX_TABLELOG * 4 + 7) as core::ffi::c_ulong
         {
             ip = ip.sub(1);
@@ -716,7 +716,7 @@ pub(crate) unsafe fn FSE_compress_usingCTable(
         >= srcSize
             .wrapping_add(srcSize >> 7)
             .wrapping_add(4)
-            .wrapping_add(::core::mem::size_of::<size_t>())) as core::ffi::c_int
+            .wrapping_add(size_of::<size_t>())) as core::ffi::c_int
         as core::ffi::c_uint;
     if fast != 0 {
         FSE_compress_usingCTable_generic(dst, dstSize, src, srcSize, ct, 1)

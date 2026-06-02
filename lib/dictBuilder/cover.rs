@@ -333,7 +333,7 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
                 qsort_r(
                     ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
                     ctx.suffix.len(),
-                    ::core::mem::size_of::<u32>(),
+                    size_of::<u32>(),
                     &raw mut *ctx as *mut core::ffi::c_void,
                     compare_fn,
                 );
@@ -344,7 +344,7 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
                 qsort_s(
                     ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
                     ctx.suffix.len(),
-                    ::core::mem::size_of::<u32>(),
+                    size_of::<u32>(),
                     compare_fn,
                     &raw mut *ctx as *mut core::ffi::c_void,
                 );
@@ -355,7 +355,7 @@ fn stableSort(ctx: &mut COVER_ctx_t) {
                 qsort_r(
                     ctx.suffix.as_mut_ptr() as *mut core::ffi::c_void,
                     ctx.suffix.len(),
-                    ::core::mem::size_of::<u32>(),
+                    size_of::<u32>(),
                     compare_fn,
                     &raw mut *ctx as *mut core::ffi::c_void,
                 );
@@ -561,13 +561,13 @@ fn COVER_ctx_init<'a>(
     };
     ctx.displayLevel = displayLevel;
     if totalSamplesSize
-        < (if d as size_t > ::core::mem::size_of::<u64>() {
+        < (if d as size_t > size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>()
+            size_of::<u64>()
         })
         || totalSamplesSize
-            >= (if ::core::mem::size_of::<size_t>() == 8 {
+            >= (if size_of::<size_t>() == 8 {
                 -(1 as core::ffi::c_int) as core::ffi::c_uint
             } else {
                 (1 as core::ffi::c_int as core::ffi::c_uint).wrapping_mul((1) << 30)
@@ -577,7 +577,7 @@ fn COVER_ctx_init<'a>(
             eprintln!(
                 "Total samples size is too large ({} MB), maximum size is {} MB",
                 (totalSamplesSize >> 20) as core::ffi::c_uint,
-                (if ::core::mem::size_of::<size_t>() == 8 {
+                (if size_of::<size_t>() == 8 {
                     -(1 as core::ffi::c_int) as core::ffi::c_uint
                 } else {
                     (1 as core::ffi::c_uint).wrapping_mul((1) << 30)
@@ -623,10 +623,10 @@ fn COVER_ctx_init<'a>(
     ctx.nbTrainSamples = nbTrainSamples as size_t;
     ctx.nbTestSamples = nbTestSamples as size_t;
     ctx.suffixSize = trainingSamplesSize
-        .wrapping_sub(if d as size_t > ::core::mem::size_of::<u64>() {
+        .wrapping_sub(if d as size_t > size_of::<u64>() {
             d as size_t
         } else {
-            ::core::mem::size_of::<u64>()
+            size_of::<u64>()
         })
         .wrapping_add(1);
     ctx.suffix = (0..ctx.suffixSize as u32).collect();

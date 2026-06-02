@@ -91,7 +91,7 @@ unsafe fn BMK_runOutcome_error(errorResult: size_t) -> BMK_runOutcome_t {
     ptr::write_bytes(
         &mut b as *mut BMK_runOutcome_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_runOutcome_t>(),
+        size_of::<BMK_runOutcome_t>(),
     );
     b.error_tag_never_ever_use_directly = 1;
     b.error_result_never_ever_use_directly = errorResult;
@@ -165,7 +165,7 @@ pub unsafe fn BMK_createTimedFnState(
     total_ms: core::ffi::c_uint,
     run_ms: core::ffi::c_uint,
 ) -> *mut BMK_timedFnState_t {
-    let r = malloc(::core::mem::size_of::<BMK_timedFnState_t>()) as *mut BMK_timedFnState_t;
+    let r = malloc(size_of::<BMK_timedFnState_t>()) as *mut BMK_timedFnState_t;
     if r.is_null() {
         return core::ptr::null_mut();
     }
@@ -186,7 +186,7 @@ pub unsafe fn BMK_initStatic_timedFnState(
     if buffer.is_null() {
         return core::ptr::null_mut();
     }
-    if size < ::core::mem::size_of::<BMK_timedFnState_s>() {
+    if size < size_of::<BMK_timedFnState_s>() {
         return core::ptr::null_mut();
     }
     if !(buffer as size_t).is_multiple_of(tfs_alignment) {

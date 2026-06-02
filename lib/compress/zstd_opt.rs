@@ -119,7 +119,7 @@ unsafe fn ZSTD_newRep(rep: *const u32, offBase: u32, ll0: u32) -> Repcodes_t {
     libc::memcpy(
         &mut newReps as *mut Repcodes_t as *mut core::ffi::c_void,
         rep as *const core::ffi::c_void,
-        ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
     );
     ZSTD_updateRep((newReps.rep).as_mut_ptr(), offBase, ll0);
     newReps
@@ -359,8 +359,7 @@ unsafe fn ZSTD_rescaleFreqs(
             libc::memcpy(
                 (*optPtr).litLengthFreq as *mut core::ffi::c_void,
                 baseLLfreqs.as_ptr() as *const core::ffi::c_void,
-                ::core::mem::size_of::<[core::ffi::c_uint; 36]>() as core::ffi::c_ulong
-                    as libc::size_t,
+                size_of::<[core::ffi::c_uint; 36]>() as core::ffi::c_ulong as libc::size_t,
             );
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), (MaxLL + 1) as size_t);
             let mut ml_0: core::ffi::c_uint = 0;
@@ -377,8 +376,7 @@ unsafe fn ZSTD_rescaleFreqs(
             libc::memcpy(
                 (*optPtr).offCodeFreq as *mut core::ffi::c_void,
                 baseOFCfreqs.as_ptr() as *const core::ffi::c_void,
-                ::core::mem::size_of::<[core::ffi::c_uint; 32]>() as core::ffi::c_ulong
-                    as libc::size_t,
+                size_of::<[core::ffi::c_uint; 32]>() as core::ffi::c_ulong as libc::size_t,
             );
             (*optPtr).offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), (MaxOff + 1) as size_t);
         }
@@ -1765,7 +1763,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
     ptr::write_bytes(
         &mut lastStretch as *mut ZSTD_optimal_t as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTD_optimal_t>(),
+        size_of::<ZSTD_optimal_t>(),
     );
     optLdm.seqStore = if !(ms.ldmSeqStore).is_null() {
         *ms.ldmSeqStore
@@ -1814,7 +1812,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
             libc::memcpy(
                 &mut (*opt).rep as *mut [u32; 3] as *mut core::ffi::c_void,
                 rep as *const core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
             );
             let maxML = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).len;
             let maxOffBase = (*matches.offset(nbMatches.wrapping_sub(1) as isize)).off;
@@ -1931,8 +1929,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                     ((*opt.offset(cur.wrapping_add(1) as isize)).rep).as_mut_ptr()
                                         as *mut core::ffi::c_void,
                                     &newReps as *const Repcodes_t as *const core::ffi::c_void,
-                                    ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong
-                                        as libc::size_t,
+                                    size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
                                 );
                                 (*opt.offset(cur.wrapping_add(1) as isize)).litlen = 1;
                                 (*opt.offset(cur.wrapping_add(1) as isize)).price = with1literal;
@@ -1953,8 +1950,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                             ((*opt.offset(cur as isize)).rep).as_mut_ptr()
                                 as *mut core::ffi::c_void,
                             &newReps_0 as *const Repcodes_t as *const core::ffi::c_void,
-                            ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong
-                                as libc::size_t,
+                            size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
                         );
                     }
                     if inr <= ilimit {
@@ -2077,13 +2073,13 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                     libc::memcpy(
                         rep as *mut core::ffi::c_void,
                         &reps as *const Repcodes_t as *const core::ffi::c_void,
-                        ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
                     );
                 } else {
                     libc::memcpy(
                         rep as *mut core::ffi::c_void,
                         (lastStretch.rep).as_mut_ptr() as *const core::ffi::c_void,
-                        ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                        size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
                     );
                     cur = cur.wrapping_sub(lastStretch.litlen);
                 }
@@ -2179,7 +2175,7 @@ unsafe fn ZSTD_initStats_ultra(
     libc::memcpy(
         tmpRep.as_mut_ptr() as *mut core::ffi::c_void,
         rep as *const core::ffi::c_void,
-        ::core::mem::size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
+        size_of::<[u32; 3]>() as core::ffi::c_ulong as libc::size_t,
     );
     ZSTD_compressBlock_opt2(ms, seqStore, tmpRep.as_mut_ptr(), src, srcSize, ZSTD_noDict);
     ZSTD_resetSeqStore(seqStore);

@@ -329,7 +329,7 @@ unsafe fn usageAdvanced(programName: *const core::ffi::c_char) {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-        (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
+        (size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
     );
@@ -865,11 +865,7 @@ unsafe fn parseCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
     params: *mut ZDICT_cover_params_t,
 ) -> core::ffi::c_uint {
-    ptr::write_bytes(
-        params as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_cover_params_t>(),
-    );
+    ptr::write_bytes(params as *mut u8, 0, size_of::<ZDICT_cover_params_t>());
     loop {
         if longCommandWArg(
             &mut stringPtr,
@@ -952,11 +948,7 @@ unsafe fn parseFastCoverParameters(
     mut stringPtr: *const core::ffi::c_char,
     params: *mut ZDICT_fastCover_params_t,
 ) -> core::ffi::c_uint {
-    ptr::write_bytes(
-        params as *mut u8,
-        0,
-        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
-    );
+    ptr::write_bytes(params as *mut u8, 0, size_of::<ZDICT_fastCover_params_t>());
     loop {
         if longCommandWArg(
             &mut stringPtr,
@@ -1347,23 +1339,23 @@ unsafe fn parseCompressionParameters(
     1
 }
 unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
-    (*params).windowLog = (if ::core::mem::size_of::<size_t>() == 4 {
+    (*params).windowLog = (if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) as core::ffi::c_uint;
-    (*params).chainLog = (if ::core::mem::size_of::<size_t>() == 4 {
+    (*params).chainLog = (if size_of::<size_t>() == 4 {
         ZSTD_CHAINLOG_MAX_32
     } else {
         ZSTD_CHAINLOG_MAX_64
     }) as core::ffi::c_uint;
-    (*params).hashLog = (if (if ::core::mem::size_of::<size_t>() == 4 {
+    (*params).hashLog = (if (if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) < 30
     {
-        if ::core::mem::size_of::<size_t>() == 4 {
+        if size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1371,7 +1363,7 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     } else {
         30
     }) as core::ffi::c_uint;
-    (*params).searchLog = ((if ::core::mem::size_of::<size_t>() == 4 {
+    (*params).searchLog = ((if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
@@ -1380,13 +1372,13 @@ unsafe fn setMaxCompression(params: *mut ZSTD_compressionParameters) {
     (*params).targetLength = ZSTD_TARGETLENGTH_MAX as core::ffi::c_uint;
     (*params).strategy = ZSTD_STRATEGY_MAX as ZSTD_strategy;
     g_overlapLog = ZSTD_OVERLAPLOG_MAX as u32;
-    g_ldmHashLog = (if (if ::core::mem::size_of::<size_t>() == 4 {
+    g_ldmHashLog = (if (if size_of::<size_t>() == 4 {
         ZSTD_WINDOWLOG_MAX_32
     } else {
         ZSTD_WINDOWLOG_MAX_64
     }) < 30
     {
-        if ::core::mem::size_of::<size_t>() == 4 {
+        if size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1411,7 +1403,7 @@ unsafe fn printVersion() {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-        (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
+        (size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
     );
@@ -1878,7 +1870,7 @@ unsafe fn main_0(
     ptr::write_bytes(
         &mut compressionParams as *mut ZSTD_compressionParameters as *mut u8,
         0,
-        ::core::mem::size_of::<ZSTD_compressionParameters>(),
+        size_of::<ZSTD_compressionParameters>(),
     );
     FIO_addAbortHandler();
     argNb = 1;
@@ -2304,10 +2296,7 @@ unsafe fn main_0(
                                 b"--max\0" as *const u8 as *const core::ffi::c_char,
                             ) == 0
                             {
-                                if ::core::mem::size_of::<*mut core::ffi::c_void>()
-                                    as core::ffi::c_ulong
-                                    == 4
-                                {
+                                if size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
                                     if g_displayLevel >= 2 {
                                         fprintf(
                                             stderr,
@@ -2338,7 +2327,7 @@ unsafe fn main_0(
                                     ptr::write_bytes(
                                         &mut coverParams as *mut ZDICT_cover_params_t as *mut u8,
                                         0,
-                                        ::core::mem::size_of::<ZDICT_cover_params_t>(),
+                                        size_of::<ZDICT_cover_params_t>(),
                                     );
                                 } else {
                                     let fresh0 = argument;
@@ -2369,7 +2358,7 @@ unsafe fn main_0(
                                         &mut fastCoverParams as *mut ZDICT_fastCover_params_t
                                             as *mut u8,
                                         0,
-                                        ::core::mem::size_of::<ZDICT_fastCover_params_t>(),
+                                        size_of::<ZDICT_fastCover_params_t>(),
                                     );
                                 } else {
                                     let fresh1 = argument;
@@ -2570,7 +2559,7 @@ unsafe fn main_0(
                                 operation = zom_decompress;
                                 NEXT_FIELD!(patchFromDictFileName);
                                 memLimit = (1)
-                                    << (if ::core::mem::size_of::<size_t>() == 4 {
+                                    << (if size_of::<size_t>() == 4 {
                                         ZSTD_WINDOWLOG_MAX_32
                                     } else {
                                         ZSTD_WINDOWLOG_MAX_64
@@ -2805,7 +2794,7 @@ unsafe fn main_0(
                 stderr,
                 b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
                 b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-                (::core::mem::size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
+                (size_of::<size_t>()).wrapping_mul(8) as core::ffi::c_int,
                 b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
                 b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
             );

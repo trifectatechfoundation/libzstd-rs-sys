@@ -95,10 +95,10 @@ pub const MB_UNIT: core::ffi::c_int = 1000000;
 pub const TIMELOOP_NANOSEC: core::ffi::c_ulonglong =
     (1 as core::ffi::c_ulonglong).wrapping_mul(1000000000);
 pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
-static maxMemory: usize = if ::core::mem::size_of::<size_t>() == 4 {
+static maxMemory: usize = if size_of::<size_t>() == 4 {
     2 * (1 << 30) - 64 * (1 << 20)
 } else {
-    1usize << (::core::mem::size_of::<usize>() * 8 - 31)
+    1usize << (size_of::<usize>() * 8 - 31)
 };
 pub const DEBUG: core::ffi::c_int = 0;
 unsafe fn uintSize(mut value: core::ffi::c_uint) -> size_t {
@@ -747,7 +747,7 @@ unsafe fn BMK_benchOutcome_error() -> BMK_benchOutcome_t {
     ptr::write_bytes(
         &mut b as *mut BMK_benchOutcome_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_benchOutcome_t>(),
+        size_of::<BMK_benchOutcome_t>(),
     );
     b.tag = 1;
     b
@@ -817,7 +817,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     ptr::write_bytes(
         &mut benchResult as *mut BMK_benchResult_t as *mut u8,
         0,
-        ::core::mem::size_of::<BMK_benchResult_t>(),
+        size_of::<BMK_benchResult_t>(),
     );
     if strlen(displayName) > 17 {
         displayName = displayName.add((strlen(displayName)).wrapping_sub(17));
@@ -845,7 +845,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 ptr::write_bytes(
                     &mut r as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                    size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -883,7 +883,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 ptr::write_bytes(
                     &mut r_0 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                    size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -928,7 +928,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             ptr::write_bytes(
                 &mut r_1 as *mut BMK_benchOutcome_t as *mut u8,
                 0,
-                ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
                 fprintf(
@@ -967,7 +967,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             ptr::write_bytes(
                 &mut r_2 as *mut BMK_benchOutcome_t as *mut u8,
                 0,
-                ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
                 fprintf(
@@ -1211,7 +1211,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 ptr::write_bytes(
                     &mut r_3 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                    size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -1291,7 +1291,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 ptr::write_bytes(
                     &mut r_4 as *mut BMK_benchOutcome_t as *mut u8,
                     0,
-                    ::core::mem::size_of::<BMK_benchOutcome_t>(),
+                    size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
                     fprintf(
@@ -1552,23 +1552,17 @@ pub unsafe fn BMK_benchMemAdvanced(
     .wrapping_add((srcSize == 0) as core::ffi::c_int as size_t);
     let nbChunksMax = ((srcSize.wrapping_add(chunkSize.wrapping_sub(1)) / chunkSize) as u32)
         .wrapping_add(nbFiles);
-    let srcPtrs = malloc(
-        (nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>()),
-    ) as *mut *const core::ffi::c_void;
-    let srcSizes = malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>()))
-        as *mut size_t;
-    let cPtrs = malloc(
-        (nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>()),
-    ) as *mut *mut core::ffi::c_void;
-    let cSizes = malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>()))
-        as *mut size_t;
-    let cCapacities = malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>()))
-        as *mut size_t;
-    let resPtrs = malloc(
-        (nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<*mut core::ffi::c_void>()),
-    ) as *mut *mut core::ffi::c_void;
-    let resSizes = malloc((nbChunksMax as size_t).wrapping_mul(::core::mem::size_of::<size_t>()))
-        as *mut size_t;
+    let srcPtrs = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<*mut core::ffi::c_void>()))
+        as *mut *const core::ffi::c_void;
+    let srcSizes = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
+    let cPtrs = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<*mut core::ffi::c_void>()))
+        as *mut *mut core::ffi::c_void;
+    let cSizes = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
+    let cCapacities =
+        malloc((nbChunksMax as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
+    let resPtrs = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<*mut core::ffi::c_void>()))
+        as *mut *mut core::ffi::c_void;
+    let resSizes = malloc((nbChunksMax as size_t).wrapping_mul(size_of::<size_t>())) as *mut size_t;
     let timeStateCompress = BMK_createTimedFnState(
         ((*adv).nbSeconds).wrapping_mul(1000),
         BMK_RUNTEST_DEFAULT_MS as core::ffi::c_uint,
@@ -1668,7 +1662,7 @@ pub unsafe fn BMK_benchMemAdvanced(
         ptr::write_bytes(
             &mut r as *mut BMK_benchOutcome_t as *mut u8,
             0,
-            ::core::mem::size_of::<BMK_benchOutcome_t>(),
+            size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
             fprintf(
@@ -1705,7 +1699,7 @@ pub unsafe fn BMK_benchMemAdvanced(
         ptr::write_bytes(
             &mut r_0 as *mut BMK_benchOutcome_t as *mut u8,
             0,
-            ::core::mem::size_of::<BMK_benchOutcome_t>(),
+            size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
             fprintf(
@@ -1884,7 +1878,7 @@ pub unsafe fn BMK_syntheticTest(
         RDG_genBuffer(srcBuffer, benchedSize, compressibility, 0.0f64, 0);
         formatString_u(
             nameBuff.as_mut_ptr(),
-            ::core::mem::size_of::<[core::ffi::c_char; 20]>(),
+            size_of::<[core::ffi::c_char; 20]>(),
             b"Synthetic %u%%\0" as *const u8 as *const core::ffi::c_char,
             (compressibility * 100.0) as core::ffi::c_uint,
         );
@@ -2097,7 +2091,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
         return 15;
     }
 
-    fileSizes = calloc(nbFiles as size_t, ::core::mem::size_of::<size_t>()) as *mut size_t;
+    fileSizes = calloc(nbFiles as size_t, size_of::<size_t>()) as *mut size_t;
     if fileSizes.is_null() {
         if displayLevel >= 1 {
             eprintln!("not enough memory for fileSizes");
@@ -2203,7 +2197,7 @@ pub unsafe fn BMK_benchFilesAdvanced(
         let mut mfName: [core::ffi::c_char; 20] = [0; 20];
         formatString_u(
             mfName.as_mut_ptr(),
-            ::core::mem::size_of::<[core::ffi::c_char; 20]>(),
+            size_of::<[core::ffi::c_char; 20]>(),
             c" %u files".as_ptr(),
             nbFiles,
         );
