@@ -329,7 +329,7 @@ unsafe fn usageAdvanced(programName: *const core::ffi::c_char) {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-        size_of::<size_t>().wrapping_mul(8) as core::ffi::c_int,
+        size_t::BITS as core::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
     );
@@ -1403,7 +1403,7 @@ unsafe fn printVersion() {
         stdout,
         b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
         b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-        size_of::<size_t>().wrapping_mul(8) as core::ffi::c_int,
+        size_t::BITS as core::ffi::c_int,
         b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
         b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
     );
@@ -2794,7 +2794,7 @@ unsafe fn main_0(
                 stderr,
                 b"*** %s (%i-bit) %s, by %s ***\n\0" as *const u8 as *const core::ffi::c_char,
                 b"Zstandard CLI\0" as *const u8 as *const core::ffi::c_char,
-                size_of::<size_t>().wrapping_mul(8) as core::ffi::c_int,
+                size_t::BITS as core::ffi::c_int,
                 b"v1.5.8\0" as *const u8 as *const core::ffi::c_char,
                 b"Yann Collet\0" as *const u8 as *const core::ffi::c_char,
             );

@@ -98,7 +98,7 @@ pub const BMK_RUNTEST_DEFAULT_MS: core::ffi::c_int = 1000;
 static maxMemory: usize = if size_of::<size_t>() == 4 {
     2 * (1 << 30) - 64 * (1 << 20)
 } else {
-    1usize << (size_of::<usize>() * 8 - 31)
+    1usize << (usize::BITS - 31)
 };
 pub const DEBUG: core::ffi::c_int = 0;
 unsafe fn uintSize(mut value: core::ffi::c_uint) -> size_t {
