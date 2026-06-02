@@ -1635,12 +1635,12 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     if ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
         (if ((((8) << 10) + 512) as size_t).wrapping_add(
-            (size_of::<core::ffi::c_uint>())
+            size_of::<core::ffi::c_uint>()
                 .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
         ) > 8208
         {
             ((((8) << 10) + 512) as size_t).wrapping_add(
-                (size_of::<core::ffi::c_uint>())
+                size_of::<core::ffi::c_uint>()
                     .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
             )
         } else {
@@ -1662,12 +1662,12 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     (*cctx).tmpWorkspace = ZSTD_cwksp_reserve_object(
         &mut (*cctx).workspace,
         if ((((8) << 10) + 512) as size_t).wrapping_add(
-            (size_of::<core::ffi::c_uint>())
+            size_of::<core::ffi::c_uint>()
                 .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
         ) > 8208
         {
             ((((8) << 10) + 512) as size_t).wrapping_add(
-                (size_of::<core::ffi::c_uint>())
+                size_of::<core::ffi::c_uint>()
                     .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
             )
         } else {
@@ -1675,12 +1675,12 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
         },
     );
     (*cctx).tmpWkspSize = if ((((8) << 10) + 512) as size_t).wrapping_add(
-        (size_of::<core::ffi::c_uint>())
+        size_of::<core::ffi::c_uint>()
             .wrapping_mul(((if 35 > 52 as core::ffi::c_int { 35 } else { 52 }) + 2) as size_t),
     ) > 8208 as size_t
     {
         ((((8) << 10) + 512) as size_t).wrapping_add(
-            (size_of::<core::ffi::c_uint>())
+            size_of::<core::ffi::c_uint>()
                 .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
         )
     } else {
@@ -3539,12 +3539,12 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         .wrapping_add(3 * ZSTD_cwksp_alloc_size(maxNbSeq.wrapping_mul(size_of::<u8>())));
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
         if ((((8) << 10) + 512) as size_t).wrapping_add(
-            (size_of::<core::ffi::c_uint>())
+            size_of::<core::ffi::c_uint>()
                 .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
         ) > 8208
         {
             ((((8) << 10) + 512) as size_t).wrapping_add(
-                (size_of::<core::ffi::c_uint>())
+                size_of::<core::ffi::c_uint>()
                     .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
             )
         } else {
@@ -4093,12 +4093,12 @@ unsafe fn ZSTD_resetCCtx_internal(
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
             if ((((8) << 10) + 512) as size_t).wrapping_add(
-                (size_of::<core::ffi::c_uint>())
+                size_of::<core::ffi::c_uint>()
                     .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
             ) > 8208
             {
                 ((((8) << 10) + 512) as size_t).wrapping_add(
-                    (size_of::<core::ffi::c_uint>())
+                    size_of::<core::ffi::c_uint>()
                         .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
                 )
             } else {
@@ -4109,12 +4109,12 @@ unsafe fn ZSTD_resetCCtx_internal(
             return Error::memory_allocation.to_error_code();
         }
         (*zc).tmpWkspSize = if ((((8) << 10) + 512) as size_t).wrapping_add(
-            (size_of::<core::ffi::c_uint>())
+            size_of::<core::ffi::c_uint>()
                 .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
         ) > 8208
         {
             ((((8) << 10) + 512) as size_t).wrapping_add(
-                (size_of::<core::ffi::c_uint>())
+                size_of::<core::ffi::c_uint>()
                     .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
             )
         } else {

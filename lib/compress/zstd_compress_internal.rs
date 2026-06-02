@@ -161,7 +161,7 @@ pub(crate) unsafe fn ZSTD_count(
     pInLimit: *const u8,
 ) -> usize {
     let pStart = pIn;
-    let pInLoopLimit = pInLimit.offset(-((size_of::<usize>()).wrapping_sub(1) as isize));
+    let pInLoopLimit = pInLimit.offset(-(size_of::<usize>().wrapping_sub(1) as isize));
     if pIn < pInLoopLimit {
         let diff = MEM_readST(pMatch as *const core::ffi::c_void)
             ^ MEM_readST(pIn as *const core::ffi::c_void);

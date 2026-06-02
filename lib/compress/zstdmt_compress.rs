@@ -1292,7 +1292,7 @@ pub unsafe fn ZSTDMT_sizeof_CCtx(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     if mtctx.is_null() {
         return 0;
     }
-    (size_of::<ZSTDMT_CCtx>())
+    size_of::<ZSTDMT_CCtx>()
         .wrapping_add(POOL_sizeof((*mtctx).factory))
         .wrapping_add(ZSTDMT_sizeof_bufferPool((*mtctx).bufPool))
         .wrapping_add(
