@@ -874,7 +874,7 @@ unsafe fn analyze_entropy_internal(
         255,
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
+        size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
     );
     if let Some(err) = Error::from_error_code(maxNbBits) {
         if notificationLevel >= 1 {
@@ -894,7 +894,7 @@ unsafe fn analyze_entropy_internal(
             255,
             huffLog,
             wksp.as_mut_ptr() as *mut core::ffi::c_void,
-            ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
+            size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
         );
     }
     let huffLog = maxNbBits as u32;
@@ -963,7 +963,7 @@ unsafe fn analyze_entropy_internal(
         255,
         huffLog,
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
+        size_of::<[u32; HUF_CTABLE_WORKSPACE_SIZE_U32]>(),
     );
     if let Some(err) = Error::from_error_code(hhSize) {
         if notificationLevel >= 1 {

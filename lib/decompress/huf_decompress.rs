@@ -278,7 +278,7 @@ unsafe fn init_remaining_dstream<'a>(
     let bitContainer = MEM_readLEST(args.ip[stream] as *const core::ffi::c_void) as usize;
     let bitsConsumed = args.bits[stream].trailing_zeros();
     let start = args.ilowest as *const core::ffi::c_char;
-    let limitPtr = start.add(::core::mem::size_of::<size_t>());
+    let limitPtr = start.add(size_of::<size_t>());
     let ptr = args.ip[stream] as *const core::ffi::c_char;
 
     Ok(BIT_DStream_t {

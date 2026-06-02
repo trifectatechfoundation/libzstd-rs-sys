@@ -521,7 +521,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
 ) -> size_t {
     let newTableSize = hashSet.ddictPtrTableSize * DDICT_HASHSET_RESIZE_FACTOR as size_t;
     let newTable = ZSTD_customCalloc(
-        (::core::mem::size_of::<*mut ZSTD_DDict>()).wrapping_mul(newTableSize),
+        (size_of::<*mut ZSTD_DDict>()).wrapping_mul(newTableSize),
         customMem,
     ) as *mut *const ZSTD_DDict;
     let oldTable = hashSet.ddictPtrTable;
@@ -545,7 +545,7 @@ unsafe fn ZSTD_DDictHashSet_expand(
     }
     ZSTD_customFree(
         oldTable as *mut core::ffi::c_void,
-        oldTableSize.wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
+        oldTableSize.wrapping_mul(size_of::<*mut ZSTD_DDict>()),
         customMem,
     );
     0
@@ -589,20 +589,19 @@ unsafe fn ZSTD_DDictHashSet_getDDict(
 ///   values automatically set to `NULL` to begin with.
 /// - `NULL` if allocation failed
 unsafe fn ZSTD_createDDictHashSet(customMem: ZSTD_customMem) -> *mut ZSTD_DDictHashSet {
-    let ret = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DDictHashSet>(), customMem)
-        as *mut ZSTD_DDictHashSet;
+    let ret =
+        ZSTD_customMalloc(size_of::<ZSTD_DDictHashSet>(), customMem) as *mut ZSTD_DDictHashSet;
     if ret.is_null() {
         return core::ptr::null_mut();
     }
     (*ret).ddictPtrTable = ZSTD_customCalloc(
-        (DDICT_HASHSET_TABLE_BASE_SIZE as size_t)
-            .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
+        (DDICT_HASHSET_TABLE_BASE_SIZE as size_t).wrapping_mul(size_of::<*mut ZSTD_DDict>()),
         customMem,
     ) as *mut *const ZSTD_DDict;
     if ((*ret).ddictPtrTable).is_null() {
         ZSTD_customFree(
             ret as *mut core::ffi::c_void,
-            ::core::mem::size_of::<ZSTD_DDictHashSet>(),
+            size_of::<ZSTD_DDictHashSet>(),
             customMem,
         );
         return core::ptr::null_mut();
@@ -621,14 +620,14 @@ unsafe fn ZSTD_freeDDictHashSet(hashSet: *mut ZSTD_DDictHashSet, customMem: ZSTD
             (*hashSet).ddictPtrTable as *mut core::ffi::c_void,
             (*hashSet)
                 .ddictPtrTableSize
-                .wrapping_mul(::core::mem::size_of::<*mut ZSTD_DDict>()),
+                .wrapping_mul(size_of::<*mut ZSTD_DDict>()),
             customMem,
         );
     }
     if !hashSet.is_null() {
         ZSTD_customFree(
             hashSet as *mut core::ffi::c_void,
-            ::core::mem::size_of::<ZSTD_DDictHashSet>(),
+            size_of::<ZSTD_DDictHashSet>(),
             customMem,
         );
     }
@@ -668,7 +667,7 @@ pub unsafe extern "C" fn ZSTD_sizeof_DCtx(dctx: *const ZSTD_DCtx) -> size_t {
     if dctx.is_null() {
         return 0;
     }
-    (::core::mem::size_of::<ZSTD_DCtx>())
+    (size_of::<ZSTD_DCtx>())
         .wrapping_add(ZSTD_sizeof_DDict((*dctx).ddictLocal))
         .wrapping_add((*dctx).inBuffSize)
         .wrapping_add((*dctx).outBuffSize)
@@ -757,7 +756,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
     }
 
     // check minimum workspace size
-    if workspaceSize < ::core::mem::size_of::<ZSTD_DCtx>() {
+    if workspaceSize < size_of::<ZSTD_DCtx>() {
         return core::ptr::null_mut();
     }
 
@@ -770,7 +769,7 @@ pub unsafe extern "C" fn ZSTD_initStaticDCtx(
 }
 
 unsafe fn ZSTD_createDCtx_internal(customMem: ZSTD_customMem) -> *mut ZSTD_DCtx {
-    let alloc = ZSTD_customMalloc(::core::mem::size_of::<ZSTD_DCtx>(), customMem);
+    let alloc = ZSTD_customMalloc(size_of::<ZSTD_DCtx>(), customMem);
     let Some(dctx) = alloc.cast::<MaybeUninit<ZSTD_DCtx>>().as_mut() else {
         return core::ptr::null_mut();
     };
@@ -831,11 +830,7 @@ pub unsafe extern "C" fn ZSTD_freeDCtx(dctx: *mut ZSTD_DCtx) -> size_t {
         ZSTD_freeDDictHashSet((*dctx).ddictSet, cMem);
         (*dctx).ddictSet = core::ptr::null_mut();
     }
-    ZSTD_customFree(
-        dctx as *mut core::ffi::c_void,
-        ::core::mem::size_of::<ZSTD_DCtx>(),
-        cMem,
-    );
+    ZSTD_customFree(dctx as *mut core::ffi::c_void, size_of::<ZSTD_DCtx>(), cMem);
     0
 }
 

@@ -223,16 +223,12 @@ impl<'a> BITv07_DStream_t<'a> {
             return Err(Error::srcSize_wrong);
         }
 
-        if src.len() >= ::core::mem::size_of::<usize>() {
+        if src.len() >= size_of::<usize>() {
             // normal case
             let mut bitD = BITv07_DStream_t {
                 bitContainer: 0,
                 bitsConsumed: 0,
-                ptr: unsafe {
-                    src.as_ptr()
-                        .add(src.len())
-                        .sub(::core::mem::size_of::<usize>())
-                },
+                ptr: unsafe { src.as_ptr().add(src.len()).sub(size_of::<usize>()) },
                 start: src.as_ptr(),
                 _marker: PhantomData,
             };
@@ -294,7 +290,7 @@ impl<'a> BITv07_DStream_t<'a> {
                 // endMark not present
                 return Err(Error::GENERIC);
             }
-            bitD.bitsConsumed += (::core::mem::size_of::<usize>() - src.len()) as u32 * 8;
+            bitD.bitsConsumed += (size_of::<usize>() - src.len()) as u32 * 8;
 
             Ok(bitD)
         }

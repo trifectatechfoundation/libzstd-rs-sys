@@ -585,7 +585,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
 
     if ms.prefetchCDictTables != 0 {
         let hashTableBytes = ((1 as core::ffi::c_int as size_t) << (*dictCParams).hashLog)
-            .wrapping_mul(::core::mem::size_of::<u32>());
+            .wrapping_mul(size_of::<u32>());
         let _ptr = dictHashTable as *const core::ffi::c_char;
         let _size = hashTableBytes;
         let mut _pos: size_t = 0;

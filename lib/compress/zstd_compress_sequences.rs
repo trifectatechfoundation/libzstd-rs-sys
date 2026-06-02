@@ -78,7 +78,7 @@ unsafe fn ZSTD_NCountCost(
     }
     FSE_writeNCount(
         wksp.as_mut_ptr() as *mut core::ffi::c_void,
-        ::core::mem::size_of::<[u8; 512]>(),
+        size_of::<[u8; 512]>(),
         norm.as_mut_ptr(),
         max,
         tableLog,
@@ -328,7 +328,7 @@ pub unsafe fn ZSTD_buildCTable(
                 max,
                 tableLog,
                 ((*wksp).wksp).as_mut_ptr() as *mut core::ffi::c_void,
-                ::core::mem::size_of::<[u32; 285]>(),
+                size_of::<[u32; 285]>(),
             );
             if ERR_isError(err_code_3) {
                 return err_code_3;

@@ -17,7 +17,7 @@ pub(crate) const HUF_CTABLE_WORKSPACE_SIZE_U32: usize =
     (4 * (HUF_SYMBOLVALUE_MAX as usize + 1)) + 192;
 
 pub(crate) const HUF_CTABLE_WORKSPACE_SIZE: usize =
-    HUF_CTABLE_WORKSPACE_SIZE_U32 * core::mem::size_of::<u32>();
+    HUF_CTABLE_WORKSPACE_SIZE_U32 * size_of::<u32>();
 
 /// Absolute limit of [`HUF_MAX_TABLELOG`]. Beyond that value, code does not work
 pub(crate) const HUF_TABLELOG_ABSOLUTEMAX: usize = 12;
@@ -63,5 +63,5 @@ pub(crate) const HUF_READ_STATS_WORKSPACE_SIZE_U32: usize =
 pub(crate) struct HUF_CTableHeader {
     pub(crate) tableLog: u8,
     pub(crate) maxSymbolValue: u8,
-    pub(crate) unused: [u8; core::mem::size_of::<usize>() - 2],
+    pub(crate) unused: [u8; size_of::<usize>() - 2],
 }

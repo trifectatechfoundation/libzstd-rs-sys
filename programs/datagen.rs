@@ -154,11 +154,7 @@ pub unsafe fn RDG_genBuffer(
 ) {
     let mut seed32 = seed;
     let mut ldt: [u8; 8192] = [0; 8192];
-    ptr::write_bytes(
-        ldt.as_mut_ptr() as *mut u8,
-        b'0',
-        ::core::mem::size_of::<[u8; 8192]>(),
-    );
+    ptr::write_bytes(ldt.as_mut_ptr() as *mut u8, b'0', size_of::<[u8; 8192]>());
     if litProba <= 0.0f64 {
         litProba = matchProba / 4.5f64;
     }
@@ -187,11 +183,7 @@ pub unsafe fn RDG_genStdout(
     if litProba <= 0.0f64 {
         litProba = matchProba / 4.5f64;
     }
-    ptr::write_bytes(
-        ldt.as_mut_ptr() as *mut u8,
-        b'0',
-        ::core::mem::size_of::<[u8; 8192]>(),
-    );
+    ptr::write_bytes(ldt.as_mut_ptr() as *mut u8, b'0', size_of::<[u8; 8192]>());
     RDG_fillLiteralDistrib(
         ldt.as_mut_ptr(),
         (litProba * 256.0 + 0.001f64) as fixedPoint_24_8,

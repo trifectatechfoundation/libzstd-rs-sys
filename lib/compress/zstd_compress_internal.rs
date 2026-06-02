@@ -161,22 +161,21 @@ pub(crate) unsafe fn ZSTD_count(
     pInLimit: *const u8,
 ) -> usize {
     let pStart = pIn;
-    let pInLoopLimit =
-        pInLimit.offset(-((::core::mem::size_of::<usize>()).wrapping_sub(1) as isize));
+    let pInLoopLimit = pInLimit.offset(-((size_of::<usize>()).wrapping_sub(1) as isize));
     if pIn < pInLoopLimit {
         let diff = MEM_readST(pMatch as *const core::ffi::c_void)
             ^ MEM_readST(pIn as *const core::ffi::c_void);
         if diff != 0 {
             return ZSTD_NbCommonBytes(diff) as usize;
         }
-        pIn = pIn.add(::core::mem::size_of::<usize>());
-        pMatch = pMatch.add(::core::mem::size_of::<usize>());
+        pIn = pIn.add(size_of::<usize>());
+        pMatch = pMatch.add(size_of::<usize>());
         while pIn < pInLoopLimit {
             let diff_0 = MEM_readST(pMatch as *const core::ffi::c_void)
                 ^ MEM_readST(pIn as *const core::ffi::c_void);
             if diff_0 == 0 {
-                pIn = pIn.add(::core::mem::size_of::<usize>());
-                pMatch = pMatch.add(::core::mem::size_of::<usize>());
+                pIn = pIn.add(size_of::<usize>());
+                pMatch = pMatch.add(size_of::<usize>());
             } else {
                 pIn = pIn.offset(ZSTD_NbCommonBytes(diff_0) as isize);
                 return pIn.offset_from_unsigned(pStart);

@@ -670,13 +670,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
     if (*params).hashLog == 0 {
         (*params).hashLog = if 6
             > (if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-                < (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                < (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
                 }) < 30
                 {
-                    if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                    if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                         30
                     } else {
                         31
@@ -687,13 +687,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
             {
                 ((*params).windowLog).wrapping_sub((*params).hashRateLog)
             } else {
-                (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
                 }) < 30
                 {
-                    if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                    if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                         30
                     } else {
                         31
@@ -704,13 +704,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
             }) {
             6
         } else if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-            < (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+            < (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                 30
             } else {
                 31
             }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
@@ -721,13 +721,13 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         {
             ((*params).windowLog).wrapping_sub((*params).hashRateLog)
         } else {
-            (if (if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+            (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                 30
             } else {
                 31
             }) < 30
             {
-                if ::core::mem::size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
@@ -774,7 +774,7 @@ pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     }) as size_t;
     let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
-        ldmHSize.wrapping_mul(::core::mem::size_of::<ldmEntry_t>()),
+        ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),
     ));
     if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         totalSize

@@ -260,7 +260,7 @@ fn FASTCOVER_ctx_init<'a>(
     };
 
     ctx.displayLevel = displayLevel;
-    if totalSamplesSize < Ord::max(d as size_t, ::core::mem::size_of::<u64>())
+    if totalSamplesSize < Ord::max(d as size_t, size_of::<u64>())
         || totalSamplesSize >= FASTCOVER_MAX_SAMPLES_SIZE
     {
         if displayLevel >= 1 {
@@ -307,8 +307,7 @@ fn FASTCOVER_ctx_init<'a>(
     ctx.nbSamples = nbSamples as size_t;
     ctx.nbTrainSamples = nbTrainSamples as size_t;
     ctx.nbTestSamples = nbTestSamples as size_t;
-    ctx.nbDmers =
-        trainingSamplesSize.wrapping_sub(Ord::max(d as size_t, ::core::mem::size_of::<u64>())) + 1;
+    ctx.nbDmers = trainingSamplesSize.wrapping_sub(Ord::max(d as size_t, size_of::<u64>())) + 1;
     ctx.d = d;
     ctx.f = f;
     ctx.accelParams = accelParams;

@@ -1080,7 +1080,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
         libc::memcpy(
             &mut (*nextCBlock).entropy.huf as *mut ZSTD_hufCTables_t as *mut core::ffi::c_void,
             &(*prevCBlock).entropy.huf as *const ZSTD_hufCTables_t as *const core::ffi::c_void,
-            ::core::mem::size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
+            size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
         );
     }
     if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&(*entropyMetadata).fseMetadata) != 0
@@ -1107,7 +1107,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             libc::memcpy(
                 &mut rep as *mut Repcodes_t as *mut core::ffi::c_void,
                 ((*prevCBlock).rep).as_ptr() as *const core::ffi::c_void,
-                ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
             );
             seq = sstart;
             while seq < sp {
@@ -1122,7 +1122,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             libc::memcpy(
                 ((*nextCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
                 &mut rep as *mut Repcodes_t as *const core::ffi::c_void,
-                ::core::mem::size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
+                size_of::<Repcodes_t>() as core::ffi::c_ulong as libc::size_t,
             );
         }
     }

@@ -210,7 +210,7 @@ unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
     let nbBits = HUF_getNbBits(*elt);
     if nbBits > 0 {
         debug_assert!((value >> nbBits) == 0);
-        *elt |= value << (core::mem::size_of::<HUF_CElt>() * 8 - nbBits);
+        *elt |= value << (HUF_CElt::BITS as usize - nbBits);
     }
 }
 
@@ -235,7 +235,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
         unused: [0; _],
     };
     const {
-        assert!(core::mem::size_of::<HUF_CElt>() == core::mem::size_of::<HUF_CTableHeader>());
+        assert!(size_of::<HUF_CElt>() == size_of::<HUF_CTableHeader>());
     }
     ptr::write_bytes(
         &mut header as *mut HUF_CTableHeader as *mut u8,
@@ -277,7 +277,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         as *mut HUF_WriteCTableWksp;
 
     const {
-        assert!(HUF_CTABLE_WORKSPACE_SIZE >= core::mem::size_of::<HUF_WriteCTableWksp>());
+        assert!(HUF_CTABLE_WORKSPACE_SIZE >= size_of::<HUF_WriteCTableWksp>());
     }
 
     debug_assert!(HUF_readCTableHeader(CTable).maxSymbolValue as c_uint == maxSymbolValue);
@@ -1254,7 +1254,7 @@ unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: c_int) {
     /* Mask bitPos to account for the bytes we consumed. */
     *((*bitC).bitPos).as_mut_ptr() &= 7;
     debug_assert!(nbBits > 0);
-    debug_assert!(nbBits <= core::mem::size_of::<size_t>() * 8);
+    debug_assert!(nbBits <= size_t::BITS as usize);
     debug_assert!((*bitC).ptr <= (*bitC).endPtr);
     MEM_writeLEST((*bitC).ptr as *mut c_void, bitContainer);
     (*bitC).ptr = ((*bitC).ptr).add(nbBytes);

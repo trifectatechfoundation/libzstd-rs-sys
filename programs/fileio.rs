@@ -390,7 +390,7 @@ unsafe fn FIO_shouldDisplayMultipleFileSummary(fCtx: *const FIO_ctx_t) -> core::
 pub const FIO_OVERLAP_LOG_NOTSET: core::ffi::c_int = 9999;
 pub const FIO_LDM_PARAM_NOTSET: core::ffi::c_int = 9999;
 pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
-    let ret = malloc(::core::mem::size_of::<FIO_prefs_t>()) as *mut FIO_prefs_t;
+    let ret = malloc(size_of::<FIO_prefs_t>()) as *mut FIO_prefs_t;
     if ret.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -452,7 +452,7 @@ pub unsafe fn FIO_createPreferences() -> *mut FIO_prefs_t {
     ret
 }
 pub unsafe fn FIO_createContext() -> *mut FIO_ctx_t {
-    let ret = malloc(::core::mem::size_of::<FIO_ctx_t>()) as *mut FIO_ctx_t;
+    let ret = malloc(size_of::<FIO_ctx_t>()) as *mut FIO_ctx_t;
     if ret.is_null() {
         if g_display_prefs.displayLevel >= 1 {
             fprintf(stderr, b"zstd: \0" as *const u8 as *const core::ffi::c_char);
@@ -1360,7 +1360,7 @@ pub unsafe fn FIO_checkFilenameCollisions(
     let mut filename = core::ptr::null::<core::ffi::c_char>();
     let mut u: core::ffi::c_uint = 0;
     filenameTableSorted =
-        malloc((::core::mem::size_of::<*mut core::ffi::c_char>()).wrapping_mul(nbFiles as size_t))
+        malloc((size_of::<*mut core::ffi::c_char>()).wrapping_mul(nbFiles as size_t))
             as *mut *const core::ffi::c_char;
     if filenameTableSorted.is_null() {
         if g_display_prefs.displayLevel >= 1 {
@@ -1387,7 +1387,7 @@ pub unsafe fn FIO_checkFilenameCollisions(
     qsort(
         filenameTableSorted as *mut core::ffi::c_void,
         nbFiles as size_t,
-        ::core::mem::size_of::<*mut core::ffi::c_char>(),
+        size_of::<*mut core::ffi::c_char>(),
         Some(
             UTIL_compareStr
                 as unsafe extern "C" fn(
@@ -1525,7 +1525,7 @@ unsafe fn FIO_adjustMemLimitForPatchFromMode(
         maxSrcFileSize
     };
     let maxWindowSize = (1 as core::ffi::c_uint)
-        << (if ::core::mem::size_of::<size_t>() == 4 {
+        << (if size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1780,7 +1780,7 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
     );
     FIO_adjustMemLimitForPatchFromMode(prefs, dictSize, maxSrcFileSize);
     if fileWindowLog
-        > (if ::core::mem::size_of::<size_t>() == 4 {
+        > (if size_of::<size_t>() == 4 {
             ZSTD_WINDOWLOG_MAX_32
         } else {
             ZSTD_WINDOWLOG_MAX_64
@@ -1794,34 +1794,18 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
         );
     }
     (*comprParams).windowLog = if 10
-        > (if ((if ::core::mem::size_of::<size_t>() == 4 {
-            30
-        } else {
-            31
-        }) as core::ffi::c_uint)
+        > (if ((if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint)
             < fileWindowLog
         {
-            (if ::core::mem::size_of::<size_t>() == 4 {
-                30
-            } else {
-                31
-            }) as core::ffi::c_uint
+            (if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint
         } else {
             fileWindowLog
         }) {
         10
-    } else if ((if ::core::mem::size_of::<size_t>() == 4 {
-        30
-    } else {
-        31
-    }) as core::ffi::c_uint)
+    } else if ((if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint)
         < fileWindowLog
     {
-        (if ::core::mem::size_of::<size_t>() == 4 {
-            30
-        } else {
-            31
-        }) as core::ffi::c_uint
+        (if size_of::<size_t>() == 4 { 30 } else { 31 }) as core::ffi::c_uint
     } else {
         fileWindowLog
     };
@@ -1855,11 +1839,7 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
                 stderr,
                 b"- Set a larger chainLog (e.g. --zstd=chainLog=%u)\n\0" as *const u8
                     as *const core::ffi::c_char,
-                if ::core::mem::size_of::<size_t>() == 4 {
-                    29
-                } else {
-                    30
-                },
+                if size_of::<size_t>() == 4 { 29 } else { 30 },
             );
         }
         if g_display_prefs.displayLevel >= 4 {
@@ -1867,13 +1847,8 @@ unsafe fn FIO_adjustParamsForPatchFromMode(
                 stderr,
                 b"- Set a larger LDM hashLog (e.g. --zstd=ldmHashLog=%u)\n\0" as *const u8
                     as *const core::ffi::c_char,
-                if (if ::core::mem::size_of::<size_t>() == 4 {
-                    30
-                } else {
-                    31
-                }) < 30
-                {
-                    if ::core::mem::size_of::<size_t>() == 4 {
+                if (if size_of::<size_t>() == 4 { 30 } else { 31 }) < 30 {
+                    if size_of::<size_t>() == 4 {
                         30
                     } else {
                         31
@@ -1951,7 +1926,7 @@ unsafe fn FIO_createCResources(
     ptr::write_bytes(
         &mut ress as *mut cRess_t as *mut u8,
         0,
-        ::core::mem::size_of::<cRess_t>(),
+        size_of::<cRess_t>(),
     );
     if g_display_prefs.displayLevel >= 6 {
         fprintf(
@@ -3322,7 +3297,7 @@ unsafe fn FIO_compressGzFrame(
         8,
         0,
         ZLIB_VERSION.as_ptr(),
-        ::core::mem::size_of::<z_stream>() as core::ffi::c_int,
+        size_of::<z_stream>() as core::ffi::c_int,
     );
     if ret != Z_OK {
         if g_display_prefs.displayLevel >= 1 {
@@ -5479,12 +5454,12 @@ unsafe fn FIO_createDResources(
     ptr::write_bytes(
         &mut statbuf as *mut stat_t as *mut u8,
         0,
-        ::core::mem::size_of::<stat_t>(),
+        size_of::<stat_t>(),
     );
     ptr::write_bytes(
         &mut ress as *mut dRess_t as *mut u8,
         0,
-        ::core::mem::size_of::<dRess_t>(),
+        size_of::<dRess_t>(),
     );
     FIO_getDictFileStat(dictFileName, &mut statbuf);
     if (*prefs).patchFromMode != 0 {
@@ -5882,7 +5857,7 @@ unsafe fn FIO_zstdErrorHelp(
             );
         }
         if windowLog
-            <= (if ::core::mem::size_of::<size_t>() == 4 {
+            <= (if size_of::<size_t>() == 4 {
                 ZSTD_WINDOWLOG_MAX_32
             } else {
                 ZSTD_WINDOWLOG_MAX_64
@@ -5912,11 +5887,7 @@ unsafe fn FIO_zstdErrorHelp(
             b"%s : Window log larger than ZSTD_WINDOWLOG_MAX=%u; not supported \n\0" as *const u8
                 as *const core::ffi::c_char,
             srcFileName,
-            if ::core::mem::size_of::<size_t>() == 4 {
-                30
-            } else {
-                31
-            },
+            if size_of::<size_t>() == 4 { 30 } else { 31 },
         );
     }
 }
@@ -6077,7 +6048,7 @@ unsafe fn FIO_decompressGzFrame(
         &mut strm,
         15 + 16,
         ZLIB_VERSION.as_ptr(),
-        ::core::mem::size_of::<z_stream>() as core::ffi::c_int,
+        size_of::<z_stream>() as core::ffi::c_int,
     ) != Z_OK
     {
         return FIO_ERROR_FRAME_DECODING as core::ffi::c_ulonglong;
@@ -6867,7 +6838,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
         let numBytesRead = fread(
             headerBuffer.as_mut_ptr() as *mut core::ffi::c_void,
             1,
-            ::core::mem::size_of::<[u8; 18]>(),
+            size_of::<[u8; 18]>(),
             srcFile,
         );
         if numBytesRead
@@ -7340,7 +7311,7 @@ unsafe fn FIO_addFInfo(fi1: fileInfo_t, fi2: fileInfo_t) -> fileInfo_t {
     ptr::write_bytes(
         &mut total as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>(),
+        size_of::<fileInfo_t>(),
     );
     total.numActualFrames = fi1.numActualFrames + fi2.numActualFrames;
     total.numSkippableFrames = fi1.numSkippableFrames + fi2.numSkippableFrames;
@@ -7371,7 +7342,7 @@ unsafe fn FIO_listFile(
     ptr::write_bytes(
         &mut info as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>(),
+        size_of::<fileInfo_t>(),
     );
     let error = getFileInfo(&mut info, inFileName);
     match error as core::ffi::c_uint {
@@ -7489,7 +7460,7 @@ pub unsafe fn FIO_listMultipleFiles(
     ptr::write_bytes(
         &mut total as *mut fileInfo_t as *mut u8,
         0,
-        ::core::mem::size_of::<fileInfo_t>(),
+        size_of::<fileInfo_t>(),
     );
     total.usesCheck = 1;
     let mut u_0: core::ffi::c_uint = 0;
