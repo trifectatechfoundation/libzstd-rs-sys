@@ -644,7 +644,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t > size_of::<size_t>().wrapping_mul(8) {
+        if FSEv05_MAX_TABLELOG * 2 + 7 > size_t::BITS as core::ffi::c_int {
             bitD.reload();
         }
         op[1] = (if fast != 0 {
@@ -652,7 +652,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 4 + 7) as size_t > size_of::<size_t>().wrapping_mul(8)
+        if FSEv05_MAX_TABLELOG * 4 + 7 > size_t::BITS as core::ffi::c_int
             && bitD.reload() > StreamStatus::Unfinished
         {
             op = &mut op[2..];
@@ -663,7 +663,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         } else {
             FSEv05_decodeSymbol(&mut state1, &mut bitD) as core::ffi::c_int
         }) as u8;
-        if (FSEv05_MAX_TABLELOG * 2 + 7) as size_t > size_of::<size_t>().wrapping_mul(8) {
+        if FSEv05_MAX_TABLELOG * 2 + 7 > size_t::BITS as core::ffi::c_int {
             bitD.reload();
         }
         op[3] = (if fast != 0 {
