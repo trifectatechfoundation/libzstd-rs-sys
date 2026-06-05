@@ -5,6 +5,7 @@ exclude = [ "fuzz" ]
 
 [workspace.package]
 edition = "2021"
+rust-version = "1.88"
 
 [package]
 name = "libzstd-rs-sys"
@@ -13,7 +14,8 @@ repository = "https://github.com/trifectatechfoundation/libzstd-rs-sys"
 description = "a rust implementation of zstd compression and decompression"
 license = "BSD-3-Clause"
 publish = true
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 autobins = false
 include = [
     "Cargo.toml",
