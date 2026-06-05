@@ -27,7 +27,7 @@ use libzstd_rs_sys::lib::decompress::zstd_decompress::{
 };
 use libzstd_rs_sys::lib::decompress::{ZSTD_DCtx, ZSTD_FrameHeader, ZSTD_frame};
 use libzstd_rs_sys::lib::zstd::{
-    ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_cParameter,
+    Format, ZSTD_ParamSwitch_e, ZSTD_ResetDirective, ZSTD_btlazy2, ZSTD_btopt, ZSTD_cParameter,
     ZSTD_compressionParameters, ZSTD_dParameter, ZSTD_error_frameParameter_windowTooLarge,
     ZSTD_frameProgression, ZSTD_inBuffer, ZSTD_inBuffer_s, ZSTD_outBuffer, ZSTD_outBuffer_s,
     ZSTD_strategy, ZSTD_BLOCKSIZE_MAX, ZSTD_CONTENTSIZE_ERROR, ZSTD_CONTENTSIZE_UNKNOWN,
@@ -6841,13 +6841,7 @@ unsafe fn FIO_analyzeFrames(info: *mut fileInfo_t, srcFile: *mut FILE) -> InfoEr
             size_of::<[u8; 18]>(),
             srcFile,
         );
-        if numBytesRead
-            < (if ZSTD_f_zstd1 as core::ffi::c_int == ZSTD_f_zstd1 as core::ffi::c_int {
-                6
-            } else {
-                2
-            }) as size_t
-        {
+        if numBytesRead < Format::ZSTD_f_zstd1.frame_header_size_min() {
             if feof(srcFile) != 0
                 && numBytesRead == 0
                 && (*info).compressedSize > 0
