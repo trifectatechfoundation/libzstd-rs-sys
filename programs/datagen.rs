@@ -19,7 +19,7 @@ unsafe fn RDG_rand(src: *mut u32) -> u32 {
     *src = rand32;
     rand32 >> 5
 }
-unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, mut ld: fixedPoint_24_8) {
+unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, ld: fixedPoint_24_8) {
     let firstChar = (if ld as core::ffi::c_double <= 0.0f64 {
         0
     } else {
@@ -36,9 +36,6 @@ unsafe fn RDG_fillLiteralDistrib(ldt: *mut u8, mut ld: fixedPoint_24_8) {
         '0' as i32
     }) as u8;
     let mut u: u32 = 0;
-    if ld <= 0 {
-        ld = 0;
-    }
     u = 0;
     while u < LTSIZE as u32 {
         let weight = (((LTSIZE as u32).wrapping_sub(u) * ld) >> 8).wrapping_add(1);

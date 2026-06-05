@@ -1249,7 +1249,7 @@ unsafe fn UTIL_readFileContent(
             bufSize.wrapping_sub(totalRead).wrapping_sub(1),
             inFile,
         );
-        if bytesRead <= 0 {
+        if bytesRead == 0 {
             break;
         }
         totalRead = totalRead.wrapping_add(bytesRead);
