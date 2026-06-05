@@ -4166,7 +4166,7 @@ unsafe fn FIO_compressZstdFrame(
                         );
                     }
                     if zfp.currentJobID > ((*prefs).nbWorkers + 1) as core::ffi::c_uint {
-                        if inputBlocked <= 0 {
+                        if inputBlocked == 0 {
                             if g_display_prefs.displayLevel >= 6 {
                                 fprintf(
                                     stderr,

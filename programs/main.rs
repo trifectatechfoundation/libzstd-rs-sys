@@ -5,6 +5,7 @@
 #![allow(unused_assignments)]
 // FIXME I guess
 #![allow(clippy::all)]
+#![warn(clippy::absurd_extreme_comparisons)]
 extern crate libc;
 
 pub mod benchfn;
