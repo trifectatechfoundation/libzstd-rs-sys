@@ -7,6 +7,7 @@
 #![allow(clippy::all)]
 #![warn(clippy::absurd_extreme_comparisons)]
 #![warn(clippy::eq_op)]
+#![warn(clippy::unnecessary_cast)]
 extern crate libc;
 
 pub mod benchfn;
