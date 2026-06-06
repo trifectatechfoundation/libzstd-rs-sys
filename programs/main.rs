@@ -14,6 +14,7 @@
 #![warn(clippy::double_parens)]
 #![warn(clippy::redundant_field_names)]
 #![warn(clippy::if_same_then_else)]
+#![warn(clippy::wildcard_in_or_patterns)]
 extern crate libc;
 
 pub mod benchfn;

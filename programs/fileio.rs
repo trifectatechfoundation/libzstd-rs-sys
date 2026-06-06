@@ -4532,7 +4532,7 @@ unsafe fn FIO_compressFilename_internal(
             }
             exit(20);
         }
-        0 | _ => {
+        _ => {
             compressedfilesize = FIO_compressZstdFrame(
                 fCtx,
                 prefs,
@@ -7372,7 +7372,7 @@ unsafe fn FIO_listFile(
             }
             return 1;
         }
-        0 | _ => {}
+        _ => {}
     }
     displayInfo(inFileName, &info, displayLevel);
     *total = FIO_addFInfo(*total, info);
