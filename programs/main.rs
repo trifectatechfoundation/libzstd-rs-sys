@@ -4,19 +4,9 @@
 #![allow(non_upper_case_globals)]
 #![allow(unused_assignments)]
 // FIXME I guess
-#![allow(clippy::all)]
-#![warn(clippy::absurd_extreme_comparisons)]
-#![warn(clippy::eq_op)]
-#![warn(clippy::unnecessary_cast)]
-#![warn(clippy::field_reassign_with_default)]
-#![warn(clippy::manual_clamp)]
-#![warn(clippy::manual_checked_ops)]
-#![warn(clippy::double_parens)]
-#![warn(clippy::redundant_field_names)]
-#![warn(clippy::if_same_then_else)]
-#![warn(clippy::wildcard_in_or_patterns)]
-#![warn(clippy::collapsible_if)]
-#![warn(clippy::assertions_on_constants)]
+#![allow(clippy::missing_safety_doc)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::nonminimal_bool)]
 extern crate libc;
 
 pub mod benchfn;
