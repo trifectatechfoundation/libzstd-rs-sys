@@ -1079,25 +1079,27 @@ unsafe fn parseLegacyParameters(
 }
 
 fn defaultCoverParams() -> ZDICT_cover_params_t {
-    let mut params = ZDICT_cover_params_t::default();
-    params.d = 8;
-    params.steps = 4;
-    params.splitPoint = 1.0f64;
-    params.shrinkDict = 0;
-    params.shrinkDictMaxRegression = kDefaultRegression;
-    params
+    ZDICT_cover_params_t {
+        d: 8,
+        steps: 4,
+        splitPoint: 1.0f64,
+        shrinkDict: 0,
+        shrinkDictMaxRegression: kDefaultRegression,
+        ..Default::default()
+    }
 }
 
 fn defaultFastCoverParams() -> ZDICT_fastCover_params_t {
-    let mut params = ZDICT_fastCover_params_t::default();
-    params.d = 8;
-    params.f = 20;
-    params.steps = 4;
-    params.splitPoint = 0.75f64;
-    params.accel = DEFAULT_ACCEL as core::ffi::c_uint;
-    params.shrinkDict = 0;
-    params.shrinkDictMaxRegression = kDefaultRegression;
-    params
+    ZDICT_fastCover_params_t {
+        d: 8,
+        f: 20,
+        steps: 4,
+        splitPoint: 0.75f64,
+        accel: DEFAULT_ACCEL as core::ffi::c_uint,
+        shrinkDict: 0,
+        shrinkDictMaxRegression: kDefaultRegression,
+        ..Default::default()
+    }
 }
 
 unsafe fn parseAdaptParameters(
@@ -3078,9 +3080,10 @@ unsafe fn main_0(
                     memLimit,
                 );
             } else {
-                let mut dictParams = ZDICT_legacy_params_t::default();
-                dictParams.selectivityLevel = dictSelect;
-                dictParams.zParams = zParams;
+                let mut dictParams = ZDICT_legacy_params_t {
+                    selectivityLevel: dictSelect,
+                    zParams,
+                };
                 operationResult = DiB_trainFromFiles(
                     outFileName,
                     maxDictSize as size_t,
