@@ -1,6 +1,8 @@
 use core::ptr;
 use std::ffi::CStr;
 use std::io;
+use std::num::NonZeroUsize;
+use std::ops::Div as _;
 
 use libc::{exit, fclose, fflush, fopen, fprintf, fread, free, fwrite, malloc, size_t, FILE};
 use libzstd_rs_sys::lib::zdict::experimental::{
@@ -337,9 +339,11 @@ unsafe fn DiB_fileStats(
                     *fileNamesTable.offset(n as isize),
                 );
             }
-        } else if chunkSize > 0 {
-            fs.nbSamples += ((fileSize as size_t).wrapping_add(chunkSize).wrapping_sub(1)
-                / chunkSize) as core::ffi::c_int;
+        } else if let Some(chunkSize) = NonZeroUsize::new(chunkSize) {
+            fs.nbSamples += (fileSize as size_t)
+                .wrapping_add(chunkSize.get())
+                .wrapping_sub(1)
+                .div(chunkSize) as core::ffi::c_int;
             fs.totalSizeToLoad += fileSize;
         } else {
             if fileSize > SAMPLESIZE_MAX as i64 {

@@ -10,6 +10,7 @@
 #![warn(clippy::unnecessary_cast)]
 #![warn(clippy::field_reassign_with_default)]
 #![warn(clippy::manual_clamp)]
+#![warn(clippy::manual_checked_ops)]
 extern crate libc;
 
 pub mod benchfn;
