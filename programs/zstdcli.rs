@@ -3149,20 +3149,20 @@ unsafe fn main_0(
                     }
                     cLevel = maxCLevel;
                 }
-                if showDefaultCParams != 0 {
-                    if operation as core::ffi::c_uint
+                if showDefaultCParams != 0
+                    && operation as core::ffi::c_uint
                         == zom_decompress as core::ffi::c_int as core::ffi::c_uint
-                    {
-                        if g_displayLevel >= 1 {
-                            fprintf(
+                {
+                    if g_displayLevel >= 1 {
+                        fprintf(
                             stderr,
                             b"error : can't use --show-default-cparams in decompression mode \n\0"
-                                as *const u8 as *const core::ffi::c_char,
+                                as *const u8
+                                as *const core::ffi::c_char,
                         );
-                        }
-                        operationResult = 1;
-                        break 'end;
                     }
+                    operationResult = 1;
+                    break 'end;
                 }
                 if !dictFileName.is_null() && !patchFromDictFileName.is_null() {
                     if g_displayLevel >= 1 {
