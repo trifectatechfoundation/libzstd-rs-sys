@@ -531,7 +531,7 @@ unsafe fn AIO_IOPool_createThreadPool(ctx: *mut IOPoolCtx_t, prefs: *const FIO_p
             }
             exit(102);
         }
-        assert!(MAX_IO_JOBS >= 2);
+        const { assert!(MAX_IO_JOBS >= 2) };
         (*ctx).threadPool = POOL_create(1, (MAX_IO_JOBS - 2) as size_t);
         (*ctx).threadPoolActive = 1;
         if ((*ctx).threadPool).is_null() {
