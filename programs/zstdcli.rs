@@ -1971,12 +1971,10 @@ unsafe fn main_0(
                             argument,
                             b"--decompress\0" as *const u8 as *const core::ffi::c_char,
                         ) == 0
-                        {
-                            operation = zom_decompress;
-                        } else if strcmp(
-                            argument,
-                            b"--uncompress\0" as *const u8 as *const core::ffi::c_char,
-                        ) == 0
+                            || strcmp(
+                                argument,
+                                b"--uncompress\0" as *const u8 as *const core::ffi::c_char,
+                            ) == 0
                         {
                             operation = zom_decompress;
                         } else if strcmp(
@@ -2334,11 +2332,8 @@ unsafe fn main_0(
                                 } else {
                                     let fresh0 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh0 as core::ffi::c_int != '=' as i32 {
-                                        badUsage(programName, originalArgument);
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else if parseCoverParameters(argument, &mut coverParams) == 0
+                                    if *fresh0 as core::ffi::c_int != '=' as i32
+                                        || parseCoverParameters(argument, &mut coverParams) == 0
                                     {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
@@ -2365,14 +2360,9 @@ unsafe fn main_0(
                                 } else {
                                     let fresh1 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh1 as core::ffi::c_int != '=' as i32 {
-                                        badUsage(programName, originalArgument);
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else if parseFastCoverParameters(
-                                        argument,
-                                        &mut fastCoverParams,
-                                    ) == 0
+                                    if *fresh1 as core::ffi::c_int != '=' as i32
+                                        || parseFastCoverParameters(argument, &mut fastCoverParams)
+                                            == 0
                                     {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
@@ -2392,11 +2382,8 @@ unsafe fn main_0(
                                 if *argument as core::ffi::c_int != 0 {
                                     let fresh2 = argument;
                                     argument = argument.offset(1);
-                                    if *fresh2 as core::ffi::c_int != '=' as i32 {
-                                        badUsage(programName, originalArgument);
-                                        operationResult = 1;
-                                        break 'end;
-                                    } else if parseLegacyParameters(argument, &mut dictSelect) == 0
+                                    if *fresh2 as core::ffi::c_int != '=' as i32
+                                        || parseLegacyParameters(argument, &mut dictSelect) == 0
                                     {
                                         badUsage(programName, originalArgument);
                                         operationResult = 1;
@@ -2414,36 +2401,29 @@ unsafe fn main_0(
                                 &mut argument,
                                 b"--memlimit\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
-                            {
-                                NEXT_UINT32!(memLimit);
-                            } else if longCommandWArg(
-                                &mut argument,
-                                b"--memory\0" as *const u8 as *const core::ffi::c_char,
-                            ) != 0
-                            {
-                                NEXT_UINT32!(memLimit);
-                            } else if longCommandWArg(
-                                &mut argument,
-                                b"--memlimit-decompress\0" as *const u8 as *const core::ffi::c_char,
-                            ) != 0
+                                || longCommandWArg(
+                                    &mut argument,
+                                    b"--memory\0" as *const u8 as *const core::ffi::c_char,
+                                ) != 0
+                                || longCommandWArg(
+                                    &mut argument,
+                                    b"--memlimit-decompress\0" as *const u8
+                                        as *const core::ffi::c_char,
+                                ) != 0
                             {
                                 NEXT_UINT32!(memLimit);
                             } else if longCommandWArg(
                                 &mut argument,
                                 b"--block-size\0" as *const u8 as *const core::ffi::c_char,
                             ) != 0
-                            {
-                                NEXT_TSIZE!(chunkSize);
-                            } else if longCommandWArg(
-                                &mut argument,
-                                b"--split\0" as *const u8 as *const core::ffi::c_char,
-                            ) != 0
-                            {
-                                NEXT_TSIZE!(chunkSize);
-                            } else if longCommandWArg(
-                                &mut argument,
-                                b"--jobsize\0" as *const u8 as *const core::ffi::c_char,
-                            ) != 0
+                                || longCommandWArg(
+                                    &mut argument,
+                                    b"--split\0" as *const u8 as *const core::ffi::c_char,
+                                ) != 0
+                                || longCommandWArg(
+                                    &mut argument,
+                                    b"--jobsize\0" as *const u8 as *const core::ffi::c_char,
+                                ) != 0
                             {
                                 NEXT_TSIZE!(chunkSize);
                             } else if longCommandWArg(
