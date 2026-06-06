@@ -11,6 +11,7 @@
 #![warn(clippy::field_reassign_with_default)]
 #![warn(clippy::manual_clamp)]
 #![warn(clippy::manual_checked_ops)]
+#![warn(clippy::double_parens)]
 extern crate libc;
 
 pub mod benchfn;
