@@ -3042,7 +3042,7 @@ unsafe fn main_0(
             let zParams = ZDICT_params_t {
                 compressionLevel: dictCLevel,
                 notificationLevel: g_displayLevel as core::ffi::c_uint,
-                dictID: dictID,
+                dictID,
             };
             if dict as core::ffi::c_uint == cover as core::ffi::c_int as core::ffi::c_uint {
                 let optimize = (coverParams.k == 0 || coverParams.d == 0) as core::ffi::c_int;
