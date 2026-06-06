@@ -9,6 +9,7 @@
 #![warn(clippy::eq_op)]
 #![warn(clippy::unnecessary_cast)]
 #![warn(clippy::field_reassign_with_default)]
+#![warn(clippy::manual_clamp)]
 extern crate libc;
 
 pub mod benchfn;
