@@ -16,6 +16,7 @@
 #![warn(clippy::if_same_then_else)]
 #![warn(clippy::wildcard_in_or_patterns)]
 #![warn(clippy::collapsible_if)]
+#![warn(clippy::assertions_on_constants)]
 extern crate libc;
 
 pub mod benchfn;
