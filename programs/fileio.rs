@@ -3560,12 +3560,7 @@ unsafe fn FIO_compressLzmaFrame(
     let mut action = LZMA_RUN;
     let mut ret = LZMA_OK;
     let mut writeJob = core::ptr::null_mut();
-    if compressionLevel < 0 {
-        compressionLevel = 0;
-    }
-    if compressionLevel > 9 {
-        compressionLevel = 9;
-    }
+    compressionLevel = compressionLevel.clamp(0, 9);
     if plain_lzma != 0 {
         let mut opt_lzma = lzma_options_lzma {
             dict_size: 0,
