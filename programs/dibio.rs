@@ -450,11 +450,7 @@ pub unsafe fn DiB_trainFromFiles(
                 stderr,
                 b"!  Warning : setting manual memory limit for dictionary training data at %u MB \n\0"
                     as *const u8 as *const core::ffi::c_char,
-                memLimit
-                    .wrapping_div(
-                        (((1) << 20))
-                            as core::ffi::c_uint,
-                    ),
+                memLimit.wrapping_div(1 << 20),
             );
         }
         loadedSize = if loadedSize < memLimit as size_t {
