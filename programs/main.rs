@@ -13,6 +13,7 @@
 #![warn(clippy::manual_checked_ops)]
 #![warn(clippy::double_parens)]
 #![warn(clippy::redundant_field_names)]
+#![warn(clippy::if_same_then_else)]
 extern crate libc;
 
 pub mod benchfn;

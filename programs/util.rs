@@ -1012,11 +1012,10 @@ pub unsafe fn UTIL_isConsole(file: *mut FILE) -> core::ffi::c_int {
         fprintf(stderr, b"\n\0" as *const u8 as *const core::ffi::c_char);
         g_traceDepth += 1;
     }
-    if file == stdin && g_fakeStdinIsConsole != 0 {
-        ret = 1;
-    } else if file == stderr && g_fakeStderrIsConsole != 0 {
-        ret = 1;
-    } else if file == stdout && g_fakeStdoutIsConsole != 0 {
+    if (file == stdin && g_fakeStdinIsConsole != 0)
+        || (file == stderr && g_fakeStderrIsConsole != 0)
+        || (file == stdout && g_fakeStdoutIsConsole != 0)
+    {
         ret = 1;
     } else {
         ret = isatty(fileno(file));
