@@ -7402,11 +7402,9 @@ pub unsafe fn ZSTD_loadCEntropy(
         offcodeMaxValue,
         if offcodeMax < 31 { offcodeMax } else { 31 },
     );
-    for u in 0..3_u32 {
-        if *((*bs).rep).as_mut_ptr().offset(u as isize) == 0 {
-            return Error::dictionary_corrupted.to_error_code();
-        }
-        if *((*bs).rep).as_mut_ptr().offset(u as isize) as size_t > dictContentSize {
+
+    for size in (*bs).rep {
+        if !(1..=dictContentSize).contains(&(size as usize)) {
             return Error::dictionary_corrupted.to_error_code();
         }
     }
