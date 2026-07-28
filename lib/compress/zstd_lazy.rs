@@ -928,7 +928,7 @@ pub const ZSTD_ROW_HASH_TAG_MASK: core::ffi::c_uint =
     ((1 as core::ffi::c_uint) << ZSTD_ROW_HASH_TAG_BITS).wrapping_sub(1);
 pub const ZSTD_ROW_HASH_CACHE_MASK: core::ffi::c_int = ZSTD_ROW_HASH_CACHE_SIZE - 1;
 #[inline]
-unsafe fn ZSTD_VecMask_next(val: ZSTD_VecMask) -> u32 {
+fn ZSTD_VecMask_next(val: ZSTD_VecMask) -> u32 {
     val.trailing_zeros()
 }
 #[inline(always)]
@@ -1110,7 +1110,7 @@ pub unsafe fn ZSTD_row_update(ms: &mut ZSTD_MatchState_t, ip: *const u8) {
     ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, 0);
 }
 #[inline(always)]
-unsafe fn ZSTD_row_matchMaskGroupWidth(_rowEntries: u32) -> u32 {
+fn ZSTD_row_matchMaskGroupWidth(_rowEntries: u32) -> u32 {
     // FIXME: add a more optimal implementation for aarch64.
     1
 }

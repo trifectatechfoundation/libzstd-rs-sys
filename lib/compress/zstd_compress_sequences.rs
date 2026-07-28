@@ -53,7 +53,7 @@ unsafe fn ZSTD_getFSEMaxSymbolValue(ctable: *const FSE_CTable) -> core::ffi::c_u
 
     MEM_read16(u16ptr.add(1) as *const core::ffi::c_void) as u32
 }
-unsafe fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
+fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
     (nbSeq >= 2048) as core::ffi::c_int as core::ffi::c_uint
 }
 unsafe fn ZSTD_NCountCost(

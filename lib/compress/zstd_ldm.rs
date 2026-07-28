@@ -125,7 +125,7 @@ pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
 
 #[inline]
-unsafe fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
+fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
     (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
 }
 #[inline]
@@ -221,7 +221,7 @@ unsafe fn ZSTD_window_enforceMaxDist(
     }
 }
 #[inline]
-unsafe fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
+fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
         return 0;
     }
@@ -764,7 +764,7 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         (*params).hashLog
     };
 }
-pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
+pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as size_t) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
         params.bucketSizeLog
@@ -781,7 +781,7 @@ pub unsafe fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
         0
     }
 }
-pub unsafe fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
+pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
     if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         maxChunkSize / params.minMatchLength as size_t
     } else {

@@ -82,7 +82,7 @@ static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     capacity: 0,
 };
 #[inline]
-unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
+fn ZSTD_LLcode(litLength: u32) -> u32 {
     static LL_Code: [u8; 64] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20,
         20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 22, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 23,
@@ -96,7 +96,7 @@ unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
     }
 }
 #[inline]
-unsafe fn ZSTD_MLcode(mlBase: u32) -> u32 {
+fn ZSTD_MLcode(mlBase: u32) -> u32 {
     static ML_Code: [u8; 128] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 32, 33, 33, 34, 34, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37,
@@ -134,11 +134,11 @@ pub const ZSTD_PREDEF_THRESHOLD: core::ffi::c_int = 8;
 pub const BITCOST_ACCURACY: core::ffi::c_int = 8;
 pub const BITCOST_MULTIPLIER: core::ffi::c_int = (1) << BITCOST_ACCURACY;
 #[inline]
-unsafe fn ZSTD_bitWeight(stat: u32) -> u32 {
+fn ZSTD_bitWeight(stat: u32) -> u32 {
     (ZSTD_highbit32(stat.wrapping_add(1))).wrapping_mul(BITCOST_MULTIPLIER as core::ffi::c_uint)
 }
 #[inline]
-unsafe fn ZSTD_fracWeight(rawStat: u32) -> u32 {
+fn ZSTD_fracWeight(rawStat: u32) -> u32 {
     let stat = rawStat.wrapping_add(1);
     let hb = ZSTD_highbit32(stat);
     let BWeight = hb * BITCOST_MULTIPLIER as u32;

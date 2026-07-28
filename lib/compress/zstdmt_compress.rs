@@ -167,7 +167,7 @@ static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
 };
 const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 static prime8bytes: u64 = 0xcf1bbcdcb7a56463 as core::ffi::c_ulonglong;
-unsafe fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
+fn ZSTD_ipow(mut base: u64, mut exponent: u64) -> u64 {
     let mut power = 1;
     while exponent != 0 {
         if exponent & 1 != 0 {
@@ -198,11 +198,11 @@ unsafe fn ZSTD_rollingHash_compute(buf: *const core::ffi::c_void, size: size_t) 
     ZSTD_rollingHash_append(0, buf, size)
 }
 #[inline]
-unsafe fn ZSTD_rollingHash_primePower(length: u32) -> u64 {
+fn ZSTD_rollingHash_primePower(length: u32) -> u64 {
     ZSTD_ipow(prime8bytes, length.wrapping_sub(1) as u64)
 }
 #[inline]
-unsafe fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u64) -> u64 {
+fn ZSTD_rollingHash_rotate(mut hash: u64, toRemove: u8, toAdd: u8, primePower: u64) -> u64 {
     hash = hash.wrapping_sub(
         (toRemove as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64 * primePower,
     );
@@ -1422,7 +1422,7 @@ unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::f
         (if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint
     }
 }
-unsafe fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
+fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
     match strat as core::ffi::c_uint {
         9 => return 9,
         8 | 7 => return 8,
@@ -1431,7 +1431,7 @@ unsafe fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
     }
     6
 }
-unsafe fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi::c_int {
+fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi::c_int {
     if ovlog == 0 {
         return ZSTDMT_overlapLog_default(strat);
     }

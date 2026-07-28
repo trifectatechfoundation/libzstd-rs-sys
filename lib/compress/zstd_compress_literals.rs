@@ -35,7 +35,7 @@ pub type huf_compress_f = Option<
     ) -> size_t,
 >;
 #[inline]
-unsafe fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
+fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
     let minlog =
         if strat as core::ffi::c_uint >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint {
             strat.wrapping_sub(1)
@@ -133,7 +133,7 @@ pub unsafe fn ZSTD_compressRleLiteralsBlock(
     *ostart.offset(flSize as isize) = *(src as *const u8);
     flSize.wrapping_add(1) as size_t
 }
-unsafe fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -> size_t {
+fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -> size_t {
     let shift = if (9 - strategy as core::ffi::c_int) < 3 {
         9 - strategy as core::ffi::c_int
     } else {
