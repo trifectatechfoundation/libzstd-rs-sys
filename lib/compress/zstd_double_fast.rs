@@ -76,7 +76,7 @@ unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: 
     *hashTable.add(hash) = index << ZSTD_SHORT_CACHE_TAG_BITS | tag;
 }
 #[inline]
-unsafe fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> core::ffi::c_int {
+fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> core::ffi::c_int {
     let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
     let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
     (tag1 == tag2) as core::ffi::c_int
