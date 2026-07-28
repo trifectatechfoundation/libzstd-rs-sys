@@ -1341,7 +1341,6 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         }
         ZSTD_ldm_limitTableUpdate(ms, ip);
         ZSTD_ldm_fillFastTables(ms, ip as *const core::ffi::c_void);
-        let mut i: core::ffi::c_int = 0;
         let newLitLength = blockCompressor.unwrap_unchecked()(
             ms,
             seqStore,
@@ -1350,10 +1349,8 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             sequence.litLength as size_t,
         );
         ip = ip.offset(sequence.litLength as isize);
-        i = ZSTD_REP_NUM - 1;
-        while i > 0 {
+        for i in (1..ZSTD_REP_NUM).rev() {
             *rep.offset(i as isize) = *rep.offset((i - 1) as isize);
-            i -= 1;
         }
         *rep = sequence.offset;
         ZSTD_storeSeq(
