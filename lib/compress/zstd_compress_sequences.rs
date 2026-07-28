@@ -99,7 +99,7 @@ unsafe fn ZSTD_entropyCost(
         }
         cost = cost.wrapping_add(
             (*count.offset(s as isize))
-                .wrapping_mul(*kInverseProbabilityLog256.as_ptr().offset(norm as isize)),
+                .wrapping_mul(kInverseProbabilityLog256[norm as usize]),
         );
     }
     (cost >> 8) as size_t
@@ -151,7 +151,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
         let norm256 = normAcc << shift;
         cost = cost.wrapping_add(
             (*count.offset(s as isize))
-                .wrapping_mul(*kInverseProbabilityLog256.as_ptr().offset(norm256 as isize))
+                .wrapping_mul(kInverseProbabilityLog256[norm256 as usize])
                 as size_t,
         );
     }
@@ -441,9 +441,9 @@ unsafe fn ZSTD_encodeSequences_body(
         let llCode = *llCodeTable.add(n);
         let ofCode = *ofCodeTable.add(n);
         let mlCode = *mlCodeTable.add(n);
-        let llBits = *LL_bits.as_ptr().offset(llCode as isize) as u32;
+        let llBits = LL_bits[llCode as usize] as u32;
         let ofBits_0 = ofCode as u32;
-        let mlBits = *ML_bits.as_ptr().offset(mlCode as isize) as u32;
+        let mlBits = ML_bits[mlCode as usize] as u32;
         FSE_encodeSymbol(
             &mut blockStream,
             &mut stateOffsetBits,

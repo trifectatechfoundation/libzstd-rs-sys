@@ -92,7 +92,7 @@ unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
     if litLength > 63 {
         (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
     } else {
-        *LL_Code.as_ptr().offset(litLength as isize) as core::ffi::c_uint
+        LL_Code[litLength as usize] as core::ffi::c_uint
     }
 }
 #[inline]
@@ -109,7 +109,7 @@ unsafe fn ZSTD_MLcode(mlBase: u32) -> u32 {
     if mlBase > 127 {
         (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
     } else {
-        *ML_Code.as_ptr().offset(mlBase as isize) as core::ffi::c_uint
+        ML_Code[mlBase as usize] as core::ffi::c_uint
     }
 }
 
@@ -418,7 +418,7 @@ unsafe fn ZSTD_litLengthPrice(
         ));
     }
     let llCode = ZSTD_LLcode(litLength);
-    ((*LL_bits.as_ptr().offset(llCode as isize) as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
+    ((LL_bits[llCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32)
         .wrapping_add((*optPtr).litLengthSumBasePrice)
         .wrapping_sub(if optLevel != 0 {
             ZSTD_fracWeight(*((*optPtr).litLengthFreq).offset(llCode as isize))
@@ -456,7 +456,7 @@ unsafe fn ZSTD_getMatchPrice(
     }
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
-        ((*ML_bits.as_ptr().offset(mlCode as isize) as core::ffi::c_int * BITCOST_MULTIPLIER)
+        ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER)
             as u32)
             .wrapping_add(
                 ((*optPtr).matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {

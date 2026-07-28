@@ -568,7 +568,7 @@ unsafe fn ZSTD_LLcode(litLength: u32) -> u32 {
     if litLength > 63 {
         (ZSTD_highbit32(litLength)).wrapping_add(LL_deltaCode)
     } else {
-        *LL_Code.as_ptr().offset(litLength as isize) as core::ffi::c_uint
+        LL_Code[litLength as usize] as core::ffi::c_uint
     }
 }
 #[inline]
@@ -585,7 +585,7 @@ unsafe fn ZSTD_MLcode(mlBase: u32) -> u32 {
     if mlBase > 127 {
         (ZSTD_highbit32(mlBase)).wrapping_add(ML_deltaCode)
     } else {
-        *ML_Code.as_ptr().offset(mlBase as isize) as core::ffi::c_uint
+        ML_Code[mlBase as usize] as core::ffi::c_uint
     }
 }
 #[inline]
@@ -3803,7 +3803,7 @@ unsafe fn ZSTD_assertEqualCParams(
 }
 pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState_t) {
     for i in 0..ZSTD_REP_NUM {
-        *((*bs).rep).as_mut_ptr().offset(i as isize) = *repStartValue.as_ptr().offset(i as isize);
+        (*bs).rep[i as usize] = repStartValue[i as usize];
     }
     (*bs).entropy.huf.repeatMode = HUF_repeat_none;
     (*bs).entropy.fse.offcode_repeatMode = FSE_repeat_none;
@@ -6700,7 +6700,7 @@ unsafe fn ZSTD_optimalBlockSize(
         return (128 * ((1) << 10)) as size_t;
     }
     if splitLevel == 0 {
-        splitLevel = *splitLevels.as_ptr().offset(strat as isize);
+        splitLevel = splitLevels[strat as usize];
     } else {
         splitLevel -= 2;
     }
@@ -12237,9 +12237,7 @@ unsafe fn ZSTD_getCParams_internal(
     } else {
         row = compressionLevel;
     }
-    let mut cp = *(*ZSTD_defaultCParameters.as_ptr().offset(tableID as isize))
-        .as_ptr()
-        .offset(row as isize);
+    let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
     if compressionLevel < 0 {
         let clampedCompressionLevel = if ZSTD_minCLevel() > compressionLevel {
             ZSTD_minCLevel()

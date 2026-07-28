@@ -631,9 +631,9 @@ unsafe fn ZSTD_ldm_gear_feed(
                     current_block = 12351618399163395313;
                     continue;
                 }
-                hash = (hash << 1).wrapping_add(*ZSTD_ldm_gearTab.as_ptr().offset(
-                    (*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize,
-                ));
+                hash = (hash << 1).wrapping_add(
+                    ZSTD_ldm_gearTab[(*data.add(n) as core::ffi::c_int & 0xff) as usize],
+                );
                 n = n.wrapping_add(1);
                 if (hash & mask == 0) as core::ffi::c_int as core::ffi::c_long == 0 {
                     current_block = 5689316957504528238;
