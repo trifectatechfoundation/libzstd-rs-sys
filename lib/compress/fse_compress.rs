@@ -90,10 +90,8 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
     *tableU16.sub(2) = tableLog as u16;
     *tableU16.sub(1) = maxSymbolValue as u16;
-    let mut u: u32 = 0;
     *cumul = 0;
-    u = 1;
-    while u <= maxSV1 {
+    for u in 1..maxSV1 + 1 {
         if *normalizedCounter.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int == -(1) {
             *cumul.offset(u as isize) =
                 (*cumul.offset(u.wrapping_sub(1) as isize) as core::ffi::c_int + 1) as u16;
@@ -106,7 +104,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
                 + *normalizedCounter.offset(u.wrapping_sub(1) as isize) as u16 as core::ffi::c_int)
                 as u16;
         }
-        u = u.wrapping_add(1);
     }
     *cumul.offset(maxSV1 as isize) = tableSize.wrapping_add(1) as u16;
     if highThreshold == tableSize.wrapping_sub(1) {
@@ -114,9 +111,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         let add = 0x101010101010101u64;
         let mut pos = 0 as size_t;
         let mut sv = 0u64;
-        let mut s: u32 = 0;
-        s = 0;
-        while s < maxSV1 {
+        for s in 0..maxSV1 {
             let mut i: core::ffi::c_int = 0;
             let n = *normalizedCounter.offset(s as isize) as core::ffi::c_int;
             MEM_write64(spread.add(pos) as *mut core::ffi::c_void, sv);
@@ -129,7 +124,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
                 i += 8;
             }
             pos = pos.wrapping_add(n as size_t);
-            s = s.wrapping_add(1);
             sv = sv.wrapping_add(add);
         }
         let mut position = 0 as size_t;
@@ -149,9 +143,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
         }
     } else {
         let mut position_0 = 0u32;
-        let mut symbol: u32 = 0;
-        symbol = 0;
-        while symbol < maxSV1 {
+        for symbol in 0..maxSV1 {
             let mut nbOccurrences: core::ffi::c_int = 0;
             let freq = *normalizedCounter.offset(symbol as isize) as core::ffi::c_int;
             nbOccurrences = 0;
@@ -163,7 +155,6 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
                 }
                 nbOccurrences += 1;
             }
-            symbol = symbol.wrapping_add(1);
         }
     }
     let mut u_1: u32 = 0;
@@ -424,8 +415,7 @@ unsafe fn FSE_normalizeM2(
     let mut ToDistribute: u32 = 0;
     let lowThreshold = (total >> tableLog) as u32;
     let mut lowOne = ((total * 3) >> tableLog.wrapping_add(1)) as u32;
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *count.offset(s as isize) == 0 {
             *norm.offset(s as isize) = 0;
         } else if *count.offset(s as isize) <= lowThreshold {
@@ -439,7 +429,6 @@ unsafe fn FSE_normalizeM2(
         } else {
             *norm.offset(s as isize) = NOT_YET_ASSIGNED;
         }
-        s = s.wrapping_add(1);
     }
     ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
     if ToDistribute == 0 {
@@ -447,8 +436,7 @@ unsafe fn FSE_normalizeM2(
     }
     if total / ToDistribute as size_t > lowOne as size_t {
         lowOne = (total * 3 / (ToDistribute * 2) as size_t) as u32;
-        s = 0;
-        while s <= maxSymbolValue {
+        for s in 0..maxSymbolValue + 1 {
             if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int
                 && *count.offset(s as isize) <= lowOne
             {
@@ -456,20 +444,17 @@ unsafe fn FSE_normalizeM2(
                 distributed = distributed.wrapping_add(1);
                 total = total.wrapping_sub(*count.offset(s as isize) as size_t);
             }
-            s = s.wrapping_add(1);
         }
         ToDistribute = ((1 << tableLog) as u32).wrapping_sub(distributed);
     }
     if distributed == maxSymbolValue.wrapping_add(1) {
         let mut maxV = 0;
         let mut maxC = 0;
-        s = 0;
-        while s <= maxSymbolValue {
+        for s in 0..maxSymbolValue + 1 {
             if *count.offset(s as isize) > maxC {
                 maxV = s;
                 maxC = *count.offset(s as isize);
             }
-            s = s.wrapping_add(1);
         }
         let fresh4 = &mut (*norm.offset(maxV as isize));
         *fresh4 = (*fresh4 as core::ffi::c_int
@@ -493,8 +478,7 @@ unsafe fn FSE_normalizeM2(
     let mid = (1u64 << vStepLog.wrapping_sub(1)).wrapping_sub(1);
     let rStep = ((1 << vStepLog) * ToDistribute as u64).wrapping_add(mid) / total as u32 as u64;
     let mut tmpTotal = mid;
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *norm.offset(s as isize) as core::ffi::c_int == NOT_YET_ASSIGNED as core::ffi::c_int {
             let end = tmpTotal.wrapping_add(*count.offset(s as isize) as u64 * rStep);
             let sStart = (tmpTotal >> vStepLog) as u32;
@@ -506,7 +490,6 @@ unsafe fn FSE_normalizeM2(
             *norm.offset(s as isize) = weight as core::ffi::c_short;
             tmpTotal = end;
         }
-        s = s.wrapping_add(1);
     }
     0
 }
@@ -536,12 +519,10 @@ pub(crate) unsafe fn FSE_normalizeCount(
     let step = (1 << 62) / total as u32 as u64;
     let vStep = 1u64.wrapping_shl(scale.wrapping_sub(20) as u32);
     let mut stillToDistribute = (1) << tableLog;
-    let mut s: core::ffi::c_uint = 0;
     let mut largest = 0;
     let mut largestP = 0;
     let lowThreshold = (total >> tableLog) as u32;
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *count.offset(s as isize) as size_t == total {
             return 0;
         }
@@ -568,7 +549,6 @@ pub(crate) unsafe fn FSE_normalizeCount(
             *normalizedCounter.offset(s as isize) = proba;
             stillToDistribute -= proba as core::ffi::c_int;
         }
-        s = s.wrapping_add(1);
     }
     if -stillToDistribute >= *normalizedCounter.offset(largest as isize) as core::ffi::c_int >> 1 {
         let errorCode = FSE_normalizeM2(

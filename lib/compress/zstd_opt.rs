@@ -174,12 +174,9 @@ unsafe fn ZSTD_setBasePrices(optPtr: *mut optState_t, optLevel: core::ffi::c_int
     };
 }
 unsafe fn sum_u32(table: *const core::ffi::c_uint, nbElts: size_t) -> u32 {
-    let mut n: size_t = 0;
     let mut total = 0;
-    n = 0;
-    while n < nbElts {
+    for n in 0..nbElts {
         total = (total as core::ffi::c_uint).wrapping_add(*table.add(n)) as u32 as u32;
-        n = n.wrapping_add(1);
     }
     total
 }
@@ -189,10 +186,8 @@ unsafe fn ZSTD_downscaleStats(
     shift: u32,
     base1: base_directive_e,
 ) -> u32 {
-    let mut s: u32 = 0;
     let mut sum = 0;
-    s = 0;
-    while s < lastEltIndex.wrapping_add(1) {
+    for s in 0..lastEltIndex.wrapping_add(1) {
         let base = (if base1 as core::ffi::c_uint != 0 {
             1
         } else {
@@ -201,7 +196,6 @@ unsafe fn ZSTD_downscaleStats(
         let newStat = base.wrapping_add(*table.offset(s as isize) >> shift);
         sum = (sum as core::ffi::c_uint).wrapping_add(newStat);
         *table.offset(s as isize) = newStat;
-        s = s.wrapping_add(1);
     }
     sum
 }
@@ -238,10 +232,8 @@ unsafe fn ZSTD_rescaleFreqs(
         {
             (*optPtr).priceType = zop_dynamic;
             if compressedLiterals != 0 {
-                let mut lit: core::ffi::c_uint = 0;
                 (*optPtr).litSum = 0;
-                lit = 0;
-                while lit <= MaxLit {
+                for lit in 0..MaxLit + 1 {
                     let scaleLog = 11u32;
                     let bitCost = HUF_getNbBitsFromCTable(
                         ((*(*optPtr).symbolCosts).huf.CTable).as_ptr(),
@@ -256,10 +248,8 @@ unsafe fn ZSTD_rescaleFreqs(
                     (*optPtr).litSum = ((*optPtr).litSum as core::ffi::c_uint)
                         .wrapping_add(*((*optPtr).litFreq).offset(lit as isize))
                         as u32 as u32;
-                    lit = lit.wrapping_add(1);
                 }
             }
-            let mut ll: core::ffi::c_uint = 0;
             let mut llstate = FSE_CState_t {
                 value: 0,
                 stateTable: core::ptr::null::<core::ffi::c_void>(),
@@ -271,8 +261,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 ((*(*optPtr).symbolCosts).fse.litlengthCTable).as_ptr(),
             );
             (*optPtr).litLengthSum = 0;
-            ll = 0;
-            while ll <= MaxLL {
+            for ll in 0..MaxLL + 1 {
                 let scaleLog_0 = 10u32;
                 let bitCost_0 = FSE_getMaxNbBits(llstate.symbolTT, ll);
                 *((*optPtr).litLengthFreq).offset(ll as isize) = (if bitCost_0 != 0 {
@@ -284,9 +273,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 (*optPtr).litLengthSum = ((*optPtr).litLengthSum as core::ffi::c_uint)
                     .wrapping_add(*((*optPtr).litLengthFreq).offset(ll as isize))
                     as u32 as u32;
-                ll = ll.wrapping_add(1);
             }
-            let mut ml: core::ffi::c_uint = 0;
             let mut mlstate = FSE_CState_t {
                 value: 0,
                 stateTable: core::ptr::null::<core::ffi::c_void>(),
@@ -298,8 +285,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 ((*(*optPtr).symbolCosts).fse.matchlengthCTable).as_ptr(),
             );
             (*optPtr).matchLengthSum = 0;
-            ml = 0;
-            while ml <= MaxML {
+            for ml in 0..MaxML + 1 {
                 let scaleLog_1 = 10u32;
                 let bitCost_1 = FSE_getMaxNbBits(mlstate.symbolTT, ml);
                 *((*optPtr).matchLengthFreq).offset(ml as isize) = (if bitCost_1 != 0 {
@@ -311,9 +297,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 (*optPtr).matchLengthSum = ((*optPtr).matchLengthSum as core::ffi::c_uint)
                     .wrapping_add(*((*optPtr).matchLengthFreq).offset(ml as isize))
                     as u32 as u32;
-                ml = ml.wrapping_add(1);
             }
-            let mut of: core::ffi::c_uint = 0;
             let mut ofstate = FSE_CState_t {
                 value: 0,
                 stateTable: core::ptr::null::<core::ffi::c_void>(),
@@ -325,8 +309,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 ((*(*optPtr).symbolCosts).fse.offcodeCTable).as_ptr(),
             );
             (*optPtr).offCodeSum = 0;
-            of = 0;
-            while of <= MaxOff {
+            for of in 0..MaxOff + 1 {
                 let scaleLog_2 = 10u32;
                 let bitCost_2 = FSE_getMaxNbBits(ofstate.symbolTT, of);
                 *((*optPtr).offCodeFreq).offset(of as isize) = (if bitCost_2 != 0 {
@@ -338,7 +321,6 @@ unsafe fn ZSTD_rescaleFreqs(
                 (*optPtr).offCodeSum = ((*optPtr).offCodeSum as core::ffi::c_uint)
                     .wrapping_add(*((*optPtr).offCodeFreq).offset(of as isize))
                     as u32;
-                of = of.wrapping_add(1);
             }
         } else {
             if compressedLiterals != 0 {
@@ -407,9 +389,7 @@ unsafe fn ZSTD_rawLiteralsCost(
     }
     let mut price = (*optPtr).litSumBasePrice * litLength;
     let litPriceMax = ((*optPtr).litSumBasePrice).wrapping_sub(BITCOST_MULTIPLIER as u32);
-    let mut u: u32 = 0;
-    u = 0;
-    while u < litLength {
+    for u in 0..litLength {
         let mut litPrice = if optLevel != 0 {
             ZSTD_fracWeight(*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize))
         } else {
@@ -419,7 +399,6 @@ unsafe fn ZSTD_rawLiteralsCost(
             litPrice = litPriceMax;
         }
         price = price.wrapping_sub(litPrice);
-        u = u.wrapping_add(1);
     }
     price
 }
@@ -502,12 +481,9 @@ unsafe fn ZSTD_updateStats(
     matchLength: u32,
 ) {
     if ZSTD_compressedLiterals(optPtr) != 0 {
-        let mut u: u32 = 0;
-        u = 0;
-        while u < litLength {
+        for u in 0..litLength {
             let fresh2 = &mut (*((*optPtr).litFreq).offset(*literals.offset(u as isize) as isize));
             *fresh2 = (*fresh2).wrapping_add(ZSTD_LITFREQ_ADD as core::ffi::c_uint);
-            u = u.wrapping_add(1);
         }
         (*optPtr).litSum = ((*optPtr).litSum).wrapping_add(litLength * ZSTD_LITFREQ_ADD as u32);
     }
@@ -546,15 +522,13 @@ unsafe fn ZSTD_insertAndFindFirstIndexHash3(
     let hashTable3 = (*ms).hashTable3;
     let hashLog3 = (*ms).hashLog3;
     let base = (*ms).window.base;
-    let mut idx = *nextToUpdate3;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
     let hash3 = ZSTD_hash3Ptr(ip as *const core::ffi::c_void, hashLog3);
-    while idx < target {
+    for idx in *nextToUpdate3..target {
         *hashTable3.add(ZSTD_hash3Ptr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog3,
         )) = idx;
-        idx = idx.wrapping_add(1);
     }
     *nextToUpdate3 = target;
     *hashTable3.add(hash3)

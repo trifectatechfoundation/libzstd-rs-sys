@@ -98,9 +98,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
     let fastHashFillStep = 3;
     while ip.offset(fastHashFillStep as isize).sub(1) <= iend {
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-        let mut i: u32 = 0;
-        i = 0;
-        while i < fastHashFillStep {
+        for i in 0..fastHashFillStep {
             let smHashAndTag = ZSTD_hashPtr(
                 ip.offset(i as isize) as *const core::ffi::c_void,
                 hBitsS,
@@ -118,7 +116,6 @@ unsafe fn ZSTD_fillDoubleHashTableForCDict(
             {
                 break;
             }
-            i = i.wrapping_add(1);
         }
         ip = ip.offset(fastHashFillStep as isize);
     }
@@ -140,9 +137,7 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
     let fastHashFillStep = 3;
     while ip.offset(fastHashFillStep as isize).sub(1) <= iend {
         let curr = ip.offset_from(base) as core::ffi::c_long as u32;
-        let mut i: u32 = 0;
-        i = 0;
-        while i < fastHashFillStep {
+        for i in 0..fastHashFillStep {
             let smHash = ZSTD_hashPtr(
                 ip.offset(i as isize) as *const core::ffi::c_void,
                 hBitsS,
@@ -159,7 +154,6 @@ unsafe fn ZSTD_fillDoubleHashTableForCCtx(
             {
                 break;
             }
-            i = i.wrapping_add(1);
         }
         ip = ip.offset(fastHashFillStep as isize);
     }

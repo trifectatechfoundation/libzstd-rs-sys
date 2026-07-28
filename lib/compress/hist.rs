@@ -59,13 +59,10 @@ pub unsafe fn HIST_count_simple(
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }
     *maxSymbolValuePtr = maxSymbolValue;
-    let mut s: u32 = 0;
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *count.offset(s as isize) > largestCount {
             largestCount = *count.offset(s as isize);
         }
-        s = s.wrapping_add(1);
     }
     largestCount
 }
@@ -153,9 +150,7 @@ unsafe fn HIST_count_parallel_wksp(
         let fresh21 = &mut (*Counting1.offset(*fresh20 as isize));
         *fresh21 = (*fresh21).wrapping_add(1);
     }
-    let mut s: u32 = 0;
-    s = 0;
-    while s < 256 {
+    for s in 0u32..256 {
         let fresh22 = &mut (*Counting1.offset(s as isize));
         *fresh22 = (*fresh22).wrapping_add(
             (*Counting2.offset(s as isize))
@@ -165,7 +160,6 @@ unsafe fn HIST_count_parallel_wksp(
         if *Counting1.offset(s as isize) > max {
             max = *Counting1.offset(s as isize);
         }
-        s = s.wrapping_add(1);
     }
     let mut maxSymbolValue = 255 as core::ffi::c_uint;
     while *Counting1.offset(maxSymbolValue as isize) == 0 {
