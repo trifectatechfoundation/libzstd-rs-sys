@@ -535,7 +535,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
             let mut proba =
                 ((*count.offset(s as isize) as u64 * step) >> scale) as core::ffi::c_short;
             if (proba as core::ffi::c_int) < 8 {
-                let restToBeat = vStep * *rtbTable.as_ptr().offset(proba as isize) as u64;
+                let restToBeat = vStep * rtbTable[proba as usize] as u64;
                 proba = (proba as core::ffi::c_int
                     + ((*count.offset(s as isize) as u64 * step)
                         .wrapping_sub((proba as u64) << scale)

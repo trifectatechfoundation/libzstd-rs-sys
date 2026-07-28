@@ -140,7 +140,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
 
     static hashParams: [c_uint; 4] = [8, 9, 10, 10];
     debug_assert!((0..=3).contains(&level));
-    let record_f = *records_fs.as_ptr().offset(level as isize);
+    let record_f = records_fs[level as usize];
     let fpstats = workspace as *mut FPStats;
     let p = blockStart as *const c_char;
     let mut penalty = THRESHOLD_PENALTY;
@@ -169,7 +169,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
             &(*fpstats).pastEvents,
             &(*fpstats).newEvents,
             penalty,
-            *hashParams.as_ptr().offset(level as isize),
+            hashParams[level as usize],
         ) != 0
         {
             return pos;
