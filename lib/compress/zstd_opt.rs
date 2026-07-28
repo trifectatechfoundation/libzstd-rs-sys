@@ -176,7 +176,7 @@ unsafe fn ZSTD_setBasePrices(optPtr: *mut optState_t, optLevel: core::ffi::c_int
 unsafe fn sum_u32(table: *const core::ffi::c_uint, nbElts: size_t) -> u32 {
     let mut total = 0;
     for n in 0..nbElts {
-        total = (total as core::ffi::c_uint).wrapping_add(*table.add(n)) as u32 as u32;
+        total = (total as core::ffi::c_uint).wrapping_add(*table.add(n));
     }
     total
 }
@@ -246,8 +246,7 @@ unsafe fn ZSTD_rescaleFreqs(
                     })
                         as core::ffi::c_uint;
                     (*optPtr).litSum = ((*optPtr).litSum as core::ffi::c_uint)
-                        .wrapping_add(*((*optPtr).litFreq).offset(lit as isize))
-                        as u32 as u32;
+                        .wrapping_add(*((*optPtr).litFreq).offset(lit as isize));
                 }
             }
             let mut llstate = FSE_CState_t {
@@ -271,8 +270,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 })
                     as core::ffi::c_uint;
                 (*optPtr).litLengthSum = ((*optPtr).litLengthSum as core::ffi::c_uint)
-                    .wrapping_add(*((*optPtr).litLengthFreq).offset(ll as isize))
-                    as u32 as u32;
+                    .wrapping_add(*((*optPtr).litLengthFreq).offset(ll as isize));
             }
             let mut mlstate = FSE_CState_t {
                 value: 0,
@@ -295,8 +293,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 })
                     as core::ffi::c_uint;
                 (*optPtr).matchLengthSum = ((*optPtr).matchLengthSum as core::ffi::c_uint)
-                    .wrapping_add(*((*optPtr).matchLengthFreq).offset(ml as isize))
-                    as u32 as u32;
+                    .wrapping_add(*((*optPtr).matchLengthFreq).offset(ml as isize));
             }
             let mut ofstate = FSE_CState_t {
                 value: 0,
@@ -319,8 +316,7 @@ unsafe fn ZSTD_rescaleFreqs(
                 })
                     as core::ffi::c_uint;
                 (*optPtr).offCodeSum = ((*optPtr).offCodeSum as core::ffi::c_uint)
-                    .wrapping_add(*((*optPtr).offCodeFreq).offset(of as isize))
-                    as u32;
+                    .wrapping_add(*((*optPtr).offCodeFreq).offset(of as isize));
             }
         } else {
             if compressedLiterals != 0 {
