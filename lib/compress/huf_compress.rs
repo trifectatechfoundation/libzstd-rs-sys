@@ -547,16 +547,13 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
             );
             {
                 let mut currentNbBits = targetNbBits;
-                let mut pos: c_int = 0;
-                pos = n;
-                while pos >= 0 {
+                for pos in (0..n + 1).rev() {
                     if ((*huffNode.offset(pos as isize)).nbBits as u32) < currentNbBits {
                         currentNbBits = (*huffNode.offset(pos as isize)).nbBits as u32; /* < targetNbBits */
                         *rankLast
                             .as_mut_ptr()
                             .offset((targetNbBits - (currentNbBits)) as isize) = pos as u32;
                     }
-                    pos -= 1;
                 }
             }
 
@@ -821,13 +818,11 @@ unsafe fn HUF_sort(
     debug_assert!((*rankPosition.add(RANK_POSITION_TABLE_SIZE - 1)).base == 0);
 
     /* Set up the rankPosition table */
-    let mut n = (RANK_POSITION_TABLE_SIZE - 1) as u32;
-    while n > 0 {
+    for n in (1..RANK_POSITION_TABLE_SIZE as u32).rev() {
         let fresh9 = &mut (*rankPosition.offset((n - 1) as isize)).base;
         *fresh9 = (*fresh9 as c_int + (*rankPosition.offset(n as isize)).base as c_int) as u16;
         (*rankPosition.offset((n - 1) as isize)).curr =
             (*rankPosition.offset((n - 1) as isize)).base;
-        n -= 1;
     }
 
     /* Insert each symbol into their appropriate bucket, setting up rankPosition table. */
@@ -874,7 +869,6 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
     let mut lowS: c_int = 0;
     let mut lowN: c_int = 0;
     let mut nodeNb = STARTNODE;
-    let mut n: c_int = 0;
     let mut nodeRoot: c_int = 0;
 
     /* init for parents */
@@ -929,13 +923,11 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
 
     /* distribute weights (unlimited tree height) */
     (*huffNode.offset(nodeRoot as isize)).nbBits = 0;
-    n = nodeRoot - 1;
-    while n >= STARTNODE {
+    for n in (STARTNODE..nodeRoot).rev() {
         (*huffNode.offset(n as isize)).nbBits = ((*huffNode
             .offset((*huffNode.offset(n as isize)).parent as isize))
         .nbBits as c_int
             + 1) as u8;
-        n -= 1;
     }
     for n in 0..nonNullRank + 1 {
         (*huffNode.offset(n as isize)).nbBits = ((*huffNode
@@ -976,12 +968,10 @@ unsafe fn HUF_buildCTableFromTree(
 
     /* determine starting value per rank */
     let mut min = 0;
-    let mut n = maxNbBits as c_int;
-    while n > 0 {
+    for n in (1..maxNbBits as c_int + 1).rev() {
         *valPerRank.as_mut_ptr().offset(n as isize) = min; /* get starting value within each rank */
         min = (min as c_int + *nbPerRank.as_mut_ptr().offset(n as isize) as c_int) as u16;
         min = (min as c_int >> 1) as u16;
-        n -= 1;
     }
     for n in 0..alphabetSize {
         HUF_setNbBits(
@@ -1275,12 +1265,11 @@ unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
 ) {
     /* Join to kUnroll */
     let mut n = srcSize as c_int;
-    let mut rem = n % kUnroll;
+    let rem = n % kUnroll;
     if rem > 0 {
-        while rem > 0 {
+        for _ in (1..rem + 1).rev() {
             n -= 1;
             HUF_encodeSymbol(bitC, *ip.offset(n as isize) as u32, ct, 0, 0);
-            rem -= 1;
         }
         HUF_flushBits(bitC, kFastFlush);
     }

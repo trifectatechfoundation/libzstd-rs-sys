@@ -1982,9 +1982,7 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                         } else {
                                             minMatch
                                         };
-                                        let mut mlen: u32 = 0;
-                                        mlen = lastML;
-                                        while mlen >= startML {
+                                        for mlen in (startML..lastML + 1).rev() {
                                             let pos_0 = cur.wrapping_add(mlen);
                                             let price_0 = basePrice
                                                 + ZSTD_getMatchPrice(
@@ -2011,7 +2009,6 @@ unsafe fn ZSTD_compressBlock_opt_generic(
                                             } else if optLevel == 0 {
                                                 break;
                                             }
-                                            mlen = mlen.wrapping_sub(1);
                                         }
                                         matchNb_0 = matchNb_0.wrapping_add(1);
                                     }
