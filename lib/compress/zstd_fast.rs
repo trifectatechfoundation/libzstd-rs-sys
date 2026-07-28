@@ -100,9 +100,7 @@ unsafe fn ZSTD_fillHashTableForCDict(
         let hashAndTag = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         ZSTD_writeTaggedIndex(hashTable, hashAndTag, curr);
         if dtlm as core::ffi::c_uint != ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint {
-            let mut p: u32 = 0;
-            p = 1;
-            while p < fastHashFillStep {
+            for p in 1..fastHashFillStep {
                 let hashAndTag_0 = ZSTD_hashPtr(
                     ip.offset(p as isize) as *const core::ffi::c_void,
                     hBits,
@@ -111,7 +109,6 @@ unsafe fn ZSTD_fillHashTableForCDict(
                 if *hashTable.add(hashAndTag_0 >> ZSTD_SHORT_CACHE_TAG_BITS) == 0 {
                     ZSTD_writeTaggedIndex(hashTable, hashAndTag_0, curr.wrapping_add(p));
                 }
-                p = p.wrapping_add(1);
             }
         }
         ip = ip.offset(fastHashFillStep as isize);
@@ -135,9 +132,7 @@ unsafe fn ZSTD_fillHashTableForCCtx(
         let hash0 = ZSTD_hashPtr(ip as *const core::ffi::c_void, hBits, mls);
         *hashTable.add(hash0) = curr;
         if dtlm as core::ffi::c_uint != ZSTD_dtlm_fast as core::ffi::c_int as core::ffi::c_uint {
-            let mut p: u32 = 0;
-            p = 1;
-            while p < fastHashFillStep {
+            for p in 1..fastHashFillStep {
                 let hash = ZSTD_hashPtr(
                     ip.offset(p as isize) as *const core::ffi::c_void,
                     hBits,
@@ -146,7 +141,6 @@ unsafe fn ZSTD_fillHashTableForCCtx(
                 if *hashTable.add(hash) == 0 {
                     *hashTable.add(hash) = curr.wrapping_add(p);
                 }
-                p = p.wrapping_add(1);
             }
         }
         ip = ip.offset(fastHashFillStep as isize);

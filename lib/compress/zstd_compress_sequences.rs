@@ -90,9 +90,7 @@ unsafe fn ZSTD_entropyCost(
     total: size_t,
 ) -> size_t {
     let mut cost = 0 as core::ffi::c_uint;
-    let mut s: core::ffi::c_uint = 0;
-    s = 0;
-    while s <= max {
+    for s in 0..max + 1 {
         let mut norm = ((256 as core::ffi::c_uint).wrapping_mul(*count.offset(s as isize))
             as size_t
             / total) as core::ffi::c_uint;
@@ -103,7 +101,6 @@ unsafe fn ZSTD_entropyCost(
             (*count.offset(s as isize))
                 .wrapping_mul(*kInverseProbabilityLog256.as_ptr().offset(norm as isize)),
         );
-        s = s.wrapping_add(1);
     }
     (cost >> 8) as size_t
 }
@@ -114,7 +111,6 @@ pub unsafe fn ZSTD_fseBitCost(
 ) -> size_t {
     let kAccuracyLog = 8;
     let mut cost = 0 as size_t;
-    let mut s: core::ffi::c_uint = 0;
     let mut cstate = FSE_CState_t {
         value: 0,
         stateTable: core::ptr::null::<core::ffi::c_void>(),
@@ -125,8 +121,7 @@ pub unsafe fn ZSTD_fseBitCost(
     if ZSTD_getFSEMaxSymbolValue(ctable) < max {
         return Error::GENERIC.to_error_code();
     }
-    s = 0;
-    while s <= max {
+    for s in 0..max + 1 {
         let tableLog = cstate.stateLog;
         let badCost = tableLog.wrapping_add(1) << kAccuracyLog;
         let bitCost = FSE_bitCost(cstate.symbolTT, tableLog, s, kAccuracyLog);
@@ -136,7 +131,6 @@ pub unsafe fn ZSTD_fseBitCost(
             }
             cost = cost.wrapping_add(*count.offset(s as isize) as size_t * bitCost as size_t);
         }
-        s = s.wrapping_add(1);
     }
     cost >> kAccuracyLog
 }
@@ -148,9 +142,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
 ) -> size_t {
     let shift = (8 as core::ffi::c_uint).wrapping_sub(accuracyLog);
     let mut cost = 0 as size_t;
-    let mut s: core::ffi::c_uint = 0;
-    s = 0;
-    while s <= max {
+    for s in 0..max + 1 {
         let normAcc = if *norm.offset(s as isize) as core::ffi::c_int != -(1) {
             *norm.offset(s as isize) as core::ffi::c_uint
         } else {
@@ -162,7 +154,6 @@ pub unsafe fn ZSTD_crossEntropyCost(
                 .wrapping_mul(*kInverseProbabilityLog256.as_ptr().offset(norm256 as isize))
                 as size_t,
         );
-        s = s.wrapping_add(1);
     }
     cost >> 8
 }

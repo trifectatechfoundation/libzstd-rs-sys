@@ -535,13 +535,12 @@ unsafe fn ZSTD_ldm_gear_reset(
         );
         n = n.wrapping_add(1);
     }
-    while n < minMatchLength {
+    for n in n..minMatchLength {
         hash = (hash << 1).wrapping_add(
             *ZSTD_ldm_gearTab
                 .as_ptr()
                 .offset((*data.add(n) as core::ffi::c_int & 0xff as core::ffi::c_int) as isize),
         );
-        n = n.wrapping_add(1);
     }
 }
 unsafe fn ZSTD_ldm_gear_feed(
@@ -891,7 +890,6 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     ZSTD_ldm_gear_init(&mut hashState, params);
     while ip < iend {
         let mut hashed: size_t = 0;
-        let mut n: core::ffi::c_uint = 0;
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
@@ -900,8 +898,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             splits,
             &mut numSplits,
         );
-        n = 0;
-        while n < numSplits {
+        for n in 0..numSplits {
             if ip.add(*splits.offset(n as isize)) >= istart.offset(minMatchLength as isize) {
                 let split = ip
                     .add(*splits.offset(n as isize))
@@ -920,7 +917,6 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                 entry.checksum = (xxhash >> 32) as u32;
                 ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, (*params).bucketSizeLog);
             }
-            n = n.wrapping_add(1);
         }
         ip = ip.add(hashed);
     }
@@ -991,7 +987,6 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     ip = ip.offset(minMatchLength as isize);
     while ip < ilimit {
         let mut hashed: size_t = 0;
-        let mut n: core::ffi::c_uint = 0;
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
@@ -1000,8 +995,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             splits,
             &mut numSplits,
         );
-        n = 0;
-        while n < numSplits {
+        for n in 0..numSplits {
             let split = ip
                 .add(*splits.offset(n as isize))
                 .offset(-(minMatchLength as isize));
@@ -1017,10 +1011,8 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             (*candidates.offset(n as isize)).checksum = (xxhash >> 32) as u32;
             let fresh3 = &mut (*candidates.offset(n as isize)).bucket;
             *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
-            n = n.wrapping_add(1);
         }
-        n = 0;
-        while n < numSplits {
+        for n in 0..numSplits {
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
             let mut bestMatchLength = 0;
@@ -1156,23 +1148,19 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     }
                 }
             }
-            n = n.wrapping_add(1);
         }
         ip = ip.add(hashed);
     }
     iend.offset_from_unsigned(anchor)
 }
 unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: u32) {
-    let mut u: u32 = 0;
-    u = 0;
-    while u < size {
+    for u in 0..size {
         if (*table.offset(u as isize)).offset < reducerValue {
             (*table.offset(u as isize)).offset = 0;
         } else {
             let fresh4 = &mut (*table.offset(u as isize)).offset;
             *fresh4 = (*fresh4).wrapping_sub(reducerValue);
         }
-        u = u.wrapping_add(1);
     }
 }
 pub unsafe fn ZSTD_ldm_generateSequences(

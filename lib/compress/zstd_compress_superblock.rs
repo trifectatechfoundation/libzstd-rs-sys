@@ -427,13 +427,10 @@ unsafe fn ZSTD_seqDecompressedSize(
 ) -> size_t {
     let mut matchLengthSum = 0 as size_t;
     let mut litLengthSum = 0 as size_t;
-    let mut n: size_t = 0;
-    n = 0;
-    while n < nbSeqs {
+    for n in 0..nbSeqs {
         let seqLen = ZSTD_getSequenceLength(seqStore, sequences.add(n));
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
         matchLengthSum = matchLengthSum.wrapping_add(seqLen.matchLength as size_t);
-        n = n.wrapping_add(1);
     }
 
     if lastSubBlock == 0 {
@@ -850,13 +847,10 @@ unsafe fn countLiterals(
     sp: *const SeqDef,
     seqCount: size_t,
 ) -> size_t {
-    let mut n: size_t = 0;
     let mut total = 0 as size_t;
-    n = 0;
-    while n < seqCount {
+    for n in 0..seqCount {
         total =
             total.wrapping_add((ZSTD_getSequenceLength(seqStore, sp.add(n))).litLength as size_t);
-        n = n.wrapping_add(1);
     }
     total
 }
@@ -965,15 +959,13 @@ unsafe fn ZSTD_compressSubBlock_multi(
             } else {
                 1
             };
-        let mut n: size_t = 0;
         let mut avgBlockBudget: size_t = 0;
         let mut blockBudgetSupp = 0;
         avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;
         if ebs.estBlockSize > srcSize {
             return 0;
         }
-        n = 0;
-        while n < nbSubBlocks.wrapping_sub(1) {
+        for n in 0..nbSubBlocks.wrapping_sub(1) {
             let seqCount = sizeBlockSequences(
                 sp,
                 send.offset_from_unsigned(sp),
@@ -1029,7 +1021,6 @@ unsafe fn ZSTD_compressSubBlock_multi(
                 sp = sp.add(seqCount);
                 blockBudgetSupp = 0;
             }
-            n = n.wrapping_add(1);
         }
     }
     let mut litEntropyWritten_0 = 0;

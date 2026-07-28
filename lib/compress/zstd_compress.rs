@@ -3627,46 +3627,38 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
         ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams)
     }
 }
-static srcSizeTiers: [core::ffi::c_ulonglong; 4] = [
+static SRC_SIZE_TIERS: [core::ffi::c_ulonglong; 4] = [
     16 * (1 << 10),
     128 * (1 << 10),
     256 * (1 << 10),
     ZSTD_CONTENTSIZE_UNKNOWN,
 ];
 unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi::c_int) -> size_t {
-    let mut tier = 0;
     let mut largestSize = 0;
-    while tier < 4 {
-        let cParams = ZSTD_getCParams_internal(
-            compressionLevel,
-            srcSizeTiers[tier],
-            0,
-            ZSTD_cpm_noAttachDict,
-        );
+    for srcSizeHint in SRC_SIZE_TIERS {
+        let cParams =
+            ZSTD_getCParams_internal(compressionLevel, srcSizeHint, 0, ZSTD_cpm_noAttachDict);
         largestSize = if ZSTD_estimateCCtxSize_usingCParams(cParams) > largestSize {
             ZSTD_estimateCCtxSize_usingCParams(cParams)
         } else {
             largestSize
         };
-        tier += 1;
     }
     largestSize
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize(compressionLevel: core::ffi::c_int) -> size_t {
-    let mut level: core::ffi::c_int = 0;
     let mut memBudget = 0;
-    level = if compressionLevel < 1 {
+    let start = if compressionLevel < 1 {
         compressionLevel
     } else {
         1
     };
-    while level <= compressionLevel {
+    for level in start..compressionLevel + 1 {
         let newMB = ZSTD_estimateCCtxSize_internal(level);
         if newMB > memBudget {
             memBudget = newMB;
         }
-        level += 1;
     }
     memBudget
 }
@@ -3744,19 +3736,17 @@ unsafe fn ZSTD_estimateCStreamSize_internal(compressionLevel: core::ffi::c_int) 
 }
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize(compressionLevel: core::ffi::c_int) -> size_t {
-    let mut level: core::ffi::c_int = 0;
     let mut memBudget = 0;
-    level = if compressionLevel < 1 {
+    let start = if compressionLevel < 1 {
         compressionLevel
     } else {
         1
     };
-    while level <= compressionLevel {
+    for level in start..compressionLevel + 1 {
         let newMB = ZSTD_estimateCStreamSize_internal(level);
         if newMB > memBudget {
             memBudget = newMB;
         }
-        level += 1;
     }
     memBudget
 }
@@ -3812,11 +3802,8 @@ unsafe fn ZSTD_assertEqualCParams(
     assert_eq!(cParams1.strategy, cParams2.strategy);
 }
 pub unsafe fn ZSTD_reset_compressedBlockState(bs: *mut ZSTD_compressedBlockState_t) {
-    let mut i: core::ffi::c_int = 0;
-    i = 0;
-    while i < ZSTD_REP_NUM {
+    for i in 0..ZSTD_REP_NUM {
         *((*bs).rep).as_mut_ptr().offset(i as isize) = *repStartValue.as_ptr().offset(i as isize);
-        i += 1;
     }
     (*bs).entropy.huf.repeatMode = HUF_repeat_none;
     (*bs).entropy.fse.offcode_repeatMode = FSE_repeat_none;
@@ -4199,13 +4186,10 @@ unsafe fn ZSTD_resetCCtx_internal(
     0
 }
 pub unsafe fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx) {
-    let mut i: core::ffi::c_int = 0;
-    i = 0;
-    while i < ZSTD_REP_NUM {
+    for i in 0..ZSTD_REP_NUM {
         *((*(*cctx).blockState.prevCBlock).rep)
             .as_mut_ptr()
             .offset(i as isize) = 0;
-        i += 1;
     }
 }
 static attachDictSizeCutoffs: [size_t; 10] = [
@@ -4291,13 +4275,10 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
     cParams: *const ZSTD_compressionParameters,
 ) {
     if ZSTD_CDictIndicesAreTagged(cParams) != 0 {
-        let mut i: size_t = 0;
-        i = 0;
-        while i < tableSize {
+        for i in 0..tableSize {
             let taggedIndex = *src.add(i);
             let index = taggedIndex >> ZSTD_SHORT_CACHE_TAG_BITS;
             *dst.add(i) = index;
-            i = i.wrapping_add(1);
         }
     } else {
         libc::memcpy(
@@ -4512,9 +4493,7 @@ unsafe fn ZSTD_reduceTable_internal(
     let reducerThreshold = reducerValue.wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
     rowNb = 0;
     while rowNb < nbRows {
-        let mut column: core::ffi::c_int = 0;
-        column = 0;
-        while column < ZSTD_ROWSIZE {
+        for _column in 0..ZSTD_ROWSIZE {
             let mut newVal: u32 = 0;
             if preserveMark != 0 && *table.offset(cellNb as isize) == ZSTD_DUBT_UNSORTED_MARK as u32
             {
@@ -4526,7 +4505,6 @@ unsafe fn ZSTD_reduceTable_internal(
             }
             *table.offset(cellNb as isize) = newVal;
             cellNb += 1;
-            column += 1;
         }
         rowNb += 1;
     }
@@ -4571,10 +4549,8 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_in
     let mlCodeTable = (*seqStorePtr).mlCode;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as core::ffi::c_long as u32;
-    let mut u: u32 = 0;
     let mut longOffsets = 0;
-    u = 0;
-    while u < nbSeq {
+    for u in 0..nbSeq {
         let llv = (*sequences.offset(u as isize)).litLength as u32;
         let ofCode = ZSTD_highbit32((*sequences.offset(u as isize)).offBase);
         let mlv = (*sequences.offset(u as isize)).mlBase as u32;
@@ -4591,7 +4567,6 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_in
         {
             longOffsets = 1;
         }
-        u = u.wrapping_add(1);
     }
     if (*seqStorePtr).longLengthType == ZSTD_llt_literalLength {
         *llCodeTable.offset((*seqStorePtr).longLengthPos as isize) = MaxLL as u8;
@@ -5203,14 +5178,9 @@ unsafe fn ZSTD_postProcessSequenceProducerResult(
 unsafe fn ZSTD_fastSequenceLengthSum(seqBuf: *const ZSTD_Sequence, seqBufSize: size_t) -> size_t {
     let mut matchLenSum: size_t = 0;
     let mut litLenSum: size_t = 0;
-    let mut i: size_t = 0;
-    matchLenSum = 0;
-    litLenSum = 0;
-    i = 0;
-    while i < seqBufSize {
+    for i in 0..seqBufSize {
         litLenSum = litLenSum.wrapping_add((*seqBuf.add(i)).litLength as size_t);
         matchLenSum = matchLenSum.wrapping_add((*seqBuf.add(i)).matchLength as size_t);
-        i = i.wrapping_add(1);
     }
     litLenSum.wrapping_add(matchLenSum)
 }
@@ -5281,15 +5251,12 @@ unsafe fn ZSTD_buildSeqStore(
     /* select and store sequences */
     let dictMode = ZSTD_matchState_dictMode(ms);
     let mut lastLLSize: size_t = 0;
-    let mut i: core::ffi::c_int = 0;
-    i = 0;
-    while i < ZSTD_REP_NUM {
+    for i in 0..ZSTD_REP_NUM {
         *((*(*zc).blockState.nextCBlock).rep)
             .as_mut_ptr()
             .offset(i as isize) = *((*(*zc).blockState.prevCBlock).rep)
             .as_mut_ptr()
             .offset(i as isize);
-        i += 1;
     }
     if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) != 0 {
@@ -5430,7 +5397,6 @@ unsafe fn ZSTD_copyBlockSequences(
     let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0 as size_t;
     let mut repcodes = repcodes_s { rep: [0; 3] };
-    let mut i: size_t = 0;
     if nbOutSequences > ((*seqCollector).maxSequences).wrapping_sub((*seqCollector).seqIndex) {
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -5439,8 +5405,7 @@ unsafe fn ZSTD_copyBlockSequences(
         prevRepcodes as *const core::ffi::c_void,
         size_of::<Repcodes_t>(),
     );
-    i = 0;
-    while i < nbInSequences {
+    for i in 0..nbInSequences {
         let mut rawOffset: u32 = 0;
         (*outSeqs.add(i)).litLength = (*inSeqs.add(i)).litLength as core::ffi::c_uint;
         (*outSeqs.add(i)).matchLength =
@@ -5477,7 +5442,6 @@ unsafe fn ZSTD_copyBlockSequences(
             ((*inSeqs.add(i)).litLength as core::ffi::c_int == 0) as core::ffi::c_int as u32,
         );
         nbOutLiterals = nbOutLiterals.wrapping_add((*outSeqs.add(i)).litLength as size_t);
-        i = i.wrapping_add(1);
     }
     let lastLLSize = nbInLiterals.wrapping_sub(nbOutLiterals);
     (*outSeqs.add(nbInSequences)).litLength = lastLLSize as u32;
@@ -6118,9 +6082,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
 unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t {
     let mut literalsBytes = 0 as size_t;
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as size_t;
-    let mut i: size_t = 0;
-    i = 0;
-    while i < nbSeqs {
+    for i in 0..nbSeqs {
         let seq = *((*seqStore).sequencesStart).add(i);
         literalsBytes = literalsBytes.wrapping_add(seq.litLength as size_t);
         if i == (*seqStore).longLengthPos as size_t
@@ -6128,16 +6090,13 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t
         {
             literalsBytes = literalsBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
         }
-        i = i.wrapping_add(1);
     }
     literalsBytes
 }
 unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
     let mut matchBytes = 0 as size_t;
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as size_t;
-    let mut i: size_t = 0;
-    i = 0;
-    while i < nbSeqs {
+    for i in 0..nbSeqs {
         let seq = *((*seqStore).sequencesStart).add(i);
         matchBytes = matchBytes.wrapping_add((seq.mlBase as core::ffi::c_int + MINMATCH) as size_t);
         if i == (*seqStore).longLengthPos as size_t
@@ -6145,7 +6104,6 @@ unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
         {
             matchBytes = matchBytes.wrapping_add(0x10000 as core::ffi::c_int as size_t);
         }
-        i = i.wrapping_add(1);
     }
     matchBytes
 }
@@ -6196,13 +6154,12 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
     seqStore: *const SeqStore_t,
     nbSeq: u32,
 ) {
-    let mut idx = 0;
     let longLitLenIdx = if (*seqStore).longLengthType == ZSTD_llt_literalLength {
         (*seqStore).longLengthPos
     } else {
         nbSeq
     };
-    while idx < nbSeq {
+    for idx in 0..nbSeq {
         let seq = ((*seqStore).sequencesStart).offset(idx as isize);
         let ll0 = ((*seq).litLength as core::ffi::c_int == 0 && idx != longLitLenIdx)
             as core::ffi::c_int as u32;
@@ -6224,7 +6181,6 @@ unsafe fn ZSTD_seqStore_resolveOffCodes(
         }
         ZSTD_updateRep(((*dRepcodes).rep).as_mut_ptr(), (*seq).offBase, ll0);
         ZSTD_updateRep(((*cRepcodes).rep).as_mut_ptr(), offBase, ll0);
-        idx = idx.wrapping_add(1);
     }
 }
 unsafe fn ZSTD_compressSeqStore_singleBlock(
@@ -6403,7 +6359,6 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     let mut cSize = 0 as size_t;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let mut i = 0;
     let mut srcBytesTotal = 0 as size_t;
     let partitions = ((*zc).blockSplitCtx.partitions).as_mut_ptr();
     let nextSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
@@ -6446,8 +6401,7 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         return cSizeSingleBlock;
     }
     ZSTD_deriveSeqStoreChunk(currSeqStore, &(*zc).seqStore, 0, *partitions as size_t);
-    i = 0;
-    while i <= numSplits {
+    for i in 0..numSplits + 1 {
         let mut cSizeChunk: size_t = 0;
         let lastPartition = (i == numSplits) as core::ffi::c_int as u32;
         let mut lastBlockEntireSrc = 0;
@@ -6486,7 +6440,6 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
         dstCapacity = dstCapacity.wrapping_sub(cSizeChunk);
         cSize = cSize.wrapping_add(cSizeChunk);
         *currSeqStore = *nextSeqStore;
-        i = i.wrapping_add(1);
     }
     libc::memcpy(
         ((*(*zc).blockState.prevCBlock).rep).as_mut_ptr() as *mut core::ffi::c_void,
@@ -7306,16 +7259,13 @@ unsafe fn ZSTD_dictNCountRepeat(
     dictMaxSymbolValue: core::ffi::c_uint,
     maxSymbolValue: core::ffi::c_uint,
 ) -> FSE_repeat {
-    let mut s: u32 = 0;
     if dictMaxSymbolValue < maxSymbolValue {
         return FSE_repeat_check;
     }
-    s = 0;
-    while s <= maxSymbolValue {
+    for s in 0..maxSymbolValue + 1 {
         if *normalizedCounter.offset(s as isize) as core::ffi::c_int == 0 {
             return FSE_repeat_check;
         }
-        s = s.wrapping_add(1);
     }
     FSE_repeat_valid
 }
@@ -7452,16 +7402,13 @@ pub unsafe fn ZSTD_loadCEntropy(
         offcodeMaxValue,
         if offcodeMax < 31 { offcodeMax } else { 31 },
     );
-    let mut u: u32 = 0;
-    u = 0;
-    while u < 3 {
+    for u in 0..3_u32 {
         if *((*bs).rep).as_mut_ptr().offset(u as isize) == 0 {
             return Error::dictionary_corrupted.to_error_code();
         }
         if *((*bs).rep).as_mut_ptr().offset(u as isize) as size_t > dictContentSize {
             return Error::dictionary_corrupted.to_error_code();
         }
-        u = u.wrapping_add(1);
     }
     dictPtr.offset_from_unsigned(dict as *const u8)
 }
@@ -10717,9 +10664,7 @@ pub unsafe fn convertSequences_noRepcodes(
     nbSequences: size_t,
 ) -> size_t {
     let mut longLen = 0;
-    let mut n: size_t = 0;
-    n = 0;
-    while n < nbSequences {
+    for n in 0..nbSequences {
         (*dstSeqs.add(n)).offBase =
             ((*inSeqs.add(n)).offset).wrapping_add(ZSTD_REP_NUM as core::ffi::c_uint);
         (*dstSeqs.add(n)).litLength = (*inSeqs.add(n)).litLength as u16;
@@ -10731,7 +10676,6 @@ pub unsafe fn convertSequences_noRepcodes(
         if (*inSeqs.add(n)).litLength > 65535 {
             longLen = n.wrapping_add(nbSequences).wrapping_add(1);
         }
-        n = n.wrapping_add(1);
     }
     longLen
 }

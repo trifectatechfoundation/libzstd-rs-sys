@@ -88,11 +88,9 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
     let btMask = (((1) << btLog) - 1) as u32;
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
-    let mut idx = ms.nextToUpdate;
-
     assert!(ip.wrapping_add(8) <= iend); /* condition for ZSTD_hashPtr */
 
-    while idx < target {
+    for idx in ms.nextToUpdate..target {
         let h = ZSTD_hashPtr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog,
@@ -104,7 +102,6 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
         *hashTable.add(h) = idx;
         *nextCandidatePtr = matchIndex;
         *sortMarkPtr = ZSTD_DUBT_UNSORTED_MARK as u32;
-        idx = idx.wrapping_add(1);
     }
     ms.nextToUpdate = target;
 }
@@ -494,7 +491,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     let hashTable = ms.hashTable;
     let chainTable = ms.chainTable;
     let chainSize = ((1) << ms.cParams.chainLog) as u32;
-    let mut idx = ms.nextToUpdate;
+    let idx = ms.nextToUpdate;
     let minChain = if chainSize < target.wrapping_sub(idx) {
         target.wrapping_sub(chainSize)
     } else {
@@ -518,7 +515,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         idx
     };
     let mut hashIdx: u32 = 0;
-    while idx < target {
+    for idx in idx..target {
         let h = ZSTD_hashPtr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog,
@@ -529,7 +526,6 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
                 *hashTable.offset(h as isize);
         }
         *tmpHashTable.offset(h as isize) = idx;
-        idx = idx.wrapping_add(1);
     }
     let mut chainPos = 0u32;
     hashIdx = 0;
@@ -590,8 +586,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
         *hashTable.offset(bucketIdx.wrapping_add(bucketSize).wrapping_sub(1) as isize) =
             chainPackedPointer;
     }
-    idx = ms.nextToUpdate;
-    while idx < target {
+    for idx in ms.nextToUpdate..target {
         let h_0 = (ZSTD_hashPtr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog,
@@ -606,7 +601,6 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
             i_1 = i_1.wrapping_sub(1);
         }
         *hashTable.offset(h_0 as isize) = idx;
-        idx = idx.wrapping_add(1);
     }
     ms.nextToUpdate = target;
 }
@@ -745,8 +739,7 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
     let chainMask = (((1) << (*cParams).chainLog) - 1) as u32;
     let base = ms.window.base;
     let target = ip.offset_from(base) as core::ffi::c_long as u32;
-    let mut idx = ms.nextToUpdate;
-    while idx < target {
+    for idx in ms.nextToUpdate..target {
         let h = ZSTD_hashPtr(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog,
@@ -754,7 +747,6 @@ unsafe fn ZSTD_insertAndFindFirstIndex_internal(
         );
         *chainTable.offset((idx & chainMask) as isize) = *hashTable.add(h);
         *hashTable.add(h) = idx;
-        idx = idx.wrapping_add(1);
         if lazySkipping != 0 {
             break;
         }
@@ -973,7 +965,7 @@ unsafe fn ZSTD_row_fillHashCache(
     base: *const u8,
     rowLog: u32,
     mls: u32,
-    mut idx: u32,
+    idx: u32,
     iLimit: *const u8,
 ) {
     let hashTable: *const u32 = ms.hashTable;
@@ -989,7 +981,7 @@ unsafe fn ZSTD_row_fillHashCache(
     } else {
         maxElemsToPrefetch
     });
-    while idx < lim {
+    for idx in idx..lim {
         let hash = ZSTD_hashPtrSalted(
             base.offset(idx as isize) as *const core::ffi::c_void,
             hashLog.wrapping_add(ZSTD_ROW_HASH_TAG_BITS as u32),
@@ -1001,7 +993,6 @@ unsafe fn ZSTD_row_fillHashCache(
         *(ms.hashCache)
             .as_mut_ptr()
             .offset((idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as isize) = hash;
-        idx = idx.wrapping_add(1);
     }
 }
 #[inline(always)]
@@ -1142,14 +1133,12 @@ unsafe fn ZSTD_row_getSSEMask(
 
     let comparisonMask = _mm_set1_epi8(tag as core::ffi::c_char);
     let mut matches: [core::ffi::c_int; 4] = [0; 4];
-    let mut i: core::ffi::c_int = 0;
-    while i < nbChunks {
+    for i in 0..nbChunks {
         let chunk = _mm_loadu_si128(
             src.offset((16 * i) as isize) as *const core::ffi::c_void as *const __m128i
         );
         let equalMask = _mm_cmpeq_epi8(chunk, comparisonMask);
         *matches.as_mut_ptr().offset(i as isize) = _mm_movemask_epi8(equalMask);
-        i += 1;
     }
     if nbChunks == 1 {
         return (matches[0] as u16).rotate_right(head) as ZSTD_VecMask;

@@ -185,14 +185,11 @@ unsafe fn ZSTD_rollingHash_append(
     size: size_t,
 ) -> u64 {
     let istart = buf as *const u8;
-    let mut pos: size_t = 0;
-    pos = 0;
-    while pos < size {
+    for pos in 0..size {
         hash *= prime8bytes;
         hash = hash.wrapping_add(
             (*istart.add(pos) as core::ffi::c_int + ZSTD_ROLL_HASH_CHAR_OFFSET) as u64,
         );
-        pos = pos.wrapping_add(1);
     }
     hash
 }
@@ -280,15 +277,12 @@ unsafe fn ZSTDMT_freeBufferPool(bufPool: *mut ZSTDMT_bufferPool) {
         return;
     }
     if !((*bufPool).buffers).is_null() {
-        let mut u: core::ffi::c_uint = 0;
-        u = 0;
-        while u < (*bufPool).totalBuffers {
+        for u in 0..(*bufPool).totalBuffers {
             ZSTD_customFree(
                 (*((*bufPool).buffers).offset(u as isize)).start,
                 (*((*bufPool).buffers).offset(u as isize)).capacity,
                 (*bufPool).cMem,
             );
-            u = u.wrapping_add(1);
         }
         ZSTD_customFree(
             (*bufPool).buffers as *mut core::ffi::c_void,
@@ -332,14 +326,11 @@ unsafe fn ZSTDMT_createBufferPool(
 unsafe fn ZSTDMT_sizeof_bufferPool(bufPool: *mut ZSTDMT_bufferPool) -> size_t {
     let poolSize = size_of::<ZSTDMT_bufferPool>();
     let arraySize = ((*bufPool).totalBuffers as size_t).wrapping_mul(size_of::<Buffer>());
-    let mut u: core::ffi::c_uint = 0;
     let mut totalBufferSize = 0 as size_t;
     let _guard = (*bufPool).poolMutex.lock().unwrap();
-    u = 0;
-    while u < (*bufPool).totalBuffers {
+    for u in 0..(*bufPool).totalBuffers {
         totalBufferSize =
             totalBufferSize.wrapping_add((*((*bufPool).buffers).offset(u as isize)).capacity);
-        u = u.wrapping_add(1);
     }
     poolSize
         .wrapping_add(arraySize)
@@ -464,11 +455,8 @@ unsafe fn ZSTDMT_freeCCtxPool(pool: *mut ZSTDMT_CCtxPool) {
     }
     core::ptr::drop_in_place(core::ptr::addr_of_mut!((*pool).poolMutex));
     if !((*pool).cctxs).is_null() {
-        let mut cid: core::ffi::c_int = 0;
-        cid = 0;
-        while cid < (*pool).totalCCtx {
+        for cid in 0..(*pool).totalCCtx {
             ZSTD_freeCCtx(*((*pool).cctxs).offset(cid as isize));
-            cid += 1;
         }
         ZSTD_customFree(
             (*pool).cctxs as *mut core::ffi::c_void,
@@ -533,12 +521,9 @@ unsafe fn ZSTDMT_sizeof_CCtxPool(cctxPool: *mut ZSTDMT_CCtxPool) -> size_t {
     let poolSize = size_of::<ZSTDMT_CCtxPool>();
     let arraySize = ((*cctxPool).totalCCtx as usize).wrapping_mul(size_of::<*mut ZSTD_CCtx>());
     let mut totalCCtxSize = 0 as size_t;
-    let mut u: core::ffi::c_uint = 0;
-    u = 0;
-    while u < nbWorkers {
+    for u in 0..nbWorkers {
         totalCCtxSize =
             totalCCtxSize.wrapping_add(ZSTD_sizeof_CCtx(*((*cctxPool).cctxs).offset(u as isize)));
-        u = u.wrapping_add(1);
     }
     poolSize.wrapping_add(arraySize).wrapping_add(totalCCtxSize)
 }
@@ -1992,7 +1977,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
             return syncPoint;
         }
     }
-    while pos < syncPoint.toLoad {
+    for pos in pos..syncPoint.toLoad {
         let toRemove = (if pos < RSYNC_LENGTH as size_t {
             *prev.add(pos) as core::ffi::c_int
         } else {
@@ -2002,10 +1987,7 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
         if hash & hitMask == hitMask {
             syncPoint.toLoad = pos.wrapping_add(1);
             syncPoint.flush = 1;
-            pos = pos.wrapping_add(1);
             break;
-        } else {
-            pos = pos.wrapping_add(1);
         }
     }
     syncPoint
