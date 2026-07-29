@@ -220,8 +220,8 @@ unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
 #[inline]
 unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
     ptr::write_bytes(window as *mut u8, 0, size_of::<ZSTD_window_t>());
-    (*window).base = b" \0" as *const u8 as *const core::ffi::c_char as *const u8;
-    (*window).dictBase = b" \0" as *const u8 as *const core::ffi::c_char as *const u8;
+    (*window).base = c" ".as_ptr() as *const u8;
+    (*window).dictBase = c" ".as_ptr() as *const u8;
     (*window).dictLimit = ZSTD_WINDOW_START_INDEX as u32;
     (*window).lowLimit = ZSTD_WINDOW_START_INDEX as u32;
     (*window).nextSrc = ((*window).base).offset(ZSTD_WINDOW_START_INDEX as isize);
