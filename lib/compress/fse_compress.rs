@@ -201,10 +201,7 @@ pub(crate) unsafe fn FSE_buildCTable_wksp(
     }
     0
 }
-fn FSE_NCountWriteBound(
-    maxSymbolValue: core::ffi::c_uint,
-    tableLog: core::ffi::c_uint,
-) -> size_t {
+fn FSE_NCountWriteBound(maxSymbolValue: core::ffi::c_uint, tableLog: core::ffi::c_uint) -> size_t {
     let maxHeaderSize = maxSymbolValue
         .wrapping_add(1)
         .wrapping_mul(tableLog)

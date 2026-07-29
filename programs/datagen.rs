@@ -174,7 +174,7 @@ pub unsafe fn RDG_genStdout(
     let mut total = 0u64;
     let mut ldt: [u8; 8192] = [0; 8192];
     if buff.is_null() {
-        perror(b"datagen\0" as *const u8 as *const core::ffi::c_char);
+        perror(c"datagen".as_ptr());
         exit(1);
     }
     if litProba <= 0.0f64 {

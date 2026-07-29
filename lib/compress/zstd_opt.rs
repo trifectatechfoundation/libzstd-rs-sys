@@ -456,15 +456,13 @@ unsafe fn ZSTD_getMatchPrice(
     }
     let mlCode = ZSTD_MLcode(mlBase);
     price = price.wrapping_add(
-        ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER)
-            as u32)
-            .wrapping_add(
-                ((*optPtr).matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {
-                    ZSTD_fracWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
-                } else {
-                    ZSTD_bitWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
-                }),
-            ),
+        ((ML_bits[mlCode as usize] as core::ffi::c_int * BITCOST_MULTIPLIER) as u32).wrapping_add(
+            ((*optPtr).matchLengthSumBasePrice).wrapping_sub(if optLevel != 0 {
+                ZSTD_fracWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
+            } else {
+                ZSTD_bitWeight(*((*optPtr).matchLengthFreq).offset(mlCode as isize))
+            }),
+        ),
     );
     price = price.wrapping_add((BITCOST_MULTIPLIER / 5) as u32);
     price

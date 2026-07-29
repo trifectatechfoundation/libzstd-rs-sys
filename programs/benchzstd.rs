@@ -204,20 +204,16 @@ unsafe fn BMK_initCCtx(
     if (*adv).nbWorkers == 1 {
         let zerr = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0);
         if ZSTD_isError(zerr) != 0 {
-            fprintf(
-                stderr,
-                b"Error : \0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"Error : ".as_ptr());
             fflush(core::ptr::null_mut());
             fprintf(
                 stderr,
-                b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0)\0" as *const u8
-                    as *const core::ffi::c_char,
+                c"%s failed : %s".as_ptr(),
+                c"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, 0)".as_ptr(),
                 ZSTD_getErrorName(zerr),
             );
             fflush(core::ptr::null_mut());
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            fprintf(stderr, c" \n".as_ptr());
             fflush(core::ptr::null_mut());
             exit(1);
         }
@@ -225,40 +221,34 @@ unsafe fn BMK_initCCtx(
         let zerr_0 =
             ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, (*adv).nbWorkers);
         if ZSTD_isError(zerr_0) != 0 {
-            fprintf(
-                stderr,
-                b"Error : \0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"Error : ".as_ptr());
             fflush(core::ptr::null_mut());
             fprintf(
                 stderr,
-                b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-                b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, adv->nbWorkers)\0"
-                    as *const u8 as *const core::ffi::c_char,
+                c"%s failed : %s".as_ptr(),
+                c"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_nbWorkers, adv->nbWorkers)"
+                    .as_ptr(),
                 ZSTD_getErrorName(zerr_0),
             );
             fflush(core::ptr::null_mut());
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            fprintf(stderr, c" \n".as_ptr());
             fflush(core::ptr::null_mut());
             exit(1);
         }
     }
     let zerr_1 = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel);
     if ZSTD_isError(zerr_1) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_compressionLevel, cLevel)"
+                .as_ptr(),
             ZSTD_getErrorName(zerr_1),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -268,20 +258,16 @@ unsafe fn BMK_initCCtx(
         (*adv).useRowMatchFinder,
     );
     if ZSTD_isError(zerr_2) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_useRowMatchFinder, adv->useRowMatchFinder)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_useRowMatchFinder, adv->useRowMatchFinder)".as_ptr(),
             ZSTD_getErrorName(zerr_2),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -291,59 +277,49 @@ unsafe fn BMK_initCCtx(
         (*adv).ldmFlag,
     );
     if ZSTD_isError(zerr_3) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching, adv->ldmFlag)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_enableLongDistanceMatching, adv->ldmFlag)".as_ptr(),
             ZSTD_getErrorName(zerr_3),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
     let zerr_4 =
         ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, (*adv).ldmMinMatch);
     if ZSTD_isError(zerr_4) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, adv->ldmMinMatch)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmMinMatch, adv->ldmMinMatch)"
+                .as_ptr(),
             ZSTD_getErrorName(zerr_4),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
     let zerr_5 = ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, (*adv).ldmHashLog);
     if ZSTD_isError(zerr_5) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, adv->ldmHashLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter(ctx, ZSTD_cParameter::ZSTD_c_ldmHashLog, adv->ldmHashLog)"
+                .as_ptr(),
             ZSTD_getErrorName(zerr_5),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -353,20 +329,16 @@ unsafe fn BMK_initCCtx(
         (*adv).ldmBucketSizeLog,
     );
     if ZSTD_isError(zerr_6) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog, adv->ldmBucketSizeLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmBucketSizeLog, adv->ldmBucketSizeLog)".as_ptr(),
             ZSTD_getErrorName(zerr_6),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -376,20 +348,16 @@ unsafe fn BMK_initCCtx(
         (*adv).ldmHashRateLog,
     );
     if ZSTD_isError(zerr_7) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmHashRateLog, adv->ldmHashRateLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_ldmHashRateLog, adv->ldmHashRateLog)".as_ptr(),
             ZSTD_getErrorName(zerr_7),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -399,20 +367,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).windowLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_8) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_windowLog, (int)comprParams->windowLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_windowLog, (int)comprParams->windowLog)".as_ptr(),
             ZSTD_getErrorName(zerr_8),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -422,20 +386,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).hashLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_9) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_hashLog, (int)comprParams->hashLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_hashLog, (int)comprParams->hashLog)".as_ptr(),
             ZSTD_getErrorName(zerr_9),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -445,20 +405,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).chainLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_10) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_chainLog, (int)comprParams->chainLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_chainLog, (int)comprParams->chainLog)".as_ptr(),
             ZSTD_getErrorName(zerr_10),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -468,20 +424,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).searchLog as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_11) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_searchLog, (int)comprParams->searchLog)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_searchLog, (int)comprParams->searchLog)".as_ptr(),
             ZSTD_getErrorName(zerr_11),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -491,20 +443,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).minMatch as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_12) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_minMatch, (int)comprParams->minMatch)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_minMatch, (int)comprParams->minMatch)".as_ptr(),
             ZSTD_getErrorName(zerr_12),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -514,20 +462,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).targetLength as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_13) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetLength, (int)comprParams->targetLength)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetLength, (int)comprParams->targetLength)".as_ptr(),
             ZSTD_getErrorName(zerr_13),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -537,20 +481,16 @@ unsafe fn BMK_initCCtx(
         (*adv).literalCompressionMode.to_i32(),
     );
     if ZSTD_isError(zerr_14) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_literalCompressionMode, (int)adv->literalCompressionMode)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_literalCompressionMode, (int)adv->literalCompressionMode)".as_ptr(),
             ZSTD_getErrorName(zerr_14),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -560,20 +500,16 @@ unsafe fn BMK_initCCtx(
         (*comprParams).strategy as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_15) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_strategy, (int)comprParams->strategy)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_strategy, (int)comprParams->strategy)".as_ptr(),
             ZSTD_getErrorName(zerr_15),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -583,39 +519,31 @@ unsafe fn BMK_initCCtx(
         (*adv).targetCBlockSize as core::ffi::c_int,
     );
     if ZSTD_isError(zerr_16) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetCBlockSize, (int)adv->targetCBlockSize)\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_setParameter( ctx, ZSTD_cParameter::ZSTD_c_targetCBlockSize, (int)adv->targetCBlockSize)".as_ptr(),
             ZSTD_getErrorName(zerr_16),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
     let zerr_17 = ZSTD_CCtx_loadDictionary(ctx, dictBuffer, dictBufferSize);
     if ZSTD_isError(zerr_17) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_CCtx_loadDictionary(ctx, dictBuffer, dictBufferSize)\0" as *const u8
-                as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_CCtx_loadDictionary(ctx, dictBuffer, dictBufferSize)".as_ptr(),
             ZSTD_getErrorName(zerr_17),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -627,39 +555,31 @@ unsafe fn BMK_initDCtx(
 ) {
     let zerr = ZSTD_DCtx_reset(dctx, ZSTD_ResetDirective::ZSTD_reset_session_and_parameters);
     if ZSTD_isError(zerr) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters)\0" as *const u8
-                as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_DCtx_reset(dctx, ZSTD_reset_session_and_parameters)".as_ptr(),
             ZSTD_getErrorName(zerr),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
     let zerr_0 = ZSTD_DCtx_loadDictionary(dctx, dictBuffer, dictBufferSize);
     if ZSTD_isError(zerr_0) != 0 {
-        fprintf(
-            stderr,
-            b"Error : \0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stderr, c"Error : ".as_ptr());
         fflush(core::ptr::null_mut());
         fprintf(
             stderr,
-            b"%s failed : %s\0" as *const u8 as *const core::ffi::c_char,
-            b"ZSTD_DCtx_loadDictionary(dctx, dictBuffer, dictBufferSize)\0" as *const u8
-                as *const core::ffi::c_char,
+            c"%s failed : %s".as_ptr(),
+            c"ZSTD_DCtx_loadDictionary(dctx, dictBuffer, dictBufferSize)".as_ptr(),
             ZSTD_getErrorName(zerr_0),
         );
         fflush(core::ptr::null_mut());
-        fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+        fprintf(stderr, c" \n".as_ptr());
         fflush(core::ptr::null_mut());
         exit(1);
     }
@@ -848,23 +768,18 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        32,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 32);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Decompressed size cannot be determined: cannot benchmark\0" as *const u8
-                            as *const core::ffi::c_char,
+                        c"Decompressed size cannot be determined: cannot benchmark".as_ptr(),
                     );
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 r.tag = 32;
@@ -886,23 +801,19 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        32,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 32);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
                     fprintf(
                         stderr,
-                        b"Error while trying to assess decompressed size: data may be invalid\0"
-                            as *const u8 as *const core::ffi::c_char,
+                        c"Error while trying to assess decompressed size: data may be invalid"
+                            .as_ptr(),
                     );
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 r_0.tag = 32;
@@ -931,23 +842,18 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                    32,
-                );
+                fprintf(stderr, c"Error %i : ".as_ptr(), 32);
                 fflush(core::ptr::null_mut());
             }
             if displayLevel >= 1 {
                 fprintf(
                     stderr,
-                    b"decompressed size is too large for local system\0" as *const u8
-                        as *const core::ffi::c_char,
+                    c"decompressed size is too large for local system".as_ptr(),
                 );
                 fflush(core::ptr::null_mut());
             }
             if displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                fprintf(stderr, c" \n".as_ptr());
                 fflush(core::ptr::null_mut());
             }
             r_1.tag = 32;
@@ -970,23 +876,15 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 size_of::<BMK_benchOutcome_t>(),
             );
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                    33,
-                );
+                fprintf(stderr, c"Error %i : ".as_ptr(), 33);
                 fflush(core::ptr::null_mut());
             }
             if displayLevel >= 1 {
-                fprintf(
-                    stderr,
-                    b"allocation error: not enough memory\0" as *const u8
-                        as *const core::ffi::c_char,
-                );
+                fprintf(stderr, c"allocation error: not enough memory".as_ptr());
                 fflush(core::ptr::null_mut());
             }
             if displayLevel >= 1 {
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                fprintf(stderr, c" \n".as_ptr());
                 fflush(core::ptr::null_mut());
             }
             r_2.tag = 33;
@@ -1063,8 +961,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     if UTIL_support_MT_measurements() == 0 && (*adv).nbWorkers > 1 && displayLevel >= 2 {
         fprintf(
             stdout,
-            b"Warning : time measurements may be incorrect in multithreading mode... \n\0"
-                as *const u8 as *const core::ffi::c_char,
+            c"Warning : time measurements may be incorrect in multithreading mode... \n".as_ptr(),
         );
         fflush(core::ptr::null_mut());
     }
@@ -1076,10 +973,10 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         ZSTD_XXH64(srcBuffer, srcSize, 0)
     };
     let mut marks: [*const core::ffi::c_char; 4] = [
-        b" |\0" as *const u8 as *const core::ffi::c_char,
-        b" /\0" as *const u8 as *const core::ffi::c_char,
-        b" =\0" as *const u8 as *const core::ffi::c_char,
-        b" \\\0" as *const u8 as *const core::ffi::c_char,
+        c" |".as_ptr(),
+        c" /".as_ptr(),
+        c" =".as_ptr(),
+        c" \\".as_ptr(),
     ];
     let mut markNb = 0u32;
     let mut compressionCompleted = ((*adv).mode as core::ffi::c_uint
@@ -1177,18 +1074,14 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
     dctxprep.dictBuffer = dictBuffer;
     dctxprep.dictBufferSize = dictBufferSize;
     if displayLevel >= 2 {
-        fprintf(
-            stdout,
-            b"\r%70s\r\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
-        );
+        fprintf(stdout, c"\r%70s\r".as_ptr(), c"".as_ptr());
         fflush(core::ptr::null_mut());
     }
     assert!(srcSize < core::ffi::c_uint::MAX as size_t);
     if displayLevel >= 2 {
         fprintf(
             stdout,
-            b"%2s-%-17.17s :%10u -> \r\0" as *const u8 as *const core::ffi::c_char,
+            c"%2s-%-17.17s :%10u -> \r".as_ptr(),
             *marks.as_mut_ptr().offset(markNb as isize),
             displayName,
             srcSize as core::ffi::c_uint,
@@ -1214,22 +1107,15 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        30,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 30);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"compression error\0" as *const u8 as *const core::ffi::c_char,
-                    );
+                    fprintf(stderr, c"compression error".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 r_3.tag = 30;
@@ -1257,8 +1143,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
-                    b"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s \r\0" as *const u8
-                        as *const core::ffi::c_char,
+                    c"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s \r".as_ptr(),
                     *marks.as_mut_ptr().offset(markNb as isize),
                     displayName,
                     srcSize as core::ffi::c_uint,
@@ -1294,22 +1179,15 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                     size_of::<BMK_benchOutcome_t>(),
                 );
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        30,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 30);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"decompression error\0" as *const u8 as *const core::ffi::c_char,
-                    );
+                    fprintf(stderr, c"decompression error".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 r_4.tag = 30;
@@ -1327,8 +1205,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
             if displayLevel >= 2 {
                 fprintf(
                     stdout,
-                    b"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s, %6.1f MB/s\r\0" as *const u8
-                        as *const core::ffi::c_char,
+                    c"%2s-%-17.17s :%10u ->%10u (x%5.*f), %6.*f MB/s, %6.1f MB/s\r".as_ptr(),
                     *marks.as_mut_ptr().offset(markNb as isize),
                     displayName,
                     srcSize as core::ffi::c_uint,
@@ -1357,8 +1234,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         let mut u: size_t = 0;
         fprintf(
             stderr,
-            b"!!! WARNING !!! %14s : Invalid Checksum : %x != %x   \n\0" as *const u8
-                as *const core::ffi::c_char,
+            c"!!! WARNING !!! %14s : Invalid Checksum : %x != %x   \n".as_ptr(),
             displayName,
             crcOrig as core::ffi::c_uint,
             crcCheck as core::ffi::c_uint,
@@ -1375,7 +1251,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 let mut bacc = 0 as size_t;
                 fprintf(
                     stderr,
-                    b"Decoding error at pos %u \0" as *const u8 as *const core::ffi::c_char,
+                    c"Decoding error at pos %u ".as_ptr(),
                     u as core::ffi::c_uint,
                 );
                 fflush(core::ptr::null_mut());
@@ -1391,7 +1267,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 bNb = pos.wrapping_div((128 * ((1) << 10)) as core::ffi::c_uint);
                 fprintf(
                     stderr,
-                    b"(sample %u, chunk %u, pos %u) \n\0" as *const u8 as *const core::ffi::c_char,
+                    c"(sample %u, chunk %u, pos %u) \n".as_ptr(),
                     segNb,
                     bNb,
                     pos,
@@ -1399,16 +1275,13 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 fflush(core::ptr::null_mut());
                 let lowest = if u > 5 { 5 } else { u };
                 let mut n: size_t = 0;
-                fprintf(
-                    stderr,
-                    b"origin: \0" as *const u8 as *const core::ffi::c_char,
-                );
+                fprintf(stderr, c"origin: ".as_ptr());
                 fflush(core::ptr::null_mut());
                 n = lowest;
                 while n > 0 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        c"%02X ".as_ptr(),
                         *(srcBuffer as *const u8).add(u.wrapping_sub(n)) as core::ffi::c_int,
                     );
                     fflush(core::ptr::null_mut());
@@ -1416,7 +1289,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 }
                 fprintf(
                     stderr,
-                    b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
+                    c" :%02X:  ".as_ptr(),
                     *(srcBuffer as *const u8).add(u) as core::ffi::c_int,
                 );
                 fflush(core::ptr::null_mut());
@@ -1424,24 +1297,21 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 while n < 3 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        c"%02X ".as_ptr(),
                         *(srcBuffer as *const u8).add(u.wrapping_add(n)) as core::ffi::c_int,
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_add(1);
                 }
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                fprintf(stderr, c" \n".as_ptr());
                 fflush(core::ptr::null_mut());
-                fprintf(
-                    stderr,
-                    b"decode: \0" as *const u8 as *const core::ffi::c_char,
-                );
+                fprintf(stderr, c"decode: ".as_ptr());
                 fflush(core::ptr::null_mut());
                 n = lowest;
                 while n > 0 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        c"%02X ".as_ptr(),
                         *resultBuffer.add(u.wrapping_sub(n)) as core::ffi::c_int,
                     );
                     fflush(core::ptr::null_mut());
@@ -1449,7 +1319,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 }
                 fprintf(
                     stderr,
-                    b" :%02X:  \0" as *const u8 as *const core::ffi::c_char,
+                    c" :%02X:  ".as_ptr(),
                     *resultBuffer.add(u) as core::ffi::c_int,
                 );
                 fflush(core::ptr::null_mut());
@@ -1457,21 +1327,18 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
                 while n < 3 {
                     fprintf(
                         stderr,
-                        b"%02X \0" as *const u8 as *const core::ffi::c_char,
+                        c"%02X ".as_ptr(),
                         *resultBuffer.add(u.wrapping_add(n)) as core::ffi::c_int,
                     );
                     fflush(core::ptr::null_mut());
                     n = n.wrapping_add(1);
                 }
-                fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                fprintf(stderr, c" \n".as_ptr());
                 fflush(core::ptr::null_mut());
                 break;
             } else {
                 if u == srcSize.wrapping_sub(1) {
-                    fprintf(
-                        stderr,
-                        b"no difference detected\n\0" as *const u8 as *const core::ffi::c_char,
-                    );
+                    fprintf(stderr, c"no difference detected\n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 u = u.wrapping_add(1);
@@ -1484,8 +1351,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         if (*adv).additionalParam != 0 {
             fprintf(
                 stdout,
-                b"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s (param=%d)\n\0" as *const u8
-                    as *const core::ffi::c_char,
+                c"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s (param=%d)\n".as_ptr(),
                 cLevel,
                 cSize as core::ffi::c_int,
                 ratio,
@@ -1498,8 +1364,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         } else {
             fprintf(
                 stdout,
-                b"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s\n\0" as *const u8
-                    as *const core::ffi::c_char,
+                c"-%-3i%11i (%5.3f) %6.2f MB/s %6.1f MB/s  %s\n".as_ptr(),
                 cLevel,
                 cSize as core::ffi::c_int,
                 ratio,
@@ -1511,11 +1376,7 @@ unsafe fn BMK_benchMemAdvancedNoAlloc(
         }
     }
     if displayLevel >= 2 {
-        fprintf(
-            stdout,
-            b"%2i#\n\0" as *const u8 as *const core::ffi::c_char,
-            cLevel,
-        );
+        fprintf(stdout, c"%2i#\n".as_ptr(), cLevel);
         fflush(core::ptr::null_mut());
     }
     benchResult.cMem = ((1 as core::ffi::c_ulonglong) << (*comprParams).windowLog)
@@ -1665,22 +1526,15 @@ pub unsafe fn BMK_benchMemAdvanced(
             size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                31,
-            );
+            fprintf(stderr, c"Error %i : ".as_ptr(), 31);
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"allocation error : not enough memory\0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"allocation error : not enough memory".as_ptr());
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            fprintf(stderr, c" \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         r.tag = 31;
@@ -1702,22 +1556,15 @@ pub unsafe fn BMK_benchMemAdvanced(
             size_of::<BMK_benchOutcome_t>(),
         );
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                32,
-            );
+            fprintf(stderr, c"Error %i : ".as_ptr(), 32);
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Dst parameters not coherent\0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"Dst parameters not coherent".as_ptr());
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            fprintf(stderr, c" \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         r_0.tag = 32;
@@ -1778,20 +1625,14 @@ unsafe fn BMK_benchCLevels(
     }
     if endCLevel > ZSTD_maxCLevel() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Invalid Compression Level \n\0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"Invalid Compression Level \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         return 15;
     }
     if endCLevel < startCLevel {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Invalid Compression Level Range \n\0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"Invalid Compression Level Range \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         return 15;
@@ -1800,8 +1641,7 @@ unsafe fn BMK_benchCLevels(
         if displayLevel >= 2 {
             fprintf(
                 stderr,
-                b"Note : switching to real-time priority \n\0" as *const u8
-                    as *const core::ffi::c_char,
+                c"Note : switching to real-time priority \n".as_ptr(),
             );
             fflush(core::ptr::null_mut());
         }
@@ -1810,10 +1650,9 @@ unsafe fn BMK_benchCLevels(
     if displayLevel == 1 && (*adv).additionalParam == 0 {
         fprintf(
             stdout,
-            b"bench %s %s: input %u bytes, %u seconds, %u KB chunks\n\0" as *const u8
-                as *const core::ffi::c_char,
-            b"1.5.8\0" as *const u8 as *const core::ffi::c_char,
-            b"\0" as *const u8 as *const core::ffi::c_char,
+            c"bench %s %s: input %u bytes, %u seconds, %u KB chunks\n".as_ptr(),
+            c"1.5.8".as_ptr(),
+            c"".as_ptr(),
             benchedSize as core::ffi::c_uint,
             (*adv).nbSeconds,
             ((*adv).chunkSizeMax >> 10) as core::ffi::c_uint,
@@ -1862,24 +1701,20 @@ pub unsafe fn BMK_syntheticTest(
     let srcBuffer = malloc(benchedSize);
     if srcBuffer.is_null() {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"allocation error : not enough memory \n\0" as *const u8
-                    as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"allocation error : not enough memory \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         return 16;
     }
     if compressibility < 0.0f64 {
         LOREM_genBuffer(srcBuffer, benchedSize, 0);
-        name = b"Lorem ipsum\0" as *const u8 as *const core::ffi::c_char;
+        name = c"Lorem ipsum".as_ptr();
     } else {
         RDG_genBuffer(srcBuffer, benchedSize, compressibility, 0.0f64, 0);
         formatString_u(
             nameBuff.as_mut_ptr(),
             size_of::<[core::ffi::c_char; 20]>(),
-            b"Synthetic %u%%\0" as *const u8 as *const core::ffi::c_char,
+            c"Synthetic %u%%".as_ptr(),
             (compressibility * 100.0) as core::ffi::c_uint,
         );
     }
@@ -1937,7 +1772,7 @@ unsafe fn BMK_loadFiles(
             if displayLevel >= 2 {
                 fprintf(
                     stderr,
-                    b"Ignoring %s directory...       \n\0" as *const u8 as *const core::ffi::c_char,
+                    c"Ignoring %s directory...       \n".as_ptr(),
                     filename,
                 );
                 fflush(core::ptr::null_mut());
@@ -1947,8 +1782,7 @@ unsafe fn BMK_loadFiles(
             if displayLevel >= 2 {
                 fprintf(
                     stderr,
-                    b"Cannot evaluate size of %s, ignoring ... \n\0" as *const u8
-                        as *const core::ffi::c_char,
+                    c"Cannot evaluate size of %s, ignoring ... \n".as_ptr(),
                     filename,
                 );
                 fflush(core::ptr::null_mut());
@@ -1959,36 +1793,24 @@ unsafe fn BMK_loadFiles(
                 fileSize = bufferSize.wrapping_sub(pos) as u64;
                 nbFiles = n;
             }
-            let f = fopen(filename, b"rb\0" as *const u8 as *const core::ffi::c_char);
+            let f = fopen(filename, c"rb".as_ptr());
             if f.is_null() {
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        10,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 10);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"cannot open file %s\0" as *const u8 as *const core::ffi::c_char,
-                        filename,
-                    );
+                    fprintf(stderr, c"cannot open file %s".as_ptr(), filename);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 return 10;
             }
             if displayLevel >= 2 {
-                fprintf(
-                    stdout,
-                    b"Loading %s...       \r\0" as *const u8 as *const core::ffi::c_char,
-                    filename,
-                );
+                fprintf(stdout, c"Loading %s...       \r".as_ptr(), filename);
                 fflush(core::ptr::null_mut());
             }
             let readSize = fread(
@@ -2000,23 +1822,15 @@ unsafe fn BMK_loadFiles(
             if readSize != fileSize as size_t {
                 fclose(f);
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                        11,
-                    );
+                    fprintf(stderr, c"Error %i : ".as_ptr(), 11);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(
-                        stderr,
-                        b"invalid read %s\0" as *const u8 as *const core::ffi::c_char,
-                        filename,
-                    );
+                    fprintf(stderr, c"invalid read %s".as_ptr(), filename);
                     fflush(core::ptr::null_mut());
                 }
                 if displayLevel >= 1 {
-                    fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+                    fprintf(stderr, c" \n".as_ptr());
                     fflush(core::ptr::null_mut());
                 }
                 return 11;
@@ -2030,22 +1844,15 @@ unsafe fn BMK_loadFiles(
     }
     if totalSize == 0 {
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"Error %i : \0" as *const u8 as *const core::ffi::c_char,
-                12,
-            );
+            fprintf(stderr, c"Error %i : ".as_ptr(), 12);
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(
-                stderr,
-                b"no data to bench\0" as *const u8 as *const core::ffi::c_char,
-            );
+            fprintf(stderr, c"no data to bench".as_ptr());
             fflush(core::ptr::null_mut());
         }
         if displayLevel >= 1 {
-            fprintf(stderr, b" \n\0" as *const u8 as *const core::ffi::c_char);
+            fprintf(stderr, c" \n".as_ptr());
             fflush(core::ptr::null_mut());
         }
         return 12;

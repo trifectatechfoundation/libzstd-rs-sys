@@ -110,7 +110,7 @@ static kWords: [&CStr; 255] = [
     c"eaque",
     c"ipsa",
     c"quae",
-    c"ab",
+    c"ac",
     c"illo",
     c"inventore",
     c"veritatis",
@@ -386,21 +386,21 @@ unsafe fn generateSentence(nbWords: core::ffi::c_int) {
     let comma2 = commaPos + about(7);
     let qmark = (LOREM_rand(11) == 7) as core::ffi::c_int;
     let endSep = if qmark != 0 {
-        b"? \0" as *const u8 as *const core::ffi::c_char
+        c"? ".as_ptr()
     } else {
-        b". \0" as *const u8 as *const core::ffi::c_char
+        c". ".as_ptr()
     };
     let mut i: core::ffi::c_int = 0;
     i = 0;
     while i < nbWords {
         let wordID = g_distrib[LOREM_rand(g_distribCount) as usize].load(Ordering::Relaxed);
         let word = kWords[wordID as usize].as_ptr();
-        let mut sep = b" \0" as *const u8 as *const core::ffi::c_char;
+        let mut sep = c" ".as_ptr();
         if i == commaPos {
-            sep = b", \0" as *const u8 as *const core::ffi::c_char;
+            sep = c", ".as_ptr();
         }
         if i == comma2 {
-            sep = b", \0" as *const u8 as *const core::ffi::c_char;
+            sep = c", ".as_ptr();
         }
         if i == nbWords - 1 {
             sep = endSep;
@@ -432,21 +432,17 @@ unsafe fn generateFirstSentence() {
     let mut i = 0;
     while i < 18 {
         let word = kWords[i].as_ptr();
-        let mut separator = b" \0" as *const u8 as *const core::ffi::c_char;
+        let mut separator = c" ".as_ptr();
         if i == 4 {
-            separator = b", \0" as *const u8 as *const core::ffi::c_char;
+            separator = c", ".as_ptr();
         }
         if i == 7 {
-            separator = b", \0" as *const u8 as *const core::ffi::c_char;
+            separator = c", ".as_ptr();
         }
         generateWord(word, separator, (i == 0) as core::ffi::c_int);
         i += 1;
     }
-    generateWord(
-        kWords[18].as_ptr(),
-        b". \0" as *const u8 as *const core::ffi::c_char,
-        0,
-    );
+    generateWord(kWords[18].as_ptr(), c". ".as_ptr(), 0);
 }
 pub unsafe fn LOREM_genBlock(
     buffer: *mut core::ffi::c_void,
