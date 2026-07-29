@@ -122,59 +122,44 @@ pub(crate) const fn ERR_getErrorCode(code: size_t) -> ZSTD_ErrorCode {
 
 pub(crate) fn ERR_getErrorString(code: ERR_enum) -> *const c_char {
     match code as core::ffi::c_uint {
-        0 => b"No error detected\0" as *const u8 as *const c_char,
-        1 => b"Error (generic)\0" as *const u8 as *const c_char,
-        10 => b"Unknown frame descriptor\0" as *const u8 as *const c_char,
-        12 => b"Version not supported\0" as *const u8 as *const c_char,
-        14 => b"Unsupported frame parameter\0" as *const u8 as *const c_char,
-        16 => b"Frame requires too much memory for decoding\0" as *const u8 as *const c_char,
-        20 => b"Data corruption detected\0" as *const u8 as *const c_char,
-        22 => b"Restored data doesn't match checksum\0" as *const u8 as *const c_char,
-        24 => {
-            b"Header of Literals' block doesn't respect format specification\0" as *const u8
-                as *const c_char
-        }
-        40 => b"Unsupported parameter\0" as *const u8 as *const c_char,
-        41 => b"Unsupported combination of parameters\0" as *const u8 as *const c_char,
-        42 => b"Parameter is out of bound\0" as *const u8 as *const c_char,
-        62 => b"Context should be init first\0" as *const u8 as *const c_char,
-        64 => b"Allocation error : not enough memory\0" as *const u8 as *const c_char,
-        66 => b"workSpace buffer is not large enough\0" as *const u8 as *const c_char,
-        60 => {
-            b"Operation not authorized at current processing stage\0" as *const u8 as *const c_char
-        }
-        44 => b"tableLog requires too much memory : unsupported\0" as *const u8 as *const c_char,
-        46 => b"Unsupported max Symbol Value : too large\0" as *const u8 as *const c_char,
-        48 => b"Specified maxSymbolValue is too small\0" as *const u8 as *const c_char,
-        49 => b"This mode cannot generate an uncompressed block\0" as *const u8 as *const c_char,
-        50 => {
-            b"pledged buffer stability condition is not respected\0" as *const u8 as *const c_char
-        }
-        30 => b"Dictionary is corrupted\0" as *const u8 as *const c_char,
-        32 => b"Dictionary mismatch\0" as *const u8 as *const c_char,
-        34 => b"Cannot create Dictionary from provided samples\0" as *const u8 as *const c_char,
-        70 => b"Destination buffer is too small\0" as *const u8 as *const c_char,
-        72 => b"Src size is incorrect\0" as *const u8 as *const c_char,
-        74 => b"Operation on NULL destination buffer\0" as *const u8 as *const c_char,
-        80 => {
-            b"Operation made no progress over multiple calls, due to output buffer being full\0"
-                as *const u8 as *const c_char
-        }
-        82 => {
-            b"Operation made no progress over multiple calls, due to input being empty\0"
-                as *const u8 as *const c_char
-        }
-        100 => b"Frame index is too large\0" as *const u8 as *const c_char,
-        102 => b"An I/O error occurred when reading/seeking\0" as *const u8 as *const c_char,
-        104 => b"Destination buffer is wrong\0" as *const u8 as *const c_char,
-        105 => b"Source buffer is wrong\0" as *const u8 as *const c_char,
-        106 => {
-            b"Block-level external sequence producer returned an error code\0" as *const u8
-                as *const c_char
-        }
-        107 => b"External sequences are not valid\0" as *const u8 as *const c_char,
-        120 => b"Unspecified error code\0" as *const u8 as *const c_char,
-        _ => b"Unspecified error code\0" as *const u8 as *const c_char,
+        0 => c"No error detected".as_ptr(),
+        1 => c"Error (generic)".as_ptr(),
+        10 => c"Unknown frame descriptor".as_ptr(),
+        12 => c"Version not supported".as_ptr(),
+        14 => c"Unsupported frame parameter".as_ptr(),
+        16 => c"Frame requires too much memory for decoding".as_ptr(),
+        20 => c"Data corruption detected".as_ptr(),
+        22 => c"Restored data doesn't match checksum".as_ptr(),
+        24 => c"Header of Literals' block doesn't respect format specification".as_ptr(),
+        40 => c"Unsupported parameter".as_ptr(),
+        41 => c"Unsupported combination of parameters".as_ptr(),
+        42 => c"Parameter is out of bound".as_ptr(),
+        62 => c"Context should be init first".as_ptr(),
+        64 => c"Allocation error : not enough memory".as_ptr(),
+        66 => c"workSpace buffer is not large enough".as_ptr(),
+        60 => c"Operation not authorized at current processing stage".as_ptr(),
+        44 => c"tableLog requires too much memory : unsupported".as_ptr(),
+        46 => c"Unsupported max Symbol Value : too large".as_ptr(),
+        48 => c"Specified maxSymbolValue is too small".as_ptr(),
+        49 => c"This mode cannot generate an uncompressed block".as_ptr(),
+        50 => c"pledged buffer stability condition is not respected".as_ptr(),
+        30 => c"Dictionary is corrupted".as_ptr(),
+        32 => c"Dictionary mismatch".as_ptr(),
+        34 => c"Cannot create Dictionary from provided samples".as_ptr(),
+        70 => c"Destination buffer is too small".as_ptr(),
+        72 => c"Src size is incorrect".as_ptr(),
+        74 => c"Operation on NULL destination buffer".as_ptr(),
+        80 => c"Operation made no progress over multiple calls, due to output buffer being full"
+            .as_ptr(),
+        82 => c"Operation made no progress over multiple calls, due to input being empty".as_ptr(),
+        100 => c"Frame index is too large".as_ptr(),
+        102 => c"An I/O error occurred when reading/seeking".as_ptr(),
+        104 => c"Destination buffer is wrong".as_ptr(),
+        105 => c"Source buffer is wrong".as_ptr(),
+        106 => c"Block-level external sequence producer returned an error code".as_ptr(),
+        107 => c"External sequences are not valid".as_ptr(),
+        120 => c"Unspecified error code".as_ptr(),
+        _ => c"Unspecified error code".as_ptr(),
     }
 }
 
