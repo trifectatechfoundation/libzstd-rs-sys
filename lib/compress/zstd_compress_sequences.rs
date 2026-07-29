@@ -98,8 +98,7 @@ unsafe fn ZSTD_entropyCost(
             norm = 1;
         }
         cost = cost.wrapping_add(
-            (*count.offset(s as isize))
-                .wrapping_mul(kInverseProbabilityLog256[norm as usize]),
+            (*count.offset(s as isize)).wrapping_mul(kInverseProbabilityLog256[norm as usize]),
         );
     }
     (cost >> 8) as size_t
@@ -150,8 +149,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
         };
         let norm256 = normAcc << shift;
         cost = cost.wrapping_add(
-            (*count.offset(s as isize))
-                .wrapping_mul(kInverseProbabilityLog256[norm256 as usize])
+            (*count.offset(s as isize)).wrapping_mul(kInverseProbabilityLog256[norm256 as usize])
                 as size_t,
         );
     }

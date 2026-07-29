@@ -9,9 +9,7 @@ pub struct UTIL_time_t {
 pub unsafe fn UTIL_getTime() -> UTIL_time_t {
     let mut time = core::mem::zeroed::<timespec>();
     if clock_gettime(CLOCK_MONOTONIC, &mut time) != 0 {
-        perror(
-            b"timefn::clock_gettime(CLOCK_MONOTONIC)\0" as *const u8 as *const core::ffi::c_char,
-        );
+        perror(c"timefn::clock_gettime(CLOCK_MONOTONIC)".as_ptr());
         abort();
     }
     let mut r = UTIL_time_t { t: 0 };
