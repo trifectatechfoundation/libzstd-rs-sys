@@ -82,7 +82,7 @@ use crate::lib::compress::zstd_compress_internal::{
 };
 use crate::lib::zstd::{ZSTD_compressionParameters, ZSTD_BLOCKSIZE_MAX};
 
-static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
+const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,
     posInSequence: 0,
