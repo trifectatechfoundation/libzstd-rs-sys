@@ -717,14 +717,14 @@ unsafe fn HUF_swapNodes(a: *mut nodeElt, b: *mut nodeElt) {
     core::ptr::swap(a, b);
 }
 
-/// Returns 0 if the huffNode array is not sorted by descending count
-unsafe fn HUF_isSorted(huffNode: *mut nodeElt, maxSymbolValue1: u32) -> c_int {
+/// Returns `false` if the huffNode array is not sorted by descending count
+unsafe fn HUF_isSorted(huffNode: *mut nodeElt, maxSymbolValue1: u32) -> bool {
     for i in 1..maxSymbolValue1 {
         if (*huffNode.offset(i as isize)).count > (*huffNode.offset((i - 1) as isize)).count {
-            return 0;
+            return false;
         }
     }
-    1
+    true
 }
 
 /// Insertion sort by descending order
@@ -848,7 +848,7 @@ unsafe fn HUF_sort(
             HUF_simpleQuickSort(huffNode.offset(bucketStartIdx as isize), 0, bucketSize - 1);
         }
     }
-    debug_assert!(HUF_isSorted(huffNode, maxSymbolValue1) != 0);
+    debug_assert!(HUF_isSorted(huffNode, maxSymbolValue1));
 }
 
 pub const STARTNODE: c_int = HUF_SYMBOLVALUE_MAX as i32 + 1;

@@ -99,20 +99,20 @@ unsafe fn fpDistance(fp1: &Fingerprint, fp2: *const Fingerprint, hashLog: c_uint
 
 /// Compares new events with past events.
 ///
-/// Returns `1` when the fingerprints are considered "too different", `0` otherwise.
+/// Returns `true` when the fingerprints are considered "too different".
 unsafe fn compareFingerprints(
     ref_0: &Fingerprint,
     newfp: &Fingerprint,
     penalty: c_int,
     hashLog: c_uint,
-) -> c_int {
+) -> bool {
     debug_assert!(ref_0.nbEvents > 0);
     debug_assert!(newfp.nbEvents > 0);
 
     let p50 = ref_0.nbEvents * newfp.nbEvents;
     let deviation = fpDistance(ref_0, newfp, hashLog);
     let threshold = p50 as u64 * (THRESHOLD_BASE + penalty) as u64 / THRESHOLD_PENALTY_RATE as u64;
-    (deviation >= threshold) as c_int
+    deviation >= threshold
 }
 
 fn mergeEvents(acc: &mut Fingerprint, newfp: &Fingerprint) {
@@ -170,8 +170,7 @@ unsafe fn ZSTD_splitBlock_byChunks(
             &(*fpstats).newEvents,
             penalty,
             hashParams[level as usize],
-        ) != 0
-        {
+        ) {
             return pos;
         } else {
             mergeEvents(&mut (*fpstats).pastEvents, &(*fpstats).newEvents);
@@ -230,7 +229,7 @@ unsafe fn ZSTD_splitBlock_fromBorders(
     );
     (*fpstats).newEvents.nbEvents = SEGMENT_SIZE as size_t;
     (*fpstats).pastEvents.nbEvents = (*fpstats).newEvents.nbEvents;
-    if compareFingerprints(&(*fpstats).pastEvents, &(*fpstats).newEvents, 0, 8) == 0 {
+    if !compareFingerprints(&(*fpstats).pastEvents, &(*fpstats).newEvents, 0, 8) {
         return blockSize;
     }
     HIST_add(
