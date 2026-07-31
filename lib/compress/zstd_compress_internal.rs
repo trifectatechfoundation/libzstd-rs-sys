@@ -371,8 +371,8 @@ pub(crate) unsafe fn ZSTD_getLowestPrefixIndex(
 }
 
 #[inline]
-pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> core::ffi::c_int {
-    (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
+pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) -> bool {
+    prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3
 }
 
 #[inline]

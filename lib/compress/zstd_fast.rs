@@ -794,7 +794,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
             let dictHashAndTag1 = ZSTD_hashPtr(ip1 as *const core::ffi::c_void, dictHBits, mls);
             *hashTable.add(hash0) = curr; // update hash table
 
-            if ZSTD_index_overlap_check(prefixStartIndex, repIndex) != 0
+            if ZSTD_index_overlap_check(prefixStartIndex, repIndex)
                 && MEM_read32(repMatch as *const core::ffi::c_void)
                     == MEM_read32(ip0.add(1) as *const core::ffi::c_void)
             {
@@ -943,7 +943,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                 } else {
                     base.offset(repIndex2 as isize)
                 };
-                if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2) != 0
+                if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2)
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
                         == MEM_read32(ip0 as *const core::ffi::c_void))
                 {
@@ -1345,9 +1345,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
                 } else {
                     base.offset(repIndex2 as isize)
                 };
-                if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2)
-                    & (offset_2 > 0) as core::ffi::c_int
-                    != 0
+                if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2) & (offset_2 > 0)
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
                         == MEM_read32(ip0 as *const core::ffi::c_void))
                 {
