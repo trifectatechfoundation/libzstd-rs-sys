@@ -2147,21 +2147,21 @@ pub const ZSTD_NO_CLEVEL: core::ffi::c_int = 0;
 /// level, otherwise ZSTD_NO_CLEVEL.
 unsafe fn ZSTD_CCtxParams_init_internal(
     cctxParams: *mut ZSTD_CCtx_params,
-    params: *const ZSTD_parameters,
+    params: &ZSTD_parameters,
     compressionLevel: core::ffi::c_int,
 ) {
     ptr::write_bytes(cctxParams as *mut u8, 0, size_of::<ZSTD_CCtx_params>());
-    (*cctxParams).cParams = (*params).cParams;
-    (*cctxParams).fParams = (*params).fParams;
+    (*cctxParams).cParams = params.cParams;
+    (*cctxParams).fParams = params.fParams;
     // Should not matter, as all cParams are presumed properly defined.
     // But, set it for tracing anyway.
     (*cctxParams).compressionLevel = compressionLevel;
     (*cctxParams).useRowMatchFinder =
-        ZSTD_resolveRowMatchFinderMode((*cctxParams).useRowMatchFinder, &(*params).cParams);
+        ZSTD_resolveRowMatchFinderMode((*cctxParams).useRowMatchFinder, &params.cParams);
     (*cctxParams).postBlockSplitter =
-        ZSTD_resolveBlockSplitterMode((*cctxParams).postBlockSplitter, &(*params).cParams);
+        ZSTD_resolveBlockSplitterMode((*cctxParams).postBlockSplitter, &params.cParams);
     (*cctxParams).ldmParams.enableLdm =
-        ZSTD_resolveEnableLdm((*cctxParams).ldmParams.enableLdm, &(*params).cParams);
+        ZSTD_resolveEnableLdm((*cctxParams).ldmParams.enableLdm, &params.cParams);
     (*cctxParams).validateSequences =
         ZSTD_resolveExternalSequenceValidation((*cctxParams).validateSequences);
     (*cctxParams).maxBlockSize = ZSTD_resolveMaxBlockSize((*cctxParams).maxBlockSize);
