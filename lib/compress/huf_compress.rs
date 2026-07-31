@@ -712,11 +712,6 @@ fn HUF_getIndex(count: u32) -> u32 {
     }
 }
 
-/// Helper swap function for [`HUF_quickSortPartition`]
-unsafe fn HUF_swapNodes(a: *mut nodeElt, b: *mut nodeElt) {
-    core::ptr::swap(a, b);
-}
-
 /// Returns `false` if the huffNode array is not sorted by descending count
 unsafe fn HUF_isSorted(huffNode: *mut nodeElt, maxSymbolValue1: u32) -> bool {
     for i in 1..maxSymbolValue1 {
@@ -753,12 +748,15 @@ unsafe fn HUF_quickSortPartition(arr: *mut nodeElt, low: c_int, high: c_int) -> 
     for j in low..high {
         if (*arr.offset(j as isize)).count > pivot {
             i += 1;
-            HUF_swapNodes(&mut *arr.offset(i as isize), &mut *arr.offset(j as isize));
+            core::ptr::swap(
+                &raw mut *arr.offset(i as isize),
+                &raw mut *arr.offset(j as isize),
+            );
         }
     }
-    HUF_swapNodes(
-        &mut *arr.offset((i + 1) as isize),
-        &mut *arr.offset(high as isize),
+    core::ptr::swap(
+        &raw mut *arr.offset((i + 1) as isize),
+        &raw mut *arr.offset(high as isize),
     );
     i + 1
 }
