@@ -751,23 +751,6 @@ unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
     (*window).dictLimit = end;
 }
 
-/// Inspects the provided matchState and figures out what dictMode
-/// should be passed to the compressor.
-#[inline]
-unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    (if ZSTD_window_hasExtDict((*ms).window) {
-        ZSTD_extDict as core::ffi::c_int
-    } else if !((*ms).dictMatchState).is_null() {
-        if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
-            ZSTD_dedicatedDictSearch as core::ffi::c_int
-        } else {
-            ZSTD_dictMatchState as core::ffi::c_int
-        }
-    } else {
-        ZSTD_noDict as core::ffi::c_int
-    }) as ZSTD_dictMode_e
-}
-
 /// Reduces the indices to protect from index overflow.
 /// Returns the correction made to the indices, which must be applied to every stored index.
 ///
@@ -997,8 +980,8 @@ use crate::lib::compress::huf_compress::{
 };
 use crate::lib::compress::zstd_compress_internal::{
     zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
-    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_updateRep, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
+    ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_needOverflowCorrection,
     ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
