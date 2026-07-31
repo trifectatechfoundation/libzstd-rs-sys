@@ -756,7 +756,7 @@ unsafe fn ZSTDMT_serialState_free(serialState: *mut SerialState) {
 
 unsafe fn ZSTDMT_serialState_genSequences(
     serialState: *mut SerialState,
-    seqStore: *mut RawSeqStore_t,
+    seqStore: &mut RawSeqStore_t,
     src: Range,
     jobID: core::ffi::c_uint,
 ) {
