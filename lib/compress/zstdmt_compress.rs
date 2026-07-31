@@ -19,9 +19,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_compressContinue_public, ZSTD_compressEnd_public, ZSTD_createCCtx_advanced,
     ZSTD_createCDict_advanced, ZSTD_cycleLog, ZSTD_freeCCtx, ZSTD_freeCDict,
     ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
-    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_hasExtDict, ZSTD_window_t,
-    ZSTD_writeLastEmptyBlock,
+    ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
+use crate::lib::compress::zstd_compress_internal::ZSTD_window_hasExtDict;
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,

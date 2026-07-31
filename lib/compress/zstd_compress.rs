@@ -751,11 +751,6 @@ unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
     (*window).dictLimit = end;
 }
 
-#[inline]
-pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
-    window.lowLimit < window.dictLimit
-}
-
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
@@ -1003,8 +998,8 @@ use crate::lib::compress::huf_compress::{
 use crate::lib::compress::zstd_compress_internal::{
     zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
     ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_storeSeq, ZSTD_storeSeqOnly,
-    ZSTD_updateRep, ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
-    ZSTD_WINDOW_START_INDEX,
+    ZSTD_updateRep, ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

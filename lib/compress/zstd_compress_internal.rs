@@ -371,6 +371,11 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
     (prefixLowestIndex.wrapping_sub(1).wrapping_sub(repIndex) >= 3) as core::ffi::c_int
 }
 
+#[inline]
+pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
+    window.lowLimit < window.dictLimit
+}
+
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
 
 #[inline]
