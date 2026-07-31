@@ -2813,7 +2813,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
             } else {
                 base.offset(repIndex as isize)
             };
-            if ZSTD_index_overlap_check(prefixLowestIndex, repIndex) != 0
+            if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
                 && MEM_read32(repMatch as *const core::ffi::c_void)
                     == MEM_read32(ip.add(1) as *const core::ffi::c_void)
             {
@@ -2941,7 +2941,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                     } else {
                                         base.offset(repIndex_0 as isize)
                                     };
-                                    if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0) != 0
+                                    if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_0)
                                         && MEM_read32(repMatch_0 as *const core::ffi::c_void)
                                             == MEM_read32(ip as *const core::ffi::c_void)
                                     {
@@ -3040,7 +3040,6 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                                             base.offset(repIndex_1 as isize)
                                         };
                                         if ZSTD_index_overlap_check(prefixLowestIndex, repIndex_1)
-                                            != 0
                                             && MEM_read32(repMatch_1 as *const core::ffi::c_void)
                                                 == MEM_read32(ip as *const core::ffi::c_void)
                                         {
@@ -3200,7 +3199,7 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
                 } else {
                     base.offset(repIndex_2 as isize)
                 };
-                if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex_2) != 0
+                if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex_2)
                     && MEM_read32(repMatch_2 as *const core::ffi::c_void)
                         == MEM_read32(ip as *const core::ffi::c_void))
                 {
@@ -3747,8 +3746,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
         let repBase = if repIndex < dictLimit { dictBase } else { base };
         let repMatch = repBase.offset(repIndex as isize);
         if ZSTD_index_overlap_check(dictLimit, repIndex)
-            & (offset_1 <= curr.wrapping_add(1).wrapping_sub(windowLow)) as core::ffi::c_int
-            != 0
+            & (offset_1 <= curr.wrapping_add(1).wrapping_sub(windowLow))
         {
             if MEM_read32(ip.add(1) as *const core::ffi::c_void)
                 == MEM_read32(repMatch as *const core::ffi::c_void)
@@ -3822,8 +3820,7 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                             };
                             let repMatch_0 = repBase_0.offset(repIndex_0 as isize);
                             if ZSTD_index_overlap_check(dictLimit, repIndex_0)
-                                & (offset_1 <= curr.wrapping_sub(windowLow_0)) as core::ffi::c_int
-                                != 0
+                                & (offset_1 <= curr.wrapping_sub(windowLow_0))
                                 && MEM_read32(ip as *const core::ffi::c_void)
                                     == MEM_read32(repMatch_0 as *const core::ffi::c_void)
                             {
@@ -3897,8 +3894,6 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                                 let repMatch_1 = repBase_1.offset(repIndex_1 as isize);
                                 if ZSTD_index_overlap_check(dictLimit, repIndex_1)
                                     & (offset_1 <= curr.wrapping_sub(windowLow_1))
-                                        as core::ffi::c_int
-                                    != 0
                                     && MEM_read32(ip as *const core::ffi::c_void)
                                         == MEM_read32(repMatch_1 as *const core::ffi::c_void)
                                 {
@@ -4021,9 +4016,8 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
                 base
             };
             let repMatch_2 = repBase_2.offset(repIndex_2 as isize);
-            if ZSTD_index_overlap_check(dictLimit, repIndex_2)
-                & (offset_2 <= repCurrent.wrapping_sub(windowLow_2)) as core::ffi::c_int
-                == 0
+            if !(ZSTD_index_overlap_check(dictLimit, repIndex_2)
+                & (offset_2 <= repCurrent.wrapping_sub(windowLow_2)))
             {
                 break;
             }

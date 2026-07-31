@@ -665,7 +665,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
         *hashLong.add(h2) = *fresh3;
 
         // check repcode
-        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex) != 0
+        if ZSTD_index_overlap_check(prefixLowestIndex, repIndex)
             && MEM_read32(repMatch as *const core::ffi::c_void)
                 == MEM_read32(ip.add(1) as *const core::ffi::c_void)
         {
@@ -970,7 +970,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 } else {
                     base.wrapping_offset(repIndex2 as isize)
                 };
-                if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex2) != 0
+                if !(ZSTD_index_overlap_check(prefixLowestIndex, repIndex2)
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
                         == MEM_read32(ip as *const core::ffi::c_void))
                 {
@@ -1203,8 +1203,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
 
         // note: we are searching at curr+1
         if ZSTD_index_overlap_check(prefixStartIndex, repIndex)
-            & (offset_1 <= curr.wrapping_add(1).wrapping_sub(dictStartIndex)) as core::ffi::c_int
-            != 0
+            & (offset_1 <= curr.wrapping_add(1).wrapping_sub(dictStartIndex))
             && MEM_read32(repMatch as *const core::ffi::c_void)
                 == MEM_read32(ip.add(1) as *const core::ffi::c_void)
         {
@@ -1396,8 +1395,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
                     base.offset(repIndex2 as isize)
                 };
                 if !(ZSTD_index_overlap_check(prefixStartIndex, repIndex2)
-                    & (offset_2 <= current2.wrapping_sub(dictStartIndex)) as core::ffi::c_int
-                    != 0
+                    & (offset_2 <= current2.wrapping_sub(dictStartIndex))
                     && MEM_read32(repMatch2 as *const core::ffi::c_void)
                         == MEM_read32(ip as *const core::ffi::c_void))
                 {

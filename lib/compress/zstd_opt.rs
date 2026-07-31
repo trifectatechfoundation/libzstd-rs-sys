@@ -975,9 +975,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
             // intentional overflow, equivalent to `curr > repIndex >= windowLow`
             if dictMode as core::ffi::c_uint
                 == ZSTD_extDict as core::ffi::c_int as core::ffi::c_uint
-                && (repOffset.wrapping_sub(1) < curr.wrapping_sub(windowLow)) as core::ffi::c_int
+                && (repOffset.wrapping_sub(1) < curr.wrapping_sub(windowLow))
                     & ZSTD_index_overlap_check(dictLimit, repIndex)
-                    != 0
                 && ZSTD_readMINMATCH(ip as *const core::ffi::c_void, minMatch)
                     == ZSTD_readMINMATCH(repMatch as *const core::ffi::c_void, minMatch)
             {
@@ -995,9 +994,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
                 == ZSTD_dictMatchState as core::ffi::c_int as core::ffi::c_uint
                 && (repOffset.wrapping_sub(1)
                     < curr.wrapping_sub(dmsLowLimit.wrapping_add(dmsIndexDelta)))
-                    as core::ffi::c_int
                     & ZSTD_index_overlap_check(dictLimit, repIndex)
-                    != 0
                 && ZSTD_readMINMATCH(ip as *const core::ffi::c_void, minMatch)
                     == ZSTD_readMINMATCH(repMatch as *const core::ffi::c_void, minMatch)
             {
