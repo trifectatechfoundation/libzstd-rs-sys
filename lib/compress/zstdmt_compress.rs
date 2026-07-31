@@ -21,7 +21,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_getCParamsFromCCtxParams, ZSTD_invalidateRepCodes, ZSTD_referenceExternalSequences,
     ZSTD_sizeof_CCtx, ZSTD_sizeof_CDict, ZSTD_window_t, ZSTD_writeLastEmptyBlock,
 };
-use crate::lib::compress::zstd_compress_internal::ZSTD_window_hasExtDict;
+use crate::lib::compress::zstd_compress_internal::{ZSTD_window_hasExtDict, ZSTD_window_update};
 use crate::lib::compress::zstd_ldm::{
     ldmEntry_t, ldmParams_t, ldmState_t, ZSTD_ldm_adjustParameters, ZSTD_ldm_fillHashTable,
     ZSTD_ldm_generateSequences, ZSTD_ldm_getMaxNbSeq,
@@ -192,7 +192,6 @@ type ZSTD_CParamMode_e = core::ffi::c_uint;
 const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
-const HASH_READ_SIZE: core::ffi::c_int = 8;
 
 static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
@@ -279,56 +278,6 @@ unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
     (*window).lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
     (*window).nextSrc = ((*window).base).offset(ZSTD_WINDOW_START_INDEX as isize);
     (*window).nbOverflowCorrections = 0;
-}
-
-/// Updates the window by appending [src, src + srcSize) to the window.
-/// If it is not contiguous, the current prefix becomes the extDict, and we
-/// forget about the extDict. Handles overlap of the prefix and extDict.
-/// Returns `true` if the segment is contiguous.
-#[inline]
-unsafe fn ZSTD_window_update(
-    window: *mut ZSTD_window_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    forceNonContiguous: bool,
-) -> bool {
-    let ip = src as *const u8;
-    let mut contiguous = true;
-    if srcSize == 0 {
-        return contiguous;
-    }
-
-    // Check if blocks follow each other
-    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
-        // not contiguous
-        let distanceFromBase = ((*window).nextSrc).offset_from((*window).base) as size_t;
-        (*window).lowLimit = (*window).dictLimit;
-        (*window).dictLimit = distanceFromBase as u32;
-        (*window).dictBase = (*window).base;
-        (*window).base = ip.offset(-(distanceFromBase as isize));
-        if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
-            (*window).lowLimit = (*window).dictLimit;
-        }
-        contiguous = false;
-    }
-    (*window).nextSrc = ip.add(srcSize);
-
-    // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
-    if (ip.add(srcSize) > ((*window).dictBase).offset((*window).lowLimit as isize))
-        as core::ffi::c_int
-        & (ip < ((*window).dictBase).offset((*window).dictLimit as isize)) as core::ffi::c_int
-        != 0
-    {
-        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as size_t;
-        let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
-            (*window).dictLimit
-        } else {
-            highInputIdx as u32
-        };
-        (*window).lowLimit = lowLimitMax;
-    }
-
-    contiguous
 }
 
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);

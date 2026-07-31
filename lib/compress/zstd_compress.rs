@@ -891,48 +891,6 @@ unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
     (*window).nbOverflowCorrections = 0;
 }
 
-/// Updates the window by appending [src, src + srcSize) to the window.
-/// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
-/// extDict. Handles overlap of the prefix and extDict.
-/// Returns `true` if the segment is contiguous.
-#[inline]
-unsafe fn ZSTD_window_update(
-    window: *mut ZSTD_window_t,
-    src: *const core::ffi::c_void,
-    srcSize: size_t,
-    forceNonContiguous: bool,
-) -> bool {
-    let ip = src as *const u8;
-    let mut contiguous = true;
-    if srcSize == 0 {
-        return contiguous;
-    }
-    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
-        let distanceFromBase = ((*window).nextSrc).wrapping_offset_from((*window).base) as size_t;
-        (*window).lowLimit = (*window).dictLimit;
-        (*window).dictLimit = distanceFromBase as u32;
-        (*window).dictBase = (*window).base;
-        (*window).base = ip.wrapping_sub(distanceFromBase);
-        if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
-            (*window).lowLimit = (*window).dictLimit;
-        }
-        contiguous = false;
-    }
-    (*window).nextSrc = ip.add(srcSize);
-    if (ip.add(srcSize) > ((*window).dictBase).wrapping_offset((*window).lowLimit as isize))
-        && (ip < ((*window).dictBase).wrapping_offset((*window).dictLimit as isize))
-    {
-        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as size_t;
-        let lowLimitMax = if highInputIdx > (*window).dictLimit as size_t {
-            (*window).dictLimit
-        } else {
-            highInputIdx as u32
-        };
-        (*window).lowLimit = lowLimitMax;
-    }
-    contiguous
-}
-
 pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
 
 /// Returns `true` if an external sequence producer is registered.
@@ -982,7 +940,7 @@ use crate::lib::compress::zstd_compress_internal::{
     zop_dynamic, ZSTD_OptPrice_e, ZSTD_count, ZSTD_getSequenceLength, ZSTD_llt_literalLength,
     ZSTD_llt_matchLength, ZSTD_llt_none, ZSTD_longLengthType_e, ZSTD_matchState_dictMode,
     ZSTD_storeSeq, ZSTD_storeSeqOnly, ZSTD_updateRep, ZSTD_window_needOverflowCorrection,
-    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
+    ZSTD_window_update, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY, ZSTD_WINDOW_START_INDEX,
 };
 use crate::lib::compress::zstd_compress_literals::ZSTD_compressLiterals;
 use crate::lib::compress::zstd_compress_sequences::{

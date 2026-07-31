@@ -5,9 +5,10 @@ use crate::lib::common::zstd_internal::{
 };
 use crate::lib::compress::zstd_compress::{
     SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_dedicatedDictSearch, ZSTD_dictMatchState,
-    ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict, ZSTD_window_t,
+    ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict, ZSTD_window_t, HASH_READ_SIZE,
 };
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
+use crate::lib::polyfill::PointerExt;
 
 pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
 pub(crate) const ZSTD_llt_matchLength: ZSTD_longLengthType_e = 2;
@@ -394,6 +395,56 @@ pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> Z
     } else {
         ZSTD_noDict as core::ffi::c_int
     }) as ZSTD_dictMode_e
+}
+
+/// Updates the window by appending [src, src + srcSize) to the window.
+///
+/// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
+/// extDict. Handles overlap of the prefix and extDict.
+///
+/// Returns `true` if the segment is contiguous.
+#[inline]
+pub(crate) unsafe fn ZSTD_window_update(
+    window: *mut ZSTD_window_t,
+    src: *const core::ffi::c_void,
+    srcSize: usize,
+    forceNonContiguous: bool,
+) -> bool {
+    let ip = src as *const u8;
+    let mut contiguous = true;
+    if srcSize == 0 {
+        return contiguous;
+    }
+
+    // Check if blocks follow each other
+    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
+        // not contiguous
+        let distanceFromBase = ((*window).nextSrc).wrapping_offset_from((*window).base) as usize;
+        (*window).lowLimit = (*window).dictLimit;
+        (*window).dictLimit = distanceFromBase as u32;
+        (*window).dictBase = (*window).base;
+        (*window).base = ip.wrapping_sub(distanceFromBase);
+        if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
+            (*window).lowLimit = (*window).dictLimit;
+        }
+        contiguous = false;
+    }
+    (*window).nextSrc = ip.add(srcSize);
+
+    // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
+    if (ip.add(srcSize) > ((*window).dictBase).wrapping_offset((*window).lowLimit as isize))
+        && (ip < ((*window).dictBase).wrapping_offset((*window).dictLimit as isize))
+    {
+        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as usize;
+        let lowLimitMax = if highInputIdx > (*window).dictLimit as usize {
+            (*window).dictLimit
+        } else {
+            highInputIdx as u32
+        };
+        (*window).lowLimit = lowLimitMax;
+    }
+
+    contiguous
 }
 
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;
