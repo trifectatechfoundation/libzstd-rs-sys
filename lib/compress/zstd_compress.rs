@@ -8783,7 +8783,7 @@ pub unsafe fn ZSTD_compress_advanced_internal(
     srcSize: size_t,
     dict: *const core::ffi::c_void,
     dictSize: size_t,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
 ) -> size_t {
     let err_code = ZSTD_compressBegin_internal(
         cctx,
