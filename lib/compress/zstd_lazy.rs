@@ -2290,7 +2290,7 @@ unsafe fn ZSTD_searchMax(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
     mls: u32,
     rowLog: u32,
     searchMethod: searchMethod_e,
