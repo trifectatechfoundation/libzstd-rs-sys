@@ -125,7 +125,7 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_storeSeq,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_storeSeq, ZSTD_window_hasExtDict,
     ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
@@ -135,11 +135,6 @@ use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_btopt, ZSTD_btultra, ZSTD_compre
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
-
-#[inline]
-fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
-    window.lowLimit < window.dictLimit
-}
 
 /// Inspects the provided matchState and figures out what dictMode should be
 /// passed to the compressor.
