@@ -405,7 +405,7 @@ pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> Z
 /// Returns `true` if the segment is contiguous.
 #[inline]
 pub(crate) unsafe fn ZSTD_window_update(
-    window: *mut ZSTD_window_t,
+    window: &mut ZSTD_window_t,
     src: *const core::ffi::c_void,
     srcSize: usize,
     forceNonContiguous: bool,
@@ -417,27 +417,27 @@ pub(crate) unsafe fn ZSTD_window_update(
     }
 
     // Check if blocks follow each other
-    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
+    if src != window.nextSrc as *const core::ffi::c_void || forceNonContiguous {
         // not contiguous
-        let distanceFromBase = ((*window).nextSrc).wrapping_offset_from((*window).base) as usize;
-        (*window).lowLimit = (*window).dictLimit;
-        (*window).dictLimit = distanceFromBase as u32;
-        (*window).dictBase = (*window).base;
-        (*window).base = ip.wrapping_sub(distanceFromBase);
-        if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
-            (*window).lowLimit = (*window).dictLimit;
+        let distanceFromBase = (window.nextSrc).wrapping_offset_from(window.base) as usize;
+        window.lowLimit = window.dictLimit;
+        window.dictLimit = distanceFromBase as u32;
+        window.dictBase = window.base;
+        window.base = ip.wrapping_sub(distanceFromBase);
+        if (window.dictLimit).wrapping_sub(window.lowLimit) < HASH_READ_SIZE as u32 {
+            window.lowLimit = window.dictLimit;
         }
         contiguous = false;
     }
-    (*window).nextSrc = ip.add(srcSize);
+    window.nextSrc = ip.add(srcSize);
 
     // if input and dictionary overlap: reduce dictionary (area presumed modified by input)
-    if (ip.add(srcSize) > ((*window).dictBase).wrapping_offset((*window).lowLimit as isize))
-        && (ip < ((*window).dictBase).wrapping_offset((*window).dictLimit as isize))
+    if (ip.add(srcSize) > (window.dictBase).wrapping_offset(window.lowLimit as isize))
+        && (ip < (window.dictBase).wrapping_offset(window.dictLimit as isize))
     {
-        let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as usize;
-        let lowLimitMax = (highInputIdx as u32).min((*window).dictLimit);
-        (*window).lowLimit = lowLimitMax;
+        let highInputIdx = ip.add(srcSize).offset_from(window.dictBase) as usize;
+        let lowLimitMax = (highInputIdx as u32).min(window.dictLimit);
+        window.lowLimit = lowLimitMax;
     }
 
     contiguous
