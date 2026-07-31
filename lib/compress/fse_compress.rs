@@ -411,7 +411,7 @@ fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) -> core::
     minBitsSrc.min(minBitsSymbols)
 }
 
-pub(crate) unsafe fn FSE_optimalTableLog_internal(
+pub(crate) fn FSE_optimalTableLog_internal(
     maxTableLog: core::ffi::c_uint,
     srcSize: size_t,
     maxSymbolValue: core::ffi::c_uint,
