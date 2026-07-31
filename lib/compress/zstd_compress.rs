@@ -5102,8 +5102,8 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
 /// Returns whether the target compressed block size param is being used.
 /// If used, compression will do best effort to make a compressed block size to be around
 /// targetCBlockSize.
-unsafe fn ZSTD_useTargetCBlockSize(cctxParams: *const ZSTD_CCtx_params) -> bool {
-    (*cctxParams).targetCBlockSize != 0
+fn ZSTD_useTargetCBlockSize(cctxParams: &ZSTD_CCtx_params) -> bool {
+    cctxParams.targetCBlockSize != 0
 }
 
 /// Returns whether the block splitting param is being used.
