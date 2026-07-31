@@ -1480,10 +1480,10 @@ unsafe fn ZSTDMT_resize(mtctx: *mut ZSTDMT_CCtx, nbWorkers: core::ffi::c_uint) -
 /// New parameters will be applied to next compression job.
 pub unsafe fn ZSTDMT_updateCParams_whileCompressing(
     mtctx: *mut ZSTDMT_CCtx,
-    cctxParams: *const ZSTD_CCtx_params,
+    cctxParams: &ZSTD_CCtx_params,
 ) {
     let saved_wlog = (*mtctx).params.cParams.windowLog; // Do not modify windowLog while compressing
-    let compressionLevel = (*cctxParams).compressionLevel;
+    let compressionLevel = cctxParams.compressionLevel;
     (*mtctx).params.compressionLevel = compressionLevel;
 
     let mut cParams = ZSTD_getCParamsFromCCtxParams(
