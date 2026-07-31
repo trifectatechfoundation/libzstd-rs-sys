@@ -453,7 +453,7 @@ unsafe fn ZSTDMT_sizeof_seqPool(seqPool: *mut ZSTDMT_seqPool) -> size_t {
     ZSTDMT_sizeof_bufferPool(seqPool)
 }
 
-unsafe fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
+fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
     let mut seq = kNullRawSeqStore;
     seq.seq = buffer.start as *mut rawSeq;
     seq.capacity = (buffer.capacity).wrapping_div(size_of::<rawSeq>());
