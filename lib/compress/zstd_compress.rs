@@ -5658,17 +5658,14 @@ unsafe fn ZSTD_fastSequenceLengthSum(seqBuf: *const ZSTD_Sequence, seqBufSize: s
 }
 
 /// Validate sequences produced by a block compressor.
-unsafe fn ZSTD_validateSeqStore(
-    seqStore: *const SeqStore_t,
-    cParams: *const ZSTD_compressionParameters,
-) {
-    let matchLenLowerBound = match (*cParams).minMatch {
+unsafe fn ZSTD_validateSeqStore(seqStore: &SeqStore_t, cParams: &ZSTD_compressionParameters) {
+    let matchLenLowerBound = match cParams.minMatch {
         3 => 3,
         _ => 4,
     };
 
-    let start = (*seqStore).sequences;
-    let end = (*seqStore).sequences;
+    let start = seqStore.sequences;
+    let end = seqStore.sequences;
 
     if cfg!(debug_assertions) {
         for n in 0..end as usize - start as usize {
