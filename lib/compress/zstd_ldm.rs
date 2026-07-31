@@ -537,11 +537,11 @@ pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 
 /// Initializes the rolling hash state such that it will honor the
 /// settings in params.
-unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const ldmParams_t) {
+unsafe fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: *const ldmParams_t) {
     let maxBitsInMask = (*params).minMatchLength.min(64);
     let hashRateLog = (*params).hashRateLog;
 
-    (*state).rolling = !0u32 as u64;
+    state.rolling = !0u32 as u64;
 
     // The choice of the splitting criterion is subject to two conditions:
     //   1. it has to trigger on average every 2^(hashRateLog) bytes;
@@ -556,11 +556,11 @@ unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const l
     // have the highest possible weight while still respecting
     // condition 2.
     if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
-        (*state).stopMask =
+        state.stopMask =
             (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
     } else {
         // In this degenerate case we simply honor the hash rate.
-        (*state).stopMask = (1u64 << hashRateLog).wrapping_sub(1);
+        state.stopMask = (1u64 << hashRateLog).wrapping_sub(1);
     }
 }
 
@@ -751,18 +751,15 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         }
     }
     if params.hashLog == 0 {
-        params.hashLog = params
-            .windowLog
-            .wrapping_sub(params.hashRateLog)
-            .clamp(
-                6,
-                (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                    30
-                } else {
-                    31
-                })
-                .min(30),
-            );
+        params.hashLog = params.windowLog.wrapping_sub(params.hashRateLog).clamp(
+            6,
+            (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
+                30
+            } else {
+                31
+            })
+            .min(30),
+        );
     }
     if params.minMatchLength == 0 {
         params.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
