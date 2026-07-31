@@ -6098,8 +6098,8 @@ unsafe fn ZSTD_maybeRLE(seqStore: *const SeqStore_t) -> bool {
     nbSeqs < 4 && nbLits < 10
 }
 
-unsafe fn ZSTD_blockState_confirmRepcodesAndEntropyTables(bs: *mut ZSTD_blockState_t) {
-    core::mem::swap(&mut (*bs).prevCBlock, &mut (*bs).nextCBlock);
+fn ZSTD_blockState_confirmRepcodesAndEntropyTables(bs: &mut ZSTD_blockState_t) {
+    core::mem::swap(&mut bs.prevCBlock, &mut bs.nextCBlock);
 }
 
 /// Writes the block header
