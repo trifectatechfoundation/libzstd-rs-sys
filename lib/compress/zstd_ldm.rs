@@ -733,27 +733,27 @@ unsafe fn ZSTD_ldm_gear_feed(
 }
 
 pub unsafe fn ZSTD_ldm_adjustParameters(
-    params: *mut ldmParams_t,
-    cParams: *const ZSTD_compressionParameters,
+    params: &mut ldmParams_t,
+    cParams: &ZSTD_compressionParameters,
 ) {
-    (*params).windowLog = (*cParams).windowLog;
+    params.windowLog = cParams.windowLog;
 
-    if (*params).hashRateLog == 0 {
-        if (*params).hashLog > 0 {
+    if params.hashRateLog == 0 {
+        if params.hashLog > 0 {
             // if params->hashLog is set, derive hashRateLog from it
-            if (*params).windowLog > (*params).hashLog {
-                (*params).hashRateLog = ((*params).windowLog).wrapping_sub((*params).hashLog);
+            if params.windowLog > params.hashLog {
+                params.hashRateLog = (params.windowLog).wrapping_sub(params.hashLog);
             }
         } else {
             // mapping from [fast, rate7] to [btultra2, rate4]
-            (*params).hashRateLog = (7 as core::ffi::c_uint)
-                .wrapping_sub(((*cParams).strategy as core::ffi::c_uint).wrapping_div(3));
+            params.hashRateLog = (7 as core::ffi::c_uint)
+                .wrapping_sub((cParams.strategy as core::ffi::c_uint).wrapping_div(3));
         }
     }
-    if (*params).hashLog == 0 {
-        (*params).hashLog = (*params)
+    if params.hashLog == 0 {
+        params.hashLog = params
             .windowLog
-            .wrapping_sub((*params).hashRateLog)
+            .wrapping_sub(params.hashRateLog)
             .clamp(
                 6,
                 (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
@@ -764,18 +764,18 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
                 .min(30),
             );
     }
-    if (*params).minMatchLength == 0 {
-        (*params).minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
-        if (*cParams).strategy as core::ffi::c_uint
+    if params.minMatchLength == 0 {
+        params.minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
+        if cParams.strategy as core::ffi::c_uint
             >= ZSTD_btultra as core::ffi::c_int as core::ffi::c_uint
         {
-            (*params).minMatchLength /= 2;
+            params.minMatchLength /= 2;
         }
     }
-    if (*params).bucketSizeLog == 0 {
-        (*params).bucketSizeLog = (*cParams).strategy.clamp(4, 8);
+    if params.bucketSizeLog == 0 {
+        params.bucketSizeLog = cParams.strategy.clamp(4, 8);
     }
-    (*params).bucketSizeLog = (*params).bucketSizeLog.min((*params).hashLog);
+    params.bucketSizeLog = params.bucketSizeLog.min(params.hashLog);
 }
 
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
