@@ -3774,8 +3774,8 @@ fn ZSTD_maxNbSeq(
 }
 
 unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
-    cParams: *const ZSTD_compressionParameters,
-    ldmParams: *const ldmParams_t,
+    cParams: &ZSTD_compressionParameters,
+    ldmParams: &ldmParams_t,
     isStatic: core::ffi::c_int,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     buffInSize: size_t,
@@ -3784,11 +3784,11 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     useSequenceProducer: bool,
     maxBlockSize: size_t,
 ) -> size_t {
-    let windowSize = ((1 as core::ffi::c_ulonglong) << (*cParams).windowLog)
+    let windowSize = ((1 as core::ffi::c_ulonglong) << cParams.windowLog)
         .min(pledgedSrcSize as core::ffi::c_ulonglong) // pledgedSrcSize can be 0, so .clamp() would panic
         .max(1) as size_t;
     let blockSize = ZSTD_resolveMaxBlockSize(maxBlockSize).min(windowSize);
-    let maxNbSeq = ZSTD_maxNbSeq(blockSize, (*cParams).minMatch, useSequenceProducer);
+    let maxNbSeq = ZSTD_maxNbSeq(blockSize, cParams.minMatch, useSequenceProducer);
     let tokenSpace = (ZSTD_cwksp_alloc_size(WILDCOPY_OVERLENGTH.wrapping_add(blockSize)))
         .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
             maxNbSeq.wrapping_mul(size_of::<SeqDef>()),
@@ -3804,7 +3804,7 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
 
     let ldmSpace = ZSTD_ldm_getTableSize(*ldmParams);
     let maxNbLdmSeq = ZSTD_ldm_getMaxNbSeq(*ldmParams, blockSize);
-    let ldmSeqSpace = if (*ldmParams).enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    let ldmSeqSpace = if ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         ZSTD_cwksp_aligned64_alloc_size(maxNbLdmSeq.wrapping_mul(size_of::<rawSeq>()))
     } else {
         0
