@@ -6345,7 +6345,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
 
     // Validate the previous Huffman table
     if repeat as core::ffi::c_uint == HUF_repeat_check as core::ffi::c_int as core::ffi::c_uint
-        && HUF_validateCTable(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue) == 0
+        && !HUF_validateCTable(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue)
     {
         repeat = HUF_repeat_none;
     }

@@ -1059,21 +1059,21 @@ pub unsafe fn HUF_validateCTable(
     CTable: *const HUF_CElt,
     count: *const c_uint,
     maxSymbolValue: c_uint,
-) -> c_int {
+) -> bool {
     let header = HUF_readCTableHeader(CTable);
     let ct = CTable.add(1);
-    let mut bad = 0;
+    let mut bad = false;
 
     debug_assert!(header.tableLog as usize <= HUF_TABLELOG_ABSOLUTEMAX);
 
     if (header.maxSymbolValue as c_uint) < maxSymbolValue {
-        return 0;
+        return false;
     }
     for s in 0..maxSymbolValue as c_int + 1 {
-        bad |= (*count.offset(s as isize) != 0) as c_int
-            & (HUF_getNbBits(*ct.offset(s as isize)) == 0) as c_int;
+        // NOTE: use `&` rather than `&&` to keep the loop branch-free
+        bad |= (*count.offset(s as isize) != 0) & (HUF_getNbBits(*ct.offset(s as isize)) == 0);
     }
-    (bad == 0) as c_int
+    !bad
 }
 
 pub fn HUF_compressBound(size: size_t) -> size_t {
@@ -1884,7 +1884,7 @@ unsafe fn HUF_compress_internal(
     /* Check validity of previous table */
     if !repeat.is_null()
         && *repeat as c_uint == HUF_repeat_check as c_int as c_uint
-        && HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue) == 0
+        && !HUF_validateCTable(oldHufTable, ((*table).count).as_mut_ptr(), maxSymbolValue)
     {
         *repeat = HUF_repeat_none;
     }
