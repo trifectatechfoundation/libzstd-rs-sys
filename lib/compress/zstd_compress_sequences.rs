@@ -61,11 +61,11 @@ unsafe fn ZSTD_getFSEMaxSymbolValue(ctable: *const FSE_CTable) -> core::ffi::c_u
 
 /// Returns true if we should use ncount=-1 else we should
 /// use ncount=1 for low probability symbols instead.
-fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
+fn ZSTD_useLowProbCount(nbSeq: size_t) -> bool {
     // Heuristic: This should cover most blocks <= 16K and
     // start to fade out after 16K to about 32K depending on
     // compressibility.
-    (nbSeq >= 2048) as core::ffi::c_int as core::ffi::c_uint
+    nbSeq >= 2048
 }
 
 /// Returns the cost in bytes of encoding the normalized count header.

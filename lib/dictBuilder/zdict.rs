@@ -911,7 +911,7 @@ unsafe fn analyze_entropy_internal(
         offcodeCount.as_mut_ptr(),
         total as size_t,
         offcodeMax,
-        1,
+        true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
         if notificationLevel >= 1 {
@@ -928,7 +928,7 @@ unsafe fn analyze_entropy_internal(
         matchLengthCount.as_mut_ptr(),
         total as size_t,
         MaxML,
-        1,
+        true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
         if notificationLevel >= 1 {
@@ -945,7 +945,7 @@ unsafe fn analyze_entropy_internal(
         litLengthCount.as_mut_ptr(),
         total as size_t,
         MaxLL,
-        1,
+        true,
     );
     if let Some(err) = Error::from_error_code(errorCode) {
         if notificationLevel >= 1 {

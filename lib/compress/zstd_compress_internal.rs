@@ -383,7 +383,7 @@ pub(crate) unsafe fn ZSTD_window_needOverflowCorrection(
     srcEnd: *const core::ffi::c_void,
 ) -> bool {
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY != 0 {
-        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) != 0 {
+        if ZSTD_window_canOverflowCorrect(window, cycleLog, maxDist, loadedDictEnd, src) {
             return true;
         }
     }
@@ -401,7 +401,7 @@ unsafe fn ZSTD_window_canOverflowCorrect(
     maxDist: u32,
     loadedDictEnd: u32,
     src: *const core::ffi::c_void,
-) -> u32 {
+) -> bool {
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     let minIndexToOverflowCorrect = cycleSize
@@ -417,8 +417,7 @@ unsafe fn ZSTD_window_canOverflowCorrect(
     } else {
         minIndexToOverflowCorrect
     };
-    let indexLargeEnough = (curr > adjustedIndex) as core::ffi::c_int as u32;
-    let dictionaryInvalidated =
-        (curr > maxDist.wrapping_add(loadedDictEnd)) as core::ffi::c_int as u32;
-    (indexLargeEnough != 0 && dictionaryInvalidated != 0) as core::ffi::c_int as u32
+    let indexLargeEnough = curr > adjustedIndex;
+    let dictionaryInvalidated = curr > maxDist.wrapping_add(loadedDictEnd);
+    indexLargeEnough && dictionaryInvalidated
 }

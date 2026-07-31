@@ -137,15 +137,15 @@ pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
 
 #[inline]
-fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
-    (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
+fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
+    window.lowLimit < window.dictLimit
 }
 
 /// Inspects the provided matchState and figures out what dictMode should be
 /// passed to the compressor.
 #[inline]
 unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    (if ZSTD_window_hasExtDict((*ms).window) != 0 {
+    (if ZSTD_window_hasExtDict((*ms).window) {
         ZSTD_extDict as core::ffi::c_int
     } else if !((*ms).dictMatchState).is_null() {
         if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
@@ -1095,30 +1095,30 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     srcSize: size_t,
 ) -> size_t {
     // LDM parameters
-    let extDict = ZSTD_window_hasExtDict((*ldmState).window) as core::ffi::c_int;
+    let extDict = ZSTD_window_hasExtDict((*ldmState).window);
     let minMatchLength = (*params).minMatchLength;
     let entsPerBucket = (1) << (*params).bucketSizeLog;
     let hBits = ((*params).hashLog).wrapping_sub((*params).bucketSizeLog);
 
     // Prefix and extDict parameters
     let dictLimit = (*ldmState).window.dictLimit;
-    let lowestIndex = if extDict != 0 {
+    let lowestIndex = if extDict {
         (*ldmState).window.lowLimit
     } else {
         dictLimit
     };
     let base = (*ldmState).window.base;
-    let dictBase = if extDict != 0 {
+    let dictBase = if extDict {
         (*ldmState).window.dictBase
     } else {
         core::ptr::null()
     };
-    let dictStart = if extDict != 0 {
+    let dictStart = if extDict {
         dictBase.offset(lowestIndex as isize)
     } else {
         core::ptr::null()
     };
-    let dictEnd = if extDict != 0 {
+    let dictEnd = if extDict {
         dictBase.offset(dictLimit as isize)
     } else {
         core::ptr::null()
@@ -1222,7 +1222,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     let mut curBackwardMatchLength: size_t = 0;
                     let mut curTotalMatchLength: size_t = 0;
                     if !((*cur).checksum != checksum || (*cur).offset <= lowestIndex) {
-                        if extDict != 0 {
+                        if extDict {
                             let curMatchBase = if (*cur).offset < dictLimit {
                                 dictBase
                             } else {
