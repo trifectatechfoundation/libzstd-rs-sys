@@ -4098,7 +4098,7 @@ fn ZSTD_advanceHashSalt(ms: &mut ZSTD_MatchState_t) {
 unsafe fn ZSTD_reset_matchState(
     ms: &mut ZSTD_MatchState_t,
     ws: *mut ZSTD_cwksp,
-    cParams: *const ZSTD_compressionParameters,
+    cParams: &ZSTD_compressionParameters,
     useRowMatchFinder: ZSTD_ParamSwitch_e,
     crp: ZSTD_compResetPolicy_e,
     forceResetIndex: ZSTD_indexResetPolicy_e,
@@ -4106,25 +4106,25 @@ unsafe fn ZSTD_reset_matchState(
 ) -> size_t {
     // disable chain table allocation for fast or row-based strategies
     let chainSize = if ZSTD_allocateChainTable(
-        (*cParams).strategy,
+        cParams.strategy,
         useRowMatchFinder,
         ms.dedicatedDictSearch != 0
             && forWho as core::ffi::c_uint
                 == ZSTD_resetTarget_CDict as core::ffi::c_int as core::ffi::c_uint,
     ) {
-        (1 as size_t) << (*cParams).chainLog
+        (1 as size_t) << cParams.chainLog
     } else {
         0 as size_t
     };
-    let hSize = (1 as size_t) << (*cParams).hashLog;
+    let hSize = (1 as size_t) << cParams.hashLog;
     let hashLog3 = if forWho as core::ffi::c_uint
         == ZSTD_resetTarget_CCtx as core::ffi::c_int as core::ffi::c_uint
-        && (*cParams).minMatch == 3
+        && cParams.minMatch == 3
     {
-        if (17) < (*cParams).windowLog {
+        if (17) < cParams.windowLog {
             17
         } else {
-            (*cParams).windowLog
+            cParams.windowLog
         }
     } else {
         0
@@ -4163,7 +4163,7 @@ unsafe fn ZSTD_reset_matchState(
         ZSTD_cwksp_clean_tables(ws);
     }
 
-    if ZSTD_rowMatchFinderUsed((*cParams).strategy, useRowMatchFinder) {
+    if ZSTD_rowMatchFinderUsed(cParams.strategy, useRowMatchFinder) {
         // Row match finder needs an additional table of hashes ("tags")
         let tagTableSize = hSize;
         // We want to generate a new salt in case we reset a Cctx, but we always want to use
@@ -4181,13 +4181,13 @@ unsafe fn ZSTD_reset_matchState(
         }
 
         // Switch to 32-entry rows if searchLog is 5 (or more)
-        let rowLog = (*cParams).searchLog.clamp(4, 6);
-        ms.rowHashLog = ((*cParams).hashLog).wrapping_sub(rowLog);
+        let rowLog = cParams.searchLog.clamp(4, 6);
+        ms.rowHashLog = cParams.hashLog.wrapping_sub(rowLog);
     }
 
     // opt parser space
     if forWho as core::ffi::c_uint == ZSTD_resetTarget_CCtx as core::ffi::c_int as core::ffi::c_uint
-        && (*cParams).strategy as core::ffi::c_uint
+        && cParams.strategy as core::ffi::c_uint
             >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
     {
         ms.opt.litFreq = ZSTD_cwksp_reserve_aligned64(
