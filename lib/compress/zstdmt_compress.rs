@@ -282,7 +282,7 @@ unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
 
 const ZSTDMT_JOBSIZE_MIN: core::ffi::c_int = 512 * ((1) << 10);
 
-static mut g_nullBuffer: Buffer = buffer_s {
+const g_nullBuffer: Buffer = buffer_s {
     start: core::ptr::null_mut(),
     capacity: 0,
 };
