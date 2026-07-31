@@ -5109,8 +5109,8 @@ unsafe fn ZSTD_useTargetCBlockSize(cctxParams: *const ZSTD_CCtx_params) -> bool 
 /// Returns whether the block splitting param is being used.
 /// If used, compression will do best effort to split a block in order to improve compression ratio.
 /// At the time this function is called, the parameter must be finalized.
-unsafe fn ZSTD_blockSplitterEnabled(cctxParams: *mut ZSTD_CCtx_params) -> bool {
-    (*cctxParams).postBlockSplitter == ZSTD_ParamSwitch_e::ZSTD_ps_enable
+fn ZSTD_blockSplitterEnabled(cctxParams: &ZSTD_CCtx_params) -> bool {
+    cctxParams.postBlockSplitter == ZSTD_ParamSwitch_e::ZSTD_ps_enable
 }
 
 /// Returns a ZSTD_symbolEncodingTypeStats_t, or a zstd error code in the `size` field.
@@ -7676,7 +7676,7 @@ unsafe fn ZSTD_compress_frameChunk(
             if ERR_isError(err_code) {
                 return err_code;
             }
-        } else if ZSTD_blockSplitterEnabled(&mut (*cctx).appliedParams) {
+        } else if ZSTD_blockSplitterEnabled(&(*cctx).appliedParams) {
             cSize = ZSTD_compressBlock_splitBlock(
                 cctx,
                 op as *mut core::ffi::c_void,
