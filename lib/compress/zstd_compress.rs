@@ -12450,12 +12450,12 @@ fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) ->
 /// Reverses the adjustment applied to cparams when enabling dedicated dict
 /// search. This is used to recover the params set to be used in the working
 /// context. (Otherwise, those tables would also grow.)
-unsafe fn ZSTD_dedicatedDictSearch_revertCParams(cParams: *mut ZSTD_compressionParameters) {
-    if let 3..=5 = (*cParams).strategy as core::ffi::c_uint {
-        (*cParams).hashLog =
-            ((*cParams).hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
-        if (*cParams).hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
-            (*cParams).hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
+unsafe fn ZSTD_dedicatedDictSearch_revertCParams(cParams: &mut ZSTD_compressionParameters) {
+    if let 3..=5 = cParams.strategy as core::ffi::c_uint {
+        cParams.hashLog =
+            (cParams.hashLog).wrapping_sub(ZSTD_LAZY_DDSS_BUCKET_LOG as core::ffi::c_uint);
+        if cParams.hashLog < ZSTD_HASHLOG_MIN as core::ffi::c_uint {
+            cParams.hashLog = ZSTD_HASHLOG_MIN as core::ffi::c_uint;
         }
     }
 }
