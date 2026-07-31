@@ -528,12 +528,12 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     writeEntropy: core::ffi::c_int,
     entropyWritten: *mut core::ffi::c_int,
 ) -> size_t {
-    let longOffsets = ((*cctxParams).cParams.windowLog
+    let longOffsets = (*cctxParams).cParams.windowLog
         > (if MEM_32bits() {
             STREAM_ACCUMULATOR_MIN_32
         } else {
             STREAM_ACCUMULATOR_MIN_64
-        }) as u32) as core::ffi::c_int;
+        }) as u32;
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;

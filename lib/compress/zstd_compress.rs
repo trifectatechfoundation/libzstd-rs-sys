@@ -442,7 +442,7 @@ pub struct ZSTD_symbolEncodingTypeStats_t {
     pub MLtype: u32,
     pub size: size_t,
     pub lastCountSize: size_t,
-    pub longOffsets: core::ffi::c_int,
+    pub longOffsets: bool,
 }
 
 pub type S16 = i16;
@@ -5064,14 +5064,14 @@ unsafe fn ZSTD_reduceIndex(
 }
 
 /// See doc/zstd_compression_format.md for detailed format description
-pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_int {
+pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> bool {
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let llCodeTable = (*seqStorePtr).llCode;
     let ofCodeTable = (*seqStorePtr).ofCode;
     let mlCodeTable = (*seqStorePtr).mlCode;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart)
         as core::ffi::c_long as u32;
-    let mut longOffsets = 0;
+    let mut longOffsets = false;
     for u in 0..nbSeq {
         let llv = (*sequences.offset(u as isize)).litLength as u32;
         let ofCode = ZSTD_highbit32((*sequences.offset(u as isize)).offBase);
@@ -5087,7 +5087,7 @@ pub unsafe fn ZSTD_seqToCodes(seqStorePtr: *const SeqStore_t) -> core::ffi::c_in
                     STREAM_ACCUMULATOR_MIN_64
                 }) as u32
         {
-            longOffsets = 1;
+            longOffsets = true;
         }
     }
     if (*seqStorePtr).longLengthType == ZSTD_llt_literalLength {
@@ -5145,7 +5145,7 @@ unsafe fn ZSTD_buildSequencesStatistics(
         MLtype: 0,
         size: 0,
         lastCountSize: 0,
-        longOffsets: 0,
+        longOffsets: false,
     };
 
     stats.lastCountSize = 0;
@@ -5352,7 +5352,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
     let mut lastCountSize: size_t = 0;
-    let mut longOffsets = 0;
+    let mut longOffsets = false;
 
     entropyWorkspace =
         count.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize) as *mut core::ffi::c_void;
@@ -6437,7 +6437,7 @@ unsafe fn ZSTD_buildDummySequencesStatistics(
             MLtype: set_basic as core::ffi::c_int as u32,
             size: 0,
             lastCountSize: 0,
-            longOffsets: 0,
+            longOffsets: false,
         }
     };
 
@@ -6482,7 +6482,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
         MLtype: 0,
         size: 0,
         lastCountSize: 0,
-        longOffsets: 0,
+        longOffsets: false,
     };
     stats = if nbSeq != 0 {
         ZSTD_buildSequencesStatistics(
