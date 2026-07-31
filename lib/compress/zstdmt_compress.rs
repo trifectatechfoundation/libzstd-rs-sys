@@ -1609,19 +1609,19 @@ fn ZSTDMT_overlapLog(ovlog: core::ffi::c_int, strat: ZSTD_strategy) -> core::ffi
     ovlog
 }
 
-unsafe fn ZSTDMT_computeOverlapSize(params: *const ZSTD_CCtx_params) -> size_t {
-    let overlapRLog = 9 - ZSTDMT_overlapLog((*params).overlapLog, (*params).cParams.strategy);
+unsafe fn ZSTDMT_computeOverlapSize(params: &ZSTD_CCtx_params) -> size_t {
+    let overlapRLog = 9 - ZSTDMT_overlapLog(params.overlapLog, params.cParams.strategy);
     let mut ovLog = (if overlapRLog >= 8 {
         0
     } else {
-        ((*params).cParams.windowLog).wrapping_sub(overlapRLog as core::ffi::c_uint)
+        (params.cParams.windowLog).wrapping_sub(overlapRLog as core::ffi::c_uint)
     }) as core::ffi::c_int;
-    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on chainLog instead.
         // Then, ovLog becomes a fraction of the jobSize, rather than windowSize
-        ovLog = ((*params)
+        ovLog = (params
             .cParams
             .windowLog
             .min((ZSTDMT_computeTargetJobLog(params)).wrapping_sub(2)))
