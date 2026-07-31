@@ -1110,14 +1110,18 @@ pub struct HUF_CStream_t {
 ///
 /// 0 or an error code.
 unsafe fn HUF_initCStream(
-    bitC: *mut HUF_CStream_t,
+    bitC: &mut HUF_CStream_t,
     startPtr: *mut c_void,
     dstCapacity: size_t,
 ) -> size_t {
-    ptr::write_bytes(bitC as *mut u8, 0, size_of::<HUF_CStream_t>());
-    (*bitC).startPtr = startPtr as *mut u8;
-    (*bitC).ptr = (*bitC).startPtr;
-    (*bitC).endPtr = ((*bitC).startPtr)
+    ptr::write_bytes(
+        ptr::from_mut(bitC).cast::<u8>(),
+        0,
+        size_of::<HUF_CStream_t>(),
+    );
+    bitC.startPtr = startPtr as *mut u8;
+    bitC.ptr = bitC.startPtr;
+    bitC.endPtr = (bitC.startPtr)
         .add(dstCapacity)
         .offset(-(size_of::<size_t>() as c_ulong as isize));
     if dstCapacity <= size_of::<size_t>() {
