@@ -810,10 +810,10 @@ unsafe fn ZSTDMT_serialState_genSequences(
 unsafe fn ZSTDMT_serialState_applySequences(
     _serialState: *const SerialState,
     jobCCtx: *mut ZSTD_CCtx,
-    seqStore: *const RawSeqStore_t,
+    seqStore: &RawSeqStore_t,
 ) {
-    if (*seqStore).size > 0 {
-        ZSTD_referenceExternalSequences(jobCCtx, (*seqStore).seq, (*seqStore).size);
+    if seqStore.size > 0 {
+        ZSTD_referenceExternalSequences(jobCCtx, seqStore.seq, seqStore.size);
     }
 }
 
