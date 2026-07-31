@@ -621,7 +621,7 @@ unsafe fn ZSTD_ldm_gear_reset(
 ///
 /// The number of bytes processed.
 unsafe fn ZSTD_ldm_gear_feed(
-    state: *mut ldmRollingHashState_t,
+    state: &mut ldmRollingHashState_t,
     data: *const u8,
     size: size_t,
     splits: *mut size_t,
@@ -632,8 +632,8 @@ unsafe fn ZSTD_ldm_gear_feed(
     let mut hash: u64 = 0;
     let mut mask: u64 = 0;
 
-    hash = (*state).rolling;
-    mask = (*state).stopMask;
+    hash = state.rolling;
+    mask = state.stopMask;
     n = 0;
 
     loop {
@@ -702,7 +702,7 @@ unsafe fn ZSTD_ldm_gear_feed(
     loop {
         match current_block {
             12351618399163395313 => {
-                (*state).rolling = hash;
+                state.rolling = hash;
                 break;
             }
             _ => {
