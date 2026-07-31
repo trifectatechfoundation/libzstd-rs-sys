@@ -6088,9 +6088,9 @@ unsafe fn ZSTD_isRLE(src: *const u8, length: size_t) -> bool {
 /// Returns true if the given block may be RLE.
 /// This is just a heuristic based on the compressibility.
 /// It may return both false positives and false negatives.
-unsafe fn ZSTD_maybeRLE(seqStore: *const SeqStore_t) -> bool {
-    let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as size_t;
-    let nbLits = ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t;
+unsafe fn ZSTD_maybeRLE(seqStore: &SeqStore_t) -> bool {
+    let nbSeqs = (seqStore.sequences).offset_from(seqStore.sequencesStart) as size_t;
+    let nbLits = (seqStore.lit).offset_from(seqStore.litStart) as size_t;
 
     nbSeqs < 4 && nbLits < 10
 }
