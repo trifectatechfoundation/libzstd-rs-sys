@@ -12454,12 +12454,12 @@ pub const extern "C" fn ZSTD_defaultCLevel() -> core::ffi::c_int {
     ZSTD_CLEVEL_DEFAULT
 }
 
-unsafe fn ZSTD_dedicatedDictSearch_isSupported(cParams: *const ZSTD_compressionParameters) -> bool {
-    (*cParams).strategy as core::ffi::c_uint >= ZSTD_greedy as core::ffi::c_int as core::ffi::c_uint
-        && (*cParams).strategy as core::ffi::c_uint
+fn ZSTD_dedicatedDictSearch_isSupported(cParams: &ZSTD_compressionParameters) -> bool {
+    cParams.strategy as core::ffi::c_uint >= ZSTD_greedy as core::ffi::c_int as core::ffi::c_uint
+        && cParams.strategy as core::ffi::c_uint
             <= ZSTD_lazy2 as core::ffi::c_int as core::ffi::c_uint
-        && (*cParams).hashLog > (*cParams).chainLog
-        && (*cParams).chainLog <= 24
+        && cParams.hashLog > cParams.chainLog
+        && cParams.chainLog <= 24
 }
 
 /// Reverses the adjustment applied to cparams when enabling dedicated dict
