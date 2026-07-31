@@ -1960,17 +1960,16 @@ fn ZSTD_allocateChainTable(
 /// Returns ZSTD_ps_enable if compression parameters are such that we should
 /// enable long distance matching (wlog >= 27, strategy >= btopt).
 /// Returns ZSTD_ps_disable otherwise.
-unsafe fn ZSTD_resolveEnableLdm(
+fn ZSTD_resolveEnableLdm(
     mode: ZSTD_ParamSwitch_e,
-    cParams: *const ZSTD_compressionParameters,
+    cParams: &ZSTD_compressionParameters,
 ) -> ZSTD_ParamSwitch_e {
     if mode != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
         return mode;
     }
 
-    if (*cParams).strategy as core::ffi::c_uint
-        >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
-        && (*cParams).windowLog >= 27
+    if cParams.strategy as core::ffi::c_uint >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
+        && cParams.windowLog >= 27
     {
         ZSTD_ParamSwitch_e::ZSTD_ps_enable
     } else {
