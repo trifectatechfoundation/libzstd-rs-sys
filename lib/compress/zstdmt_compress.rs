@@ -284,22 +284,22 @@ unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
 /// Updates the window by appending [src, src + srcSize) to the window.
 /// If it is not contiguous, the current prefix becomes the extDict, and we
 /// forget about the extDict. Handles overlap of the prefix and extDict.
-/// Returns non-zero if the segment is contiguous.
+/// Returns `true` if the segment is contiguous.
 #[inline]
 unsafe fn ZSTD_window_update(
     window: *mut ZSTD_window_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    forceNonContiguous: core::ffi::c_int,
-) -> u32 {
+    forceNonContiguous: bool,
+) -> bool {
     let ip = src as *const u8;
-    let mut contiguous = 1;
+    let mut contiguous = true;
     if srcSize == 0 {
         return contiguous;
     }
 
     // Check if blocks follow each other
-    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous != 0 {
+    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
         // not contiguous
         let distanceFromBase = ((*window).nextSrc).offset_from((*window).base) as size_t;
         (*window).lowLimit = (*window).dictLimit;
@@ -309,7 +309,7 @@ unsafe fn ZSTD_window_update(
         if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
             (*window).lowLimit = (*window).dictLimit;
         }
-        contiguous = 0;
+        contiguous = false;
     }
     (*window).nextSrc = ip.add(srcSize);
 
@@ -741,7 +741,7 @@ unsafe fn ZSTDMT_serialState_reset(
                 == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
         {
             let dictEnd = (dict as *const u8).add(dictSize);
-            ZSTD_window_update(&mut (*serialState).ldmState.window, dict, dictSize, 0);
+            ZSTD_window_update(&mut (*serialState).ldmState.window, dict, dictSize, false);
             ZSTD_ldm_fillHashTable(
                 &mut (*serialState).ldmState,
                 dict as *const u8,
@@ -823,7 +823,12 @@ unsafe fn ZSTDMT_serialState_genSequences(
     if (*serialState).nextJobID == jobID {
         // It is now our turn, do any processing necessary
         if (*serialState).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-            ZSTD_window_update(&mut (*serialState).ldmState.window, src.start, src.size, 0);
+            ZSTD_window_update(
+                &mut (*serialState).ldmState.window,
+                src.start,
+                src.size,
+                false,
+            );
             let error = ZSTD_ldm_generateSequences(
                 &mut (*serialState).ldmState,
                 seqStore,
@@ -1169,14 +1174,9 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                                     if (*job).firstJob == 0 {
                                                         // Double check that we don't have an ext-dict, because then our
                                                         // repcode invalidation doesn't work.
-                                                        assert!(
-                                                            ZSTD_window_hasExtDict(
-                                                                (*cctx)
-                                                                    .blockState
-                                                                    .matchState
-                                                                    .window
-                                                            ) == 0
-                                                        );
+                                                        assert!(!ZSTD_window_hasExtDict(
+                                                            (*cctx).blockState.matchState.window
+                                                        ));
                                                     }
                                                     ZSTD_CCtx_trace(cctx, 0);
                                                 }

@@ -132,7 +132,7 @@ unsafe fn HUF_compressWeights(
         ((*wksp).count).as_mut_ptr(),
         wtSize,
         maxSymbolValue,
-        /* useLowProbCount */ 0,
+        /* useLowProbCount */ false,
     );
     if ERR_isError(_var_err__) {
         return _var_err__;

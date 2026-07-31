@@ -752,15 +752,15 @@ unsafe fn ZSTD_window_clear(window: *mut ZSTD_window_t) {
 }
 
 #[inline]
-pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
-    (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
+pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
+    window.lowLimit < window.dictLimit
 }
 
 /// Inspects the provided matchState and figures out what dictMode
 /// should be passed to the compressor.
 #[inline]
 unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    (if ZSTD_window_hasExtDict((*ms).window) != 0 {
+    (if ZSTD_window_hasExtDict((*ms).window) {
         ZSTD_extDict as core::ffi::c_int
     } else if !((*ms).dictMatchState).is_null() {
         if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
@@ -916,20 +916,20 @@ unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
 /// Updates the window by appending [src, src + srcSize) to the window.
 /// If it is not contiguous, the current prefix becomes the extDict, and we forget about the
 /// extDict. Handles overlap of the prefix and extDict.
-/// Returns non-zero if the segment is contiguous.
+/// Returns `true` if the segment is contiguous.
 #[inline]
 unsafe fn ZSTD_window_update(
     window: *mut ZSTD_window_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
-    forceNonContiguous: core::ffi::c_int,
-) -> u32 {
+    forceNonContiguous: bool,
+) -> bool {
     let ip = src as *const u8;
-    let mut contiguous = 1;
+    let mut contiguous = true;
     if srcSize == 0 {
         return contiguous;
     }
-    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous != 0 {
+    if src != (*window).nextSrc as *const core::ffi::c_void || forceNonContiguous {
         let distanceFromBase = ((*window).nextSrc).wrapping_offset_from((*window).base) as size_t;
         (*window).lowLimit = (*window).dictLimit;
         (*window).dictLimit = distanceFromBase as u32;
@@ -938,7 +938,7 @@ unsafe fn ZSTD_window_update(
         if ((*window).dictLimit).wrapping_sub((*window).lowLimit) < HASH_READ_SIZE as u32 {
             (*window).lowLimit = (*window).dictLimit;
         }
-        contiguous = 0;
+        contiguous = false;
     }
     (*window).nextSrc = ip.add(srcSize);
     if (ip.add(srcSize) > ((*window).dictBase).wrapping_offset((*window).lowLimit as isize))
@@ -8023,12 +8023,12 @@ unsafe extern "C" fn ZSTD_compressContinue_internal(
         return fhSize;
     }
 
-    if ZSTD_window_update(&mut ms.window, src, srcSize, ms.forceNonContiguous) == 0 {
+    if !ZSTD_window_update(&mut ms.window, src, srcSize, ms.forceNonContiguous != 0) {
         ms.forceNonContiguous = 0;
         ms.nextToUpdate = ms.window.dictLimit;
     }
     if (*cctx).appliedParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-        ZSTD_window_update(&mut (*cctx).ldmState.window, src, srcSize, 0);
+        ZSTD_window_update(&mut (*cctx).ldmState.window, src, srcSize, false);
     }
 
     if frame == 0 {
@@ -8191,11 +8191,11 @@ unsafe fn ZSTD_loadDictionaryContent(
         assert!(loadLdmDict != 0);
     }
 
-    ZSTD_window_update(&mut ms.window, src, srcSize, 0);
+    ZSTD_window_update(&mut ms.window, src, srcSize, false);
 
     if loadLdmDict != 0 {
         // Load the entire dict into LDM matchfinders.
-        ZSTD_window_update(&mut (*ls).window, src, srcSize, 0);
+        ZSTD_window_update(&mut (*ls).window, src, srcSize, false);
         (*ls).loadedDictEnd = if (*params).forceWindow != 0 {
             0
         } else {

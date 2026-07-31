@@ -565,7 +565,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     count: *const core::ffi::c_uint,
     total: size_t,
     maxSymbolValue: core::ffi::c_uint,
-    useLowProbCount: core::ffi::c_uint,
+    useLowProbCount: bool,
 ) -> size_t {
     // Sanity checks
     if tableLog == 0 {
@@ -582,7 +582,7 @@ pub(crate) unsafe fn FSE_normalizeCount(
     }
 
     static rtbTable: [u32; 8] = [0, 473195, 504333, 520860, 550000, 700000, 750000, 830000];
-    let lowProbCount = (if useLowProbCount != 0 { -(1) } else { 1 }) as core::ffi::c_short;
+    let lowProbCount = (if useLowProbCount { -(1) } else { 1 }) as core::ffi::c_short;
     let scale = (62 as core::ffi::c_uint).wrapping_sub(tableLog) as u64;
     let step = (1 << 62) / total as u32 as u64;
     let vStep = 1u64.wrapping_shl(scale.wrapping_sub(20) as u32);
