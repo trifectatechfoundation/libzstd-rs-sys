@@ -3613,30 +3613,30 @@ pub extern "C" fn ZSTD_adjustCParams(
     )
 }
 
-unsafe fn ZSTD_overrideCParams(
-    cParams: *mut ZSTD_compressionParameters,
-    overrides: *const ZSTD_compressionParameters,
+fn ZSTD_overrideCParams(
+    cParams: &mut ZSTD_compressionParameters,
+    overrides: &ZSTD_compressionParameters,
 ) {
-    if (*overrides).windowLog != 0 {
-        (*cParams).windowLog = (*overrides).windowLog;
+    if overrides.windowLog != 0 {
+        cParams.windowLog = overrides.windowLog;
     }
-    if (*overrides).hashLog != 0 {
-        (*cParams).hashLog = (*overrides).hashLog;
+    if overrides.hashLog != 0 {
+        cParams.hashLog = overrides.hashLog;
     }
-    if (*overrides).chainLog != 0 {
-        (*cParams).chainLog = (*overrides).chainLog;
+    if overrides.chainLog != 0 {
+        cParams.chainLog = overrides.chainLog;
     }
-    if (*overrides).searchLog != 0 {
-        (*cParams).searchLog = (*overrides).searchLog;
+    if overrides.searchLog != 0 {
+        cParams.searchLog = overrides.searchLog;
     }
-    if (*overrides).minMatch != 0 {
-        (*cParams).minMatch = (*overrides).minMatch;
+    if overrides.minMatch != 0 {
+        cParams.minMatch = overrides.minMatch;
     }
-    if (*overrides).targetLength != 0 {
-        (*cParams).targetLength = (*overrides).targetLength;
+    if overrides.targetLength != 0 {
+        cParams.targetLength = overrides.targetLength;
     }
-    if (*overrides).strategy as u64 != 0 {
-        (*cParams).strategy = (*overrides).strategy;
+    if overrides.strategy as u64 != 0 {
+        cParams.strategy = overrides.strategy;
     }
 }
 
