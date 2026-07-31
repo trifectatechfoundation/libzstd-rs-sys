@@ -5872,7 +5872,7 @@ unsafe fn ZSTD_buildSeqStore(
 }
 
 unsafe fn ZSTD_copyBlockSequences(
-    seqCollector: *mut SeqCollector,
+    seqCollector: &mut SeqCollector,
     seqStore: *const SeqStore_t,
     prevRepcodes: *const u32,
 ) -> size_t {
@@ -5880,16 +5880,16 @@ unsafe fn ZSTD_copyBlockSequences(
     let nbInSequences = ((*seqStore).sequences).offset_from_unsigned(inSeqs);
     let nbInLiterals = ((*seqStore).lit).offset_from((*seqStore).litStart) as size_t;
 
-    let outSeqs = if (*seqCollector).seqIndex == 0 {
-        (*seqCollector).seqStart
+    let outSeqs = if seqCollector.seqIndex == 0 {
+        seqCollector.seqStart
     } else {
-        ((*seqCollector).seqStart).add((*seqCollector).seqIndex)
+        (seqCollector.seqStart).add(seqCollector.seqIndex)
     };
     let nbOutSequences = nbInSequences.wrapping_add(1);
     let mut nbOutLiterals = 0 as size_t;
     let mut repcodes = repcodes_s { rep: [0; 3] };
 
-    if nbOutSequences > ((*seqCollector).maxSequences).wrapping_sub((*seqCollector).seqIndex) {
+    if nbOutSequences > (seqCollector.maxSequences).wrapping_sub(seqCollector.seqIndex) {
         return Error::dstSize_tooSmall.to_error_code();
     }
 
@@ -5953,7 +5953,7 @@ unsafe fn ZSTD_copyBlockSequences(
     (*outSeqs.add(nbInSequences)).matchLength = 0;
     (*outSeqs.add(nbInSequences)).offset = 0;
 
-    (*seqCollector).seqIndex = ((*seqCollector).seqIndex).wrapping_add(nbOutSequences);
+    seqCollector.seqIndex = (seqCollector.seqIndex).wrapping_add(nbOutSequences);
 
     0
 }
