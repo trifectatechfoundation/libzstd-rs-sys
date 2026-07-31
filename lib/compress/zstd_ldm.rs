@@ -18,11 +18,13 @@ pub struct optState_t {
     pub symbolCosts: *const ZSTD_entropyCTables_t,
     pub literalCompressionMode: ZSTD_ParamSwitch_e,
 }
+
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
     pub fse: ZSTD_fseCTables_t,
 }
+
 #[repr(C)]
 pub struct ZSTD_fseCTables_t {
     pub offcodeCTable: [FSE_CTable; 193],
@@ -32,16 +34,19 @@ pub struct ZSTD_fseCTables_t {
     pub matchlength_repeatMode: FSE_repeat,
     pub litlength_repeatMode: FSE_repeat,
 }
+
 #[repr(C)]
 pub struct ZSTD_hufCTables_t {
     pub CTable: [HUF_CElt; 257],
     pub repeatMode: HUF_repeat,
 }
+
 #[repr(C)]
 pub struct ZSTD_match_t {
     pub off: u32,
     pub len: u32,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmState_t {
@@ -52,6 +57,7 @@ pub struct ldmState_t {
     pub splitIndices: [size_t; 64],
     pub matchCandidates: [ldmMatchCandidate_t; 64],
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmMatchCandidate_t {
@@ -60,12 +66,14 @@ pub struct ldmMatchCandidate_t {
     pub checksum: u32,
     pub bucket: *mut ldmEntry_t,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmEntry_t {
     pub offset: u32,
     pub checksum: u32,
 }
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ldmParams_t {
@@ -76,6 +84,7 @@ pub struct ldmParams_t {
     pub hashRateLog: u32,
     pub windowLog: u32,
 }
+
 pub type ZSTD_dictTableLoadMethod_e = core::ffi::c_uint;
 pub const ZSTD_dtlm_full: ZSTD_dictTableLoadMethod_e = 1;
 pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
@@ -87,6 +96,7 @@ pub const ZSTD_dedicatedDictSearch: ZSTD_dictMode_e = 3;
 pub const ZSTD_dictMatchState: ZSTD_dictMode_e = 2;
 pub const ZSTD_extDict: ZSTD_dictMode_e = 1;
 pub const ZSTD_noDict: ZSTD_dictMode_e = 0;
+
 pub type ZSTD_BlockCompressor_f = Option<
     unsafe fn(
         &mut ZSTD_MatchState_t,
@@ -96,6 +106,7 @@ pub type ZSTD_BlockCompressor_f = Option<
         size_t,
     ) -> size_t,
 >;
+
 #[repr(C)]
 pub struct ldmRollingHashState_t {
     pub rolling: u64,
@@ -120,6 +131,7 @@ use crate::lib::compress::zstd_compress_internal::{
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
 use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_btopt, ZSTD_btultra, ZSTD_compressionParameters};
+
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
@@ -128,6 +140,9 @@ pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
 fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> u32 {
     (window.lowLimit < window.dictLimit) as core::ffi::c_int as u32
 }
+
+/// Inspects the provided matchState and figures out what dictMode should be
+/// passed to the compressor.
 #[inline]
 unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
     (if ZSTD_window_hasExtDict((*ms).window) != 0 {
@@ -142,6 +157,15 @@ unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMod
         ZSTD_noDict as core::ffi::c_int
     }) as ZSTD_dictMode_e
 }
+
+/// Reduces the indices to protect from index overflow.
+///
+/// The least significant cycleLog bits of the indices must remain the same,
+/// which may be 0. Every index up to maxDist in the past must be valid.
+///
+/// # Returns
+///
+/// The correction made to the indices, which must be applied to every stored index.
 #[inline]
 unsafe fn ZSTD_window_correctOverflow(
     window: *mut ZSTD_window_t,
@@ -153,6 +177,7 @@ unsafe fn ZSTD_window_correctOverflow(
     let cycleMask = cycleSize.wrapping_sub(1);
     let curr = (src as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
     let currentCycle = curr & cycleMask;
+    // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
         if cycleSize > 2 {
             cycleSize
@@ -170,10 +195,12 @@ unsafe fn ZSTD_window_correctOverflow(
             cycleSize
         });
     let correction = curr.wrapping_sub(newCurrent);
+
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
         // Loose bound, should be around 1<<29 (see above)
         assert!(correction > 1 << 28);
     }
+
     (*window).base = ((*window).base).offset(correction as isize);
     (*window).dictBase = ((*window).dictBase).offset(correction as isize);
     if (*window).lowLimit < correction.wrapping_add(ZSTD_WINDOW_START_INDEX as u32) {
@@ -186,9 +213,32 @@ unsafe fn ZSTD_window_correctOverflow(
     } else {
         (*window).dictLimit = ((*window).dictLimit).wrapping_sub(correction);
     }
+
     (*window).nbOverflowCorrections = ((*window).nbOverflowCorrections).wrapping_add(1);
+
     correction
 }
+
+/// Updates lowLimit so that:
+///    (srcEnd - base) - lowLimit == maxDist + loadedDictEnd
+///
+/// It ensures index is valid as long as index >= lowLimit.
+/// This must be called before a block compression call.
+///
+/// loadedDictEnd is only defined if a dictionary is in use for current compression.
+/// As the name implies, loadedDictEnd represents the index at end of dictionary.
+/// The value lies within context's referential, it can be directly compared to blockEndIdx.
+///
+/// If loadedDictEndPtr is NULL, no dictionary is in use, and we use loadedDictEnd == 0.
+/// If loadedDictEndPtr is not NULL, we set it to zero after updating lowLimit.
+/// This is because dictionaries are allowed to be referenced fully
+/// as long as the last byte of the dictionary is in the window.
+/// Once input has progressed beyond window size, dictionary cannot be referenced anymore.
+///
+/// In normal dict mode, the dictionary lies between lowLimit and dictLimit.
+/// In dictMatchState mode, lowLimit and dictLimit are the same,
+/// and the dictionary is below them.
+/// forceWindow and dictMatchState are therefore incompatible.
 #[inline]
 unsafe fn ZSTD_window_enforceMaxDist(
     window: *mut ZSTD_window_t,
@@ -204,6 +254,19 @@ unsafe fn ZSTD_window_enforceMaxDist(
     } else {
         0
     };
+
+    // - When there is no dictionary: loadedDictEnd == 0.
+    //   In which case, the test (blockEndIdx > maxDist) is merely to avoid
+    //   overflowing next operation `newLowLimit = blockEndIdx - maxDist`.
+    // - When there is a standard dictionary:
+    //   Index referential is copied from the dictionary,
+    //   which means it starts from 0.
+    //   In which case, loadedDictEnd == dictSize,
+    //   and it makes sense to compare `blockEndIdx > maxDist + dictSize`
+    //   since `blockEndIdx` also starts from zero.
+    // - When there is an attached dictionary:
+    //   loadedDictEnd is expressed within the referential of the context,
+    //   so it can be directly compared against blockEndIdx.
     if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
         let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
         if (*window).lowLimit < newLowLimit {
@@ -212,6 +275,7 @@ unsafe fn ZSTD_window_enforceMaxDist(
         if (*window).dictLimit < (*window).lowLimit {
             (*window).dictLimit = (*window).lowLimit;
         }
+        // On reaching window size, dictionaries are invalidated
         if !loadedDictEndPtr.is_null() {
             *loadedDictEndPtr = 0;
         }
@@ -220,6 +284,17 @@ unsafe fn ZSTD_window_enforceMaxDist(
         }
     }
 }
+
+/// Use this to determine how much space in the workspace we will consume to
+/// allocate this object. (Normally it should be exactly the size of the object,
+/// but under special conditions, like ASAN, where we pad each object, it might
+/// be larger.)
+///
+/// Since tables aren't currently redzoned, you don't need to call through this
+/// to figure out how much space you need for the matchState tables. Everything
+/// else is though.
+///
+/// Do not use for sizing aligned buffers. Instead, use ZSTD_cwksp_aligned64_alloc_size().
 #[inline]
 fn ZSTD_cwksp_alloc_size(size: size_t) -> size_t {
     if size == 0 {
@@ -486,7 +561,11 @@ static ZSTD_ldm_gearTab: [u64; 256] = [
     0xcf751f27ecdab2b,
     0x2b4da14f2613d8f4,
 ];
+
 pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
+
+/// Initializes the rolling hash state such that it will honor the
+/// settings in params.
 unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const ldmParams_t) {
     let maxBitsInMask = if (*params).minMatchLength < 64 {
         (*params).minMatchLength
@@ -494,14 +573,33 @@ unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const l
         64
     };
     let hashRateLog = (*params).hashRateLog;
+
     (*state).rolling = !0u32 as u64;
+
+    // The choice of the splitting criterion is subject to two conditions:
+    //   1. it has to trigger on average every 2^(hashRateLog) bytes;
+    //   2. ideally, it has to depend on a window of minMatchLength bytes.
+    //
+    // In the gear hash algorithm, bit n depends on the last n bytes;
+    // so in order to obtain a good quality splitting criterion it is
+    // preferable to use bits with high weight.
+    //
+    // To match condition 1 we use a mask with hashRateLog bits set
+    // and, because of the previous remark, we make sure these bits
+    // have the highest possible weight while still respecting
+    // condition 2.
     if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
         (*state).stopMask =
             (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
     } else {
+        // In this degenerate case we simply honor the hash rate.
         (*state).stopMask = (1u64 << hashRateLog).wrapping_sub(1);
     }
 }
+
+/// Feeds [data, data + minMatchLength) into the hash without registering any
+/// splits. This effectively resets the hash state. This is used when skipping
+/// over data, either at the beginning of a block, or skipping sections.
 unsafe fn ZSTD_ldm_gear_reset(
     state: *mut ldmRollingHashState_t,
     data: *const u8,
@@ -509,6 +607,7 @@ unsafe fn ZSTD_ldm_gear_reset(
 ) {
     let mut hash = (*state).rolling;
     let mut n = 0 as size_t;
+
     while n.wrapping_add(3) < minMatchLength {
         hash = (hash << 1).wrapping_add(
             *ZSTD_ldm_gearTab
@@ -543,6 +642,17 @@ unsafe fn ZSTD_ldm_gear_reset(
         );
     }
 }
+
+/// Registers in the splits array all the split points found in the first
+/// size bytes following the data pointer. This function terminates when
+/// either all the data has been processed or LDM_BATCH_SIZE splits are
+/// present in the splits array.
+///
+/// Precondition: The splits array must not be full.
+///
+/// # Returns
+///
+/// The number of bytes processed.
 unsafe fn ZSTD_ldm_gear_feed(
     state: *mut ldmRollingHashState_t,
     data: *const u8,
@@ -554,9 +664,11 @@ unsafe fn ZSTD_ldm_gear_feed(
     let mut n: size_t = 0;
     let mut hash: u64 = 0;
     let mut mask: u64 = 0;
+
     hash = (*state).rolling;
     mask = (*state).stopMask;
     n = 0;
+
     loop {
         if n.wrapping_add(3) >= size {
             current_block = 5689316957504528238;
@@ -649,19 +761,24 @@ unsafe fn ZSTD_ldm_gear_feed(
             }
         }
     }
+
     n
 }
+
 pub unsafe fn ZSTD_ldm_adjustParameters(
     params: *mut ldmParams_t,
     cParams: *const ZSTD_compressionParameters,
 ) {
     (*params).windowLog = (*cParams).windowLog;
+
     if (*params).hashRateLog == 0 {
         if (*params).hashLog > 0 {
+            // if params->hashLog is set, derive hashRateLog from it
             if (*params).windowLog > (*params).hashLog {
                 (*params).hashRateLog = ((*params).windowLog).wrapping_sub((*params).hashLog);
             }
         } else {
+            // mapping from [fast, rate7] to [btultra2, rate4]
             (*params).hashRateLog = (7 as core::ffi::c_uint)
                 .wrapping_sub(((*cParams).strategy as core::ffi::c_uint).wrapping_div(3));
         }
@@ -764,6 +881,7 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         (*params).hashLog
     };
 }
+
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as size_t) << params.hashLog;
     let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
@@ -781,6 +899,7 @@ pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
         0
     }
 }
+
 pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t {
     if params.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         maxChunkSize / params.minMatchLength as size_t
@@ -788,6 +907,8 @@ pub fn ZSTD_ldm_getMaxNbSeq(params: ldmParams_t, maxChunkSize: size_t) -> size_t
         0
     }
 }
+
+/// Returns a pointer to the start of the bucket associated with hash.
 unsafe fn ZSTD_ldm_getBucket(
     ldmState: *const ldmState_t,
     hash: size_t,
@@ -795,6 +916,8 @@ unsafe fn ZSTD_ldm_getBucket(
 ) -> *mut ldmEntry_t {
     ((*ldmState).hashTable).add(hash << bucketSizeLog)
 }
+
+/// Insert the entry with corresponding hash into the hash table
 unsafe fn ZSTD_ldm_insertEntry(
     ldmState: *mut ldmState_t,
     hash: size_t,
@@ -803,10 +926,15 @@ unsafe fn ZSTD_ldm_insertEntry(
 ) {
     let pOffset = ((*ldmState).bucketOffsets).add(hash);
     let offset = *pOffset as core::ffi::c_uint;
+
     *(ZSTD_ldm_getBucket(ldmState, hash, bucketSizeLog)).offset(offset as isize) = entry;
     *pOffset = (offset.wrapping_add(1)
         & ((1 as core::ffi::c_uint) << bucketSizeLog).wrapping_sub(1)) as u8;
 }
+
+/// Returns the number of bytes that match backwards before pIn and pMatch.
+///
+/// We count only bytes where pMatch >= pBase and pIn >= pAnchor.
 unsafe fn ZSTD_ldm_countBackwardsMatch(
     mut pIn: *const u8,
     pAnchor: *const u8,
@@ -824,6 +952,11 @@ unsafe fn ZSTD_ldm_countBackwardsMatch(
     }
     matchLength
 }
+
+/// Returns the number of bytes that match backwards from pMatch,
+/// even with the backwards match spanning 2 different segments.
+///
+/// On reaching `pMatchBase`, start counting from mEnd
 unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     pIn: *const u8,
     pAnchor: *const u8,
@@ -834,8 +967,10 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
 ) -> size_t {
     let mut matchLength = ZSTD_ldm_countBackwardsMatch(pIn, pAnchor, pMatch, pMatchBase);
     if pMatch.offset(-(matchLength as isize)) != pMatchBase || pMatchBase == pExtDictStart {
+        // If backwards match is entirely in the extDict or prefix, immediately return
         return matchLength;
     }
+
     matchLength = matchLength.wrapping_add(ZSTD_ldm_countBackwardsMatch(
         pIn.offset(-(matchLength as isize)),
         pAnchor,
@@ -844,11 +979,18 @@ unsafe fn ZSTD_ldm_countBackwardsMatch_2segments(
     ));
     matchLength
 }
+
+/// Fills the relevant tables for the ZSTD_fast and ZSTD_dfast strategies.
+/// This is similar to ZSTD_loadDictionaryContent.
+///
+/// The tables for the other strategies are filled within their
+/// block compressors.
 unsafe fn ZSTD_ldm_fillFastTables(
     ms: &mut ZSTD_MatchState_t,
     end: *const core::ffi::c_void,
 ) -> size_t {
     let iend = end as *const u8;
+
     match ms.cParams.strategy as core::ffi::c_uint {
         1 => {
             ZSTD_fillHashTable(
@@ -868,8 +1010,10 @@ unsafe fn ZSTD_ldm_fillFastTables(
         }
         3 | 4 | 5 | 6 | 7 | 8 | 9 | _ => {}
     }
+
     0
 }
+
 pub unsafe fn ZSTD_ldm_fillHashTable(
     ldmState: *mut ldmState_t,
     mut ip: *const u8,
@@ -887,9 +1031,11 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     };
     let splits = ((*ldmState).splitIndices).as_mut_ptr();
     let mut numSplits: core::ffi::c_uint = 0;
+
     ZSTD_ldm_gear_init(&mut hashState, params);
     while ip < iend {
         let mut hashed: size_t = 0;
+
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
@@ -898,6 +1044,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
             splits,
             &mut numSplits,
         );
+
         for n in 0..numSplits {
             if ip.add(*splits.offset(n as isize)) >= istart.offset(minMatchLength as isize) {
                 let split = ip
@@ -913,14 +1060,20 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
                     offset: 0,
                     checksum: 0,
                 };
+
                 entry.offset = split.offset_from(base) as core::ffi::c_long as u32;
                 entry.checksum = (xxhash >> 32) as u32;
                 ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, (*params).bucketSizeLog);
             }
         }
+
         ip = ip.add(hashed);
     }
 }
+
+/// Sets cctx->nextToUpdate to a position corresponding closer to anchor
+/// if it is far way
+/// (after a long match, only update tables a limited amount).
 unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u8) {
     let curr = anchor.offset_from(ms.window.base) as core::ffi::c_long as u32;
     if curr > (ms.nextToUpdate).wrapping_add(1024) {
@@ -933,6 +1086,7 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
         );
     }
 }
+
 unsafe fn ZSTD_ldm_generateSequences_internal(
     ldmState: *mut ldmState_t,
     rawSeqStore: *mut RawSeqStore_t,
@@ -940,10 +1094,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
+    // LDM parameters
     let extDict = ZSTD_window_hasExtDict((*ldmState).window) as core::ffi::c_int;
     let minMatchLength = (*params).minMatchLength;
     let entsPerBucket = (1) << (*params).bucketSizeLog;
     let hBits = ((*params).hashLog).wrapping_sub((*params).bucketSizeLog);
+
+    // Prefix and extDict parameters
     let dictLimit = (*ldmState).window.dictLimit;
     let lowestIndex = if extDict != 0 {
         (*ldmState).window.lowLimit
@@ -967,26 +1124,39 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
         core::ptr::null()
     };
     let lowPrefixPtr = base.offset(dictLimit as isize);
+
+    // Input bounds
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
     let ilimit = iend.offset(-(HASH_READ_SIZE as isize));
+
+    // Input positions
     let mut anchor = istart;
     let mut ip = istart;
+
+    // Rolling hash state
     let mut hashState = ldmRollingHashState_t {
         rolling: 0,
         stopMask: 0,
     };
+
+    // Arrays for staged-processing
     let splits = ((*ldmState).splitIndices).as_mut_ptr();
     let candidates = ((*ldmState).matchCandidates).as_mut_ptr();
     let mut numSplits: core::ffi::c_uint = 0;
+
     if srcSize < minMatchLength as size_t {
         return iend.offset_from_unsigned(anchor);
     }
+
+    // Initialize the rolling hash state with the first minMatchLength bytes
     ZSTD_ldm_gear_init(&mut hashState, params);
     ZSTD_ldm_gear_reset(&mut hashState, ip, minMatchLength as size_t);
     ip = ip.offset(minMatchLength as isize);
+
     while ip < ilimit {
         let mut hashed: size_t = 0;
+
         numSplits = 0;
         hashed = ZSTD_ldm_gear_feed(
             &mut hashState,
@@ -995,6 +1165,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             splits,
             &mut numSplits,
         );
+
         for n in 0..numSplits {
             let split = ip
                 .add(*splits.offset(n as isize))
@@ -1012,6 +1183,7 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
             let fresh3 = &mut (*candidates.offset(n as isize)).bucket;
             *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
         }
+
         for n in 0..numSplits {
             let mut forwardMatchLength = 0;
             let mut backwardMatchLength = 0;
@@ -1028,8 +1200,13 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 offset: 0,
                 checksum: 0,
             };
+
             newEntry.offset = split_0.offset_from(base) as core::ffi::c_long as u32;
             newEntry.checksum = checksum;
+
+            // If a split point would generate a sequence overlapping with
+            // the previous one, we merely register it in the hash table and
+            // move on
             if split_0 < anchor {
                 ZSTD_ldm_insertEntry(
                     ldmState,
@@ -1108,6 +1285,9 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     }
                     cur = cur.add(1);
                 }
+
+                // No match found -- insert an entry into the hash table
+                // and process the next candidate match
                 if bestEntry.is_null() {
                     ZSTD_ldm_insertEntry(
                         ldmState,
@@ -1116,10 +1296,14 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         (*params).bucketSizeLog,
                     );
                 } else {
+                    // Match found
                     offset = (split_0.offset_from(base) as core::ffi::c_long as u32)
                         .wrapping_sub((*bestEntry).offset);
                     mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
+
                     let seq = ((*rawSeqStore).seq).add((*rawSeqStore).size);
+
+                    // Out of sequence storage
                     if (*rawSeqStore).size == (*rawSeqStore).capacity {
                         return Error::dstSize_tooSmall.to_error_code();
                     }
@@ -1130,29 +1314,46 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
                     (*rawSeqStore).size = ((*rawSeqStore).size).wrapping_add(1);
+
+                    // Insert the current entry into the hash table --- it must be
+                    // done after the previous block to avoid clobbering bestEntry
                     ZSTD_ldm_insertEntry(
                         ldmState,
                         hash_0 as size_t,
                         newEntry,
                         (*params).bucketSizeLog,
                     );
+
                     anchor = split_0.add(forwardMatchLength);
+
+                    // If we find a match that ends after the data that we've hashed
+                    // then we have a repeating, overlapping, pattern. E.g. all zeros.
+                    // If one repetition of the pattern matches our `stopMask` then all
+                    // repetitions will. We don't need to insert them all into out table,
+                    // only the first one. So skip over overlapping matches.
+                    // This is a major speed boost (20x) for compressing a single byte
+                    // repeated, when that byte ends up in the table.
                     if anchor > ip.add(hashed) {
                         ZSTD_ldm_gear_reset(
                             &mut hashState,
                             anchor.offset(-(minMatchLength as isize)),
                             minMatchLength as size_t,
                         );
+                        // Continue the outer loop at anchor (ip + hashed == anchor).
                         ip = anchor.offset(-(hashed as isize));
                         break;
                     }
                 }
             }
         }
+
         ip = ip.add(hashed);
     }
+
     iend.offset_from_unsigned(anchor)
 }
+
+/// Reduce table indexes by `reducerValue`
 unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: u32) {
     for u in 0..size {
         if (*table.offset(u as isize)).offset < reducerValue {
@@ -1163,6 +1364,7 @@ unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: 
         }
     }
 }
+
 pub unsafe fn ZSTD_ldm_generateSequences(
     ldmState: *mut ldmState_t,
     sequences: *mut RawSeqStore_t,
@@ -1178,6 +1380,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         .wrapping_add(!srcSize.is_multiple_of(kMaxChunkSize) as core::ffi::c_int as size_t);
     let mut chunk: size_t = 0;
     let mut leftoverSize = 0;
+
     chunk = 0;
     while chunk < nbChunks && (*sequences).size < (*sequences).capacity {
         let chunkStart = istart.add(chunk * kMaxChunkSize);
@@ -1190,6 +1393,8 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         let chunkSize = chunkEnd.offset_from_unsigned(chunkStart);
         let mut newLeftoverSize: size_t = 0;
         let prevSize = (*sequences).size;
+
+        // 1. Perform overflow correction if necessary.
         if ZSTD_window_needOverflowCorrection(
             (*ldmState).window,
             0,
@@ -1206,8 +1411,23 @@ pub unsafe fn ZSTD_ldm_generateSequences(
                 chunkStart as *const core::ffi::c_void,
             );
             ZSTD_ldm_reduceTable((*ldmState).hashTable, ldmHSize, correction);
+            // invalidate dictionaries on overflow correction
             (*ldmState).loadedDictEnd = 0;
         }
+
+        // 2. We enforce the maximum offset allowed.
+        //
+        // kMaxChunkSize should be small enough that we don't lose too much of
+        // the window through early invalidation.
+        // TODO: * Test the chunk size.
+        //       * Try invalidation after the sequence generation and test the
+        //         offset against maxDist directly.
+        //
+        // NOTE: Because of dictionaries + sequence splitting we MUST make sure
+        // that any offset used is valid at the END of the sequence, since it may
+        // be split into two sequences. This condition holds when using
+        // ZSTD_window_enforceMaxDist(), but if we move to checking offsets
+        // against maxDist directly, we'll have to carefully handle that case.
         ZSTD_window_enforceMaxDist(
             &mut (*ldmState).window,
             chunkEnd as *const core::ffi::c_void,
@@ -1215,6 +1435,8 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             &mut (*ldmState).loadedDictEnd,
             core::ptr::null_mut(),
         );
+
+        // 3. Generate the sequences for the chunk, and get newLeftoverSize.
         newLeftoverSize = ZSTD_ldm_generateSequences_internal(
             ldmState,
             sequences,
@@ -1225,6 +1447,11 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         if ERR_isError(newLeftoverSize) {
             return newLeftoverSize;
         }
+
+        // 4. We add the leftover literals from previous iterations to the first
+        //    newly generated sequence, or add the `newLeftoverSize` if none are
+        //    generated.
+        // Prepend the leftover literals from the last call
         if prevSize < (*sequences).size {
             let fresh5 = &mut (*((*sequences).seq).add(prevSize)).litLength;
             *fresh5 = (*fresh5).wrapping_add(leftoverSize as u32);
@@ -1232,10 +1459,13 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         } else {
             leftoverSize = leftoverSize.wrapping_add(chunkSize);
         }
+
         chunk = chunk.wrapping_add(1);
     }
+
     0
 }
+
 pub unsafe fn ZSTD_ldm_skipSequences(
     rawSeqStore: *mut RawSeqStore_t,
     mut srcSize: size_t,
@@ -1244,14 +1474,17 @@ pub unsafe fn ZSTD_ldm_skipSequences(
     while srcSize > 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
         let seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
         if srcSize <= (*seq).litLength as size_t {
+            // Skip past srcSize literals
             (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
             return;
         }
         srcSize = srcSize.wrapping_sub((*seq).litLength as size_t);
         (*seq).litLength = 0;
         if srcSize < (*seq).matchLength as size_t {
+            // Skip past the first srcSize of the match
             (*seq).matchLength = ((*seq).matchLength).wrapping_sub(srcSize as u32);
             if (*seq).matchLength < minMatch {
+                // The match is too short, omit it
                 if ((*rawSeqStore).pos).wrapping_add(1) < (*rawSeqStore).size {
                     let fresh6 = &mut (*seq.add(1)).litLength;
                     *fresh6 = (*fresh6).wrapping_add((*seq).matchLength);
@@ -1265,16 +1498,26 @@ pub unsafe fn ZSTD_ldm_skipSequences(
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
     }
 }
+
+/// If the sequence length is longer than remaining then the sequence is split
+/// between this block and the next.
+///
+/// Returns the current sequence to handle, or if the rest of the block should
+/// be literals, it returns a sequence with offset == 0.
 unsafe fn maybeSplitSequence(
     rawSeqStore: *mut RawSeqStore_t,
     remaining: u32,
     minMatch: u32,
 ) -> rawSeq {
     let mut sequence = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
+
+    // Likely: No partial sequence
     if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
         (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
         return sequence;
     }
+
+    // Cut the sequence short (offset == 0 ==> rest is literals).
     if remaining <= sequence.litLength {
         sequence.offset = 0;
     } else if remaining < (sequence.litLength).wrapping_add(sequence.matchLength) {
@@ -1283,9 +1526,12 @@ unsafe fn maybeSplitSequence(
             sequence.offset = 0;
         }
     }
+
+    // Skip past `remaining` bytes for the future sequences.
     ZSTD_ldm_skipSequences(rawSeqStore, remaining as size_t, minMatch);
     sequence
 }
+
 pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbBytes: size_t) {
     let mut currPos = ((*rawSeqStore).posInSequence).wrapping_add(nbBytes) as u32;
     while currPos != 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
@@ -1298,10 +1544,12 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
             break;
         }
     }
+
     if currPos == 0 || (*rawSeqStore).pos == (*rawSeqStore).size {
         (*rawSeqStore).posInSequence = 0;
     }
 }
+
 pub unsafe fn ZSTD_ldm_blockCompress(
     rawSeqStore: *mut RawSeqStore_t,
     ms: &mut ZSTD_MatchState_t,
@@ -1318,9 +1566,15 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         useRowMatchFinder,
         ZSTD_matchState_dictMode(ms),
     );
+
+    // Input bounds
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
+
+    // Input positions
     let mut ip = istart;
+
+    // If using opt parser, use LDMs only as candidates rather than always accepting them
     if (*cParams).strategy as core::ffi::c_uint
         >= ZSTD_btopt as core::ffi::c_int as core::ffi::c_uint
     {
@@ -1330,17 +1584,26 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore, srcSize);
         return lastLLSize;
     }
+
+    // Loop through each sequence and apply the block compressor to the literals
     while (*rawSeqStore).pos < (*rawSeqStore).size && ip < iend {
+        // maybeSplitSequence updates rawSeqStore->pos
         let sequence = maybeSplitSequence(
             rawSeqStore,
             iend.offset_from(ip) as core::ffi::c_long as u32,
             minMatch,
         );
+
+        // End signal
         if sequence.offset == 0 {
             break;
         }
+
+        // Fill tables for block compressor
         ZSTD_ldm_limitTableUpdate(ms, ip);
         ZSTD_ldm_fillFastTables(ms, ip as *const core::ffi::c_void);
+
+        // Run the block compressor
         let newLitLength = blockCompressor.unwrap_unchecked()(
             ms,
             seqStore,
@@ -1349,10 +1612,12 @@ pub unsafe fn ZSTD_ldm_blockCompress(
             sequence.litLength as size_t,
         );
         ip = ip.offset(sequence.litLength as isize);
+        // Update the repcodes
         for i in (1..ZSTD_REP_NUM).rev() {
             *rep.offset(i as isize) = *rep.offset((i - 1) as isize);
         }
         *rep = sequence.offset;
+        // Store the sequence
         ZSTD_storeSeq(
             seqStore,
             newLitLength,
@@ -1363,8 +1628,12 @@ pub unsafe fn ZSTD_ldm_blockCompress(
         );
         ip = ip.offset(sequence.matchLength as isize);
     }
+
+    // Fill the tables for the block compressor
     ZSTD_ldm_limitTableUpdate(ms, ip);
     ZSTD_ldm_fillFastTables(ms, ip as *const core::ffi::c_void);
+
+    // Compress the last literals
     blockCompressor.unwrap_unchecked()(
         ms,
         seqStore,
