@@ -2189,15 +2189,12 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_init_advanced(
 }
 
 /// Sets cctxParams' cParams and fParams from validated zstd params, but otherwise leaves them alone.
-unsafe fn ZSTD_CCtxParams_setZstdParams(
-    cctxParams: *mut ZSTD_CCtx_params,
-    params: *const ZSTD_parameters,
-) {
-    (*cctxParams).cParams = (*params).cParams;
-    (*cctxParams).fParams = (*params).fParams;
+fn ZSTD_CCtxParams_setZstdParams(cctxParams: &mut ZSTD_CCtx_params, params: &ZSTD_parameters) {
+    cctxParams.cParams = params.cParams;
+    cctxParams.fParams = params.fParams;
     // Should not matter, as all cParams are presumed properly defined.
     // But, set it for tracing anyway.
-    (*cctxParams).compressionLevel = ZSTD_NO_CLEVEL;
+    cctxParams.compressionLevel = ZSTD_NO_CLEVEL;
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_cParam_getBounds))]
