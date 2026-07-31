@@ -10137,7 +10137,7 @@ pub extern "C" fn ZSTD_CStreamOutSize() -> size_t {
 
 unsafe fn ZSTD_getCParamMode(
     cdict: *const ZSTD_CDict,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
 ) -> ZSTD_CParamMode_e {
     if !cdict.is_null() && ZSTD_shouldAttachDict(cdict, params, pledgedSrcSize) {
