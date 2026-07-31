@@ -620,7 +620,7 @@ unsafe fn ZSTDMT_releaseCCtx(pool: *mut ZSTDMT_CCtxPool, cctx: *mut ZSTD_CCtx) {
 }
 
 unsafe fn ZSTDMT_serialState_reset(
-    serialState: *mut SerialState,
+    serialState: &mut SerialState,
     seqPool: *mut ZSTDMT_seqPool,
     mut params: ZSTD_CCtx_params,
     jobSize: size_t,
@@ -638,78 +638,77 @@ unsafe fn ZSTDMT_serialState_reset(
             size_of::<ldmParams_t>(),
         );
     }
-    (*serialState).nextJobID = 0;
+    serialState.nextJobID = 0;
     if params.fParams.checksumFlag != 0 {
-        ZSTD_XXH64_reset(&mut (*serialState).xxhState, 0);
+        ZSTD_XXH64_reset(&mut serialState.xxhState, 0);
     }
     if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         let cMem = params.customMem;
         let hashLog = params.ldmParams.hashLog;
         let hashSize = ((1 as size_t) << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
         let bucketLog = (params.ldmParams.hashLog).wrapping_sub(params.ldmParams.bucketSizeLog);
-        let prevBucketLog = ((*serialState).params.ldmParams.hashLog)
-            .wrapping_sub((*serialState).params.ldmParams.bucketSizeLog);
+        let prevBucketLog = (serialState.params.ldmParams.hashLog)
+            .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
         let numBuckets = (1) << bucketLog;
         // Size the seq pool tables
         ZSTDMT_setNbSeq(seqPool, ZSTD_ldm_getMaxNbSeq(params.ldmParams, jobSize));
         // Reset the window
-        ZSTD_window_init(&mut (*serialState).ldmState.window);
+        ZSTD_window_init(&mut serialState.ldmState.window);
         // Resize tables and output space if necessary.
-        if ((*serialState).ldmState.hashTable).is_null()
-            || (*serialState).params.ldmParams.hashLog < hashLog
+        if (serialState.ldmState.hashTable).is_null()
+            || serialState.params.ldmParams.hashLog < hashLog
         {
             ZSTD_customFree(
-                (*serialState).ldmState.hashTable as *mut core::ffi::c_void,
+                serialState.ldmState.hashTable as *mut core::ffi::c_void,
                 hashSize,
                 cMem,
             );
-            (*serialState).ldmState.hashTable =
-                ZSTD_customMalloc(hashSize, cMem) as *mut ldmEntry_t;
+            serialState.ldmState.hashTable = ZSTD_customMalloc(hashSize, cMem) as *mut ldmEntry_t;
         }
-        if ((*serialState).ldmState.bucketOffsets).is_null() || prevBucketLog < bucketLog {
+        if (serialState.ldmState.bucketOffsets).is_null() || prevBucketLog < bucketLog {
             ZSTD_customFree(
-                (*serialState).ldmState.bucketOffsets as *mut core::ffi::c_void,
+                serialState.ldmState.bucketOffsets as *mut core::ffi::c_void,
                 1 << prevBucketLog,
                 cMem,
             );
-            (*serialState).ldmState.bucketOffsets = ZSTD_customMalloc(numBuckets, cMem) as *mut u8;
+            serialState.ldmState.bucketOffsets = ZSTD_customMalloc(numBuckets, cMem) as *mut u8;
         }
-        if ((*serialState).ldmState.hashTable).is_null()
-            || ((*serialState).ldmState.bucketOffsets).is_null()
+        if (serialState.ldmState.hashTable).is_null()
+            || (serialState.ldmState.bucketOffsets).is_null()
         {
             return 1;
         }
         // Zero the tables
-        ptr::write_bytes((*serialState).ldmState.hashTable as *mut u8, 0, hashSize);
-        ptr::write_bytes((*serialState).ldmState.bucketOffsets, 0, numBuckets);
+        ptr::write_bytes(serialState.ldmState.hashTable as *mut u8, 0, hashSize);
+        ptr::write_bytes(serialState.ldmState.bucketOffsets, 0, numBuckets);
 
         // Update window state and fill hash table with dict
-        (*serialState).ldmState.loadedDictEnd = 0;
+        serialState.ldmState.loadedDictEnd = 0;
         if dictSize > 0
             && dictContentType as core::ffi::c_uint
                 == ZSTD_dct_rawContent as core::ffi::c_int as core::ffi::c_uint
         {
             let dictEnd = (dict as *const u8).add(dictSize);
-            ZSTD_window_update(&mut (*serialState).ldmState.window, dict, dictSize, false);
+            ZSTD_window_update(&mut serialState.ldmState.window, dict, dictSize, false);
             ZSTD_ldm_fillHashTable(
-                &mut (*serialState).ldmState,
+                &mut serialState.ldmState,
                 dict as *const u8,
                 dictEnd,
                 &params.ldmParams,
             );
-            (*serialState).ldmState.loadedDictEnd = if params.forceWindow != 0 {
+            serialState.ldmState.loadedDictEnd = if params.forceWindow != 0 {
                 0
             } else {
-                dictEnd.offset_from((*serialState).ldmState.window.base) as core::ffi::c_long as u32
+                dictEnd.offset_from(serialState.ldmState.window.base) as core::ffi::c_long as u32
             };
         }
 
         // Initialize serialState's copy of ldmWindow.
-        (*serialState).ldmWindow = (*serialState).ldmState.window;
+        serialState.ldmWindow = serialState.ldmState.window;
     }
 
-    (*serialState).params = params;
-    (*serialState).params.jobSize = jobSize as u32 as size_t;
+    serialState.params = params;
+    serialState.params.jobSize = jobSize as u32 as size_t;
 
     0
 }
