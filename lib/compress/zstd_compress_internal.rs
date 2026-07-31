@@ -436,11 +436,7 @@ pub(crate) unsafe fn ZSTD_window_update(
         && (ip < ((*window).dictBase).wrapping_offset((*window).dictLimit as isize))
     {
         let highInputIdx = ip.add(srcSize).offset_from((*window).dictBase) as usize;
-        let lowLimitMax = if highInputIdx > (*window).dictLimit as usize {
-            (*window).dictLimit
-        } else {
-            highInputIdx as u32
-        };
+        let lowLimitMax = (highInputIdx as u32).min((*window).dictLimit);
         (*window).lowLimit = lowLimitMax;
     }
 
@@ -481,18 +477,12 @@ unsafe fn ZSTD_window_canOverflowCorrect(
     let cycleSize = (1 as core::ffi::c_uint) << cycleLog;
     let curr = (src as *const u8).offset_from(window.base) as core::ffi::c_long as u32;
     let minIndexToOverflowCorrect = cycleSize
-        .wrapping_add(if maxDist > cycleSize {
-            maxDist
-        } else {
-            cycleSize
-        })
+        .wrapping_add(maxDist.max(cycleSize))
         .wrapping_add(ZSTD_WINDOW_START_INDEX as u32);
     let adjustment = (window.nbOverflowCorrections).wrapping_add(1);
-    let adjustedIndex = if minIndexToOverflowCorrect * adjustment > minIndexToOverflowCorrect {
-        minIndexToOverflowCorrect * adjustment
-    } else {
-        minIndexToOverflowCorrect
-    };
+    let adjustedIndex = minIndexToOverflowCorrect
+        .wrapping_mul(adjustment)
+        .max(minIndexToOverflowCorrect);
     let indexLargeEnough = curr > adjustedIndex;
     let dictionaryInvalidated = curr > maxDist.wrapping_add(loadedDictEnd);
     indexLargeEnough && dictionaryInvalidated

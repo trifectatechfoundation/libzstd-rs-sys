@@ -408,11 +408,7 @@ pub(crate) unsafe fn FSE_writeNCount(
 fn FSE_minTableLog(srcSize: size_t, maxSymbolValue: core::ffi::c_uint) -> core::ffi::c_uint {
     let minBitsSrc = (ZSTD_highbit32(srcSize as u32)).wrapping_add(1);
     let minBitsSymbols = (ZSTD_highbit32(maxSymbolValue)).wrapping_add(2);
-    if minBitsSrc < minBitsSymbols {
-        minBitsSrc
-    } else {
-        minBitsSymbols
-    }
+    minBitsSrc.min(minBitsSymbols)
 }
 
 pub(crate) unsafe fn FSE_optimalTableLog_internal(

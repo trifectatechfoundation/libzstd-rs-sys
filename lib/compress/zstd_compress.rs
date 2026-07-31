@@ -768,21 +768,13 @@ unsafe fn ZSTD_window_correctOverflow(
     let curr = (src as *const u8).offset_from((*window).base) as core::ffi::c_long as u32;
     let currentCycle = curr & cycleMask;
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        if cycleSize > 2 {
-            cycleSize
-        } else {
-            2
-        }
+        cycleSize.max(2)
     } else {
         0
     };
     let newCurrent = currentCycle
         .wrapping_add(currentCycleCorrection)
-        .wrapping_add(if maxDist > cycleSize {
-            maxDist
-        } else {
-            cycleSize
-        });
+        .wrapping_add(maxDist.max(cycleSize));
     let correction = curr.wrapping_sub(newCurrent);
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
         // Loose bound, should be around 1<<29 (see above)
@@ -1780,19 +1772,10 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     // statically sized space. tmpWorkspace never moves (but prev/next block swap places)
     if !ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
-        (if ((((8) << 10) + 512) as size_t).wrapping_add(
-            size_of::<core::ffi::c_uint>()
-                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-        ) > 8208
-        {
-            ((((8) << 10) + 512) as size_t).wrapping_add(
-                size_of::<core::ffi::c_uint>()
-                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-            )
-        } else {
-            8208
-        })
-        .wrapping_add((2 as size_t).wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
+        ((((8) << 10) + 512) as size_t)
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(((35.max(52)) + 2) as size_t))
+            .max(8208)
+            .wrapping_add((2 as size_t).wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
     ) {
         return core::ptr::null_mut();
     }
@@ -1806,31 +1789,13 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     ) as *mut ZSTD_compressedBlockState_t;
     (*cctx).tmpWorkspace = ZSTD_cwksp_reserve_object(
         &mut (*cctx).workspace,
-        if ((((8) << 10) + 512) as size_t).wrapping_add(
-            size_of::<core::ffi::c_uint>()
-                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-        ) > 8208
-        {
-            ((((8) << 10) + 512) as size_t).wrapping_add(
-                size_of::<core::ffi::c_uint>()
-                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-            )
-        } else {
-            8208
-        },
+        ((((8) << 10) + 512) as size_t)
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .max(8208),
     );
-    (*cctx).tmpWkspSize = if ((((8) << 10) + 512) as size_t).wrapping_add(
-        size_of::<core::ffi::c_uint>()
-            .wrapping_mul(((if 35 > 52 as core::ffi::c_int { 35 } else { 52 }) + 2) as size_t),
-    ) > 8208 as size_t
-    {
-        ((((8) << 10) + 512) as size_t).wrapping_add(
-            size_of::<core::ffi::c_uint>()
-                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-        )
-    } else {
-        8208
-    };
+    (*cctx).tmpWkspSize = ((((8) << 10) + 512) as size_t)
+        .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+        .max(8208);
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     cctx
 }
@@ -2786,7 +2751,7 @@ pub unsafe extern "C" fn ZSTD_CCtxParams_setParameter(
         }
         130 => {
             if value != 0 {
-                value = if value > 1340 { value } else { 1340 };
+                value = value.max(1340);
                 if !ZSTD_cParam_withinBounds(ZSTD_cParameter::ZSTD_c_targetCBlockSize, value) {
                     return Error::parameter_outOfBound.to_error_code();
                 }
@@ -3622,18 +3587,7 @@ fn ZSTD_adjustCParams_internal(
     // (hashLog - rowLog + 8) <= 32
     if ZSTD_rowMatchFinderUsed(cPar.strategy, useRowMatchFinder) {
         // Switch to 32-entry rows if searchLog is 5 (or more)
-        let rowLog = if 4
-            > (if cPar.searchLog < 6 {
-                cPar.searchLog
-            } else {
-                6
-            }) {
-            4
-        } else if cPar.searchLog < 6 {
-            cPar.searchLog
-        } else {
-            6
-        };
+        let rowLog = cPar.searchLog.clamp(4, 6);
         let maxRowHashLog = (32 - ZSTD_ROW_HASH_TAG_BITS) as u32;
         let maxHashLog = maxRowHashLog.wrapping_add(rowLog);
         if cPar.hashLog > maxHashLog {
@@ -3835,23 +3789,10 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     useSequenceProducer: bool,
     maxBlockSize: size_t,
 ) -> size_t {
-    let windowSize = (if 1
-        > (if (1) << (*cParams).windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
-            (1) << (*cParams).windowLog
-        } else {
-            pledgedSrcSize as core::ffi::c_ulonglong
-        }) {
-        1
-    } else if (1) << (*cParams).windowLog < pledgedSrcSize as core::ffi::c_ulonglong {
-        (1) << (*cParams).windowLog
-    } else {
-        pledgedSrcSize as core::ffi::c_ulonglong
-    }) as size_t;
-    let blockSize = if ZSTD_resolveMaxBlockSize(maxBlockSize) < windowSize {
-        ZSTD_resolveMaxBlockSize(maxBlockSize)
-    } else {
-        windowSize
-    };
+    let windowSize = ((1 as core::ffi::c_ulonglong) << (*cParams).windowLog)
+        .min(pledgedSrcSize as core::ffi::c_ulonglong) // pledgedSrcSize can be 0, so .clamp() would panic
+        .max(1) as size_t;
+    let blockSize = ZSTD_resolveMaxBlockSize(maxBlockSize).min(windowSize);
     let maxNbSeq = ZSTD_maxNbSeq(blockSize, (*cParams).minMatch, useSequenceProducer);
     let tokenSpace = (ZSTD_cwksp_alloc_size(WILDCOPY_OVERLENGTH.wrapping_add(blockSize)))
         .wrapping_add(ZSTD_cwksp_aligned64_alloc_size(
@@ -3859,18 +3800,9 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         ))
         .wrapping_add(3 * ZSTD_cwksp_alloc_size(maxNbSeq.wrapping_mul(size_of::<u8>())));
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
-        if ((((8) << 10) + 512) as size_t).wrapping_add(
-            size_of::<core::ffi::c_uint>()
-                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-        ) > 8208
-        {
-            ((((8) << 10) + 512) as size_t).wrapping_add(
-                size_of::<core::ffi::c_uint>()
-                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-            )
-        } else {
-            8208
-        },
+        ((((8) << 10) + 512) as size_t)
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .max(8208),
     );
     let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(size_of::<ZSTD_compressedBlockState_t>());
     let matchStateSize = ZSTD_sizeof_matchState(cParams, useRowMatchFinder, 0, 1);
@@ -3950,11 +3882,7 @@ pub unsafe extern "C" fn ZSTD_estimateCCtxSize_usingCParams(
         noRowCCtxSize = ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams);
         initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
         rowCCtxSize = ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams);
-        if noRowCCtxSize > rowCCtxSize {
-            noRowCCtxSize
-        } else {
-            rowCCtxSize
-        }
+        noRowCCtxSize.max(rowCCtxSize)
     } else {
         ZSTD_estimateCCtxSize_usingCCtxParams(&initialParams)
     }
@@ -3973,11 +3901,7 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi:
         // Choose the set of cParams for a given level across all srcSizes that give the largest cctxSize
         let cParams =
             ZSTD_getCParams_internal(compressionLevel, srcSizeHint, 0, ZSTD_cpm_noAttachDict);
-        largestSize = if ZSTD_estimateCCtxSize_usingCParams(cParams) > largestSize {
-            ZSTD_estimateCCtxSize_usingCParams(cParams)
-        } else {
-            largestSize
-        };
+        largestSize = ZSTD_estimateCCtxSize_usingCParams(cParams).max(largestSize);
     }
     largestSize
 }
@@ -3985,11 +3909,8 @@ unsafe extern "C" fn ZSTD_estimateCCtxSize_internal(compressionLevel: core::ffi:
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCCtxSize))]
 pub unsafe extern "C" fn ZSTD_estimateCCtxSize(compressionLevel: core::ffi::c_int) -> size_t {
     let mut memBudget = 0;
-    let start = if compressionLevel < 1 {
-        compressionLevel
-    } else {
-        1
-    };
+    // Negative compression levels are used for fast mode, these should still do 1 iteration
+    let start = compressionLevel.min(1);
     for level in start..compressionLevel + 1 {
         // Ensure monotonically increasing memory usage as compression level increases
         let newMB = ZSTD_estimateCCtxSize_internal(level);
@@ -4009,11 +3930,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCCtxParams(
     }
     let cParams =
         ZSTD_getCParamsFromCCtxParams(params, ZSTD_CONTENTSIZE_UNKNOWN, 0, ZSTD_cpm_noAttachDict);
-    let blockSize = if ZSTD_resolveMaxBlockSize((*params).maxBlockSize) < (1) << cParams.windowLog {
-        ZSTD_resolveMaxBlockSize((*params).maxBlockSize)
-    } else {
-        (1) << cParams.windowLog
-    };
+    let blockSize = ZSTD_resolveMaxBlockSize((*params).maxBlockSize).min((1) << cParams.windowLog);
     let inBuffSize = if (*params).inBufferMode as core::ffi::c_uint
         == ZSTD_bm_buffered as core::ffi::c_int as core::ffi::c_uint
     {
@@ -4057,11 +3974,7 @@ pub unsafe extern "C" fn ZSTD_estimateCStreamSize_usingCParams(
         noRowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
         initialParams.useRowMatchFinder = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
         rowCCtxSize = ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams);
-        if noRowCCtxSize > rowCCtxSize {
-            noRowCCtxSize
-        } else {
-            rowCCtxSize
-        }
+        noRowCCtxSize.max(rowCCtxSize)
     } else {
         ZSTD_estimateCStreamSize_usingCCtxParams(&initialParams)
     }
@@ -4080,11 +3993,7 @@ unsafe fn ZSTD_estimateCStreamSize_internal(compressionLevel: core::ffi::c_int) 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_estimateCStreamSize))]
 pub unsafe extern "C" fn ZSTD_estimateCStreamSize(compressionLevel: core::ffi::c_int) -> size_t {
     let mut memBudget = 0;
-    let start = if compressionLevel < 1 {
-        compressionLevel
-    } else {
-        1
-    };
+    let start = compressionLevel.min(1);
     for level in start..compressionLevel + 1 {
         let newMB = ZSTD_estimateCStreamSize_internal(level);
         if newMB > memBudget {
@@ -4277,18 +4186,7 @@ unsafe fn ZSTD_reset_matchState(
         }
 
         // Switch to 32-entry rows if searchLog is 5 (or more)
-        let rowLog = if 4
-            > (if (*cParams).searchLog < 6 {
-                (*cParams).searchLog
-            } else {
-                6
-            }) {
-            4
-        } else if (*cParams).searchLog < 6 {
-            (*cParams).searchLog
-        } else {
-            6
-        };
+        let rowLog = (*cParams).searchLog.clamp(4, 6);
         ms.rowHashLog = ((*cParams).hashLog).wrapping_sub(rowLog);
     }
 
@@ -4391,23 +4289,10 @@ unsafe fn ZSTD_resetCCtx_internal(
         ZSTD_ldm_adjustParameters(&mut (*zc).appliedParams.ldmParams, &(*params).cParams);
     }
 
-    let windowSize = if 1
-        > (if (1 as size_t) << (*params).cParams.windowLog < pledgedSrcSize as size_t {
-            (1 as size_t) << (*params).cParams.windowLog
-        } else {
-            pledgedSrcSize as size_t
-        }) {
-        1
-    } else if (1 as size_t) << (*params).cParams.windowLog < pledgedSrcSize as size_t {
-        (1 as size_t) << (*params).cParams.windowLog
-    } else {
-        pledgedSrcSize as size_t
-    };
-    let blockSize = if (*params).maxBlockSize < windowSize {
-        (*params).maxBlockSize
-    } else {
-        windowSize
-    };
+    let windowSize = ((1 as size_t) << (*params).cParams.windowLog)
+        .min(pledgedSrcSize as size_t) // pledgedSrcSize can be 0, so .clamp() would panic
+        .max(1);
+    let blockSize = (*params).maxBlockSize.min(windowSize);
     let maxNbSeq = ZSTD_maxNbSeq(
         blockSize,
         (*params).cParams.minMatch,
@@ -4495,34 +4380,16 @@ unsafe fn ZSTD_resetCCtx_internal(
         }
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
-            if ((((8) << 10) + 512) as size_t).wrapping_add(
-                size_of::<core::ffi::c_uint>()
-                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-            ) > 8208
-            {
-                ((((8) << 10) + 512) as size_t).wrapping_add(
-                    size_of::<core::ffi::c_uint>()
-                        .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-                )
-            } else {
-                8208
-            },
+            ((((8) << 10) + 512) as size_t)
+                .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+                .max(8208),
         );
         if ((*zc).tmpWorkspace).is_null() {
             return Error::memory_allocation.to_error_code();
         }
-        (*zc).tmpWkspSize = if ((((8) << 10) + 512) as size_t).wrapping_add(
-            size_of::<core::ffi::c_uint>()
-                .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-        ) > 8208
-        {
-            ((((8) << 10) + 512) as size_t).wrapping_add(
-                size_of::<core::ffi::c_uint>()
-                    .wrapping_mul(((if 35 > 52 { 35 } else { 52 }) + 2) as size_t),
-            )
-        } else {
-            8208
-        };
+        (*zc).tmpWkspSize = ((((8) << 10) + 512) as size_t)
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .max(8208);
     }
 
     ZSTD_cwksp_clear(ws);
@@ -5354,8 +5221,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let mut lastCountSize: size_t = 0;
     let mut longOffsets = false;
 
-    entropyWorkspace =
-        count.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize) as *mut core::ffi::c_void;
+    entropyWorkspace = count.offset(((35.max(52)) + 1) as isize) as *mut core::ffi::c_void;
     entropyWkspSize = (entropyWkspSize as size_t).wrapping_sub(
         ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
             .wrapping_mul(size_of::<core::ffi::c_uint>()),
@@ -6470,7 +6336,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     let oend = ostart.add(size_of::<[u8; 133]>());
     let op = ostart;
     let countWorkspace = workspace as *mut core::ffi::c_uint;
-    let entropyWorkspace = countWorkspace.offset(((if 35 > 52 { 35 } else { 52 }) + 1) as isize);
+    let entropyWorkspace = countWorkspace.offset(((35.max(52)) + 1) as isize);
     let entropyWorkspaceSize = wkspSize.wrapping_sub(
         ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
             .wrapping_mul(size_of::<core::ffi::c_uint>()),
@@ -7551,11 +7417,7 @@ unsafe fn ZSTD_optimalBlockSize(
     // While it's possible to go lower, let's keep it simple for a first implementation.
     // Besides, benefits of splitting are reduced when blocks are already small.
     if srcSize < (128 * ((1) << 10)) as size_t || blockSizeMax < (128 * ((1) << 10)) as size_t {
-        return if srcSize < blockSizeMax {
-            srcSize
-        } else {
-            blockSizeMax
-        };
+        return srcSize.min(blockSizeMax);
     }
     // Do not split incompressible data though:
     // Require verified savings to allow pre-splitting.
@@ -8024,11 +7886,10 @@ pub unsafe extern "C" fn ZSTD_compressContinue(
 
 unsafe fn ZSTD_getBlockSize_deprecated(cctx: *const ZSTD_CCtx) -> size_t {
     let cParams = (*cctx).appliedParams.cParams;
-    if (*cctx).appliedParams.maxBlockSize < (1) << cParams.windowLog {
-        (*cctx).appliedParams.maxBlockSize
-    } else {
-        (1) << cParams.windowLog
-    }
+    (*cctx)
+        .appliedParams
+        .maxBlockSize
+        .min((1) << cParams.windowLog)
 }
 
 #[cfg_attr(feature = "export-symbols", export_name = crate::prefix!(ZSTD_getBlockSize))]
@@ -8100,11 +7961,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     {
         let shortCacheMaxDictSize = ((1 as core::ffi::c_uint) << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
             .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
-        maxDictSize = if maxDictSize < shortCacheMaxDictSize {
-            maxDictSize
-        } else {
-            shortCacheMaxDictSize
-        };
+        maxDictSize = maxDictSize.min(shortCacheMaxDictSize);
     }
 
     // If the dictionary is too large, only load the suffix of the dictionary.
@@ -8150,13 +8007,9 @@ unsafe fn ZSTD_loadDictionaryContent(
             ((*params).cParams.chainLog).wrapping_add(1)
         }) < 31
         {
-            if ((*params).cParams.hashLog).wrapping_add(3)
-                > ((*params).cParams.chainLog).wrapping_add(1)
-            {
-                ((*params).cParams.hashLog).wrapping_add(3)
-            } else {
-                ((*params).cParams.chainLog).wrapping_add(1)
-            }
+            ((*params).cParams.hashLog)
+                .wrapping_add(3)
+                .max(((*params).cParams.chainLog).wrapping_add(1))
         } else {
             31
         });
@@ -8381,7 +8234,7 @@ pub unsafe fn ZSTD_loadCEntropy(
     (*bs).entropy.fse.offcode_repeatMode = ZSTD_dictNCountRepeat(
         offcodeNCount.as_mut_ptr(),
         offcodeMaxValue,
-        if offcodeMax < 31 { offcodeMax } else { 31 },
+        offcodeMax.min(31),
     );
 
     // All repCodes must be <= dictContentSize and != 0
@@ -10153,21 +10006,13 @@ unsafe fn ZSTD_compressBegin_usingCDict_internal(
     // source size is known. Limit the increase to 19, which is the
     // window log for compression level 1 with the largest source size.
     if pledgedSrcSize != ZSTD_CONTENTSIZE_UNKNOWN {
-        let limitedSrcSize = (if pledgedSrcSize < ((1) << 19) as core::ffi::c_ulonglong {
-            pledgedSrcSize
-        } else {
-            ((1) << 19) as core::ffi::c_ulonglong
-        }) as u32;
+        let limitedSrcSize = (pledgedSrcSize.min(((1) << 19) as core::ffi::c_ulonglong)) as u32;
         let limitedSrcLog = if limitedSrcSize > 1 {
             (ZSTD_highbit32(limitedSrcSize.wrapping_sub(1))).wrapping_add(1)
         } else {
             1
         };
-        cctxParams.cParams.windowLog = if cctxParams.cParams.windowLog > limitedSrcLog {
-            cctxParams.cParams.windowLog
-        } else {
-            limitedSrcLog
-        };
+        cctxParams.cParams.windowLog = cctxParams.cParams.windowLog.max(limitedSrcLog);
     }
 
     ZSTD_compressBegin_internal(
@@ -11776,11 +11621,7 @@ unsafe fn determine_blockSize(
         == ZSTD_sf_noBlockDelimiters as core::ffi::c_int as core::ffi::c_uint
     {
         // Note: more a "target" block size
-        return if remaining < blockSize {
-            remaining
-        } else {
-            blockSize
-        };
+        return remaining.min(blockSize);
     }
 
     let explicitBlockSize = blockSize_explicitDelimiter(inSeqs, inSeqsSize, seqPos);
@@ -13772,11 +13613,7 @@ fn ZSTD_getCParams_internal(
     let mut cp = ZSTD_defaultCParameters[tableID as usize][row as usize];
     // acceleration factor
     if compressionLevel < 0 {
-        let clampedCompressionLevel = if ZSTD_minCLevel() > compressionLevel {
-            ZSTD_minCLevel()
-        } else {
-            compressionLevel
-        };
+        let clampedCompressionLevel = ZSTD_minCLevel().max(compressionLevel);
         cp.targetLength = -clampedCompressionLevel as core::ffi::c_uint;
     }
 

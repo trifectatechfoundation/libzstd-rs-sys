@@ -158,21 +158,13 @@ unsafe fn ZSTD_window_correctOverflow(
     let currentCycle = curr & cycleMask;
     // Ensure newCurrent - maxDist >= ZSTD_WINDOW_START_INDEX.
     let currentCycleCorrection = if currentCycle < ZSTD_WINDOW_START_INDEX as u32 {
-        if cycleSize > 2 {
-            cycleSize
-        } else {
-            2
-        }
+        cycleSize.max(2)
     } else {
         0
     };
     let newCurrent = currentCycle
         .wrapping_add(currentCycleCorrection)
-        .wrapping_add(if maxDist > cycleSize {
-            maxDist
-        } else {
-            cycleSize
-        });
+        .wrapping_add(maxDist.max(cycleSize));
     let correction = curr.wrapping_sub(newCurrent);
 
     if ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY == 0 {
@@ -546,11 +538,7 @@ pub const LDM_MIN_MATCH_LENGTH: core::ffi::c_int = 64;
 /// Initializes the rolling hash state such that it will honor the
 /// settings in params.
 unsafe fn ZSTD_ldm_gear_init(state: *mut ldmRollingHashState_t, params: *const ldmParams_t) {
-    let maxBitsInMask = if (*params).minMatchLength < 64 {
-        (*params).minMatchLength
-    } else {
-        64
-    };
+    let maxBitsInMask = (*params).minMatchLength.min(64);
     let hashRateLog = (*params).hashRateLog;
 
     (*state).rolling = !0u32 as u64;
@@ -763,74 +751,18 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         }
     }
     if (*params).hashLog == 0 {
-        (*params).hashLog = if 6
-            > (if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-                < (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
+        (*params).hashLog = (*params)
+            .windowLog
+            .wrapping_sub((*params).hashRateLog)
+            .clamp(
+                6,
+                (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
                     30
                 } else {
                     31
-                }) < 30
-                {
-                    if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                        30
-                    } else {
-                        31
-                    }
-                } else {
-                    30
-                }) as u32
-            {
-                ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-            } else {
-                (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                    30
-                } else {
-                    31
-                }) < 30
-                {
-                    if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                        30
-                    } else {
-                        31
-                    }
-                } else {
-                    30
-                }) as u32
-            }) {
-            6
-        } else if ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-            < (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                30
-            } else {
-                31
-            }) < 30
-            {
-                if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                    30
-                } else {
-                    31
-                }
-            } else {
-                30
-            }) as u32
-        {
-            ((*params).windowLog).wrapping_sub((*params).hashRateLog)
-        } else {
-            (if (if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                30
-            } else {
-                31
-            }) < 30
-            {
-                if size_of::<size_t>() as core::ffi::c_ulong == 4 {
-                    30
-                } else {
-                    31
-                }
-            } else {
-                30
-            }) as u32
-        };
+                })
+                .min(30),
+            );
     }
     if (*params).minMatchLength == 0 {
         (*params).minMatchLength = LDM_MIN_MATCH_LENGTH as u32;
@@ -841,33 +773,14 @@ pub unsafe fn ZSTD_ldm_adjustParameters(
         }
     }
     if (*params).bucketSizeLog == 0 {
-        (*params).bucketSizeLog = if 4
-            > (if (*cParams).strategy < 8 {
-                (*cParams).strategy
-            } else {
-                8
-            }) {
-            4
-        } else if (*cParams).strategy < 8 {
-            (*cParams).strategy
-        } else {
-            8
-        };
+        (*params).bucketSizeLog = (*cParams).strategy.clamp(4, 8);
     }
-    (*params).bucketSizeLog = if (*params).bucketSizeLog < (*params).hashLog {
-        (*params).bucketSizeLog
-    } else {
-        (*params).hashLog
-    };
+    (*params).bucketSizeLog = (*params).bucketSizeLog.min((*params).hashLog);
 }
 
 pub fn ZSTD_ldm_getTableSize(params: ldmParams_t) -> size_t {
     let ldmHSize = (1 as size_t) << params.hashLog;
-    let ldmBucketSizeLog = (if params.bucketSizeLog < params.hashLog {
-        params.bucketSizeLog
-    } else {
-        params.hashLog
-    }) as size_t;
+    let ldmBucketSizeLog = (params.bucketSizeLog.min(params.hashLog)) as size_t;
     let ldmBucketSize = (1) << (params.hashLog as size_t).wrapping_sub(ldmBucketSizeLog);
     let totalSize = (ZSTD_cwksp_alloc_size(ldmBucketSize)).wrapping_add(ZSTD_cwksp_alloc_size(
         ldmHSize.wrapping_mul(size_of::<ldmEntry_t>()),

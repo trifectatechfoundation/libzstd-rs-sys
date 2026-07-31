@@ -681,11 +681,8 @@ unsafe fn ZSTD_insertBt1(
 
     while nbCompares != 0 && matchIndex >= windowLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
-        let mut matchLength = if commonLengthSmaller < commonLengthLarger {
-            commonLengthSmaller
-        } else {
-            commonLengthLarger // guaranteed minimum nb of common bytes
-        };
+        // guaranteed minimum nb of common bytes
+        let mut matchLength = commonLengthSmaller.min(commonLengthLarger);
 
         if extDict == 0 || (matchIndex as size_t).wrapping_add(matchLength) >= dictLimit as size_t {
             match_0 = base.offset(matchIndex as isize);
@@ -755,17 +752,9 @@ unsafe fn ZSTD_insertBt1(
     let mut positions = 0;
     if bestLength > 384 {
         // speed optimization
-        positions = if (192) < bestLength.wrapping_sub(384) as u32 {
-            192
-        } else {
-            bestLength.wrapping_sub(384) as u32
-        };
+        positions = (bestLength.wrapping_sub(384) as u32).min(192);
     }
-    if positions > matchEndIdx.wrapping_sub(curr.wrapping_add(8)) {
-        positions
-    } else {
-        matchEndIdx.wrapping_sub(curr.wrapping_add(8))
-    }
+    positions.max(matchEndIdx.wrapping_sub(curr.wrapping_add(8)))
 }
 
 #[inline(always)]
@@ -814,11 +803,9 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     mls: u32,
 ) -> u32 {
     let cParams: *const ZSTD_compressionParameters = &mut ms.cParams;
-    let sufficient_len = if (*cParams).targetLength < (((1) << 12) - 1) as core::ffi::c_uint {
-        (*cParams).targetLength
-    } else {
-        (((1) << 12) - 1) as core::ffi::c_uint
-    };
+    let sufficient_len = (*cParams)
+        .targetLength
+        .min((((1) << 12) - 1) as core::ffi::c_uint);
     let base = ms.window.base;
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
     let hashLog = (*cParams).hashLog;
@@ -1072,11 +1059,8 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
     while nbCompares != 0 && matchIndex >= matchLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
         let mut match_2 = core::ptr::null::<u8>();
-        let mut matchLength = if commonLengthSmaller < commonLengthLarger {
-            commonLengthSmaller
-        } else {
-            commonLengthLarger // guaranteed minimum nb of common bytes
-        };
+        // guaranteed minimum nb of common bytes
+        let mut matchLength = commonLengthSmaller.min(commonLengthLarger);
 
         if dictMode as core::ffi::c_uint == ZSTD_noDict as core::ffi::c_int as core::ffi::c_uint
             || dictMode as core::ffi::c_uint
@@ -1173,11 +1157,7 @@ unsafe fn ZSTD_insertBtAndGetAllMatches(
         commonLengthSmaller = commonLengthLarger;
         while nbCompares != 0 && dictMatchIndex > dmsLowLimit {
             let nextPtr_0 = dmsBt.offset((2 * (dictMatchIndex & dmsBtMask)) as isize);
-            let mut matchLength_0 = if commonLengthSmaller < commonLengthLarger {
-                commonLengthSmaller
-            } else {
-                commonLengthLarger
-            }; // guaranteed minimum number of common bytes
+            let mut matchLength_0 = commonLengthSmaller.min(commonLengthLarger); // guaranteed minimum number of common bytes
             let mut match_3 = dmsBase.offset(dictMatchIndex as isize);
             matchLength_0 = matchLength_0.wrapping_add(ZSTD_count_2segments(
                 ip.add(matchLength_0),
@@ -1722,18 +1702,7 @@ unsafe fn ZSTD_selectBtGetAllMatches(
             ),
         ],
     ];
-    let mls = if 3
-        > (if (*ms).cParams.minMatch < 6 {
-            (*ms).cParams.minMatch
-        } else {
-            6
-        }) {
-        3
-    } else if (*ms).cParams.minMatch < 6 {
-        (*ms).cParams.minMatch
-    } else {
-        6
-    };
+    let mls = (*ms).cParams.minMatch.clamp(3, 6);
     *(*getAllMatchesFns
         .as_ptr()
         .offset(dictMode as core::ffi::c_int as isize))
@@ -1912,11 +1881,9 @@ unsafe fn ZSTD_compressBlock_opt_generic(
 
     let getAllMatches = ZSTD_selectBtGetAllMatches(ms, dictMode);
 
-    let sufficient_len = if (*cParams).targetLength < (((1) << 12) - 1) as core::ffi::c_uint {
-        (*cParams).targetLength
-    } else {
-        (((1) << 12) - 1) as core::ffi::c_uint
-    };
+    let sufficient_len = (*cParams)
+        .targetLength
+        .min((((1) << 12) - 1) as core::ffi::c_uint);
     let minMatch = (if (*cParams).minMatch == 3 { 3 } else { 4 }) as u32;
     let mut nextToUpdate3 = ms.nextToUpdate;
 

@@ -1055,11 +1055,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let mut mlCodePtr: *const u8 = (*seqStorePtr).mlCode;
     let mut ofCodePtr: *const u8 = (*seqStorePtr).ofCode;
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
-    let targetCBlockSize = if minTarget > (*cctxParams).targetCBlockSize {
-        minTarget
-    } else {
-        (*cctxParams).targetCBlockSize
-    };
+    let targetCBlockSize = minTarget.max((*cctxParams).targetCBlockSize);
     let mut writeLitEntropy = ((*entropyMetadata).hufMetadata.hType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
@@ -1091,11 +1087,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             (ebs.estBlockSize).wrapping_sub(ebs.estLitSize) * BYTESCALE as size_t / nbSeqs;
 
         let nbSubBlocks =
-            if (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize > 1 {
-                (ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize
-            } else {
-                1
-            };
+            ((ebs.estBlockSize).wrapping_add(targetCBlockSize / 2) / targetCBlockSize).max(1);
         let mut avgBlockBudget: size_t = 0;
         let mut blockBudgetSupp = 0;
         avgBlockBudget = ebs.estBlockSize * BYTESCALE as size_t / nbSubBlocks;

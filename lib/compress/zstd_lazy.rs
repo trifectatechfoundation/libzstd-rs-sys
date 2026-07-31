@@ -167,11 +167,7 @@ unsafe fn ZSTD_insertDUBT1(
 
     while nbCompares != 0 && matchIndex > windowLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
-        let mut matchLength = if commonLengthSmaller < commonLengthLarger {
-            commonLengthSmaller
-        } else {
-            commonLengthLarger
-        }; // guaranteed minimum number of common bytes
+        let mut matchLength = commonLengthSmaller.min(commonLengthLarger); // guaranteed minimum number of common bytes
 
         // Note: all candidates are now supposed sorted,
         // but it's still possible to have nextPtr[1] == ZSTD_DUBT_UNSORTED_MARK
@@ -294,11 +290,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
 
     while nbCompares != 0 && dictMatchIndex > dictLowLimit {
         let nextPtr = dictBt.offset((2 * (dictMatchIndex & btMask)) as isize);
-        let mut matchLength = if commonLengthSmaller < commonLengthLarger {
-            commonLengthSmaller
-        } else {
-            commonLengthLarger
-        }; // guaranteed minimum nb of common bytes
+        let mut matchLength = commonLengthSmaller.min(commonLengthLarger); // guaranteed minimum nb of common bytes
         let mut match_0 = dictBase.offset(dictMatchIndex as isize);
         matchLength = matchLength.wrapping_add(ZSTD_count_2segments(
             ip.add(matchLength),
@@ -381,7 +373,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
     } else {
         curr.wrapping_sub(btMask)
     };
-    let unsortLimit = if btLow > windowLow { btLow } else { windowLow };
+    let unsortLimit = btLow.max(windowLow);
 
     let mut nextCandidate = bt.offset((2 * (matchIndex & btMask)) as isize);
     let mut unsortedMark = bt.offset((2 * (matchIndex & btMask)) as isize).add(1);
@@ -437,11 +429,7 @@ unsafe fn ZSTD_DUBT_findBestMatch(
 
     while nbCompares != 0 && matchIndex > windowLow {
         let nextPtr = bt.offset((2 * (matchIndex & btMask)) as isize);
-        let mut matchLength = if commonLengthSmaller < commonLengthLarger {
-            commonLengthSmaller
-        } else {
-            commonLengthLarger
-        }; // guaranteed minimum nb of common bytes
+        let mut matchLength = commonLengthSmaller.min(commonLengthLarger); // guaranteed minimum nb of common bytes
         let mut match_0 = core::ptr::null::<u8>();
 
         if dictMode as core::ffi::c_uint != ZSTD_extDict as core::ffi::c_int as core::ffi::c_uint
@@ -575,11 +563,7 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
     let bucketSize = ((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
     let cacheSize = bucketSize.wrapping_sub(1);
     let chainAttempts = (((1) << ms.cParams.searchLog) as u32).wrapping_sub(cacheSize);
-    let chainLimit = if chainAttempts > 255 {
-        255
-    } else {
-        chainAttempts
-    };
+    let chainLimit = chainAttempts.min(255);
 
     // We know the hashtable is oversized by a factor of `bucketSize`.
     // We are going to temporarily pretend `bucketSize == 1`, keeping only a
@@ -726,11 +710,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let ddsSize = ddsEnd.offset_from(ddsBase) as core::ffi::c_long as u32;
     let ddsIndexDelta = dictLimit.wrapping_sub(ddsSize);
     let bucketSize = ((1) << ZSTD_LAZY_DDSS_BUCKET_LOG) as u32;
-    let bucketLimit = if nbAttempts < bucketSize.wrapping_sub(1) {
-        nbAttempts
-    } else {
-        bucketSize.wrapping_sub(1)
-    };
+    let bucketLimit = nbAttempts.min(bucketSize.wrapping_sub(1));
     let mut ddsAttempt: u32 = 0;
     let mut matchIndex: u32 = 0;
 
@@ -798,11 +778,7 @@ unsafe fn ZSTD_dedicatedDictSearch_lazy_search(
     let mut chainIndex_0 = chainPackedPointer_0 >> 8;
     let chainLength = chainPackedPointer_0 & 0xff as core::ffi::c_int as u32;
     let chainAttempts = nbAttempts.wrapping_sub(ddsAttempt);
-    let chainLimit = if chainAttempts > chainLength {
-        chainLength
-    } else {
-        chainAttempts
-    };
+    let chainLimit = chainAttempts.min(chainLength);
     let mut chainAttempt: u32 = 0;
 
     chainAttempt = 0;
@@ -1268,24 +1244,9 @@ unsafe fn ZSTD_row_update_internal(
 /// External wrapper for ZSTD_row_update_internal(). Used for filling the hashtable during dictionary
 /// processing.
 pub unsafe fn ZSTD_row_update(ms: &mut ZSTD_MatchState_t, ip: *const u8) {
-    let rowLog = if 4
-        > (if ms.cParams.searchLog < 6 {
-            ms.cParams.searchLog
-        } else {
-            6
-        }) {
-        4
-    } else if ms.cParams.searchLog < 6 {
-        ms.cParams.searchLog
-    } else {
-        6
-    };
+    let rowLog = ms.cParams.searchLog.clamp(4, 6);
     let rowMask = ((1 as core::ffi::c_uint) << rowLog).wrapping_sub(1);
-    let mls = if ms.cParams.minMatch < 6 as core::ffi::c_uint {
-        ms.cParams.minMatch
-    } else {
-        6
-    };
+    let mls = ms.cParams.minMatch.min(6);
 
     ZSTD_row_update_internal(ms, ip, mls, rowLog, rowMask, 0);
 }
@@ -1467,11 +1428,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     };
     let rowEntries = (1 as core::ffi::c_uint) << rowLog;
     let rowMask = rowEntries.wrapping_sub(1);
-    let cappedSearchLog = if (*cParams).searchLog < rowLog {
-        (*cParams).searchLog
-    } else {
-        rowLog
-    };
+    let cappedSearchLog = (*cParams).searchLog.min(rowLog);
     let groupWidth = ZSTD_row_matchMaskGroupWidth(rowEntries);
     let hashSalt = ms.hashSalt;
     let mut nbAttempts = (1 as core::ffi::c_uint) << cappedSearchLog;
@@ -2694,30 +2651,8 @@ unsafe fn ZSTD_compressBlock_lazy_generic(
     let base = ms.window.base;
     let prefixLowestIndex = ms.window.dictLimit;
     let prefixLowest = base.offset(prefixLowestIndex as isize);
-    let mls = if 4
-        > (if ms.cParams.minMatch < 6 {
-            ms.cParams.minMatch
-        } else {
-            6
-        }) {
-        4
-    } else if ms.cParams.minMatch < 6 {
-        ms.cParams.minMatch
-    } else {
-        6
-    };
-    let rowLog = if 4
-        > (if ms.cParams.searchLog < 6 {
-            ms.cParams.searchLog
-        } else {
-            6
-        }) {
-        4
-    } else if ms.cParams.searchLog < 6 {
-        ms.cParams.searchLog
-    } else {
-        6
-    };
+    let mls = ms.cParams.minMatch.clamp(4, 6);
+    let rowLog = ms.cParams.searchLog.clamp(4, 6);
 
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
@@ -3691,30 +3626,8 @@ unsafe fn ZSTD_compressBlock_lazy_extDict_generic(
     let dictEnd = dictBase.offset(dictLimit as isize);
     let dictStart = dictBase.offset(ms.window.lowLimit as isize);
     let windowLog = ms.cParams.windowLog;
-    let mls = if 4
-        > (if ms.cParams.minMatch < 6 {
-            ms.cParams.minMatch
-        } else {
-            6
-        }) {
-        4
-    } else if ms.cParams.minMatch < 6 {
-        ms.cParams.minMatch
-    } else {
-        6
-    };
-    let rowLog = if 4
-        > (if ms.cParams.searchLog < 6 {
-            ms.cParams.searchLog
-        } else {
-            6
-        }) {
-        4
-    } else if ms.cParams.searchLog < 6 {
-        ms.cParams.searchLog
-    } else {
-        6
-    };
+    let mls = ms.cParams.minMatch.clamp(4, 6);
+    let rowLog = ms.cParams.searchLog.clamp(4, 6);
 
     let mut offset_1 = *rep;
     let mut offset_2 = *rep.add(1);
