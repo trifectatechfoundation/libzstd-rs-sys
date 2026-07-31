@@ -1363,9 +1363,9 @@ unsafe fn ZSTD_cwksp_free(ws: *mut ZSTD_cwksp, customMem: ZSTD_customMem) {
 /// Moves the management of a workspace from one cwksp to another. The src cwksp is left in an
 /// invalid state (src must be re-init()'ed before it's used again).
 #[inline]
-unsafe fn ZSTD_cwksp_move(dst: *mut ZSTD_cwksp, src: *mut ZSTD_cwksp) {
+unsafe fn ZSTD_cwksp_move(dst: &mut ZSTD_cwksp, src: &mut ZSTD_cwksp) {
     *dst = *src;
-    ptr::write_bytes(src as *mut u8, 0, size_of::<ZSTD_cwksp>());
+    ptr::write_bytes(ptr::from_mut(src).cast::<u8>(), 0, size_of::<ZSTD_cwksp>());
 }
 
 #[inline]
