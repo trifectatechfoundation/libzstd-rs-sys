@@ -32,6 +32,10 @@ pub struct ZSTD_BuildCTableWksp {
     pub norm: [i16; 53],
     pub wksp: [u32; 285],
 }
+
+/// -log2(x / 256) lookup table for x in [0, 256).
+/// If x == 0: Return 0
+/// Else: Return floor(-log2(x / 256) * 256)
 static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     0, 2048, 1792, 1642, 1536, 1453, 1386, 1329, 1280, 1236, 1197, 1162, 1130, 1100, 1073, 1047,
     1024, 1001, 980, 960, 941, 923, 906, 889, 874, 859, 844, 830, 817, 804, 791, 779, 768, 756,
@@ -47,15 +51,25 @@ static kInverseProbabilityLog256: [core::ffi::c_uint; 256] = [
     78, 76, 74, 73, 71, 69, 67, 66, 64, 62, 61, 59, 57, 55, 54, 52, 50, 49, 47, 46, 44, 42, 41, 39,
     37, 36, 34, 33, 31, 30, 28, 26, 25, 23, 22, 20, 19, 17, 16, 14, 13, 11, 10, 8, 7, 5, 4, 2, 1,
 ];
+
 unsafe fn ZSTD_getFSEMaxSymbolValue(ctable: *const FSE_CTable) -> core::ffi::c_uint {
     let ptr = ctable as *const core::ffi::c_void;
     let u16ptr = ptr as *const u16;
 
     MEM_read16(u16ptr.add(1) as *const core::ffi::c_void) as u32
 }
+
+/// Returns true if we should use ncount=-1 else we should
+/// use ncount=1 for low probability symbols instead.
 fn ZSTD_useLowProbCount(nbSeq: size_t) -> core::ffi::c_uint {
+    // Heuristic: This should cover most blocks <= 16K and
+    // start to fade out after 16K to about 32K depending on
+    // compressibility.
     (nbSeq >= 2048) as core::ffi::c_int as core::ffi::c_uint
 }
+
+/// Returns the cost in bytes of encoding the normalized count header.
+/// Returns an error if any of the helper functions return an error.
 unsafe fn ZSTD_NCountCost(
     count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
@@ -84,6 +98,9 @@ unsafe fn ZSTD_NCountCost(
         tableLog,
     )
 }
+
+/// Returns the cost in bits of encoding the distribution described by count
+/// using the entropy bound.
 unsafe fn ZSTD_entropyCost(
     count: *const core::ffi::c_uint,
     max: core::ffi::c_uint,
@@ -103,6 +120,9 @@ unsafe fn ZSTD_entropyCost(
     }
     (cost >> 8) as size_t
 }
+
+/// Returns the cost in bits of encoding the distribution in count using ctable.
+/// Returns an error if ctable cannot represent all the symbols in count.
 pub unsafe fn ZSTD_fseBitCost(
     ctable: *const FSE_CTable,
     count: *const core::ffi::c_uint,
@@ -133,6 +153,10 @@ pub unsafe fn ZSTD_fseBitCost(
     }
     cost >> kAccuracyLog
 }
+
+/// Returns the cost in bits of encoding the distribution in count using the
+/// table described by norm. The max symbol support by norm is assumed >= max.
+/// norm must be valid for every symbol with non-zero probability in count.
 pub unsafe fn ZSTD_crossEntropyCost(
     norm: *const core::ffi::c_short,
     accuracyLog: core::ffi::c_uint,
@@ -155,6 +179,7 @@ pub unsafe fn ZSTD_crossEntropyCost(
     }
     cost >> 8
 }
+
 pub unsafe fn ZSTD_selectEncodingType(
     repeatMode: *mut FSE_repeat,
     count: *const core::ffi::c_uint,
@@ -171,6 +196,9 @@ pub unsafe fn ZSTD_selectEncodingType(
     if mostFrequent == nbSeq {
         *repeatMode = FSE_repeat_none;
         if isDefaultAllowed as core::ffi::c_uint != 0 && nbSeq <= 2 {
+            // Prefer set_basic over set_rle when there are 2 or fewer symbols,
+            // since RLE uses 1 byte, but set_basic uses 5-6 bits per symbol.
+            // If basic encoding isn't possible, always choose RLE.
             return set_basic;
         }
         return set_rle;
@@ -191,6 +219,11 @@ pub unsafe fn ZSTD_selectEncodingType(
             if nbSeq < dynamicFse_nbSeq_min
                 || mostFrequent < nbSeq >> defaultNormLog.wrapping_sub(1)
             {
+                // The format allows default tables to be repeated, but it isn't useful.
+                // When using simple heuristics to select encoding type, we don't want
+                // to confuse these tables with dictionaries. When running more careful
+                // analysis, we don't need to waste time checking both repeating tables
+                // and default tables.
                 *repeatMode = FSE_repeat_none;
                 return set_basic;
             }
@@ -210,6 +243,7 @@ pub unsafe fn ZSTD_selectEncodingType(
         };
         let NCountCost = ZSTD_NCountCost(count, max, nbSeq, FSELog);
         let compressedCost = (NCountCost << 3).wrapping_add(ZSTD_entropyCost(count, max, nbSeq));
+
         if isDefaultAllowed != 0 {
             assert!(ZSTD_isError(basicCost) == 0);
             assert!(!(*repeatMode == FSE_repeat_valid && ZSTD_isError(repeatCost) != 0));
@@ -226,6 +260,7 @@ pub unsafe fn ZSTD_selectEncodingType(
     *repeatMode = FSE_repeat_check;
     set_compressed
 }
+
 pub unsafe fn ZSTD_buildCTable(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -246,6 +281,7 @@ pub unsafe fn ZSTD_buildCTable(
 ) -> size_t {
     let op = dst as *mut u8;
     let oend: *const u8 = op.add(dstCapacity);
+
     match type_0 as core::ffi::c_uint {
         1 => {
             let err_code = FSE_buildCTable_rle(nextCTable, max as u8);
@@ -327,6 +363,7 @@ pub unsafe fn ZSTD_buildCTable(
         _ => Error::GENERIC.to_error_code(),
     }
 }
+
 unsafe fn ZSTD_encodeSequences_body(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -365,9 +402,12 @@ unsafe fn ZSTD_encodeSequences_body(
         symbolTT: core::ptr::null::<core::ffi::c_void>(),
         stateLog: 0,
     };
+
     if ERR_isError(BIT_initCStream(&mut blockStream, dst, dstCapacity)) {
         return Error::dstSize_tooSmall.to_error_code();
     }
+
+    // first symbols
     FSE_initCState2(
         &mut stateMatchLength,
         CTable_MatchLength,
@@ -433,6 +473,7 @@ unsafe fn ZSTD_encodeSequences_body(
         );
     }
     BIT_flushBits(&mut blockStream);
+
     let mut n: size_t = 0;
     n = nbSeq.wrapping_sub(2);
     while n < nbSeq {
@@ -513,15 +554,18 @@ unsafe fn ZSTD_encodeSequences_body(
         BIT_flushBits(&mut blockStream);
         n = n.wrapping_sub(1);
     }
+
     FSE_flushCState(&mut blockStream, &stateMatchLength);
     FSE_flushCState(&mut blockStream, &stateOffsetBits);
     FSE_flushCState(&mut blockStream, &stateLitLength);
+
     let streamSize = BIT_closeCStream(&mut blockStream);
     if streamSize == 0 {
         return Error::dstSize_tooSmall.to_error_code();
     }
     streamSize
 }
+
 unsafe fn ZSTD_encodeSequences_default(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -549,6 +593,7 @@ unsafe fn ZSTD_encodeSequences_default(
         longOffsets,
     )
 }
+
 unsafe fn ZSTD_encodeSequences_bmi2(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
@@ -576,6 +621,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
         longOffsets,
     )
 }
+
 pub unsafe fn ZSTD_encodeSequences(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,

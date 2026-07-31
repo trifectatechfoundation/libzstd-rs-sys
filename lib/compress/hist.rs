@@ -11,9 +11,11 @@ pub const HIST_WKSP_SIZE_U32: core::ffi::c_int = 1024;
 pub const HIST_WKSP_SIZE: size_t =
     (HIST_WKSP_SIZE_U32 as size_t).wrapping_mul(size_of::<core::ffi::c_uint>());
 pub const HIST_FAST_THRESHOLD: core::ffi::c_int = 1500;
+
 pub fn HIST_isError(code: size_t) -> core::ffi::c_uint {
     ERR_isError(code) as _
 }
+
 pub unsafe fn HIST_add(
     count: *mut core::ffi::c_uint,
     src: *const core::ffi::c_void,
@@ -28,6 +30,7 @@ pub unsafe fn HIST_add(
         *fresh1 = (*fresh1).wrapping_add(1);
     }
 }
+
 pub unsafe fn HIST_count_simple(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -38,6 +41,7 @@ pub unsafe fn HIST_count_simple(
     let end = ip.add(srcSize);
     let mut maxSymbolValue = *maxSymbolValuePtr;
     let mut largestCount = 0;
+
     ptr::write_bytes(
         count as *mut u8,
         0,
@@ -49,23 +53,38 @@ pub unsafe fn HIST_count_simple(
         *maxSymbolValuePtr = 0;
         return 0;
     }
+
     while ip < end {
         let fresh2 = ip;
         ip = ip.add(1);
         let fresh3 = &mut (*count.offset(*fresh2 as isize));
         *fresh3 = (*fresh3).wrapping_add(1);
     }
+
     while *count.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
     }
     *maxSymbolValuePtr = maxSymbolValue;
+
     for s in 0..maxSymbolValue + 1 {
         if *count.offset(s as isize) > largestCount {
             largestCount = *count.offset(s as isize);
         }
     }
+
     largestCount
 }
+
+/// Store histogram into 4 intermediate tables, recombined at the end.
+/// this design makes better use of OoO cpus,
+/// and is noticeably faster when some values are heavily repeated.
+/// But it needs some additional workspace for intermediate tables.
+/// `workSpace` must be a U32 table of size >= HIST_WKSP_SIZE_U32.
+///
+/// # Returns
+///
+/// largest histogram frequency, or an error code (notably when
+/// histogram's alphabet is larger than *maxSymbolValuePtr)
 unsafe fn HIST_count_parallel_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -83,6 +102,8 @@ unsafe fn HIST_count_parallel_wksp(
     let Counting2 = Counting1.add(256);
     let Counting3 = Counting2.add(256);
     let Counting4 = Counting3.add(256);
+
+    // safety checks
     if sourceSize == 0 {
         ptr::write_bytes(count as *mut u8, 0, countSize as libc::size_t);
         *maxSymbolValuePtr = 0;
@@ -95,6 +116,8 @@ unsafe fn HIST_count_parallel_wksp(
             .wrapping_mul(size_of::<core::ffi::c_uint>() as core::ffi::c_ulong)
             as libc::size_t,
     );
+
+    // by stripes of 16 bytes
     let mut cached = MEM_read32(ip as *const core::ffi::c_void);
     ip = ip.add(4);
     while ip < iend.sub(15) {
@@ -144,12 +167,15 @@ unsafe fn HIST_count_parallel_wksp(
         *fresh19 = (*fresh19).wrapping_add(1);
     }
     ip = ip.sub(4);
+
+    // finish last symbols
     while ip < iend {
         let fresh20 = ip;
         ip = ip.add(1);
         let fresh21 = &mut (*Counting1.offset(*fresh20 as isize));
         *fresh21 = (*fresh21).wrapping_add(1);
     }
+
     for s in 0u32..256 {
         let fresh22 = &mut (*Counting1.offset(s as isize));
         *fresh22 = (*fresh22).wrapping_add(
@@ -161,6 +187,7 @@ unsafe fn HIST_count_parallel_wksp(
             max = *Counting1.offset(s as isize);
         }
     }
+
     let mut maxSymbolValue = 255 as core::ffi::c_uint;
     while *Counting1.offset(maxSymbolValue as isize) == 0 {
         maxSymbolValue = maxSymbolValue.wrapping_sub(1);
@@ -170,8 +197,13 @@ unsafe fn HIST_count_parallel_wksp(
     }
     *maxSymbolValuePtr = maxSymbolValue;
     core::ptr::copy(Counting1 as *const u8, count as *mut u8, countSize as usize);
+
     max as size_t
 }
+
+/// Same as [`HIST_countFast`], but using an externally provided scratch buffer.
+/// `workSpace` is a writable buffer which must be 4-bytes aligned,
+/// `workSpaceSize` must be >= HIST_WKSP_SIZE
 pub unsafe fn HIST_countFast_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -184,6 +216,7 @@ pub unsafe fn HIST_countFast_wksp(
         return HIST_count_simple(count, maxSymbolValuePtr, source, sourceSize) as size_t;
     }
     if workSpace as size_t & 3 != 0 {
+        // must be aligned on 4-bytes boundaries
         return Error::GENERIC.to_error_code();
     }
     if workSpaceSize < HIST_WKSP_SIZE {
@@ -198,6 +231,9 @@ pub unsafe fn HIST_countFast_wksp(
         workSpace as *mut u32,
     )
 }
+
+/// Same as [`HIST_count`], but using an externally provided scratch buffer.
+/// `workSpace` size must be table of >= HIST_WKSP_SIZE_U32 unsigned
 pub unsafe fn HIST_count_wksp(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -207,6 +243,7 @@ pub unsafe fn HIST_count_wksp(
     workSpaceSize: size_t,
 ) -> size_t {
     if workSpace as size_t & 3 != 0 {
+        // must be aligned on 4-bytes boundaries
         return Error::GENERIC.to_error_code();
     }
     if workSpaceSize < HIST_WKSP_SIZE {
@@ -232,6 +269,8 @@ pub unsafe fn HIST_count_wksp(
         workSpaceSize,
     )
 }
+
+/// fast variant (unsafe : won't check if src contains values beyond count[] limit)
 pub unsafe fn HIST_countFast(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
@@ -248,6 +287,7 @@ pub unsafe fn HIST_countFast(
         size_of::<[core::ffi::c_uint; 1024]>(),
     )
 }
+
 pub unsafe fn HIST_count(
     count: *mut core::ffi::c_uint,
     maxSymbolValuePtr: *mut core::ffi::c_uint,
