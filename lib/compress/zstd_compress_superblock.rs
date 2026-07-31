@@ -930,24 +930,24 @@ unsafe fn ZSTD_estimateSubBlockSize(
     ebs
 }
 
-unsafe fn ZSTD_needSequenceEntropyTables(fseMetadata: *const ZSTD_fseCTablesMetadata_t) -> bool {
-    if (*fseMetadata).llType as core::ffi::c_uint
+fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bool {
+    if fseMetadata.llType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || (*fseMetadata).llType as core::ffi::c_uint
+        || fseMetadata.llType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
         return true;
     }
-    if (*fseMetadata).mlType as core::ffi::c_uint
+    if fseMetadata.mlType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || (*fseMetadata).mlType as core::ffi::c_uint
+        || fseMetadata.mlType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
         return true;
     }
-    if (*fseMetadata).ofType as core::ffi::c_uint
+    if fseMetadata.ofType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || (*fseMetadata).ofType as core::ffi::c_uint
+        || fseMetadata.ofType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
         return true;
