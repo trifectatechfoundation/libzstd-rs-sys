@@ -915,9 +915,9 @@ use crate::lib::common::xxhash::{
 use crate::lib::common::zstd_internal::{
     bt_compressed, bt_raw, bt_rle, repStartValue, DefaultMaxOff, LLFSELog, LL_bits, LL_defaultNorm,
     LL_defaultNormLog, LitHufLog, Litbits, MLFSELog, ML_bits, ML_defaultNorm, ML_defaultNormLog,
-    MaxLL, MaxML, MaxOff, OF_defaultNorm, OF_defaultNormLog, OffFSELog, ZSTD_cpuSupportsBmi2,
-    ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM, ZSTD_REP_NUM,
-    ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
+    MaxLL, MaxML, MaxOff, MaxSeq, OF_defaultNorm, OF_defaultNormLog, OffFSELog,
+    ZSTD_cpuSupportsBmi2, ZSTD_limitCopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_OPT_NUM,
+    ZSTD_REP_NUM, ZSTD_WORKSPACETOOLARGE_FACTOR, ZSTD_WORKSPACETOOLARGE_MAXDURATION,
 };
 use crate::lib::common::zstd_trace::{
     ZSTD_Trace, ZSTD_TraceCtx, ZSTD_trace_compress_begin, ZSTD_trace_compress_end,
@@ -1773,7 +1773,7 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     if !ZSTD_cwksp_check_available(
         &mut (*cctx).workspace,
         ((((8) << 10) + 512) as size_t)
-            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(((35.max(52)) + 2) as size_t))
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((MaxSeq + 2) as size_t))
             .max(8208)
             .wrapping_add((2 as size_t).wrapping_mul(size_of::<ZSTD_compressedBlockState_t>())),
     ) {
@@ -1790,11 +1790,11 @@ pub unsafe extern "C" fn ZSTD_initStaticCCtx(
     (*cctx).tmpWorkspace = ZSTD_cwksp_reserve_object(
         &mut (*cctx).workspace,
         ((((8) << 10) + 512) as size_t)
-            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(8208),
     );
     (*cctx).tmpWkspSize = ((((8) << 10) + 512) as size_t)
-        .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+        .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
         .max(8208);
     (*cctx).bmi2 = ZSTD_cpuSupportsBmi2() as _;
     cctx
@@ -3801,7 +3801,7 @@ unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
         .wrapping_add(3 * ZSTD_cwksp_alloc_size(maxNbSeq.wrapping_mul(size_of::<u8>())));
     let tmpWorkSpace = ZSTD_cwksp_alloc_size(
         ((((8) << 10) + 512) as size_t)
-            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(8208),
     );
     let blockStateSpace = 2 * ZSTD_cwksp_alloc_size(size_of::<ZSTD_compressedBlockState_t>());
@@ -4381,14 +4381,14 @@ unsafe fn ZSTD_resetCCtx_internal(
         (*zc).tmpWorkspace = ZSTD_cwksp_reserve_object(
             ws,
             ((((8) << 10) + 512) as size_t)
-                .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+                .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
                 .max(8208),
         );
         if ((*zc).tmpWorkspace).is_null() {
             return Error::memory_allocation.to_error_code();
         }
         (*zc).tmpWkspSize = ((((8) << 10) + 512) as size_t)
-            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul((35.max(52)) + 2))
+            .wrapping_add(size_of::<core::ffi::c_uint>().wrapping_mul(MaxSeq + 2))
             .max(8208);
     }
 
@@ -5221,11 +5221,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let mut lastCountSize: size_t = 0;
     let mut longOffsets = false;
 
-    entropyWorkspace = count.offset(((35.max(52)) + 1) as isize) as *mut core::ffi::c_void;
-    entropyWkspSize = (entropyWkspSize as size_t).wrapping_sub(
-        ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
-            .wrapping_mul(size_of::<core::ffi::c_uint>()),
-    );
+    entropyWorkspace = count.add(MaxSeq + 1) as *mut core::ffi::c_void;
+    entropyWkspSize = (entropyWkspSize as size_t)
+        .wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
 
     // Compress literals
     let numSequences =
@@ -6336,11 +6334,9 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     let oend = ostart.add(size_of::<[u8; 133]>());
     let op = ostart;
     let countWorkspace = workspace as *mut core::ffi::c_uint;
-    let entropyWorkspace = countWorkspace.offset(((35.max(52)) + 1) as isize);
-    let entropyWorkspaceSize = wkspSize.wrapping_sub(
-        ((if 35 > 52 { 35 as size_t } else { 52 }) + 1)
-            .wrapping_mul(size_of::<core::ffi::c_uint>()),
-    );
+    let entropyWorkspace = countWorkspace.add(MaxSeq + 1);
+    let entropyWorkspaceSize =
+        wkspSize.wrapping_sub((MaxSeq + 1).wrapping_mul(size_of::<core::ffi::c_uint>()));
 
     let mut stats = ZSTD_symbolEncodingTypeStats_t {
         LLtype: 0,
