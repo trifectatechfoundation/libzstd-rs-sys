@@ -732,10 +732,7 @@ unsafe fn ZSTD_ldm_gear_feed(
     n
 }
 
-pub unsafe fn ZSTD_ldm_adjustParameters(
-    params: &mut ldmParams_t,
-    cParams: &ZSTD_compressionParameters,
-) {
+pub fn ZSTD_ldm_adjustParameters(params: &mut ldmParams_t, cParams: &ZSTD_compressionParameters) {
     params.windowLog = cParams.windowLog;
 
     if params.hashRateLog == 0 {
