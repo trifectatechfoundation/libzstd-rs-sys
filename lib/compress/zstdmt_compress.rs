@@ -193,7 +193,7 @@ const ZSTD_cpm_noAttachDict: ZSTD_CParamMode_e = 0;
 const ZSTD_c_forceMaxWindow: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam3;
 const ZSTD_c_deterministicRefPrefix: ZSTD_cParameter = ZSTD_cParameter::ZSTD_c_experimentalParam15;
 
-static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
+const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,
     posInSequence: 0,

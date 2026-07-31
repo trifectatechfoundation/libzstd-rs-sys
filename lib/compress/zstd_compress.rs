@@ -604,7 +604,7 @@ pub const ZSTD_c_repcodeResolution: core::ffi::c_int = 1016;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
 
-static mut kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
+const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
     seq: core::ptr::null_mut(),
     pos: 0,
     posInSequence: 0,
