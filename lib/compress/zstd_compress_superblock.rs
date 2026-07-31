@@ -723,8 +723,8 @@ unsafe fn ZSTD_compressSubBlock(
 unsafe fn ZSTD_estimateSubBlockSize_literal(
     literals: *const u8,
     litSize: size_t,
-    huf: *const ZSTD_hufCTables_t,
-    hufMetadata: *const ZSTD_hufCTablesMetadata_t,
+    huf: &ZSTD_hufCTables_t,
+    hufMetadata: &ZSTD_hufCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
     writeEntropy: core::ffi::c_int,
@@ -733,17 +733,16 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
     let mut maxSymbolValue = 255;
     let literalSectionHeaderSize = 3; // Use hard coded size of 3 bytes
 
-    if (*hufMetadata).hType as core::ffi::c_uint
-        == set_basic as core::ffi::c_int as core::ffi::c_uint
+    if hufMetadata.hType as core::ffi::c_uint == set_basic as core::ffi::c_int as core::ffi::c_uint
     {
         return litSize;
-    } else if (*hufMetadata).hType as core::ffi::c_uint
+    } else if hufMetadata.hType as core::ffi::c_uint
         == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
         return 1;
-    } else if (*hufMetadata).hType as core::ffi::c_uint
+    } else if hufMetadata.hType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
-        || (*hufMetadata).hType as core::ffi::c_uint
+        || hufMetadata.hType as core::ffi::c_uint
             == set_repeat as core::ffi::c_int as core::ffi::c_uint
     {
         let largest = HIST_count_wksp(
@@ -758,9 +757,9 @@ unsafe fn ZSTD_estimateSubBlockSize_literal(
             return litSize;
         }
         let mut cLitSizeEstimate =
-            HUF_estimateCompressedSize(((*huf).CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize((huf.CTable).as_ptr(), countWksp, maxSymbolValue);
         if writeEntropy != 0 {
-            cLitSizeEstimate = cLitSizeEstimate.wrapping_add((*hufMetadata).hufDesSize);
+            cLitSizeEstimate = cLitSizeEstimate.wrapping_add(hufMetadata.hufDesSize);
         }
         return cLitSizeEstimate.wrapping_add(literalSectionHeaderSize);
     }
