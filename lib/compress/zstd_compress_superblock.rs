@@ -930,31 +930,29 @@ unsafe fn ZSTD_estimateSubBlockSize(
     ebs
 }
 
-unsafe fn ZSTD_needSequenceEntropyTables(
-    fseMetadata: *const ZSTD_fseCTablesMetadata_t,
-) -> core::ffi::c_int {
+unsafe fn ZSTD_needSequenceEntropyTables(fseMetadata: *const ZSTD_fseCTablesMetadata_t) -> bool {
     if (*fseMetadata).llType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
         || (*fseMetadata).llType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
-        return 1;
+        return true;
     }
     if (*fseMetadata).mlType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
         || (*fseMetadata).mlType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
-        return 1;
+        return true;
     }
     if (*fseMetadata).ofType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint
         || (*fseMetadata).ofType as core::ffi::c_uint
             == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
-        return 1;
+        return true;
     }
-    0
+    false
 }
 
 unsafe fn countLiterals(
@@ -1231,8 +1229,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
         );
     }
-    if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&(*entropyMetadata).fseMetadata) != 0
-    {
+    if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&(*entropyMetadata).fseMetadata) {
         // If we haven't written our entropy tables, then we've violated our contract and
         // must emit an uncompressed block.
         return 0;

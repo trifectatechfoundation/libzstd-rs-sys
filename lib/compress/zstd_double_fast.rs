@@ -86,10 +86,10 @@ unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: 
 /// Helper function for short cache matchfinders.
 /// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
 #[inline]
-fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> core::ffi::c_int {
+fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
     let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
     let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    (tag1 == tag2) as core::ffi::c_int
+    tag1 == tag2
 }
 
 unsafe fn ZSTD_fillDoubleHashTableForCDict(
@@ -710,7 +710,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                 }
             } else {
                 // check dictMatchState long match
-                if dictTagsMatchL != 0 {
+                if dictTagsMatchL {
                     let dictMatchIndexL = dictMatchIndexAndTagL >> ZSTD_SHORT_CACHE_TAG_BITS;
                     let mut dictMatchL = dictBase.offset(dictMatchIndexL as isize);
 
@@ -759,7 +759,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                             } else {
                                 current_block = 5372832139739605200;
                             }
-                        } else if dictTagsMatchS != 0 {
+                        } else if dictTagsMatchS {
                             // check dictMatchState short match
                             let dictMatchIndexS =
                                 dictMatchIndexAndTagS >> ZSTD_SHORT_CACHE_TAG_BITS;
@@ -826,7 +826,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_dictMatchState_generic(
                                     }
                                 } else {
                                     // check dict long +1 match
-                                    if dictTagsMatchL3 != 0 {
+                                    if dictTagsMatchL3 {
                                         let dictMatchIndexL3 =
                                             dictMatchIndexAndTagL3 >> ZSTD_SHORT_CACHE_TAG_BITS;
                                         let mut dictMatchL3 =

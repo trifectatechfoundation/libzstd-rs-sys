@@ -2174,13 +2174,13 @@ unsafe fn ZSTDMT_getInputDataInUse(mtctx: *mut ZSTDMT_CCtx) -> Range {
     kNullRange
 }
 
-/// Returns non-zero iff buffer and range overlap.
-unsafe fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> core::ffi::c_int {
+/// Returns `true` iff buffer and range overlap.
+unsafe fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> bool {
     let bufferStart = buffer.start as *const u8;
     let rangeStart = range.start as *const u8;
 
     if rangeStart.is_null() || bufferStart.is_null() {
-        return 0;
+        return false;
     }
 
     let bufferEnd = bufferStart.add(buffer.capacity);
@@ -2188,13 +2188,13 @@ unsafe fn ZSTDMT_isOverlapped(buffer: Buffer, range: Range) -> core::ffi::c_int 
 
     // Empty ranges cannot overlap
     if bufferStart == bufferEnd || rangeStart == rangeEnd {
-        return 0;
+        return false;
     }
 
-    (bufferStart < rangeEnd && rangeStart < bufferEnd) as core::ffi::c_int
+    bufferStart < rangeEnd && rangeStart < bufferEnd
 }
 
-unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> core::ffi::c_int {
+unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> bool {
     let mut extDict = Range {
         start: core::ptr::null::<core::ffi::c_void>(),
         size: 0,
@@ -2211,14 +2211,13 @@ unsafe fn ZSTDMT_doesOverlapWindow(buffer: Buffer, window: ZSTD_window_t) -> cor
     prefix.size =
         (window.nextSrc).offset_from((window.base).offset(window.dictLimit as isize)) as size_t;
 
-    (ZSTDMT_isOverlapped(buffer, extDict) != 0 || ZSTDMT_isOverlapped(buffer, prefix) != 0)
-        as core::ffi::c_int
+    ZSTDMT_isOverlapped(buffer, extDict) || ZSTDMT_isOverlapped(buffer, prefix)
 }
 
 unsafe fn ZSTDMT_waitForLdmComplete(mtctx: *mut ZSTDMT_CCtx, buffer: Buffer) {
     if (*mtctx).params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         let mut guard = (*mtctx).serial.ldmWindowMutex.lock().unwrap();
-        while ZSTDMT_doesOverlapWindow(buffer, (*mtctx).serial.ldmWindow) != 0 {
+        while ZSTDMT_doesOverlapWindow(buffer, (*mtctx).serial.ldmWindow) {
             guard = (*mtctx).serial.ldmWindowCond.wait(guard).unwrap();
         }
     }
@@ -2226,8 +2225,8 @@ unsafe fn ZSTDMT_waitForLdmComplete(mtctx: *mut ZSTDMT_CCtx, buffer: Buffer) {
 
 /// Attempts to set the inBuff to the next section to fill.
 /// If any part of the new section is still in use we give up.
-/// Returns non-zero if the buffer is filled.
-unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
+/// Returns `true` if the buffer is filled.
+unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> bool {
     let inUse = ZSTDMT_getInputDataInUse(mtctx);
     let spaceLeft = ((*mtctx).roundBuff.capacity).wrapping_sub((*mtctx).roundBuff.pos);
     let spaceNeeded = (*mtctx).targetSectionSize;
@@ -2243,8 +2242,8 @@ unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
         let prefixSize = (*mtctx).inBuff.prefix.size;
         buffer.start = start as *mut core::ffi::c_void;
         buffer.capacity = prefixSize;
-        if ZSTDMT_isOverlapped(buffer, inUse) != 0 {
-            return 0;
+        if ZSTDMT_isOverlapped(buffer, inUse) {
+            return false;
         }
         ZSTDMT_waitForLdmComplete(mtctx, buffer);
         core::ptr::copy((*mtctx).inBuff.prefix.start.cast::<u8>(), start, prefixSize);
@@ -2255,8 +2254,8 @@ unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
         ((*mtctx).roundBuff.buffer).add((*mtctx).roundBuff.pos) as *mut core::ffi::c_void;
     buffer.capacity = spaceNeeded;
 
-    if ZSTDMT_isOverlapped(buffer, inUse) != 0 {
-        return 0;
+    if ZSTDMT_isOverlapped(buffer, inUse) {
+        return false;
     }
 
     ZSTDMT_waitForLdmComplete(mtctx, buffer);
@@ -2264,7 +2263,7 @@ unsafe fn ZSTDMT_tryGetInputRange(mtctx: *mut ZSTDMT_CCtx) -> core::ffi::c_int {
     (*mtctx).inBuff.buffer = buffer;
     (*mtctx).inBuff.filled = 0;
 
-    1
+    true
 }
 
 /// Searches through the input for a synchronization point. If one is found, we
@@ -2411,7 +2410,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
     if (*mtctx).jobReady == 0 && (*input).size > (*input).pos {
         // support NULL input
         if ((*mtctx).inBuff.buffer.start).is_null() {
-            if ZSTDMT_tryGetInputRange(mtctx) == 0 {
+            if !ZSTDMT_tryGetInputRange(mtctx) {
                 // It is only possible for this operation to fail if there are
                 // still compression jobs ongoing.
                 assert_ne!((*mtctx).doneJobID, (*mtctx).nextJobID);

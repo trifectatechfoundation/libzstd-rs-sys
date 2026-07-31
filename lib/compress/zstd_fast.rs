@@ -49,7 +49,7 @@ pub const ZSTD_dtlm_fast: ZSTD_dictTableLoadMethod_e = 0;
 pub type ZSTD_tableFillPurpose_e = core::ffi::c_uint;
 pub const ZSTD_tfp_forCDict: ZSTD_tableFillPurpose_e = 1;
 pub const ZSTD_tfp_forCCtx: ZSTD_tableFillPurpose_e = 0;
-pub type ZSTD_match4Found = Option<unsafe fn(*const u8, *const u8, u32, u32) -> core::ffi::c_int>;
+pub type ZSTD_match4Found = Option<unsafe fn(*const u8, *const u8, u32, u32) -> bool>;
 pub const CACHELINE_SIZE: core::ffi::c_int = 64;
 
 use libc::size_t;
@@ -88,10 +88,10 @@ unsafe fn ZSTD_writeTaggedIndex(hashTable: *mut u32, hashAndTag: size_t, index: 
 /// Helper function for short cache matchfinders.
 /// Unpacks tag1 and tag2 from lower bits of packedTag1 and packedTag2, then checks if the tags match.
 #[inline]
-fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> core::ffi::c_int {
+fn ZSTD_comparePackedTags(packedTag1: size_t, packedTag2: size_t) -> bool {
     let tag1 = (packedTag1 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
     let tag2 = (packedTag2 & ZSTD_SHORT_CACHE_TAG_MASK as size_t) as u32;
-    (tag1 == tag2) as core::ffi::c_int
+    tag1 == tag2
 }
 
 unsafe fn ZSTD_fillHashTableForCDict(
@@ -188,7 +188,7 @@ unsafe fn ZSTD_match4Found_cmov(
     matchAddress: *const u8,
     matchIdx: u32,
     idxLowLimit: u32,
-) -> core::ffi::c_int {
+) -> bool {
     // Array of ~random data, should have low probability of matching data.
     // Load from here if the index is invalid.
     // Used to avoid unpredictable branches.
@@ -206,14 +206,14 @@ unsafe fn ZSTD_match4Found_cmov(
     if MEM_read32(currentPtr as *const core::ffi::c_void)
         != MEM_read32(mvalAddr as *const core::ffi::c_void)
     {
-        return 0;
+        return false;
     }
 
     // force ordering of these tests, which matters once the function is inlined, as they become branches.
     #[cfg(not(target_family = "wasm"))]
     asm!("", options(preserves_flags));
 
-    (matchIdx >= idxLowLimit) as core::ffi::c_int
+    matchIdx >= idxLowLimit
 }
 
 unsafe fn ZSTD_match4Found_branch(
@@ -221,7 +221,7 @@ unsafe fn ZSTD_match4Found_branch(
     matchAddress: *const u8,
     matchIdx: u32,
     idxLowLimit: u32,
-) -> core::ffi::c_int {
+) -> bool {
     // using a branch instead of a cmov,
     // because it's faster in scenarios where matchIdx >= idxLowLimit is generally true,
     // aka almost all candidates are within range
@@ -231,7 +231,7 @@ unsafe fn ZSTD_match4Found_branch(
     } else {
         mval = MEM_read32(currentPtr as *const core::ffi::c_void) ^ 1;
     }
-    (MEM_read32(currentPtr as *const core::ffi::c_void) == mval) as core::ffi::c_int
+    MEM_read32(currentPtr as *const core::ffi::c_void) == mval
 }
 
 /// If you squint hard enough (and ignore repcodes), the search operation at any
@@ -331,12 +331,9 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
     let mut nextStep = core::ptr::null::<u8>();
     let kStepIncr = ((1) << (kSearchStrength - 1)) as size_t;
     let matchFound: ZSTD_match4Found = if useCmov != 0 {
-        Some(ZSTD_match4Found_cmov as unsafe fn(*const u8, *const u8, u32, u32) -> core::ffi::c_int)
+        Some(ZSTD_match4Found_cmov as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
     } else {
-        Some(
-            ZSTD_match4Found_branch
-                as unsafe fn(*const u8, *const u8, u32, u32) -> core::ffi::c_int,
-        )
+        Some(ZSTD_match4Found_branch as unsafe fn(*const u8, *const u8, u32, u32) -> bool)
     };
 
     ip0 = ip0.offset((ip0 == prefixStart) as core::ffi::c_int as isize);
@@ -404,8 +401,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                 base.offset(matchIdx as isize),
                 matchIdx,
                 prefixStartIndex,
-            ) != 0
-            {
+            ) {
                 // Write next hash table entry (it's already calculated).
                 // This write is known to be safe because ip1 == ip0 + 1,
                 // so searching will resume after ip1.
@@ -435,8 +431,7 @@ unsafe fn ZSTD_compressBlock_fast_noDict_generic(
                     base.offset(matchIdx as isize),
                     matchIdx,
                     prefixStartIndex,
-                ) != 0
-                {
+                ) {
                     // Write next hash table entry, since it's already calculated
                     if step <= 4 {
                         // Avoid writing an index if it's >= position where search will resume.
@@ -827,7 +822,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                 );
                 break;
             } else {
-                if dictTagsMatch != 0 {
+                if dictTagsMatch {
                     // Found a possible dict match
                     let dictMatchIndex = dictMatchIndexAndTag >> ZSTD_SHORT_CACHE_TAG_BITS;
                     let mut dictMatch = dictBase.offset(dictMatchIndex as isize);
@@ -872,7 +867,7 @@ unsafe fn ZSTD_compressBlock_fast_dictMatchState_generic(
                     }
                 }
 
-                if ZSTD_match4Found_cmov(ip0, match_0, matchIndex, prefixStartIndex) != 0 {
+                if ZSTD_match4Found_cmov(ip0, match_0, matchIndex, prefixStartIndex) {
                     // found a regular match of size >= 4
                     let offset_0 = ip0.offset_from(match_0) as core::ffi::c_long as u32;
                     mLength = (ZSTD_count(ip0.add(4), match_0.add(4), iend)).wrapping_add(4);

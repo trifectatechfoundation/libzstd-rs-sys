@@ -181,7 +181,7 @@ pub unsafe fn ZSTD_compressLiterals(
     prevHuf: *const ZSTD_hufCTables_t,
     nextHuf: *mut ZSTD_hufCTables_t,
     strategy: ZSTD_strategy,
-    disableLiteralCompression: core::ffi::c_int,
+    disableLiteralCompression: bool,
     suspectUncompressible: core::ffi::c_int,
     bmi2: core::ffi::c_int,
 ) -> size_t {
@@ -200,7 +200,7 @@ pub unsafe fn ZSTD_compressLiterals(
         size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
     );
 
-    if disableLiteralCompression != 0 {
+    if disableLiteralCompression {
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
 
