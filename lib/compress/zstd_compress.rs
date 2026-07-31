@@ -8422,11 +8422,11 @@ pub unsafe fn ZSTD_compressBegin_advanced_internal(
     dictContentType: ZSTD_dictContentType_e,
     dtlm: ZSTD_dictTableLoadMethod_e,
     cdict: *const ZSTD_CDict,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: core::ffi::c_ulonglong,
 ) -> size_t {
     // compression parameters verification and optimization
-    let err_code = ZSTD_checkCParams((*params).cParams);
+    let err_code = ZSTD_checkCParams(params.cParams);
     if ERR_isError(err_code) {
         return err_code;
     }
