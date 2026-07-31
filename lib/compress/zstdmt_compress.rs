@@ -1259,7 +1259,7 @@ unsafe fn ZSTDMT_expandJobsTable(mtctx: *mut ZSTDMT_CCtx, nbWorkers: u32) -> siz
 
 /// Internal use only.
 unsafe fn ZSTDMT_CCtxParam_setNbWorkers(
-    params: *mut ZSTD_CCtx_params,
+    params: &mut ZSTD_CCtx_params,
     nbWorkers: core::ffi::c_uint,
 ) -> size_t {
     ZSTD_CCtxParams_setParameter(
