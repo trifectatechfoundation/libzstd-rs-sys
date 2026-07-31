@@ -333,7 +333,7 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 /// - Or an error code
 unsafe fn ZSTD_compressSubBlock_literal(
     hufTable: *const HUF_CElt,
-    hufMetadata: *const ZSTD_hufCTablesMetadata_t,
+    hufMetadata: &ZSTD_hufCTablesMetadata_t,
     literals: *const u8,
     litSize: size_t,
     dst: *mut core::ffi::c_void,
@@ -352,7 +352,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     let mut op = ostart.add(lhSize);
     let singleStream = (lhSize == 3) as core::ffi::c_int as u32;
     let hType = (if writeEntropy != 0 {
-        (*hufMetadata).hType as core::ffi::c_uint
+        hufMetadata.hType as core::ffi::c_uint
     } else {
         set_repeat as core::ffi::c_int as core::ffi::c_uint
     }) as SymbolEncodingType_e;
@@ -360,7 +360,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
 
     *entropyWritten = 0;
     if litSize == 0
-        || (*hufMetadata).hType as core::ffi::c_uint
+        || hufMetadata.hType as core::ffi::c_uint
             == set_basic as core::ffi::c_int as core::ffi::c_uint
     {
         return ZSTD_noCompressLiterals(
@@ -369,7 +369,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             literals as *const core::ffi::c_void,
             litSize,
         );
-    } else if (*hufMetadata).hType as core::ffi::c_uint
+    } else if hufMetadata.hType as core::ffi::c_uint
         == set_rle as core::ffi::c_int as core::ffi::c_uint
     {
         return ZSTD_compressRleLiteralsBlock(
@@ -381,16 +381,16 @@ unsafe fn ZSTD_compressSubBlock_literal(
     }
 
     if writeEntropy != 0
-        && (*hufMetadata).hType as core::ffi::c_uint
+        && hufMetadata.hType as core::ffi::c_uint
             == set_compressed as core::ffi::c_int as core::ffi::c_uint
     {
         libc::memcpy(
             op as *mut core::ffi::c_void,
-            ((*hufMetadata).hufDesBuffer).as_ptr() as *const core::ffi::c_void,
-            (*hufMetadata).hufDesSize as libc::size_t,
+            (hufMetadata.hufDesBuffer).as_ptr() as *const core::ffi::c_void,
+            hufMetadata.hufDesSize as libc::size_t,
         );
-        op = op.add((*hufMetadata).hufDesSize);
-        cLitSize = cLitSize.wrapping_add((*hufMetadata).hufDesSize);
+        op = op.add(hufMetadata.hufDesSize);
+        cLitSize = cLitSize.wrapping_add(hufMetadata.hufDesSize);
     }
 
     let flags = if bmi2 != 0 {
