@@ -1255,13 +1255,13 @@ unsafe fn ZSTD_ldm_reduceTable(table: *mut ldmEntry_t, size: u32, reducerValue: 
 }
 
 pub unsafe fn ZSTD_ldm_generateSequences(
-    ldmState: *mut ldmState_t,
+    ldmState: &mut ldmState_t,
     sequences: *mut RawSeqStore_t,
-    params: *const ldmParams_t,
+    params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let maxDist = (1) << (*params).windowLog;
+    let maxDist = (1) << params.windowLog;
     let istart = src as *const u8;
     let iend = istart.add(srcSize);
     let kMaxChunkSize = ((1) << 20) as size_t;
@@ -1285,23 +1285,23 @@ pub unsafe fn ZSTD_ldm_generateSequences(
 
         // 1. Perform overflow correction if necessary.
         if ZSTD_window_needOverflowCorrection(
-            (*ldmState).window,
+            ldmState.window,
             0,
             maxDist,
-            (*ldmState).loadedDictEnd,
+            ldmState.loadedDictEnd,
             chunkStart as *const core::ffi::c_void,
             chunkEnd as *const core::ffi::c_void,
         ) {
-            let ldmHSize = (1) << (*params).hashLog;
+            let ldmHSize = (1) << params.hashLog;
             let correction = ZSTD_window_correctOverflow(
-                &mut (*ldmState).window,
+                &mut ldmState.window,
                 0,
                 maxDist,
                 chunkStart as *const core::ffi::c_void,
             );
-            ZSTD_ldm_reduceTable((*ldmState).hashTable, ldmHSize, correction);
+            ZSTD_ldm_reduceTable(ldmState.hashTable, ldmHSize, correction);
             // invalidate dictionaries on overflow correction
-            (*ldmState).loadedDictEnd = 0;
+            ldmState.loadedDictEnd = 0;
         }
 
         // 2. We enforce the maximum offset allowed.
@@ -1318,10 +1318,10 @@ pub unsafe fn ZSTD_ldm_generateSequences(
         // ZSTD_window_enforceMaxDist(), but if we move to checking offsets
         // against maxDist directly, we'll have to carefully handle that case.
         ZSTD_window_enforceMaxDist(
-            &mut (*ldmState).window,
+            &mut ldmState.window,
             chunkEnd as *const core::ffi::c_void,
             maxDist,
-            &mut (*ldmState).loadedDictEnd,
+            &mut ldmState.loadedDictEnd,
             core::ptr::null_mut(),
         );
 
