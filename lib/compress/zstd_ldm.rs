@@ -1440,7 +1440,7 @@ pub unsafe fn ZSTD_ldm_skipRawSeqStoreBytes(rawSeqStore: *mut RawSeqStore_t, nbB
 }
 
 pub unsafe fn ZSTD_ldm_blockCompress(
-    rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore_t,
     ms: &mut ZSTD_MatchState_t,
     seqStore: &mut SeqStore_t,
     rep: *mut u32,
@@ -1475,7 +1475,7 @@ pub unsafe fn ZSTD_ldm_blockCompress(
     }
 
     // Loop through each sequence and apply the block compressor to the literals
-    while (*rawSeqStore).pos < (*rawSeqStore).size && ip < iend {
+    while rawSeqStore.pos < rawSeqStore.size && ip < iend {
         // maybeSplitSequence updates rawSeqStore->pos
         let sequence = maybeSplitSequence(
             rawSeqStore,
