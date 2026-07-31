@@ -6301,16 +6301,16 @@ unsafe fn ZSTD_buildDummySequencesStatistics(
 /// - Or an error code
 unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     seqStorePtr: *const SeqStore_t,
-    prevEntropy: *const ZSTD_fseCTables_t,
-    nextEntropy: *mut ZSTD_fseCTables_t,
+    prevEntropy: &ZSTD_fseCTables_t,
+    nextEntropy: &mut ZSTD_fseCTables_t,
     cctxParams: *const ZSTD_CCtx_params,
-    fseMetadata: *mut ZSTD_fseCTablesMetadata_t,
+    fseMetadata: &mut ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
     let strategy = (*cctxParams).cParams.strategy;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
-    let ostart = ((*fseMetadata).fseTablesBuffer).as_mut_ptr();
+    let ostart = (fseMetadata.fseTablesBuffer).as_mut_ptr();
     let oend = ostart.add(size_of::<[u8; 133]>());
     let op = ostart;
     let countWorkspace = workspace as *mut core::ffi::c_uint;
@@ -6347,10 +6347,10 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
         return err_code;
     }
 
-    (*fseMetadata).llType = stats.LLtype as SymbolEncodingType_e;
-    (*fseMetadata).ofType = stats.Offtype as SymbolEncodingType_e;
-    (*fseMetadata).mlType = stats.MLtype as SymbolEncodingType_e;
-    (*fseMetadata).lastCountSize = stats.lastCountSize;
+    fseMetadata.llType = stats.LLtype as SymbolEncodingType_e;
+    fseMetadata.ofType = stats.Offtype as SymbolEncodingType_e;
+    fseMetadata.mlType = stats.MLtype as SymbolEncodingType_e;
+    fseMetadata.lastCountSize = stats.lastCountSize;
 
     stats.size
 }
