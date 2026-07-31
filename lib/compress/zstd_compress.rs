@@ -6537,8 +6537,8 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     llCodeTable: *const u8,
     mlCodeTable: *const u8,
     nbSeq: size_t,
-    fseTables: *const ZSTD_fseCTables_t,
-    fseMetadata: *const ZSTD_fseCTablesMetadata_t,
+    fseTables: &ZSTD_fseCTables_t,
+    fseMetadata: &ZSTD_fseCTablesMetadata_t,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
     writeEntropy: core::ffi::c_int,
@@ -6550,11 +6550,11 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     let mut cSeqSizeEstimate = 0 as size_t;
 
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
-        (*fseMetadata).ofType,
+        fseMetadata.ofType,
         ofCodeTable,
         nbSeq,
         MaxOff,
-        ((*fseTables).offcodeCTable).as_ptr(),
+        (fseTables.offcodeCTable).as_ptr(),
         core::ptr::null(),
         OF_defaultNorm.as_ptr(),
         OF_defaultNormLog,
@@ -6563,11 +6563,11 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         wkspSize,
     ));
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
-        (*fseMetadata).llType,
+        fseMetadata.llType,
         llCodeTable,
         nbSeq,
         MaxLL,
-        ((*fseTables).litlengthCTable).as_ptr(),
+        (fseTables.litlengthCTable).as_ptr(),
         LL_bits.as_ptr(),
         LL_defaultNorm.as_ptr(),
         LL_defaultNormLog,
@@ -6576,11 +6576,11 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         wkspSize,
     ));
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
-        (*fseMetadata).mlType,
+        fseMetadata.mlType,
         mlCodeTable,
         nbSeq,
         MaxML,
-        ((*fseTables).matchlengthCTable).as_ptr(),
+        (fseTables.matchlengthCTable).as_ptr(),
         ML_bits.as_ptr(),
         ML_defaultNorm.as_ptr(),
         ML_defaultNormLog,
@@ -6590,7 +6590,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
     ));
 
     if writeEntropy != 0 {
-        cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add((*fseMetadata).fseTablesSize);
+        cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(fseMetadata.fseTablesSize);
     }
 
     cSeqSizeEstimate.wrapping_add(sequencesSectionHeaderSize)
