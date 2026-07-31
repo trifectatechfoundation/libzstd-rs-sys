@@ -3,7 +3,10 @@ use crate::lib::common::mem::{MEM_64bits, MEM_read16, MEM_read32, MEM_readLE64, 
 use crate::lib::common::zstd_internal::{
     Overlap, ZSTD_copy16, ZSTD_wildcopy, MINMATCH, WILDCOPY_OVERLENGTH, ZSTD_REP_NUM,
 };
-use crate::lib::compress::zstd_compress::{SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_window_t};
+use crate::lib::compress::zstd_compress::{
+    SeqDef, SeqStore_t, ZSTD_MatchState_t, ZSTD_dedicatedDictSearch, ZSTD_dictMatchState,
+    ZSTD_dictMode_e, ZSTD_extDict, ZSTD_noDict, ZSTD_window_t,
+};
 use crate::lib::compress::zstd_compress_superblock::ZSTD_SequenceLength;
 
 pub(crate) type ZSTD_longLengthType_e = core::ffi::c_uint;
@@ -374,6 +377,23 @@ pub(crate) fn ZSTD_index_overlap_check(prefixLowestIndex: u32, repIndex: u32) ->
 #[inline]
 pub(crate) fn ZSTD_window_hasExtDict(window: ZSTD_window_t) -> bool {
     window.lowLimit < window.dictLimit
+}
+
+/// Inspects the provided matchState and figures out what dictMode
+/// should be passed to the compressor.
+#[inline]
+pub(crate) unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
+    (if ZSTD_window_hasExtDict((*ms).window) {
+        ZSTD_extDict as core::ffi::c_int
+    } else if !((*ms).dictMatchState).is_null() {
+        if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
+            ZSTD_dedicatedDictSearch as core::ffi::c_int
+        } else {
+            ZSTD_dictMatchState as core::ffi::c_int
+        }
+    } else {
+        ZSTD_noDict as core::ffi::c_int
+    }) as ZSTD_dictMode_e
 }
 
 pub const ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY: core::ffi::c_int = 0;

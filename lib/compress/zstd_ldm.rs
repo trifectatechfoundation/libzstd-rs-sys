@@ -125,8 +125,9 @@ use crate::lib::compress::zstd_compress::{
     ZSTD_selectBlockCompressor, ZSTD_window_t,
 };
 use crate::lib::compress::zstd_compress_internal::{
-    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_storeSeq, ZSTD_window_hasExtDict,
-    ZSTD_window_needOverflowCorrection, ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
+    ZSTD_OptPrice_e, ZSTD_count, ZSTD_count_2segments, ZSTD_matchState_dictMode, ZSTD_storeSeq,
+    ZSTD_window_hasExtDict, ZSTD_window_needOverflowCorrection,
+    ZSTD_WINDOW_OVERFLOW_CORRECT_FREQUENTLY,
 };
 use crate::lib::compress::zstd_double_fast::ZSTD_fillDoubleHashTable;
 use crate::lib::compress::zstd_fast::ZSTD_fillHashTable;
@@ -135,23 +136,6 @@ use crate::lib::zstd::{ZSTD_ParamSwitch_e, ZSTD_btopt, ZSTD_btultra, ZSTD_compre
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_WINDOW_START_INDEX: core::ffi::c_int = 2;
 pub const LDM_BATCH_SIZE: core::ffi::c_int = 64;
-
-/// Inspects the provided matchState and figures out what dictMode should be
-/// passed to the compressor.
-#[inline]
-unsafe fn ZSTD_matchState_dictMode(ms: *const ZSTD_MatchState_t) -> ZSTD_dictMode_e {
-    (if ZSTD_window_hasExtDict((*ms).window) {
-        ZSTD_extDict as core::ffi::c_int
-    } else if !((*ms).dictMatchState).is_null() {
-        if (*(*ms).dictMatchState).dedicatedDictSearch != 0 {
-            ZSTD_dedicatedDictSearch as core::ffi::c_int
-        } else {
-            ZSTD_dictMatchState as core::ffi::c_int
-        }
-    } else {
-        ZSTD_noDict as core::ffi::c_int
-    }) as ZSTD_dictMode_e
-}
 
 /// Reduces the indices to protect from index overflow.
 ///
