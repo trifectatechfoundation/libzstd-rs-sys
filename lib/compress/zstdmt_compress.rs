@@ -833,7 +833,7 @@ unsafe fn ZSTDMT_serialState_ensureFinished(
     }
 }
 
-static mut kNullRange: Range = Range {
+const kNullRange: Range = Range {
     start: core::ptr::null(),
     size: 0,
 };
