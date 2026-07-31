@@ -7600,7 +7600,7 @@ unsafe fn ZSTD_compress_frameChunk(
 unsafe fn ZSTD_writeFrameHeader(
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     dictID: u32,
 ) -> size_t {
@@ -7608,19 +7608,19 @@ unsafe fn ZSTD_writeFrameHeader(
     let dictIDSizeCodeLength = ((dictID > 0) as core::ffi::c_int
         + (dictID >= 256) as core::ffi::c_int
         + (dictID >= 65536) as core::ffi::c_int) as u32;
-    let dictIDSizeCode = if (*params).fParams.noDictIDFlag != 0 {
+    let dictIDSizeCode = if params.fParams.noDictIDFlag != 0 {
         0
     } else {
         dictIDSizeCodeLength
     };
-    let checksumFlag = ((*params).fParams.checksumFlag > 0) as core::ffi::c_int as u32;
-    let windowSize = (1) << (*params).cParams.windowLog;
-    let singleSegment = ((*params).fParams.contentSizeFlag != 0
-        && windowSize as u64 >= pledgedSrcSize) as core::ffi::c_int as u32;
-    let windowLogByte = (((*params).cParams.windowLog)
+    let checksumFlag = (params.fParams.checksumFlag > 0) as core::ffi::c_int as u32;
+    let windowSize = (1) << params.cParams.windowLog;
+    let singleSegment = (params.fParams.contentSizeFlag != 0 && windowSize as u64 >= pledgedSrcSize)
+        as core::ffi::c_int as u32;
+    let windowLogByte = ((params.cParams.windowLog)
         .wrapping_sub(ZSTD_WINDOWLOG_ABSOLUTEMIN as core::ffi::c_uint)
         << 3) as u8;
-    let fcsCode = (if (*params).fParams.contentSizeFlag != 0 {
+    let fcsCode = (if params.fParams.contentSizeFlag != 0 {
         (pledgedSrcSize >= 256) as core::ffi::c_int
             + (pledgedSrcSize >= (65536 + 256) as u64) as core::ffi::c_int
             + (pledgedSrcSize >= 0xffffffff as core::ffi::c_uint as u64) as core::ffi::c_int
@@ -7636,7 +7636,7 @@ unsafe fn ZSTD_writeFrameHeader(
     if dstCapacity < 18 {
         return Error::dstSize_tooSmall.to_error_code();
     }
-    if (*params).format == Format::ZSTD_f_zstd1 {
+    if params.format == Format::ZSTD_f_zstd1 {
         MEM_writeLE32(dst, ZSTD_MAGICNUMBER);
         pos = 4;
     }
