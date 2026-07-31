@@ -1060,7 +1060,7 @@ fn ZSTD_cwksp_slack_space_required() -> size_t {
 /// Return the number of additional bytes required to align a pointer to the given number of bytes.
 /// alignBytes must be a power of two.
 #[inline]
-unsafe fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: size_t) -> size_t {
+fn ZSTD_cwksp_bytes_to_align_ptr(ptr: *mut core::ffi::c_void, alignBytes: size_t) -> size_t {
     let alignBytesMask = alignBytes.wrapping_sub(1);
 
     alignBytes.wrapping_sub(ptr as size_t & alignBytesMask) & alignBytesMask
