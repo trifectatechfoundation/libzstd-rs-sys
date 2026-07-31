@@ -460,7 +460,7 @@ unsafe fn bufferToSeq(buffer: Buffer) -> RawSeqStore_t {
     seq
 }
 
-unsafe fn seqToBuffer(seq: RawSeqStore_t) -> Buffer {
+fn seqToBuffer(seq: RawSeqStore_t) -> Buffer {
     let mut buffer = buffer_s {
         start: core::ptr::null_mut::<core::ffi::c_void>(),
         capacity: 0,
