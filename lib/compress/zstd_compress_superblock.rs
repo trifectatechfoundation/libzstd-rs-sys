@@ -1023,11 +1023,11 @@ unsafe fn sizeBlockSequences(
 /// - The compressed size of the super block (which features multiple ZSTD blocks)
 /// - or 0 if it failed to compress.
 unsafe fn ZSTD_compressSubBlock_multi(
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     prevCBlock: *const ZSTD_compressedBlockState_t,
     nextCBlock: *mut ZSTD_compressedBlockState_t,
-    entropyMetadata: *const ZSTD_entropyCTablesMetadata_t,
-    cctxParams: *const ZSTD_CCtx_params,
+    entropyMetadata: &ZSTD_entropyCTablesMetadata_t,
+    cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     src: *const core::ffi::c_void,
@@ -1037,12 +1037,12 @@ unsafe fn ZSTD_compressSubBlock_multi(
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
 ) -> size_t {
-    let sstart: *const SeqDef = (*seqStorePtr).sequencesStart;
-    let send: *const SeqDef = (*seqStorePtr).sequences;
+    let sstart: *const SeqDef = seqStorePtr.sequencesStart;
+    let send: *const SeqDef = seqStorePtr.sequences;
     let mut sp = sstart; // tracks progresses within seqStorePtr->sequences
     let nbSeqs = send.offset_from_unsigned(sstart);
-    let lstart: *const u8 = (*seqStorePtr).litStart;
-    let lend: *const u8 = (*seqStorePtr).lit;
+    let lstart: *const u8 = seqStorePtr.litStart;
+    let lend: *const u8 = seqStorePtr.lit;
     let mut lp = lstart;
     let nbLiterals = lend.offset_from_unsigned(lstart);
     let mut ip = src as *const u8;
@@ -1050,12 +1050,12 @@ unsafe fn ZSTD_compressSubBlock_multi(
     let ostart = dst as *mut u8;
     let oend = ostart.add(dstCapacity);
     let mut op = ostart;
-    let mut llCodePtr: *const u8 = (*seqStorePtr).llCode;
-    let mut mlCodePtr: *const u8 = (*seqStorePtr).mlCode;
-    let mut ofCodePtr: *const u8 = (*seqStorePtr).ofCode;
+    let mut llCodePtr: *const u8 = seqStorePtr.llCode;
+    let mut mlCodePtr: *const u8 = seqStorePtr.mlCode;
+    let mut ofCodePtr: *const u8 = seqStorePtr.ofCode;
     let minTarget = ZSTD_TARGETCBLOCKSIZE_MIN as size_t; // enforce minimum size, to reduce undesirable side effects
-    let targetCBlockSize = minTarget.max((*cctxParams).targetCBlockSize);
-    let mut writeLitEntropy = ((*entropyMetadata).hufMetadata.hType as core::ffi::c_uint
+    let targetCBlockSize = minTarget.max(cctxParams.targetCBlockSize);
+    let mut writeLitEntropy = (entropyMetadata.hufMetadata.hType as core::ffi::c_uint
         == set_compressed as core::ffi::c_int as core::ffi::c_uint)
         as core::ffi::c_int;
     let mut writeSeqEntropy = 1;
@@ -1220,7 +1220,7 @@ unsafe fn ZSTD_compressSubBlock_multi(
             size_of::<ZSTD_hufCTables_t>() as core::ffi::c_ulong as libc::size_t,
         );
     }
-    if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&(*entropyMetadata).fseMetadata) {
+    if writeSeqEntropy != 0 && ZSTD_needSequenceEntropyTables(&entropyMetadata.fseMetadata) {
         // If we haven't written our entropy tables, then we've violated our contract and
         // must emit an uncompressed block.
         return 0;
