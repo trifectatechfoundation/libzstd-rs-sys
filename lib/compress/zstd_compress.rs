@@ -6130,9 +6130,9 @@ unsafe fn writeBlockHeader(
 unsafe fn ZSTD_buildBlockEntropyStats_literals(
     src: *mut core::ffi::c_void,
     srcSize: size_t,
-    prevHuf: *const ZSTD_hufCTables_t,
-    nextHuf: *mut ZSTD_hufCTables_t,
-    hufMetadata: *mut ZSTD_hufCTablesMetadata_t,
+    prevHuf: &ZSTD_hufCTables_t,
+    nextHuf: &mut ZSTD_hufCTables_t,
+    hufMetadata: &mut ZSTD_hufCTablesMetadata_t,
     literalsCompressionIsDisabled: bool,
     workspace: *mut core::ffi::c_void,
     wkspSize: size_t,
@@ -6148,22 +6148,18 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     let nodeWkspSize = wkspEnd.offset_from_unsigned(nodeWksp);
     let mut maxSymbolValue = HUF_SYMBOLVALUE_MAX;
     let mut huffLog = LitHufLog;
-    let mut repeat = (*prevHuf).repeatMode;
+    let mut repeat = prevHuf.repeatMode;
 
     // Prepare nextEntropy assuming reusing the existing table
-    libc::memcpy(
-        nextHuf as *mut core::ffi::c_void,
-        prevHuf as *const core::ffi::c_void,
-        size_of::<ZSTD_hufCTables_t>(),
-    );
+    *nextHuf = *prevHuf;
 
     if literalsCompressionIsDisabled {
-        (*hufMetadata).hType = set_basic;
+        hufMetadata.hType = set_basic;
         return 0;
     }
 
     // small ? don't even attempt compression (speed opt)
-    let minLitSize = (if (*prevHuf).repeatMode as core::ffi::c_uint
+    let minLitSize = (if prevHuf.repeatMode as core::ffi::c_uint
         == HUF_repeat_valid as core::ffi::c_int as core::ffi::c_uint
     {
         6
@@ -6171,7 +6167,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         COMPRESS_LITERALS_SIZE_MIN
     }) as size_t;
     if srcSize <= minLitSize {
-        (*hufMetadata).hType = set_basic;
+        hufMetadata.hType = set_basic;
         return 0;
     }
 
@@ -6190,25 +6186,25 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     }
     if largest == srcSize {
         // only one literal symbol
-        (*hufMetadata).hType = set_rle;
+        hufMetadata.hType = set_rle;
         return 0;
     }
     if largest <= (srcSize >> 7).wrapping_add(4) {
         // heuristic: likely not compressible
-        (*hufMetadata).hType = set_basic;
+        hufMetadata.hType = set_basic;
         return 0;
     }
 
     // Validate the previous Huffman table
     if repeat as core::ffi::c_uint == HUF_repeat_check as core::ffi::c_int as core::ffi::c_uint
-        && !HUF_validateCTable(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue)
+        && !HUF_validateCTable((prevHuf.CTable).as_ptr(), countWksp, maxSymbolValue)
     {
         repeat = HUF_repeat_none;
     }
 
     // Build Huffman Tree
     ptr::write_bytes(
-        ((*nextHuf).CTable).as_mut_ptr() as *mut u8,
+        (nextHuf.CTable).as_mut_ptr() as *mut u8,
         0,
         size_of::<[HUF_CElt; 257]>(),
     );
@@ -6218,12 +6214,12 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
         maxSymbolValue,
         nodeWksp as *mut core::ffi::c_void,
         nodeWkspSize,
-        ((*nextHuf).CTable).as_mut_ptr(),
+        (nextHuf.CTable).as_mut_ptr(),
         countWksp,
         hufFlags,
     );
     let maxBits = HUF_buildCTable_wksp(
-        ((*nextHuf).CTable).as_mut_ptr(),
+        (nextHuf.CTable).as_mut_ptr(),
         countWksp,
         maxSymbolValue,
         huffLog,
@@ -6237,11 +6233,11 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     huffLog = maxBits as u32;
     // Build and write the CTable
     let newCSize =
-        HUF_estimateCompressedSize(((*nextHuf).CTable).as_mut_ptr(), countWksp, maxSymbolValue);
+        HUF_estimateCompressedSize((nextHuf.CTable).as_mut_ptr(), countWksp, maxSymbolValue);
     let hSize = HUF_writeCTable_wksp(
-        ((*hufMetadata).hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
+        (hufMetadata.hufDesBuffer).as_mut_ptr() as *mut core::ffi::c_void,
         size_of::<[u8; 128]>(),
-        ((*nextHuf).CTable).as_mut_ptr(),
+        (nextHuf.CTable).as_mut_ptr(),
         maxSymbolValue,
         huffLog,
         nodeWksp as *mut core::ffi::c_void,
@@ -6250,30 +6246,22 @@ unsafe fn ZSTD_buildBlockEntropyStats_literals(
     // Check against repeating the previous CTable
     if repeat as core::ffi::c_uint != HUF_repeat_none as core::ffi::c_int as core::ffi::c_uint {
         let oldCSize =
-            HUF_estimateCompressedSize(((*prevHuf).CTable).as_ptr(), countWksp, maxSymbolValue);
+            HUF_estimateCompressedSize((prevHuf.CTable).as_ptr(), countWksp, maxSymbolValue);
         if oldCSize < srcSize
             && (oldCSize <= hSize.wrapping_add(newCSize) || hSize.wrapping_add(12) >= srcSize)
         {
-            libc::memcpy(
-                nextHuf as *mut core::ffi::c_void,
-                prevHuf as *const core::ffi::c_void,
-                size_of::<ZSTD_hufCTables_t>(),
-            );
-            (*hufMetadata).hType = set_repeat;
+            *nextHuf = *prevHuf;
+            hufMetadata.hType = set_repeat;
             return 0;
         }
     }
     if newCSize.wrapping_add(hSize) >= srcSize {
-        libc::memcpy(
-            nextHuf as *mut core::ffi::c_void,
-            prevHuf as *const core::ffi::c_void,
-            size_of::<ZSTD_hufCTables_t>(),
-        );
-        (*hufMetadata).hType = set_basic;
+        *nextHuf = *prevHuf;
+        hufMetadata.hType = set_basic;
         return 0;
     }
-    (*hufMetadata).hType = set_compressed;
-    (*nextHuf).repeatMode = HUF_repeat_check;
+    hufMetadata.hType = set_compressed;
+    nextHuf.repeatMode = HUF_repeat_check;
 
     hSize
 }
