@@ -157,11 +157,7 @@ fn ZSTD_minLiteralsToCompress(strategy: ZSTD_strategy, huf_repeat: HUF_repeat) -
     // btultra2 : min 8 bytes;
     // then 2x larger for each successive compression strategy
     // max threshold 64 bytes
-    let shift = if (9 - strategy as core::ffi::c_int) < 3 {
-        9 - strategy as core::ffi::c_int
-    } else {
-        3
-    };
+    let shift = (9 - strategy as core::ffi::c_int).min(3);
 
     if huf_repeat as core::ffi::c_uint == HUF_repeat_valid as core::ffi::c_int as core::ffi::c_uint
     {

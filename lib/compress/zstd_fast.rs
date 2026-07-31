@@ -1071,11 +1071,7 @@ unsafe fn ZSTD_compressBlock_fast_extDict_generic(
     let dictStartIndex = lowLimit;
     let dictStart = dictBase.offset(dictStartIndex as isize);
     let dictLimit = ms.window.dictLimit;
-    let prefixStartIndex = if dictLimit < lowLimit {
-        lowLimit
-    } else {
-        dictLimit
-    };
+    let prefixStartIndex = dictLimit.max(lowLimit);
     let prefixStart = base.offset(prefixStartIndex as isize);
     let dictEnd = dictBase.offset(prefixStartIndex as isize);
     let iend = istart.add(srcSize);

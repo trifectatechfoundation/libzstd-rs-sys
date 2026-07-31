@@ -1280,21 +1280,13 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     if nbWorkers < 1 {
         return core::ptr::null_mut();
     }
-    nbWorkers = if nbWorkers
-        < (if size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
-            64
-        } else {
-            256
-        }) as core::ffi::c_uint
-    {
-        nbWorkers
-    } else {
+    nbWorkers = nbWorkers.min(
         (if size_of::<*mut core::ffi::c_void>() as core::ffi::c_ulong == 4 {
             64
         } else {
             256
-        }) as core::ffi::c_uint
-    };
+        }) as core::ffi::c_uint,
+    );
 
     let mtctx = ZSTD_customCalloc(size_of::<ZSTDMT_CCtx>(), cMem) as *mut ZSTDMT_CCtx;
     if mtctx.is_null() {
@@ -1591,26 +1583,13 @@ unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::f
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on cycleLog instead.
-        jobLog = if 21
-            > (ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy))
-                .wrapping_add(3)
-        {
-            21
-        } else {
-            (ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy)).wrapping_add(3)
-        };
+        jobLog = (ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy))
+            .wrapping_add(3)
+            .max(21);
     } else {
-        jobLog = if 20 > ((*params).cParams.windowLog).wrapping_add(2) {
-            20
-        } else {
-            ((*params).cParams.windowLog).wrapping_add(2)
-        };
+        jobLog = ((*params).cParams.windowLog).wrapping_add(2).max(20);
     }
-    if jobLog < (if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint {
-        jobLog
-    } else {
-        (if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint
-    }
+    jobLog.min((if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint)
 }
 
 fn ZSTDMT_overlapLog_default(strat: ZSTD_strategy) -> core::ffi::c_int {
@@ -1642,13 +1621,10 @@ unsafe fn ZSTDMT_computeOverlapSize(params: *const ZSTD_CCtx_params) -> size_t {
         // In which case, it's preferable to determine the jobSize
         // based on chainLog instead.
         // Then, ovLog becomes a fraction of the jobSize, rather than windowSize
-        ovLog = (if (*params).cParams.windowLog
-            < (ZSTDMT_computeTargetJobLog(params)).wrapping_sub(2)
-        {
-            (*params).cParams.windowLog
-        } else {
-            (ZSTDMT_computeTargetJobLog(params)).wrapping_sub(2)
-        })
+        ovLog = ((*params)
+            .cParams
+            .windowLog
+            .min((ZSTDMT_computeTargetJobLog(params)).wrapping_sub(2)))
         .wrapping_sub(overlapRLog as core::ffi::c_uint) as core::ffi::c_int;
     }
     if ovLog == 0 {
@@ -1758,18 +1734,9 @@ pub unsafe fn ZSTDMT_initCStream_internal(
     let nbSlackBuffers = (2 + ((*mtctx).targetPrefixSize > 0) as core::ffi::c_int) as size_t;
     let slackSize = (*mtctx).targetSectionSize * nbSlackBuffers;
     // Compute the total size, and always have enough slack
-    let nbWorkers = (if (*mtctx).params.nbWorkers > 1 {
-        (*mtctx).params.nbWorkers
-    } else {
-        1
-    }) as size_t;
+    let nbWorkers = ((*mtctx).params.nbWorkers.max(1)) as size_t;
     let sectionsSize = (*mtctx).targetSectionSize * nbWorkers;
-    let capacity = (if windowSize > sectionsSize {
-        windowSize
-    } else {
-        sectionsSize
-    })
-    .wrapping_add(slackSize);
+    let capacity = (windowSize.max(sectionsSize)).wrapping_add(slackSize);
     if (*mtctx).roundBuff.capacity < capacity {
         if !((*mtctx).roundBuff.buffer).is_null() {
             ZSTD_customFree(
@@ -1911,11 +1878,7 @@ unsafe fn ZSTDMT_createCompressionJob(
 
         // Set the prefix for next job
         if endFrame == 0 {
-            let newPrefixSize = if srcSize < (*mtctx).targetPrefixSize {
-                srcSize
-            } else {
-                (*mtctx).targetPrefixSize
-            };
+            let newPrefixSize = srcSize.min((*mtctx).targetPrefixSize);
             (*mtctx).inBuff.prefix.start =
                 src.add(srcSize).offset(-(newPrefixSize as isize)) as *const core::ffi::c_void;
             (*mtctx).inBuff.prefix.size = newPrefixSize;
@@ -2019,13 +1982,9 @@ unsafe fn ZSTDMT_flushProduced(
 
     if cSize > 0 {
         // compression is ongoing or completed
-        let toFlush = if cSize.wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
-            < ((*output).size).wrapping_sub((*output).pos)
-        {
-            cSize.wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
-        } else {
-            ((*output).size).wrapping_sub((*output).pos)
-        };
+        let toFlush = cSize
+            .wrapping_sub((*((*mtctx).jobs).offset(wJobID as isize)).dstFlushed)
+            .min(((*output).size).wrapping_sub((*output).pos));
         if toFlush > 0 {
             libc::memcpy(
                 ((*output).dst as *mut core::ffi::c_char).add((*output).pos)
@@ -2232,13 +2191,9 @@ unsafe fn findSynchronizationPoint(mtctx: *const ZSTDMT_CCtx, input: ZSTD_inBuff
     let mut prev = core::ptr::null::<u8>();
     let mut pos: size_t = 0;
 
-    syncPoint.toLoad = if (input.size).wrapping_sub(input.pos)
-        < ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled)
-    {
-        (input.size).wrapping_sub(input.pos)
-    } else {
-        ((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled)
-    };
+    syncPoint.toLoad = (input.size)
+        .wrapping_sub(input.pos)
+        .min(((*mtctx).targetSectionSize).wrapping_sub((*mtctx).inBuff.filled));
     syncPoint.flush = 0;
     if (*mtctx).params.rsyncable == 0 {
         // Rsync is disabled.
@@ -2418,11 +2373,7 @@ pub unsafe fn ZSTDMT_compressStream_generic(
         endOp,
     );
     if (*input).pos < (*input).size {
-        return if remainingToFlush > 1 {
-            remainingToFlush
-        } else {
-            1
-        }; // input not consumed: do not end flush yet
+        return remainingToFlush.max(1); // input not consumed: do not end flush yet
     }
     remainingToFlush
 }

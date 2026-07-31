@@ -1150,11 +1150,7 @@ unsafe fn ZSTD_compressBlock_doubleFast_extDict_generic(
     let lowLimit = ZSTD_getLowestMatchIndex(ms, endIndex, (*cParams).windowLog);
     let dictStartIndex = lowLimit;
     let dictLimit = ms.window.dictLimit;
-    let prefixStartIndex = if dictLimit > lowLimit {
-        dictLimit
-    } else {
-        lowLimit
-    };
+    let prefixStartIndex = dictLimit.max(lowLimit);
     let prefixStart = base.wrapping_offset(prefixStartIndex as isize);
     let dictBase = ms.window.dictBase;
     let dictStart = dictBase.wrapping_offset(dictStartIndex as isize);

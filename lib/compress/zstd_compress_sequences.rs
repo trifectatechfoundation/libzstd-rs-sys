@@ -446,11 +446,7 @@ unsafe fn ZSTD_encodeSequences_body(
     if longOffsets {
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
         let extraBits = ofBits.wrapping_sub(
-            if ofBits < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
-                ofBits
-            } else {
-                ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)
-            },
+            ofBits.min(((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)),
         );
         if extraBits != 0 {
             BIT_addBits(
@@ -525,11 +521,7 @@ unsafe fn ZSTD_encodeSequences_body(
         }
         if longOffsets {
             let extraBits_0 = ofBits_0.wrapping_sub(
-                if ofBits_0 < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
-                    ofBits_0
-                } else {
-                    ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)
-                },
+                ofBits_0.min(((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1)),
             );
             if extraBits_0 != 0 {
                 BIT_addBits(
