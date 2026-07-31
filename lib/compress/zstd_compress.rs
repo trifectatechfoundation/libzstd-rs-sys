@@ -1905,9 +1905,9 @@ fn ZSTD_rowMatchFinderUsed(strategy: ZSTD_strategy, mode: ZSTD_ParamSwitch_e) ->
 }
 
 /// Returns row matchfinder usage given an initial mode and cParams
-unsafe fn ZSTD_resolveRowMatchFinderMode(
+fn ZSTD_resolveRowMatchFinderMode(
     mut mode: ZSTD_ParamSwitch_e,
-    cParams: *const ZSTD_compressionParameters,
+    cParams: &ZSTD_compressionParameters,
 ) -> ZSTD_ParamSwitch_e {
     let kWindowLogLowerBound = 14;
     if mode != ZSTD_ParamSwitch_e::ZSTD_ps_auto {
@@ -1915,10 +1915,10 @@ unsafe fn ZSTD_resolveRowMatchFinderMode(
         return mode;
     }
     mode = ZSTD_ParamSwitch_e::ZSTD_ps_disable;
-    if !ZSTD_rowMatchFinderSupported((*cParams).strategy) {
+    if !ZSTD_rowMatchFinderSupported(cParams.strategy) {
         return mode;
     }
-    if (*cParams).windowLog > kWindowLogLowerBound {
+    if cParams.windowLog > kWindowLogLowerBound {
         mode = ZSTD_ParamSwitch_e::ZSTD_ps_enable;
     }
     mode
