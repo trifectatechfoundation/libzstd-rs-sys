@@ -907,11 +907,11 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
     ldmState: *mut ldmState_t,
     mut ip: *const u8,
     iend: *const u8,
-    params: *const ldmParams_t,
+    params: &ldmParams_t,
 ) {
-    let minMatchLength = (*params).minMatchLength;
-    let bucketSizeLog = (*params).bucketSizeLog;
-    let hBits = ((*params).hashLog).wrapping_sub(bucketSizeLog);
+    let minMatchLength = params.minMatchLength;
+    let bucketSizeLog = params.bucketSizeLog;
+    let hBits = (params.hashLog).wrapping_sub(bucketSizeLog);
     let base = (*ldmState).window.base;
     let istart = ip;
     let mut hashState = ldmRollingHashState_t {
@@ -952,7 +952,7 @@ pub unsafe fn ZSTD_ldm_fillHashTable(
 
                 entry.offset = split.offset_from(base) as core::ffi::c_long as u32;
                 entry.checksum = (xxhash >> 32) as u32;
-                ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, (*params).bucketSizeLog);
+                ZSTD_ldm_insertEntry(ldmState, hash as size_t, entry, params.bucketSizeLog);
             }
         }
 
