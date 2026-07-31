@@ -568,11 +568,11 @@ unsafe fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: *const l
 /// splits. This effectively resets the hash state. This is used when skipping
 /// over data, either at the beginning of a block, or skipping sections.
 unsafe fn ZSTD_ldm_gear_reset(
-    state: *mut ldmRollingHashState_t,
+    state: &mut ldmRollingHashState_t,
     data: *const u8,
     minMatchLength: size_t,
 ) {
-    let mut hash = (*state).rolling;
+    let mut hash = state.rolling;
     let mut n = 0 as size_t;
 
     while n.wrapping_add(3) < minMatchLength {
