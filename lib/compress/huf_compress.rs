@@ -1257,7 +1257,7 @@ unsafe fn HUF_encodeSymbol(
 
 #[inline(always)]
 unsafe fn HUF_compress1X_usingCTable_internal_body_loop(
-    bitC: *mut HUF_CStream_t,
+    bitC: &mut HUF_CStream_t,
     ip: *const u8,
     srcSize: size_t,
     ct: *const HUF_CElt,
