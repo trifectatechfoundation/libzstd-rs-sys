@@ -375,7 +375,7 @@ unsafe fn ZSTD_encodeSequences_body(
     llCodeTable: *const u8,
     sequences: *const SeqDef,
     nbSeq: size_t,
-    longOffsets: core::ffi::c_int,
+    longOffsets: bool,
 ) -> size_t {
     let mut blockStream = BIT_CStream_t {
         bitContainer: 0,
@@ -443,7 +443,7 @@ unsafe fn ZSTD_encodeSequences_body(
     if MEM_32bits() {
         BIT_flushBits(&mut blockStream);
     }
-    if longOffsets != 0 {
+    if longOffsets {
         let ofBits = *ofCodeTable.add(nbSeq.wrapping_sub(1)) as u32;
         let extraBits = ofBits.wrapping_sub(
             if ofBits < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
@@ -523,7 +523,7 @@ unsafe fn ZSTD_encodeSequences_body(
         if MEM_32bits() || ofBits_0.wrapping_add(mlBits).wrapping_add(llBits) > 56 {
             BIT_flushBits(&mut blockStream);
         }
-        if longOffsets != 0 {
+        if longOffsets {
             let extraBits_0 = ofBits_0.wrapping_sub(
                 if ofBits_0 < ((if MEM_32bits() { 25 } else { 57 }) as u32).wrapping_sub(1) {
                     ofBits_0
@@ -577,7 +577,7 @@ unsafe fn ZSTD_encodeSequences_default(
     llCodeTable: *const u8,
     sequences: *const SeqDef,
     nbSeq: size_t,
-    longOffsets: core::ffi::c_int,
+    longOffsets: bool,
 ) -> size_t {
     ZSTD_encodeSequences_body(
         dst,
@@ -605,7 +605,7 @@ unsafe fn ZSTD_encodeSequences_bmi2(
     llCodeTable: *const u8,
     sequences: *const SeqDef,
     nbSeq: size_t,
-    longOffsets: core::ffi::c_int,
+    longOffsets: bool,
 ) -> size_t {
     ZSTD_encodeSequences_body(
         dst,
@@ -633,7 +633,7 @@ pub unsafe fn ZSTD_encodeSequences(
     llCodeTable: *const u8,
     sequences: *const SeqDef,
     nbSeq: size_t,
-    longOffsets: core::ffi::c_int,
+    longOffsets: bool,
     bmi2: core::ffi::c_int,
 ) -> size_t {
     if bmi2 != 0 {
