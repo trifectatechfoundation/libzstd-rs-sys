@@ -854,16 +854,16 @@ unsafe fn ZSTD_window_enforceMaxDist(
 /// maxDist is the window size
 #[inline]
 unsafe fn ZSTD_checkDictValidity(
-    window: *const ZSTD_window_t,
+    window: &ZSTD_window_t,
     blockEnd: *const core::ffi::c_void,
     maxDist: u32,
     loadedDictEndPtr: *mut u32,
     dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
 ) {
     let blockEndIdx =
-        (blockEnd as *const u8).wrapping_offset_from((*window).base) as core::ffi::c_long as u32;
+        (blockEnd as *const u8).wrapping_offset_from(window.base) as core::ffi::c_long as u32;
     let loadedDictEnd = *loadedDictEndPtr;
-    if blockEndIdx > loadedDictEnd.wrapping_add(maxDist) || loadedDictEnd != (*window).dictLimit {
+    if blockEndIdx > loadedDictEnd.wrapping_add(maxDist) || loadedDictEnd != window.dictLimit {
         *loadedDictEndPtr = 0;
         *dictMatchStatePtr = core::ptr::null();
     } else {
