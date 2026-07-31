@@ -1156,7 +1156,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
     (*job).job_cond.notify_one();
 }
 
-static mut kNullRoundBuff: RoundBuff_t = RoundBuff_t {
+const kNullRoundBuff: RoundBuff_t = RoundBuff_t {
     buffer: core::ptr::null_mut(),
     capacity: 0,
     pos: 0,
