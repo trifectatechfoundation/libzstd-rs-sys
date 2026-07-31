@@ -1234,14 +1234,14 @@ unsafe fn HUF_endMark() -> HUF_CElt {
 /// # Returns
 ///
 /// Size of CStream, in bytes, or 0 if it could not fit into dstBuffer
-unsafe fn HUF_closeCStream(bitC: *mut HUF_CStream_t) -> size_t {
+unsafe fn HUF_closeCStream(bitC: &mut HUF_CStream_t) -> size_t {
     HUF_addBits(bitC, HUF_endMark(), 0, 0);
     HUF_flushBits(bitC, 0);
-    let nbBits = *((*bitC).bitPos).as_mut_ptr() & 0xff as c_int as size_t;
-    if (*bitC).ptr >= (*bitC).endPtr {
+    let nbBits = *(bitC.bitPos).as_mut_ptr() & 0xff as c_int as size_t;
+    if bitC.ptr >= bitC.endPtr {
         return 0; /* overflow detected */
     }
-    (((*bitC).ptr).offset_from((*bitC).startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
+    ((bitC.ptr).offset_from(bitC.startPtr) as size_t) + ((nbBits > 0) as c_int as size_t)
 }
 
 #[inline(always)]
