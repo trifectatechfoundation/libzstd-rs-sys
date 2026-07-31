@@ -514,8 +514,8 @@ unsafe fn ZSTD_seqDecompressedSize(
 /// - Or 0 if it is unable to compress
 /// - Or error code.
 unsafe fn ZSTD_compressSubBlock_sequences(
-    fseTables: *const ZSTD_fseCTables_t,
-    fseMetadata: *const ZSTD_fseCTablesMetadata_t,
+    fseTables: &ZSTD_fseCTables_t,
+    fseMetadata: &ZSTD_fseCTablesMetadata_t,
     sequences: *const SeqDef,
     nbSeq: size_t,
     llCode: *const u8,
@@ -570,18 +570,18 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     seqHead = fresh1;
 
     if writeEntropy != 0 {
-        let LLtype = (*fseMetadata).llType;
-        let Offtype = (*fseMetadata).ofType;
-        let MLtype = (*fseMetadata).mlType;
+        let LLtype = fseMetadata.llType;
+        let Offtype = fseMetadata.ofType;
+        let MLtype = fseMetadata.mlType;
         *seqHead = (LLtype << 6)
             .wrapping_add(Offtype << 4)
             .wrapping_add(MLtype << 2) as u8;
         libc::memcpy(
             op as *mut core::ffi::c_void,
-            ((*fseMetadata).fseTablesBuffer).as_ptr() as *const core::ffi::c_void,
-            (*fseMetadata).fseTablesSize as libc::size_t,
+            (fseMetadata.fseTablesBuffer).as_ptr() as *const core::ffi::c_void,
+            fseMetadata.fseTablesSize as libc::size_t,
         );
-        op = op.add((*fseMetadata).fseTablesSize);
+        op = op.add(fseMetadata.fseTablesSize);
     } else {
         let repeat = set_repeat as core::ffi::c_int as u32;
         *seqHead = (repeat << 6)
@@ -592,11 +592,11 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     let bitstreamSize = ZSTD_encodeSequences(
         op as *mut core::ffi::c_void,
         oend.offset_from_unsigned(op),
-        ((*fseTables).matchlengthCTable).as_ptr(),
+        (fseTables.matchlengthCTable).as_ptr(),
         mlCode,
-        ((*fseTables).offcodeCTable).as_ptr(),
+        (fseTables.offcodeCTable).as_ptr(),
         ofCode,
-        ((*fseTables).litlengthCTable).as_ptr(),
+        (fseTables.litlengthCTable).as_ptr(),
         llCode,
         sequences,
         nbSeq,
@@ -616,8 +616,8 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     // In this exceedingly rare case, we will simply emit an uncompressed
     // block, since it isn't worth optimizing.
     if writeEntropy != 0
-        && (*fseMetadata).lastCountSize != 0
-        && ((*fseMetadata).lastCountSize).wrapping_add(bitstreamSize) < 4
+        && fseMetadata.lastCountSize != 0
+        && (fseMetadata.lastCountSize).wrapping_add(bitstreamSize) < 4
     {
         return 0;
     }
