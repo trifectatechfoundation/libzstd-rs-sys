@@ -106,7 +106,7 @@ pub(crate) unsafe fn POOL_create_advanced(
             (*ctx.0).threads.add(i),
             std::thread::spawn(|| {
                 let ctx = ctx;
-                POOL_thread(ctx.0)
+                POOL_thread(ctx.0);
             }),
         );
     }
@@ -199,7 +199,7 @@ unsafe fn POOL_resize_internal(ctx: *mut POOL_ctx, numThreads: size_t) -> core::
             ((*ctx.0).threads).add(threadId),
             std::thread::spawn(|| {
                 let ctx = ctx;
-                POOL_thread(ctx.0)
+                POOL_thread(ctx.0);
             }),
         );
     }

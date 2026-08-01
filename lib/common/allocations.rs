@@ -73,7 +73,7 @@ pub(crate) unsafe fn ZSTD_customFree(
         cfg_select! {
             feature = "rust-allocator" => {
                 let layout = core::alloc::Layout::from_size_align_unchecked(_size, 16);
-                std::alloc::dealloc(ptr.cast(), layout)
+                std::alloc::dealloc(ptr.cast(), layout);
             }
             feature = "c-allocator" => {
                 libc::free(ptr);

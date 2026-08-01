@@ -328,7 +328,7 @@ pub unsafe fn ZSTD_compressLiterals(
         3 => {
             // 2 - 2 - 10 - 10
             if singleStream == 0 {
-                assert!(srcSize >= MIN_LITERALS_FOR_4_STREAMS)
+                assert!(srcSize >= MIN_LITERALS_FOR_4_STREAMS);
             }
 
             let lhc = (hType as core::ffi::c_uint)

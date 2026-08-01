@@ -155,7 +155,7 @@ pub unsafe fn ZSTD_XXH64(input: *const core::ffi::c_void, len: usize, seed: u64)
 }
 
 pub(crate) fn ZSTD_XXH64_reset(state: &mut XXH64_state_t, seed: u64) {
-    state.reset(seed)
+    state.reset(seed);
 }
 
 pub(crate) fn ZSTD_XXH64_update_slice(state: &mut XXH64_state_t, mut slice: &[u8]) {
