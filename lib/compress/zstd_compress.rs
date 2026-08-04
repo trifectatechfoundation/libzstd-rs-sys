@@ -13353,7 +13353,7 @@ fn ZSTD_getCParams_internal(
 /// # Returns
 ///
 /// a `ZSTD_parameters` structure (instead of `ZSTD_compressionParameters`).
-unsafe fn ZSTD_getParams_internal(
+fn ZSTD_getParams_internal(
     compressionLevel: core::ffi::c_int,
     srcSizeHint: core::ffi::c_ulonglong,
     dictSize: size_t,
