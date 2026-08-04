@@ -327,10 +327,10 @@ pub unsafe fn HUF_writeCTable_wksp(
 
 pub unsafe fn HUF_readCTable(
     CTable: *mut HUF_CElt,
-    maxSymbolValuePtr: *mut c_uint,
+    maxSymbolValuePtr: &mut c_uint,
     src: *const c_void,
     srcSize: size_t,
-    hasZeroWeights: *mut c_uint,
+    hasZeroWeights: &mut c_uint,
 ) -> size_t {
     let src = core::slice::from_raw_parts(src.cast(), srcSize);
 
