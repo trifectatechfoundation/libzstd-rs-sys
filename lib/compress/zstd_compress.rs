@@ -9378,11 +9378,6 @@ pub unsafe extern "C" fn ZSTD_createCDict_advanced(
         extSeqProdFunc: None,
         searchForExternalRepcodes: ZSTD_ParamSwitch_e::ZSTD_ps_auto,
     };
-    ptr::write_bytes(
-        &mut cctxParams as *mut ZSTD_CCtx_params as *mut u8,
-        0,
-        size_of::<ZSTD_CCtx_params>(),
-    );
     ZSTD_CCtxParams_init(&mut cctxParams, 0);
     cctxParams.cParams = cParams;
     cctxParams.customMem = customMem;
@@ -13381,11 +13376,6 @@ unsafe fn ZSTD_getParams_internal(
         },
     };
     let cParams = ZSTD_getCParams_internal(compressionLevel, srcSizeHint, dictSize, mode);
-    ptr::write_bytes(
-        &mut params as *mut ZSTD_parameters as *mut u8,
-        0,
-        size_of::<ZSTD_parameters>(),
-    );
     params.cParams = cParams;
     params.fParams.contentSizeFlag = 1;
     params
