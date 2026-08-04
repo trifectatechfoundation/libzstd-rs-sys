@@ -911,7 +911,7 @@ unsafe fn ZSTD_ldm_limitTableUpdate(ms: &mut ZSTD_MatchState_t, anchor: *const u
 
 unsafe fn ZSTD_ldm_generateSequences_internal(
     ldmState: &mut ldmState_t,
-    rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore_t,
     params: &ldmParams_t,
     src: *const core::ffi::c_void,
     srcSize: size_t,
@@ -1117,17 +1117,17 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                         .wrapping_sub((*bestEntry).offset);
                     mLength = forwardMatchLength.wrapping_add(backwardMatchLength);
 
-                    let seq = ((*rawSeqStore).seq).add((*rawSeqStore).size);
+                    let seq = (rawSeqStore.seq).add(rawSeqStore.size);
 
                     // Out of sequence storage
-                    if (*rawSeqStore).size == (*rawSeqStore).capacity {
+                    if rawSeqStore.size == rawSeqStore.capacity {
                         return Error::dstSize_tooSmall.to_error_code();
                     }
                     (*seq).litLength = split_0.sub(backwardMatchLength).offset_from(anchor)
                         as core::ffi::c_long as u32;
                     (*seq).matchLength = mLength as u32;
                     (*seq).offset = offset;
-                    (*rawSeqStore).size = ((*rawSeqStore).size).wrapping_add(1);
+                    rawSeqStore.size = (rawSeqStore.size).wrapping_add(1);
 
                     // Insert the current entry into the hash table --- it must be
                     // done after the previous block to avoid clobbering bestEntry
