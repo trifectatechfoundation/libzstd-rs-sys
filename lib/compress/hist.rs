@@ -24,9 +24,8 @@ pub unsafe fn HIST_add(
     let mut ip = src as *const u8;
     let end = ip.add(srcSize);
     while ip < end {
-        let fresh1 = &mut (*count.offset(*ip as isize));
+        *count.offset(*ip as isize) += 1;
         ip = ip.add(1);
-        *fresh1 = (*fresh1).wrapping_add(1);
     }
 }
 
@@ -54,9 +53,8 @@ pub unsafe fn HIST_count_simple(
     }
 
     while ip < end {
-        let fresh3 = &mut (*count.offset(*ip as isize));
+        *count.offset(*ip as isize) += 1;
         ip = ip.add(1);
-        *fresh3 = (*fresh3).wrapping_add(1);
     }
 
     while *count.offset(maxSymbolValue as isize) == 0 {
@@ -122,64 +120,44 @@ unsafe fn HIST_count_parallel_wksp(
         let mut c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        let fresh4 = &mut (*Counting1.offset(c as u8 as isize));
-        *fresh4 = (*fresh4).wrapping_add(1);
-        let fresh5 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
-        *fresh5 = (*fresh5).wrapping_add(1);
-        let fresh6 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
-        *fresh6 = (*fresh6).wrapping_add(1);
-        let fresh7 = &mut (*Counting4.offset((c >> 24) as isize));
-        *fresh7 = (*fresh7).wrapping_add(1);
+        *Counting1.offset(c as u8 as isize) += 1;
+        *Counting2.offset((c >> 8) as u8 as isize) += 1;
+        *Counting3.offset((c >> 16) as u8 as isize) += 1;
+        *Counting4.offset((c >> 24) as isize) += 1;
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        let fresh8 = &mut (*Counting1.offset(c as u8 as isize));
-        *fresh8 = (*fresh8).wrapping_add(1);
-        let fresh9 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
-        *fresh9 = (*fresh9).wrapping_add(1);
-        let fresh10 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
-        *fresh10 = (*fresh10).wrapping_add(1);
-        let fresh11 = &mut (*Counting4.offset((c >> 24) as isize));
-        *fresh11 = (*fresh11).wrapping_add(1);
+        *Counting1.offset(c as u8 as isize) += 1;
+        *Counting2.offset((c >> 8) as u8 as isize) += 1;
+        *Counting3.offset((c >> 16) as u8 as isize) += 1;
+        *Counting4.offset((c >> 24) as isize) += 1;
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        let fresh12 = &mut (*Counting1.offset(c as u8 as isize));
-        *fresh12 = (*fresh12).wrapping_add(1);
-        let fresh13 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
-        *fresh13 = (*fresh13).wrapping_add(1);
-        let fresh14 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
-        *fresh14 = (*fresh14).wrapping_add(1);
-        let fresh15 = &mut (*Counting4.offset((c >> 24) as isize));
-        *fresh15 = (*fresh15).wrapping_add(1);
+        *Counting1.offset(c as u8 as isize) += 1;
+        *Counting2.offset((c >> 8) as u8 as isize) += 1;
+        *Counting3.offset((c >> 16) as u8 as isize) += 1;
+        *Counting4.offset((c >> 24) as isize) += 1;
         c = cached;
         cached = MEM_read32(ip as *const core::ffi::c_void);
         ip = ip.add(4);
-        let fresh16 = &mut (*Counting1.offset(c as u8 as isize));
-        *fresh16 = (*fresh16).wrapping_add(1);
-        let fresh17 = &mut (*Counting2.offset((c >> 8) as u8 as isize));
-        *fresh17 = (*fresh17).wrapping_add(1);
-        let fresh18 = &mut (*Counting3.offset((c >> 16) as u8 as isize));
-        *fresh18 = (*fresh18).wrapping_add(1);
-        let fresh19 = &mut (*Counting4.offset((c >> 24) as isize));
-        *fresh19 = (*fresh19).wrapping_add(1);
+        *Counting1.offset(c as u8 as isize) += 1;
+        *Counting2.offset((c >> 8) as u8 as isize) += 1;
+        *Counting3.offset((c >> 16) as u8 as isize) += 1;
+        *Counting4.offset((c >> 24) as isize) += 1;
     }
     ip = ip.sub(4);
 
     // finish last symbols
     while ip < iend {
-        let fresh21 = &mut (*Counting1.offset(*ip as isize));
+        *Counting1.offset(*ip as isize) += 1;
         ip = ip.add(1);
-        *fresh21 = (*fresh21).wrapping_add(1);
     }
 
     for s in 0u32..256 {
-        let fresh22 = &mut (*Counting1.offset(s as isize));
-        *fresh22 = (*fresh22).wrapping_add(
-            (*Counting2.offset(s as isize))
-                .wrapping_add(*Counting3.offset(s as isize))
-                .wrapping_add(*Counting4.offset(s as isize)),
-        );
+        *Counting1.offset(s as isize) += *Counting2.offset(s as isize)
+            + *Counting3.offset(s as isize)
+            + *Counting4.offset(s as isize);
         if *Counting1.offset(s as isize) > max {
             max = *Counting1.offset(s as isize);
         }
