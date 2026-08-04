@@ -1104,9 +1104,7 @@ unsafe fn ZSTD_row_fillHashCache(
         ) as u32;
         let row = hash >> ZSTD_ROW_HASH_TAG_BITS << rowLog;
         ZSTD_row_prefetch(hashTable, tagTable, row, rowLog);
-        *(ms.hashCache)
-            .as_mut_ptr()
-            .offset((idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as isize) = hash;
+        ms.hashCache[(idx & ZSTD_ROW_HASH_CACHE_MASK as u32) as usize] = hash;
     }
 }
 
