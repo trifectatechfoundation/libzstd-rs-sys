@@ -708,24 +708,24 @@ unsafe fn ZSTDMT_serialState_init(serialState: &mut SerialState) -> core::ffi::c
     0
 }
 
-unsafe fn ZSTDMT_serialState_free(serialState: *mut SerialState) {
-    let cMem = (*serialState).params.customMem;
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).mutex));
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).cond));
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowMutex));
-    core::ptr::drop_in_place(core::ptr::addr_of_mut!((*serialState).ldmWindowCond));
-    let hashLog = (*serialState).params.ldmParams.hashLog;
+unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
+    let cMem = serialState.params.customMem;
+    core::ptr::drop_in_place(&raw mut serialState.mutex);
+    core::ptr::drop_in_place(&raw mut serialState.cond);
+    core::ptr::drop_in_place(&raw mut serialState.ldmWindowMutex);
+    core::ptr::drop_in_place(&raw mut serialState.ldmWindowCond);
+    let hashLog = serialState.params.ldmParams.hashLog;
     let hashSize = ((1 as size_t) << hashLog).wrapping_mul(size_of::<ldmEntry_t>());
-    let bucketLog = ((*serialState).params.ldmParams.hashLog)
-        .wrapping_sub((*serialState).params.ldmParams.bucketSizeLog);
+    let bucketLog = (serialState.params.ldmParams.hashLog)
+        .wrapping_sub(serialState.params.ldmParams.bucketSizeLog);
     let numBuckets = 1usize << bucketLog;
     ZSTD_customFree(
-        (*serialState).ldmState.hashTable as *mut core::ffi::c_void,
+        serialState.ldmState.hashTable as *mut core::ffi::c_void,
         hashSize,
         cMem,
     );
     ZSTD_customFree(
-        (*serialState).ldmState.bucketOffsets as *mut core::ffi::c_void,
+        serialState.ldmState.bucketOffsets as *mut core::ffi::c_void,
         numBuckets,
         cMem,
     );
