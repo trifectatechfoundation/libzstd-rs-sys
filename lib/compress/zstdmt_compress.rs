@@ -1548,17 +1548,17 @@ pub unsafe fn ZSTDMT_toFlushNow(mtctx: *mut ZSTDMT_CCtx) -> size_t {
     toFlush
 }
 
-unsafe fn ZSTDMT_computeTargetJobLog(params: *const ZSTD_CCtx_params) -> core::ffi::c_uint {
+unsafe fn ZSTDMT_computeTargetJobLog(params: &ZSTD_CCtx_params) -> core::ffi::c_uint {
     let mut jobLog: core::ffi::c_uint = 0;
-    if (*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+    if params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
         // In Long Range Mode, the windowLog is typically oversized.
         // In which case, it's preferable to determine the jobSize
         // based on cycleLog instead.
-        jobLog = (ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy))
+        jobLog = (ZSTD_cycleLog(params.cParams.chainLog, params.cParams.strategy))
             .wrapping_add(3)
             .max(21);
     } else {
-        jobLog = ((*params).cParams.windowLog).wrapping_add(2).max(20);
+        jobLog = (params.cParams.windowLog).wrapping_add(2).max(20);
     }
     jobLog.min((if MEM_32bits() { 29 } else { 30 }) as core::ffi::c_uint)
 }
