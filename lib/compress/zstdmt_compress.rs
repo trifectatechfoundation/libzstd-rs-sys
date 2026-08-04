@@ -399,10 +399,7 @@ unsafe fn ZSTDMT_getBuffer(bufPool: *mut ZSTDMT_bufferPool) -> Buffer {
         let buf = *((*bufPool).buffers).offset((*bufPool).nbBuffers as isize);
         let availBufferSize = buf.capacity;
         *((*bufPool).buffers).offset((*bufPool).nbBuffers as isize) = g_nullBuffer;
-        if (availBufferSize >= bSize) as core::ffi::c_int
-            & (availBufferSize >> 3 <= bSize) as core::ffi::c_int
-            != 0
-        {
+        if (availBufferSize >= bSize) && (availBufferSize >> 3 <= bSize) {
             // large enough, but not too much
             return buf;
         }
@@ -1055,11 +1052,7 @@ unsafe fn ZSTDMT_compressionJob(jobDescription: *mut core::ffi::c_void) {
                                         17100290475540901977 => {}
                                         _ => {
                                             // last block
-                                            if (nbChunks > 0) as core::ffi::c_int
-                                                as core::ffi::c_uint
-                                                | (*job).lastJob
-                                                != 0
-                                            {
+                                            if (nbChunks > 0) || ((*job).lastJob > 0) {
                                                 // must output a "last block" flag
                                                 let lastBlockSize1 =
                                                     (*job).src.size & chunkSize.wrapping_sub(1);
