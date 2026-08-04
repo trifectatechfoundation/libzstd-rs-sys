@@ -5068,18 +5068,18 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     literals: *const core::ffi::c_void,
     litSize: size_t,
     seqStorePtr: *const SeqStore_t,
-    prevEntropy: *const ZSTD_entropyCTables_t,
-    nextEntropy: *mut ZSTD_entropyCTables_t,
-    cctxParams: *const ZSTD_CCtx_params,
+    prevEntropy: &ZSTD_entropyCTables_t,
+    nextEntropy: &mut ZSTD_entropyCTables_t,
+    cctxParams: &ZSTD_CCtx_params,
     mut entropyWorkspace: *mut core::ffi::c_void,
     mut entropyWkspSize: size_t,
     bmi2: core::ffi::c_int,
 ) -> size_t {
-    let strategy = (*cctxParams).cParams.strategy;
+    let strategy = cctxParams.cParams.strategy;
     let count = entropyWorkspace as *mut core::ffi::c_uint;
-    let CTable_LitLength = (&raw const ((*nextEntropy).fse.litlengthCTable)).cast::<u32>();
-    let CTable_OffsetBits = (&raw const ((*nextEntropy).fse.offcodeCTable)).cast::<u32>();
-    let CTable_MatchLength = (&raw const ((*nextEntropy).fse.matchlengthCTable)).cast::<u32>();
+    let CTable_LitLength = (&raw const (nextEntropy.fse.litlengthCTable)).cast::<u32>();
+    let CTable_OffsetBits = (&raw const (nextEntropy.fse.offcodeCTable)).cast::<u32>();
+    let CTable_MatchLength = (&raw const (nextEntropy.fse.matchlengthCTable)).cast::<u32>();
     let sequences: *const SeqDef = (*seqStorePtr).sequencesStart;
     let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
     let ofCodeTable: *const u8 = (*seqStorePtr).ofCode;
@@ -5110,9 +5110,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
         litSize,
         entropyWorkspace,
         entropyWkspSize,
-        &(*prevEntropy).huf,
-        &mut (*nextEntropy).huf,
-        (*cctxParams).cParams.strategy,
+        &prevEntropy.huf,
+        &mut nextEntropy.huf,
+        cctxParams.cParams.strategy,
         ZSTD_literalsCompressionIsDisabled(cctxParams),
         suspectUncompressible,
         bmi2,
@@ -5144,11 +5144,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     }
     if nbSeq == 0 {
         // Copy the old tables over as if we repeated them
-        core::ptr::copy_nonoverlapping(
-            &raw const (*prevEntropy).fse,
-            &raw mut (*nextEntropy).fse,
-            1,
-        );
+        core::ptr::copy_nonoverlapping(&raw const prevEntropy.fse, &raw mut nextEntropy.fse, 1);
         return op.offset_from_unsigned(ostart);
     }
 
@@ -5158,8 +5154,8 @@ unsafe fn ZSTD_entropyCompressSeqStore_internal(
     let stats = ZSTD_buildSequencesStatistics(
         seqStorePtr,
         nbSeq,
-        &(*prevEntropy).fse,
-        &mut (*nextEntropy).fse,
+        &prevEntropy.fse,
+        &mut nextEntropy.fse,
         op,
         oend,
         strategy,
