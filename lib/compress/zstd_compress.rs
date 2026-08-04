@@ -5219,9 +5219,9 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     litSize: size_t,
     blockSize: size_t,
     seqStorePtr: *const SeqStore_t,
-    prevEntropy: *const ZSTD_entropyCTables_t,
-    nextEntropy: *mut ZSTD_entropyCTables_t,
-    cctxParams: *const ZSTD_CCtx_params,
+    prevEntropy: &ZSTD_entropyCTables_t,
+    nextEntropy: &mut ZSTD_entropyCTables_t,
+    cctxParams: &ZSTD_CCtx_params,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWkspSize: size_t,
     bmi2: core::ffi::c_int,
@@ -5256,7 +5256,7 @@ unsafe fn ZSTD_entropyCompressSeqStore_wExtLitBuffer(
     }
 
     // Check compressibility
-    let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, (*cctxParams).cParams.strategy));
+    let maxCSize = blockSize.wrapping_sub(ZSTD_minGain(blockSize, cctxParams.cParams.strategy));
     if cSize >= maxCSize {
         return 0;
     }
