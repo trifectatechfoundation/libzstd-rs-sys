@@ -1,4 +1,4 @@
-use core::ffi::{c_int, c_uint, c_ulong, c_void};
+use core::ffi::{c_int, c_uint, c_void};
 use core::ptr;
 
 use libc::size_t;
