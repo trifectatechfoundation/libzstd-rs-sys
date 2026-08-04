@@ -5,7 +5,9 @@ use libc::size_t;
 
 use crate::lib::common::bits::ZSTD_highbit32;
 use crate::lib::common::error_private::{ERR_getErrorName, ERR_isError, Error};
-use crate::lib::common::huf::{HUF_CElt, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE};
+use crate::lib::common::huf::{
+    HUF_CElt, HUF_CTABLE_SIZE_ST, HUF_CTABLE_WORKSPACE_SIZE_U32, HUF_WORKSPACE_SIZE,
+};
 use crate::lib::common::mem::{MEM_readLE32, MEM_writeLE32};
 use crate::lib::common::xxhash::ZSTD_XXH64;
 use crate::lib::common::zstd_internal::{
@@ -788,7 +790,7 @@ unsafe fn analyze_entropy_internal(
     notificationLevel: core::ffi::c_uint,
     esr: &mut EStats_ress_t,
 ) -> Result<size_t, Error> {
-    let mut hufTable: [HUF_CElt; 257] = [0; 257];
+    let mut hufTable: [HUF_CElt; HUF_CTABLE_SIZE_ST(255)] = [0; HUF_CTABLE_SIZE_ST(255)];
 
     const KB: usize = 1 << 10;
     let offcodeMax = ZSTD_highbit32(dictBufferSize.wrapping_add(128 * KB) as u32);
