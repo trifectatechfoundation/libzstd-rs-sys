@@ -325,7 +325,7 @@ pub const STREAM_ACCUMULATOR_MIN_64: core::ffi::c_int = 57;
 /// - Or 0 if unable to compress
 /// - Or an error code
 unsafe fn ZSTD_compressSubBlock_literal(
-    hufTable: *const HUF_CElt,
+    hufTable: &[HUF_CElt; 257],
     hufMetadata: &ZSTD_hufCTablesMetadata_t,
     literals: *const u8,
     litSize: size_t,
@@ -389,7 +389,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             oend.offset_from_unsigned(op),
             literals as *const core::ffi::c_void,
             litSize,
-            hufTable,
+            hufTable.as_ptr(),
             flags,
         )
     } else {
@@ -398,7 +398,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
             oend.offset_from_unsigned(op),
             literals as *const core::ffi::c_void,
             litSize,
-            hufTable,
+            hufTable.as_ptr(),
             flags,
         )
     };
@@ -650,7 +650,7 @@ unsafe fn ZSTD_compressSubBlock(
     let mut op = ostart.add(ZSTD_blockHeaderSize);
 
     let cLitSize = ZSTD_compressSubBlock_literal(
-        (entropy.huf.CTable).as_ptr(),
+        &entropy.huf.CTable,
         &(*entropyMetadata).hufMetadata,
         literals,
         litSize,
