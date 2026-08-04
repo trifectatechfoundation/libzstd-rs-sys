@@ -368,10 +368,10 @@ unsafe fn ZSTD_rescaleFreqs(
                 4, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
             ];
-            libc::memcpy(
-                (*optPtr).litLengthFreq as *mut core::ffi::c_void,
-                baseLLfreqs.as_ptr() as *const core::ffi::c_void,
-                size_of::<[core::ffi::c_uint; 36]>(),
+            core::ptr::copy_nonoverlapping(
+                baseLLfreqs.as_ptr(),
+                (*optPtr).litLengthFreq,
+                baseLLfreqs.len(),
             );
             (*optPtr).litLengthSum = sum_u32(baseLLfreqs.as_ptr(), (MaxLL + 1) as size_t);
 
@@ -387,10 +387,10 @@ unsafe fn ZSTD_rescaleFreqs(
                 6, 2, 1, 1, 2, 3, 4, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1,
             ];
-            libc::memcpy(
-                (*optPtr).offCodeFreq as *mut core::ffi::c_void,
-                baseOFCfreqs.as_ptr() as *const core::ffi::c_void,
-                size_of::<[core::ffi::c_uint; 32]>(),
+            core::ptr::copy_nonoverlapping(
+                baseOFCfreqs.as_ptr(),
+                (*optPtr).offCodeFreq,
+                baseOFCfreqs.len(),
             );
             (*optPtr).offCodeSum = sum_u32(baseOFCfreqs.as_ptr(), (MaxOff + 1) as size_t);
         }
