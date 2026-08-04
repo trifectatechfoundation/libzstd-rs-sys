@@ -730,12 +730,12 @@ fn ZSTD_minGain(srcSize: size_t, strat: ZSTD_strategy) -> size_t {
 }
 
 #[inline]
-unsafe fn ZSTD_literalsCompressionIsDisabled(cctxParams: *const ZSTD_CCtx_params) -> bool {
-    match (*cctxParams).literalCompressionMode {
+unsafe fn ZSTD_literalsCompressionIsDisabled(cctxParams: &ZSTD_CCtx_params) -> bool {
+    match cctxParams.literalCompressionMode {
         ParamSwitch::Enable => false,
         ParamSwitch::Disable => true,
         ParamSwitch::Auto => {
-            (*cctxParams).cParams.strategy == ZSTD_fast && (*cctxParams).cParams.targetLength > 0
+            cctxParams.cParams.strategy == ZSTD_fast && cctxParams.cParams.targetLength > 0
         }
     }
 }
