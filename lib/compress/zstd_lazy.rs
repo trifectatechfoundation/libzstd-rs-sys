@@ -250,7 +250,7 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     ms: &ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
     mut bestLength: size_t,
     mut nbCompares: u32,
     mls: u32,
