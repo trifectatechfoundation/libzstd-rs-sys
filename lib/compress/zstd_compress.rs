@@ -258,6 +258,24 @@ pub struct RawSeqStore_t {
     pub capacity: size_t,
 }
 
+impl RawSeqStore_t {
+    pub const fn new() -> Self {
+        Self {
+            seq: core::ptr::null_mut(),
+            pos: 0,
+            posInSequence: 0,
+            size: 0,
+            capacity: 0,
+        }
+    }
+}
+
+impl Default for RawSeqStore_t {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct rawSeq {
@@ -603,14 +621,6 @@ pub const ZSTD_c_maxBlockSize: core::ffi::c_int = 1015;
 pub const ZSTD_c_repcodeResolution: core::ffi::c_int = 1016;
 pub const HASH_READ_SIZE: core::ffi::c_int = 8;
 pub const ZSTD_DUBT_UNSORTED_MARK: core::ffi::c_int = 1;
-
-const kNullRawSeqStore: RawSeqStore_t = RawSeqStore_t {
-    seq: core::ptr::null_mut(),
-    pos: 0,
-    posInSequence: 0,
-    size: 0,
-    capacity: 0,
-};
 
 pub const ZSTD_OPT_SIZE: core::ffi::c_int = ZSTD_OPT_NUM + 3;
 pub const ZSTD_MAX_NB_BLOCK_SPLITS: core::ffi::c_int = 196;
@@ -5748,7 +5758,7 @@ unsafe fn ZSTD_buildSeqStore(
             srcSize,
         );
     } else if (*zc).appliedParams.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-        let mut ldmSeqStore = kNullRawSeqStore;
+        let mut ldmSeqStore = RawSeqStore_t::new();
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
             return Error::parameter_combination_unsupported.to_error_code();
         }
