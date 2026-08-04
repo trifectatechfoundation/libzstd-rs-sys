@@ -124,22 +124,22 @@ unsafe fn ZSTD_updateDUBT(ms: &mut ZSTD_MatchState_t, ip: *const u8, iend: *cons
 ///
 /// doesn't fail
 unsafe fn ZSTD_insertDUBT1(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     curr: u32,
     inputEnd: *const u8,
     mut nbCompares: u32,
     btLow: u32,
     dictMode: ZSTD_dictMode_e,
 ) {
-    let cParams: *const ZSTD_compressionParameters = &(*ms).cParams;
-    let bt = (*ms).chainTable;
+    let cParams: *const ZSTD_compressionParameters = &ms.cParams;
+    let bt = ms.chainTable;
     let btLog = ((*cParams).chainLog).wrapping_sub(1);
     let btMask = ((1 << btLog) - 1) as u32;
     let mut commonLengthSmaller = 0;
     let mut commonLengthLarger = 0;
-    let base = (*ms).window.base;
-    let dictBase = (*ms).window.dictBase;
-    let dictLimit = (*ms).window.dictLimit;
+    let base = ms.window.base;
+    let dictBase = ms.window.dictBase;
+    let dictLimit = ms.window.dictLimit;
     let ip = if curr >= dictLimit {
         base.offset(curr as isize)
     } else {
@@ -157,7 +157,7 @@ unsafe fn ZSTD_insertDUBT1(
     let mut largerPtr = smallerPtr.add(1);
     let mut matchIndex = *smallerPtr; // this candidate is unsorted: next sorted candidate is reached through *smallerPtr, while *largerPtr contains previous unsorted candidate (which is already saved and can be overwritten)
     let mut dummy32: u32 = 0; // to be nullified at the end
-    let windowValid = (*ms).window.lowLimit;
+    let windowValid = ms.window.lowLimit;
     let maxDistance = 1 << (*cParams).windowLog;
     let windowLow = if curr.wrapping_sub(windowValid) > maxDistance {
         curr.wrapping_sub(maxDistance)
