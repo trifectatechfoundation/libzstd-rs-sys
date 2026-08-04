@@ -583,8 +583,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                 }
                 /* only triggered when no more rank 1 symbol left => find closest one (note : there is necessarily at least one !) */
                 debug_assert!(
-                    *rankLast.as_ptr().offset(nBitsToDecrease as isize) != noSymbol
-                        || nBitsToDecrease == 1
+                    rankLast[nBitsToDecrease as usize] != noSymbol || nBitsToDecrease == 1
                 );
 
                 /* HUF_MAX_TABLELOG test just to please gcc 5+; but it should not be necessary */
@@ -593,7 +592,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                 {
                     nBitsToDecrease += 1;
                 }
-                debug_assert!(*rankLast.as_ptr().offset(nBitsToDecrease as isize) != noSymbol);
+                debug_assert!(rankLast[nBitsToDecrease as usize] != noSymbol);
 
                 /* Increase the number of bits to gain back half the rank cost. */
                 totalCost -= 1 << (nBitsToDecrease - 1);
@@ -1160,9 +1159,7 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
      */
     let fresh21 = &mut (*((*bitC).bitPos).as_mut_ptr().offset(idx as isize));
     *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
-    debug_assert!(
-        (*((*bitC).bitPos).as_ptr().offset(idx as isize) & 0xFF) <= HUF_BITS_IN_CONTAINER
-    );
+    debug_assert!(((*bitC).bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     /* The last 4-bits of elt are dirty if fast is set,
      * so we must not be overwriting bits that have already been
      * inserted into the bit container.
@@ -1179,7 +1176,7 @@ unsafe fn HUF_zeroIndex1(bitC: *mut HUF_CStream_t) {
 /// and zeros the bit container @ index 1.
 #[inline(always)]
 unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
-    debug_assert!((*((*bitC).bitPos).as_ptr().add(1) & 0xFF) < HUF_BITS_IN_CONTAINER);
+    debug_assert!(((*bitC).bitPos[1] & 0xFF) < HUF_BITS_IN_CONTAINER);
     *((*bitC).bitContainer).as_mut_ptr() >>=
         *((*bitC).bitPos).as_mut_ptr().add(1) & 0xff as c_int as size_t;
     *((*bitC).bitContainer).as_mut_ptr() |= *((*bitC).bitContainer).as_mut_ptr().add(1);
