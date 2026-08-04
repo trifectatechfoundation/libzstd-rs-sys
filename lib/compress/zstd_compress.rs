@@ -4596,7 +4596,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
 unsafe fn ZSTD_resetCCtx_usingCDict(
     cctx: *mut ZSTD_CCtx,
     cdict: *const ZSTD_CDict,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
     zbuff: ZSTD_buffered_policy_e,
 ) -> size_t {
