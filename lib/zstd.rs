@@ -175,9 +175,10 @@ impl From<ZSTD_format_e> for u32 {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[repr(u32)]
 pub enum Format {
+    #[default]
     ZSTD_f_zstd1 = 0,
     ZSTD_f_zstd1_magicless = 1,
 }
@@ -531,7 +532,7 @@ impl ZSTD_ResetDirective {
 /// Zstd is making poor choices, it is possible to override that choice with
 /// this enum.
 #[repr(transparent)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct ZSTD_dictAttachPref_e(pub(crate) u32);
 impl ZSTD_dictAttachPref_e {
     /// Use the default heuristic
@@ -562,9 +563,10 @@ impl TryFrom<i32> for ZSTD_dictAttachPref_e {
 ///
 /// Zstd can take a decision on whether or not to enable the feature (`ZSTD_ps_auto`),
 /// or set the switch to `ZSTD_ps_enable` or `ZSTD_ps_disable` force enable/disable the feature.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ZSTD_ParamSwitch_e {
     /// Let the library automatically determine whether the feature shall be enabled
+    #[default]
     ZSTD_ps_auto = 0,
     /// Force-enable the feature
     ZSTD_ps_enable = 1,

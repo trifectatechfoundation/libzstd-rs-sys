@@ -172,8 +172,9 @@ pub struct ZSTD_CDict_s {
 }
 
 #[repr(u32)]
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Default)]
 pub enum ParamSwitch {
+    #[default]
     Auto = 0,
     Enable = 1,
     Disable = 2,
@@ -322,7 +323,7 @@ pub struct ZSTD_match_t {
     pub len: u32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_window_t {
     pub nextSrc: *const u8,
@@ -393,7 +394,7 @@ pub struct SeqCollector {
 
 pub type ZSTD_CCtx_params = ZSTD_CCtx_params_s;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ZSTD_CCtx_params_s {
     pub format: Format,
