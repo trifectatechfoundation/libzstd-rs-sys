@@ -289,10 +289,10 @@ unsafe fn ZSTD_noCompressBlock(
         return Error::dstSize_tooSmall.to_error_code();
     }
     MEM_writeLE24(dst, cBlockHeader24);
-    libc::memcpy(
-        dst.byte_add(ZSTD_blockHeaderSize),
-        src,
-        srcSize as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        src.cast::<u8>(),
+        dst.byte_add(ZSTD_blockHeaderSize).cast::<u8>(),
+        srcSize,
     );
     ZSTD_blockHeaderSize.wrapping_add(srcSize)
 }
@@ -369,10 +369,10 @@ unsafe fn ZSTD_compressSubBlock_literal(
     }
 
     if writeEntropy && hufMetadata.hType == set_compressed {
-        libc::memcpy(
-            op as *mut core::ffi::c_void,
-            (hufMetadata.hufDesBuffer).as_ptr() as *const core::ffi::c_void,
-            hufMetadata.hufDesSize as libc::size_t,
+        core::ptr::copy_nonoverlapping(
+            hufMetadata.hufDesBuffer.as_ptr(),
+            op,
+            hufMetadata.hufDesSize,
         );
         op = op.add(hufMetadata.hufDesSize);
         cLitSize = cLitSize.wrapping_add(hufMetadata.hufDesSize);
@@ -561,10 +561,10 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         *seqHead = (LLtype << 6)
             .wrapping_add(Offtype << 4)
             .wrapping_add(MLtype << 2) as u8;
-        libc::memcpy(
-            op as *mut core::ffi::c_void,
-            (fseMetadata.fseTablesBuffer).as_ptr() as *const core::ffi::c_void,
-            fseMetadata.fseTablesSize as libc::size_t,
+        core::ptr::copy_nonoverlapping(
+            fseMetadata.fseTablesBuffer.as_ptr(),
+            op,
+            fseMetadata.fseTablesSize,
         );
         op = op.add(fseMetadata.fseTablesSize);
     } else {
