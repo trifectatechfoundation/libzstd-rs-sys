@@ -916,11 +916,7 @@ fn ZSTD_needSequenceEntropyTables(fseMetadata: &ZSTD_fseCTablesMetadata_t) -> bo
     false
 }
 
-unsafe fn countLiterals(
-    seqStore: *const SeqStore_t,
-    sp: *const SeqDef,
-    seqCount: size_t,
-) -> size_t {
+unsafe fn countLiterals(seqStore: &SeqStore_t, sp: *const SeqDef, seqCount: size_t) -> size_t {
     let mut total = 0usize;
     for n in 0..seqCount {
         total =
