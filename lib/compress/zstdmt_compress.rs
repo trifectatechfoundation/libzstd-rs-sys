@@ -1818,9 +1818,8 @@ unsafe fn ZSTDMT_createCompressionJob(
     endOp: ZSTD_EndDirective,
 ) -> size_t {
     let jobID = (*mtctx).nextJobID & (*mtctx).jobIDMask;
-    let endFrame = (endOp as core::ffi::c_uint
-        == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint)
-        as core::ffi::c_int;
+    let endFrame =
+        endOp as core::ffi::c_uint == ZSTD_e_end as core::ffi::c_int as core::ffi::c_uint;
 
     if (*mtctx).nextJobID > ((*mtctx).doneJobID).wrapping_add((*mtctx).jobIDMask) {
         // will not create new job: table is full
@@ -1857,7 +1856,7 @@ unsafe fn ZSTDMT_createCompressionJob(
             ((*mtctx).nextJobID == 0) as core::ffi::c_int as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).lastJob = endFrame as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).frameChecksumNeeded =
-            ((*mtctx).params.fParams.checksumFlag != 0 && endFrame != 0 && (*mtctx).nextJobID > 0)
+            ((*mtctx).params.fParams.checksumFlag != 0 && endFrame && (*mtctx).nextJobID > 0)
                 as core::ffi::c_int as core::ffi::c_uint;
         (*((*mtctx).jobs).offset(jobID as isize)).dstFlushed = 0;
 
@@ -1867,7 +1866,7 @@ unsafe fn ZSTDMT_createCompressionJob(
         (*mtctx).inBuff.filled = 0;
 
         // Set the prefix for next job
-        if endFrame == 0 {
+        if !endFrame {
             let newPrefixSize = srcSize.min((*mtctx).targetPrefixSize);
             (*mtctx).inBuff.prefix.start =
                 src.add(srcSize).offset(-(newPrefixSize as isize)) as *const core::ffi::c_void;
