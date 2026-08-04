@@ -529,7 +529,7 @@ unsafe fn ZSTD_BtFindBestMatch(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offBasePtr: *mut size_t,
+    offBasePtr: &mut size_t,
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
@@ -859,7 +859,7 @@ unsafe fn ZSTD_HcFindBestMatch(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
@@ -1374,7 +1374,7 @@ unsafe fn ZSTD_RowFindBestMatch(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
     mls: u32,
     dictMode: ZSTD_dictMode_e,
     rowLog: u32,
