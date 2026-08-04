@@ -215,17 +215,8 @@ unsafe fn HUF_setValue(elt: *mut HUF_CElt, value: size_t) {
 }
 
 pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTableHeader {
-    let mut header = HUF_CTableHeader {
-        tableLog: 0,
-        maxSymbolValue: 0,
-        unused: [0; _],
-    };
-    libc::memcpy(
-        &mut header as *mut HUF_CTableHeader as *mut c_void,
-        ctable as *const c_void,
-        size_of::<HUF_CTableHeader>(),
-    );
-    header
+    // the header is stored in the first `HUF_CElt` slot of the table
+    ctable.cast::<HUF_CTableHeader>().read()
 }
 
 unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolValue: u32) {
@@ -246,11 +237,8 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     header.tableLog = tableLog as u8;
     debug_assert!(maxSymbolValue < 256);
     header.maxSymbolValue = maxSymbolValue as u8;
-    libc::memcpy(
-        ctable as *mut c_void,
-        &mut header as *mut HUF_CTableHeader as *const c_void,
-        size_of::<HUF_CTableHeader>(),
-    );
+    // the header is stored in the first `HUF_CElt` slot of the table
+    ctable.cast::<HUF_CTableHeader>().write(header);
 }
 
 #[derive(Copy, Clone)]
