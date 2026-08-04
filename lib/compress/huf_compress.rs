@@ -434,13 +434,16 @@ pub unsafe fn HUF_readCTable(
     readSize
 }
 
-pub unsafe fn HUF_getNbBitsFromCTable(CTable: *const HUF_CElt, symbolValue: u32) -> u32 {
-    let ct = CTable.add(1);
+pub unsafe fn HUF_getNbBitsFromCTable(
+    CTable: &[HUF_CElt; HUF_CTABLE_SIZE_ST(HUF_SYMBOLVALUE_MAX as usize)],
+    symbolValue: u32,
+) -> u32 {
     debug_assert!(symbolValue <= HUF_SYMBOLVALUE_MAX);
-    if symbolValue > (HUF_readCTableHeader(CTable)).maxSymbolValue as u32 {
+    if symbolValue > (HUF_readCTableHeader(CTable.as_ptr())).maxSymbolValue as u32 {
         return 0;
     }
-    HUF_getNbBits(*ct.offset(symbolValue as isize)) as u32
+    // the first slot holds the header, so symbol `s` lives at index `s + 1`
+    HUF_getNbBits(CTable[symbolValue as usize + 1]) as u32
 }
 
 /// Try to enforce `targetNbBits` on the Huffman tree described in `huffNode`.
