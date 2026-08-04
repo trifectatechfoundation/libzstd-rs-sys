@@ -304,7 +304,7 @@ pub unsafe fn HUF_writeCTable_wksp(
         if ERR_isError(hSize) {
             return hSize;
         }
-        if (hSize > 1) as c_int & (hSize < (maxSymbolValue / 2) as size_t) as c_int != 0 {
+        if (hSize > 1) && (hSize < (maxSymbolValue / 2) as size_t) {
             /* FSE compressed */
             *op = hSize as u8;
             return hSize + 1;
