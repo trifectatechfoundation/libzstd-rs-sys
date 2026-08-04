@@ -7159,13 +7159,13 @@ unsafe fn ZSTD_compressBlock_targetCBlockSize(
 
 unsafe fn ZSTD_overflowCorrectIfNeeded(
     ms: &mut ZSTD_MatchState_t,
-    ws: *mut ZSTD_cwksp,
-    params: *const ZSTD_CCtx_params,
+    ws: &mut ZSTD_cwksp,
+    params: &ZSTD_CCtx_params,
     ip: *const core::ffi::c_void,
     iend: *const core::ffi::c_void,
 ) {
-    let cycleLog = ZSTD_cycleLog((*params).cParams.chainLog, (*params).cParams.strategy);
-    let maxDist = 1 << (*params).cParams.windowLog;
+    let cycleLog = ZSTD_cycleLog(params.cParams.chainLog, params.cParams.strategy);
+    let maxDist = 1 << params.cParams.windowLog;
     if ZSTD_window_needOverflowCorrection(ms.window, cycleLog, maxDist, ms.loadedDictEnd, ip, iend)
     {
         let correction = ZSTD_window_correctOverflow(&mut ms.window, cycleLog, maxDist, ip);
