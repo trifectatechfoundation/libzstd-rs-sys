@@ -247,7 +247,7 @@ unsafe fn ZSTD_insertDUBT1(
 }
 
 unsafe fn ZSTD_DUBT_findBetterDictMatch(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     ip: *const u8,
     iend: *const u8,
     offsetPtr: *mut size_t,
@@ -256,22 +256,22 @@ unsafe fn ZSTD_DUBT_findBetterDictMatch(
     mls: u32,
     dictMode: ZSTD_dictMode_e,
 ) -> size_t {
-    let dms = (*ms).dictMatchState;
+    let dms = ms.dictMatchState;
     let dmsCParams: *const ZSTD_compressionParameters = &(*dms).cParams;
     let dictHashTable: *const u32 = (*dms).hashTable;
     let hashLog = (*dmsCParams).hashLog;
     let h = ZSTD_hashPtr(ip as *const core::ffi::c_void, hashLog, mls);
     let mut dictMatchIndex = *dictHashTable.add(h);
 
-    let base = (*ms).window.base;
-    let prefixStart = base.offset((*ms).window.dictLimit as isize);
+    let base = ms.window.base;
+    let prefixStart = base.offset(ms.window.dictLimit as isize);
     let curr = ip.offset_from(base) as core::ffi::c_long as u32;
     let dictBase = (*dms).window.base;
     let dictEnd = (*dms).window.nextSrc;
     let dictHighLimit =
         ((*dms).window.nextSrc).offset_from((*dms).window.base) as core::ffi::c_long as u32;
     let dictLowLimit = (*dms).window.lowLimit;
-    let dictIndexDelta = ((*ms).window.lowLimit).wrapping_sub(dictHighLimit);
+    let dictIndexDelta = (ms.window.lowLimit).wrapping_sub(dictHighLimit);
 
     let dictBt = (*dms).chainTable;
     let btLog = ((*dmsCParams).chainLog).wrapping_sub(1);
