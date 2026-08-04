@@ -1631,7 +1631,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 6)
 }
@@ -1641,7 +1641,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_4_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 6)
 }
@@ -1651,7 +1651,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 4)
 }
@@ -1661,7 +1661,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 6)
 }
@@ -1671,7 +1671,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_6_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 6)
 }
@@ -1681,7 +1681,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_6_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 5)
 }
@@ -1691,7 +1691,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_6_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_extDict, 4)
 }
@@ -1701,7 +1701,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_5_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 6)
 }
@@ -1711,7 +1711,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_5_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 5)
 }
@@ -1721,7 +1721,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_5_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_extDict, 4)
 }
@@ -1731,7 +1731,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 5)
 }
@@ -1741,7 +1741,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_4_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 5)
 }
@@ -1751,7 +1751,7 @@ unsafe fn ZSTD_RowFindBestMatch_extDict_4_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_extDict, 4)
 }
@@ -1761,7 +1761,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 5)
 }
@@ -1771,7 +1771,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_6_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dedicatedDictSearch, 4)
 }
@@ -1781,7 +1781,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 6)
 }
@@ -1791,7 +1791,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 5)
 }
@@ -1801,7 +1801,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_5_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dedicatedDictSearch, 4)
 }
@@ -1811,7 +1811,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 6)
 }
@@ -1821,7 +1821,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_6_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 6)
 }
@@ -1831,7 +1831,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 5)
 }
@@ -1841,7 +1841,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_6_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 4)
 }
@@ -1851,7 +1851,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_5_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 6)
 }
@@ -1861,7 +1861,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_5_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 5)
 }
@@ -1871,7 +1871,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_5_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_noDict, 4)
 }
@@ -1881,7 +1881,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_4_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 6)
 }
@@ -1891,7 +1891,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_4_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 5)
 }
@@ -1901,7 +1901,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_4_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_noDict, 4)
 }
@@ -1911,7 +1911,7 @@ unsafe fn ZSTD_RowFindBestMatch_dedicatedDictSearch_4_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dedicatedDictSearch, 4)
 }
@@ -1921,7 +1921,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_4_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 4, ZSTD_dictMatchState, 6)
 }
@@ -1931,7 +1931,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 5)
 }
@@ -1941,7 +1941,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_6_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_dictMatchState, 4)
 }
@@ -1951,7 +1951,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_6(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 6)
 }
@@ -1961,7 +1961,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 5)
 }
@@ -1971,7 +1971,7 @@ unsafe fn ZSTD_RowFindBestMatch_dictMatchState_5_4(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 5, ZSTD_dictMatchState, 4)
 }
@@ -1981,7 +1981,7 @@ unsafe fn ZSTD_RowFindBestMatch_noDict_6_5(
     ms: &mut ZSTD_MatchState_t,
     ip: *const u8,
     iLimit: *const u8,
-    offsetPtr: *mut size_t,
+    offsetPtr: &mut size_t,
 ) -> size_t {
     ZSTD_RowFindBestMatch(ms, ip, iLimit, offsetPtr, 6, ZSTD_noDict, 5)
 }
