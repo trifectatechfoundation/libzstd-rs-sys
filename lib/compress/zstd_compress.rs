@@ -873,14 +873,13 @@ unsafe fn ZSTD_checkDictValidity(
 }
 
 #[inline]
-unsafe fn ZSTD_window_init(window: *mut ZSTD_window_t) {
-    ptr::write_bytes(window as *mut u8, 0, size_of::<ZSTD_window_t>());
-    (*window).base = c" ".as_ptr() as *const u8;
-    (*window).dictBase = c" ".as_ptr() as *const u8;
-    (*window).dictLimit = ZSTD_WINDOW_START_INDEX as u32;
-    (*window).lowLimit = ZSTD_WINDOW_START_INDEX as u32;
-    (*window).nextSrc = ((*window).base).offset(ZSTD_WINDOW_START_INDEX as isize);
-    (*window).nbOverflowCorrections = 0;
+fn ZSTD_window_init(window: &mut ZSTD_window_t) {
+    window.base = c" ".as_ptr() as *const u8;
+    window.dictBase = c" ".as_ptr() as *const u8;
+    window.dictLimit = ZSTD_WINDOW_START_INDEX as u32; // start from >0, so that 1st position is valid
+    window.lowLimit = ZSTD_WINDOW_START_INDEX as u32; // it ensures first and later CCtx usages compress the same
+    window.nextSrc = (window.base).wrapping_offset(ZSTD_WINDOW_START_INDEX as isize);
+    window.nbOverflowCorrections = 0;
 }
 
 pub const ZSTD_SHORT_CACHE_TAG_BITS: core::ffi::c_int = 8;
