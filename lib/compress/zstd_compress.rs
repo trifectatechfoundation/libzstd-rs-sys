@@ -3783,7 +3783,7 @@ fn ZSTD_maxNbSeq(
     blockSize / divider as size_t
 }
 
-unsafe fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
+fn ZSTD_estimateCCtxSize_usingCCtxParams_internal(
     cParams: &ZSTD_compressionParameters,
     ldmParams: &ldmParams_t,
     isStatic: core::ffi::c_int,
