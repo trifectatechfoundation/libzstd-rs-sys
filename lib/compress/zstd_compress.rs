@@ -4434,9 +4434,7 @@ unsafe fn ZSTD_resetCCtx_internal(
 /// Note: only works with regular variant; do not use with extDict variant!
 pub unsafe fn ZSTD_invalidateRepCodes(cctx: *mut ZSTD_CCtx) {
     for i in 0..ZSTD_REP_NUM {
-        *((*(*cctx).blockState.prevCBlock).rep)
-            .as_mut_ptr()
-            .offset(i as isize) = 0;
+        (*(*cctx).blockState.prevCBlock).rep[i as usize] = 0;
     }
 }
 
@@ -4460,9 +4458,7 @@ unsafe fn ZSTD_shouldAttachDict(
     params: *const ZSTD_CCtx_params,
     pledgedSrcSize: u64,
 ) -> bool {
-    let cutoff = *attachDictSizeCutoffs
-        .as_ptr()
-        .offset((*cdict).matchState.cParams.strategy as isize);
+    let cutoff = attachDictSizeCutoffs[(*cdict).matchState.cParams.strategy as usize];
     let dedicatedDictSearch = (*cdict).matchState.dedicatedDictSearch;
     dedicatedDictSearch != 0
         || (pledgedSrcSize <= cutoff as u64
@@ -5482,17 +5478,10 @@ pub unsafe fn ZSTD_selectBlockCompressor(
                 Some(ZSTD_COMPRESSBLOCK_LAZY2_DEDICATEDDICTSEARCH_ROW),
             ],
         ];
-        selectedCompressor = *(*rowBasedBlockCompressors
-            .as_ptr()
-            .offset(dictMode as core::ffi::c_int as isize))
-        .as_ptr()
-        .offset((strat as core::ffi::c_int - ZSTD_greedy as core::ffi::c_int) as isize);
+        selectedCompressor = rowBasedBlockCompressors[dictMode as usize]
+            [(strat as core::ffi::c_int - ZSTD_greedy as core::ffi::c_int) as usize];
     } else {
-        selectedCompressor = *(*blockCompressor
-            .as_ptr()
-            .offset(dictMode as core::ffi::c_int as isize))
-        .as_ptr()
-        .offset(strat as core::ffi::c_int as isize);
+        selectedCompressor = blockCompressor[dictMode as usize][strat as usize];
     }
     selectedCompressor
 }
@@ -5649,11 +5638,8 @@ unsafe fn ZSTD_buildSeqStore(
     let dictMode = ZSTD_matchState_dictMode(ms);
     let mut lastLLSize: size_t = 0;
     for i in 0..ZSTD_REP_NUM {
-        *((*(*zc).blockState.nextCBlock).rep)
-            .as_mut_ptr()
-            .offset(i as isize) = *((*(*zc).blockState.prevCBlock).rep)
-            .as_mut_ptr()
-            .offset(i as isize);
+        (*(*zc).blockState.nextCBlock).rep[i as usize] =
+            (*(*zc).blockState.prevCBlock).rep[i as usize];
     }
     if (*zc).externSeqStore.pos < (*zc).externSeqStore.size {
         if ZSTD_hasExtSeqProd(&(*zc).appliedParams) {
@@ -5842,13 +5828,11 @@ unsafe fn ZSTD_copyBlockSequences(
             let repcode = (*inSeqs.add(i)).offBase;
             (*outSeqs.add(i)).rep = repcode;
             if (*outSeqs.add(i)).litLength != 0 {
-                rawOffset = *(repcodes.rep)
-                    .as_mut_ptr()
-                    .offset(repcode.wrapping_sub(1) as isize);
+                rawOffset = repcodes.rep[repcode.wrapping_sub(1) as usize];
             } else if repcode == 3 {
-                rawOffset = (*(repcodes.rep).as_mut_ptr()).wrapping_sub(1);
+                rawOffset = repcodes.rep[0].wrapping_sub(1);
             } else {
-                rawOffset = *(repcodes.rep).as_mut_ptr().offset(repcode as isize);
+                rawOffset = repcodes.rep[repcode as usize];
             }
         } else {
             rawOffset = ((*inSeqs.add(i)).offBase).wrapping_sub(ZSTD_REP_NUM as u32);
@@ -8061,9 +8045,9 @@ pub unsafe fn ZSTD_loadCEntropy(
     if dictPtr.add(12) > dictEnd {
         return Error::dictionary_corrupted.to_error_code();
     }
-    *((*bs).rep).as_mut_ptr() = MEM_readLE32(dictPtr as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().add(1) = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
-    *((*bs).rep).as_mut_ptr().add(2) = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
+    (*bs).rep[0] = MEM_readLE32(dictPtr as *const core::ffi::c_void);
+    (*bs).rep[1] = MEM_readLE32(dictPtr.add(4) as *const core::ffi::c_void);
+    (*bs).rep[2] = MEM_readLE32(dictPtr.add(8) as *const core::ffi::c_void);
     dictPtr = dictPtr.add(12);
 
     let dictContentSize = dictEnd.offset_from_unsigned(dictPtr);
