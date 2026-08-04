@@ -1,5 +1,3 @@
-use core::ptr;
-
 #[repr(C)]
 pub struct ZSTD_entropyCTables_t {
     pub huf: ZSTD_hufCTables_t,
