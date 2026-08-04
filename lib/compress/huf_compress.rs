@@ -223,7 +223,7 @@ pub(super) unsafe fn HUF_readCTableHeader(ctable: *const HUF_CElt) -> HUF_CTable
     libc::memcpy(
         &mut header as *mut HUF_CTableHeader as *mut c_void,
         ctable as *const c_void,
-        size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
+        size_of::<HUF_CTableHeader>(),
     );
     header
 }
@@ -249,7 +249,7 @@ unsafe fn HUF_writeCTableHeader(ctable: *mut HUF_CElt, tableLog: u32, maxSymbolV
     libc::memcpy(
         ctable as *mut c_void,
         &mut header as *mut HUF_CTableHeader as *const c_void,
-        size_of::<HUF_CTableHeader>() as c_ulong as libc::size_t,
+        size_of::<HUF_CTableHeader>(),
     );
 }
 
@@ -1100,9 +1100,7 @@ unsafe fn HUF_initCStream(
     );
     bitC.startPtr = startPtr as *mut u8;
     bitC.ptr = bitC.startPtr;
-    bitC.endPtr = (bitC.startPtr)
-        .add(dstCapacity)
-        .sub(size_of::<size_t>() as c_ulong as usize);
+    bitC.endPtr = (bitC.startPtr).add(dstCapacity).sub(size_of::<size_t>());
     if dstCapacity <= size_of::<size_t>() {
         return Error::dstSize_tooSmall.to_error_code();
     }
@@ -1677,7 +1675,7 @@ pub unsafe fn HUF_optimalTableLog(
         /* cheap evaluation, based on FSE */
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
-    let dst = workSpace.byte_offset(size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
+    let dst = workSpace.byte_offset(size_of::<HUF_WriteCTableWksp>() as isize);
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
     let mut hSize: size_t = 0;
     let mut newSize: size_t = 0;
@@ -1963,7 +1961,7 @@ unsafe fn HUF_compress_internal(
             libc::memcpy(
                 oldHufTable as *mut c_void,
                 ((*table).CTable).as_mut_ptr() as *const c_void,
-                size_of::<[HUF_CElt; 257]>() as c_ulong as libc::size_t,
+                size_of::<[HUF_CElt; 257]>(),
             );
         }
     }
