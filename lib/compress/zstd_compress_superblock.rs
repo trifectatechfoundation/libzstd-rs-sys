@@ -297,7 +297,7 @@ unsafe fn ZSTD_noCompressBlock(
     }
     MEM_writeLE24(dst, cBlockHeader24);
     libc::memcpy(
-        (dst as *mut u8).add(ZSTD_blockHeaderSize) as *mut core::ffi::c_void,
+        dst.byte_add(ZSTD_blockHeaderSize),
         src,
         srcSize as libc::size_t,
     );
