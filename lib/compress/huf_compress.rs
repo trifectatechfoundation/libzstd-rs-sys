@@ -1087,7 +1087,7 @@ unsafe fn HUF_initCStream(
 ///   to have at least 4 unused bits after this call it may be 1,
 ///   otherwise it must be 0. HUF_addBits() is faster when fast is set.
 #[inline(always)]
-unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
+unsafe fn HUF_addBits(bitC: &mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast: c_int) {
     debug_assert!(idx <= 1);
     debug_assert!(HUF_getNbBits(elt) <= HUF_TABLELOG_ABSOLUTEMAX);
     /* This is efficient on x86-64 with BMI2 because shrx
@@ -1095,8 +1095,8 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
      * knows this and elides the mask. When fast is set,
      * every operation can use the same value loaded from elt.
      */
-    (*bitC).bitContainer[idx as usize] >>= HUF_getNbBits(elt);
-    (*bitC).bitContainer[idx as usize] |= if kFast != 0 {
+    bitC.bitContainer[idx as usize] >>= HUF_getNbBits(elt);
+    bitC.bitContainer[idx as usize] |= if kFast != 0 {
         HUF_getValueFast(elt)
     } else {
         HUF_getValue(elt)
@@ -1104,9 +1104,9 @@ unsafe fn HUF_addBits(bitC: *mut HUF_CStream_t, elt: HUF_CElt, idx: c_int, kFast
     /* We only read the low 8 bits of bitC->bitPos[idx] so it
      * doesn't matter that the high bits have noise from the value.
      */
-    let fresh21 = &mut (*bitC).bitPos[idx as usize];
+    let fresh21 = &mut bitC.bitPos[idx as usize];
     *fresh21 = (*fresh21).wrapping_add(HUF_getNbBitsFast(elt));
-    debug_assert!(((*bitC).bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
+    debug_assert!((bitC.bitPos[idx as usize] & 0xFF) <= HUF_BITS_IN_CONTAINER);
     /* The last 4-bits of elt are dirty if fast is set,
      * so we must not be overwriting bits that have already been
      * inserted into the bit container.
