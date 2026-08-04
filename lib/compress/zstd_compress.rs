@@ -2465,7 +2465,7 @@ pub extern "C" fn ZSTD_cParam_getBounds(param: ZSTD_cParameter) -> ZSTD_bounds {
 }
 
 /// Clamps the value into the bounded range.
-unsafe fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: *mut core::ffi::c_int) -> size_t {
+fn ZSTD_cParam_clampBounds(cParam: ZSTD_cParameter, value: &mut core::ffi::c_int) -> size_t {
     let bounds = ZSTD_cParam_getBounds(cParam);
     if ERR_isError(bounds.error) {
         return bounds.error;
