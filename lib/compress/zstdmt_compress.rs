@@ -84,6 +84,22 @@ struct SerialState {
     ldmWindow: ZSTD_window_t, // A thread-safe copy of ldmState.window
 }
 
+impl Default for SerialState {
+    fn default() -> Self {
+        Self {
+            mutex: Mutex::new(()),
+            cond: Condvar::new(),
+            ldmWindowMutex: Mutex::new(()),
+            ldmWindowCond: Condvar::new(),
+            params: ZSTD_CCtx_params::default(),
+            ldmState: ldmState_t::default(),
+            xxhState: XXH64_state_t::default(),
+            nextJobID: 0,
+            ldmWindow: ZSTD_window_t::default(),
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct RoundBuff_t {
@@ -694,20 +710,6 @@ unsafe fn ZSTDMT_serialState_reset(
     0
 }
 
-unsafe fn ZSTDMT_serialState_init(serialState: &mut SerialState) -> core::ffi::c_int {
-    ptr::write_bytes(
-        ptr::from_mut(serialState).cast::<u8>(),
-        0,
-        size_of::<SerialState>(),
-    );
-    // `write` rather than assignment: the old value is not a valid `Mutex`/`Condvar` to drop
-    core::ptr::write(&raw mut serialState.mutex, Mutex::new(()));
-    core::ptr::write(&raw mut serialState.cond, Condvar::new());
-    core::ptr::write(&raw mut serialState.ldmWindowMutex, Mutex::new(()));
-    core::ptr::write(&raw mut serialState.ldmWindowCond, Condvar::new());
-    0
-}
-
 unsafe fn ZSTDMT_serialState_free(serialState: &mut SerialState) {
     let cMem = serialState.params.customMem;
     core::ptr::drop_in_place(&raw mut serialState.mutex);
@@ -1248,7 +1250,6 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     pool: *mut ZSTD_threadPool,
 ) -> *mut ZSTDMT_CCtx {
     let mut nbJobs = nbWorkers.wrapping_add(2);
-    let mut initError: core::ffi::c_int = 0;
     if nbWorkers < 1 {
         return core::ptr::null_mut();
     }
@@ -1284,14 +1285,13 @@ unsafe fn ZSTDMT_createCCtx_advanced_internal(
     );
     (*mtctx).cctxPool = ZSTDMT_createCCtxPool(nbWorkers as core::ffi::c_int, cMem);
     (*mtctx).seqPool = ZSTDMT_createSeqPool(nbWorkers, cMem);
-    initError = ZSTDMT_serialState_init(&mut (*mtctx).serial);
+    core::ptr::write(&raw mut (*mtctx).serial, SerialState::default());
     (*mtctx).roundBuff = kNullRoundBuff;
     if ((*mtctx).factory).is_null() as core::ffi::c_int
         | ((*mtctx).jobs).is_null() as core::ffi::c_int
         | ((*mtctx).bufPool).is_null() as core::ffi::c_int
         | ((*mtctx).cctxPool).is_null() as core::ffi::c_int
         | ((*mtctx).seqPool).is_null() as core::ffi::c_int
-        | initError
         != 0
     {
         ZSTDMT_freeCCtx(mtctx);

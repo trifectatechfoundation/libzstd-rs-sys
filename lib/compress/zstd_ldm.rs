@@ -58,7 +58,20 @@ pub struct ldmState_t {
     pub matchCandidates: [ldmMatchCandidate_t; 64],
 }
 
-#[derive(Copy, Clone)]
+impl Default for ldmState_t {
+    fn default() -> Self {
+        Self {
+            window: ZSTD_window_t::default(),
+            hashTable: core::ptr::null_mut(),
+            loadedDictEnd: 0,
+            bucketOffsets: core::ptr::null_mut(),
+            splitIndices: [0; 64],
+            matchCandidates: [ldmMatchCandidate_t::default(); 64],
+        }
+    }
+}
+
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ldmMatchCandidate_t {
     pub split: *const u8,
@@ -74,7 +87,7 @@ pub struct ldmEntry_t {
     pub checksum: u32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct ldmParams_t {
     pub enableLdm: ZSTD_ParamSwitch_e,
