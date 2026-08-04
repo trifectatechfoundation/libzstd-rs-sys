@@ -1324,15 +1324,15 @@ pub unsafe fn ZSTD_ldm_skipSequences(
 /// Returns the current sequence to handle, or if the rest of the block should
 /// be literals, it returns a sequence with offset == 0.
 unsafe fn maybeSplitSequence(
-    rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore_t,
     remaining: u32,
     minMatch: u32,
 ) -> rawSeq {
-    let mut sequence = *((*rawSeqStore).seq).add((*rawSeqStore).pos);
+    let mut sequence = *(rawSeqStore.seq).add(rawSeqStore.pos);
 
     // Likely: No partial sequence
     if remaining >= (sequence.litLength).wrapping_add(sequence.matchLength) {
-        (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
+        rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
         return sequence;
     }
 
