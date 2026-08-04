@@ -465,19 +465,15 @@ pub(crate) unsafe fn ZSTD_window_update(
 /// forceWindow and dictMatchState are therefore incompatible.
 #[inline]
 pub(crate) unsafe fn ZSTD_window_enforceMaxDist(
-    window: *mut ZSTD_window_t,
+    window: &mut ZSTD_window_t,
     blockEnd: *const core::ffi::c_void,
     maxDist: u32,
-    loadedDictEndPtr: *mut u32,
-    dictMatchStatePtr: *mut *const ZSTD_MatchState_t,
+    loadedDictEndPtr: &mut u32,
+    dictMatchStatePtr: Option<&mut *const ZSTD_MatchState_t>,
 ) {
     let blockEndIdx =
-        (blockEnd as *const u8).wrapping_offset_from((*window).base) as core::ffi::c_long as u32;
-    let loadedDictEnd = if !loadedDictEndPtr.is_null() {
-        *loadedDictEndPtr
-    } else {
-        0
-    };
+        (blockEnd as *const u8).wrapping_offset_from(window.base) as core::ffi::c_long as u32;
+    let loadedDictEnd = *loadedDictEndPtr;
 
     // - When there is no dictionary: loadedDictEnd == 0.
     //   In which case, the test (blockEndIdx > maxDist) is merely to avoid
@@ -493,17 +489,15 @@ pub(crate) unsafe fn ZSTD_window_enforceMaxDist(
     //   so it can be directly compared against blockEndIdx.
     if blockEndIdx > maxDist.wrapping_add(loadedDictEnd) {
         let newLowLimit = blockEndIdx.wrapping_sub(maxDist);
-        if (*window).lowLimit < newLowLimit {
-            (*window).lowLimit = newLowLimit;
+        if window.lowLimit < newLowLimit {
+            window.lowLimit = newLowLimit;
         }
-        if (*window).dictLimit < (*window).lowLimit {
-            (*window).dictLimit = (*window).lowLimit;
+        if window.dictLimit < window.lowLimit {
+            window.dictLimit = window.lowLimit;
         }
         // On reaching window size, dictionaries are invalidated
-        if !loadedDictEndPtr.is_null() {
-            *loadedDictEndPtr = 0;
-        }
-        if !dictMatchStatePtr.is_null() {
+        *loadedDictEndPtr = 0;
+        if let Some(dictMatchStatePtr) = dictMatchStatePtr {
             *dictMatchStatePtr = core::ptr::null();
         }
     }
