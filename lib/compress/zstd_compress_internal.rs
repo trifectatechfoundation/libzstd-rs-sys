@@ -61,9 +61,7 @@ pub(crate) unsafe fn ZSTD_storeSeqOnly(
     offBase: u32,
     matchLength: usize,
 ) {
-    if (litLength > 0xffff as core::ffi::c_int as usize) as core::ffi::c_int as core::ffi::c_long
-        != 0
-    {
+    if litLength > 0xffff {
         seqStorePtr.longLengthType = ZSTD_llt_literalLength;
         seqStorePtr.longLengthPos = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart)
             as core::ffi::c_long as u32;
