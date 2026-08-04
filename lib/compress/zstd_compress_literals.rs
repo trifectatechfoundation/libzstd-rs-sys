@@ -179,7 +179,7 @@ pub unsafe fn ZSTD_compressLiterals(
         + (srcSize >= (1 << 10) as size_t) as core::ffi::c_int
         + (srcSize >= (16 * (1 << 10)) as size_t) as core::ffi::c_int) as size_t;
     let ostart = dst as *mut u8;
-    let mut singleStream = (srcSize < 256) as core::ffi::c_int as u32;
+    let mut singleStream = srcSize < 256;
     let mut hType = set_compressed;
     let mut cLitSize: size_t = 0;
 
@@ -219,9 +219,9 @@ pub unsafe fn ZSTD_compressLiterals(
     });
     let mut huf_compress: huf_compress_f = None;
     if repeat == HUF_repeat_valid && lhSize == 3 {
-        singleStream = 1;
+        singleStream = true;
     }
-    huf_compress = if singleStream != 0 {
+    huf_compress = if singleStream {
         Some(
             HUF_compress1X_repeat
                 as unsafe extern "C" fn(
@@ -299,12 +299,12 @@ pub unsafe fn ZSTD_compressLiterals(
     match lhSize {
         3 => {
             // 2 - 2 - 10 - 10
-            if singleStream == 0 {
+            if !singleStream {
                 assert!(srcSize >= MIN_LITERALS_FOR_4_STREAMS)
             }
 
             let lhc = (hType as core::ffi::c_uint)
-                .wrapping_add(((singleStream == 0) as core::ffi::c_int as u32) << 2)
+                .wrapping_add(((!singleStream) as core::ffi::c_int as u32) << 2)
                 .wrapping_add((srcSize as u32) << 4)
                 .wrapping_add((cLitSize as u32) << 14);
             MEM_writeLE24(ostart as *mut core::ffi::c_void, lhc);
