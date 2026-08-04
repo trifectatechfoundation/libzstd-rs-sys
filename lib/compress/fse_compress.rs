@@ -521,8 +521,7 @@ unsafe fn FSE_normalizeM2(
         while ToDistribute > 0 {
             if *norm.offset(s as isize) as core::ffi::c_int > 0 {
                 ToDistribute = ToDistribute.wrapping_sub(1);
-                let fresh5 = &mut (*norm.offset(s as isize));
-                *fresh5 += 1;
+                *norm.offset(s as isize) += 1;
             }
             s = s.wrapping_add(1) % maxSymbolValue.wrapping_add(1);
         }

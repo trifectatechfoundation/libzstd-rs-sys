@@ -1060,12 +1060,11 @@ unsafe fn ZSTD_ldm_generateSequences_internal(
                 0,
             );
             let hash = (xxhash & (1u32 << hBits).wrapping_sub(1) as u64) as u32;
-            let fresh2 = &mut (*candidates.offset(n as isize)).split;
-            *fresh2 = split;
+            (*candidates.offset(n as isize)).split = split;
             (*candidates.offset(n as isize)).hash = hash;
             (*candidates.offset(n as isize)).checksum = (xxhash >> 32) as u32;
-            let fresh3 = &mut (*candidates.offset(n as isize)).bucket;
-            *fresh3 = ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
+            (*candidates.offset(n as isize)).bucket =
+                ZSTD_ldm_getBucket(ldmState, hash as size_t, (*params).bucketSizeLog);
         }
 
         for n in 0..numSplits {

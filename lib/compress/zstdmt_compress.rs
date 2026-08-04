@@ -538,8 +538,7 @@ unsafe fn ZSTDMT_createCCtxPool(
         return core::ptr::null_mut();
     }
     (*cctxPool).cMem = cMem;
-    let fresh1 = &mut (*((*cctxPool).cctxs));
-    *fresh1 = ZSTD_createCCtx_advanced(cMem);
+    *((*cctxPool).cctxs) = ZSTD_createCCtx_advanced(cMem);
     if (*((*cctxPool).cctxs)).is_null() {
         ZSTDMT_freeCCtxPool(cctxPool);
         return core::ptr::null_mut();
@@ -1811,29 +1810,23 @@ unsafe fn ZSTDMT_createCompressionJob(
 
     if (*mtctx).jobReady == 0 {
         let src = (*mtctx).inBuff.buffer.start as *const u8;
-        let fresh4 = &mut (*((*mtctx).jobs).offset(jobID as isize)).src.start;
-        *fresh4 = src as *const core::ffi::c_void;
+        (*((*mtctx).jobs).offset(jobID as isize)).src.start = src as *const core::ffi::c_void;
         (*((*mtctx).jobs).offset(jobID as isize)).src.size = srcSize;
         (*((*mtctx).jobs).offset(jobID as isize)).prefix = (*mtctx).inBuff.prefix;
         (*((*mtctx).jobs).offset(jobID as isize)).consumed = 0;
         (*((*mtctx).jobs).offset(jobID as isize)).cSize = 0;
         (*((*mtctx).jobs).offset(jobID as isize)).params = (*mtctx).params;
-        let fresh5 = &mut (*((*mtctx).jobs).offset(jobID as isize)).cdict;
-        *fresh5 = if (*mtctx).nextJobID == 0 {
+        (*((*mtctx).jobs).offset(jobID as isize)).cdict = if (*mtctx).nextJobID == 0 {
             (*mtctx).cdict
         } else {
             core::ptr::null()
         };
         (*((*mtctx).jobs).offset(jobID as isize)).fullFrameSize = (*mtctx).frameContentSize;
         (*((*mtctx).jobs).offset(jobID as isize)).dstBuff = g_nullBuffer;
-        let fresh6 = &mut (*((*mtctx).jobs).offset(jobID as isize)).cctxPool;
-        *fresh6 = (*mtctx).cctxPool;
-        let fresh7 = &mut (*((*mtctx).jobs).offset(jobID as isize)).bufPool;
-        *fresh7 = (*mtctx).bufPool;
-        let fresh8 = &mut (*((*mtctx).jobs).offset(jobID as isize)).seqPool;
-        *fresh8 = (*mtctx).seqPool;
-        let fresh9 = &mut (*((*mtctx).jobs).offset(jobID as isize)).serial;
-        *fresh9 = &mut (*mtctx).serial;
+        (*((*mtctx).jobs).offset(jobID as isize)).cctxPool = (*mtctx).cctxPool;
+        (*((*mtctx).jobs).offset(jobID as isize)).bufPool = (*mtctx).bufPool;
+        (*((*mtctx).jobs).offset(jobID as isize)).seqPool = (*mtctx).seqPool;
+        (*((*mtctx).jobs).offset(jobID as isize)).serial = &mut (*mtctx).serial;
         (*((*mtctx).jobs).offset(jobID as isize)).jobID = (*mtctx).nextJobID;
         (*((*mtctx).jobs).offset(jobID as isize)).firstJob =
             ((*mtctx).nextJobID == 0) as core::ffi::c_uint;

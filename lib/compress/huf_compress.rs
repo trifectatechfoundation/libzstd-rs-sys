@@ -404,8 +404,7 @@ pub unsafe fn HUF_readCTable(
         {
             n_1 = 0;
             while n_1 < nbSymbols {
-                let fresh0 = &mut nbPerRank[HUF_getNbBits(*ct.offset(n_1 as isize))];
-                *fresh0 += 1;
+                nbPerRank[HUF_getNbBits(*ct.offset(n_1 as isize))] += 1;
                 n_1 += 1;
             }
         }
@@ -596,8 +595,7 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                     /* special case, reached largest symbol */
                     rankLast[nBitsToDecrease as usize] = noSymbol;
                 } else {
-                    let fresh4 = &mut rankLast[nBitsToDecrease as usize];
-                    *fresh4 -= 1;
+                    rankLast[nBitsToDecrease as usize] -= 1;
                     if (*huffNode.offset(rankLast[nBitsToDecrease as usize] as isize)).nbBits as u32
                         != targetNbBits - (nBitsToDecrease)
                     {
@@ -622,16 +620,13 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
                     while (*huffNode.offset(n as isize)).nbBits as u32 == targetNbBits {
                         n -= 1;
                     }
-                    let fresh5 = &mut (*huffNode.offset((n + 1) as isize)).nbBits;
-                    *fresh5 -= 1;
+                    (*huffNode.offset((n + 1) as isize)).nbBits -= 1;
                     debug_assert!(n >= 0);
                     rankLast[1] = (n + 1) as u32;
                     totalCost += 1;
                 } else {
-                    let fresh6 = &mut (*huffNode.offset((rankLast[1] + 1) as isize)).nbBits;
-                    *fresh6 -= 1;
-                    let fresh7 = &mut rankLast[1];
-                    *fresh7 += 1;
+                    (*huffNode.offset((rankLast[1] + 1) as isize)).nbBits -= 1;
+                    rankLast[1] += 1;
                     totalCost += 1;
                 }
             }
@@ -779,9 +774,8 @@ unsafe fn HUF_sort(
     ptr::write_bytes(rankPosition as *mut u8, 0, size_of::<rankPos>() * 192);
     for n in 0..maxSymbolValue1 {
         let lowerRank = HUF_getIndex(*count.offset(n as isize));
-        let fresh8 = &mut (*rankPosition.offset(lowerRank as isize)).base;
         debug_assert!((lowerRank as usize) < (RANK_POSITION_TABLE_SIZE - 1));
-        *fresh8 += 1;
+        (*rankPosition.offset(lowerRank as isize)).base += 1;
     }
     debug_assert!((*rankPosition.add(RANK_POSITION_TABLE_SIZE - 1)).base == 0);
 
@@ -848,9 +842,8 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
     lowN = nodeNb;
     (*huffNode.offset(nodeNb as isize)).count =
         ((*huffNode.offset(lowS as isize)).count) + ((*huffNode.offset((lowS - 1) as isize)).count);
-    let fresh12 = &mut (*huffNode.offset((lowS - 1) as isize)).parent;
-    *fresh12 = nodeNb as u16;
-    (*huffNode.offset(lowS as isize)).parent = *fresh12;
+    (*huffNode.offset((lowS - 1) as isize)).parent = nodeNb as u16;
+    (*huffNode.offset(lowS as isize)).parent = nodeNb as u16;
     nodeNb += 1;
     lowS -= 2;
     for n in nodeNb..nodeRoot + 1 {
@@ -882,9 +875,8 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
             };
         (*huffNode.offset(nodeNb as isize)).count =
             ((*huffNode.offset(n1 as isize)).count) + ((*huffNode.offset(n2 as isize)).count);
-        let fresh17 = &mut (*huffNode.offset(n2 as isize)).parent;
-        *fresh17 = nodeNb as u16;
-        (*huffNode.offset(n1 as isize)).parent = *fresh17;
+        (*huffNode.offset(n2 as isize)).parent = nodeNb as u16;
+        (*huffNode.offset(n1 as isize)).parent = nodeNb as u16;
         nodeNb += 1;
     }
 
@@ -927,8 +919,7 @@ unsafe fn HUF_buildCTableFromTree(
     let mut valPerRank: [u16; HUF_TABLELOG_MAX + 1] = [0; HUF_TABLELOG_MAX + 1];
     let alphabetSize = (maxSymbolValue + 1) as c_int;
     for n in 0..nonNullRank + 1 {
-        let fresh18 = &mut nbPerRank[(*huffNode.offset(n as isize)).nbBits as usize];
-        *fresh18 += 1;
+        nbPerRank[(*huffNode.offset(n as isize)).nbBits as usize] += 1;
     }
 
     /* determine starting value per rank */
