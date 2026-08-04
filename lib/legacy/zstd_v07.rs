@@ -444,9 +444,9 @@ unsafe fn FSEv07_readNCount(
     nbBits += 1;
 
     let mut charnum = 0;
-    let mut previous0 = 0;
+    let mut previous0 = false;
     while remaining > 1 && charnum <= *maxSVPtr {
-        if previous0 != 0 {
+        if previous0 {
             let mut n0 = charnum;
             while bitStream & 0xffff == 0xffff {
                 n0 = n0.wrapping_add(24);
@@ -498,7 +498,7 @@ unsafe fn FSEv07_readNCount(
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
         normalizedCounter[fresh1 as usize] = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = count == 0;
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
@@ -2139,7 +2139,7 @@ fn ZSTDv07_decodeSequence(seqState: &mut seqState_t) -> seq_t {
         }
     }
     if ofCode <= 1 {
-        if (llCode == 0) as core::ffi::c_int & (offset <= 1) as core::ffi::c_int != 0 {
+        if (llCode == 0) && (offset <= 1) {
             offset = 1_usize.wrapping_sub(offset);
         }
         if offset != 0 {

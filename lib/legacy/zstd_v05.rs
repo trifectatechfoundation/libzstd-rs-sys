@@ -401,8 +401,8 @@ fn FSEv05_decodeSymbolFast<const N: usize>(
     symbol
 }
 #[inline]
-fn FSEv05_endOfDState<const N: usize>(DStatePtr: &FSEv05_DState_t<N>) -> core::ffi::c_uint {
-    (DStatePtr.state == 0) as core::ffi::c_uint
+fn FSEv05_endOfDState<const N: usize>(DStatePtr: &FSEv05_DState_t<N>) -> bool {
+    DStatePtr.state == 0
 }
 const FSEv05_MAX_MEMORY_USAGE: core::ffi::c_int = 14;
 const FSEv05_MAX_SYMBOL_VALUE: core::ffi::c_int = 255;
@@ -503,7 +503,7 @@ unsafe fn FSEv05_readNCount(
     let iend = istart.add(headerBuffer.len());
     let mut ip = istart;
     let mut charnum = 0;
-    let mut previous0 = 0;
+    let mut previous0 = false;
     if headerBuffer.len() < 4 {
         return Err(Error::srcSize_wrong);
     }
@@ -520,7 +520,7 @@ unsafe fn FSEv05_readNCount(
     let mut threshold = (1) << nbBits;
     nbBits += 1;
     while remaining > 1 && charnum <= *maxSVPtr {
-        if previous0 != 0 {
+        if previous0 {
             let mut n0 = charnum;
             while bitStream & 0xffff as core::ffi::c_int as u32 == 0xffff as core::ffi::c_int as u32
             {
@@ -573,7 +573,7 @@ unsafe fn FSEv05_readNCount(
         let fresh4 = charnum;
         charnum = charnum.wrapping_add(1);
         normalizedCounter[fresh4 as usize] = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = count == 0;
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
@@ -675,7 +675,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
     }
     while !(bitD.reload() > StreamStatus::Completed
         || op.is_empty()
-        || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state1) != 0))
+        || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state1)))
     {
         let fresh5: &mut [u8; 1];
         (fresh5, op) = op.split_first_chunk_mut::<1>().unwrap();
@@ -686,7 +686,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
         }) as u8;
         if bitD.reload() > StreamStatus::Completed
             || op.is_empty()
-            || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state2) != 0)
+            || bitD.is_empty() && (fast != 0 || FSEv05_endOfDState(&state2))
         {
             break;
         }
@@ -698,7 +698,7 @@ fn FSEv05_decompress_usingDTable_generic<const N: usize>(
             FSEv05_decodeSymbol(&mut state2, &mut bitD) as core::ffi::c_int
         }) as u8;
     }
-    if bitD.is_empty() && FSEv05_endOfDState(&state1) != 0 && FSEv05_endOfDState(&state2) != 0 {
+    if bitD.is_empty() && FSEv05_endOfDState(&state1) && FSEv05_endOfDState(&state2) {
         return Ok(dst_len - op.len());
     }
     if op.is_empty() {
@@ -2403,7 +2403,7 @@ unsafe fn ZSTDv05_decodeSequence(seq: &mut seq_t, seqState: &mut seqState_t) {
     if offsetCode == 0 {
         offset = prevOffset;
     }
-    if offsetCode | (litLength == 0) as core::ffi::c_int as u32 != 0 {
+    if offsetCode > 0 || litLength == 0 {
         seqState.prevOffset = seq.offset;
     }
     FSEv05_decodeSymbol(&mut seqState.stateOffb, &mut seqState.DStream);

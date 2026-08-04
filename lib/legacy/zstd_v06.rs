@@ -438,7 +438,7 @@ unsafe fn FSEv06_readNCount(
     let mut bitStream: u32 = 0;
     let mut bitCount: core::ffi::c_int = 0;
     let mut charnum = 0;
-    let mut previous0 = 0;
+    let mut previous0 = false;
     if hbSize < 4 {
         return Error::srcSize_wrong.to_error_code();
     }
@@ -455,7 +455,7 @@ unsafe fn FSEv06_readNCount(
     threshold = (1) << nbBits;
     nbBits += 1;
     while remaining > 1 && charnum <= *maxSVPtr {
-        if previous0 != 0 {
+        if previous0 {
             let mut n0 = charnum;
             while bitStream & 0xffff as core::ffi::c_int as u32 == 0xffff as core::ffi::c_int as u32
             {
@@ -508,7 +508,7 @@ unsafe fn FSEv06_readNCount(
         let fresh1 = charnum;
         charnum = charnum.wrapping_add(1);
         *normalizedCounter.offset(fresh1 as isize) = count;
-        previous0 = (count == 0) as core::ffi::c_int;
+        previous0 = count == 0;
         while remaining < threshold {
             nbBits -= 1;
             threshold >>= 1;
