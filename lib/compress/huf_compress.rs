@@ -1141,22 +1141,22 @@ unsafe fn HUF_mergeIndex1(bitC: *mut HUF_CStream_t) {
 ///
 /// bitPos will be < 8.
 #[inline(always)]
-unsafe fn HUF_flushBits(bitC: *mut HUF_CStream_t, kFast: c_int) {
+unsafe fn HUF_flushBits(bitC: &mut HUF_CStream_t, kFast: c_int) {
     /* The upper bits of bitPos are noisy, so we must mask by 0xFF. */
-    let nbBits = (*bitC).bitPos[0] & 0xff as c_int as size_t;
+    let nbBits = bitC.bitPos[0] & 0xff as c_int as size_t;
     let nbBytes = nbBits >> 3;
     /* The top nbBits bits of bitContainer are the ones we need. */
-    let bitContainer = (*bitC).bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
+    let bitContainer = bitC.bitContainer[0] >> (HUF_BITS_IN_CONTAINER - (nbBits));
     /* Mask bitPos to account for the bytes we consumed. */
-    (*bitC).bitPos[0] &= 7;
+    bitC.bitPos[0] &= 7;
     debug_assert!(nbBits > 0);
     debug_assert!(nbBits <= size_t::BITS as usize);
-    debug_assert!((*bitC).ptr <= (*bitC).endPtr);
-    MEM_writeLEST((*bitC).ptr as *mut c_void, bitContainer);
-    (*bitC).ptr = ((*bitC).ptr).add(nbBytes);
-    debug_assert!(kFast == 0 || (*bitC).ptr <= (*bitC).endPtr);
-    if kFast == 0 && (*bitC).ptr > (*bitC).endPtr {
-        (*bitC).ptr = (*bitC).endPtr;
+    debug_assert!(bitC.ptr <= bitC.endPtr);
+    MEM_writeLEST(bitC.ptr as *mut c_void, bitContainer);
+    bitC.ptr = (bitC.ptr).add(nbBytes);
+    debug_assert!(kFast == 0 || bitC.ptr <= bitC.endPtr);
+    if kFast == 0 && bitC.ptr > bitC.endPtr {
+        bitC.ptr = bitC.endPtr;
     }
     /* bitContainer doesn't need to be modified because the leftover
      * bits are already the top bitPos bits. And we don't care about
