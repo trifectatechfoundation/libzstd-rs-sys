@@ -290,10 +290,10 @@ pub unsafe fn ZSTD_buildCTable(
             1
         }
         3 => {
-            libc::memcpy(
-                nextCTable as *mut core::ffi::c_void,
-                prevCTable as *const core::ffi::c_void,
-                prevCTableSize as libc::size_t,
+            core::ptr::copy_nonoverlapping(
+                prevCTable.cast::<u8>(),
+                nextCTable.cast::<u8>(),
+                prevCTableSize,
             );
             0
         }

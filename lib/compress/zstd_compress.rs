@@ -4547,11 +4547,7 @@ unsafe fn ZSTD_copyCDictTableIntoCCtx(
             *dst.add(i) = index;
         }
     } else {
-        libc::memcpy(
-            dst as *mut core::ffi::c_void,
-            src as *const core::ffi::c_void,
-            tableSize.wrapping_mul(size_of::<u32>()),
-        );
+        core::ptr::copy_nonoverlapping(src, dst, tableSize);
     }
 }
 
@@ -4606,10 +4602,10 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     // copy tag table
     if ZSTD_rowMatchFinderUsed((*cdict_cParams).strategy, (*cdict).useRowMatchFinder) {
         let tagTableSize = hSize;
-        libc::memcpy(
-            (*cctx).blockState.matchState.tagTable as *mut core::ffi::c_void,
-            (*cdict).matchState.tagTable as *const core::ffi::c_void,
-            tagTableSize as libc::size_t,
+        core::ptr::copy_nonoverlapping(
+            (*cdict).matchState.tagTable,
+            (*cctx).blockState.matchState.tagTable,
+            tagTableSize,
         );
         (*cctx).blockState.matchState.hashSalt = (*cdict).matchState.hashSalt;
     }
@@ -4724,20 +4720,20 @@ unsafe fn ZSTD_copyCCtx_internal(
     } else {
         0
     };
-    libc::memcpy(
-        (*dstCCtx).blockState.matchState.hashTable as *mut core::ffi::c_void,
-        (*srcCCtx).blockState.matchState.hashTable as *const core::ffi::c_void,
-        hSize.wrapping_mul(size_of::<u32>()) as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        (*srcCCtx).blockState.matchState.hashTable,
+        (*dstCCtx).blockState.matchState.hashTable,
+        hSize,
     );
-    libc::memcpy(
-        (*dstCCtx).blockState.matchState.chainTable as *mut core::ffi::c_void,
-        (*srcCCtx).blockState.matchState.chainTable as *const core::ffi::c_void,
-        chainSize.wrapping_mul(size_of::<u32>()) as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        (*srcCCtx).blockState.matchState.chainTable,
+        (*dstCCtx).blockState.matchState.chainTable,
+        chainSize,
     );
-    libc::memcpy(
-        (*dstCCtx).blockState.matchState.hashTable3 as *mut core::ffi::c_void,
-        (*srcCCtx).blockState.matchState.hashTable3 as *const core::ffi::c_void,
-        h3Size.wrapping_mul(size_of::<u32>()) as libc::size_t,
+    core::ptr::copy_nonoverlapping(
+        (*srcCCtx).blockState.matchState.hashTable3,
+        (*dstCCtx).blockState.matchState.hashTable3,
+        h3Size,
     );
 
     ZSTD_cwksp_mark_tables_clean(&mut (*dstCCtx).workspace);
