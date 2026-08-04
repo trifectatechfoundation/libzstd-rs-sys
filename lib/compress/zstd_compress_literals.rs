@@ -168,8 +168,8 @@ pub unsafe fn ZSTD_compressLiterals(
     srcSize: size_t,
     entropyWorkspace: *mut core::ffi::c_void,
     entropyWorkspaceSize: size_t,
-    prevHuf: *const ZSTD_hufCTables_t,
-    nextHuf: *mut ZSTD_hufCTables_t,
+    prevHuf: &ZSTD_hufCTables_t,
+    nextHuf: &mut ZSTD_hufCTables_t,
     strategy: ZSTD_strategy,
     disableLiteralCompression: bool,
     suspectUncompressible: core::ffi::c_int,
@@ -191,7 +191,7 @@ pub unsafe fn ZSTD_compressLiterals(
     }
 
     // if too small, don't even attempt compression (speed opt)
-    if srcSize < ZSTD_minLiteralsToCompress(strategy, (*prevHuf).repeatMode) {
+    if srcSize < ZSTD_minLiteralsToCompress(strategy, prevHuf.repeatMode) {
         return ZSTD_noCompressLiterals(dst, dstCapacity, src, srcSize);
     }
 
@@ -199,7 +199,7 @@ pub unsafe fn ZSTD_compressLiterals(
         return Error::dstSize_tooSmall.to_error_code();
     }
 
-    let mut repeat = (*prevHuf).repeatMode;
+    let mut repeat = prevHuf.repeatMode;
     let flags = (if bmi2 != 0 {
         HUF_flags_bmi2 as core::ffi::c_int
     } else {
@@ -265,7 +265,7 @@ pub unsafe fn ZSTD_compressLiterals(
         LitHufLog,
         entropyWorkspace,
         entropyWorkspaceSize,
-        ((*nextHuf).CTable).as_mut_ptr(),
+        (nextHuf.CTable).as_mut_ptr(),
         &mut repeat,
         flags,
     );
@@ -292,7 +292,7 @@ pub unsafe fn ZSTD_compressLiterals(
 
     if hType == set_compressed {
         // using a newly constructed table
-        (*nextHuf).repeatMode = HUF_repeat_check;
+        nextHuf.repeatMode = HUF_repeat_check;
     }
 
     // Build header
