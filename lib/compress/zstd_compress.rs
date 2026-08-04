@@ -5896,7 +5896,7 @@ unsafe fn ZSTD_copyBlockSequences(
         (seqCollector.seqStart).add(seqCollector.seqIndex)
     };
     let nbOutSequences = nbInSequences.wrapping_add(1);
-    let mut nbOutLiterals = 0 as size_t;
+    let mut nbOutLiterals = 0usize;
     let mut repcodes = repcodes_s { rep: [0; 3] };
 
     if nbOutSequences > (seqCollector.maxSequences).wrapping_sub(seqCollector.seqIndex) {
@@ -6041,7 +6041,7 @@ pub unsafe extern "C" fn ZSTD_mergeBlockDelimiters(
     seqsSize: size_t,
 ) -> size_t {
     let mut in_0 = 0;
-    let mut out = 0 as size_t;
+    let mut out = 0usize;
     while in_0 < seqsSize {
         if (*sequences.add(in_0)).offset == 0 && (*sequences.add(in_0)).matchLength == 0 {
             if in_0 != seqsSize.wrapping_sub(1) {
@@ -6557,7 +6557,7 @@ unsafe fn ZSTD_estimateBlockSize_sequences(
         (1 + 1
             + (nbSeq >= 128) as core::ffi::c_int
             + (nbSeq >= LONGNBSEQ as size_t) as core::ffi::c_int) as size_t;
-    let mut cSeqSizeEstimate = 0 as size_t;
+    let mut cSeqSizeEstimate = 0usize;
 
     cSeqSizeEstimate = cSeqSizeEstimate.wrapping_add(ZSTD_estimateBlockSize_symbolType(
         fseMetadata.ofType,
@@ -6689,7 +6689,7 @@ unsafe fn ZSTD_buildEntropyStatisticsAndEstimateSubBlockSize(
 
 /// Returns literals bytes represented in a seqStore
 unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t {
-    let mut literalsBytes = 0 as size_t;
+    let mut literalsBytes = 0usize;
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as size_t;
     for i in 0..nbSeqs {
         let seq = *((*seqStore).sequencesStart).add(i);
@@ -6705,7 +6705,7 @@ unsafe fn ZSTD_countSeqStoreLiteralsBytes(seqStore: *const SeqStore_t) -> size_t
 
 /// Returns match bytes represented in a seqStore
 unsafe fn ZSTD_countSeqStoreMatchBytes(seqStore: *const SeqStore_t) -> size_t {
-    let mut matchBytes = 0 as size_t;
+    let mut matchBytes = 0usize;
     let nbSeqs = ((*seqStore).sequences).offset_from((*seqStore).sequencesStart) as size_t;
     for i in 0..nbSeqs {
         let seq = *((*seqStore).sequencesStart).add(i);
@@ -7038,10 +7038,10 @@ unsafe fn ZSTD_compressBlock_splitBlock_internal(
     lastBlock: u32,
     nbSeq: u32,
 ) -> size_t {
-    let mut cSize = 0 as size_t;
+    let mut cSize = 0usize;
     let mut ip = src as *const u8;
     let mut op = dst as *mut u8;
-    let mut srcBytesTotal = 0 as size_t;
+    let mut srcBytesTotal = 0usize;
     let partitions = ((*zc).blockSplitCtx.partitions).as_mut_ptr();
     let nextSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.nextSeqStore;
     let currSeqStore: &mut SeqStore_t = &mut (*zc).blockSplitCtx.currSeqStore;
@@ -7640,7 +7640,7 @@ unsafe fn ZSTD_writeFrameHeader(
         .wrapping_add(checksumFlag << 2)
         .wrapping_add(singleSegment << 5)
         .wrapping_add(fcsCode << 6) as u8;
-    let mut pos = 0 as size_t;
+    let mut pos = 0usize;
 
     if dstCapacity < 18 {
         return Error::dstSize_tooSmall.to_error_code();
@@ -11567,7 +11567,7 @@ unsafe fn blockSize_explicitDelimiter(
     seqPos: ZSTD_SequencePosition,
 ) -> size_t {
     let mut end = 0;
-    let mut blockSize = 0 as size_t;
+    let mut blockSize = 0usize;
     let mut spos = seqPos.idx as size_t;
 
     while spos < inSeqsSize {
@@ -11636,7 +11636,7 @@ unsafe fn ZSTD_compressSequences_internal(
     src: *const core::ffi::c_void,
     srcSize: size_t,
 ) -> size_t {
-    let mut cSize = 0 as size_t;
+    let mut cSize = 0usize;
     let mut remaining = srcSize;
     let mut seqPos = {
         ZSTD_SequencePosition {
@@ -11825,7 +11825,7 @@ pub unsafe extern "C" fn ZSTD_compressSequences(
     srcSize: size_t,
 ) -> size_t {
     let mut op = dst as *mut u8;
-    let mut cSize = 0 as size_t;
+    let mut cSize = 0usize;
 
     // Transparent initialization stage, same as compressStream2()
     let err_code = ZSTD_CCtx_init_compressStream2(cctx, ZSTD_e_end, srcSize);
@@ -12046,7 +12046,7 @@ pub unsafe fn ZSTD_get1BlockSummary(seqs: *const ZSTD_Sequence, nbSeqs: size_t) 
     let mut litMatchSize1 = 0u64;
     let mut litMatchSize2 = 0u64;
     let mut litMatchSize3 = 0u64;
-    let mut n = 0 as size_t;
+    let mut n = 0usize;
 
     if nbSeqs > 3 as size_t {
         // Process the input in 4 independent streams to reach high throughput.
@@ -12166,7 +12166,7 @@ unsafe fn ZSTD_compressSequencesAndLiterals_internal(
     srcSize: size_t,
 ) -> size_t {
     let mut remaining = srcSize;
-    let mut cSize = 0 as size_t;
+    let mut cSize = 0usize;
     let mut op = dst as *mut u8;
     let repcodeResolution =
         (*cctx).appliedParams.searchForExternalRepcodes == ZSTD_ParamSwitch_e::ZSTD_ps_enable;
@@ -12312,7 +12312,7 @@ pub unsafe extern "C" fn ZSTD_compressSequencesAndLiterals(
     decompressedSize: size_t,
 ) -> size_t {
     let mut op = dst as *mut u8;
-    let mut cSize = 0 as size_t;
+    let mut cSize = 0usize;
 
     // Transparent initialization stage, same as compressStream2()
     if litCapacity < litSize {

@@ -356,7 +356,7 @@ unsafe fn ZSTD_compressSubBlock_literal(
     } else {
         set_repeat as core::ffi::c_int as core::ffi::c_uint
     }) as SymbolEncodingType_e;
-    let mut cLitSize = 0 as size_t;
+    let mut cLitSize = 0usize;
 
     *entropyWritten = false;
     if litSize == 0
@@ -484,8 +484,8 @@ unsafe fn ZSTD_seqDecompressedSize(
     litSize: size_t,
     lastSubBlock: core::ffi::c_int,
 ) -> size_t {
-    let mut matchLengthSum = 0 as size_t;
-    let mut litLengthSum = 0 as size_t;
+    let mut matchLengthSum = 0usize;
+    let mut litLengthSum = 0usize;
     for n in 0..nbSeqs {
         let seqLen = ZSTD_getSequenceLength(seqStore, sequences.add(n));
         litLengthSum = litLengthSum.wrapping_add(seqLen.litLength as size_t);
@@ -837,7 +837,7 @@ unsafe fn ZSTD_estimateSubBlockSize_sequences(
     writeEntropy: bool,
 ) -> size_t {
     let sequencesSectionHeaderSize = 3; // Use hard coded size of 3 bytes
-    let mut cSeqSizeEstimate = 0 as size_t;
+    let mut cSeqSizeEstimate = 0usize;
     if nbSeq == 0 {
         return sequencesSectionHeaderSize;
     }
@@ -959,7 +959,7 @@ unsafe fn countLiterals(
     sp: *const SeqDef,
     seqCount: size_t,
 ) -> size_t {
-    let mut total = 0 as size_t;
+    let mut total = 0usize;
     for n in 0..seqCount {
         total =
             total.wrapping_add((ZSTD_getSequenceLength(seqStore, sp.add(n))).litLength as size_t);
@@ -978,7 +978,7 @@ unsafe fn sizeBlockSequences(
     firstSubBlock: core::ffi::c_int,
 ) -> size_t {
     let mut n: size_t = 0;
-    let mut budget = 0 as size_t;
+    let mut budget = 0usize;
     let mut inSize = 0;
 
     // entropy headers, generous estimate
