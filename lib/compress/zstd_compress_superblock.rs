@@ -530,9 +530,8 @@ unsafe fn ZSTD_compressSubBlock_sequences(
         return Error::dstSize_tooSmall.to_error_code();
     }
     if nbSeq < 128 {
-        let fresh0 = op;
+        *op = nbSeq as u8;
         op = op.add(1);
-        *fresh0 = nbSeq as u8;
     } else if nbSeq < LONGNBSEQ as size_t {
         *op = (nbSeq >> 8).wrapping_add(0x80 as core::ffi::c_int as size_t) as u8;
         *op.add(1) = nbSeq as u8;
@@ -550,9 +549,8 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     }
 
     // seqHead : flags for FSE encoding type
-    let fresh1 = op;
+    seqHead = op;
     op = op.add(1);
-    seqHead = fresh1;
 
     if writeEntropy {
         let LLtype = fseMetadata.llType;

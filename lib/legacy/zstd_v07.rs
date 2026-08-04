@@ -469,9 +469,8 @@ unsafe fn FSEv07_readNCount(
                 return Err(Error::maxSymbolValue_tooSmall);
             }
             while charnum < n0 {
-                let fresh0 = charnum;
+                normalizedCounter[charnum as usize] = 0;
                 charnum = charnum.wrapping_add(1);
-                normalizedCounter[fresh0 as usize] = 0;
             }
             if ip <= iend.sub(7) || ip.offset((bitCount >> 3) as isize) <= iend.sub(4) {
                 ip = ip.offset((bitCount >> 3) as isize);
@@ -495,9 +494,8 @@ unsafe fn FSEv07_readNCount(
         }
         count -= 1;
         remaining -= count.abs() as core::ffi::c_int;
-        let fresh1 = charnum;
+        normalizedCounter[charnum as usize] = count;
         charnum = charnum.wrapping_add(1);
-        normalizedCounter[fresh1 as usize] = count;
         previous0 = count == 0;
         while remaining < threshold {
             nbBits -= 1;
@@ -631,9 +629,8 @@ fn FSEv07_buildDTable<const N: usize>(
     let largeLimit = ((1) << tableLog.wrapping_sub(1)) as i16;
     for s in 0..maxSV1 {
         if normalizedCounter[s] == -1 {
-            let fresh4 = highThreshold;
+            tableDecode[highThreshold as usize].symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            tableDecode[fresh4 as usize].symbol = s as u8;
             symbolNext[s] = 1;
         } else {
             if normalizedCounter[s] >= largeLimit {

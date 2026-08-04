@@ -431,9 +431,8 @@ pub unsafe fn HUF_readCTable(
             n_3 = 0;
             while n_3 < nbSymbols {
                 let fresh1 = &mut valPerRank[HUF_getNbBits(*ct.offset(n_3 as isize))];
-                let fresh2 = *fresh1;
+                HUF_setValue(ct.offset(n_3 as isize), *fresh1 as size_t);
                 *fresh1 += 1;
-                HUF_setValue(ct.offset(n_3 as isize), fresh2 as size_t);
                 n_3 += 1;
             }
         }
@@ -799,9 +798,8 @@ unsafe fn HUF_sort(
         let c = *count.offset(n as isize);
         let r = (HUF_getIndex(c)) + 1;
         let fresh10 = &mut (*rankPosition.offset(r as isize)).curr;
-        let fresh11 = *fresh10;
+        let pos = *fresh10 as u32;
         *fresh10 += 1;
-        let pos = fresh11 as u32;
         debug_assert!(pos < maxSymbolValue1);
         (*huffNode.offset(pos as isize)).count = c;
         (*huffNode.offset(pos as isize)).byte = n as u8;
@@ -864,23 +862,23 @@ unsafe fn HUF_buildTree(huffNode: *mut nodeElt, maxSymbolValue: u32) -> c_int {
     while nodeNb <= nodeRoot {
         let n1 =
             if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let fresh13 = lowS;
+                let val = lowS;
                 lowS -= 1;
-                fresh13
+                val
             } else {
-                let fresh14 = lowN;
+                let val = lowN;
                 lowN += 1;
-                fresh14
+                val
             };
         let n2 =
             if (*huffNode.offset(lowS as isize)).count < (*huffNode.offset(lowN as isize)).count {
-                let fresh15 = lowS;
+                let val = lowS;
                 lowS -= 1;
-                fresh15
+                val
             } else {
-                let fresh16 = lowN;
+                let val = lowN;
                 lowN += 1;
-                fresh16
+                val
             };
         (*huffNode.offset(nodeNb as isize)).count =
             ((*huffNode.offset(n1 as isize)).count) + ((*huffNode.offset(n2 as isize)).count);
@@ -940,19 +938,19 @@ unsafe fn HUF_buildCTableFromTree(
         min = (min as c_int + nbPerRank[n as usize] as c_int) as u16;
         min = (min as c_int >> 1) as u16;
     }
+
     for n in 0..alphabetSize {
         HUF_setNbBits(
             ct.offset((*huffNode.offset(n as isize)).byte as c_int as isize),
             (*huffNode.offset(n as isize)).nbBits as size_t,
         ); /* push nbBits per symbol, symbol order */
     }
-
     for n in 0..alphabetSize {
         let fresh19 = &mut valPerRank[HUF_getNbBits(*ct.offset(n as isize))];
-        let fresh20 = *fresh19;
+        HUF_setValue(ct.offset(n as isize), *fresh19 as size_t); /* assign value within rank, symbol order */
         *fresh19 += 1;
-        HUF_setValue(ct.offset(n as isize), fresh20 as size_t); /* assign value within rank, symbol order */
     }
+
     HUF_writeCTableHeader(CTable, maxNbBits, maxSymbolValue);
 }
 

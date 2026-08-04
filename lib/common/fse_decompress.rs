@@ -112,9 +112,8 @@ fn FSE_buildDTable_internal(
     s = 0;
     while s < maxSV1 {
         if normalizedCounter[s as usize] as core::ffi::c_int == -(1) {
-            let fresh0 = highThreshold;
+            elements[highThreshold as usize].symbol = s as u8;
             highThreshold = highThreshold.wrapping_sub(1);
-            elements[fresh0 as usize].symbol = s as u8;
             symbols[s as usize] = 1;
         } else {
             if normalizedCounter[s as usize] as core::ffi::c_int >= largeLimit as core::ffi::c_int {

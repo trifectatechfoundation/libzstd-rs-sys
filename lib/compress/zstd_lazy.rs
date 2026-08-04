@@ -625,9 +625,8 @@ pub unsafe fn ZSTD_dedicatedDictSearch_lazy_loadDictionary(
                     // allocated for the regular one.
                     break;
                 }
-                let fresh2 = chainPos;
+                *chainTable.offset(chainPos as isize) = i;
                 chainPos = chainPos.wrapping_add(1);
-                *chainTable.offset(fresh2 as isize) = i;
                 count = count.wrapping_add(1);
                 if i < tmpMinChain {
                     break;
@@ -1503,9 +1502,8 @@ unsafe fn ZSTD_RowFindBestMatch(
                 prefetch_read_data(dictBase.add(matchIndex as usize), Locality::L1);
             }
 
-            let fresh3 = numMatches;
+            *matchBuffer.as_mut_ptr().add(numMatches) = matchIndex;
             numMatches = numMatches.wrapping_add(1);
-            *matchBuffer.as_mut_ptr().add(fresh3) = matchIndex;
             nbAttempts = nbAttempts.wrapping_sub(1);
         }
         matches &= matches.wrapping_sub(1);
@@ -1515,9 +1513,8 @@ unsafe fn ZSTD_RowFindBestMatch(
     // in ZSTD_row_update_internal() at the next search.
     let pos = ZSTD_row_nextIndex(tagRow, rowMask);
     *tagRow.offset(pos as isize) = tag as u8;
-    let fresh4 = ms.nextToUpdate;
+    *row.offset(pos as isize) = ms.nextToUpdate;
     ms.nextToUpdate = (ms.nextToUpdate).wrapping_add(1);
-    *row.offset(pos as isize) = fresh4;
 
     // Return the longest match
     while currMatch < numMatches {
@@ -1593,9 +1590,8 @@ unsafe fn ZSTD_RowFindBestMatch(
                 if matchIndex_1 < dmsLowestIndex {
                     break;
                 }
-                let fresh5 = numMatches_0;
+                *matchBuffer_0.as_mut_ptr().add(numMatches_0) = matchIndex_1;
                 numMatches_0 = numMatches_0.wrapping_add(1);
-                *matchBuffer_0.as_mut_ptr().add(fresh5) = matchIndex_1;
                 nbAttempts = nbAttempts.wrapping_sub(1);
             }
             matches_0 &= matches_0.wrapping_sub(1);
