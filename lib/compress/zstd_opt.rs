@@ -1773,24 +1773,24 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
 
 /// Wrapper function to update ldm seq store and call ldm functions as necessary.
 unsafe fn ZSTD_optLdm_processMatchCandidate(
-    optLdm: *mut ZSTD_optLdm_t,
+    optLdm: &mut ZSTD_optLdm_t,
     matches: *mut ZSTD_match_t,
-    nbMatches: *mut u32,
+    nbMatches: &mut u32,
     currPosInBlock: u32,
     remainingBytes: u32,
     minMatch: u32,
 ) {
-    if (*optLdm).seqStore.size == 0 || (*optLdm).seqStore.pos >= (*optLdm).seqStore.size {
+    if optLdm.seqStore.size == 0 || optLdm.seqStore.pos >= optLdm.seqStore.size {
         return;
     }
 
-    if currPosInBlock >= (*optLdm).endPosInBlock {
-        if currPosInBlock > (*optLdm).endPosInBlock {
+    if currPosInBlock >= optLdm.endPosInBlock {
+        if currPosInBlock > optLdm.endPosInBlock {
             // The position at which ZSTD_optLdm_processMatchCandidate() is called is not necessarily
             // at the end of a match from the ldm seq store, and will often be some bytes
             // over beyond matchEndPosInBlock. As such, we need to correct for these "overshoots"
-            let posOvershoot = currPosInBlock.wrapping_sub((*optLdm).endPosInBlock);
-            ZSTD_optLdm_skipRawSeqStoreBytes(&mut (*optLdm).seqStore, posOvershoot as size_t);
+            let posOvershoot = currPosInBlock.wrapping_sub(optLdm.endPosInBlock);
+            ZSTD_optLdm_skipRawSeqStoreBytes(&mut optLdm.seqStore, posOvershoot as size_t);
         }
         ZSTD_opt_getNextMatchAndUpdateSeqStore(optLdm, currPosInBlock, remainingBytes);
     }
