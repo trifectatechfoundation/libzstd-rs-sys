@@ -1741,20 +1741,20 @@ unsafe fn ZSTD_opt_getNextMatchAndUpdateSeqStore(
 /// into 'matches'. Maintains the correct ordering of 'matches'.
 unsafe fn ZSTD_optLdm_maybeAddMatch(
     matches: *mut ZSTD_match_t,
-    nbMatches: *mut u32,
-    optLdm: *const ZSTD_optLdm_t,
+    nbMatches: &mut u32,
+    optLdm: &ZSTD_optLdm_t,
     currPosInBlock: u32,
     minMatch: u32,
 ) {
-    let posDiff = currPosInBlock.wrapping_sub((*optLdm).startPosInBlock);
+    let posDiff = currPosInBlock.wrapping_sub(optLdm.startPosInBlock);
     // Note: ZSTD_match_t actually contains offBase and matchLength (before subtracting MINMATCH)
-    let candidateMatchLength = ((*optLdm).endPosInBlock)
-        .wrapping_sub((*optLdm).startPosInBlock)
+    let candidateMatchLength = (optLdm.endPosInBlock)
+        .wrapping_sub(optLdm.startPosInBlock)
         .wrapping_sub(posDiff);
 
     // Ensure that current block position is not outside of the match
-    if currPosInBlock < (*optLdm).startPosInBlock
-        || currPosInBlock >= (*optLdm).endPosInBlock
+    if currPosInBlock < optLdm.startPosInBlock
+        || currPosInBlock >= optLdm.endPosInBlock
         || candidateMatchLength < minMatch
     {
         return;
@@ -1764,7 +1764,7 @@ unsafe fn ZSTD_optLdm_maybeAddMatch(
         || candidateMatchLength > (*matches.offset((*nbMatches).wrapping_sub(1) as isize)).len
             && *nbMatches < ZSTD_OPT_NUM as u32
     {
-        let candidateOffBase = ((*optLdm).offset).wrapping_add(ZSTD_REP_NUM as u32);
+        let candidateOffBase = (optLdm.offset).wrapping_add(ZSTD_REP_NUM as u32);
         (*matches.offset(*nbMatches as isize)).len = candidateMatchLength;
         (*matches.offset(*nbMatches as isize)).off = candidateOffBase;
         *nbMatches = (*nbMatches).wrapping_add(1);
