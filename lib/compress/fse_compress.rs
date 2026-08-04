@@ -43,12 +43,8 @@ unsafe fn FSE_initCState2(statePtr: &mut FSE_CState_t, ct: *const FSE_CTable, sy
 }
 
 #[inline]
-unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: *const FSE_CState_t) {
-    BIT_addBits(
-        bitC,
-        (*statePtr).value as BitContainerType,
-        (*statePtr).stateLog,
-    );
+unsafe fn FSE_flushCState(bitC: &mut BIT_CStream_t, statePtr: &FSE_CState_t) {
+    BIT_addBits(bitC, statePtr.value as BitContainerType, statePtr.stateLog);
     BIT_flushBits(bitC);
 }
 
