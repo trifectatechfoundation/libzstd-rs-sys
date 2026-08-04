@@ -506,14 +506,14 @@ unsafe fn ZSTD_compressSubBlock_sequences(
     llCode: *const u8,
     mlCode: *const u8,
     ofCode: *const u8,
-    cctxParams: *const ZSTD_CCtx_params,
+    cctxParams: &ZSTD_CCtx_params,
     dst: *mut core::ffi::c_void,
     dstCapacity: size_t,
     bmi2: core::ffi::c_int,
     writeEntropy: bool,
     entropyWritten: &mut bool,
 ) -> size_t {
-    let longOffsets = (*cctxParams).cParams.windowLog
+    let longOffsets = cctxParams.cParams.windowLog
         > (if MEM_32bits() {
             STREAM_ACCUMULATOR_MIN_32
         } else {
