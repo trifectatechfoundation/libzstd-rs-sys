@@ -11101,21 +11101,21 @@ unsafe fn ZSTD_transferSequences_wBlockDelim(
 
     // If we skipped repcode search while parsing, we need to update repcodes now
     if externalRepSearch == ZSTD_ParamSwitch_e::ZSTD_ps_disable && idx != startIdx {
-        let rep = (updatedRepcodes.rep).as_mut_ptr();
+        let rep = &mut updatedRepcodes.rep;
         let lastSeqIdx = idx.wrapping_sub(1); // index of last non-block-delimiter sequence
 
         if lastSeqIdx >= startIdx.wrapping_add(2) {
-            *rep.add(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
-            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            rep[2] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            rep[1] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            rep[0] = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else if lastSeqIdx == startIdx.wrapping_add(1) {
-            *rep.add(2) = *rep;
-            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            rep[2] = rep[0];
+            rep[1] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            rep[0] = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else {
-            *rep.add(2) = *rep.add(1);
-            *rep.add(1) = *rep;
-            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            rep[2] = rep[1];
+            rep[1] = rep[0];
+            rep[0] = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         }
     }
 
@@ -11768,21 +11768,21 @@ pub unsafe fn ZSTD_convertBlockSequences(
 
     // If we skipped repcode search while parsing, we need to update repcodes now
     if !repcodeResolution && nbSequences > 1 {
-        let rep = (updatedRepcodes.rep).as_mut_ptr();
+        let rep = &mut updatedRepcodes.rep;
 
         if nbSequences >= 4 {
             let lastSeqIdx = (nbSequences as u32).wrapping_sub(2); // index of last full sequence
-            *rep.add(2) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
-            *rep.add(1) = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
-            *rep = (*inSeqs.offset(lastSeqIdx as isize)).offset;
+            rep[2] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(2) as isize)).offset;
+            rep[1] = (*inSeqs.offset(lastSeqIdx.wrapping_sub(1) as isize)).offset;
+            rep[0] = (*inSeqs.offset(lastSeqIdx as isize)).offset;
         } else if nbSequences == 3 {
-            *rep.add(2) = *rep;
-            *rep.add(1) = (*inSeqs).offset;
-            *rep = (*inSeqs.add(1)).offset;
+            rep[2] = rep[0];
+            rep[1] = (*inSeqs).offset;
+            rep[0] = (*inSeqs.add(1)).offset;
         } else {
-            *rep.add(2) = *rep.add(1);
-            *rep.add(1) = *rep;
-            *rep = (*inSeqs).offset;
+            rep[2] = rep[1];
+            rep[1] = rep[0];
+            rep[0] = (*inSeqs).offset;
         }
     }
 
