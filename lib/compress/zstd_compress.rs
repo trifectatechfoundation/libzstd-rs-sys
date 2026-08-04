@@ -6143,7 +6143,7 @@ unsafe fn ZSTD_buildDummySequencesStatistics(
 /// - The size of the fse tables
 /// - Or an error code
 unsafe fn ZSTD_buildBlockEntropyStats_sequences(
-    seqStorePtr: *const SeqStore_t,
+    seqStorePtr: &SeqStore_t,
     prevEntropy: &ZSTD_fseCTables_t,
     nextEntropy: &mut ZSTD_fseCTables_t,
     cctxParams: &ZSTD_CCtx_params,
@@ -6152,7 +6152,7 @@ unsafe fn ZSTD_buildBlockEntropyStats_sequences(
     wkspSize: size_t,
 ) -> size_t {
     let strategy = cctxParams.cParams.strategy;
-    let nbSeq = ((*seqStorePtr).sequences).offset_from((*seqStorePtr).sequencesStart) as size_t;
+    let nbSeq = (seqStorePtr.sequences).offset_from(seqStorePtr.sequencesStart) as size_t;
     let ostart = (fseMetadata.fseTablesBuffer).as_mut_ptr();
     let oend = ostart.add(size_of::<[u8; 133]>());
     let op = ostart;
