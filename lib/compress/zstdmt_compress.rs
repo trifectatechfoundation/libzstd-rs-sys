@@ -694,21 +694,17 @@ unsafe fn ZSTDMT_serialState_reset(
     0
 }
 
-unsafe fn ZSTDMT_serialState_init(serialState: *mut SerialState) -> core::ffi::c_int {
-    ptr::write_bytes(serialState as *mut u8, 0, size_of::<SerialState>());
-    core::ptr::write(
-        core::ptr::addr_of_mut!((*serialState).mutex),
-        Mutex::new(()),
+unsafe fn ZSTDMT_serialState_init(serialState: &mut SerialState) -> core::ffi::c_int {
+    ptr::write_bytes(
+        ptr::from_mut(serialState).cast::<u8>(),
+        0,
+        size_of::<SerialState>(),
     );
-    core::ptr::write(core::ptr::addr_of_mut!((*serialState).cond), Condvar::new());
-    core::ptr::write(
-        core::ptr::addr_of_mut!((*serialState).ldmWindowMutex),
-        Mutex::new(()),
-    );
-    core::ptr::write(
-        core::ptr::addr_of_mut!((*serialState).ldmWindowCond),
-        Condvar::new(),
-    );
+    // `write` rather than assignment: the old value is not a valid `Mutex`/`Condvar` to drop
+    core::ptr::write(&raw mut serialState.mutex, Mutex::new(()));
+    core::ptr::write(&raw mut serialState.cond, Condvar::new());
+    core::ptr::write(&raw mut serialState.ldmWindowMutex, Mutex::new(()));
+    core::ptr::write(&raw mut serialState.ldmWindowCond, Condvar::new());
     0
 }
 
