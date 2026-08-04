@@ -7700,8 +7700,8 @@ pub unsafe extern "C" fn ZSTD_compressBlock(
 unsafe fn ZSTD_loadDictionaryContent(
     ms: &mut ZSTD_MatchState_t,
     ls: *mut ldmState_t,
-    ws: *mut ZSTD_cwksp,
-    params: *const ZSTD_CCtx_params,
+    ws: &mut ZSTD_cwksp,
+    params: &ZSTD_CCtx_params,
     mut src: *const core::ffi::c_void,
     mut srcSize: size_t,
     dtlm: ZSTD_dictTableLoadMethod_e,
@@ -7709,11 +7709,11 @@ unsafe fn ZSTD_loadDictionaryContent(
 ) -> size_t {
     let mut ip = src as *const u8;
     let iend = ip.add(srcSize);
-    let loadLdmDict = ((*params).ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
+    let loadLdmDict = (params.ldmParams.enableLdm == ZSTD_ParamSwitch_e::ZSTD_ps_enable
         && !ls.is_null()) as core::ffi::c_int;
 
     // Assert that the ms params match the params we're being given
-    ZSTD_assertEqualCParams((*params).cParams, ms.cParams);
+    ZSTD_assertEqualCParams(params.cParams, ms.cParams);
 
     // Ensure large dictionaries can't cause index overflow
     let mut maxDictSize = (if MEM_64bits() {
@@ -7725,7 +7725,7 @@ unsafe fn ZSTD_loadDictionaryContent(
     })
     .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
 
-    let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&(*params).cParams);
+    let CDictTaggedIndices = ZSTD_CDictIndicesAreTagged(&params.cParams);
     if CDictTaggedIndices && tfp == ZSTD_tfp_forCDict {
         let shortCacheMaxDictSize = ((1 as core::ffi::c_uint) << (32 - ZSTD_SHORT_CACHE_TAG_BITS))
             .wrapping_sub(ZSTD_WINDOW_START_INDEX as core::ffi::c_uint);
@@ -7757,27 +7757,27 @@ unsafe fn ZSTD_loadDictionaryContent(
     if loadLdmDict != 0 {
         // Load the entire dict into LDM matchfinders.
         ZSTD_window_update(&mut (*ls).window, src, srcSize, false);
-        (*ls).loadedDictEnd = if (*params).forceWindow != 0 {
+        (*ls).loadedDictEnd = if params.forceWindow != 0 {
             0
         } else {
             iend.offset_from((*ls).window.base) as core::ffi::c_long as u32
         };
-        ZSTD_ldm_fillHashTable(ls, ip, iend, &(*params).ldmParams);
+        ZSTD_ldm_fillHashTable(ls, ip, iend, &params.ldmParams);
     }
 
     // If the dict is larger than we can reasonably index in our tables, only load the suffix.
     let maxDictSize_0 = 1
-        << (if (if ((*params).cParams.hashLog).wrapping_add(3)
-            > ((*params).cParams.chainLog).wrapping_add(1)
+        << (if (if (params.cParams.hashLog).wrapping_add(3)
+            > (params.cParams.chainLog).wrapping_add(1)
         {
-            ((*params).cParams.hashLog).wrapping_add(3)
+            (params.cParams.hashLog).wrapping_add(3)
         } else {
-            ((*params).cParams.chainLog).wrapping_add(1)
+            (params.cParams.chainLog).wrapping_add(1)
         }) < 31
         {
-            ((*params).cParams.hashLog)
+            (params.cParams.hashLog)
                 .wrapping_add(3)
-                .max(((*params).cParams.chainLog).wrapping_add(1))
+                .max((params.cParams.chainLog).wrapping_add(1))
         } else {
             31
         });
@@ -7788,12 +7788,12 @@ unsafe fn ZSTD_loadDictionaryContent(
     }
 
     ms.nextToUpdate = ip.offset_from(ms.window.base) as core::ffi::c_long as u32;
-    ms.loadedDictEnd = if (*params).forceWindow != 0 {
+    ms.loadedDictEnd = if params.forceWindow != 0 {
         0
     } else {
         iend.offset_from(ms.window.base) as core::ffi::c_long as u32
     };
-    ms.forceNonContiguous = (*params).deterministicRefPrefix;
+    ms.forceNonContiguous = params.deterministicRefPrefix;
 
     if srcSize <= HASH_READ_SIZE as size_t {
         return 0;
@@ -7807,7 +7807,7 @@ unsafe fn ZSTD_loadDictionaryContent(
         iend as *const core::ffi::c_void,
     );
 
-    match (*params).cParams.strategy as core::ffi::c_uint {
+    match params.cParams.strategy as core::ffi::c_uint {
         1 => {
             ZSTD_fillHashTable(ms, iend as *const core::ffi::c_void, dtlm, tfp);
         }
@@ -7817,8 +7817,8 @@ unsafe fn ZSTD_loadDictionaryContent(
         3..=5 => {
             if ms.dedicatedDictSearch != 0 {
                 ZSTD_dedicatedDictSearch_lazy_loadDictionary(ms, iend.sub(HASH_READ_SIZE as usize));
-            } else if (*params).useRowMatchFinder == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
-                let tagTableSize = 1 << (*params).cParams.hashLog;
+            } else if params.useRowMatchFinder == ZSTD_ParamSwitch_e::ZSTD_ps_enable {
+                let tagTableSize = 1 << params.cParams.hashLog;
                 ptr::write_bytes(ms.tagTable, 0, tagTableSize as usize);
                 ZSTD_row_update(ms, iend.sub(HASH_READ_SIZE as usize));
             } else {
