@@ -1281,12 +1281,12 @@ pub unsafe fn ZSTD_ldm_generateSequences(
 }
 
 pub unsafe fn ZSTD_ldm_skipSequences(
-    rawSeqStore: *mut RawSeqStore_t,
+    rawSeqStore: &mut RawSeqStore_t,
     mut srcSize: size_t,
     minMatch: u32,
 ) {
-    while srcSize > 0 && (*rawSeqStore).pos < (*rawSeqStore).size {
-        let seq = ((*rawSeqStore).seq).add((*rawSeqStore).pos);
+    while srcSize > 0 && rawSeqStore.pos < rawSeqStore.size {
+        let seq = (rawSeqStore.seq).add(rawSeqStore.pos);
         if srcSize <= (*seq).litLength as size_t {
             // Skip past srcSize literals
             (*seq).litLength = ((*seq).litLength).wrapping_sub(srcSize as u32);
@@ -1299,17 +1299,17 @@ pub unsafe fn ZSTD_ldm_skipSequences(
             (*seq).matchLength = ((*seq).matchLength).wrapping_sub(srcSize as u32);
             if (*seq).matchLength < minMatch {
                 // The match is too short, omit it
-                if ((*rawSeqStore).pos).wrapping_add(1) < (*rawSeqStore).size {
+                if (rawSeqStore.pos).wrapping_add(1) < rawSeqStore.size {
                     let fresh6 = &mut (*seq.add(1)).litLength;
                     *fresh6 = (*fresh6).wrapping_add((*seq).matchLength);
                 }
-                (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
+                rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
             }
             return;
         }
         srcSize = srcSize.wrapping_sub((*seq).matchLength as size_t);
         (*seq).matchLength = 0;
-        (*rawSeqStore).pos = ((*rawSeqStore).pos).wrapping_add(1);
+        rawSeqStore.pos = (rawSeqStore.pos).wrapping_add(1);
     }
 }
 
