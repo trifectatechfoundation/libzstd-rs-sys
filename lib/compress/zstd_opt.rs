@@ -1478,7 +1478,7 @@ unsafe fn ZSTD_btGetAllMatches_dictMatchState_4(
 }
 
 unsafe fn ZSTD_selectBtGetAllMatches(
-    ms: *const ZSTD_MatchState_t,
+    ms: &ZSTD_MatchState_t,
     dictMode: ZSTD_dictMode_e,
 ) -> ZSTD_getAllMatchesFn {
     let getAllMatchesFns: [[ZSTD_getAllMatchesFn; 4]; 3] = [
@@ -1645,7 +1645,7 @@ unsafe fn ZSTD_selectBtGetAllMatches(
             ),
         ],
     ];
-    let mls = (*ms).cParams.minMatch.clamp(3, 6);
+    let mls = ms.cParams.minMatch.clamp(3, 6);
     getAllMatchesFns[dictMode as usize][mls.wrapping_sub(3) as usize]
 }
 
