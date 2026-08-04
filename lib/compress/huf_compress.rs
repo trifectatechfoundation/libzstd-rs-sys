@@ -511,13 +511,8 @@ unsafe fn HUF_setMaxHeight(huffNode: *mut nodeElt, lastNonNull: u32, targetNbBit
         /* repay normalized cost */
         {
             let noSymbol = 0xf0f0f0f0 as c_uint;
-            let mut rankLast: [u32; HUF_TABLELOG_MAX + 2] = [0; HUF_TABLELOG_MAX + 2];
             /* Get pos of last (smallest = lowest cum. count) symbol per rank */
-            ptr::write_bytes(
-                rankLast.as_mut_ptr() as *mut u8,
-                0xf0,
-                size_of::<[u32; HUF_TABLELOG_MAX + 2]>(),
-            );
+            let mut rankLast: [u32; HUF_TABLELOG_MAX + 2] = [noSymbol; HUF_TABLELOG_MAX + 2];
             {
                 let mut currentNbBits = targetNbBits;
                 for pos in (0..n + 1).rev() {
