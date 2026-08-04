@@ -1677,7 +1677,7 @@ pub unsafe fn HUF_optimalTableLog(
         /* cheap evaluation, based on FSE */
         return FSE_optimalTableLog_internal(maxTableLog, srcSize, maxSymbolValue, 1);
     }
-    let dst = (workSpace as *mut u8).offset(size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
+    let dst = workSpace.byte_offset(size_of::<HUF_WriteCTableWksp>() as c_ulong as isize);
     let dstSize = wkspSize - size_of::<HUF_WriteCTableWksp>();
     let mut hSize: size_t = 0;
     let mut newSize: size_t = 0;
@@ -1703,7 +1703,7 @@ pub unsafe fn HUF_optimalTableLog(
                 break;
             }
             hSize = HUF_writeCTable_wksp(
-                dst as *mut c_void,
+                dst,
                 dstSize,
                 table,
                 maxSymbolValue,
