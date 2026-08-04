@@ -555,7 +555,7 @@ unsafe fn ZSTD_ldm_gear_init(state: &mut ldmRollingHashState_t, params: *const l
     // and, because of the previous remark, we make sure these bits
     // have the highest possible weight while still respecting
     // condition 2.
-    if hashRateLog > 0 as core::ffi::c_uint && hashRateLog <= maxBitsInMask {
+    if hashRateLog > 0 && hashRateLog <= maxBitsInMask {
         state.stopMask =
             (1u64 << hashRateLog).wrapping_sub(1) << maxBitsInMask.wrapping_sub(hashRateLog);
     } else {

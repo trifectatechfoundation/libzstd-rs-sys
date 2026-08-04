@@ -3706,7 +3706,7 @@ fn ZSTD_sizeof_matchState(
     ) {
         (1 as size_t) << cParams.chainLog
     } else {
-        0 as size_t
+        0
     };
     let hSize = (1 as size_t) << cParams.hashLog;
     let hashLog3 = if forCCtx != 0 && cParams.minMatch == 3 {
@@ -3721,7 +3721,7 @@ fn ZSTD_sizeof_matchState(
     let h3Size = if hashLog3 != 0 {
         (1 as size_t) << hashLog3
     } else {
-        0 as size_t
+        0
     };
     // We don't use ZSTD_cwksp_alloc_size() here because the tables aren't
     // surrounded by redzones in ASAN.
@@ -4124,7 +4124,7 @@ unsafe fn ZSTD_reset_matchState(
     ) {
         (1 as size_t) << cParams.chainLog
     } else {
-        0 as size_t
+        0
     };
     let hSize = (1 as size_t) << cParams.hashLog;
     let hashLog3 = if forWho as core::ffi::c_uint
@@ -4142,7 +4142,7 @@ unsafe fn ZSTD_reset_matchState(
     let h3Size = if hashLog3 != 0 {
         (1 as size_t) << hashLog3
     } else {
-        0 as size_t
+        0
     };
 
     if forceResetIndex as core::ffi::c_uint
@@ -4688,7 +4688,7 @@ unsafe fn ZSTD_resetCCtx_byCopyingCDict(
     let h3Size = if h3log != 0 {
         (1 as size_t) << h3log
     } else {
-        0 as size_t
+        0
     };
     ptr::write_bytes(
         (*cctx).blockState.matchState.hashTable3 as *mut u8,
@@ -4790,14 +4790,14 @@ unsafe fn ZSTD_copyCCtx_internal(
     ) {
         (1 as size_t) << (*srcCCtx).appliedParams.cParams.chainLog
     } else {
-        0 as size_t
+        0
     };
     let hSize = (1 as size_t) << (*srcCCtx).appliedParams.cParams.hashLog;
     let h3log = (*srcCCtx).blockState.matchState.hashLog3;
     let h3Size = if h3log != 0 {
         (1 as size_t) << h3log
     } else {
-        0 as size_t
+        0
     };
     libc::memcpy(
         (*dstCCtx).blockState.matchState.hashTable as *mut core::ffi::c_void,
