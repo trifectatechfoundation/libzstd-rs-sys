@@ -4405,7 +4405,7 @@ static attachDictSizeCutoffs: [size_t; 10] = [
 
 unsafe fn ZSTD_shouldAttachDict(
     cdict: *const ZSTD_CDict,
-    params: *const ZSTD_CCtx_params,
+    params: &ZSTD_CCtx_params,
     pledgedSrcSize: u64,
 ) -> bool {
     let cutoff = attachDictSizeCutoffs[(*cdict).matchState.cParams.strategy as usize];
@@ -4413,9 +4413,9 @@ unsafe fn ZSTD_shouldAttachDict(
     dedicatedDictSearch != 0
         || (pledgedSrcSize <= cutoff as u64
             || pledgedSrcSize as core::ffi::c_ulonglong == ZSTD_CONTENTSIZE_UNKNOWN
-            || (*params).attachDictPref == ZSTD_dictAttachPref_e::ZSTD_dictForceAttach)
-            && (*params).attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceCopy
-            && (*params).forceWindow == 0
+            || params.attachDictPref == ZSTD_dictAttachPref_e::ZSTD_dictForceAttach)
+            && params.attachDictPref != ZSTD_dictAttachPref_e::ZSTD_dictForceCopy
+            && params.forceWindow == 0
 }
 
 unsafe fn ZSTD_resetCCtx_byAttachingCDict(
