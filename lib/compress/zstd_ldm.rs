@@ -1252,7 +1252,7 @@ pub unsafe fn ZSTD_ldm_generateSequences(
             chunkEnd as *const core::ffi::c_void,
             maxDist,
             &mut ldmState.loadedDictEnd,
-            core::ptr::null_mut(),
+            None,
         );
 
         // 3. Generate the sequences for the chunk, and get newLeftoverSize.

@@ -7301,7 +7301,7 @@ unsafe fn ZSTD_compress_frameChunk(
             ip as *const core::ffi::c_void,
             maxDist,
             &mut ms.loadedDictEnd,
-            &mut ms.dictMatchState,
+            Some(&mut ms.dictMatchState),
         );
 
         // Ensure hash/chain table insertion resumes no sooner than lowlimit
